@@ -12,6 +12,23 @@ import {
   softDeleteUserAccount,
   USER_OWNED_TABLES,
 } from "./accountDeletion";
+import {
+  CONVERSATION_CHILD_TABLES,
+  findLiveOperationReceipt,
+  NOTE_CHILD_TABLES,
+  type PagePrivacyDenial,
+  PagePrivacyError,
+  readLivePageBlocks,
+  requireActiveOwner,
+  requireLiveAgentThread,
+  requireLiveChatRequest,
+  requireLiveConversation,
+  requireLiveOperation,
+  requireLivePage,
+  requireLiveProposal,
+  requirePendingProposal,
+  requireUndoAccess,
+} from "./pagePrivacy";
 import { makeFakeCtx, run } from "./testFakeCtx";
 import * as coach from "../coach";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
@@ -29,6 +46,7 @@ function handlerCtx(userId: string, extraUsers: string[] = []) {
     const addTerminals = (value: ReturnType<typeof query>) => ({
       ...value,
       first: async () => (await value.collect())[0] ?? null,
+      take: async (n: number) => (await value.collect()).slice(0, n),
       unique: async () => (await value.collect())[0] ?? null,
       withIndex: (name: string, fn: (q: unknown) => unknown) =>
         addTerminals(value.withIndex(name, fn)),
@@ -1768,5 +1786,1044 @@ describe("softDeleteUserAccount", () => {
       run(coach.decideProposal, ctx, { proposalId, decision: "reject" }),
     ).rejects.toThrow("Proposal not found");
     expect((await ctx.db.get(nagId)).deletedAt).toBe(now);
+  });
+});
+
+describe("page privacy guards (#808)", () => {
+  const appliedAt = 1_800_000_000_000;
+  const undoWindowMs = 300_000;
+  const proposalWindowMs = 86_400_000;
+  const inWindow = appliedAt + 1_000;
+  const lastGoodMs = appliedAt + undoWindowMs - 1;
+  const closedMs = appliedAt + undoWindowMs;
+  const deletedAt = appliedAt + 2_000;
+
+  async function seed() {
+    const { ctx, forbiddenCalls } = lifecycleCtx("users:a", ["users:b"]);
+    const userA = asUserId("users:a");
+    const userB = asUserId("users:b");
+
+    const note = (userId: Id<"users">, title: string) => ({
+      userId,
+      title,
+      body: "synthetic body",
+      pinned: false,
+      periodType: "none",
+      createdAt: 1,
+      updatedAt: 5,
+    });
+    const noteA = await ctx.db.insert("notes", note(userA, "page one"));
+    const noteA2 = await ctx.db.insert("notes", note(userA, "page two"));
+    const noteB = await ctx.db.insert("notes", note(userB, "other page"));
+
+    const conversation = (userId: Id<"users">, agentThreadId?: string) => ({
+      userId,
+      title: "chat",
+      createdAt: 1,
+      updatedAt: 1,
+      ...(agentThreadId === undefined ? {} : { agentThreadId }),
+    });
+    const convA = await ctx.db.insert("conversations", conversation(userA, "agent-thread-a"));
+    const convNoThread = await ctx.db.insert("conversations", conversation(userA));
+    const convB = await ctx.db.insert("conversations", conversation(userB, "agent-thread-b"));
+
+    const chatRequest = (
+      userId: Id<"users">,
+      conversationId: string,
+      requestKey: string,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      userId,
+      conversationId,
+      requestKey,
+      payloadDigest: fakeDigest(7),
+      sequence: 0,
+      status: "completed",
+      agentPromptMessageId: `agent-prompt-${requestKey}`,
+      agentResultMessageId: `agent-result-${requestKey}`,
+      generationEpoch: 0,
+      createdAt: 1,
+      updatedAt: 5,
+      ...overrides,
+    });
+    const reqA = await ctx.db.insert("chatRequests", chatRequest(userA, convA, "key_a"));
+    const reqGone = await ctx.db.insert(
+      "chatRequests",
+      chatRequest(userA, convA, "key_gone", { deletedAt: 3, updatedAt: 3 }),
+    );
+    // Same key as A's, different owner: lookups must stay owner-scoped.
+    const reqB = await ctx.db.insert("chatRequests", chatRequest(userB, convB, "key_a"));
+    // Indexes are not unique constraints: two rows for one key must be refused, not guessed at.
+    await ctx.db.insert("chatRequests", chatRequest(userA, convA, "key_dup"));
+    await ctx.db.insert("chatRequests", chatRequest(userA, convA, "key_dup"));
+
+    const block = (
+      userId: Id<"users">,
+      noteId: string,
+      position: number,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      userId,
+      noteId,
+      type: "broken",
+      errorCode: "malformed_json",
+      position,
+      createdAt: 1,
+      updatedAt: 5,
+      ...extra,
+    });
+    await ctx.db.insert("noteBlocks", block(userA, noteA, 0));
+    await ctx.db.insert("noteBlocks", block(userA, noteA, 1));
+    await ctx.db.insert("noteBlocks", block(userA, noteA, 2, { deletedAt: 3 }));
+    await ctx.db.insert("noteBlocks", block(userA, noteA2, 0));
+    await ctx.db.insert("noteBlocks", block(userB, noteB, 0));
+
+    const operation = (
+      userId: Id<"users">,
+      noteId: string,
+      n: number,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      userId,
+      noteId,
+      requestId: fakeRequestId(n),
+      requestDigest: fakeDigest(n),
+      kind: "add_task",
+      source: "coach",
+      result: "applied",
+      affectsBody: true,
+      baseRevision: n,
+      resultRevision: n + 1,
+      baseBodyDigest: fakeDigest(n + 100),
+      resultBodyDigest: fakeDigest(n + 101),
+      delta: [{ startUtf16: 0, removedLengthUtf16: 0, insertedLengthUtf16: 4 }],
+      appliedAtMs: appliedAt,
+      undoUntilMs: appliedAt + undoWindowMs,
+      metadataExpiresAtMs: appliedAt + 172_800_000,
+      createdAt: appliedAt,
+      updatedAt: appliedAt,
+      ...overrides,
+    });
+    const available = {
+      state: "available",
+      splices: [{ startUtf16: 0, removedText: "", insertedText: "synthetic" }],
+    };
+    const payload = (
+      userId: Id<"users">,
+      noteId: string,
+      operationId: string,
+      state: Record<string, unknown> = available,
+    ) => ({
+      userId,
+      noteId,
+      operationId,
+      undoUntilMs: appliedAt + undoWindowMs,
+      // Cleanup is due five minutes after the window, so it has not run at `closedMs`.
+      cleanupDueAtMs: appliedAt + 2 * undoWindowMs,
+      payload: state,
+      createdAt: appliedAt,
+      updatedAt: appliedAt,
+    });
+
+    const ops: Record<string, string> = {};
+    const addOp = async (
+      name: string,
+      userId: Id<"users">,
+      noteId: string,
+      n: number,
+      overrides: Record<string, unknown> = {},
+      payloadState: Record<string, unknown> | null = available,
+      payloadNoteId = noteId,
+    ) => {
+      const id = await ctx.db.insert("pageOperations", operation(userId, noteId, n, overrides));
+      if (payloadState) {
+        await ctx.db.insert(
+          "pageOperationPayloads",
+          payload(userId, payloadNoteId, id, payloadState),
+        );
+      }
+      ops[name] = id;
+      return id;
+    };
+
+    const live = await addOp("live", userA, noteA, 1);
+    const receipt = await addOp(
+      "undoReceipt",
+      userA,
+      noteA,
+      2,
+      { kind: "undo", undoOfOperationId: live, undoUntilMs: undefined },
+      null,
+    );
+    await addOp(
+      "done",
+      userA,
+      noteA,
+      3,
+      { undoneAtMs: appliedAt + 5, undoneByOperationId: receipt },
+      null,
+    );
+    await addOp("malformed", userA, noteA, 4, { undoneAtMs: appliedAt + 5 }, null);
+    // A malformed undo receipt that still carries a window and fragments is not undoable.
+    await addOp("undoWithPayload", userA, noteA, 13, { kind: "undo", undoOfOperationId: live });
+    await addOp(
+      "noop",
+      userA,
+      noteA,
+      5,
+      {
+        result: "noop",
+        affectsBody: false,
+        resultRevision: 5,
+        resultBodyDigest: fakeDigest(105),
+        delta: [],
+        undoUntilMs: undefined,
+      },
+      null,
+    );
+    await addOp("stale", userA, noteA, 6, {}, { state: "expired", expiredAtMs: appliedAt + 10 });
+    await addOp("noPayload", userA, noteA, 7, {}, null);
+    await addOp("twoPayloads", userA, noteA, 8);
+    await ctx.db.insert("pageOperationPayloads", payload(userA, noteA, ops.twoPayloads));
+    await addOp("wrongNote", userA, noteA, 9, {}, available, noteA2);
+    ops.foreignPayloadOnly = await ctx.db.insert("pageOperations", operation(userA, noteA, 10));
+    await ctx.db.insert("pageOperationPayloads", payload(userB, noteB, ops.foreignPayloadOnly));
+    await addOp("onPageTwo", userA, noteA2, 11);
+    // Two receipts for one request id.
+    await addOp("duplicate", userA, noteA, 12, {}, null);
+    await ctx.db.insert("pageOperations", operation(userA, noteA, 12));
+    // Same request id as A's "live" operation, other owner.
+    await addOp("foreign", userB, noteB, 1);
+
+    const taskAvailable = {
+      state: "available",
+      task: { title: "Synthetic task", durationMin: 15 },
+    };
+    const taskExpired = { state: "expired", expiredAtMs: appliedAt + 12 };
+    const props: Record<string, string> = {};
+    const addProposal = async (
+      name: string,
+      userId: Id<"users">,
+      noteId: string,
+      conversationId: string,
+      sourceRequestKey: string,
+      status: string,
+      state: Record<string, unknown>,
+      overrides: Record<string, unknown> = {},
+    ) => {
+      props[name] = await ctx.db.insert("pageProposals", {
+        userId,
+        kind: "add_task_to_today",
+        schemaVersion: 1,
+        noteId,
+        localDate: "2026-10-11",
+        conversationId,
+        sourceRequestKey,
+        proposalRevision: 0,
+        expectedPageRevision: 1,
+        blockId: "blk_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        status,
+        proposalExpiresAtMs: appliedAt + proposalWindowMs,
+        cleanupDueAtMs: appliedAt + proposalWindowMs + undoWindowMs,
+        metadataExpiresAtMs: appliedAt + 172_800_000,
+        payload: state,
+        createdAt: appliedAt,
+        updatedAt: appliedAt,
+        ...overrides,
+      });
+    };
+    const A = userA;
+    await addProposal("pending", A, noteA, convA, "key_a", "pending", taskAvailable);
+    await addProposal("pageTwo", A, noteA2, convA, "key_a", "pending", taskAvailable);
+    // Decided proposals keep their content until the cleanup job runs; access must end sooner.
+    await addProposal("confirmed", A, noteA, convA, "key_a", "confirmed", taskAvailable, {
+      decidedAtMs: appliedAt + 2,
+      confirmedOperationId: live,
+      confirmDigest: fakeDigest(9),
+    });
+    await addProposal("rejected", A, noteA, convA, "key_a", "rejected", taskAvailable, {
+      decidedAtMs: appliedAt + 2,
+    });
+    await addProposal("cancelled", A, noteA, convA, "key_a", "cancelled", taskAvailable, {
+      decidedAtMs: appliedAt + 2,
+    });
+    await addProposal("expiredStatus", A, noteA, convA, "key_a", "expired", taskExpired);
+    await addProposal("markerOnly", A, noteA, convA, "key_a", "pending", taskExpired);
+    await addProposal("noSource", A, noteA, convA, "key_missing", "pending", taskAvailable);
+    await addProposal("goneSource", A, noteA, convA, "key_gone", "pending", taskAvailable);
+    await addProposal("dupSource", A, noteA, convA, "key_dup", "pending", taskAvailable);
+    await addProposal("foreign", userB, noteB, convB, "key_a", "pending", taskAvailable);
+
+    return {
+      ctx,
+      forbiddenCalls,
+      userA,
+      userB,
+      noteA,
+      noteA2,
+      noteB,
+      convA,
+      convNoThread,
+      convB,
+      reqA,
+      reqGone,
+      reqB,
+      ops,
+      props,
+    };
+  }
+
+  type Seed = Awaited<ReturnType<typeof seed>>;
+  type Calls = Record<string, () => Promise<unknown>>;
+  type Outcome = PagePrivacyDenial | "ok";
+
+  const opId = (s: Seed, name: string) => s.ops[name] as Id<"pageOperations">;
+  const propId = (s: Seed, name: string) => s.props[name] as Id<"pageProposals">;
+
+  /** Every guard once, for one caller, against the main page, chat, operation and proposal. */
+  function everyGuard(s: Seed, ctx = s.ctx, userId = s.userA, now = inWindow): Calls {
+    return {
+      owner: () => requireActiveOwner(ctx, userId),
+      page: () => requireLivePage(ctx, userId, s.noteA),
+      blocks: () => readLivePageBlocks(ctx, userId, s.noteA),
+      conversation: () => requireLiveConversation(ctx, userId, s.convA),
+      thread: () => requireLiveAgentThread(ctx, userId, s.convA),
+      chatRequest: () => requireLiveChatRequest(ctx, userId, s.reqA),
+      operation: () => requireLiveOperation(ctx, userId, opId(s, "live")),
+      receipt: () => findLiveOperationReceipt(ctx, userId, fakeRequestId(1)),
+      undo: () => requireUndoAccess(ctx, { userId, operationId: opId(s, "live"), now }),
+      proposal: () => requireLiveProposal(ctx, userId, propId(s, "pending")),
+      pending: () => requirePendingProposal(ctx, { userId, proposalId: propId(s, "pending"), now }),
+    };
+  }
+
+  const GUARD_NAMES = [
+    "owner",
+    "page",
+    "blocks",
+    "conversation",
+    "thread",
+    "chatRequest",
+    "operation",
+    "receipt",
+    "undo",
+    "proposal",
+    "pending",
+  ];
+  const allOk: Record<string, Outcome> = Object.fromEntries(
+    GUARD_NAMES.map((name) => [name, "ok"]),
+  );
+
+  async function outcomes(calls: Calls): Promise<Record<string, Outcome>> {
+    const out: Record<string, Outcome> = {};
+    for (const [name, call] of Object.entries(calls)) {
+      try {
+        await call();
+        out[name] = "ok";
+      } catch (error) {
+        if (!(error instanceof PagePrivacyError)) {
+          throw error;
+        }
+        out[name] = error.code;
+      }
+    }
+    return out;
+  }
+
+  async function codeOf(call: () => Promise<unknown>): Promise<Outcome> {
+    return (await outcomes({ call })).call;
+  }
+
+  test("a live owner reaches every guarded record and gets back the stored rows", async () => {
+    const s = await seed();
+    expect(await outcomes(everyGuard(s))).toEqual(allOk);
+
+    const thread = await requireLiveAgentThread(s.ctx, s.userA, s.convA);
+    expect(thread.agentThreadId).toBe("agent-thread-a");
+    expect(thread.conversation._id).toBe(s.convA);
+
+    const request = await requireLiveChatRequest(s.ctx, s.userA, s.reqA, s.convA);
+    expect(request.request.agentPromptMessageId).toBe("agent-prompt-key_a");
+    expect(request.conversation._id).toBe(s.convA);
+
+    const pending = await requirePendingProposal(s.ctx, {
+      userId: s.userA,
+      proposalId: propId(s, "pending"),
+      now: inWindow,
+    });
+    expect(pending.task).toEqual({ title: "Synthetic task", durationMin: 15 });
+    expect(pending.note._id).toBe(s.noteA);
+
+    const found = await findLiveOperationReceipt(s.ctx, s.userA, fakeRequestId(1));
+    expect(found?.operation._id).toBe(opId(s, "live"));
+    expect(await findLiveOperationReceipt(s.ctx, s.userA, fakeRequestId(99))).toBeNull();
+    // The other owner's receipt for the same request id is a different row.
+    const foreign = await findLiveOperationReceipt(s.ctx, s.userB, fakeRequestId(1));
+    expect(foreign?.operation._id).toBe(opId(s, "foreign"));
+  });
+
+  test("another person's ids and missing ids are refused identically, with no id in the message", async () => {
+    const s = await seed();
+    expect(await outcomes(everyGuard(s, s.ctx, s.userB))).toEqual({
+      owner: "ok",
+      page: "page_unavailable",
+      blocks: "page_unavailable",
+      conversation: "conversation_unavailable",
+      thread: "conversation_unavailable",
+      chatRequest: "request_unavailable",
+      operation: "operation_unavailable",
+      receipt: "ok",
+      undo: "operation_unavailable",
+      proposal: "proposal_unavailable",
+      pending: "proposal_unavailable",
+    });
+
+    const missing: Calls = {
+      page: () => requireLivePage(s.ctx, s.userA, "notes:missing" as Id<"notes">),
+      conversation: () =>
+        requireLiveConversation(s.ctx, s.userA, "conversations:missing" as Id<"conversations">),
+      chatRequest: () =>
+        requireLiveChatRequest(s.ctx, s.userA, "chatRequests:missing" as Id<"chatRequests">),
+      operation: () =>
+        requireLiveOperation(s.ctx, s.userA, "pageOperations:missing" as Id<"pageOperations">),
+      proposal: () =>
+        requireLiveProposal(s.ctx, s.userA, "pageProposals:missing" as Id<"pageProposals">),
+    };
+    const foreignIds: Calls = {
+      page: () => requireLivePage(s.ctx, s.userA, s.noteB),
+      conversation: () => requireLiveConversation(s.ctx, s.userA, s.convB),
+      chatRequest: () => requireLiveChatRequest(s.ctx, s.userA, s.reqB),
+      operation: () => requireLiveOperation(s.ctx, s.userA, opId(s, "foreign")),
+      proposal: () => requireLiveProposal(s.ctx, s.userA, propId(s, "foreign")),
+    };
+    for (const name of Object.keys(missing)) {
+      const a = await missing[name]().catch((error: unknown) => error);
+      const b = await foreignIds[name]().catch((error: unknown) => error);
+      expect(a).toBeInstanceOf(PagePrivacyError);
+      expect(b).toBeInstanceOf(PagePrivacyError);
+      expect({
+        name,
+        code: (a as PagePrivacyError).code,
+        message: (a as PagePrivacyError).message,
+      }).toEqual({
+        name,
+        code: (b as PagePrivacyError).code,
+        message: (b as PagePrivacyError).message,
+      });
+    }
+
+    // A chat request cannot be used against a different conversation of the same owner.
+    expect(await codeOf(() => requireLiveChatRequest(s.ctx, s.userA, s.reqA, s.convNoThread))).toBe(
+      "request_unavailable",
+    );
+  });
+
+  test("account deletion denies every guard at once, and restoring only the account row reopens nothing", async () => {
+    const s = await seed();
+    expect(await outcomes(everyGuard(s))).toEqual(allOk);
+    const foreignBefore = await outcomes(everyGuard(s, s.ctx, s.userB));
+
+    await softDeleteUserAccount(s.ctx, s.userA, deletedAt);
+    expect(await outcomes(everyGuard(s, s.ctx, s.userA, deletedAt))).toEqual(
+      Object.fromEntries(GUARD_NAMES.map((name) => [name, "account_unavailable"])),
+    );
+    // Also for ids the main matrix does not use.
+    expect(await codeOf(() => requireLivePage(s.ctx, s.userA, s.noteA2))).toBe(
+      "account_unavailable",
+    );
+    expect(
+      await codeOf(() =>
+        requirePendingProposal(s.ctx, {
+          userId: s.userA,
+          proposalId: propId(s, "pageTwo"),
+          now: deletedAt,
+        }),
+      ),
+    ).toBe("account_unavailable");
+    expect(await outcomes(everyGuard(s, s.ctx, s.userB))).toEqual(foreignBefore);
+
+    // The sign-in restore patch reactivates the account row but not owned rows (a reported
+    // lifecycle gap). The guards must not make the tombstoned rows reachable again.
+    const patch = signInRestorePatch(await s.ctx.db.get(s.userA), deletedAt + 1_000);
+    expect(patch).not.toBeNull();
+    await s.ctx.db.patch(s.userA, patch);
+    expect(await outcomes(everyGuard(s, s.ctx, s.userA, deletedAt))).toEqual({
+      owner: "ok",
+      page: "page_unavailable",
+      blocks: "page_unavailable",
+      conversation: "conversation_unavailable",
+      thread: "conversation_unavailable",
+      chatRequest: "request_unavailable",
+      operation: "operation_unavailable",
+      receipt: "operation_unavailable",
+      undo: "operation_unavailable",
+      proposal: "proposal_unavailable",
+      pending: "proposal_unavailable",
+    });
+  });
+
+  test("a deleted note hides its blocks, receipts, Undo and proposals; the other page and the chat stay", async () => {
+    const s = await seed();
+    await s.ctx.db.patch(s.noteA, { deletedAt, updatedAt: deletedAt });
+    expect(await outcomes(everyGuard(s))).toEqual({
+      owner: "ok",
+      page: "page_unavailable",
+      blocks: "page_unavailable",
+      conversation: "ok",
+      thread: "ok",
+      chatRequest: "ok",
+      operation: "page_unavailable",
+      receipt: "page_unavailable",
+      undo: "page_unavailable",
+      proposal: "page_unavailable",
+      pending: "page_unavailable",
+    });
+
+    // The sibling page keeps working, including its own Undo and proposal.
+    expect((await readLivePageBlocks(s.ctx, s.userA, s.noteA2)).blocks).toHaveLength(1);
+    const sibling = await requireUndoAccess(s.ctx, {
+      userId: s.userA,
+      operationId: opId(s, "onPageTwo"),
+      now: inWindow,
+    });
+    expect(sibling.state).toBe("eligible");
+    const pending = await requirePendingProposal(s.ctx, {
+      userId: s.userA,
+      proposalId: propId(s, "pageTwo"),
+      now: inWindow,
+    });
+    expect(pending.note._id).toBe(s.noteA2);
+  });
+
+  test("a deleted conversation hides its Agent thread, chat requests and proposals; pages and Undo stay", async () => {
+    const s = await seed();
+    await s.ctx.db.patch(s.convA, { deletedAt, updatedAt: deletedAt });
+    expect(await outcomes(everyGuard(s))).toEqual({
+      owner: "ok",
+      page: "ok",
+      blocks: "ok",
+      conversation: "conversation_unavailable",
+      thread: "conversation_unavailable",
+      chatRequest: "conversation_unavailable",
+      operation: "ok",
+      receipt: "ok",
+      undo: "ok",
+      proposal: "proposal_unavailable",
+      pending: "proposal_unavailable",
+    });
+    // The Agent thread id is still stored on the tombstoned host row, but no guard returns it.
+    expect((await s.ctx.db.get(s.convA)).agentThreadId).toBe("agent-thread-a");
+  });
+
+  test("a conversation without an Agent thread, or with an empty one, is refused", async () => {
+    const s = await seed();
+    expect(await codeOf(() => requireLiveAgentThread(s.ctx, s.userA, s.convNoThread))).toBe(
+      "thread_unavailable",
+    );
+    await s.ctx.db.patch(s.convA, { agentThreadId: "" });
+    expect(await codeOf(() => requireLiveAgentThread(s.ctx, s.userA, s.convA))).toBe(
+      "thread_unavailable",
+    );
+    // Another person's thread is never reachable through a conversation id.
+    expect(await codeOf(() => requireLiveAgentThread(s.ctx, s.userA, s.convB))).toBe(
+      "conversation_unavailable",
+    );
+    expect((await requireLiveAgentThread(s.ctx, s.userB, s.convB)).agentThreadId).toBe(
+      "agent-thread-b",
+    );
+  });
+
+  test("a tombstoned chat request or receipt is refused even when its conversation and page are live", async () => {
+    const s = await seed();
+    expect(await codeOf(() => requireLiveChatRequest(s.ctx, s.userA, s.reqGone))).toBe(
+      "request_unavailable",
+    );
+    await s.ctx.db.patch(s.ops.live, { deletedAt, updatedAt: deletedAt });
+    expect(await codeOf(() => requireLiveOperation(s.ctx, s.userA, opId(s, "live")))).toBe(
+      "operation_unavailable",
+    );
+    // A tombstoned receipt is not treated as "no receipt": that would let its id be minted again.
+    expect(await codeOf(() => findLiveOperationReceipt(s.ctx, s.userA, fakeRequestId(1)))).toBe(
+      "operation_unavailable",
+    );
+  });
+
+  test("a receipt lookup refuses ambiguous rows instead of guessing", async () => {
+    const s = await seed();
+    expect(await codeOf(() => findLiveOperationReceipt(s.ctx, s.userA, fakeRequestId(12)))).toBe(
+      "operation_unavailable",
+    );
+  });
+
+  test("Undo is reachable only inside its five-minute window, even while cleanup has not run", async () => {
+    const s = await seed();
+    const undoAt = (now: number) =>
+      requireUndoAccess(s.ctx, { userId: s.userA, operationId: opId(s, "live"), now });
+
+    expect(await codeOf(() => undoAt(appliedAt - 1))).toBe("undo_unavailable");
+    for (const now of [appliedAt, inWindow, lastGoodMs]) {
+      const access = await undoAt(now);
+      expect(access.state).toBe("eligible");
+      if (access.state === "eligible") {
+        expect(access.splices).toEqual([
+          { startUtf16: 0, removedText: "", insertedText: "synthetic" },
+        ]);
+        expect(access.operation._id).toBe(opId(s, "live"));
+      }
+    }
+    for (const now of [closedMs, closedMs + 1, closedMs + 4 * 60_000]) {
+      expect(await codeOf(() => undoAt(now))).toBe("undo_expired");
+    }
+
+    // The fragments are still stored (cleanup is due later), yet unreachable. Nothing was edited.
+    const mine = (await s.ctx.db.query("pageOperationPayloads").collect()).filter(
+      (row: { operationId: string }) => row.operationId === s.ops.live,
+    );
+    expect(mine).toHaveLength(1);
+    expect(mine[0].payload.state).toBe("available");
+    expect(mine[0].cleanupDueAtMs).toBeGreaterThan(closedMs + 4 * 60_000);
+    expect(mine[0].deletedAt).toBeUndefined();
+  });
+
+  test("whichever of the receipt window and the payload window closes first ends access", async () => {
+    for (const closing of ["pageOperations", "pageOperationPayloads"] as const) {
+      const s = await seed();
+      const row = (await s.ctx.db.query(closing).collect()).find(
+        (candidate: { _id: string; operationId?: string }) =>
+          (closing === "pageOperations" ? candidate._id : candidate.operationId) === s.ops.live,
+      );
+      await s.ctx.db.patch(row._id, { undoUntilMs: appliedAt + 10_000 });
+      const undoAt = (now: number) =>
+        requireUndoAccess(s.ctx, { userId: s.userA, operationId: opId(s, "live"), now });
+      expect({ closing, state: (await undoAt(appliedAt + 9_999)).state }).toEqual({
+        closing,
+        state: "eligible",
+      });
+      expect({ closing, code: await codeOf(() => undoAt(appliedAt + 10_000)) }).toEqual({
+        closing,
+        code: "undo_expired",
+      });
+    }
+  });
+
+  test("stale, missing, ambiguous, foreign or mismatched fragments and non-undoable receipts are refused", async () => {
+    const s = await seed();
+    const undoOf = (name: string) =>
+      codeOf(() =>
+        requireUndoAccess(s.ctx, { userId: s.userA, operationId: opId(s, name), now: inWindow }),
+      );
+    expect({
+      stale: await undoOf("stale"),
+      noPayload: await undoOf("noPayload"),
+      twoPayloads: await undoOf("twoPayloads"),
+      wrongNote: await undoOf("wrongNote"),
+      foreignPayloadOnly: await undoOf("foreignPayloadOnly"),
+      noop: await undoOf("noop"),
+      undoReceipt: await undoOf("undoReceipt"),
+      undoWithPayload: await undoOf("undoWithPayload"),
+      malformed: await undoOf("malformed"),
+      foreign: await undoOf("foreign"),
+    }).toEqual({
+      stale: "undo_unavailable",
+      noPayload: "undo_unavailable",
+      twoPayloads: "undo_unavailable",
+      wrongNote: "undo_unavailable",
+      foreignPayloadOnly: "undo_unavailable",
+      noop: "undo_unavailable",
+      undoReceipt: "undo_unavailable",
+      undoWithPayload: "undo_unavailable",
+      malformed: "undo_unavailable",
+      foreign: "operation_unavailable",
+    });
+  });
+
+  test("a repeated Undo is an authorized no-op that reads no fragments, even after the window", async () => {
+    const s = await seed();
+    for (const now of [inWindow, closedMs + 10 * 60_000]) {
+      const access = await requireUndoAccess(s.ctx, {
+        userId: s.userA,
+        operationId: opId(s, "done"),
+        now,
+      });
+      expect(access.state).toBe("already_undone");
+      expect("splices" in access).toBe(false);
+    }
+    // Privacy still comes first: a deleted page refuses the retry too.
+    await s.ctx.db.patch(s.noteA, { deletedAt, updatedAt: deletedAt });
+    expect(
+      await codeOf(() =>
+        requireUndoAccess(s.ctx, { userId: s.userA, operationId: opId(s, "done"), now: inWindow }),
+      ),
+    ).toBe("page_unavailable");
+  });
+
+  test("proposal content needs a pending, unexpired proposal with a live source request", async () => {
+    const s = await seed();
+    const pendingOf = (name: string, now = inWindow, userId = s.userA) =>
+      codeOf(() => requirePendingProposal(s.ctx, { userId, proposalId: propId(s, name), now }));
+    const expiresAt = appliedAt + proposalWindowMs;
+
+    expect(await pendingOf("pending")).toBe("ok");
+    expect(await pendingOf("pending", expiresAt - 1)).toBe("ok");
+    // A late expiry sweep does not extend access: status is still pending, payload still stored.
+    expect(await pendingOf("pending", expiresAt)).toBe("proposal_expired");
+    expect(await pendingOf("pending", expiresAt + 3_600_000)).toBe("proposal_expired");
+
+    expect({
+      confirmed: await pendingOf("confirmed"),
+      rejected: await pendingOf("rejected"),
+      cancelled: await pendingOf("cancelled"),
+      expiredStatus: await pendingOf("expiredStatus"),
+      markerOnly: await pendingOf("markerOnly"),
+      noSource: await pendingOf("noSource"),
+      goneSource: await pendingOf("goneSource"),
+      dupSource: await pendingOf("dupSource"),
+      foreign: await pendingOf("foreign"),
+    }).toEqual({
+      confirmed: "proposal_unavailable",
+      rejected: "proposal_unavailable",
+      cancelled: "proposal_unavailable",
+      expiredStatus: "proposal_unavailable",
+      markerOnly: "proposal_unavailable",
+      noSource: "proposal_unavailable",
+      goneSource: "proposal_unavailable",
+      dupSource: "proposal_unavailable",
+      foreign: "proposal_unavailable",
+    });
+    expect(await pendingOf("foreign", inWindow, s.userB)).toBe("ok");
+  });
+
+  test("a confirmed proposal's receipt stays readable while its content does not", async () => {
+    const s = await seed();
+    const receipt = await requireLiveProposal(s.ctx, s.userA, propId(s, "confirmed"));
+    expect(receipt.proposal.status).toBe("confirmed");
+    expect(receipt.proposal.confirmedOperationId).toBe(opId(s, "live"));
+    expect(receipt.proposal.confirmDigest).toBe(fakeDigest(9));
+    // The content is still stored, but only the receipt is readable.
+    expect(receipt.proposal.payload.state).toBe("available");
+    expect(
+      await codeOf(() =>
+        requirePendingProposal(s.ctx, {
+          userId: s.userA,
+          proposalId: propId(s, "confirmed"),
+          now: inWindow,
+        }),
+      ),
+    ).toBe("proposal_unavailable");
+
+    await s.ctx.db.patch(s.noteA, { deletedAt, updatedAt: deletedAt });
+    expect(await codeOf(() => requireLiveProposal(s.ctx, s.userA, propId(s, "confirmed")))).toBe(
+      "page_unavailable",
+    );
+  });
+
+  test("page block reads are live, owner-scoped and bounded", async () => {
+    const s = await seed();
+    const all = await readLivePageBlocks(s.ctx, s.userA, s.noteA);
+    expect(all.blocks.map((row) => row.position)).toEqual([0, 1]);
+    expect(all.blocks.every((row) => row.noteId === s.noteA && row.deletedAt === undefined)).toBe(
+      true,
+    );
+    expect(all.truncated).toBe(false);
+    expect(all.note._id).toBe(s.noteA);
+
+    const one = await readLivePageBlocks(s.ctx, s.userA, s.noteA, 1);
+    expect(one.blocks).toHaveLength(1);
+    expect(one.truncated).toBe(true);
+    const exact = await readLivePageBlocks(s.ctx, s.userA, s.noteA, 2);
+    expect(exact.blocks).toHaveLength(2);
+    expect(exact.truncated).toBe(false);
+
+    for (const bad of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      await expect(readLivePageBlocks(s.ctx, s.userA, s.noteA, bad)).rejects.toThrow(RangeError);
+    }
+  });
+
+  test("a late result is rejected at the committing mutation once the account, page or chat is deleted", async () => {
+    // Stand-ins for the activating mutations: re-check inside the commit, then write.
+    const commitProposal = async (s: Seed, now: number) => {
+      const { note } = await requirePendingProposal(s.ctx, {
+        userId: s.userA,
+        proposalId: propId(s, "pending"),
+        now,
+      });
+      await s.ctx.db.patch(note._id, { body: `${note.body}\nlate task`, updatedAt: now });
+    };
+    const completeChat = async (s: Seed, now: number) => {
+      const { request } = await requireLiveChatRequest(s.ctx, s.userA, s.reqA, s.convA);
+      await s.ctx.db.patch(request._id, {
+        status: "completed",
+        agentResultMessageId: "agent-result-late",
+        updatedAt: now,
+      });
+    };
+    const state = async (s: Seed) => ({
+      body: (await s.ctx.db.get(s.noteA)).body,
+      result: (await s.ctx.db.get(s.reqA)).agentResultMessageId,
+    });
+    const codeFrom = async (call: () => Promise<unknown>): Promise<Outcome> =>
+      codeOf(async () => {
+        await call();
+      });
+
+    // Control: before any deletion the same commits succeed, so the rejections below are real.
+    const control = await seed();
+    expect(await codeFrom(() => commitProposal(control, inWindow))).toBe("ok");
+    expect(await codeFrom(() => completeChat(control, inWindow))).toBe("ok");
+    expect(await state(control)).toEqual({
+      body: "synthetic body\nlate task",
+      result: "agent-result-late",
+    });
+
+    const cases: {
+      name: string;
+      prepare: (s: Seed) => Promise<unknown>;
+      proposal: Outcome;
+      chat: Outcome;
+    }[] = [
+      {
+        name: "account deleted",
+        prepare: (s) => softDeleteUserAccount(s.ctx, s.userA, deletedAt),
+        proposal: "account_unavailable",
+        chat: "account_unavailable",
+      },
+      {
+        name: "page deleted",
+        prepare: (s) => s.ctx.db.patch(s.noteA, { deletedAt, updatedAt: deletedAt }),
+        proposal: "page_unavailable",
+        chat: "ok",
+      },
+      {
+        name: "chat deleted",
+        prepare: (s) => s.ctx.db.patch(s.convA, { deletedAt, updatedAt: deletedAt }),
+        proposal: "proposal_unavailable",
+        chat: "conversation_unavailable",
+      },
+    ];
+    const results: Record<string, { proposal: Outcome; chat: Outcome; unchanged: boolean }> = {};
+    const expected: typeof results = {};
+    for (const { name, prepare, proposal, chat } of cases) {
+      const s = await seed();
+      const before = await state(s);
+      await prepare(s);
+      const proposalCode = await codeFrom(() => commitProposal(s, deletedAt));
+      const chatCode = await codeFrom(() => completeChat(s, deletedAt));
+      const after = await state(s);
+      results[name] = {
+        proposal: proposalCode,
+        chat: chatCode,
+        // A rejected commit changes nothing. The one allowed chat write is the live-chat control.
+        unchanged: after.body === before.body && (chat === "ok" || after.result === before.result),
+      };
+      expected[name] = { proposal, chat, unchanged: true };
+    }
+    expect(results).toEqual(expected);
+  });
+
+  test("guards only read: a reader-only context works, no row changes and nothing external is called", async () => {
+    const s = await seed();
+    const writes: string[] = [];
+    for (const method of ["insert", "patch", "replace", "delete"] as const) {
+      s.ctx.db[method] = (..._args: unknown[]) => {
+        writes.push(method);
+        throw new Error(`${method} must not be called by a privacy guard`);
+      };
+    }
+    // Only `get` and `query` exist on this context; any other db method would be a TypeError.
+    const readerOnly = { db: { get: s.ctx.db.get, query: s.ctx.db.query } };
+    const watched = [
+      ...Object.values(s.ops),
+      ...Object.values(s.props),
+      s.noteA,
+      s.noteA2,
+      s.convA,
+      s.reqA,
+      s.userA,
+    ];
+    const snapshot = async () => JSON.stringify(await readAll(s.ctx, watched));
+    const before = await snapshot();
+
+    await outcomes(everyGuard(s, readerOnly as never));
+    await outcomes(everyGuard(s, readerOnly as never, s.userB));
+    await outcomes(everyGuard(s, readerOnly as never, s.userA, closedMs));
+    for (const name of Object.keys(s.ops)) {
+      await outcomes({
+        undo: () =>
+          requireUndoAccess(readerOnly as never, {
+            userId: s.userA,
+            operationId: opId(s, name),
+            now: inWindow,
+          }),
+      });
+    }
+    for (const name of Object.keys(s.props)) {
+      await outcomes({
+        pending: () =>
+          requirePendingProposal(readerOnly as never, {
+            userId: s.userA,
+            proposalId: propId(s, name),
+            now: inWindow,
+          }),
+      });
+    }
+
+    expect(await snapshot()).toBe(before);
+    expect(writes).toEqual([]);
+    // No hard delete, component call or scheduling (see lifecycleCtx).
+    expect(s.forbiddenCalls).toEqual([]);
+  });
+
+  test("every index the guards read is declared by the schema, owner-scoped and read with take", async () => {
+    const s = await seed();
+    const uses: { table: string; index: string; fields: string[] }[] = [];
+    const unbounded: string[] = [];
+    const query = s.ctx.db.query;
+    s.ctx.db.query = (table: string) => {
+      const builder = query(table);
+      return {
+        ...builder,
+        // A query with no index is a table scan.
+        collect: () => {
+          unbounded.push(`${table}.collect`);
+          throw new Error("table scan");
+        },
+        withIndex: (name: string, fn: (q: unknown) => unknown) => {
+          const fields: string[] = [];
+          const recorder: Record<string, unknown> = {};
+          for (const op of ["eq", "gt", "gte", "lt", "lte"]) {
+            recorder[op] = (field: string) => {
+              fields.push(field);
+              return recorder;
+            };
+          }
+          fn(recorder);
+          uses.push({ table, index: name, fields });
+          return {
+            ...builder.withIndex(name, fn),
+            collect: () => {
+              unbounded.push(`${table}.${name}.collect`);
+              throw new Error("unbounded read");
+            },
+          };
+        },
+      };
+    };
+
+    await outcomes(everyGuard(s));
+    await outcomes(everyGuard(s, s.ctx, s.userB));
+    await outcomes({
+      dupSource: () =>
+        requirePendingProposal(s.ctx, {
+          userId: s.userA,
+          proposalId: propId(s, "dupSource"),
+          now: inWindow,
+        }),
+      duplicateReceipt: () => findLiveOperationReceipt(s.ctx, s.userA, fakeRequestId(12)),
+      twoPayloads: () =>
+        requireUndoAccess(s.ctx, {
+          userId: s.userA,
+          operationId: opId(s, "twoPayloads"),
+          now: inWindow,
+        }),
+    });
+    expect(unbounded).toEqual([]);
+
+    expect([...new Set(uses.map((use) => `${use.table}.${use.index}`))].sort()).toEqual([
+      "chatRequests.by_userId_conversationId_requestKey",
+      "noteBlocks.by_userId_noteId_deletedAt_position",
+      "pageOperationPayloads.by_userId_operationId",
+      "pageOperations.by_userId_requestId",
+    ]);
+    for (const use of uses) {
+      const declared = indexesOf(use.table).find((index) => index.indexDescriptor === use.index);
+      expect(declared).toBeDefined();
+      // The guard constrains a leading prefix of the index, and that prefix starts with the owner.
+      expect(use.fields[0]).toBe("userId");
+      expect(use.fields).toEqual((declared?.fields ?? []).slice(0, use.fields.length));
+    }
+  });
+
+  test("denial messages are fixed calm copy with no ids, text or JSON", () => {
+    const codes: PagePrivacyDenial[] = [
+      "account_unavailable",
+      "page_unavailable",
+      "conversation_unavailable",
+      "thread_unavailable",
+      "request_unavailable",
+      "operation_unavailable",
+      "undo_unavailable",
+      "undo_expired",
+      "proposal_unavailable",
+      "proposal_expired",
+    ];
+    for (const code of codes) {
+      const error = new PagePrivacyError(code);
+      expect(error).toBeInstanceOf(Error);
+      expect(error.name).toBe("PagePrivacyError");
+      expect(error.code).toBe(code);
+      expect(error.message.length).toBeGreaterThan(0);
+      expect(error.message).not.toMatch(/[{}[\]":_\d]/);
+    }
+  });
+});
+
+describe("page privacy coverage is derived from the schema (#808)", () => {
+  const ownedChildTables = (
+    parentField: string,
+    tables: Record<string, { validator: GenericValidator }> = schemaTables,
+  ) =>
+    Object.entries(tables)
+      .filter(([name]) => !AUTH_TABLE_NAMES.has(name))
+      .filter(([, table]) =>
+        fieldMaps(table.validator).some((fields) => "userId" in fields && parentField in fields),
+      )
+      .map(([name]) => name)
+      .sort();
+
+  test("every owned table that points at a note or a conversation has a privacy guard", () => {
+    expect(ownedChildTables("noteId")).toEqual([...NOTE_CHILD_TABLES].sort());
+    expect(ownedChildTables("conversationId")).toEqual([...CONVERSATION_CHILD_TABLES].sort());
+    // Parent-owned `messages` has no userId; its conversation guard lives in messages.ts.
+    expect(declaredFieldNames("messages").has("userId")).toBe(false);
+    expect(declaredFieldNames("messages").has("conversationId")).toBe(true);
+  });
+
+  test("every guarded child table is enrolled in account soft deletion", () => {
+    for (const table of [...NOTE_CHILD_TABLES, ...CONVERSATION_CHILD_TABLES]) {
+      expect(USER_OWNED_TABLES as readonly string[]).toContain(table);
+      expect(FIXTURE_TABLE_NAMES).toContain(table);
+    }
+  });
+
+  test("a newly added page or conversation child table without a guard is reported", () => {
+    const withNew = {
+      ...schemaTables,
+      pageComments: {
+        validator: defineTable({
+          userId: v.id("users"),
+          noteId: v.id("notes"),
+          deletedAt: v.optional(v.number()),
+        }).validator,
+      },
+      chatDrafts: {
+        validator: defineTable({
+          userId: v.id("users"),
+          conversationId: v.id("conversations"),
+        }).validator,
+      },
+      ownerlessChild: {
+        validator: defineTable({ noteId: v.id("notes") }).validator,
+      },
+    };
+    const guardedNote: readonly string[] = NOTE_CHILD_TABLES;
+    const guardedConversation: readonly string[] = CONVERSATION_CHILD_TABLES;
+    expect(
+      ownedChildTables("noteId", withNew).filter((name) => !guardedNote.includes(name)),
+    ).toEqual(["pageComments"]);
+    expect(
+      ownedChildTables("conversationId", withNew).filter(
+        (name) => !guardedConversation.includes(name),
+      ),
+    ).toEqual(["chatDrafts"]);
   });
 });
