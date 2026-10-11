@@ -4,8 +4,8 @@
 |---|---|
 | Ticket | #837 `TEMPO-CORE-CONTRACT-01`, batch CORE-WEB. Held. Document only. |
 | Status | **PROPOSAL.** Nothing here is adopted until the coordinator records adoption on #837. This file changes no schema, API, retention rule, privacy rule, UI or deployment, and starts no work. |
-| Baseline | `integration` @ `704bd0832fe9c490a0d5b68d7e1cc7c23b178c58` (fetched 2026-10-11). Every `path:line` below is a line in that tree. `convex/notes.ts`, `convex/tasks.ts`, `convex/lib/softDelete.ts`, `convex/lib/accountDeletion.ts`, `convex/search.ts`, `convex/templates.ts` and `docs/contracts/B02.md` are identical to `0c5b4279847b8f21c1bafff9813fe55a1770fe30`, the SHA #837 cites for the restore clocks (`git diff --stat` empty, 2026-10-11). |
-| Not baseline | Everything still open on GitHub (#787, #807, #808, #828, #831, #803, #804, #792, #840 and the rest of #838–#866) is a **proposal, not an API**. This file says what it needs from each and marks the need UNKNOWN until merged code can be read. |
+| Baseline | `integration` @ `9cf7985c6cc9a7b78dc9a805f832bc9bdab2ba79` (fetched 2026-10-11; first drafted at `704bd0832fe9c490a0d5b68d7e1cc7c23b178c58`, re-pinned in fix round 1). Every `path:line` below is a line in the 9cf7985 tree. Merged since 704bd08 and now part of the baseline: #807 (chat state: `chatRequests`, four `conversations` lifecycle fields, a `memories` index, and account-deletion enrollment of `noteBlocks` and `chatRequests`; PR #877), #815 (Agent component tests under Bun, the first test that imports `convex-test`; PR #876) and the shared block codec (branch `t/802-shared-block-codec`; PR #879, which moved the codec from `convex/lib/blocks.ts` to `packages/utils/src/blocks.ts`). #826 (the page/block foundation of ticket #786) was already merged. `convex/notes.ts`, `convex/tasks.ts`, `convex/lib/softDelete.ts`, `convex/search.ts`, `convex/templates.ts` and `docs/contracts/B02.md` are identical to `0c5b4279847b8f21c1bafff9813fe55a1770fe30`, the SHA #837 cites for the restore clocks (`git diff --stat` empty, 2026-10-11). `convex/lib/accountDeletion.ts` is not (#807 added two tables to it), so its citations, and those to `convex/schema.ts` and the block codec, are re-pinned to 9cf7985. |
+| Not baseline | Everything still open on GitHub (#787, #808, #828, #831, #803, #804, #792, #840 and the rest of #838–#866) is a **proposal, not an API**. This file says what it needs from each and marks the need UNKNOWN until merged code can be read. #807 is no longer on that list: it is merged (Baseline row). |
 | Source order | (1) code at the baseline; (2) `docs/HARD_RULES.md` > ticket > `docs/PRD.md` (`docs/PRD.md:6`); (3) owner doc pack of 2026-10-10, Part A (decisions newer than the repo docs) over Part B (repo docs). Part A holds no decision on note kinds, TODO identity or lifecycle. Its one relevant line is the 10 Oct note that Blinko is a one-to-one comparator, used here as a behaviour reference only (§0.3). |
 
 ## 0. How to read this file
@@ -45,7 +45,7 @@ Out of scope, and unadopted here: resources and attachments (#838), note version
 |---|---|---|---|
 | AE-1 | Note kind is an optional stored literal `quick` or `todo`; an absent value means `note`. Kind is independent of `periodType` and `pageType`. | ADOPTED-ENGINEERING | §4 |
 | AE-2 | Lifecycle is `deletedAt` (existing, trash) plus a new optional `archivedAt`. Trash outranks archive. Restoring from trash returns the note to its earlier archived or active state. | ADOPTED-ENGINEERING | §6 |
-| AE-3 | Two new owner-scoped `notes` indexes serve every feed view without a scan. The kind filter is index-backed in the Active view only. | ADOPTED-ENGINEERING | §8.1 |
+| AE-3 | Three new owner-scoped `notes` indexes (two feed, one trash) serve every feed view without a scan. The kind filter is index-backed in the Active view only. | ADOPTED-ENGINEERING | §8.1 |
 | AE-4 | Feeds page with Convex `paginate`, default 20 and maximum 50 per page, and return safe summaries, never `body`. No counts API. | ADOPTED-ENGINEERING | §9.1, §11.1 |
 | AE-5 | The one TODO identity is the typed `tasks._id`. A task block in a note is an anchor to it. The link is two optional fields on `tasks` plus one index. No new table. | ADOPTED-ENGINEERING, conditional on OD-1 | §5 |
 | AE-6 | For a linked task the row is authoritative; the block is an anchor plus a snapshot; readers overlay the row; writes to the typed form never rewrite note bodies. | ADOPTED-ENGINEERING | §5.5 |
@@ -56,10 +56,13 @@ Out of scope, and unadopted here: resources and attachments (#838), note version
 | AE-11 | Search stays bounded: a fixed scan window per call plus a continuation cursor. A `searchIndex` is a named alternative that needs a schema owner. | ADOPTED-ENGINEERING | §9.4 |
 | AE-12 | Tags are relational: `noteTags` plus `noteTagLinks`, both enrolled in account deletion in the same slice. Limits, normalization, duplicate, cycle, idempotency and deletion rules are fixed in §10. | ADOPTED-ENGINEERING | §10 |
 | AE-13 | Only new Convex modules touch `convex/_generated/api.d.ts`. No ticket here runs codegen. | ADOPTED-ENGINEERING | §11.3 |
-| AE-14 | Kind, archive and link fields need no new account-deletion enrollment. The two tag tables do. `noteBlocks` enrollment stays with #807. | ADOPTED-ENGINEERING | §6.5 |
+| AE-14 | Kind, archive, template and link fields need no new account-deletion enrollment. The two tag tables do. `noteBlocks` was already enrolled by #807 (merged). | ADOPTED-ENGINEERING | §6.5 |
 | AE-15 | Tests must apply `args`/`returns` validators, multi-field index ranges and pagination. The current fake context cannot. | ADOPTED-ENGINEERING | §12.1 |
 | AE-16 | No new unbounded read of a user-owned table. Existing ones are listed with an owner and stay as they are until that owner acts. | ADOPTED-ENGINEERING | §11.2 |
 | AE-17 | The Trash view takes the client clock (`nowMs`), hides rows older than the 30-day restore window, and does not erase them. | ADOPTED-ENGINEERING | §6.3 |
+| AE-18 | Template pages are kept out of every feed and Trash range by a stored `isTemplate` discriminator in the index prefix, never by a filter after the index. | ADOPTED-ENGINEERING | §8.1 |
+| AE-19 | Every bounded read of a note's linked tasks fixes `deletedAt` in the index prefix: the task-link index carries `deletedAt` before `sourceBlockId`, so soft-deleted links never enter a live read. | ADOPTED-ENGINEERING | §5.3, §8.2 |
+| AE-20 | A tag link carries `linkedAt`, set on insert and reset on revival, and `notesByTag` orders by it. | ADOPTED-ENGINEERING | §8.3, §10.4 |
 | OD-1 | Is the typed `tasks` row the canonical TODO identity for core web, or do typed tasks later retire into blocks (the 20 Sep design)? | OWNER-DECISION | Default: typed `tasks._id` is canonical for core web. Retiring typed tasks stays unadopted. |
 | OD-2 | Does archiving or trashing a note change its linked tasks? | OWNER-DECISION | Default: no. The tasks stay live in Today, the planner, Tasks and TODO, with a provenance label. |
 | OD-3 | User-facing names for the kinds, and whether a separate quick kind exists. | OWNER-DECISION | Default: stored `quick`/`note`/`todo`; labels "Quick note", "Note", "To-do". Hebrew strings are the owner's. |
@@ -75,7 +78,7 @@ Not decided here and explicitly unadopted: §13.2.
 
 ### 2.1 Tables
 
-`notes` (`convex/schema.ts:256-287`)
+`notes` (`convex/schema.ts:331-362`)
 
 | Field | Type | Note |
 |---|---|---|
@@ -89,17 +92,17 @@ Not decided here and explicitly unadopted: §13.2.
 | `createdAt`, `updatedAt` | `number` | |
 | `deletedAt?` | `number` | Soft delete. |
 
-Indexes: `by_userId`, `by_userId_pinned`, `by_userId_updatedAt`, `by_userId_deletedAt`, `by_userId_deletedAt_pageType_date` (`convex/schema.ts:283-287`).
+Indexes: `by_userId`, `by_userId_pinned`, `by_userId_updatedAt`, `by_userId_deletedAt`, `by_userId_deletedAt_pageType_date` (`convex/schema.ts:358-362`).
 
-There is **no** `kind`, `archivedAt`, `revision`, tag, or task link on `notes` (`convex/schema.ts:256-287`).
+There is **no** `kind`, `archivedAt`, `isTemplate`, `revision`, tag, or task link on `notes` (`convex/schema.ts:331-362`).
 
-`noteBlocks` (`convex/schema.ts:290-390`) is the derived index of `json tempo` blocks added by #826. It has no writer and no reader at the baseline: `grep noteBlocks` finds only the schema, and `parseTempoBlocks` (`convex/lib/blocks.ts:168`) has no caller outside its test. It is not in `USER_OWNED_TABLES` (`convex/lib/accountDeletion.ts:5-20`), so account deletion does not soft-delete it.
+`noteBlocks` (`convex/schema.ts:365-465`) is the derived index of `json tempo` blocks added by #826. It has no writer and no reader at the baseline: `grep noteBlocks` finds only the schema and the account-deletion files, and `parseTempoBlocks` (`packages/utils/src/blocks.ts:201`, re-exported by `convex/lib/blocks.ts`) has no caller outside tests and that re-export. #807 (merged) put it in `USER_OWNED_TABLES` (`convex/lib/accountDeletion.ts:12-29`), so account deletion soft-deletes its rows.
 
-`tasks` (`convex/schema.ts:139-185`): `title`, `description?`, `status` (`todo | in_progress | done | cancelled`), `priority`, `energy?`, `timeEstimate?` (ms, `:153-154`), `flexibility?` (`fixed | elastic`, absent = elastic, `:155-156`), `repeatCfgId?`, `parentTaskId?`, `projectId?`, `projectName?`, `dueAt?`, `completedAt?` (`:165-166`), `checklist?` (sub-steps inside one task, `:167-176`), `createdAt`, `updatedAt`, `deletedAt?`. Indexes `by_userId`, `by_userId_status`, `by_userId_dueAt`, `by_userId_projectId`, `by_userId_deletedAt` (`:181-185`). There is no source-note or source-block field.
+`tasks` (`convex/schema.ts:214-260`): `title`, `description?`, `status` (`todo | in_progress | done | cancelled`), `priority`, `energy?`, `timeEstimate?` (ms, `:228-229`), `flexibility?` (`fixed | elastic`, absent = elastic, `:230-231`), `repeatCfgId?`, `parentTaskId?`, `projectId?`, `projectName?`, `dueAt?`, `completedAt?` (`:240-241`), `checklist?` (sub-steps inside one task, `:242-251`), `createdAt`, `updatedAt`, `deletedAt?`. Indexes `by_userId`, `by_userId_status`, `by_userId_dueAt`, `by_userId_projectId`, `by_userId_deletedAt` (`:256-260`). There is no source-note or source-block field.
 
-`Id<"tasks">` is already the identity everything else points at: `focusBlocks.taskId` (`:248`), `dayPlans.topTaskIds` (`:428`), `timeBlocks.taskId` (`:459`), `coachProposals.taskIds` (`:570`), `tasks.parentTaskId` (`:160`).
+`Id<"tasks">` is already the identity everything else points at: `focusBlocks.taskId` (`:323`), `dayPlans.topTaskIds` (`:503`), `timeBlocks.taskId` (`:534`), `coachProposals.taskIds` (`:645`), `tasks.parentTaskId` (`:235`).
 
-The block codec's task block is `{ title, durationMin, status: now | later | done, order, inelastic, reason?, scheduledAt?, doneAt? }`, built with `.strict()` (`convex/lib/blocks.ts:32-43`, `:58-62`). It has no task id field. Adding one is a codec change and belongs to #786/#802, not here.
+The block codec's task block is `{ title, durationMin, status: now | later | done, order, inelastic, reason?, scheduledAt?, doneAt? }`, built with `.strict()` (`packages/utils/src/blocks.ts:32-43`, `:58-62`). It has no task id field. Adding one is a codec change (the codec is #786's, moved to `@tempo/utils` by the shared-codec ticket) and belongs to a codec ticket, not here.
 
 ### 2.2 Current notes API (`convex/notes.ts`)
 
@@ -129,7 +132,7 @@ The block codec's task block is `{ title, durationMin, status: now | later | don
 | `convex/search.ts:80-83`, `:99-109` `search.all` notes group | read | `deletedAt` only | no (`collect()` of every note and task, habit, goal) | snippet cut from raw `body` (`:57-68`, `:108`) |
 | `convex/activity.ts:42-110` `listActivityForUser` (`:48`, `:68-75`) | read | `deletedAt` only | no | no |
 | `convex/analytics.ts:123-148` `overview` (notes at `:128-131`) with `computeOverview` (`:41-83`) | read | **none**: neither the handler nor `computeOverview` mentions `deletedAt` (`grep deletedAt convex/analytics.ts` is empty), so trashed notes and tasks are counted | no | no |
-| `convex/lib/accountDeletion.ts:72-95`, `:177-196` | write (soft delete) | live rows only | no (`collect()`) | no |
+| `convex/lib/accountDeletion.ts:81-104`, `:186-205` | write (soft delete) | live rows only | no (`collect()`) | no |
 | Web: `apps/web/components/notes-pages/NotesList.tsx:28-32` (list, create, togglePin, remove, restore; preview at `:214`), `apps/web/components/notes/NotesScreen.tsx:71-74`, `:216-222` (list, getSafe, update, togglePin, remove, restore; `snippet(body)` at `:43-47`), `apps/web/components/global-search/SearchScreen.tsx:38`, `apps/web/app/(tempo)/activity/page.tsx:27`, `apps/web/components/template-run/TemplateRun.tsx:130` | callers | | | NotesList and NotesScreen render slices of raw `body` |
 
 `api.analytics.overview` has no web caller (`grep api.analytics apps` finds only `insightsSummary`, `apps/web/components/insights/InsightsScreen.tsx:185`), so the miscount is dormant.
@@ -162,15 +165,15 @@ There is no data-export function in `convex/` (no `dsr.ts`, no `requestDataExpor
 | UI Undo window: 5 minutes. `undoUntil(deletedAt) = deletedAt + 300000`. | `convex/lib/softDelete.ts:1-2`, `:7-9`; returned by `notes.remove` (`convex/notes.ts:196`); consumed by `apps/web/components/notes/UndoDeleteToast.tsx:5-7`, `:23-29` |
 | Server restore eligibility: 30 days, **inclusive**: `now - deletedAt <= GRACE_MS`. | `convex/lib/softDelete.ts:4-5`, `:11-14`; boundary tests `convex/softDelete.test.ts:14-22` |
 | The two clocks are different constants and different consumers. The toast deadline is never the server deadline. | `convex/lib/softDelete.ts:2` vs `:5`; `docs/contracts/B02.md:5-7` |
-| Account deletion soft-deletes every live row of `USER_OWNED_TABLES` (tasks, notes, habits, … notifications) with one `deletedAt`/`updatedAt` and skips rows that already have `deletedAt`. | `convex/lib/accountDeletion.ts:5-20`, `:93-95`, `:177-196` (skip at `:190`) |
-| Sign-in restore patches only the **user** row when the account was deleted within 30 days. Owned rows keep their `deletedAt`. | `convex/auth.ts:106-115`; `convex/lib/accountDeletion.ts:39-53` |
+| Account deletion soft-deletes every live row of `USER_OWNED_TABLES` (tasks, notes, habits, … notifications) with one `deletedAt`/`updatedAt` and skips rows that already have `deletedAt`. | `convex/lib/accountDeletion.ts:12-29`, `:102-104`, `:186-205` (skip at `:199`) |
+| Sign-in restore patches only the **user** row when the account was deleted within 30 days. Owned rows keep their `deletedAt`. | `convex/auth.ts:106-115`; `convex/lib/accountDeletion.ts:48-62` |
 | An inactive account cannot call any `requireUser` function. | `convex/lib/requireUser.ts:64-66`; MCP checks the same (`convex/mcp.ts:120`) |
 | No scheduled job hard-deletes anything. `convex/` has no `crons.ts` and no `cron` use. `docs/HARD_RULES.md:237` describes a post-30-day hard delete; it does not exist. | `ls convex`; `grep -ri cron convex` |
 | This source evidence does not guarantee physical deletion at 30 days, indefinite retention, account restoration, or that the deployed backend matches this revision. | #837 clarification of 2026-10-09 |
 
 ### 2.6 What does not exist at the baseline
 
-Note kinds; archive; note revisions or a page-operation ledger (#828, #831 are proposals); `notes.save`, `getOrCreateToday`, `patchBlock`, `undo` (#787 is a proposal); the safe text projection (#803, #804 are held); any tag; any link between a block and a task; any pagination in `convex/` (`grep paginate` is empty), although `.paginate()` and `paginationOptsValidator` exist in the installed `convex` 1.32.0 typings; any `searchIndex`; any `ConvexError` use. `convex-test` 0.0.38 is pinned by #827 (`package.json:45`) but no test imports it (UNKNOWN whether it runs under `bun test`).
+Note kinds; archive; note revisions or a page-operation ledger (#828, #831 are proposals); `notes.save`, `getOrCreateToday`, `patchBlock`, `undo` (#787 is a proposal); the safe text projection (#803, #804 are held); any tag; any link between a block and a task; any pagination in `convex/` (`grep paginate` is empty), although `.paginate()` and `paginationOptsValidator` exist in the installed `convex` 1.32.0 typings; any `searchIndex`; any `ConvexError` use. `convex-test` 0.0.38 is pinned by #827 (`package.json:45`) and is imported by exactly one test, `convex/lib/agentComponent.test.ts:7` (#815), which runs the Agent component's functions under `bun test` and calls no Tempo function (§12.1). `grep paginate convex` is still empty: that test only passes `paginationOpts` to the component's own paginated queries.
 
 ## 3. Prerequisites and write order
 
@@ -178,9 +181,9 @@ These paths are shared. Writers run **serially**, in the order below. Admission 
 
 | Path | Serial writers, in order |
 |---|---|
-| `convex/schema.ts` | #826 (merged) → #807 → #828 → **#841** (also adds the `tasks` link fields and indexes) → #846 |
+| `convex/schema.ts` | #826 (merged) → #807 (merged) → #828 → **#841** (also adds `notes.isTemplate` and the `tasks` link fields and indexes) → #846 |
 | `convex/MIGRATIONS.md` | same chain |
-| `convex/lib/accountDeletion.ts` + test | #807 → #828 → #808 → #846 |
+| `convex/lib/accountDeletion.ts` + test | #807 (merged) → #828 → #808 → #846 |
 | `convex/notes.ts` | #787 → **#842** |
 | `convex/tasks.ts` | validator-parity slice (§5.9) → **#856** |
 | `convex/dayPlans.ts` | validator-parity slice (§5.9). No ticket owns it today. |
@@ -197,8 +200,8 @@ What this contract needs that does not exist yet (every item UNKNOWN until merge
 | `requestId` format `req_` + 26-character ULID and the receipt rule "same id and digest returns the original receipt" | #828 D2–D3 | the same three functions. This file adds no second ledger. |
 | Safe text projection (prose plus permitted block fields, never raw fences) | #803 | `NoteCard.preview`, search snippets |
 | `noteBlocks` rows maintained atomically with `body` | #787 | block existence checks in `note_tasks.link` |
-| Account-lifecycle enrollment of `noteBlocks` and the operation tables | #807, #828, #808 | not repeated here |
-| Test runtime that applies validators and models index ranges | #827 pins `convex-test`; compatibility UNKNOWN | §12.1 |
+| Account-lifecycle enrollment of the operation tables (`noteBlocks` itself was enrolled by #807, merged) | #828, #808 | not repeated here |
+| Test runtime that applies validators and models index ranges | #827 pins `convex-test`; #815 runs the Agent component under `bun test`; Tempo's own modules, `returns` validators and multi-field index ranges UNKNOWN | §12.1 |
 
 If a merged shape differs from what is written here, this file is revised before the dependent slice is admitted. It does not bend the other ticket.
 
@@ -213,10 +216,10 @@ If a merged shape differs from what is written here, this file is revised before
 | `todo` | `"todo"` | A note whose purpose is task items. It may hold zero or more linked task blocks (§5). Zero is valid. |
 
 - Schema: `kind: v.optional(v.union(v.literal("quick"), v.literal("todo")))`.
-- The API accepts and returns all three values. Writing `note` stores nothing (`kind: undefined`), the same pattern `deletedAt` and `flexibility` already use (`convex/lib/softDelete.ts:12-14`, `convex/schema.ts:155-156`). That keeps legacy rows valid with no backfill and lets "kind is `note`" be an index equality on `undefined`, which the repo already relies on (`convex/tasks.ts:89`).
+- The API accepts and returns all three values. Writing `note` stores nothing (`kind: undefined`), the same pattern `deletedAt` and `flexibility` already use (`convex/lib/softDelete.ts:12-14`, `convex/schema.ts:230-231`). That keeps legacy rows valid with no backfill and lets "kind is `note`" be an index equality on `undefined`, which the repo already relies on (`convex/tasks.ts:89`).
 - Storage names are neutral. The name "Blinko" is never stored (OD-3 owns user-facing labels).
-- `kind` is independent of `periodType` (what period a page covers, `convex/schema.ts:261-266`) and `pageType` (what a page is for, `:267-275`). A Today page is expected to be `pageType: daily` with `kind` absent (EXTRAPOLATED; #787 decides how it is created).
-- Pages with `pageType: "template"` (TRD module pages, `docs/TRD.md:92`) are not user notes. Feed, search and TODO views exclude them. Until #826's field is written by anything, the rule is vacuous.
+- `kind` is independent of `periodType` (what period a page covers, `convex/schema.ts:336-341`) and `pageType` (what a page is for, `:342-350`). A Today page is expected to be `pageType: daily` with `kind` absent (EXTRAPOLATED; #787 decides how it is created).
+- Pages with `pageType: "template"` (TRD module pages, `docs/TRD.md:92`) are not user notes. The feed (every view), Trash and search exclude them **by an index prefix, not by a filter after the index**: a stored `isTemplate` discriminator (§8.1) is `true` exactly when `pageType` is `template` and absent otherwise, and every feed and Trash range fixes `isTemplate = undefined`. No writer sets `pageType` at the baseline (`grep pageType convex` finds only the schema and the codec), so the rule is vacuous until one does.
 
 ### 4.2 Legacy defaults
 
@@ -225,6 +228,7 @@ If a merged shape differs from what is written here, this file is revised before
 | `kind` | `note` | none |
 | `archivedAt` | not archived | none |
 | `pageType`, `date` | not a structured page | none (#826) |
+| `isTemplate` | not a template page | none. Written only together with `pageType` (§8.1). |
 | `notes.revision` | revision 0 (#828 D1, proposal) | none. **Not added by this contract.** |
 | `tasks.sourceNoteId`, `tasks.sourceBlockId` | task has no note anchor | none |
 
@@ -260,27 +264,29 @@ OD-1 default: typed `tasks._id` is canonical for core web. If Amit instead rules
 // convex/schema.ts — tasks (PROPOSED, added by #841)
 sourceNoteId: v.optional(v.id("notes")),
 sourceBlockId: v.optional(v.string()),   // "blk_" + 26-char ULID, validated by the writer
-// index
-.index("by_userId_sourceNoteId_sourceBlockId", ["userId", "sourceNoteId", "sourceBlockId"])
+// index: deletedAt BEFORE sourceBlockId (binding order, §8.2)
+.index("by_userId_sourceNoteId_deletedAt_sourceBlockId",
+       ["userId", "sourceNoteId", "deletedAt", "sourceBlockId"])
 ```
 
+- Soft-deleted tasks keep their link fields (`tasks.remove` does not clear them), so a removed task can be drawn as a ghost and `tasks.restore` can re-attach it (L6). That is why the index carries `deletedAt`, and carries it **before** `sourceBlockId`: every bounded read of a note's links fixes `deletedAt` (live: `undefined`; removed: `>= 0`), so a note with many removed linked tasks never inflates a live read. An index without `deletedAt` (the earlier `["userId", "sourceNoteId", "sourceBlockId"]`) cannot give a bounded, correct live read. This is a schema requirement for #841.
 - Both fields are set together or both absent. Only `note_tasks.*` writes them. `tasks.create`, `tasks.update`, `createQuick`, MCP and the coach never accept them (a client cannot forge a link).
 - A task has at most one source note and block (v1). A block has at most one task.
-- The block id is stable and never reused within a note (`docs/BACKEND-SCHEMA.md:68-73`; codec `blockId` regex `convex/lib/blocks.ts:22`). Undoing a block removal brings back the same id, so the link re-attaches by itself.
+- The block id is stable and never reused within a note (`docs/BACKEND-SCHEMA.md:68-73`; codec `blockId` regex `packages/utils/src/blocks.ts:22`). Undoing a block removal brings back the same id, so the link re-attaches by itself.
 - The key is `(noteId, blockId)`. Copying a block's text into another note, or duplicating a note, produces blocks in a different note, which no row points at. They are page-local.
 
 ### 5.4 Invariants (AE-7)
 
 | # | Invariant | How it holds |
 |---|---|---|
-| L1 | At most one **live** row (`deletedAt` undefined) has a given `(userId, sourceNoteId, sourceBlockId)`. | Checked inside the creating transaction through `by_userId_sourceNoteId_sourceBlockId`. Convex indexes are not unique; the check and the insert are one transaction. |
+| L1 | At most one **live** row (`deletedAt` undefined) has a given `(userId, sourceNoteId, sourceBlockId)`. | Checked inside the creating transaction on `by_userId_sourceNoteId_deletedAt_sourceBlockId`, range `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined).eq(sourceBlockId, b)`, read with `take(2)` (two rows is corrupt data and fails the call). Convex indexes are not unique; the check and the insert are one transaction. |
 | L2 | A live row has both link fields or neither. | The only writers set both. A test reads every inserted and patched row. |
 | L3 | A link never crosses owners. | Every lookup starts with `userId`; a foreign `noteId` or `taskId` is reported as not found, never as foreign. |
 | L4 | Retrying any link operation does not create a second row. | Natural key `(noteId, blockId)` for row-only operations; `requestId` receipts for operations that also write the body (§9.2). |
 | L5 | A dangling link is allowed. If the block is no longer in the body, or the note is trashed, the task stays exactly as it is and reports `source.state` (`block_missing`, `note_trashed`). Deleting a line of Markdown never deletes a task. | Detection by lookup, never by cascade. |
-| L6 | `tasks.restore` never revives a link that was taken meanwhile. | If another live row now holds the same `(note, block)`, the restore succeeds but clears the restored row's link fields and returns `linkCleared: true`. |
+| L6 | `tasks.restore` never revives a link that was taken meanwhile. | If another live row now holds the same `(note, block)` (the same live-prefix read as L1), the restore succeeds but clears the restored row's link fields and returns `linkCleared: true`. |
 | L7 | A repeat occurrence is a new logical task and carries no link. | `spawnRepeatAfterCompletion` copies an explicit field list (`convex/tasks.ts:427-450`) and must keep doing so. The original stays linked, done. |
-| L8 | Linked tasks per note are bounded. | `MAX_LINKED_TASKS_PER_NOTE = 50` (EXTRAPOLATED). The 51st is `NOTE_TASK_LIMIT`. |
+| L8 | **Live** linked tasks per note are bounded. | `MAX_LINKED_TASKS_PER_NOTE = 50` (EXTRAPOLATED). The check is `take(51)` on `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined)` of the L1 index, so removed rows are neither read nor counted, and a note may carry any number of removed linked tasks. The 51st live link is `NOTE_TASK_LIMIT`. Removed rows are read only by `listForNote`, under their own cap (§9.2). |
 | L9 | No unlink in v1. | To detach, delete the task or remove the block. Unlink would need a body write to refresh the snapshot; it is unadopted (§13.2). |
 | L10 | Archived notes accept link operations. Trashed notes do not. | Same rule as `updateNoteForUser` (`convex/notes.ts:156`), extended by AE-2. |
 
@@ -345,7 +351,7 @@ Page-local blocks remain legitimate (#792, #787). The UI must label them honestl
 | Block is the identity; typed tasks retire into blocks (20 Sep design) | Every planner table and MCP tool points at `Id<"tasks">` (§2.4). It needs a data migration, which #787 and #856 forbid, and it is the open question OD-1. |
 | Note-level pointer, `notes.taskId` (one task per To-do note) | Cannot hold several items in one note or in a Today page. Block-level anchors cover it. |
 | New relation table `noteTaskLinks` | Works, supports one task in many notes, and leaves `tasks` rows untouched, so it avoids the validator gate in §5.9. It costs a new table with account-lifecycle enrollment and a longer serial schema chain, and #841 says to stop for a separate ticket if a table is needed. Kept as the fallback if the owner wants one task in several notes or the validator gate proves hard. |
-| Link id stored inside the block (`data.taskId`) | Changes the strict codec (`convex/lib/blocks.ts:32-43`), copies with the Markdown to other notes, and puts an id of another table into user text. |
+| Link id stored inside the block (`data.taskId`) | Changes the strict codec (`packages/utils/src/blocks.ts:32-43`), copies with the Markdown to other notes, and puts an id of another table into user text. |
 | Parse `- [ ]` Markdown checkboxes as tasks | A second parser and a second canonical form. See OD-8. |
 
 ### 5.9 Hard gate: strict return validators (AE-10)
@@ -406,9 +412,9 @@ Not allowed: "permanently deleted", "erased", "gone for good", any statement abo
 
 ### 6.5 Account deletion (AE-14, OD-5)
 
-- Existing `notes` and `tasks` are already in `USER_OWNED_TABLES` (`convex/lib/accountDeletion.ts:5-20`). New fields on them (`kind`, `archivedAt`, `sourceNoteId`, `sourceBlockId`) need no change to account deletion.
-- The two new tag tables (§8.3) are enrolled in the same slice that creates them (#846), with `by_userId` and `deletedAt`/`updatedAt`, as `softDeleteRowsByUserId` requires (`:177-196`).
-- `noteBlocks` is not enrolled at the baseline (§2.1). #807 text assigns that to itself; this contract does not repeat or pre-empt it.
+- Existing `notes` and `tasks` are already in `USER_OWNED_TABLES` (`convex/lib/accountDeletion.ts:12-29`). New fields on them (`kind`, `archivedAt`, `isTemplate`, `sourceNoteId`, `sourceBlockId`) need no change to account deletion.
+- The two new tag tables (§8.3) are enrolled in the same slice that creates them (#846), with `by_userId` and `deletedAt`/`updatedAt`, as `softDeleteRowsByUserId` requires (`convex/lib/accountDeletion.ts:186-205`).
+- `noteBlocks` is enrolled (#807, merged): it is in `USER_OWNED_TABLES` (`convex/lib/accountDeletion.ts:12-29`), so account deletion soft-deletes its rows like any other owned table. The sweep still reads each owned table with an unpaginated `collect()` (`convex/MIGRATIONS.md`, #807 entry, "Activation gates still open"); chunking it is #808's, not this contract's.
 - Account soft-deletion stamps every live note and task with one `deletedAt`. A later sign-in restore revives only the user row (`convex/auth.ts:106-115`). The notes then sit in the data as soft-deleted rows inside their own 30-day window, so they appear in Trash and each can be restored one by one. There is no field that distinguishes "I trashed this" from "account deletion trashed this". OD-5 default: accept this, add no special UI, and make no claim that account restore brings data back (#837 and #808 both warn against that claim).
 
 ### 6.6 Unadopted
@@ -435,7 +441,7 @@ Changing the 30-day eligibility, version or attachment retention, permanent clea
 | Linked tasks in Today, planner, Tasks, TODO | show | show (OD-2) | show (OD-2), `source.state = note_trashed` | same |
 | `activity.list` | show | show (unchanged, not in any CORE-WEB ticket) | hide | hide |
 | `analytics.overview` | counted | counted | **counted today (defect, §2.3)** | counted |
-| Account deletion sweep | soft-deleted | soft-deleted | skipped, timestamp kept (`convex/lib/accountDeletion.ts:190`) | skipped |
+| Account deletion sweep | soft-deleted | soft-deleted | skipped, timestamp kept (`convex/lib/accountDeletion.ts:199`) | skipped |
 
 ### 7.2 Linked task × note state (OD-2 default)
 
@@ -469,23 +475,29 @@ Everything is additive and optional. No backfill, no data migration, no new tabl
 ```ts
 kind: v.optional(v.union(v.literal("quick"), v.literal("todo"))),   // absent = "note"
 archivedAt: v.optional(v.number()),                                  // epoch ms
+isTemplate: v.optional(v.literal(true)),                             // absent = not a template page
 // new indexes (existing ones stay)
-.index("by_userId_deletedAt_archivedAt_pinned_updatedAt",
-       ["userId", "deletedAt", "archivedAt", "pinned", "updatedAt"])
-.index("by_userId_deletedAt_archivedAt_kind_pinned_updatedAt",
-       ["userId", "deletedAt", "archivedAt", "kind", "pinned", "updatedAt"])
+.index("by_userId_deletedAt_isTemplate_archivedAt_pinned_updatedAt",
+       ["userId", "deletedAt", "isTemplate", "archivedAt", "pinned", "updatedAt"])
+.index("by_userId_deletedAt_isTemplate_archivedAt_kind_pinned_updatedAt",
+       ["userId", "deletedAt", "isTemplate", "archivedAt", "kind", "pinned", "updatedAt"])
+.index("by_userId_isTemplate_deletedAt", ["userId", "isTemplate", "deletedAt"])
 ```
 
-Index names are 47 and 52 characters (the Convex name-length limit was not checked here).
+Index names are 58, 63 and 30 characters (the Convex name-length limit was not checked here: UNKNOWN). The **field order** of each index is binding; if the 63-character name is refused, #841 may shorten it.
 
-How each view reads (all bounded by `paginate`; Convex appends `_creationTime` to every index as a tie-breaker, so order is total):
+**Template discriminator (AE-18).** `isTemplate` is derived from `pageType`: it is `true` exactly when `pageType` is `"template"` and **absent** otherwise. The validator is `v.literal(true)`, so `false` cannot be stored, "not a template" has one stored form, and `eq(isTemplate, undefined)` is the whole ordinary range. Whatever writes `pageType` sets or clears `isTemplate` in the same patch, and nothing else writes it; a test reads every inserted and patched row (as L2 does for links). No writer of `pageType` exists at the baseline, so no row carries either field and nothing is backfilled. A `filter` on `pageType` after the index is not allowed: in index order `pageType` sorts `undefined`, `daily`, `plain`, `project`, `template`, `weekly`, so "everything but template" is not one range, and a filter after the index would have to read every template row that precedes the first ordinary note.
+
+How each view reads (all bounded by `paginate`; Convex appends `_creationTime` to every index as a tie-breaker, so order is total). Every range fixes `isTemplate = undefined`, so template pages are never read, however many exist:
 
 | View | Index | Range | Order |
 |---|---|---|---|
-| Active | first | `eq(userId).eq(deletedAt, undefined).eq(archivedAt, undefined)` | `desc`: pinned first, then `updatedAt` newest first |
-| Active + kind | second | the same three equalities, then `eq(kind, v)`; for `note` use `eq(kind, undefined)` | `desc`: pinned, `updatedAt` |
-| Archived | first | `eq(userId).eq(deletedAt, undefined).gte(archivedAt, 0)` (`undefined` sorts before numbers, as `convex/dayPlans.ts:194` already relies on) | `desc`: newest `archivedAt` first |
-| Trash | existing `by_userId_deletedAt` | `eq(userId).gte(deletedAt, nowMs - GRACE_MS)` | `desc`: newest `deletedAt` first |
+| Active | first | `eq(userId).eq(deletedAt, undefined).eq(isTemplate, undefined).eq(archivedAt, undefined)` | `desc`: pinned first, then `updatedAt` newest first |
+| Active + kind | second | the same four equalities, then `eq(kind, v)`; for `note` use `eq(kind, undefined)` | `desc`: pinned, `updatedAt` |
+| Archived | first | `eq(userId).eq(deletedAt, undefined).eq(isTemplate, undefined).gte(archivedAt, 0)` (`undefined` sorts before numbers, as `convex/dayPlans.ts:194` already relies on) | `desc`: newest `archivedAt` first |
+| Trash | third | `eq(userId).eq(isTemplate, undefined).gte(deletedAt, nowMs - GRACE_MS)` | `desc`: newest `deletedAt` first |
+
+The existing `by_userId_deletedAt` index no longer serves the Trash view (it cannot fix `isTemplate`); it stays for its other readers.
 
 A kind filter in the Archived and Trash views is **not** offered (it would be a post-index filter over an unbounded range).
 
@@ -496,9 +508,20 @@ A kind filter in the Archived and Trash views is **not** offered (it would be a 
 ```ts
 sourceNoteId: v.optional(v.id("notes")),
 sourceBlockId: v.optional(v.string()),
-.index("by_userId_sourceNoteId_sourceBlockId", ["userId", "sourceNoteId", "sourceBlockId"])   // 36 chars
+.index("by_userId_sourceNoteId_deletedAt_sourceBlockId",
+       ["userId", "sourceNoteId", "deletedAt", "sourceBlockId"])                               // 46 chars
 .index("by_userId_deletedAt_status_dueAt", ["userId", "deletedAt", "status", "dueAt"])        // 32 chars
 ```
+
+The first index is the only link index (AE-19). Its field order is binding, with `deletedAt` before `sourceBlockId`; the name is a proposal. Because `tasks.remove` preserves the source fields, the index holds removed rows too, and every read fixes `deletedAt`:
+
+| Read | Range | Bound |
+|---|---|---|
+| Live links of a note (L8, `taskPreview`, `listForNote`) | `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined)` | `take(MAX_LINKED_TASKS_PER_NOTE + 1)`; ordered by `sourceBlockId` |
+| The live link of one block (L1, L6) | the same, then `eq(sourceBlockId, b)` | `take(2)` |
+| Removed links of a note (ghosts, `listForNote` only) | `eq(userId).eq(sourceNoteId, n).gte(deletedAt, 0)`, `.order("desc")` | `take(MAX_REMOVED_SHOWN + 1)`; newest removal first |
+
+None of them reads a soft-deleted row when it wants a live one. **Schema requirement for #841:** without `deletedAt` in the index prefix, a note with more than 50 removed linked tasks could not give a bounded, correct live read (`take(51)` would fill with removed rows, or a post-limit filter would drop live ones).
 
 The second index serves the TODO list (`note_tasks.list`, §9.2) without scanning every task: `eq(userId).eq(deletedAt, undefined).eq(status, s)` returns undated items first, then by `dueAt` ascending. The existing task readers keep their `collect()` (§11.2); the TODO list must not reuse them.
 
@@ -520,23 +543,26 @@ noteTagLinks: defineTable({
   userId: v.id("users"),
   noteId: v.id("notes"),
   tagId: v.id("noteTags"),
+  linkedAt: v.number(),                   // when the pair last became live; set on insert, reset on revival (§10.4)
   createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()),
 })
   .index("by_userId", ["userId"])
   .index("by_userId_noteId_tagId", ["userId", "noteId", "tagId"])
   .index("by_userId_noteId_deletedAt", ["userId", "noteId", "deletedAt"])
-  .index("by_userId_tagId_deletedAt_createdAt", ["userId", "tagId", "deletedAt", "createdAt"]),
+  .index("by_userId_tagId_deletedAt_linkedAt", ["userId", "tagId", "deletedAt", "linkedAt"]),   // 34 chars
 ```
 
-Both tables join `USER_OWNED_TABLES` in the same slice (`convex/lib/accountDeletion.ts:5-20`).
+`linkedAt` is the only ordering key of `notesByTag` (AE-20). `createdAt` is when the pair was first linked and never changes; `updatedAt` is bumped by every write to the row and is not used for ordering.
+
+Both tables join `USER_OWNED_TABLES` in the same slice (`convex/lib/accountDeletion.ts:12-29`).
 
 ### 8.4 `MIGRATIONS.md` entry for #841 (text to use)
 
-> **TEMPO-CORE-NOTE-SCHEMA-01 — note kind, archive and task link (inactive).** Additive only; no backfill. `notes` gains optional `kind` (`quick` or `todo`; absent means note) and optional `archivedAt`, with two feed indexes. `tasks` gains optional `sourceNoteId` and `sourceBlockId`, with `by_userId_sourceNoteId_sourceBlockId` and `by_userId_deletedAt_status_dueAt`. No writer is activated. Deployed to: **not deployed by this authoring ticket**; the integration TEST deployment is separate; live is not touched.
+> **TEMPO-CORE-NOTE-SCHEMA-01 — note kind, archive and task link (inactive).** Additive only; no backfill. `notes` gains optional `kind` (`quick` or `todo`; absent means note), optional `archivedAt` and optional `isTemplate` (`true` only; absent means not a template), with three indexes (two feed, one trash). `tasks` gains optional `sourceNoteId` and `sourceBlockId`, with `by_userId_sourceNoteId_deletedAt_sourceBlockId` and `by_userId_deletedAt_status_dueAt`. No writer is activated. Deployed to: **not deployed by this authoring ticket**; the integration TEST deployment is separate; live is not touched.
 
 ### 8.5 What #841's test must prove
 
-Nonzero cases for: a legacy note row with none of the new fields; each kind; archived and not archived; an invalid `kind` literal and an invalid `sourceNoteId` rejected by the validator; the exact index names and field order (read from the schema definition); the new `tasks` fields optional; all existing indexes still present.
+Nonzero cases for: a legacy note row with none of the new fields; each kind; archived and not archived; an invalid `kind` literal, `isTemplate: false` and an invalid `sourceNoteId` rejected by the validator; `isTemplate: true` accepted; the exact index field order (read from the schema definition), including `isTemplate` before `archivedAt` in the two feed indexes and `deletedAt` before `sourceBlockId` in the link index; the new `tasks` fields optional; all existing indexes still present.
 
 ## 9. API proposals per slice
 
@@ -582,8 +608,8 @@ type NoteCard = {
 }
 ```
 
-- Reads: the index and range in §8.1. Pages with `pageType: "template"` are excluded by a `filter` before `paginate`; the template population is small.
-- `taskPreview` reads `by_userId_sourceNoteId_sourceBlockId` with prefix `(userId, noteId)` and `take(MAX_LINKED_TASKS_PER_NOTE + 1)` per To-do card. The cost is page size × 51 reads at most.
+- Reads: the index and range in §8.1. Every range fixes `isTemplate = undefined`, so template pages are excluded by the index prefix, not by a `filter` before `paginate`; the number of template pages does not change the reads per page (NL-23).
+- `taskPreview` reads `by_userId_sourceNoteId_deletedAt_sourceBlockId` with `eq(userId).eq(sourceNoteId, noteId).eq(deletedAt, undefined)` and `take(MAX_LINKED_TASKS_PER_NOTE + 1)` per To-do card, so removed tasks are never read. The cost is page size × 51 reads at most.
 - Blocked until #803's projection exists. The feed does not ship with a raw-body fallback.
 
 **`notes.create`** — existing; adds `kind?: NoteKind`. Returns `Id<"notes">` as today. `kind: "todo"` through this call creates a To-do note with no tasks.
@@ -634,7 +660,7 @@ type SourceState = "ok" | "block_missing" | "note_trashed";
 | `note_tasks.addTask` | mutation | `{ noteId, requestId, expectedRevision: number, title: string, afterBlockId?: string, dueAt?: number }` | `{ ok:true; taskId; blockId; noteRevision: number; operationId; undoUntilMs } \| Fail<LinkCode>`. Row insert, block insert, receipt, and link in one transaction. Title 1–280. |
 | `note_tasks.captureTodo` | mutation | `{ requestId, text: string, title?: string }` | `{ ok:true; noteId; taskId; blockId } \| Fail<LinkCode>`. Creates a `todo` note whose body holds one block, and the linked row. |
 | `note_tasks.undoCreate` | mutation | `{ requestId }` | `{ ok:true } \| Fail<"REQUEST_ID_INVALID" \| "UNDO_EXPIRED" \| "UNDO_CONFLICT" \| "NOTE_NOT_FOUND">`. Within the 5-minute window, removes what the add or capture created and soft-deletes the created row, in one transaction. Never touches work done after the create. Shape follows #787/#828. |
-| `note_tasks.listForNote` | query | `{ noteId }` | `{ ok:true; items: { blockId; taskId; title; status: TaskStatus; completedAt?: number; dueAt?: number; deletedAt?: number; restorableUntilMs?: number }[]; truncated: boolean } \| Fail<"NOTE_NOT_FOUND">`. Prefix `(userId, noteId)`, `take(51)`. Includes soft-deleted linked rows so the editor can draw a "removed task" ghost. |
+| `note_tasks.listForNote` | query | `{ noteId }` | `{ ok:true; items: { blockId; taskId; title; status: TaskStatus; completedAt?: number; dueAt?: number; deletedAt?: number; restorableUntilMs?: number }[]; truncated: boolean; removedTruncated: boolean } \| Fail<"NOTE_NOT_FOUND">`. Two bounded reads on the link index (§8.2). Live: `eq(userId).eq(sourceNoteId, noteId).eq(deletedAt, undefined)`, `take(51)`; the first 50 are returned and `truncated` is true when a 51st exists. Removed: `eq(userId).eq(sourceNoteId, noteId).gte(deletedAt, 0)`, `.order("desc")`, `take(MAX_REMOVED_SHOWN + 1)` with `MAX_REMOVED_SHOWN = 20` (EXTRAPOLATED); the newest 20 are appended with `deletedAt` and `restorableUntilMs` so the editor can draw a "removed task" ghost, and `removedTruncated` is true when older removals exist. A removed row whose `blockId` already has a live row in the result is dropped. The live read never touches a soft-deleted row, so any number of removed tasks leaves it bounded and correct. |
 | `note_tasks.list` | query | `{ status: TaskStatus, paginationOpts }` | page of `TodoItem`, below. Index `by_userId_deletedAt_status_dueAt`: ascending (undated first) for `todo` and `in_progress`, descending for `done` and `cancelled`. Page ≤ 50. |
 
 ```ts
@@ -676,7 +702,7 @@ type TagCode =
 | `note_tags.attach` | mutation | `{ noteId, tagId }` | `{ ok:true; attached: boolean } \| Fail<TagCode>`. `attached:false` when the pair is already live. |
 | `note_tags.detach` | mutation | `{ noteId, tagId }` | `{ ok:true; detached: boolean } \| Fail<TagCode>` |
 | `note_tags.forNotes` | query | `{ noteIds: Id<"notes">[] }` (≤ 50) | `{ byNote: Record<string, Id<"noteTags">[]> }`. Only live links to live tags, ≤ 20 per note. |
-| `note_tags.notesByTag` | query | `{ tagId, view: "active" \| "archived", paginationOpts }` | page of `NoteCard`, ordered by when the tag was attached (newest first). Index `by_userId_tagId_deletedAt_createdAt`; each note is read and filtered by state. Short pages are possible; `isDone` and the cursor are truthful. |
+| `note_tags.notesByTag` | query | `{ tagId, view: "active" \| "archived", paginationOpts }` | page of `NoteCard`, ordered by `linkedAt`, the time the pair last became live (newest first; a re-attach moves the note to the top, §10.4). Index `by_userId_tagId_deletedAt_linkedAt`, range `eq(userId).eq(tagId, t).eq(deletedAt, undefined)`, `.order("desc")`; each note is read and filtered by state (live, the requested archive state, not a template). Short pages are possible; `isDone` and the cursor are truthful. |
 
 Ordering by the note's own `updatedAt` is not offered: it would need a denormalised timestamp on every link row, kept in step with every note write.
 
@@ -700,7 +726,7 @@ returns: today's four groups (unchanged) + notesPage?: { nextCursor: string | nu
 
 Behaviour (AE-11):
 
-- Notes are scanned in feed order, **at most `SEARCH_SCAN_NOTES = 25` per call** (EXTRAPOLATED), through the Active-or-Archived index, and the matches among them are returned (≤ 8, the existing `GROUP_LIMIT`, `convex/search.ts:6`). `nextCursor` continues the scan. A user may need "search older notes". This replaces today's `collect()` of every note, task, habit and goal (`:80-97`).
+- Notes are scanned in feed order, **at most `SEARCH_SCAN_NOTES = 25` per call** (EXTRAPOLATED), through the first feed index (Active or Archived range, `isTemplate` fixed to `undefined`, so template pages are never scanned), and the matches among them are returned (≤ 8, the existing `GROUP_LIMIT`, `convex/search.ts:6`). `nextCursor` continues the scan. A user may need "search older notes". This replaces today's `collect()` of every note, task, habit and goal (`:80-97`).
 - Matching and snippets use the safe projection (#803/#804), never raw `body`.
 - With `tagId`, iteration runs over `noteTagLinks` for that tag, not over the feed.
 - `createdFrom/To` filters inside the scan window (no `createdAt` index is proposed).
@@ -757,7 +783,8 @@ Exceeding returns `TAG_LIMIT` or `NOTE_TAG_LIMIT`. No limit check scans an unbou
 
 ### 10.4 Membership
 
-- One `noteTagLinks` row per `(userId, noteId, tagId)` ever. `attach` finds the pair through `by_userId_noteId_tagId`: live → `attached:false`; soft-deleted → revive it (clear `deletedAt`, bump `updatedAt`); absent → insert. `detach` soft-deletes a live row and returns `detached:false` otherwise. Both are idempotent and neither leaves a second row.
+- One `noteTagLinks` row per `(userId, noteId, tagId)` ever. `attach` finds the pair through `by_userId_noteId_tagId`: live → `attached:false`; soft-deleted → revive it (clear `deletedAt`, set `linkedAt = now`, bump `updatedAt`); absent → insert with `linkedAt = createdAt = now`. `detach` soft-deletes a live row and returns `detached:false` otherwise. Both are idempotent and neither leaves a second row.
+- Revival resets `linkedAt`, the ordering key of `notesByTag` (AE-20), so a note that is detached and re-attached moves to the top of that tag's list exactly like a first attach. `createdAt` keeps the first attach time. Ordering by `createdAt` or by `updatedAt` is not used: the first would leave a re-attached note in its old place, and the second would move a note whenever any future write touched the row.
 - The note must be live (not trashed); the tag must be live; both owned. Archived notes accept attach and detach.
 - A link is visible only if the link is live **and** the tag is live **and** the note is in the requested view.
 
@@ -770,9 +797,9 @@ Exceeding returns `TAG_LIMIT` or `NOTE_TAG_LIMIT`. No limit check scans an unbou
 
 ### 10.6 Relationship to other tag-like things
 
-- `page-meta.data.tags: string[]` in the block codec (`convex/lib/blocks.ts:24-30`) is **not** the tag store. Tag APIs neither read nor write it, and filters ignore it. Two tag stores would conflict (#837 DO NOT). Whether the codec field is later retired is #786/#802/#840's call; recorded in §14.
+- `page-meta.data.tags: string[]` in the block codec (`packages/utils/src/blocks.ts:24-30`) is **not** the tag store. Tag APIs neither read nor write it, and filters ignore it. Two tag stores would conflict (#837 DO NOT). Whether the codec field is later retired is #786/#802/#840's call; recorded in §14.
 - Inline `#word` text is plain text. The composer may offer autocompletion that calls `attach` on an explicit user choice; nothing parses the body.
-- Folders and projects (#260) are separate. #837 asks that their semantics not be copied unchecked. Checked: no projects or folders table exists; `tasks.projectId` and `projectName` are free strings kept "until a projects table exists" (`convex/schema.ts:161-163`) and carry no hierarchy, uniqueness or deletion rules. Nothing is borrowed from them.
+- Folders and projects (#260) are separate. #837 asks that their semantics not be copied unchecked. Checked: no projects or folders table exists; `tasks.projectId` and `projectName` are free strings kept "until a projects table exists" (`convex/schema.ts:236-238`) and carry no hierarchy, uniqueness or deletion rules. Nothing is borrowed from them.
 
 ## 11. Paging, boundedness, generated API
 
@@ -797,7 +824,7 @@ Existing unbounded readers stay as they are until their owner acts:
 | `tasks.list`, `listDueInRange`, `listToday` | `convex/tasks.ts:87-90`, `:129-132`, `:368-371` | no CORE-WEB owner. The TODO list uses its own index (§8.2). |
 | `dayPlans.listCarryOver` | `convex/dayPlans.ts:195-201` | none |
 | `activity.list`, `analytics.overview`, `insightsSummary` | `convex/activity.ts:46-54`, `convex/analytics.ts:123-148`, `:204-217` | none |
-| account deletion sweep | `convex/lib/accountDeletion.ts:177-196` | #808 |
+| account deletion sweep | `convex/lib/accountDeletion.ts:186-205` | #808 |
 
 ### 11.3 Generated API ownership (AE-13)
 
@@ -814,7 +841,7 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 
 - The helper `run()` calls `fn._handler(ctx, args)` directly (`convex/lib/testFakeCtx.ts:71`), which **skips `args` and `returns` validation**. It cannot show that a strict return validator accepts a linked row (TK-14). Tests must run the function through a runtime that applies validators, or call the validator explicitly.
 - The fake contexts in `convex/lib/testFakeCtx.ts:19-52` and `convex/notes.test.ts:20-89` model one `eq` (or `eq`/`gte`/`lt` in the shared one), no `take`, no `paginate`, and no multi-field index semantics. They cannot show indexed paging or boundedness.
-- `convex-test` 0.0.38 is pinned (`package.json:45`) and unused; whether it works under `bun test` is UNKNOWN. If no harness can apply validators, model index ranges and paginate, the affected case is reported UNKNOWN, never skipped silently or replaced by a mock that passes.
+- `convex-test` 0.0.38 is pinned (`package.json:45`). One test uses it, `convex/lib/agentComponent.test.ts` (#815; 21 pass, 3 todo when run on 2026-10-11), which runs the Agent component's own functions under `bun test` through explicit module maps; per its header it proves argument validation (a malformed thread id is rejected) and a `paginationOpts` query inside that component. It calls no Tempo function, so whether Tempo's modules (`requireUser`, `notes`, `tasks`) load under it, whether `returns` validators are applied to them, and whether multi-field index ranges behave as in production are UNKNOWN. If no harness can apply validators, model index ranges and paginate, the affected case is reported UNKNOWN, never skipped silently or replaced by a mock that passes.
 - Root `bun run test` is `bun test convex apps/web/lib tests/unit packages` (`package.json:18`; `packages` was added by #872). New test files under other folders need an explicit command.
 
 ### 12.2 Notes: kinds, lifecycle, feed
@@ -839,10 +866,11 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | NL-16 | Instrumented context during `feed` | reads go through the §8.1 index and range; no `collect()` of `notes`; documents read ≤ page size + small constant |
 | NL-17 | Legacy `notes.list` and MCP `notes_list` with an archived note | excluded |
 | NL-18 | Inactive account (`deletedAt` set) | every function throws `This account is not active` |
-| NL-19 | `pageType:"template"` note | never in feed or search |
+| NL-19 | `pageType:"template"` note (stored with `isTemplate:true`) | never in any feed view, Trash or search |
 | NL-20 | Note with a valid fence, a malformed fence and an unclosed fence | `preview` contains neither fence text nor `"type":`; the card has no `body` key |
 | NL-21 | `kind` filter with view `archived`/`trash`; `nowMs` missing for trash | throws the specified message |
 | NL-22 | Account deletion with live, archived, already-trashed notes | live and archived get the account `deletedAt`; the already-trashed keeps its older one |
+| NL-23 | Instrumented context: 200 template notes (`isTemplate:true`) that sort ahead of 30 ordinary notes in every index order, in Active, Archived and Trash; `isTemplate:false` written directly | the first page of each view holds ordinary notes only; documents read ≤ page size + small constant, the same as with no templates; no `filter` on `pageType`; `isTemplate:false` rejected by the validator |
 
 ### 12.3 TODO identity
 
@@ -854,7 +882,7 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | TK-04 | `link` to a broken block, a non-task block, a missing block | `BLOCK_BROKEN`, `BLOCK_NOT_TASK`, `BLOCK_NOT_FOUND`; no write |
 | TK-05 | `link` with a `taskId` already linked elsewhere; a block already linked to another row | `TASK_ALREADY_LINKED`; `BLOCK_ALREADY_LINKED` |
 | TK-06 | Block title of 281 and of 280 code units | `TITLE_INVALID`; ok |
-| TK-07 | 50th and 51st linked task in one note | ok; `NOTE_TASK_LIMIT` |
+| TK-07 | 50th and 51st **live** linked task in one note, with 0 and with 120 removed linked tasks on that note | ok; `NOTE_TASK_LIMIT`, identical in both fixtures |
 | TK-08 | Tick through `tasks.toggleCompletion` | `listForNote` shows done; `notes.body` byte-identical; no revision or receipt written |
 | TK-09 | The same row via `listToday`, a `dayPlans` top task and `listForNote` after reload | one `_id` |
 | TK-10 | Complete a repeating linked task | two rows; the new one has no link fields; the original keeps its link |
@@ -869,6 +897,7 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | TK-19 | `note_tasks.list` for each status | correct order (undated first for open), no deleted or foreign row, ≤ 50 per page |
 | TK-20 | Two concurrent `link` calls for one block | one row. UNKNOWN if the harness cannot run two transactions |
 | TK-21 | `captureTodo` / `addTask` when the body write is rejected (stale revision, oversized body) | no row exists afterwards |
+| TK-22 | Note with 120 removed linked tasks and 3 live ones; `listForNote`, `taskPreview`, then one more `link` | the live read returns exactly the 3 live rows, `truncated:false`, and its documents read stay ≤ 3 + small constant (instrumented); the removed read returns the 20 newest removals with `removedTruncated:true`; the extra link is ok; a removed row whose block has a live row is not shown as a ghost |
 
 ### 12.4 Tags
 
@@ -882,13 +911,14 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | TG-06 | Move a tag under itself and under a descendant | `TAG_CYCLE` |
 | TG-07 | Fixture with a hand-made cycle in stored parents | `TAG_CORRUPT_HIERARCHY`, terminates |
 | TG-08 | 501st tag; 101st child; 21st link on a note | `TAG_LIMIT`; `TAG_LIMIT`; `NOTE_TAG_LIMIT` |
-| TG-09 | Attach twice; detach twice; attach after detach | `attached:false`; `detached:false`; the same link row revived; never two rows for the pair |
+| TG-09 | Attach twice; detach twice; attach after detach | `attached:false`; `detached:false`; the same link row revived with `linkedAt` reset to the re-attach time and `createdAt` unchanged; never two rows for the pair |
 | TG-10 | Attach A's note with B's tag; B's note as A; trashed note; deleted tag | `TAG_NOT_FOUND`; `NOTE_NOT_FOUND`; `NOTE_NOT_FOUND`; `TAG_NOT_FOUND` |
 | TG-11 | Remove a tag with children | children under the grandparent; links untouched; `notesByTag` for it → `TAG_NOT_FOUND`; a child name collision → `TAG_NAME_TAKEN`, nothing changed |
 | TG-12 | Restore at `GRACE` and `GRACE + 1`; restore with a live same-name sibling; with a deleted parent | ok; `TAG_RESTORE_EXPIRED`; `TAG_NAME_TAKEN`; `reparentedToRoot:true` |
 | TG-13 | Account deletion | both tag tables soft-deleted (schema-derived exhaustive coverage), foreign rows untouched, earlier timestamps kept |
 | TG-14 | Two concurrent conflicting renames or moves | exactly one succeeds. UNKNOWN if the harness cannot run two transactions |
 | TG-15 | `notesByTag` paging with archived and trashed notes mixed in | only notes in the requested view; each once; truthful `isDone` |
+| TG-16 | Attach tag T to note X, then to note Y; detach X and attach it again | `notesByTag(T)` order is Y, X before the re-attach and X, Y after it; X's link row is the same row, `createdAt` unchanged |
 
 ### 12.5 Search
 
@@ -928,7 +958,7 @@ See the index in §1: OD-1 to OD-8. Each states its recommended default there. I
 |---|---|
 | UK-1 | The merged shape of #787, #828, #831, #803, #804, #808. Every dependency in §3. |
 | UK-2 | The owner's Blinko/Note/TODO inventory file (§0.3). |
-| UK-3 | Whether `convex-test` (pinned by #827, imported nowhere) runs under `bun test`. |
+| UK-3 | Whether `convex-test` runs Tempo's own modules under `bun test`, applies their `returns` validators and models multi-field index ranges. #815 shows it runs the Agent component (`convex/lib/agentComponent.test.ts`). |
 | UK-4 | Whether any stored task has `flexibility` set (the `dayPlans` validator drift, §5.9). |
 | UK-5 | Convex per-function read limits (about 16 MiB, 32,000 documents) are the vendor's published figures and were not verified in this worktree; they set the search window. |
 | UK-6 | Whether the deployed backend matches this revision (#837). |
@@ -945,7 +975,7 @@ Follow-ups for the coordinator. This file edits no ticket.
 2. **A validator-parity slice is needed before #856** (§5.9): `convex/dayPlans.ts` plus a test, one file. It also fixes the existing `flexibility` omission. No ticket owns `dayPlans.ts`.
 3. **#842 and #849 list `convex/_generated/api.d.ts`** but add functions to existing modules, which needs no edit to it (§11.3). Only #847 and #856 add modules.
 4. **#842 needs #803's projection** for `NoteCard.preview`; the feed must not ship with a raw-body fallback.
-5. **`page-meta.tags` in the codec** (`convex/lib/blocks.ts:24-30`, from #786) is a second tag list. Decide whether it is retired or stays unread, before #846.
+5. **`page-meta.tags` in the codec** (`packages/utils/src/blocks.ts:24-30`, from #786) is a second tag list. Decide whether it is retired or stays unread, before #846.
 6. **MCP `notes_list` and `note_update` return and accept raw bodies** (`convex/mcpTools.ts:41-49`); archived rows leave with the shared helper, but raw fences still appear. Nobody in this batch owns it.
 7. **`analytics.overview` counts soft-deleted notes and tasks** (`convex/analytics.ts:123-148`, `:41-83`). No web caller today; fix before one appears.
 8. **#843 step 2 gating**: To-do capture waits for `note_tasks.captureTodo` (#856). Until then only quick and note kinds appear.
@@ -953,7 +983,8 @@ Follow-ups for the coordinator. This file edits no ticket.
 10. **#845 and #837 clocks**: the Trash UI must show `restorableUntilMs`, not `undoUntilMs`.
 11. **Open PRs that may touch task readers** (by title only; their file lists were not read): #756 (Today task list) and #730 (`/tasks/energy`). Re-check path ownership at admission.
 12. **No ticket owns two editor-side changes** this contract relies on: making "+ Task" call `note_tasks.addTask`, and a "make this a to-do" action that calls `note_tasks.link`. #788–#792 build the editor; #857 only lists. Until someone owns them, editor blocks stay page-local (§5.6).
-13. **Guard note for this PR**: `docs/contracts/**` may change only in a PR that changes nothing else, carries the `config` label added by `Division6066`, and links no ticket (`scripts/factory/config-guard.mjs:14-16`, `:61-66`; `scope-guard` accepts a `config` PR with no ticket, `scripts/factory/scope-guard.mjs:3-4`). The PR therefore cannot go green on `config-guard` and `scope-guard` until that label is applied, which the author did not do.
+13. **Fix round 1 widens #841 and #846.** #841 also adds `notes.isTemplate` and three `notes` indexes (§8.1), and its `tasks` link index carries `deletedAt` before `sourceBlockId` (§8.2); #846's `noteTagLinks` carries `linkedAt` (§8.3). Any writer of `notes.pageType` (none today; #787 and the editor tickets are the likely ones) must set or clear `isTemplate` in the same patch, and no ticket says so yet. #842's feed, #849's search scan and #856's readers must use these ranges.
+14. **Guard note for this PR**: `docs/contracts/**` may change only in a PR that changes nothing else, carries the `config` label added by `Division6066`, and links no ticket (`scripts/factory/config-guard.mjs:14-16`, `:61-66`; `scope-guard` accepts a `config` PR with no ticket, `scripts/factory/scope-guard.mjs:3-4`). The PR therefore cannot go green on `config-guard` and `scope-guard` until that label is applied, which the author did not do.
 
 ## 15. Verification record
 
@@ -969,7 +1000,7 @@ Document-only change. One file: `docs/contracts/CORE-WEB-NOTES.md`.
 | DONE clause: existing 30-day restore kept, duration/version/purge unadopted | §6.3, §6.6, §13.2 |
 | DONE clause: conflicting task stores and unbounded scans rejected by rule | §5.8, §11.2 |
 | Tag contract coverage | §10 |
-| Citation check: every `path:line` resolves in the baseline tree | run before commit; result recorded in the PR body |
+| Citation check: every `path:line` resolves in the baseline tree | fix round 1 re-pinned every `convex/schema.ts`, `convex/lib/accountDeletion.ts` and block-codec citation to 9cf7985; the result is recorded in the PR body |
 | Path ownership of `docs/contracts/CORE-WEB-NOTES.md` | absent at the baseline. No open PR title in the 50 most recent suggests it. PR file lists were not read: UNKNOWN. |
 | Repository checks | recorded in the PR body with the head SHA: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test`, the four scans/notices, local Playwright, build |
 | Preview evidence | none. This is a contract, not a feature; nothing is coded, locally tested or preview-proven. |
