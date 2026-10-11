@@ -20,6 +20,22 @@ export {
   resolveEnergySuggestion,
 } from "./habit-energy-suggestions";
 
+export {
+  BLOCK_CODEC_LIMITS,
+  type BlockErrorCode,
+  type BlockSegment,
+  type BrokenBlockSegment,
+  type MarkdownSegment,
+  pageMetaDataSchema,
+  parseTempoBlocks,
+  serializeTempoBlocks,
+  type TempoBlock,
+  taskDataSchema,
+  tempoBlockSchema,
+  templateDataSchema,
+  type ValidBlockSegment,
+} from "./blocks";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */
