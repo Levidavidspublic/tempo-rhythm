@@ -27,6 +27,7 @@ import { AiUpstreamError } from "./lib/ai_errors";
 import type { AiResult } from "./lib/ai_router";
 import { crisisCardText } from "./lib/crisisWords";
 import { run } from "./lib/testFakeCtx";
+import { list as listMessages } from "./messages";
 
 const USER_MESSAGE = "messages:user" as Id<"messages">;
 const CARD = crisisCardText();
@@ -565,7 +566,10 @@ function makeDb(ownerId = "users:me", otherUsers: string[] = ["users:other"]) {
   };
   for (const id of [ownerId, ...otherUsers]) table("users").set(id, { _id: id, email: `${id}@x.test` });
 
-  const indexSort: Record<string, string[]> = { by_userId_salience: ["salience", "_creationTime"] };
+  const indexSort: Record<string, string[]> = {
+    by_userId_salience: ["salience", "_creationTime"],
+    by_conversationId_createdAt: ["createdAt", "_creationTime"],
+  };
   const rank = (value: unknown) => (value === undefined ? -Infinity : (value as number));
 
   function builder(name: string, rows: Row[], sortKeys = ["_creationTime"], desc = false) {
@@ -914,6 +918,69 @@ describe("chat turns over the db", () => {
       retry.messageId,
       other.messageId,
     ]);
+  });
+
+  test("turns stored within the same millisecond list in the order they were sent", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    const callModel = mock()
+      .mockResolvedValueOnce(modelResult("First reply."))
+      .mockResolvedValueOnce(modelResult("Second reply."));
+    const deps = wire(world, conversationId, callModel);
+
+    // The clock never moves: two crisis turns, an ordinary turn, then another crisis turn.
+    await sendChat(deps, "I want to die");
+    await sendChat(deps, "I want to end my life");
+    await sendChat(deps, "Help me start");
+    await sendChat(deps, "I want to die tonight");
+    await sendChat(deps, "Thanks");
+
+    const listed = (await run(listMessages, world.ctx, { conversationId })) as Row[];
+    expect(listed.map((row) => [row.role, row.content])).toEqual([
+      ["user", "I want to die"],
+      ["assistant", CARD],
+      ["user", "I want to end my life"],
+      ["assistant", CARD],
+      ["user", "Help me start"],
+      ["assistant", "First reply."],
+      ["user", "I want to die tonight"],
+      ["assistant", CARD],
+      ["user", "Thanks"],
+      ["assistant", "Second reply."],
+    ]);
+    const stamps = listed.map((row) => row.createdAt as number);
+    expect(stamps[0]).toBe(T0);
+    for (let i = 1; i < stamps.length; i += 1) {
+      expect(stamps[i]).toBeGreaterThan(stamps[i - 1] as number);
+    }
+    expect(world.table("conversations").get(conversationId)?.updatedAt).toBe(stamps.at(-1));
+  });
+
+  test("a failed turn retried within the same millisecond as a crisis card still lists after the card", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    const callModel = mock()
+      .mockRejectedValueOnce(new AiUpstreamError("boom", 502, "deepinfra"))
+      .mockResolvedValueOnce(modelResult("Recovered."));
+    const deps = wire(world, conversationId, callModel);
+
+    await sendChat(deps, "I want to die");
+    const failure = await errorData(sendChat(deps, "Help me start"));
+    const retried = await sendChat(deps, "Help me start", failure.messageId);
+
+    expect(retried).toEqual({ reply: "Recovered.", messageId: failure.messageId as Id<"messages"> });
+    const listed = (await run(listMessages, world.ctx, { conversationId })) as Row[];
+    expect(listed.map((row) => [row.role, row.content])).toEqual([
+      ["user", "I want to die"],
+      ["assistant", CARD],
+      ["user", "Help me start"],
+      ["assistant", "Recovered."],
+    ]);
+    const stamps = listed.map((row) => row.createdAt as number);
+    expect(stamps).toEqual([...stamps].sort((a, b) => a - b));
+    expect(new Set(stamps).size).toBe(stamps.length);
   });
 
   test("a second send while a turn is pending is refused before any model call", async () => {

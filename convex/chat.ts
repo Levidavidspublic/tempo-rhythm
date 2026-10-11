@@ -391,6 +391,25 @@ function liveMessages(ctx: QueryCtx | MutationCtx, conversationId: Id<"conversat
     );
 }
 
+/**
+ * `createdAt` for the next message of a conversation: the clock, but always after the newest stored message
+ * (soft-deleted ones included). `messages.list` orders by `createdAt`, so every row this file writes gets a
+ * strictly later stamp than the one before it, and turns that commit within the same millisecond still list
+ * in the order they were stored. One indexed read; a row written right after this one uses the result + 1.
+ */
+async function nextCreatedAt(
+  ctx: MutationCtx,
+  conversationId: Id<"conversations">,
+  now: number,
+): Promise<number> {
+  const newest = await ctx.db
+    .query("messages")
+    .withIndex("by_conversationId_createdAt", (q) => q.eq("conversationId", conversationId))
+    .order("desc")
+    .first();
+  return newest ? Math.max(now, newest.createdAt + 1) : now;
+}
+
 async function firstLiveAfter(
   ctx: QueryCtx | MutationCtx,
   conversationId: Id<"conversations">,
@@ -460,20 +479,21 @@ export const beginTurn = internalMutation({
       };
     }
 
+    const createdAt = await nextCreatedAt(ctx, args.conversationId, now);
     let userMessageId: MessageId;
     if (decision.action === "insert") {
       userMessageId = await ctx.db.insert("messages", {
         conversationId: args.conversationId,
         role: "user",
         content: args.content,
-        createdAt: now,
+        createdAt,
       });
     } else {
       userMessageId = decision.message._id;
       // `createdAt` doubles as the turn-start clock, so a concurrent duplicate retry sees it pending.
-      await ctx.db.patch(userMessageId, { deletedAt: undefined, createdAt: now });
+      await ctx.db.patch(userMessageId, { deletedAt: undefined, createdAt });
     }
-    await ctx.db.patch(args.conversationId, { updatedAt: now });
+    await ctx.db.patch(args.conversationId, { updatedAt: createdAt });
 
     // Reads after the write see it, so the newest message here is this turn's user message.
     const newest = await liveMessages(ctx, args.conversationId).order("desc").take(CONTEXT_MESSAGES);
@@ -522,11 +542,12 @@ export const crisisTurn = internalMutation({
     }
 
     const reply = crisisCardText(CRISIS_CARD);
+    const createdAt = await nextCreatedAt(ctx, args.conversationId, now);
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "user",
       content: args.content,
-      createdAt: now,
+      createdAt,
     });
     // One millisecond later, so ordering by `createdAt` keeps the card after its user message.
     await ctx.db.insert("messages", {
@@ -534,9 +555,9 @@ export const crisisTurn = internalMutation({
       role: "assistant",
       content: reply,
       modelUsed: CRISIS_MODEL,
-      createdAt: now + 1,
+      createdAt: createdAt + 1,
     });
-    await ctx.db.patch(args.conversationId, { updatedAt: now + 1 });
+    await ctx.db.patch(args.conversationId, { updatedAt: createdAt + 1 });
     return { messageId, reply };
   },
 });
@@ -579,15 +600,16 @@ export const insertAssistantMessage = internalMutation({
       });
     }
 
-    const now = Math.max(Date.now(), userMessage.createdAt + 1);
+    // After the user message too: it is in the conversation, so the newest stored stamp is at least its own.
+    const createdAt = await nextCreatedAt(ctx, args.conversationId, Date.now());
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "assistant",
       content: args.content,
       modelUsed: args.modelUsed,
-      createdAt: now,
+      createdAt,
     });
-    await ctx.db.patch(args.conversationId, { updatedAt: now });
+    await ctx.db.patch(args.conversationId, { updatedAt: createdAt });
     return { content: args.content, modelUsed: args.modelUsed, inserted: true };
   },
 });
