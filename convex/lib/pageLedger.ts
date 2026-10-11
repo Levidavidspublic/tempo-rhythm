@@ -1278,6 +1278,13 @@ function parseProposal(input: unknown): PageProposalFacts {
       reject("state_invariant", "status");
     }
     if (status !== "expired" && decidedAtMs === undefined) reject("missing_field", "decidedAtMs");
+    // D5: rejection or cancellation ends content access at the decision time
+    // (`proposalDeadlinesAfterDecision`). The cleanup bound above is relative to
+    // `proposalExpiresAtMs`, so this also keeps cleanup within the grace after the decision.
+    const endsAtDecision = status === "rejected" || status === "cancelled";
+    if (endsAtDecision && proposalExpiresAtMs !== decidedAtMs) {
+      reject("deadline_mismatch", "proposalExpiresAtMs");
+    }
   }
   if (decidedAtMs !== undefined && decidedAtMs < createdAt)
     reject("state_invariant", "decidedAtMs");

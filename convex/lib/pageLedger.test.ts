@@ -188,6 +188,21 @@ function proposalRow(overrides: Record<string, unknown> = {}): Record<string, un
   };
 }
 
+/** A rejected or cancelled proposal with its D5 post-decision deadlines. */
+function decidedProposalRow(
+  status: string,
+  decidedAtMs: number,
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return proposalRow({
+    status,
+    decidedAtMs,
+    proposalExpiresAtMs: decidedAtMs,
+    cleanupDueAtMs: decidedAtMs + 5 * MIN,
+    ...overrides,
+  });
+}
+
 // ---------------------------------------------------------------------------------------------
 // A minimal in-memory ledger that drives the helper the way #787 will: plan, build the receipt and
 // payload rows, "write", then (after a JSON round trip, as if reloaded) plan an Undo.
@@ -1115,10 +1130,10 @@ describe("pageProposals facts", () => {
   test("accepts each decided status and an expired payload", () => {
     const decided = { decidedAtMs: NOW + 10 };
     expect(
-      ok(validatePageProposalFacts(proposalRow({ status: "rejected", ...decided }))).status
+      ok(validatePageProposalFacts(decidedProposalRow("rejected", NOW + 10))).status
     ).toBe("rejected");
     expect(
-      ok(validatePageProposalFacts(proposalRow({ status: "cancelled", ...decided }))).status
+      ok(validatePageProposalFacts(decidedProposalRow("cancelled", NOW + 10))).status
     ).toBe("cancelled");
     expect(ok(validatePageProposalFacts(proposalRow({ status: "expired" }))).status).toBe(
       "expired"
@@ -1130,9 +1145,7 @@ describe("pageProposals facts", () => {
       confirmDigest: HEX_A,
     });
     expect(String(ok(validatePageProposalFacts(confirmed)).confirmedOperationId)).toBe("op_1");
-    const cleaned = proposalRow({
-      status: "rejected",
-      ...decided,
+    const cleaned = decidedProposalRow("rejected", NOW + 10, {
       payload: { state: "expired", expiredAtMs: NOW + 20 },
     });
     expect(ok(validatePageProposalFacts(cleaned)).payload.state).toBe("expired");
@@ -1269,6 +1282,45 @@ describe("pageProposals facts", () => {
         )
       ).proposalExpiresAtMs
     ).toBe(decidedAt);
+  });
+
+  test("a rejected or cancelled proposal's content deadline is its decision time", () => {
+    const decidedAt = NOW + 2 * HOUR;
+    for (const status of ["rejected", "cancelled"]) {
+      // Keeping the 24-hour creation deadline (and its cleanup) after the decision is rejected,
+      // so the private task payload cannot outlive the decision by more than the cleanup grace.
+      fail(
+        validatePageProposalFacts(proposalRow({ status, decidedAtMs: decidedAt })),
+        "deadline_mismatch",
+        "proposalExpiresAtMs"
+      );
+      for (const delta of [-1, 1]) {
+        fail(
+          validatePageProposalFacts(
+            decidedProposalRow(status, decidedAt, {
+              proposalExpiresAtMs: decidedAt + delta,
+              cleanupDueAtMs: decidedAt + delta + 5 * MIN,
+            })
+          ),
+          "deadline_mismatch",
+          "proposalExpiresAtMs"
+        );
+      }
+      // Cleanup is due within the five-minute grace of the decision, never later.
+      fail(
+        validatePageProposalFacts(
+          decidedProposalRow(status, decidedAt, { cleanupDueAtMs: decidedAt + 5 * MIN + 1 })
+        ),
+        "deadline_mismatch",
+        "cleanupDueAtMs"
+      );
+      const afterDecision = ok(proposalDeadlinesAfterDecision(proposalRow(), decidedAt));
+      const parsed = ok(
+        validatePageProposalFacts(proposalRow({ status, decidedAtMs: decidedAt, ...afterDecision }))
+      );
+      expect(parsed.proposalExpiresAtMs).toBe(decidedAt);
+      expect(parsed.cleanupDueAtMs).toBe(decidedAt + 5 * MIN);
+    }
   });
 });
 
@@ -1650,7 +1702,7 @@ describe("D3 proposal confirmation keeps two revisions apart", () => {
 
   test("rejected, cancelled and expired proposals cannot write", () => {
     for (const status of ["rejected", "cancelled"]) {
-      fail(decide(proposalRow({ status, decidedAtMs: NOW + 1 })), "proposal_not_pending");
+      fail(decide(decidedProposalRow(status, NOW + 1)), "proposal_not_pending");
     }
     fail(decide(proposalRow({ status: "expired" })), "proposal_not_pending");
   });
@@ -1817,7 +1869,7 @@ describe("D5 deadlines and eligibility", () => {
     expect(isProposalContentReadable(proposalRow(), NOW + 24 * HOUR)).toBe(false);
     const decided = { decidedAtMs: NOW + 10 };
     for (const status of ["rejected", "cancelled"]) {
-      expect(isProposalContentReadable(proposalRow({ status, ...decided }), NOW + 11)).toBe(false);
+      expect(isProposalContentReadable(decidedProposalRow(status, NOW + 10), NOW + 9)).toBe(false);
     }
     expect(isProposalContentReadable(proposalRow({ status: "expired" }), NOW)).toBe(false);
     const confirmed = proposalRow({
