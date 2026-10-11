@@ -21,20 +21,31 @@ import {
   type ChatMemory,
   historyBeforeTurn,
   pickTopMemories,
+  takeLiveMemories,
+  truncateForStorage,
 } from "./lib/chatPrompt";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
 import { requireUser } from "./lib/requireUser";
 
-const MAX_MESSAGE_LENGTH = 4000;
+export const MAX_MESSAGE_LENGTH = 4000;
 const CONTEXT_MESSAGES = 20;
-const CONTEXT_MEMORIES = 20;
-/** Hard cap on memory rows read per turn; the top CONTEXT_MEMORIES by salience are kept from these. */
-export const MEMORY_SCAN_LIMIT = 200;
+/** Live memories sent to the model per turn. */
+export const CONTEXT_MEMORIES = 20;
+/**
+ * Hard cap on memory rows read per turn. The salience index is read highest first and the scan stops
+ * after CONTEXT_MEMORIES live rows or this many rows, so soft-deleted rows cannot crowd out live ones.
+ */
+export const MEMORY_SCAN_LIMIT = 500;
 /**
  * How long an unanswered user message counts as "Tempo is still replying". The model call times out
  * well inside this, so an older unanswered message is a crashed turn and may be reused.
  */
 export const PENDING_MS = 90_000;
+/**
+ * A resend of identical text, with no `retryOf`, inside this window of an answered turn gets that turn's
+ * reply back instead of a second paid model call (the response was probably lost on the way to the client).
+ */
+export const REPLAY_MS = 120_000;
 
 type MessageId = Id<"messages">;
 
@@ -71,6 +82,7 @@ function isPending(message: TurnMessage, now: number): boolean {
  * What to do with a send, given only what the transaction read. Pure.
  *
  * - `latest`: the newest live message in the conversation (only needed without `retry`).
+ * - `previous`: the live message just before `latest` (only needed without `retry`).
  * - `retry.target`: the message `retryOf` names, or null when it is missing or in another conversation.
  * - `retry.after`: the first live message created after `retry.target`.
  */
@@ -78,15 +90,32 @@ export function decideTurn(input: {
   content: string;
   now: number;
   latest: TurnMessage | null;
+  previous?: TurnMessage | null;
   retry?: { target: TurnMessage | null; after: TurnMessage | null };
 }): TurnDecision {
   const refuse = (reason: TurnRefusal): TurnDecision => ({ action: "refuse", reason });
 
   if (!input.retry) {
-    // Newest live message is a user message: nothing answered it yet. Serialize sends behind it.
-    const { latest } = input;
+    const { latest, previous } = input;
+    // Newest live message is a user message: nothing answered it yet. Serialize sends behind it
+    // (identical text included: it is the same in-flight turn).
     if (latest && latest.role === "user" && isPending(latest, input.now)) {
       return refuse("still_replying");
+    }
+    // The newest live pair is [user turn with identical text, its reply] and the turn is recent: the
+    // client most likely lost the response and is resending. Return the stored reply, no model call, no
+    // new rows. Turn identity here is content plus recency only; a durable client request key arrives
+    // with #807's request contract and replaces this heuristic. Accepted trade-off: the same text sent
+    // on purpose within REPLAY_MS of its answered turn also gets that reply back.
+    if (
+      latest &&
+      latest.role === "assistant" &&
+      previous &&
+      previous.role === "user" &&
+      previous.content.trim() === input.content &&
+      input.now - previous.createdAt < REPLAY_MS
+    ) {
+      return { action: "replay", messageId: previous._id, reply: latest };
     }
     return { action: "insert" };
   }
@@ -193,13 +222,18 @@ export async function sendChat(
 
   const text = content.trim();
   if (!text) throw new Error("Write a message first.");
-  if (text.length > MAX_MESSAGE_LENGTH) {
+
+  // Crisis detection runs on the full trimmed text before any length rejection, so a long crisis message
+  // still gets the crisis card. Only that case may exceed the limit; its stored copy is cut to the limit
+  // with a visible "…" (the same cut every time, so a retry of it still matches the stored row).
+  const crisis = isCrisisText(text);
+  if (!crisis && text.length > MAX_MESSAGE_LENGTH) {
     throw new Error(`Keep your message to ${MAX_MESSAGE_LENGTH} characters or fewer.`);
   }
+  const storedText = truncateForStorage(text, MAX_MESSAGE_LENGTH);
 
   // Ownership, dedupe, serialization and the context snapshot all happen in this one transaction.
-  const crisis = isCrisisText(text);
-  const turn = await deps.beginTurn({ content: text, retryOf, withContext: !crisis });
+  const turn = await deps.beginTurn({ content: storedText, retryOf, withContext: !crisis });
   if (turn.status === "refused") {
     throw chatError({ code: turn.reason, message: TURN_REFUSAL_MESSAGES[turn.reason] });
   }
@@ -375,9 +409,12 @@ export const beginTurn = internalMutation({
         after: target ? await firstLiveAfter(ctx, args.conversationId, target) : null,
       };
     }
-    const latest = retry ? null : await liveMessages(ctx, args.conversationId).order("desc").first();
+    // Without `retryOf`, the two newest live messages decide serialize (pending) versus replay (answered).
+    const [latest = null, previous = null] = retry
+      ? []
+      : await liveMessages(ctx, args.conversationId).order("desc").take(2);
 
-    const decision = decideTurn({ content: args.content, now, latest, retry });
+    const decision = decideTurn({ content: args.content, now, latest, previous, retry });
     if (decision.action === "refuse") return { status: "refused", reason: decision.reason };
     if (decision.action === "replay") {
       return {
@@ -407,11 +444,15 @@ export const beginTurn = internalMutation({
 
     // Reads after the write see it, so the newest message here is this turn's user message.
     const newest = await liveMessages(ctx, args.conversationId).order("desc").take(CONTEXT_MESSAGES);
-    const memoryRows = await ctx.db
-      .query("memories")
-      .withIndex("by_userId_salience", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .take(MEMORY_SCAN_LIMIT);
+    // Highest salience first, skipping soft-deleted rows; bounded by live count and rows scanned, no collect.
+    const memoryRows = await takeLiveMemories(
+      ctx.db
+        .query("memories")
+        .withIndex("by_userId_salience", (q) => q.eq("userId", user._id))
+        .order("desc"),
+      CONTEXT_MEMORIES,
+      MEMORY_SCAN_LIMIT,
+    );
 
     return {
       status: "ready",

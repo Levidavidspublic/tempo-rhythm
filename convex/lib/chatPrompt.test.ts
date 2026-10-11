@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { buildChatMessages, historyBeforeTurn, pickTopMemories } from "./chatPrompt";
+import {
+  buildChatMessages,
+  historyBeforeTurn,
+  pickTopMemories,
+  takeLiveMemories,
+  truncateForStorage,
+} from "./chatPrompt";
 
 describe("buildChatMessages", () => {
   test("includes memories between the instructions and history", () => {
@@ -121,5 +127,87 @@ describe("historyBeforeTurn", () => {
       { role: "user" as const, content: "ok" },
     ];
     expect(historyBeforeTurn(history, "ok")).toEqual([history[0]]);
+  });
+});
+
+describe("truncateForStorage", () => {
+  test("returns text that fits, including text exactly at the limit, untouched", () => {
+    expect(truncateForStorage("short", 10)).toBe("short");
+    expect(truncateForStorage("a".repeat(10), 10)).toBe("a".repeat(10));
+  });
+
+  test("cuts longer text to the limit and ends with a visible marker", () => {
+    const out = truncateForStorage("a".repeat(50), 10);
+    expect(out).toBe(`${"a".repeat(9)}…`);
+    expect(out).toHaveLength(10);
+  });
+
+  test("never splits a surrogate pair at the cut", () => {
+    // 4 emoji = 8 units; max 6 leaves 5 units before the marker, which would end on a lone high surrogate.
+    const out = truncateForStorage("😀😀😀😀", 6);
+    expect(out).toBe("😀😀…");
+    expect(out).toHaveLength(5);
+    expect(out).not.toMatch(/[\ud800-\udbff](?![\udc00-\udfff])/);
+  });
+
+  test("is deterministic, so a retry of the same text matches the stored copy", () => {
+    const text = "word ".repeat(2000).trim();
+    expect(truncateForStorage(text, 4000)).toBe(truncateForStorage(text, 4000));
+  });
+});
+
+describe("takeLiveMemories", () => {
+  type Row = { content: string; deletedAt?: number };
+
+  /** An async iterable that records how many rows the consumer pulled. */
+  function source(rows: Row[]) {
+    const state = { pulled: 0 };
+    const iterable: AsyncIterable<Row> = {
+      async *[Symbol.asyncIterator]() {
+        for (const row of rows) {
+          state.pulled += 1;
+          yield row;
+        }
+      },
+    };
+    return { iterable, state };
+  }
+
+  const live = (n: number): Row[] => Array.from({ length: n }, (_, i) => ({ content: `live ${i}` }));
+  const deleted = (n: number): Row[] =>
+    Array.from({ length: n }, (_, i) => ({ content: `deleted ${i}`, deletedAt: 1 }));
+
+  test("skips soft-deleted rows and stops after the live limit", async () => {
+    const { iterable, state } = source([...deleted(3), ...live(10)]);
+    const out = await takeLiveMemories(iterable, 4, 100);
+    expect(out.map((row) => row.content)).toEqual(["live 0", "live 1", "live 2", "live 3"]);
+    expect(state.pulled).toBe(7);
+  });
+
+  test("finds live rows behind more deleted rows than the live limit", async () => {
+    const { iterable, state } = source([...deleted(300), ...live(2)]);
+    const out = await takeLiveMemories(iterable, 20, 500);
+    expect(out.map((row) => row.content)).toEqual(["live 0", "live 1"]);
+    expect(state.pulled).toBe(302);
+  });
+
+  test("stops at the scan limit even when no live row was found", async () => {
+    const { iterable, state } = source([...deleted(50), ...live(5)]);
+    expect(await takeLiveMemories(iterable, 20, 10)).toEqual([]);
+    expect(state.pulled).toBe(10);
+  });
+
+  test("a live row at the last scanned position is still kept", async () => {
+    const { iterable, state } = source([...deleted(9), ...live(3)]);
+    const out = await takeLiveMemories(iterable, 20, 10);
+    expect(out.map((row) => row.content)).toEqual(["live 0"]);
+    expect(state.pulled).toBe(10);
+  });
+
+  test("reads nothing for a zero limit", async () => {
+    const { iterable, state } = source(live(3));
+    expect(await takeLiveMemories(iterable, 0, 10)).toEqual([]);
+    expect(await takeLiveMemories(iterable, 5, 0)).toEqual([]);
+    expect(state.pulled).toBe(0);
   });
 });

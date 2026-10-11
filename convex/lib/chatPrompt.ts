@@ -79,3 +79,39 @@ export function buildChatMessages(args: {
   messages.push({ role: "user", content: args.userText });
   return messages;
 }
+
+const TRUNCATION_MARKER = "…";
+
+/**
+ * Bound text to `max` UTF-16 units for storage. Text that fits is returned untouched. Longer text is cut
+ * and ends with a visible "…", and the cut never splits a surrogate pair. Deterministic, so a retry of the
+ * same long text produces the same stored content.
+ */
+export function truncateForStorage(text: string, max: number): string {
+  if (text.length <= max) return text;
+  let end = Math.max(0, max - TRUNCATION_MARKER.length);
+  const last = text.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return text.slice(0, end) + TRUNCATION_MARKER;
+}
+
+/**
+ * Walk `rows` (already in the order to keep, e.g. a salience index read descending) and collect live rows.
+ * Stops after `liveLimit` live rows or `scanLimit` rows read, whichever comes first, so soft-deleted rows
+ * cannot crowd out live ones yet the read stays bounded. Pulls rows one at a time and never collects.
+ */
+export async function takeLiveMemories<T extends { deletedAt?: number }>(
+  rows: AsyncIterable<T>,
+  liveLimit: number,
+  scanLimit: number,
+): Promise<T[]> {
+  const live: T[] = [];
+  if (liveLimit <= 0 || scanLimit <= 0) return live;
+  let scanned = 0;
+  for await (const row of rows) {
+    scanned += 1;
+    if (row.deletedAt === undefined) live.push(row);
+    if (live.length >= liveLimit || scanned >= scanLimit) break;
+  }
+  return live;
+}

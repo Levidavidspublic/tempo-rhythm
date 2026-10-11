@@ -2,8 +2,11 @@ import { afterEach, describe, expect, mock, setSystemTime, test } from "bun:test
 import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import {
+  CONTEXT_MEMORIES,
+  MAX_MESSAGE_LENGTH,
   MEMORY_SCAN_LIMIT,
   PENDING_MS,
+  REPLAY_MS,
   TURN_REFUSAL_MESSAGES,
   type ChatErrorData,
   beginTurn,
@@ -94,6 +97,45 @@ describe("sendChat", () => {
       withContext: false,
     });
     expect(deps.insertAssistantMessage).toHaveBeenCalledWith(USER_MESSAGE, result.reply, "crisis-card");
+  });
+
+  test("a crisis message over the length limit still gets the crisis card, stored cut to the limit", async () => {
+    const deps = dependencies();
+    const long = `${"I have been carrying this for a long time. ".repeat(150)}I want to die`;
+    expect(long.length).toBeGreaterThan(MAX_MESSAGE_LENGTH);
+
+    const result = await sendChat(deps, `  ${long}  `);
+
+    expect(result.crisis).toBe(true);
+    expect(result.reply).toContain("You are not alone");
+    expect(deps.callModel).not.toHaveBeenCalled();
+    const [turn] = deps.beginTurn.mock.calls[0] as unknown as [
+      { content: string; withContext: boolean; retryOf?: string },
+    ];
+    expect(turn.withContext).toBe(false);
+    expect(turn.content).toHaveLength(MAX_MESSAGE_LENGTH);
+    expect(turn.content.endsWith("…")).toBe(true);
+    expect(turn.content.startsWith("I have been carrying")).toBe(true);
+    expect(deps.insertAssistantMessage).toHaveBeenCalledWith(USER_MESSAGE, result.reply, "crisis-card");
+  });
+
+  test("a crisis message at exactly the limit is stored whole, without a marker", async () => {
+    const deps = dependencies();
+    const text = `${"a".repeat(MAX_MESSAGE_LENGTH - " I want to die".length)} I want to die`;
+    expect(text).toHaveLength(MAX_MESSAGE_LENGTH);
+
+    await sendChat(deps, text);
+    expect(deps.beginTurn).toHaveBeenCalledWith({ content: text, retryOf: undefined, withContext: false });
+  });
+
+  test("a non-crisis message over the length limit is still rejected before any turn or model call", async () => {
+    const deps = dependencies();
+
+    await expect(sendChat(deps, "a".repeat(MAX_MESSAGE_LENGTH + 1))).rejects.toThrow(
+      /4000 characters or fewer/,
+    );
+    expect(deps.beginTurn).not.toHaveBeenCalled();
+    expect(deps.callModel).not.toHaveBeenCalled();
   });
 
   test("refuses another user's conversation before writing or calling the model", async () => {
@@ -298,6 +340,60 @@ describe("decideTurn", () => {
     expect(decideTurn({ content: "Hi", now, latest: old })).toEqual({ action: "insert" });
   });
 
+  describe("without retryOf, a resend of an answered turn", () => {
+    const answered = (userOverrides: Omit<Partial<TurnMessage>, "_id"> = {}) => ({
+      previous: message({ _id: "u", content: "Hi", createdAt: now - 30_000, ...userOverrides }),
+      latest: message({ _id: "a", role: "assistant", content: "Reply", createdAt: now - 25_000 }),
+    });
+
+    test("with identical trimmed text inside REPLAY_MS replays the stored reply", () => {
+      const { previous, latest } = answered();
+      expect(REPLAY_MS).toBe(120_000);
+      expect(decideTurn({ content: "Hi", now, latest, previous })).toEqual({
+        action: "replay",
+        messageId: previous._id,
+        reply: latest,
+      });
+      // The stored row is compared trimmed, like a retry.
+      const padded = answered({ content: "  Hi \n" });
+      expect(decideTurn({ content: "Hi", ...padded, now })).toEqual({
+        action: "replay",
+        messageId: padded.previous._id,
+        reply: padded.latest,
+      });
+    });
+
+    test("the window is measured from the user turn: just inside replays, REPLAY_MS and older insert", () => {
+      const inside = answered({ createdAt: now - REPLAY_MS + 1 });
+      expect(decideTurn({ content: "Hi", ...inside, now }).action).toBe("replay");
+      const edge = answered({ createdAt: now - REPLAY_MS });
+      expect(decideTurn({ content: "Hi", ...edge, now })).toEqual({ action: "insert" });
+      const old = answered({ createdAt: now - 10 * 60_000 });
+      expect(decideTurn({ content: "Hi", ...old, now })).toEqual({ action: "insert" });
+    });
+
+    test("different text inserts a new turn", () => {
+      expect(decideTurn({ content: "Something else", ...answered(), now })).toEqual({ action: "insert" });
+    });
+
+    test("needs a user turn directly before the reply", () => {
+      const { latest } = answered();
+      expect(decideTurn({ content: "Hi", now, latest, previous: null })).toEqual({ action: "insert" });
+      const assistantBefore = message({ _id: "p", role: "assistant", content: "Hi", createdAt: fresh });
+      expect(decideTurn({ content: "Hi", now, latest, previous: assistantBefore })).toEqual({
+        action: "insert",
+      });
+    });
+
+    test("identical text while that turn is still pending keeps the still-replying refusal", () => {
+      const pending = message({ _id: "u", content: "Hi", createdAt: fresh });
+      expect(decideTurn({ content: "Hi", now, latest: pending, previous: null })).toEqual({
+        action: "refuse",
+        reason: "still_replying",
+      });
+    });
+  });
+
   test("a retry of a soft-deleted turn with nothing newer live reuses it", () => {
     const target = message({ _id: "u", content: "Hi", createdAt: fresh, deletedAt: fresh + 1 });
     expect(decideTurn({ content: "Hi", now, latest: null, retry: { target, after: null } })).toEqual({
@@ -371,13 +467,15 @@ type IndexQuery = {
 };
 type ChatDeps = Parameters<typeof sendChat>[0];
 
-/** Minimal stateful stand-in for the Convex db: enough index, order, take and first for chat.ts. */
+/** Minimal stateful stand-in for the Convex db: enough index, order, take, first and iteration for chat.ts. */
 function makeDb(ownerId = "users:me", otherUsers: string[] = ["users:other"]) {
   const tables = new Map<string, Map<string, Row>>();
   let nextId = 1;
   let creation = 1;
   const takes: { table: string; n: number }[] = [];
   const collects: string[] = [];
+  /** Rows pulled through the query's async iterator, per table. */
+  const scans: Record<string, number> = {};
   const table = (name: string) => {
     let rows = tables.get(name);
     if (!rows) {
@@ -429,6 +527,13 @@ function makeDb(ownerId = "users:me", otherUsers: string[] = ["users:other"]) {
         return ordered().slice(0, n);
       },
       first: async () => ordered()[0] ?? null,
+      // Lazy, like Convex: a row counts as read only once the loop asks for it.
+      async *[Symbol.asyncIterator]() {
+        for (const row of ordered()) {
+          scans[name] = (scans[name] ?? 0) + 1;
+          yield row;
+        }
+      },
       collect: async () => {
         collects.push(name);
         return ordered();
@@ -455,7 +560,7 @@ function makeDb(ownerId = "users:me", otherUsers: string[] = ["users:other"]) {
     db,
   });
 
-  return { db, takes, collects, table, ctxFor, ctx: ctxFor(ownerId), ownerId };
+  return { db, takes, collects, scans, table, ctxFor, ctx: ctxFor(ownerId), ownerId };
 }
 
 async function seedConversation(world: ReturnType<typeof makeDb>, userId = world.ownerId) {
@@ -547,6 +652,92 @@ describe("chat turns over the db", () => {
     expect(rowsOf(world, "assistant")).toHaveLength(1);
   });
 
+  test("a resend of identical text without retryOf replays the reply: zero model calls, no new rows", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    const callModel = mock(async () => modelResult("Stored reply."));
+    const deps = wire(world, conversationId, callModel);
+
+    // The first response is lost on the way back, so the client resends without a message id.
+    const first = await sendChat(deps, "Help me start");
+    const rowsBefore = world.table("messages").size;
+
+    setSystemTime(new Date(T0 + 30_000));
+    const resend = await sendChat(deps, "  Help me start  ");
+
+    expect(resend).toEqual(first);
+    expect(callModel).toHaveBeenCalledTimes(1);
+    expect(world.table("messages").size).toBe(rowsBefore);
+    expect(rowsOf(world, "user")).toHaveLength(1);
+    expect(rowsOf(world, "assistant")).toHaveLength(1);
+  });
+
+  test("a resend after REPLAY_MS, or with different text, is a new paid turn", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    const callModel = mock(async () => modelResult("Reply."));
+    const deps = wire(world, conversationId, callModel);
+
+    await sendChat(deps, "Help me start");
+
+    setSystemTime(new Date(T0 + 10_000));
+    const other = await sendChat(deps, "Something else");
+    expect(callModel).toHaveBeenCalledTimes(2);
+
+    // "Help me start" is no longer the newest pair, so it is not a resend of it either.
+    setSystemTime(new Date(T0 + 20_000));
+    await sendChat(deps, "Help me start");
+    expect(callModel).toHaveBeenCalledTimes(3);
+
+    setSystemTime(new Date(T0 + 20_000 + REPLAY_MS));
+    const later = await sendChat(deps, "Help me start");
+    expect(callModel).toHaveBeenCalledTimes(4);
+    expect(later.messageId).not.toBe(other.messageId);
+    expect(rowsOf(world, "user")).toHaveLength(4);
+    expect(rowsOf(world, "assistant")).toHaveLength(4);
+  });
+
+  test("an identical resend while the turn is still pending is refused, not replayed or duplicated", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    await run(beginTurn, world.ctx, { conversationId, content: "First", withContext: true });
+
+    setSystemTime(new Date(T0 + PENDING_MS - 1));
+    const callModel = mock(async () => modelResult());
+    const data = await errorData(sendChat(wire(world, conversationId, callModel), "First"));
+
+    expect(data.code).toBe("still_replying");
+    expect(callModel).not.toHaveBeenCalled();
+    expect(rowsOf(world, "user")).toHaveLength(1);
+  });
+
+  test("a long crisis message is answered with the card and stored cut to the limit, then replayed on resend", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    const callModel = mock(async () => modelResult());
+    const deps = wire(world, conversationId, callModel);
+    const long = `${"x".repeat(MAX_MESSAGE_LENGTH + 500)} I want to die`;
+
+    const first = await sendChat(deps, long);
+    expect(first.crisis).toBe(true);
+    const [userRow] = rowsOf(world, "user");
+    expect(userRow?.content).toHaveLength(MAX_MESSAGE_LENGTH);
+    expect((userRow?.content as string).endsWith("…")).toBe(true);
+    expect(rowsOf(world, "assistant")).toHaveLength(1);
+
+    // Both a resend and a retry by id match the stored (cut) row and return the same card.
+    setSystemTime(new Date(T0 + 5_000));
+    expect(await sendChat(deps, long)).toEqual(first);
+    expect(await sendChat(deps, long, first.messageId)).toEqual(first);
+    expect(callModel).not.toHaveBeenCalled();
+    expect(rowsOf(world, "user")).toHaveLength(1);
+    expect(rowsOf(world, "assistant")).toHaveLength(1);
+  });
+
   test("a retry of a stored crisis reply keeps the crisis flag and makes no model call", async () => {
     setSystemTime(new Date(T0));
     const world = makeDb();
@@ -631,7 +822,7 @@ describe("chat turns over the db", () => {
     expect(assistantRow?.modelUsed).toBe("test-model");
   });
 
-  test("memory reads are bounded with take(200) and keep the top 20 by salience", async () => {
+  test("memory reads stop after 20 live rows, never take or collect, and keep the top 20 by salience", async () => {
     setSystemTime(new Date(T0));
     const world = makeDb();
     const conversationId = await seedConversation(world);
@@ -664,14 +855,89 @@ describe("chat turns over the db", () => {
       withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
-    expect(MEMORY_SCAN_LIMIT).toBe(200);
-    const memoryTakes = world.takes.filter((entry) => entry.table === "memories");
-    expect(memoryTakes).toEqual([{ table: "memories", n: MEMORY_SCAN_LIMIT }]);
+    expect(MEMORY_SCAN_LIMIT).toBe(500);
+    expect(CONTEXT_MEMORIES).toBe(20);
+    expect(world.takes.filter((entry) => entry.table === "memories")).toEqual([]);
     expect(world.collects).not.toContain("memories");
+    // The deleted row plus the 20 live ones; the other 230 rows are never read.
+    expect(world.scans.memories).toBe(21);
     expect(turn.memories).toHaveLength(20);
     expect(turn.memories.map((memory) => memory.content)).toEqual(
       Array.from({ length: 20 }, (_, i) => `memory ${249 - i}`),
     );
+  });
+
+  test("live memories behind many soft-deleted, higher-salience ones are still found", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    // 300 deleted rows outrank every live one; the old take(200) would have returned only deleted rows.
+    for (let i = 0; i < 300; i += 1) {
+      await world.db.insert("memories", {
+        userId: world.ownerId,
+        content: `deleted ${i}`,
+        salience: 1_000 + i,
+        updatedAt: i,
+        deletedAt: 5,
+      });
+    }
+    for (let i = 0; i < 5; i += 1) {
+      await world.db.insert("memories", {
+        userId: world.ownerId,
+        content: `live ${i}`,
+        salience: i,
+        updatedAt: i,
+      });
+    }
+
+    const turn = (await run(beginTurn, world.ctx, {
+      conversationId,
+      content: "Hi",
+      withContext: true,
+    })) as Extract<TurnStart, { status: "ready" }>;
+
+    expect(turn.memories.map((memory) => memory.content)).toEqual([
+      "live 4",
+      "live 3",
+      "live 2",
+      "live 1",
+      "live 0",
+    ]);
+    // All 300 deleted rows and the 5 live ones were read, then the index ran out.
+    expect(world.scans.memories).toBe(305);
+    expect(world.collects).not.toContain("memories");
+  });
+
+  test("the memory scan stops at MEMORY_SCAN_LIMIT rows even when no live memory has been found", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    for (let i = 0; i < MEMORY_SCAN_LIMIT + 100; i += 1) {
+      await world.db.insert("memories", {
+        userId: world.ownerId,
+        content: `deleted ${i}`,
+        salience: 1_000 + i,
+        updatedAt: i,
+        deletedAt: 5,
+      });
+    }
+    // Live, but ranked past the bound.
+    await world.db.insert("memories", {
+      userId: world.ownerId,
+      content: "too far down",
+      salience: 1,
+      updatedAt: 1,
+    });
+
+    const turn = (await run(beginTurn, world.ctx, {
+      conversationId,
+      content: "Hi",
+      withContext: true,
+    })) as Extract<TurnStart, { status: "ready" }>;
+
+    expect(world.scans.memories).toBe(MEMORY_SCAN_LIMIT);
+    expect(turn.memories).toEqual([]);
+    expect(world.collects).not.toContain("memories");
   });
 
   test("history is the last 20 live messages, oldest first, ending with this turn", async () => {
@@ -705,7 +971,9 @@ describe("chat turns over the db", () => {
     expect(turn.history.at(-1)).toEqual({ role: "user", content: "now" });
     expect(turn.history[0]).toEqual({ role: "assistant", content: "m11" });
     expect(turn.history.map((item) => item.content)).not.toContain("hidden");
+    // take(2) decides serialize vs replay; take(20) is the context window.
     expect(world.takes.filter((entry) => entry.table === "messages")).toEqual([
+      { table: "messages", n: 2 },
       { table: "messages", n: 20 },
     ]);
   });
@@ -722,7 +990,9 @@ describe("chat turns over the db", () => {
 
     expect(turn.history).toEqual([]);
     expect(turn.memories).toEqual([]);
-    expect(world.takes).toEqual([]);
+    // Only the two-message check that serializes sends; no context window and no memory read.
+    expect(world.takes).toEqual([{ table: "messages", n: 2 }]);
+    expect(world.scans.memories).toBeUndefined();
   });
 
   test("another user's conversation is refused by every internal mutation", async () => {
