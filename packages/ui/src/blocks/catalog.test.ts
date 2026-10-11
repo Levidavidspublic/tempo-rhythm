@@ -559,6 +559,122 @@ describe("broken and unreadable blocks", () => {
     expect(onlyElement(tempoBlockToSpec(hostile)).type).toBe("BrokenBlockCard");
     expect(({} as { polluted?: boolean }).polluted).toBeUndefined();
   });
+
+  describe("an input that throws when read never throws out of the adapter", () => {
+    const boom = () => {
+      throw new Error(SENTINEL);
+    };
+    const throwingProxy = () => new Proxy({}, { get: boom, has: boom, ownKeys: boom });
+    const revokedProxy = () => {
+      const { proxy, revoke } = Proxy.revocable({}, {});
+      revoke();
+      return proxy;
+    };
+    const getterOn = (key: string) => {
+      const hostile: Record<string, unknown> = { ...task };
+      Object.defineProperty(hostile, key, { enumerable: true, get: boom });
+      return hostile;
+    };
+    const nestedGetter = () => {
+      const data = { ...task.data };
+      Object.defineProperty(data, "title", { enumerable: true, get: boom });
+      return { ...task, data };
+    };
+    const hostileBlocks: [string, unknown][] = [
+      ["a throwing getter on type", getterOn("type")],
+      ["a throwing getter on v", getterOn("v")],
+      ["a throwing getter on id", getterOn("id")],
+      ["a throwing getter on data", getterOn("data")],
+      ["a throwing getter inside data", nestedGetter()],
+      ["a throwing Proxy", throwingProxy()],
+      ["a revoked Proxy", revokedProxy()],
+      ["a Proxy over a valid task whose reads throw", new Proxy(task, { get: boom, has: boom })],
+      ["a throwing Proxy as data", { ...task, data: throwingProxy() }],
+    ];
+
+    for (const [name, hostile] of hostileBlocks) {
+      test(`${name} becomes the generic card with no leak`, () => {
+        let spec: TempoBlockSpec | undefined;
+        expect(() => {
+          spec = tempoBlockToSpec(hostile);
+        }).not.toThrow();
+        expect(spec).toEqual(brokenBlockSpec("invalid_spec"));
+        expect(validateBlockSpec(spec).ok).toBe(true);
+        expect(JSON.stringify(spec)).not.toContain(SENTINEL);
+      });
+    }
+
+    test("the fallback card still honours the Undo option", () => {
+      expect(
+        onlyElement(tempoBlockToSpec(throwingProxy(), { undoAvailable: true })).props
+      ).toMatchObject({ undoAvailable: true });
+      expect(onlyElement(tempoBlockToSpec(throwingProxy())).props).toMatchObject({
+        undoAvailable: false,
+      });
+    });
+
+    test("a throwing options object never throws and yields the card without Undo", () => {
+      const options = throwingProxy() as { interactive?: boolean; undoAvailable?: boolean };
+      for (const input of [task, throwingProxy()]) {
+        let spec: TempoBlockSpec | undefined;
+        expect(() => {
+          spec = tempoBlockToSpec(input, options);
+        }).not.toThrow();
+        expect(onlyElement(spec as TempoBlockSpec)).toMatchObject({
+          type: "BrokenBlockCard",
+          props: { undoAvailable: false },
+        });
+      }
+      expect(() => brokenBlockSpec("malformed_json", options)).not.toThrow();
+      expect(() => safeBlockSpec(null, options)).not.toThrow();
+      expect(() => blockSegmentToSpec(firstBlockSegment(fence(task)), options)).not.toThrow();
+    });
+
+    test("a null options value is treated as no options", () => {
+      const spec = tempoBlockToSpec(task, null as unknown as undefined);
+      expect(onlyElement(spec).type).toBe("TaskBlock");
+      expect(
+        onlyElement(brokenBlockSpec("malformed_json", null as unknown as undefined)).props
+      ).toMatchObject({ undoAvailable: false });
+    });
+
+    test("a hostile segment becomes the generic card, and the error text never leaks", () => {
+      const hostileSegments: [string, unknown][] = [
+        ["a throwing Proxy", throwingProxy()],
+        ["a revoked Proxy", revokedProxy()],
+        ["a throwing kind getter", Object.defineProperty({}, "kind", { get: boom })],
+        [
+          "a valid segment whose block getter throws",
+          Object.defineProperty({ kind: "valid" }, "block", { get: boom }),
+        ],
+        [
+          "a broken segment whose errorCode getter throws",
+          Object.defineProperty({ kind: "broken" }, "errorCode", { get: boom }),
+        ],
+        [
+          "a broken segment whose errorCode is a throwing Proxy",
+          { kind: "broken", errorCode: throwingProxy() },
+        ],
+      ];
+      for (const [, segment] of hostileSegments) {
+        let spec: TempoBlockSpec | undefined;
+        expect(() => {
+          spec = blockSegmentToSpec(segment as Parameters<typeof blockSegmentToSpec>[0]);
+        }).not.toThrow();
+        expect(spec).toEqual(brokenBlockSpec("invalid_spec"));
+        expect(JSON.stringify(spec)).not.toContain(SENTINEL);
+      }
+    });
+
+    test("a hostile reason falls back to the generic copy", () => {
+      for (const reason of [throwingProxy(), revokedProxy(), Symbol("x"), 7, null, undefined]) {
+        expect(() => brokenBlockSpec(reason as unknown as BrokenBlockReason)).not.toThrow();
+        expect(
+          onlyElement(brokenBlockSpec(reason as unknown as BrokenBlockReason)).props
+        ).toMatchObject({ message: BROKEN_BLOCK_MESSAGES.invalid_spec });
+      }
+    });
+  });
 });
 
 describe("a spec from anywhere else must pass the allowlist or it becomes a safe card", () => {

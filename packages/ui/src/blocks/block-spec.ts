@@ -29,7 +29,9 @@ import {
  *   and never in the element key.
  * - Broken blocks carry a fixed calm sentence chosen by error code. The segment `source` and any
  *   raw JSON are never read, so they cannot reach a spec, an error or a card.
- * - Anything this module cannot prove valid becomes a `BrokenBlockCard`. Nothing throws.
+ * - Anything this module cannot prove valid becomes a `BrokenBlockCard`. Nothing throws, not even
+ *   for a hostile input: a getter that throws, a throwing or revoked Proxy and a throwing option
+ *   all end in the same card as any other block this module cannot read.
  *
  * `catalog.validate()` in json-render 0.21.0 does not check element props against the component's
  * Zod schema when the catalog has more than one component, and its element schema silently drops
@@ -163,17 +165,34 @@ export function validateBlockSpec(input: unknown): BlockSpecValidation {
   }
 }
 
+/** Read `undoAvailable` without ever throwing: a hostile `options` just means no Undo. */
+function holdsUndo(options: BlockSpecOptions | undefined): boolean {
+  try {
+    return options?.undoAvailable === true;
+  } catch {
+    return false;
+  }
+}
+
+/** The fixed copy for `reason`, or the generic copy. Never throws, even for a hostile `reason`. */
+function brokenBlockMessage(reason: unknown): string {
+  try {
+    if (typeof reason === "string" && Object.hasOwn(BROKEN_BLOCK_MESSAGES, reason))
+      return BROKEN_BLOCK_MESSAGES[reason as BrokenBlockReason];
+  } catch {
+    // Fall through to the generic copy.
+  }
+  return BROKEN_BLOCK_MESSAGES.invalid_spec;
+}
+
 /** A `BrokenBlockCard` spec with the fixed copy for `reason`. Never reads block content. */
 export function brokenBlockSpec(
   reason: BrokenBlockReason,
   options: BlockSpecOptions = {}
 ): TempoBlockSpec {
-  const message = Object.hasOwn(BROKEN_BLOCK_MESSAGES, reason)
-    ? BROKEN_BLOCK_MESSAGES[reason]
-    : BROKEN_BLOCK_MESSAGES.invalid_spec;
   return singleElementSpec("BrokenBlockCard", {
-    message,
-    undoAvailable: options.undoAvailable === true,
+    message: brokenBlockMessage(reason),
+    undoAvailable: holdsUndo(options),
   });
 }
 
@@ -200,9 +219,20 @@ function classifyUnreadableBlock(block: unknown): BrokenBlockReason {
 /**
  * Map one persisted block envelope to a spec. The input is re-validated with the codec schema, so
  * hand-built, stale or hostile values never reach a component: an unknown `type`, a `v` other
- * than 1 or invalid `data` returns a `BrokenBlockCard` spec instead.
+ * than 1 or invalid `data` returns a `BrokenBlockCard` spec instead. The whole conversion is
+ * guarded: if reading the input or the options throws (a throwing getter, a throwing or revoked
+ * Proxy), the result is the generic `invalid_spec` card, never an exception and never the error
+ * text.
  */
 export function tempoBlockToSpec(block: unknown, options: BlockSpecOptions = {}): TempoBlockSpec {
+  try {
+    return convertBlock(block, options);
+  } catch {
+    return brokenBlockSpec("invalid_spec", options);
+  }
+}
+
+function convertBlock(block: unknown, options: BlockSpecOptions): TempoBlockSpec {
   const parsed = tempoBlockSchema.safeParse(block);
   if (!parsed.success) return brokenBlockSpec(classifyUnreadableBlock(block), options);
 
@@ -230,7 +260,7 @@ export function tempoBlockToSpec(block: unknown, options: BlockSpecOptions = {})
       spec = singleElementSpec(
         "TaskBlock",
         props,
-        options.interactive === false ? undefined : toggle
+        options?.interactive === false ? undefined : toggle
       );
       break;
     }
@@ -270,7 +300,11 @@ export function blockSegmentToSpec(
   segment: ValidBlockSegment | BrokenBlockSegment,
   options: BlockSpecOptions = {}
 ): TempoBlockSpec {
-  if (segment.kind === "valid") return tempoBlockToSpec(segment.block, options);
-  if (segment.kind === "broken") return brokenBlockSpec(segment.errorCode, options);
+  try {
+    if (segment.kind === "valid") return tempoBlockToSpec(segment.block, options);
+    if (segment.kind === "broken") return brokenBlockSpec(segment.errorCode, options);
+  } catch {
+    // A hostile segment ends in the generic card below.
+  }
   return brokenBlockSpec("invalid_spec", options);
 }
