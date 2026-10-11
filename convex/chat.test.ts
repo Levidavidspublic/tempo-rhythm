@@ -9,7 +9,11 @@ import {
   REPLAY_MS,
   TURN_REFUSAL_MESSAGES,
   type ChatErrorData,
+  type ChatSendResult,
+  type CrisisReply,
   beginTurn,
+  crisisTurn,
+  decideCrisisTurn,
   decideTurn,
   failTurn,
   insertAssistantMessage,
@@ -21,9 +25,11 @@ import {
 } from "./chat";
 import { AiUpstreamError } from "./lib/ai_errors";
 import type { AiResult } from "./lib/ai_router";
+import { crisisCardText } from "./lib/crisisWords";
 import { run } from "./lib/testFakeCtx";
 
 const USER_MESSAGE = "messages:user" as Id<"messages">;
+const CARD = crisisCardText();
 
 function modelResult(content = "One small step is to open the document."): AiResult {
   return {
@@ -45,6 +51,9 @@ function dependencies(overrides: Record<string, unknown> = {}) {
   return {
     requireApproval: mock(async () => {}),
     beginTurn: mock(async (_turn: unknown): Promise<TurnStart> => ready()),
+    crisisTurn: mock(
+      async (_turn: unknown): Promise<CrisisReply> => ({ messageId: USER_MESSAGE, reply: CARD }),
+    ),
     insertAssistantMessage: mock(
       async (_id: Id<"messages">, content: string, modelUsed: string): Promise<StoredReply> => ({
         content,
@@ -83,20 +92,28 @@ describe("sendChat", () => {
     expect(deps.callModel).not.toHaveBeenCalled();
   });
 
-  test("stores the fixed crisis card without a model call, still through the turn bookkeeping", async () => {
+  test("stores the fixed crisis card in one crisis turn, with no model call and no ordinary turn", async () => {
     const deps = dependencies();
     const result = await sendChat(deps, "I want to die");
 
-    expect(result.crisis).toBe(true);
+    expect(result).toEqual({ reply: CARD, crisis: true, messageId: USER_MESSAGE });
     expect(result.reply).toContain("You are not alone");
-    expect(result.messageId).toBe(USER_MESSAGE);
     expect(deps.callModel).not.toHaveBeenCalled();
-    expect(deps.beginTurn).toHaveBeenCalledWith({
-      content: "I want to die",
-      retryOf: undefined,
-      withContext: false,
+    expect(deps.crisisTurn).toHaveBeenCalledWith({ content: "I want to die", retryOf: undefined });
+    expect(deps.beginTurn).not.toHaveBeenCalled();
+    expect(deps.insertAssistantMessage).not.toHaveBeenCalled();
+  });
+
+  test("a crisis message goes to the crisis turn even when an ordinary turn would refuse it", async () => {
+    const deps = dependencies({
+      beginTurn: mock(async (): Promise<TurnStart> => ({ status: "refused", reason: "still_replying" })),
     });
-    expect(deps.insertAssistantMessage).toHaveBeenCalledWith(USER_MESSAGE, result.reply, "crisis-card");
+
+    const result = await sendChat(deps, "I want to die", USER_MESSAGE);
+    expect(result).toEqual({ reply: CARD, crisis: true, messageId: USER_MESSAGE });
+    expect(deps.crisisTurn).toHaveBeenCalledWith({ content: "I want to die", retryOf: USER_MESSAGE });
+    expect(deps.beginTurn).not.toHaveBeenCalled();
+    expect(deps.callModel).not.toHaveBeenCalled();
   });
 
   test("a crisis message over the length limit still gets the crisis card, stored cut to the limit", async () => {
@@ -109,14 +126,11 @@ describe("sendChat", () => {
     expect(result.crisis).toBe(true);
     expect(result.reply).toContain("You are not alone");
     expect(deps.callModel).not.toHaveBeenCalled();
-    const [turn] = deps.beginTurn.mock.calls[0] as unknown as [
-      { content: string; withContext: boolean; retryOf?: string },
-    ];
-    expect(turn.withContext).toBe(false);
+    const [turn] = deps.crisisTurn.mock.calls[0] as unknown as [{ content: string; retryOf?: string }];
     expect(turn.content).toHaveLength(MAX_MESSAGE_LENGTH);
     expect(turn.content.endsWith("…")).toBe(true);
     expect(turn.content.startsWith("I have been carrying")).toBe(true);
-    expect(deps.insertAssistantMessage).toHaveBeenCalledWith(USER_MESSAGE, result.reply, "crisis-card");
+    expect(deps.beginTurn).not.toHaveBeenCalled();
   });
 
   test("a crisis message at exactly the limit is stored whole, without a marker", async () => {
@@ -125,7 +139,7 @@ describe("sendChat", () => {
     expect(text).toHaveLength(MAX_MESSAGE_LENGTH);
 
     await sendChat(deps, text);
-    expect(deps.beginTurn).toHaveBeenCalledWith({ content: text, retryOf: undefined, withContext: false });
+    expect(deps.crisisTurn).toHaveBeenCalledWith({ content: text, retryOf: undefined });
   });
 
   test("a non-crisis message over the length limit is still rejected before any turn or model call", async () => {
@@ -162,11 +176,8 @@ describe("sendChat", () => {
     expect(deps.callModel).toHaveBeenCalledWith(
       expect.objectContaining({ tier: "balanced", maxTokens: 600, temperature: 0.6 }),
     );
-    expect(deps.beginTurn).toHaveBeenCalledWith({
-      content: "Help me start",
-      retryOf: undefined,
-      withContext: true,
-    });
+    expect(deps.beginTurn).toHaveBeenCalledWith({ content: "Help me start", retryOf: undefined });
+    expect(deps.crisisTurn).not.toHaveBeenCalled();
     expect(deps.insertAssistantMessage).toHaveBeenCalledWith(USER_MESSAGE, result.reply, "test-model");
     expect(deps.failTurn).not.toHaveBeenCalled();
   });
@@ -250,6 +261,23 @@ describe("sendChat", () => {
     expect(data.code).toBe("upstream");
   });
 
+  test("a reply refused because the conversation moved on abandons the turn and passes the calm error on", async () => {
+    const refusal: ChatErrorData = {
+      code: "turn_outdated",
+      message: "The conversation moved on while Tempo was replying. Please send it again.",
+    };
+    const deps = dependencies({
+      insertAssistantMessage: mock(async () => {
+        throw new ConvexError(refusal);
+      }),
+    });
+
+    const data = await errorData(sendChat(deps, "Hello"));
+    expect(data).toEqual(refusal);
+    expect(deps.callModel).toHaveBeenCalledTimes(1);
+    expect(deps.failTurn).toHaveBeenCalledWith(USER_MESSAGE);
+  });
+
   test("a refused turn throws a calm error before any model call", async () => {
     const deps = dependencies({
       beginTurn: mock(async (): Promise<TurnStart> => ({ status: "refused", reason: "still_replying" })),
@@ -276,16 +304,12 @@ describe("sendChat", () => {
 
     const result = await sendChat(deps, "Hello", USER_MESSAGE);
     expect(result).toEqual({ reply: "Already answered.", messageId: USER_MESSAGE });
-    expect(deps.beginTurn).toHaveBeenCalledWith({
-      content: "Hello",
-      retryOf: USER_MESSAGE,
-      withContext: true,
-    });
+    expect(deps.beginTurn).toHaveBeenCalledWith({ content: "Hello", retryOf: USER_MESSAGE });
     expect(deps.callModel).not.toHaveBeenCalled();
     expect(deps.insertAssistantMessage).not.toHaveBeenCalled();
   });
 
-  test("an existing crisis-card reply keeps the crisis flag", async () => {
+  test("an ordinary turn that replays a stored crisis card keeps the crisis flag", async () => {
     const deps = dependencies({
       beginTurn: mock(
         async (): Promise<TurnStart> => ({
@@ -297,7 +321,8 @@ describe("sendChat", () => {
       ),
     });
 
-    expect(await sendChat(deps, "I want to die", USER_MESSAGE)).toEqual({
+    // Non-crisis text whose stored row matches a crisis turn (a long crisis message's cut copy, say).
+    expect(await sendChat(deps, "Hello", USER_MESSAGE)).toEqual({
       reply: "card",
       crisis: true,
       messageId: USER_MESSAGE,
@@ -460,6 +485,60 @@ describe("decideTurn", () => {
   });
 });
 
+describe("decideCrisisTurn", () => {
+  const now = 1_000_000;
+  const text = "I want to die";
+  const insert = { action: "insert" } as const;
+  const card = (overrides: Omit<Partial<TurnMessage>, "_id"> = {}) =>
+    message({ _id: "c", role: "assistant", content: "card", modelUsed: "crisis-card", ...overrides });
+
+  test("is never refused: a pending turn, a pending crisis turn or a bad retry all insert", () => {
+    const pending = message({ _id: "u", content: "Help me start", createdAt: now - 1_000 });
+    expect(decideCrisisTurn({ content: text, now, latest: pending })).toEqual(insert);
+    const pendingCrisis = message({ _id: "u", content: text, createdAt: now - 1_000 });
+    expect(decideCrisisTurn({ content: text, now, latest: pendingCrisis })).toEqual(insert);
+    // Retry of that same pending row, a missing row, other text, and a row the conversation moved past.
+    expect(
+      decideCrisisTurn({ content: text, now, latest: null, retry: { target: pendingCrisis, after: null } }),
+    ).toEqual(insert);
+    expect(
+      decideCrisisTurn({ content: text, now, latest: null, retry: { target: null, after: null } }),
+    ).toEqual(insert);
+    const other = message({ _id: "o", content: "Hello", createdAt: now - PENDING_MS - 1 });
+    expect(
+      decideCrisisTurn({ content: text, now, latest: null, retry: { target: other, after: null } }),
+    ).toEqual(insert);
+    const deleted = message({ _id: "d", content: text, deletedAt: 5 });
+    const newer = message({ _id: "n", role: "user", content: "Later", _creationTime: 9 });
+    expect(
+      decideCrisisTurn({ content: text, now, latest: null, retry: { target: deleted, after: newer } }),
+    ).toEqual(insert);
+  });
+
+  test("replays only a stored crisis card for the same text", () => {
+    const previous = message({ _id: "u", content: text, createdAt: now - 5_000 });
+    expect(decideCrisisTurn({ content: text, now, latest: card(), previous })).toEqual({
+      action: "replay",
+      messageId: previous._id,
+      reply: card(),
+    });
+    expect(
+      decideCrisisTurn({ content: text, now, latest: null, retry: { target: previous, after: card() } }),
+    ).toEqual({ action: "replay", messageId: previous._id, reply: card() });
+  });
+
+  test("a matching turn answered by the model, or a card outside REPLAY_MS, inserts a new crisis turn", () => {
+    const previous = message({ _id: "u", content: text, createdAt: now - 5_000 });
+    const modelReply = card({ content: "Model reply", modelUsed: "test-model" });
+    expect(decideCrisisTurn({ content: text, now, latest: modelReply, previous })).toEqual(insert);
+    expect(
+      decideCrisisTurn({ content: text, now, latest: null, retry: { target: previous, after: modelReply } }),
+    ).toEqual(insert);
+    const old = message({ _id: "u", content: text, createdAt: now - REPLAY_MS });
+    expect(decideCrisisTurn({ content: text, now, latest: card(), previous: old })).toEqual(insert);
+  });
+});
+
 type Row = Record<string, unknown>;
 type IndexQuery = {
   eq: (field: string, value: unknown) => IndexQuery;
@@ -584,6 +663,7 @@ function wire(
   return {
     requireApproval: async () => {},
     beginTurn: (turn) => run(beginTurn, ctx, { conversationId, ...turn }) as Promise<TurnStart>,
+    crisisTurn: (turn) => run(crisisTurn, ctx, { conversationId, ...turn }) as Promise<CrisisReply>,
     insertAssistantMessage: (userMessageId, content, modelUsed) =>
       run(insertAssistantMessage, ctx, {
         conversationId,
@@ -703,7 +783,7 @@ describe("chat turns over the db", () => {
     setSystemTime(new Date(T0));
     const world = makeDb();
     const conversationId = await seedConversation(world);
-    await run(beginTurn, world.ctx, { conversationId, content: "First", withContext: true });
+    await run(beginTurn, world.ctx, { conversationId, content: "First" });
 
     setSystemTime(new Date(T0 + PENDING_MS - 1));
     const callModel = mock(async () => modelResult());
@@ -754,6 +834,88 @@ describe("chat turns over the db", () => {
     expect(rowsOf(world, "assistant")).toHaveLength(1);
   });
 
+  test("a crisis message sent while a turn is pending gets the card at once; the pending reply is refused calmly", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    let crisis: ChatSendResult | undefined;
+    const callModel = mock(async () => {
+      // While the model is still answering "Help me start", the user sends a crisis message.
+      setSystemTime(new Date(T0 + 2_000));
+      crisis = await sendChat(deps, "I want to die");
+      return modelResult("Late reply.");
+    });
+    const deps = wire(world, conversationId, callModel);
+
+    const late = await errorData(sendChat(deps, "Help me start"));
+
+    expect(crisis).toEqual({ reply: CARD, crisis: true, messageId: expect.any(String) });
+    // Only the pending turn's own call; the crisis turn made none.
+    expect(callModel).toHaveBeenCalledTimes(1);
+    expect(late).toEqual({
+      code: "turn_outdated",
+      message: "The conversation moved on while Tempo was replying. Please send it again.",
+    });
+    // The pending turn is soft-deleted, not left unanswered; the crisis pair stays live, in order.
+    const pendingRow = rowsOf(world, "user").find((row) => row.content === "Help me start");
+    expect(pendingRow?.deletedAt).toBeDefined();
+    const live = Array.from(world.table("messages").values()).filter((row) => row.deletedAt === undefined);
+    expect(live.map((row) => [row.role, row.content, row.modelUsed])).toEqual([
+      ["user", "I want to die", undefined],
+      ["assistant", CARD, "crisis-card"],
+    ]);
+    expect(rowsOf(world, "assistant")).toHaveLength(1);
+
+    // Sending it again starts a fresh turn that gets a real reply.
+    setSystemTime(new Date(T0 + 5_000));
+    const again = await sendChat(
+      wire(world, conversationId, mock(async () => modelResult("Here is a first step."))),
+      "Help me start",
+    );
+    expect(again.reply).toBe("Here is a first step.");
+    expect(again.messageId).not.toBe(pendingRow?._id as Id<"messages">);
+  });
+
+  test("a crisis message while an earlier crisis turn is still pending also gets the card, never a refusal", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    // An earlier crisis message whose card is not stored: a live, recent, unanswered user row.
+    const pending = (await run(beginTurn, world.ctx, {
+      conversationId,
+      content: "I want to die",
+    })) as Extract<TurnStart, { status: "ready" }>;
+    const callModel = mock(async () => modelResult());
+    const deps = wire(world, conversationId, callModel);
+
+    setSystemTime(new Date(T0 + 1_000));
+    const resend = await sendChat(deps, "I want to die");
+    // A retry by id of the pending row is outdated now, and still gets the card.
+    const retry = await sendChat(deps, "I want to die", pending.userMessageId);
+    const other = await sendChat(deps, "I want to end my life");
+
+    for (const result of [resend, retry, other]) {
+      expect(result).toEqual({ reply: CARD, crisis: true, messageId: expect.any(String) });
+    }
+    expect(callModel).not.toHaveBeenCalled();
+    // Every new crisis message is answered by its own card, directly after it.
+    const live = Array.from(world.table("messages").values()).filter((row) => row.deletedAt === undefined);
+    expect(live.map((row) => row.role)).toEqual([
+      "user",
+      "user",
+      "assistant",
+      "user",
+      "assistant",
+      "user",
+      "assistant",
+    ]);
+    expect(live.slice(1).map((row) => row._id).filter((_, i) => i % 2 === 0)).toEqual([
+      resend.messageId,
+      retry.messageId,
+      other.messageId,
+    ]);
+  });
+
   test("a second send while a turn is pending is refused before any model call", async () => {
     setSystemTime(new Date(T0));
     const world = makeDb();
@@ -762,7 +924,6 @@ describe("chat turns over the db", () => {
     const opened = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "First",
-      withContext: true,
     })) as TurnStart;
     expect(opened.status).toBe("ready");
 
@@ -790,7 +951,6 @@ describe("chat turns over the db", () => {
     const opened = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "First",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     setSystemTime(new Date(T0 + PENDING_MS + 1));
@@ -852,7 +1012,6 @@ describe("chat turns over the db", () => {
     const turn = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Hi",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     expect(MEMORY_SCAN_LIMIT).toBe(500);
@@ -887,7 +1046,6 @@ describe("chat turns over the db", () => {
     const turn = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Hi",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     expect(turn.memories).toHaveLength(20);
@@ -921,7 +1079,6 @@ describe("chat turns over the db", () => {
     const turn = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Hi",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     expect(world.scans.memories).toBe(MEMORY_SCAN_LIMIT);
@@ -958,7 +1115,6 @@ describe("chat turns over the db", () => {
     const turn = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Hi",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     expect(turn.memories.map((memory) => memory.content)).toEqual([
@@ -997,7 +1153,6 @@ describe("chat turns over the db", () => {
     const turn = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Hi",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     expect(world.scans.memories).toBe(MEMORY_SCAN_LIMIT);
@@ -1029,7 +1184,6 @@ describe("chat turns over the db", () => {
     const turn = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "now",
-      withContext: true,
     })) as Extract<TurnStart, { status: "ready" }>;
 
     expect(turn.history).toHaveLength(20);
@@ -1043,19 +1197,21 @@ describe("chat turns over the db", () => {
     ]);
   });
 
-  test("crisis turns read no history or memories", async () => {
+  test("a crisis turn stores the user row and the card in one go and reads no history or memories", async () => {
     setSystemTime(new Date(T0));
     const world = makeDb();
     const conversationId = await seedConversation(world);
-    const turn = (await run(beginTurn, world.ctx, {
-      conversationId,
-      content: "I want to die",
-      withContext: false,
-    })) as Extract<TurnStart, { status: "ready" }>;
+    await world.db.insert("memories", { userId: world.ownerId, content: "m", salience: 1, updatedAt: 1 });
 
-    expect(turn.history).toEqual([]);
-    expect(turn.memories).toEqual([]);
-    // Only the two-message check that serializes sends; no context window and no memory read.
+    const turn = (await run(crisisTurn, world.ctx, { conversationId, content: "I want to die" })) as CrisisReply;
+
+    expect(turn.reply).toBe(CARD);
+    const [userRow] = rowsOf(world, "user");
+    const [cardRow] = rowsOf(world, "assistant");
+    expect(userRow).toMatchObject({ _id: turn.messageId, content: "I want to die", createdAt: T0 });
+    expect(cardRow).toMatchObject({ content: CARD, modelUsed: "crisis-card", createdAt: T0 + 1 });
+    expect(world.table("conversations").get(conversationId)?.updatedAt).toBe(T0 + 1);
+    // Only the two-message replay check; no context window and no memory read.
     expect(world.takes).toEqual([{ table: "messages", n: 2 }]);
     expect(world.scans.memories).toBeUndefined();
   });
@@ -1067,20 +1223,18 @@ describe("chat turns over the db", () => {
     const own = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Mine",
-      withContext: false,
     })) as Extract<TurnStart, { status: "ready" }>;
     const intruder = world.ctxFor("users:other");
     const before = world.table("messages").size;
 
     await expect(
-      run(beginTurn, intruder, { conversationId, content: "Hi", withContext: true }),
+      run(beginTurn, intruder, { conversationId, content: "Hi" }),
     ).rejects.toThrow(/access denied/i);
     await expect(
       run(beginTurn, intruder, {
         conversationId,
         content: "Mine",
         retryOf: own.userMessageId,
-        withContext: true,
       }),
     ).rejects.toThrow(/access denied/i);
     await expect(
@@ -1093,6 +1247,9 @@ describe("chat turns over the db", () => {
     ).rejects.toThrow(/access denied/i);
     await expect(
       run(failTurn, intruder, { conversationId, userMessageId: own.userMessageId }),
+    ).rejects.toThrow(/access denied/i);
+    await expect(
+      run(crisisTurn, intruder, { conversationId, content: "I want to die" }),
     ).rejects.toThrow(/access denied/i);
 
     expect(world.table("messages").size).toBe(before);
@@ -1107,7 +1264,6 @@ describe("chat turns over the db", () => {
     const opened = (await run(beginTurn, world.ctx, {
       conversationId: first,
       content: "Hello",
-      withContext: false,
     })) as Extract<TurnStart, { status: "ready" }>;
     await run(failTurn, world.ctx, { conversationId: first, userMessageId: opened.userMessageId });
 
@@ -1115,7 +1271,6 @@ describe("chat turns over the db", () => {
       conversationId: second,
       content: "Hello",
       retryOf: opened.userMessageId,
-      withContext: true,
     });
     expect(result).toEqual({ status: "refused", reason: "retry_mismatch" });
     expect(world.table("messages").get(opened.userMessageId)?.deletedAt).toBeDefined();
@@ -1128,7 +1283,6 @@ describe("chat turns over the db", () => {
     const opened = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Hello",
-      withContext: false,
     })) as Extract<TurnStart, { status: "ready" }>;
     const args = { conversationId, userMessageId: opened.userMessageId, modelUsed: "m" };
 
@@ -1142,7 +1296,6 @@ describe("chat turns over the db", () => {
     const gone = (await run(beginTurn, world.ctx, {
       conversationId,
       content: "Next",
-      withContext: false,
     })) as Extract<TurnStart, { status: "ready" }>;
     await run(failTurn, world.ctx, { conversationId, userMessageId: gone.userMessageId });
     await expect(

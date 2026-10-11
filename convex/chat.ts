@@ -47,6 +47,8 @@ export const PENDING_MS = 90_000;
  * reply back instead of a second paid model call (the response was probably lost on the way to the client).
  */
 export const REPLAY_MS = 120_000;
+/** `modelUsed` of the fixed crisis card reply. */
+const CRISIS_MODEL = "crisis-card";
 
 type MessageId = Id<"messages">;
 
@@ -140,6 +142,20 @@ export function decideTurn(input: {
   return { action: "reuse", message: target };
 }
 
+/**
+ * What to do with a crisis send. Pure. A crisis message is never refused or delayed: a pending turn, a
+ * mismatched or outdated `retryOf`, or a resend whose stored reply is not the crisis card all insert a new
+ * turn. Only a stored crisis card for the same text (a lost response, or a retry by id) is replayed.
+ */
+export function decideCrisisTurn(
+  input: Parameters<typeof decideTurn>[0],
+): Extract<TurnDecision, { action: "insert" | "replay" }> {
+  const decision = decideTurn(input);
+  return decision.action === "replay" && decision.reply.modelUsed === CRISIS_MODEL
+    ? decision
+    : { action: "insert" };
+}
+
 export type TurnStart =
   | {
       status: "ready";
@@ -151,6 +167,8 @@ export type TurnStart =
   | { status: "refused"; reason: TurnRefusal };
 
 export type StoredReply = { content: string; modelUsed?: string; inserted: boolean };
+
+export type CrisisReply = { messageId: MessageId; reply: string };
 
 export type ChatSendResult = { reply: string; crisis?: true; messageId: MessageId };
 
@@ -167,11 +185,8 @@ export type ChatErrorData = { code: ChatErrorCode; message: string; messageId?: 
 
 type ChatDependencies = {
   requireApproval: () => Promise<void>;
-  beginTurn: (args: {
-    content: string;
-    retryOf?: MessageId;
-    withContext: boolean;
-  }) => Promise<TurnStart>;
+  beginTurn: (args: { content: string; retryOf?: MessageId }) => Promise<TurnStart>;
+  crisisTurn: (args: { content: string; retryOf?: MessageId }) => Promise<CrisisReply>;
   insertAssistantMessage: (
     userMessageId: MessageId,
     content: string,
@@ -209,7 +224,7 @@ function chatError(data: ChatErrorData): ConvexError<ChatErrorData> {
 }
 
 function toResult(messageId: MessageId, stored: Pick<StoredReply, "content" | "modelUsed">): ChatSendResult {
-  return stored.modelUsed === "crisis-card"
+  return stored.modelUsed === CRISIS_MODEL
     ? { reply: stored.content, crisis: true, messageId }
     : { reply: stored.content, messageId };
 }
@@ -224,17 +239,24 @@ export async function sendChat(
   const text = content.trim();
   if (!text) throw new Error("Write a message first.");
 
-  // Crisis detection runs on the full trimmed text before any length rejection, so a long crisis message
-  // still gets the crisis card. Only that case may exceed the limit; its stored copy is cut to the limit
-  // with a visible "…" (the same cut every time, so a retry of it still matches the stored row).
-  const crisis = isCrisisText(text);
-  if (!crisis && text.length > MAX_MESSAGE_LENGTH) {
+  // Crisis detection runs first, on the full trimmed text. A crisis message is never refused or delayed:
+  // it skips the length limit (its stored copy is cut to the limit with a visible "…", the same cut every
+  // time, so a retry of it still matches the stored row), never waits behind a pending turn, cannot be
+  // blocked by its `retryOf`, and makes no model call. One transaction stores the user row and the card,
+  // so no other send can land between them.
+  if (isCrisisText(text)) {
+    const turn = await deps.crisisTurn({
+      content: truncateForStorage(text, MAX_MESSAGE_LENGTH),
+      retryOf,
+    });
+    return { reply: turn.reply, crisis: true, messageId: turn.messageId };
+  }
+  if (text.length > MAX_MESSAGE_LENGTH) {
     throw new Error(`Keep your message to ${MAX_MESSAGE_LENGTH} characters or fewer.`);
   }
-  const storedText = truncateForStorage(text, MAX_MESSAGE_LENGTH);
 
   // Ownership, dedupe, serialization and the context snapshot all happen in this one transaction.
-  const turn = await deps.beginTurn({ content: storedText, retryOf, withContext: !crisis });
+  const turn = await deps.beginTurn({ content: text, retryOf });
   if (turn.status === "refused") {
     throw chatError({ code: turn.reason, message: TURN_REFUSAL_MESSAGES[turn.reason] });
   }
@@ -245,15 +267,6 @@ export async function sendChat(
   }
 
   const { userMessageId } = turn;
-
-  if (crisis) {
-    const stored = await deps.insertAssistantMessage(
-      userMessageId,
-      crisisCardText(CRISIS_CARD),
-      "crisis-card",
-    );
-    return toResult(userMessageId, stored);
-  }
 
   // The user row must not stay behind as a "pending" turn when we cannot answer it.
   const abandonTurn = async () => {
@@ -293,7 +306,15 @@ export async function sendChat(
       messageId: userMessageId,
     });
   }
-  const stored = await deps.insertAssistantMessage(userMessageId, reply, result.model);
+  let stored: StoredReply;
+  try {
+    stored = await deps.insertAssistantMessage(userMessageId, reply, result.model);
+  } catch (error) {
+    // Usually the conversation moved on while the model answered (a crisis turn never waits behind this
+    // one). Soft-delete this turn so it does not sit unanswered, and pass the calm `turn_outdated` error on.
+    await abandonTurn();
+    throw error;
+  }
   return toResult(userMessageId, stored);
 }
 
@@ -319,7 +340,12 @@ export const send = action({
           ctx.runMutation(internal.chat.beginTurn, {
             conversationId: args.conversationId,
             content: turn.content,
-            withContext: turn.withContext,
+            ...(turn.retryOf ? { retryOf: turn.retryOf } : {}),
+          }),
+        crisisTurn: (turn) =>
+          ctx.runMutation(internal.chat.crisisTurn, {
+            conversationId: args.conversationId,
+            content: turn.content,
             ...(turn.retryOf ? { retryOf: turn.retryOf } : {}),
           }),
         insertAssistantMessage: (userMessageId, content, modelUsed) =>
@@ -382,10 +408,34 @@ async function firstLiveAfter(
 }
 
 /**
+ * What `decideTurn` reads. With `retryOf`: the named message (a message from another conversation
+ * reads as "no such message") and the first live message after it. Without it: the two newest live
+ * messages, which decide serialize (pending) versus replay (answered).
+ */
+async function readTurnState(
+  ctx: MutationCtx,
+  conversationId: Id<"conversations">,
+  retryOf: MessageId | undefined,
+): Promise<Pick<Parameters<typeof decideTurn>[0], "latest" | "previous" | "retry">> {
+  if (retryOf) {
+    const found = await ctx.db.get(retryOf);
+    const target = found && found.conversationId === conversationId ? found : null;
+    return {
+      latest: null,
+      retry: { target, after: target ? await firstLiveAfter(ctx, conversationId, target) : null },
+    };
+  }
+  const [latest = null, previous = null] = await liveMessages(ctx, conversationId)
+    .order("desc")
+    .take(2);
+  return { latest, previous };
+}
+
+/**
  * Start (or resume) one turn in a single transaction: ownership check, dedupe or serialize against
  * the newest live message, insert or reuse the user row, then read the context snapshot. Convex
  * retries this mutation when a concurrent send for the same conversation commits first, so two
- * sends can never both pass the "nothing pending" check.
+ * sends can never both pass the "nothing pending" check. Crisis text never comes here: see `crisisTurn`.
  */
 export const beginTurn = internalMutation({
   args: {
@@ -393,36 +443,20 @@ export const beginTurn = internalMutation({
     /** Already trimmed by the caller. */
     content: v.string(),
     retryOf: v.optional(v.id("messages")),
-    /** False for crisis text: no history or memories are read for it. */
-    withContext: v.boolean(),
   },
   handler: async (ctx, args): Promise<TurnStart> => {
     const { user } = await requireOwnedConversation(ctx, args.conversationId);
     const now = Date.now();
 
-    let retry: { target: TurnMessage | null; after: TurnMessage | null } | undefined;
-    if (args.retryOf) {
-      const found = await ctx.db.get(args.retryOf);
-      // A message from another conversation reads as "no such message".
-      const target = found && found.conversationId === args.conversationId ? found : null;
-      retry = {
-        target,
-        after: target ? await firstLiveAfter(ctx, args.conversationId, target) : null,
-      };
-    }
-    // Without `retryOf`, the two newest live messages decide serialize (pending) versus replay (answered).
-    const [latest = null, previous = null] = retry
-      ? []
-      : await liveMessages(ctx, args.conversationId).order("desc").take(2);
-
-    const decision = decideTurn({ content: args.content, now, latest, previous, retry });
+    const state = await readTurnState(ctx, args.conversationId, args.retryOf);
+    const decision = decideTurn({ content: args.content, now, ...state });
     if (decision.action === "refuse") return { status: "refused", reason: decision.reason };
     if (decision.action === "replay") {
       return {
         status: "replied",
         messageId: decision.messageId,
         reply: decision.reply.content,
-        crisis: decision.reply.modelUsed === "crisis-card",
+        crisis: decision.reply.modelUsed === CRISIS_MODEL,
       };
     }
 
@@ -440,8 +474,6 @@ export const beginTurn = internalMutation({
       await ctx.db.patch(userMessageId, { deletedAt: undefined, createdAt: now });
     }
     await ctx.db.patch(args.conversationId, { updatedAt: now });
-
-    if (!args.withContext) return { status: "ready", userMessageId, history: [], memories: [] };
 
     // Reads after the write see it, so the newest message here is this turn's user message.
     const newest = await liveMessages(ctx, args.conversationId).order("desc").take(CONTEXT_MESSAGES);
@@ -468,8 +500,51 @@ export const beginTurn = internalMutation({
 });
 
 /**
+ * A crisis turn in one transaction: the user row and the fixed crisis card, with no model call and no
+ * context read. Never refused (see `decideCrisisTurn`), so it does not wait behind a pending turn; that
+ * turn's later reply is then refused by `insertAssistantMessage` and `sendChat` soft-deletes the turn.
+ */
+export const crisisTurn = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    /** Already trimmed, and cut to MAX_MESSAGE_LENGTH, by the caller. */
+    content: v.string(),
+    retryOf: v.optional(v.id("messages")),
+  },
+  handler: async (ctx, args): Promise<CrisisReply> => {
+    await requireOwnedConversation(ctx, args.conversationId);
+    const now = Date.now();
+
+    const state = await readTurnState(ctx, args.conversationId, args.retryOf);
+    const decision = decideCrisisTurn({ content: args.content, now, ...state });
+    if (decision.action === "replay") {
+      return { messageId: decision.messageId, reply: decision.reply.content };
+    }
+
+    const reply = crisisCardText(CRISIS_CARD);
+    const messageId = await ctx.db.insert("messages", {
+      conversationId: args.conversationId,
+      role: "user",
+      content: args.content,
+      createdAt: now,
+    });
+    // One millisecond later, so ordering by `createdAt` keeps the card after its user message.
+    await ctx.db.insert("messages", {
+      conversationId: args.conversationId,
+      role: "assistant",
+      content: reply,
+      modelUsed: CRISIS_MODEL,
+      createdAt: now + 1,
+    });
+    await ctx.db.patch(args.conversationId, { updatedAt: now + 1 });
+    return { messageId, reply };
+  },
+});
+
+/**
  * Store the assistant reply for one user turn. Refuses to add a second reply, or a reply to a turn
- * that is gone or no longer the newest, so the stored order stays user, assistant, user, assistant.
+ * that is gone or no longer the newest (a crisis turn may have landed meanwhile), so the stored order
+ * stays user, assistant, user, assistant.
  */
 export const insertAssistantMessage = internalMutation({
   args: {
