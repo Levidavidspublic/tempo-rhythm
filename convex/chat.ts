@@ -1,10 +1,9 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import {
   action,
   internalMutation,
-  internalQuery,
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server";
@@ -16,32 +15,180 @@ import {
 } from "./lib/ai_errors";
 import { callLLM, type AiResult } from "./lib/ai_router";
 import { requireApprovedForAi } from "./lib/aiGate";
-import { buildChatMessages, type ChatHistoryItem } from "./lib/chatPrompt";
+import {
+  buildChatMessages,
+  type ChatHistoryItem,
+  type ChatMemory,
+  historyBeforeTurn,
+  pickTopMemories,
+} from "./lib/chatPrompt";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
 import { requireUser } from "./lib/requireUser";
 
 const MAX_MESSAGE_LENGTH = 4000;
 const CONTEXT_MESSAGES = 20;
 const CONTEXT_MEMORIES = 20;
+/** Hard cap on memory rows read per turn; the top CONTEXT_MEMORIES by salience are kept from these. */
+export const MEMORY_SCAN_LIMIT = 200;
+/**
+ * How long an unanswered user message counts as "Tempo is still replying". The model call times out
+ * well inside this, so an older unanswered message is a crashed turn and may be reused.
+ */
+export const PENDING_MS = 90_000;
 
-type ChatContext = {
-  history: ChatHistoryItem[];
-  memories: Array<{ content: string }>;
+type MessageId = Id<"messages">;
+
+/**
+ * One chat turn is identified by its user message `_id`. A retry sends that id back as `retryOf`,
+ * so a retry resolves to the same row instead of inserting the user turn a second time.
+ */
+export type TurnMessage = Pick<
+  Doc<"messages">,
+  "_id" | "_creationTime" | "role" | "content" | "modelUsed" | "createdAt" | "deletedAt"
+>;
+
+export type TurnRefusal = "still_replying" | "retry_mismatch" | "turn_outdated";
+
+export const TURN_REFUSAL_MESSAGES: Record<TurnRefusal, string> = {
+  still_replying: "Tempo is still replying to your last message. Give it a moment.",
+  retry_mismatch: "That message could not be retried. Please send it again.",
+  turn_outdated: "The conversation moved on since that message. Please send it again.",
 };
+
+export type TurnDecision =
+  | { action: "insert" }
+  /** Reuse the user row (clearing `deletedAt` if a failed turn soft-deleted it). */
+  | { action: "reuse"; message: TurnMessage }
+  /** The turn already has a reply: return it, make no model call. */
+  | { action: "replay"; messageId: MessageId; reply: TurnMessage }
+  | { action: "refuse"; reason: TurnRefusal };
+
+function isPending(message: TurnMessage, now: number): boolean {
+  return now - message.createdAt < PENDING_MS;
+}
+
+/**
+ * What to do with a send, given only what the transaction read. Pure.
+ *
+ * - `latest`: the newest live message in the conversation (only needed without `retry`).
+ * - `retry.target`: the message `retryOf` names, or null when it is missing or in another conversation.
+ * - `retry.after`: the first live message created after `retry.target`.
+ */
+export function decideTurn(input: {
+  content: string;
+  now: number;
+  latest: TurnMessage | null;
+  retry?: { target: TurnMessage | null; after: TurnMessage | null };
+}): TurnDecision {
+  const refuse = (reason: TurnRefusal): TurnDecision => ({ action: "refuse", reason });
+
+  if (!input.retry) {
+    // Newest live message is a user message: nothing answered it yet. Serialize sends behind it.
+    const { latest } = input;
+    if (latest && latest.role === "user" && isPending(latest, input.now)) {
+      return refuse("still_replying");
+    }
+    return { action: "insert" };
+  }
+
+  const { target, after } = input.retry;
+  if (!target || target.role !== "user" || target.content.trim() !== input.content) {
+    return refuse("retry_mismatch");
+  }
+
+  if (target.deletedAt !== undefined) {
+    // A failed earlier turn. Only revive it while nothing newer is live, so order stays intact.
+    return after ? refuse("turn_outdated") : { action: "reuse", message: target };
+  }
+
+  if (after) {
+    return after.role === "assistant"
+      ? { action: "replay", messageId: target._id, reply: after }
+      : refuse("turn_outdated");
+  }
+  if (isPending(target, input.now)) return refuse("still_replying");
+  return { action: "reuse", message: target };
+}
+
+export type TurnStart =
+  | {
+      status: "ready";
+      userMessageId: MessageId;
+      history: ChatHistoryItem[];
+      memories: ChatMemory[];
+    }
+  | { status: "replied"; messageId: MessageId; reply: string; crisis: boolean }
+  | { status: "refused"; reason: TurnRefusal };
+
+export type StoredReply = { content: string; modelUsed?: string; inserted: boolean };
+
+export type ChatSendResult = { reply: string; crisis?: true; messageId: MessageId };
+
+export type ChatErrorCode =
+  | "not_configured"
+  | "busy"
+  | "conversation_too_long"
+  | "upstream"
+  | "empty_reply"
+  | TurnRefusal;
+
+/** Calm, user-facing error. `messageId` is present when the turn can be retried with `retryOf`. */
+export type ChatErrorData = { code: ChatErrorCode; message: string; messageId?: MessageId };
 
 type ChatDependencies = {
   requireApproval: () => Promise<void>;
-  loadContext: () => Promise<ChatContext>;
-  insertUserMessage: (content: string) => Promise<void>;
-  insertAssistantMessage: (content: string, modelUsed: string) => Promise<void>;
+  beginTurn: (args: {
+    content: string;
+    retryOf?: MessageId;
+    withContext: boolean;
+  }) => Promise<TurnStart>;
+  insertAssistantMessage: (
+    userMessageId: MessageId,
+    content: string,
+    modelUsed: string,
+  ) => Promise<StoredReply>;
+  failTurn: (userMessageId: MessageId) => Promise<void>;
   callModel: typeof callLLM;
   now: () => number;
 };
 
+function describeModelFailure(error: unknown): { code: ChatErrorCode; message: string } | null {
+  if (error instanceof AiAuthError) {
+    return {
+      code: "not_configured",
+      message: "Chat is not configured here yet. Please try again later.",
+    };
+  }
+  if (error instanceof AiRateLimitedError) {
+    return { code: "busy", message: "Chat is busy right now. Pause a moment and try again." };
+  }
+  if (error instanceof AiContextTooLargeError) {
+    return {
+      code: "conversation_too_long",
+      message: "This conversation is too long for one reply. Try a shorter message.",
+    };
+  }
+  if (error instanceof AiUpstreamError) {
+    return { code: "upstream", message: "Tempo had a hiccup. Try again in a moment?" };
+  }
+  return null;
+}
+
+function chatError(data: ChatErrorData): ConvexError<ChatErrorData> {
+  return new ConvexError(data);
+}
+
+function toResult(messageId: MessageId, stored: Pick<StoredReply, "content" | "modelUsed">): ChatSendResult {
+  return stored.modelUsed === "crisis-card"
+    ? { reply: stored.content, crisis: true, messageId }
+    : { reply: stored.content, messageId };
+}
+
 export async function sendChat(
   deps: ChatDependencies,
   content: string,
-): Promise<{ reply: string; crisis?: true }> {
+  retryOf?: MessageId,
+): Promise<ChatSendResult> {
   await deps.requireApproval();
 
   const text = content.trim();
@@ -50,74 +197,114 @@ export async function sendChat(
     throw new Error(`Keep your message to ${MAX_MESSAGE_LENGTH} characters or fewer.`);
   }
 
+  // Ownership, dedupe, serialization and the context snapshot all happen in this one transaction.
   const crisis = isCrisisText(text);
-  const context = crisis ? { history: [], memories: [] } : await deps.loadContext();
-  await deps.insertUserMessage(text);
+  const turn = await deps.beginTurn({ content: text, retryOf, withContext: !crisis });
+  if (turn.status === "refused") {
+    throw chatError({ code: turn.reason, message: TURN_REFUSAL_MESSAGES[turn.reason] });
+  }
+  if (turn.status === "replied") {
+    return turn.crisis
+      ? { reply: turn.reply, crisis: true, messageId: turn.messageId }
+      : { reply: turn.reply, messageId: turn.messageId };
+  }
+
+  const { userMessageId } = turn;
 
   if (crisis) {
-    const reply = crisisCardText(CRISIS_CARD);
-    await deps.insertAssistantMessage(reply, "crisis-card");
-    return { reply, crisis: true };
+    const stored = await deps.insertAssistantMessage(
+      userMessageId,
+      crisisCardText(CRISIS_CARD),
+      "crisis-card",
+    );
+    return toResult(userMessageId, stored);
   }
+
+  // The user row must not stay behind as a "pending" turn when we cannot answer it.
+  const abandonTurn = async () => {
+    try {
+      await deps.failTurn(userMessageId);
+    } catch {
+      // The turn goes stale after PENDING_MS and can then be retried; keep the original error.
+    }
+  };
 
   let result: AiResult;
   try {
     result = await deps.callModel({
       tier: "balanced",
-      messages: buildChatMessages({ ...context, userText: text, now: deps.now() }),
+      messages: buildChatMessages({
+        history: historyBeforeTurn(turn.history, text),
+        memories: turn.memories,
+        userText: text,
+        now: deps.now(),
+      }),
       maxTokens: 600,
       temperature: 0.6,
     });
   } catch (error) {
-    if (error instanceof AiAuthError) {
-      throw new Error("Chat is not configured here yet. Please try again later.");
-    }
-    if (error instanceof AiRateLimitedError) {
-      throw new Error("Chat is busy right now. Pause a moment and try again.");
-    }
-    if (error instanceof AiContextTooLargeError) {
-      throw new Error("This conversation is too long for one reply. Try a shorter message.");
-    }
-    if (error instanceof AiUpstreamError) {
-      throw new Error("Tempo had a hiccup. Try again in a moment?");
-    }
-    throw error;
+    await abandonTurn();
+    const failure = describeModelFailure(error);
+    if (!failure) throw error;
+    throw chatError({ ...failure, messageId: userMessageId });
   }
 
   const reply = result.content.trim();
-  if (!reply) throw new Error("Tempo could not form a reply. Try again in a moment?");
-  await deps.insertAssistantMessage(reply, result.model);
-  return { reply };
+  if (!reply) {
+    await abandonTurn();
+    throw chatError({
+      code: "empty_reply",
+      message: "Tempo could not form a reply. Try again in a moment?",
+      messageId: userMessageId,
+    });
+  }
+  const stored = await deps.insertAssistantMessage(userMessageId, reply, result.model);
+  return toResult(userMessageId, stored);
 }
 
 export const send = action({
-  args: { conversationId: v.id("conversations"), content: v.string() },
-  returns: v.object({ reply: v.string(), crisis: v.optional(v.literal(true)) }),
-  handler: async (ctx, args): Promise<{ reply: string; crisis?: true }> => {
+  args: {
+    conversationId: v.id("conversations"),
+    content: v.string(),
+    retryOf: v.optional(v.id("messages")),
+  },
+  returns: v.object({
+    reply: v.string(),
+    crisis: v.optional(v.literal(true)),
+    messageId: v.id("messages"),
+  }),
+  handler: async (ctx, args): Promise<ChatSendResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to chat on this device.");
 
     return sendChat(
       {
         requireApproval: () => requireApprovedForAi(ctx),
-        loadContext: () => ctx.runQuery(internal.chat.loadContext, { conversationId: args.conversationId }),
-        insertUserMessage: async (content) => {
-          await ctx.runMutation(internal.chat.insertUserMessage, {
+        beginTurn: (turn) =>
+          ctx.runMutation(internal.chat.beginTurn, {
             conversationId: args.conversationId,
-            content,
-          });
-        },
-        insertAssistantMessage: async (content, modelUsed) => {
-          await ctx.runMutation(internal.chat.insertAssistantMessage, {
+            content: turn.content,
+            withContext: turn.withContext,
+            ...(turn.retryOf ? { retryOf: turn.retryOf } : {}),
+          }),
+        insertAssistantMessage: (userMessageId, content, modelUsed) =>
+          ctx.runMutation(internal.chat.insertAssistantMessage, {
             conversationId: args.conversationId,
+            userMessageId,
             content,
             modelUsed,
+          }),
+        failTurn: async (userMessageId) => {
+          await ctx.runMutation(internal.chat.failTurn, {
+            conversationId: args.conversationId,
+            userMessageId,
           });
         },
         callModel: callLLM,
         now: Date.now,
       },
       args.content,
+      args.retryOf,
     );
   },
 });
@@ -134,59 +321,145 @@ async function requireOwnedConversation(
   return { user, conversation };
 }
 
-export const loadContext = internalQuery({
-  args: { conversationId: v.id("conversations") },
-  handler: async (ctx, args): Promise<ChatContext> => {
+/** Live messages of one conversation, in creation order (the index order). */
+function liveMessages(ctx: QueryCtx | MutationCtx, conversationId: Id<"conversations">) {
+  return ctx.db
+    .query("messages")
+    .withIndex("by_conversationId_deletedAt", (q) =>
+      q.eq("conversationId", conversationId).eq("deletedAt", undefined),
+    );
+}
+
+async function firstLiveAfter(
+  ctx: QueryCtx | MutationCtx,
+  conversationId: Id<"conversations">,
+  message: TurnMessage,
+) {
+  return ctx.db
+    .query("messages")
+    .withIndex("by_conversationId_deletedAt", (q) =>
+      q
+        .eq("conversationId", conversationId)
+        .eq("deletedAt", undefined)
+        .gt("_creationTime", message._creationTime),
+    )
+    .first();
+}
+
+/**
+ * Start (or resume) one turn in a single transaction: ownership check, dedupe or serialize against
+ * the newest live message, insert or reuse the user row, then read the context snapshot. Convex
+ * retries this mutation when a concurrent send for the same conversation commits first, so two
+ * sends can never both pass the "nothing pending" check.
+ */
+export const beginTurn = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    /** Already trimmed by the caller. */
+    content: v.string(),
+    retryOf: v.optional(v.id("messages")),
+    /** False for crisis text: no history or memories are read for it. */
+    withContext: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<TurnStart> => {
     const { user } = await requireOwnedConversation(ctx, args.conversationId);
-    const newestMessages = await ctx.db
-      .query("messages")
-      .withIndex("by_conversationId_deletedAt", (q) =>
-        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined),
-      )
-      .order("desc")
-      .take(CONTEXT_MESSAGES);
-    const memories = await ctx.db
+    const now = Date.now();
+
+    let retry: { target: TurnMessage | null; after: TurnMessage | null } | undefined;
+    if (args.retryOf) {
+      const found = await ctx.db.get(args.retryOf);
+      // A message from another conversation reads as "no such message".
+      const target = found && found.conversationId === args.conversationId ? found : null;
+      retry = {
+        target,
+        after: target ? await firstLiveAfter(ctx, args.conversationId, target) : null,
+      };
+    }
+    const latest = retry ? null : await liveMessages(ctx, args.conversationId).order("desc").first();
+
+    const decision = decideTurn({ content: args.content, now, latest, retry });
+    if (decision.action === "refuse") return { status: "refused", reason: decision.reason };
+    if (decision.action === "replay") {
+      return {
+        status: "replied",
+        messageId: decision.messageId,
+        reply: decision.reply.content,
+        crisis: decision.reply.modelUsed === "crisis-card",
+      };
+    }
+
+    let userMessageId: MessageId;
+    if (decision.action === "insert") {
+      userMessageId = await ctx.db.insert("messages", {
+        conversationId: args.conversationId,
+        role: "user",
+        content: args.content,
+        createdAt: now,
+      });
+    } else {
+      userMessageId = decision.message._id;
+      // `createdAt` doubles as the turn-start clock, so a concurrent duplicate retry sees it pending.
+      await ctx.db.patch(userMessageId, { deletedAt: undefined, createdAt: now });
+    }
+    await ctx.db.patch(args.conversationId, { updatedAt: now });
+
+    if (!args.withContext) return { status: "ready", userMessageId, history: [], memories: [] };
+
+    // Reads after the write see it, so the newest message here is this turn's user message.
+    const newest = await liveMessages(ctx, args.conversationId).order("desc").take(CONTEXT_MESSAGES);
+    const memoryRows = await ctx.db
       .query("memories")
-      .withIndex("by_userId_deletedAt", (q) =>
-        q.eq("userId", user._id).eq("deletedAt", undefined),
-      )
-      .collect();
+      .withIndex("by_userId_salience", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(MEMORY_SCAN_LIMIT);
 
     return {
-      history: newestMessages.reverse().map(({ role, content }) => ({ role, content })),
-      memories: memories
-        .filter((memory) => memory.deletedAt === undefined)
-        .sort((a, b) => b.salience - a.salience || b.updatedAt - a.updatedAt)
-        .slice(0, CONTEXT_MEMORIES)
-        .map(({ content }) => ({ content })),
+      status: "ready",
+      userMessageId,
+      history: newest.reverse().map(({ role, content }) => ({ role, content })),
+      memories: pickTopMemories(memoryRows, CONTEXT_MEMORIES),
     };
   },
 });
 
-export const insertUserMessage = internalMutation({
-  args: { conversationId: v.id("conversations"), content: v.string() },
-  handler: async (ctx, args) => {
-    await requireOwnedConversation(ctx, args.conversationId);
-    const now = Date.now();
-    await ctx.db.insert("messages", {
-      conversationId: args.conversationId,
-      role: "user",
-      content: args.content,
-      createdAt: now,
-    });
-    await ctx.db.patch(args.conversationId, { updatedAt: now });
-  },
-});
-
+/**
+ * Store the assistant reply for one user turn. Refuses to add a second reply, or a reply to a turn
+ * that is gone or no longer the newest, so the stored order stays user, assistant, user, assistant.
+ */
 export const insertAssistantMessage = internalMutation({
   args: {
     conversationId: v.id("conversations"),
+    userMessageId: v.id("messages"),
     content: v.string(),
     modelUsed: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<StoredReply> => {
     await requireOwnedConversation(ctx, args.conversationId);
-    const now = Date.now();
+    const userMessage = await ctx.db.get(args.userMessageId);
+    if (
+      !userMessage ||
+      userMessage.conversationId !== args.conversationId ||
+      userMessage.role !== "user" ||
+      userMessage.deletedAt !== undefined
+    ) {
+      throw chatError({
+        code: "turn_outdated",
+        message: "That message is no longer in the conversation. Please send it again.",
+      });
+    }
+
+    const next = await firstLiveAfter(ctx, args.conversationId, userMessage);
+    if (next?.role === "assistant") {
+      return { content: next.content, modelUsed: next.modelUsed, inserted: false };
+    }
+    if (next) {
+      throw chatError({
+        code: "turn_outdated",
+        message: "The conversation moved on while Tempo was replying. Please send it again.",
+      });
+    }
+
+    const now = Math.max(Date.now(), userMessage.createdAt + 1);
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "assistant",
@@ -195,5 +468,29 @@ export const insertAssistantMessage = internalMutation({
       createdAt: now,
     });
     await ctx.db.patch(args.conversationId, { updatedAt: now });
+    return { content: args.content, modelUsed: args.modelUsed, inserted: true };
+  },
+});
+
+/**
+ * A turn we could not answer: soft-delete its user row (only if no reply follows) so it neither
+ * blocks the next send nor shows up unanswered. The client retries it by id with `retryOf`.
+ */
+export const failTurn = internalMutation({
+  args: { conversationId: v.id("conversations"), userMessageId: v.id("messages") },
+  handler: async (ctx, args): Promise<void> => {
+    await requireOwnedConversation(ctx, args.conversationId);
+    const userMessage = await ctx.db.get(args.userMessageId);
+    if (
+      !userMessage ||
+      userMessage.conversationId !== args.conversationId ||
+      userMessage.role !== "user" ||
+      userMessage.deletedAt !== undefined
+    ) {
+      return;
+    }
+    const next = await firstLiveAfter(ctx, args.conversationId, userMessage);
+    if (next?.role === "assistant") return;
+    await ctx.db.patch(userMessage._id, { deletedAt: Date.now() });
   },
 });
