@@ -97,7 +97,8 @@ const isWellFormedFindings = (list) => Array.isArray(list) && list.every(isObjec
 
 const notClean = (detail) => ({ state: "pending", findings: [], detail });
 
-function evaluate({ expected, observed, result, otherFindings, competingReview = false }) {
+// `competingReview` has no default: an omitted value is unknown, not "no other review is active".
+function evaluate({ expected, observed, result, otherFindings, competingReview }) {
   const idKey = tupleMismatchKey(expected, observed);
   if (idKey) return notClean(`${idKey} missing, wrong type, or mismatched between the expected and freshly observed request identity`);
   if (!FULL_SHA_RE.test(expected.headSha) || !FULL_SHA_RE.test(expected.baseSha)) {
@@ -108,19 +109,24 @@ function evaluate({ expected, observed, result, otherFindings, competingReview =
   const blocking = otherFindings.filter(blocksClean);
   if (blocking.length) return { state: "findings", findings: blocking, detail: `${blocking.length} unresolved/P2/unknown-severity finding(s) from an already-used reviewer block clean` };
 
-  if (competingReview !== false) return notClean("another review is active on this request (or competingReview is not a boolean false); can't call it clean yet");
+  // The adapter must state it explicitly: present and exactly boolean false. Omitted/undefined/null/true/"false"/0
+  // all mean another review may be active or was never checked, so never clean.
+  if (competingReview !== false) return notClean("competingReview must be explicitly present and boolean false (another review may be active or was never checked); can't call it clean yet");
 
   if (result === undefined || result === null) return notClean("no independent AI review result yet");
   if (!isObject(result)) return notClean("review result is not an object (malformed results are never clean)");
-  if (result.status === "usage_limit") return { state: "blocked", findings: [], detail: `${result.provider || "provider"} usage limit reached` };
-  if (result.status !== "completed") {
-    return notClean(`review data is ${result.status || "missing"} (incomplete/error/malformed results are never clean)`);
+  if (result.status !== "completed" && result.status !== "usage_limit") {
+    return notClean(`review data is ${String(result.status || "missing")} (incomplete/error/malformed results are never clean)`);
   }
-  if (!SUPPORTED_AI_PROVIDERS.includes(result.provider)) return notClean(`unsupported provider: ${result.provider || "none"}`);
+  // Authenticate BEFORE acting on any status, including usage_limit: "blocked" escalates to the owner, so a
+  // stale, forged, or mismatched result must not be able to emit it. Only a supported provider, verified
+  // evidence, and a tuple bound to this exact request can reach "blocked" or "clean".
+  if (!SUPPORTED_AI_PROVIDERS.includes(result.provider)) return notClean(`unsupported provider: ${String(result.provider || "none")}`);
   if (!VERIFIED_AI_EVIDENCE_KINDS.includes(result.evidenceKind)) {
-    return notClean(`evidence "${result.evidenceKind || "none"}" is not verified-provider/native-result evidence (no bare reactions, generic summaries, Actions success, or author self-attestation)`);
+    return notClean(`evidence "${String(result.evidenceKind || "none")}" is not verified-provider/native-result evidence (no bare reactions, generic summaries, Actions success, or author self-attestation)`);
   }
   if (tupleMismatchKey(expected, result.tuple)) return notClean("the review result's own tuple is missing, malformed, or does not match the expected/observed request");
+  if (result.status === "usage_limit") return { state: "blocked", findings: [], detail: `${result.provider} usage limit reached (verified result bound to ${expected.headSha.slice(0, 7)})` };
 
   if (!isWellFormedFindings(result.findings)) return notClean("result.findings must be an array of finding objects (missing/null/non-array or non-object entries are never clean)");
   const own = result.findings.filter(blocksClean);

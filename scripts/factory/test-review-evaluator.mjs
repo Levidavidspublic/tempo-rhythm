@@ -5,6 +5,14 @@ import { aiReviewState, SUPPORTED_AI_PROVIDERS } from "./review-gate.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 
+// Asserts the evaluator never throws and never returns "clean" for this input; returns the result.
+const notClean = (f, label) => {
+  let r;
+  assert.doesNotThrow(() => { r = aiReviewState(f); }, `${label}: threw`);
+  assert.notEqual(r.state, "clean", `${label}: returned clean`);
+  return r;
+};
+
 const HEAD = "007d28add63476f80e4146948d1f117aff79d9e9";
 const BASE = "1a2b3c4d5e6f7081920314253647586970819203";
 const identity = { repo: "tempo/tempo-rhythm", pr: 700, headSha: HEAD, baseSha: BASE, requestId: "req-1" };
@@ -12,6 +20,7 @@ const clean = () => ({
   expected: { ...identity },
   observed: { ...identity },
   otherFindings: [],
+  competingReview: false,
   result: { provider: "claude", status: "completed", evidenceKind: "verified-provider", tuple: { ...identity }, findings: [] },
 });
 
@@ -87,9 +96,41 @@ t("pending: active competing review prevents clean", () => {
   assert.equal(aiReviewState(f).state, "pending");
 });
 
-t("blocked: provider usage limit", () => {
-  const f = clean(); f.result = { ...f.result, status: "usage_limit" };
-  assert.equal(aiReviewState(f).state, "blocked");
+t("blocked: authenticated provider usage limit (supported provider, verified evidence, bound tuple)", () => {
+  for (const provider of SUPPORTED_AI_PROVIDERS) {
+    for (const evidenceKind of ["verified-provider", "native-result"]) {
+      const f = clean(); f.result = { ...f.result, provider, evidenceKind, status: "usage_limit", findings: undefined };
+      const r = aiReviewState(f);
+      assert.equal(r.state, "blocked", `${provider}/${evidenceKind}`);
+      assert.deepEqual(r.findings, []);
+      assert.ok(r.detail.includes(provider), r.detail);
+    }
+  }
+});
+
+t("pending: an unauthenticated usage_limit result (unsupported provider, unverified evidence, or unbound tuple) never blocks", () => {
+  const usageLimit = (patch) => { const f = clean(); f.result = { ...f.result, status: "usage_limit", ...patch }; return f; };
+  for (const provider of ["gemini", "", undefined, null, 7, {}]) {
+    assert.equal(notClean(usageLimit({ provider }), `provider=${String(provider)}`).state, "pending", `provider=${String(provider)}`);
+  }
+  for (const evidenceKind of ["reaction", "summary", "actions-success", "self-attestation", undefined, null]) {
+    assert.equal(notClean(usageLimit({ evidenceKind }), `evidenceKind=${String(evidenceKind)}`).state, "pending", `evidenceKind=${String(evidenceKind)}`);
+  }
+  // Unbound tuple: every field mismatched, missing, or the whole tuple absent/malformed.
+  for (const key of ["repo", "pr", "headSha", "baseSha", "requestId"]) {
+    const bad = usageLimit({ tuple: { ...identity, [key]: key === "pr" ? 999 : `other-${key}` } });
+    assert.equal(notClean(bad, `tuple.${key} mismatched`).state, "pending", key);
+    const missing = usageLimit({ tuple: (({ [key]: _omit, ...rest }) => rest)(identity) });
+    assert.equal(notClean(missing, `tuple.${key} missing`).state, "pending", key);
+  }
+  for (const tuple of [undefined, null, "x", 7, []]) {
+    assert.equal(notClean(usageLimit({ tuple }), `tuple=${JSON.stringify(tuple)}`).state, "pending");
+  }
+  // The request identity itself must also be sound before a usage_limit can block.
+  const f = usageLimit({}); f.observed = { ...f.observed, requestId: "req-other" };
+  assert.equal(notClean(f, "expected/observed mismatch").state, "pending");
+  const g = usageLimit({}); g.competingReview = undefined;
+  assert.equal(notClean(g, "competingReview omitted").state, "pending");
 });
 
 t("pending: incomplete, error, and malformed review data", () => {
@@ -105,12 +146,6 @@ t("pending: missing result (genuinely missing/in-flight)", () => {
 });
 
 // ---- Fail-closed hardening: malformed input can never yield "clean" and never throws. ----
-const notClean = (f, label) => {
-  let r;
-  assert.doesNotThrow(() => { r = aiReviewState(f); }, `${label}: threw`);
-  assert.notEqual(r.state, "clean", `${label}: returned clean`);
-  return r;
-};
 
 t("pending: a tuple field missing from expected, observed, and result.tuple is never an accepted match (undefined !== a value)", () => {
   for (const key of ["repo", "pr", "headSha", "baseSha", "requestId"]) {
@@ -196,8 +231,20 @@ t("findings: only resolved === true counts as resolved; wrong-typed resolved or 
   assert.equal(aiReviewState(ok).state, "clean");
 });
 
+t("pending: competingReview omitted (or explicitly undefined) is unknown, never clean", () => {
+  const omitted = clean(); delete omitted.competingReview;
+  assert.equal("competingReview" in omitted, false);
+  const r = notClean(omitted, "competingReview omitted");
+  assert.equal(r.state, "pending");
+  assert.ok(r.detail.includes("competingReview"), r.detail);
+  const undef = clean(); undef.competingReview = undefined;
+  assert.equal(notClean(undef, "competingReview undefined").state, "pending");
+  // Positive control: explicit boolean false is the only accepted value.
+  assert.equal(aiReviewState(clean()).state, "clean");
+});
+
 t("pending: competingReview other than boolean false, and a malformed result, are never clean", () => {
-  for (const v of [true, "false", "", 0, null, {}]) {
+  for (const v of [true, "false", "", 0, null, undefined, {}]) {
     const f = clean(); f.competingReview = v;
     assert.equal(notClean(f, `competingReview=${JSON.stringify(v)}`).state, "pending");
   }

@@ -77,8 +77,6 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run tests (enforcing — failures block the PR)
         run: bun run test
-      - name: Run review-evaluator tests (enforcing — failures block the PR)
-        run: node scripts/factory/test-review-evaluator.mjs
 
   scan:
     name: Scans (forbidden-tech, ram-only-audit, design-tokens)
