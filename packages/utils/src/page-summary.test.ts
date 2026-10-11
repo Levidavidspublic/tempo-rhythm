@@ -293,16 +293,204 @@ describe("fenced and raw-HTML look-alikes", () => {
     }
   });
 
-  test("a fence the codec reads as an unclosed ordinary fence hides the rest, as the codec does", () => {
+  test("a list-item fence the codec cannot see is closed by its own indented closer", () => {
+    // The codec reads the indented closer as the opener of an ordinary fence that swallows "After".
+    // The projection follows CommonMark: the item's fence ends there, and "After" is a paragraph.
     const body = `Before\n- ${TICKS}json tempo\n  ${JSON.stringify(task)}\n  ${TICKS}\nAfter`;
     expect(isAllMarkdown(body)).toBe(true);
-    expect(project(body).searchText).toBe("Before");
+    expect(project(body).searchText).toBe("Before After");
   });
 
   test("ordinary fenced code is not part of the projection", () => {
     const body = `Before\n${TICKS}js\nconsole.log("secret code");\n${TICKS}\nAfter\n~~~\nmore code\n~~~\nEnd`;
     expect(project(body).searchText).toBe("Before After End");
     expect(project(`Before\n${TICKS}js\nunclosed code\nAfter`).searchText).toBe("Before");
+  });
+});
+
+describe("fenced code inside quotes and list items", () => {
+  const secret = "secret code line";
+  const cases: Record<string, { body: string; text: string }> = {
+    quote: { body: `> ${TICKS}js\n> ${secret}\n> ${TICKS}\nAfter`, text: "After" },
+    quoteNoSpace: { body: `>${TICKS}js\n>${secret}\n>${TICKS}\nAfter`, text: "After" },
+    quoteTilde: { body: `> ~~~\n> ${secret}\n> ~~~\n\nAfter`, text: "After" },
+    quoteTempoFence: {
+      body: `> ${TICKS}json tempo\n> ${JSON.stringify(task)}\n> ${TICKS}\nAfter`,
+      text: "After",
+    },
+    nestedQuotes: { body: `> > ${TICKS}js\n> > ${secret}\n> > ${TICKS}\nAfter`, text: "After" },
+    dash: { body: `- ${TICKS}js\n  ${secret}\n  ${TICKS}\nAfter`, text: "After" },
+    star: { body: `* ${TICKS}js\n  ${secret}\n  ${TICKS}\nAfter`, text: "After" },
+    plus: { body: `+ ${TICKS}js\n  ${secret}\n  ${TICKS}\nAfter`, text: "After" },
+    ordered: { body: `1. ${TICKS}js\n   ${secret}\n   ${TICKS}\nAfter`, text: "After" },
+    orderedParen: { body: `2) ${TICKS}js\n   ${secret}\n   ${TICKS}\nAfter`, text: "After" },
+    wideMarker: { body: `10.  ${TICKS}js\n     ${secret}\n     ${TICKS}\nAfter`, text: "After" },
+    tabIndented: { body: `- ${TICKS}js\n\t${secret}\n\t${TICKS}\nAfter`, text: "After" },
+    blankLinesInside: {
+      body: `- ${TICKS}js\n\n  ${secret}\n\n  ${TICKS}\nAfter`,
+      text: "After",
+    },
+    quoteInList: { body: `- > ${TICKS}js\n  > ${secret}\n  > ${TICKS}\nAfter`, text: "After" },
+    listInQuote: { body: `> - ${TICKS}js\n>   ${secret}\n>   ${TICKS}\nAfter`, text: "After" },
+    nestedList: {
+      body: `- outer\n  - ${TICKS}js\n    ${secret}\n    ${TICKS}\nAfter`,
+      text: "outer After",
+    },
+    longerOpener: {
+      body: `> ${TICKS}\`js\n> ${TICKS}\n> ${secret}\n> ${TICKS}\`\nAfter`,
+      text: "After",
+    },
+    openedOnItsOwnLine: {
+      body: `10. item\n\n    ${TICKS}js\n    ${secret}\n    ${TICKS}\n\nAfter`,
+      text: "item After",
+    },
+    thematicBreakIsNotAnItem: {
+      body: `- - -\n${TICKS}js\n${secret}\n${TICKS}\nAfter`,
+      text: "After",
+    },
+  };
+
+  for (const [name, { body, text }] of Object.entries(cases)) {
+    test(`${name}: the fenced code is not shown, the prose around it is`, () => {
+      const result = project(body);
+      expect(result.searchText).not.toContain("secret");
+      expect(result.searchText).not.toContain("Email supervisor");
+      expect(result.searchText).toBe(text);
+      expect(result.omittedBlocks).toBe(0);
+    });
+  }
+
+  test("a fence ends with the quote or list item it is in, closed or not", () => {
+    expect(project(`> ${TICKS}js\n> ${secret}\n\nAfter`).searchText).toBe("After");
+    expect(project(`> ${TICKS}js\n> ${secret}\nAfter`).searchText).toBe("After");
+    expect(project(`- ${TICKS}js\n  ${secret}\nAfter`).searchText).toBe("After");
+    expect(project(`- ${TICKS}js\n  ${secret}\n- Next`).searchText).toBe("Next");
+    // The quote is over on line 3, so line 3 opens an ordinary fence of its own.
+    const body = `> ${TICKS}js\n> ${secret}\n${TICKS}js\nlater ${secret}\n${TICKS}\nAfter`;
+    expect(project(body).searchText).toBe("After");
+  });
+
+  test("quoted text and list items outside fences are still shown", () => {
+    expect(project("> quoted\n- item\n1. one\n   more").searchText).toBe("quoted item one more");
+  });
+
+  test("a closer in another container does not close the fence", () => {
+    const body = `> ${TICKS}js\n> ${secret}\n> - ${TICKS}\n> ${secret} again\n> ${TICKS}\nAfter`;
+    expect(project(body).searchText).toBe("After");
+  });
+
+  test("a real Tempo block after a container fence is still read", () => {
+    const body = `> ${TICKS}js\n> ${secret}\n> ${TICKS}\n\n${fence(task)}After`;
+    expect(project(body).searchText).toBe("Email supervisor After");
+  });
+});
+
+describe("Tempo-looking fences inside HTML blocks that end at a blank line", () => {
+  const payload = fence(task);
+  const second = fence(withTitle("Second block", numberedId(2)));
+
+  /** The codec accepts these as valid blocks (it does not model CommonMark HTML blocks 6 and 7). */
+  const gated: Record<string, string> = {
+    blockTag: `<div>\n${payload}After`,
+    blockTagWithAttributes: `<div class="note">\n${payload}After`,
+    blockTagUpperCase: `<DIV>\n${payload}After`,
+    blockTagSelfClosed: `<hr/>\n${payload}After`,
+    blockTagWithContent: `<div>text</div>\n${payload}After`,
+    closingTag: `</div>\n${payload}After`,
+    table: `<table>\n<tr>\n${payload}After`,
+    headingTag: `<h2>\n${payload}After`,
+    indentedStart: `   <section>\n${payload}After`,
+    interruptsParagraph: `Before\n<section>\n${payload}After`,
+    completeTag: `<span>\n${payload}After`,
+    customElement: `<my-widget data-x="1">\n${payload}After`,
+    selfClosingTag: `<br/>\n${payload}After`,
+    closingCustomTag: `</my-widget>\n${payload}After`,
+    afterBlankLine: `Before\n\n<span>\n${payload}After`,
+  };
+
+  for (const [name, body] of Object.entries(gated)) {
+    test(`${name}: the codec trusts it, the projection does not`, () => {
+      expect(parseTempoBlocks(body).some((segment) => segment.kind === "valid")).toBe(true);
+      const result = project(body);
+      expect(result.searchText).not.toContain("Email supervisor");
+      expect(result.searchText.endsWith("After")).toBe(true);
+      expect(result.omittedBlocks).toBe(0);
+    });
+  }
+
+  test("every block in the same HTML block is left out, and the blank line that ends it is honoured", () => {
+    expect(project(`<div>\n${payload}${second}After`).searchText).toBe("After");
+    expect(project(`<div>\n${payload}\n${second}After`).searchText).toBe("Second block After");
+    expect(project(`<div>\n${payload}\n\n${second}After`).searchText).toBe("Second block After");
+  });
+
+  test("broken and unclosed fences inside the HTML block are not counted as blocks", () => {
+    const broken = `<div>\n${TICKS}json tempo\n{ nope\n${TICKS}\nAfter`;
+    expect(parseTempoBlocks(broken).some((segment) => segment.kind === "broken")).toBe(true);
+    expect(project(broken).omittedBlocks).toBe(0);
+    expect(project(broken).searchText).toBe("After");
+    const unclosed = `<div>\n${TICKS}json tempo\n${JSON.stringify(task)}`;
+    expect(parseTempoBlocks(unclosed).some((segment) => segment.kind === "broken")).toBe(true);
+    expect(project(unclosed).omittedBlocks).toBe(0);
+    expect(project(unclosed).searchText).toBe("");
+  });
+
+  test("a broken block outside any HTML block is still counted", () => {
+    expect(project(`<div>\n\n${TICKS}json tempo\n{ nope\n${TICKS}\nAfter`).omittedBlocks).toBe(1);
+    expect(project(`Text\n<span>\n${TICKS}json tempo\n{ nope\n${TICKS}\nAfter`).omittedBlocks).toBe(1);
+  });
+
+  const trusted: Record<string, { body: string; text: string }> = {
+    blankLine: { body: `<div>\n\n${payload}After`, text: "Email supervisor After" },
+    blankLineWithSpaces: { body: `<div>\n   \n${payload}After`, text: "Email supervisor After" },
+    inlineTagAfterParagraph: {
+      body: `Text\n<span>\n${payload}After`,
+      text: "Text Email supervisor After",
+    },
+    tagBeforeText: { body: `<span>text\n${payload}After`, text: "text Email supervisor After" },
+    notATag: { body: `<3 hearts\n${payload}After`, text: "<3 hearts Email supervisor After" },
+    unknownNameWithText: {
+      body: `<divider>\n\n${payload}After`,
+      text: "Email supervisor After",
+    },
+    comparison: { body: `a < b\n${payload}After`, text: "a < b Email supervisor After" },
+    inQuote: { body: `> <div>\n${payload}After`, text: "Email supervisor After" },
+    inListItem: { body: `- item\n  <div>\n${payload}After`, text: "item Email supervisor After" },
+    inCodeFence: {
+      body: `${TICKS}html\n<div>\n${TICKS}\n${payload}After`,
+      text: "Email supervisor After",
+    },
+    inTildeFence: { body: `~~~\n<div>\n~~~\n${payload}After`, text: "Email supervisor After" },
+    afterTrustedBlock: {
+      body: `${payload}Text\n<span>\n${second}After`,
+      text: "Email supervisor Text Second block After",
+    },
+  };
+
+  for (const [name, { body, text }] of Object.entries(trusted)) {
+    test(`${name}: not an HTML block, so the block is shown`, () => {
+      expect(project(body).searchText).toBe(text);
+    });
+  }
+
+  test("a tag alone on the line right after a block starts an HTML block of its own", () => {
+    const body = `${payload}<span>\n${second}After`;
+    expect(project(body).searchText).toBe("Email supervisor After");
+  });
+
+  test("a gated block does not hide prose, only the block", () => {
+    const result = project(`Intro\n\n<div>\n${payload}\nOutro`);
+    expect(result.searchText).toBe("Intro Outro");
+  });
+
+  test("gating keeps following HTML blocks past the text limit", () => {
+    const filler = "word ".repeat(40);
+    const body = `${filler}\n\n<div>\n${payload}${TICKS}json tempo\n{ nope\n${TICKS}\n`;
+    const result = project(body, { searchChars: 50 });
+    expect(result.truncated).toBe(true);
+    expect(result.omittedBlocks).toBe(0);
+    const open = `${filler}\n\n${TICKS}json tempo\n{ nope\n${TICKS}\n`;
+    expect(project(open, { searchChars: 50 }).omittedBlocks).toBe(1);
   });
 });
 
@@ -419,6 +607,18 @@ describe("limits", () => {
       '"'.concat("\\".repeat(size / 2)),
       `[${" ".repeat(size)}x`,
       "`".repeat(size),
+      "> ".repeat(size / 2),
+      "- ".repeat(size / 2),
+      ">".repeat(size),
+      "1. ".repeat(size / 3),
+      "> - ".repeat(size / 4).concat("```js"),
+      `- ${TICKS}js\n`.repeat(size / 8),
+      `> ${TICKS}\n  x\n`.repeat(size / 12),
+      "<div>\n".repeat(size / 6),
+      "<a ".repeat(size / 3).concat(">"),
+      `<span>\n${TICKS}json tempo\n{}\n${TICKS}\n`.repeat(size / 40),
+      "\t".repeat(size),
+      `- ${"\t".repeat(size / 2)}x`,
     ];
     for (const body of bodies) {
       const started = performance.now();
@@ -523,6 +723,53 @@ describe("pageSnippet", () => {
     const snippet = pageSnippet(projection, "inelastic");
     expectSafe(snippet);
     expect(snippet.startsWith("lorem")).toBe(true);
+  });
+
+  test("a snippet never exceeds its limit, whatever the limit and the match", () => {
+    const hebrew = "בוקר טוב שָׁלוֹם 👍🏽 ".repeat(30);
+    const texts = [
+      `${filler}Needle in the middle ${filler}`,
+      `${filler}${filler}Needle`,
+      `Needle ${filler}`,
+      `${hebrew}מילת מפתח ${hebrew}`,
+      "x".repeat(200),
+    ];
+    for (const searchText of texts) {
+      for (const query of ["needle", "מילת", "absent", ""]) {
+        for (let max = 0; max <= 60; max += 1) {
+          const snippet = pageSnippet({ searchText }, query, max);
+          expect(snippet.length).toBeLessThanOrEqual(max);
+          expect(snippet).not.toMatch(/^\u{2026}?[\p{M}\u{DC00}-\u{DFFF}]/u);
+          expect(snippet).not.toMatch(/[\u{D800}-\u{DBFF}]\u{2026}?$/u);
+        }
+      }
+    }
+  });
+
+  test("a limit of 0 gives an empty snippet and a limit of 1 gives at most the ellipsis", () => {
+    expect(pageSnippet({ searchText: text }, "needle", 0)).toBe("");
+    expect(pageSnippet({ searchText: text }, "absent", 0)).toBe("");
+    expect(pageSnippet({ searchText: "" }, "needle", 0)).toBe("");
+    expect(pageSnippet({ searchText: "tiny" }, "x", 0)).toBe("");
+    expect(pageSnippet({ searchText: "a" }, "a", 1)).toBe("a");
+    expect(pageSnippet({ searchText: text }, "needle", 1)).toBe("\u{2026}");
+    expect(pageSnippet({ searchText: text }, "absent", 1)).toBe("\u{2026}");
+    expect(pageSnippet({ searchText: text }, "needle", -4)).toBe("");
+  });
+
+  test("a window too small for two ellipses and text starts at the beginning instead", () => {
+    expect(pageSnippet({ searchText: text }, "needle", 2)).toBe("l\u{2026}");
+    const three = pageSnippet({ searchText: text }, "needle", 3);
+    expect(three.length).toBeLessThanOrEqual(3);
+    expect(three).not.toBe("\u{2026}\u{2026}");
+  });
+
+  test("the default limit applies when none is given", () => {
+    const long = "word ".repeat(100);
+    expect(pageSnippet({ searchText: long }, "").length).toBeLessThanOrEqual(
+      PAGE_TEXT_LIMITS.snippetChars
+    );
+    expect(pageSnippet({ searchText: long }, "", Number.NaN).length).toBeGreaterThan(40);
   });
 
   test("Hebrew snippets keep clusters whole and still contain the match", () => {
