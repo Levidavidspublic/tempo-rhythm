@@ -1261,6 +1261,14 @@ function parseProposal(input: unknown): PageProposalFacts {
     ) {
       reject("state_invariant", "status");
     }
+    // D5: an undecided proposal keeps its creation-time content deadline (24 hours), so a stored
+    // row cannot stretch content access (or, through it, the cleanup deadline) past that lifetime.
+    if (
+      proposalExpiresAtMs !==
+      addMs(createdAt, PAGE_LEDGER_TIMING.proposalLifetimeMs, "proposalExpiresAtMs")
+    ) {
+      reject("deadline_mismatch", "proposalExpiresAtMs");
+    }
   } else if (status === "confirmed") {
     if (decidedAtMs === undefined) reject("missing_field", "decidedAtMs");
     if (confirmedOperationId === undefined) reject("missing_field", "confirmedOperationId");
@@ -1320,7 +1328,8 @@ function parseProposal(input: unknown): PageProposalFacts {
  * D2: validate a `pageProposals` row. Real calendar `localDate`, 1-128 ASCII letter/digit/underscore/
  * hyphen `sourceRequestKey`, 1-256 character `sourceAgentPromptId`, safe nonnegative
  * `proposalRevision` and `expectedPageRevision` (two distinct guards), `blk_` + ULID `blockId`, the
- * D5 deadline relationships, status-dependent decided / confirmed fields, and a payload whose task
+ * D5 deadline relationships (a pending proposal's `proposalExpiresAtMs` is exactly `createdAt` + 24
+ * hours), status-dependent decided / confirmed fields, and a payload whose task
  * passes `validateProposalTaskInput` rules with a stored `durationMin`. Returns a fresh copy.
  */
 export function validatePageProposalFacts(input: unknown): PageLedgerResult<PageProposalFacts> {
@@ -1790,7 +1799,8 @@ export type ProposalConfirmationDecision =
  * stored `proposalRevision`; the proposal's stored `expectedPageRevision` guards the target page
  * against the note's current revision. A stale page needs a fresh preview and is never applied to
  * the newer page. Order: an already-confirmed proposal replays (same `confirmDigest`) or is
- * `proposal_confirm_changed`; rejected / cancelled / expired status, a spent content window or an
+ * `proposal_confirm_changed` while `now < metadataExpiresAtMs`, and at or after it is
+ * `request_id_expired`; rejected / cancelled / expired status, a spent content window or an
  * expired payload cannot write; then the proposal guard, then the page guard.
  */
 export function decideProposalConfirmation(input: {
@@ -1812,6 +1822,9 @@ export function decideProposalConfirmation(input: {
     const confirmDigest = readDigest(input.confirmDigest, "confirmDigest");
     if (proposal.deletedAt !== undefined) reject("row_deleted", "deletedAt");
     if (proposal.status === "confirmed") {
+      // D3: like a request replay, a confirmation replay lasts only while its receipt is retained.
+      if (nowMs >= proposal.metadataExpiresAtMs)
+        reject("request_id_expired", "metadataExpiresAtMs");
       if (proposal.confirmDigest !== confirmDigest)
         reject("proposal_confirm_changed", "confirmDigest");
       return { decision: "replay", confirmedOperationId: proposal.confirmedOperationId as string };

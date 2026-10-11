@@ -1217,6 +1217,59 @@ describe("pageProposals facts", () => {
   for (const [name, overrides, code] of cases) {
     test(`rejects ${name}`, () => fail(validatePageProposalFacts(proposalRow(overrides)), code));
   }
+
+  test("a pending proposal's content deadline is exactly createdAt + 24 hours", () => {
+    // The creation-time deadlines validate as stored, for any creation time.
+    const createdAt = NOW + 7 * HOUR;
+    const atCreation = ok(proposalDeadlinesAtCreation(createdAt));
+    expect(
+      ok(validatePageProposalFacts(proposalRow({ ...atCreation, createdAt, updatedAt: createdAt })))
+        .proposalExpiresAtMs
+    ).toBe(createdAt + 24 * HOUR);
+    // A month-long pending proposal (with a cleanup and receipt deadline to match) is rejected...
+    const stretched = proposalRow({
+      proposalExpiresAtMs: NOW + 30 * 24 * HOUR,
+      cleanupDueAtMs: NOW + 30 * 24 * HOUR + 5 * MIN,
+      metadataExpiresAtMs: NOW + 31 * 24 * HOUR,
+    });
+    fail(validatePageProposalFacts(stretched), "deadline_mismatch", "proposalExpiresAtMs");
+    // ...so its content is never readable or confirmable after the intended lifetime.
+    expect(isProposalContentReadable(stretched, NOW + 25 * HOUR)).toBe(false);
+    fail(
+      decideProposalConfirmation({
+        nowMs: NOW + 25 * HOUR,
+        proposal: stretched,
+        expectedProposalRevision: 0,
+        noteRevision: 3,
+        confirmDigest: HEX_C,
+      }),
+      "deadline_mismatch",
+      "proposalExpiresAtMs"
+    );
+    // One millisecond either way is also a mismatch while pending.
+    for (const delta of [-1, 1]) {
+      fail(
+        validatePageProposalFacts(
+          proposalRow({
+            proposalExpiresAtMs: NOW + 24 * HOUR + delta,
+            cleanupDueAtMs: NOW + 24 * HOUR + delta,
+          })
+        ),
+        "deadline_mismatch",
+        "proposalExpiresAtMs"
+      );
+    }
+    // Decided proposals carry their post-decision deadline instead.
+    const decidedAt = NOW + 2 * HOUR;
+    const afterDecision = ok(proposalDeadlinesAfterDecision(proposalRow(), decidedAt));
+    expect(
+      ok(
+        validatePageProposalFacts(
+          proposalRow({ status: "rejected", decidedAtMs: decidedAt, ...afterDecision })
+        )
+      ).proposalExpiresAtMs
+    ).toBe(decidedAt);
+  });
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -1613,6 +1666,47 @@ describe("D3 proposal confirmation keeps two revisions apart", () => {
     fail(decide(confirmed, { confirmDigest: HEX_A }), "proposal_confirm_changed");
     // Still answerable after the content window has closed: the receipt outlives the content.
     expect(ok(decide(confirmed, { nowMs: NOW + 30 * HOUR })).decision).toBe("replay");
+  });
+
+  test("a confirmed proposal replays only while its receipt is retained", () => {
+    const confirmed = proposalRow({
+      status: "confirmed",
+      decidedAtMs: NOW + 1,
+      confirmedOperationId: "op_7",
+      confirmDigest: digest,
+    });
+    expect(ok(decide(confirmed, { nowMs: NOW + 48 * HOUR - 1 }))).toEqual({
+      decision: "replay",
+      confirmedOperationId: "op_7",
+    });
+    // At or after metadataExpiresAtMs (cleanup is late, the row is still there): expired, not a replay.
+    fail(
+      decide(confirmed, { nowMs: NOW + 48 * HOUR }),
+      "request_id_expired",
+      "metadataExpiresAtMs"
+    );
+    fail(decide(confirmed, { nowMs: NOW + 90 * 24 * HOUR }), "request_id_expired");
+    // Expiry is decided before the digest, as for request replay: a changed confirmation is expired too.
+    fail(decide(confirmed, { nowMs: NOW + 48 * HOUR, confirmDigest: HEX_A }), "request_id_expired");
+    // A late confirmation's extended receipt (from its operation) keeps the replay open until then.
+    const confirmAt = NOW + 23 * HOUR;
+    const operation = operationRow({
+      kind: "add_task",
+      appliedAtMs: confirmAt,
+      undoUntilMs: confirmAt + 5 * MIN,
+      metadataExpiresAtMs: confirmAt + 48 * HOUR,
+      createdAt: confirmAt,
+      updatedAt: confirmAt,
+    });
+    const late = proposalRow({
+      status: "confirmed",
+      decidedAtMs: confirmAt,
+      confirmedOperationId: "op_8",
+      confirmDigest: digest,
+      ...ok(proposalDeadlinesAfterConfirmation(proposalRow(), operation)),
+    });
+    expect(ok(decide(late, { nowMs: confirmAt + 48 * HOUR - 1 })).decision).toBe("replay");
+    fail(decide(late, { nowMs: confirmAt + 48 * HOUR }), "request_id_expired");
   });
 
   test("deleted proposals and bad inputs fail safe", () => {
@@ -3089,33 +3183,34 @@ describe("builders and the single undone transition", () => {
 
 describe("bounded errors", () => {
   test("no failure from any entry point echoes caller text", async () => {
-    const secret = "SECRET-FRAGMENT-9f3a";
+    // A recognisable canary built at runtime; it must never come back in any failure.
+    const canary = ["CANARY", "FRAGMENT", (0x9f3a).toString(16)].join("-");
     const results: PageLedgerResult<unknown>[] = [
-      validatePageSplices([{ startUtf16: 0, removedText: secret, insertedText: secret }]),
-      validatePageSplices([{ startUtf16: 0, removedText: secret, insertedText: "\ud800" }]),
-      applyPageSplices(`prefix ${secret}`, [
-        { startUtf16: 0, removedText: "wrong", insertedText: secret },
+      validatePageSplices([{ startUtf16: 0, removedText: canary, insertedText: canary }]),
+      validatePageSplices([{ startUtf16: 0, removedText: canary, insertedText: "\ud800" }]),
+      applyPageSplices(`prefix ${canary}`, [
+        { startUtf16: 0, removedText: "wrong", insertedText: canary },
       ]),
-      validateProposalTaskInput({ title: " ", note: secret }),
-      validateProposalTaskInput({ title: secret.repeat(40) }),
+      validateProposalTaskInput({ title: " ", note: canary }),
+      validateProposalTaskInput({ title: canary.repeat(40) }),
       encodePageRequest({
         kind: "save",
         noteId: NOTE,
         expectedRevision: 0,
-        body: secret.repeat(20_000),
+        body: canary.repeat(20_000),
       }),
       encodePageRequest({
         kind: "patch_block",
         noteId: NOTE,
         expectedRevision: 0,
         blockId: BLOCK_A,
-        patch: { [secret]: 1 },
+        patch: { [canary]: 1 },
       }),
-      validatePageOperationFacts({ [secret]: 1 }),
-      validatePageProposalFacts(proposalRow({ [secret]: 1 })),
-      await planBodyChange({ before: secret, after: secret.repeat(30_000), noteRevision: 0 }),
+      validatePageOperationFacts({ [canary]: 1 }),
+      validatePageProposalFacts(proposalRow({ [canary]: 1 })),
+      await planBodyChange({ before: canary, after: canary.repeat(30_000), noteRevision: 0 }),
       await planSpliceChange({
-        before: secret,
+        before: canary,
         splices: [{ startUtf16: 0, removedText: "nope", insertedText: "x" }],
         noteRevision: 0,
       }),
@@ -3124,14 +3219,14 @@ describe("bounded errors", () => {
         userId: USER,
         noteId: NOTE,
         noteRevision: 1,
-        currentBody: secret,
-        target: { operation: { [secret]: 1 }, payload: {} },
+        currentBody: canary,
+        target: { operation: { [canary]: 1 }, payload: {} },
         intervening: [],
       }),
     ];
     for (const result of results) {
       expect(result.ok).toBe(false);
-      expect(JSON.stringify(result)).not.toContain(secret);
+      expect(JSON.stringify(result)).not.toContain(canary);
       if (!result.ok) {
         expect(
           Object.keys(result).every((key) => ["ok", "code", "field", "index"].includes(key))
