@@ -1,0 +1,183 @@
+# TEST ONLY. Manually dispatched: set the sign-up approval status of ONE synthetic test account on the TEST
+# Convex deployment ceaseless-dog-617. It never touches live (precious-wildcat-890) and never deploys.
+#
+# Why: new accounts start `pending` and get ACCOUNT_PENDING_APPROVAL from every AI function
+# (docs/ops/APPROVAL-GATE.md). The supervised alpha run signs in to preview.tempoflow.dev (which uses
+# ceaseless-dog-617) with a brand-new mail.tm inbox through scripts/e2e/magic-link-login.mjs, so its account
+# must be approved before AI features can be checked (docs/reports/FEATURE-TEST-2026-10-06.md).
+# Owner-authorized on 11 Oct 2026 for that run (ledger #444). Synthetic test accounts for preview checks ONLY:
+# never use it for a real person's account. Real approvals go through /admin/approvals.
+#
+# What it runs, once per dispatch, in one step:
+#   npx --no-install convex run approval:setStatusByEmail '{"email":"<email>","status":"approved|pending"}'
+# `approval:setStatusByEmail` (convex/approval.ts) is an internalMutation: callable with the deployment's
+# deploy key, never from a browser. It looks the account up by normalized email and patches only
+# approvalStatus / approvalUpdatedAt / approvalUpdatedBy ("cli"). `revoked` is deliberately not offered here;
+# `pending` undoes an approval.
+#
+# Safety:
+#   - TEST only. Same key guard as convex-deploy-test.yml: CONVEX_DEPLOY_KEY_TEST must start with
+#     `dev:ceaseless-dog-617|`, checked in memory, value never printed. No `convex deploy`, no `convex dev`,
+#     no `--prod`, no `--push` anywhere in this file.
+#   - Dispatch on integration ONLY (`gh workflow run convex-test-admin.yml --ref integration
+#     -f email=<synthetic test address> -f status=approved`). A dispatch runs the workflow file of the ref it
+#     was started on, so the job requires `github.ref == refs/heads/integration` in its `if` and re-checks it
+#     in its first step; the checkout is that same integration commit (reviewed code), installed with
+#     lifecycle scripts skipped. LIMIT: this prevents accidental use of an unreviewed copy of this file. It
+#     does not stop a user with write access from pushing a modified workflow on another trigger, which only
+#     repo rules (branch protection, secret environments) can prevent.
+#   - Inputs reach shell only through env (never `${{ }}` inside a script). The email is validated and the
+#     convex args JSON is built with jq, so no input can change the command or the JSON shape.
+#   - The deploy key is in the env of the guard step and the one `convex run` step only.
+#   - Logs: no --verbose, CONVEX_VERBOSE/DEBUG unset, Actions debug logging refused. On success only the
+#     resulting status and an email-matched yes/no are printed. On failure only the last 20 lines that
+#     survive a redaction filter are printed.
+#   - Concurrency: one run at a time (group convex-test-admin, cancel-in-progress: false).
+name: convex-test-admin
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Email of a SYNTHETIC test account on TEST ceaseless-dog-617 (e.g. a mail.tm inbox). Never a real person. Dispatch on integration."
+        required: true
+        type: string
+      status:
+        description: "Approval status to set."
+        required: true
+        type: choice
+        options:
+          - approved
+          - pending
+        default: approved
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convex-test-admin
+  cancel-in-progress: false
+
+env:
+  BUN_VERSION: "1.3.9"
+  EXPECTED_DEPLOYMENT: ceaseless-dog-617
+
+jobs:
+  set-approval:
+    name: Set approval of a synthetic test account (test ceaseless-dog-617)
+    # Must be dispatched on integration: the workflow file that runs (and holds the key) is the reviewed copy.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Refuse to run unless dispatched on integration (fail closed, env only)
+        env:
+          RUN_REF: ${{ github.ref }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/integration" ] || [ "$RUN_REF" != "refs/heads/integration" ]; then
+            echo "::error::Dispatch this workflow on integration only (run ref is not refs/heads/integration). Refusing."
+            exit 1
+          fi
+          echo "Workflow dispatched on integration."
+      - name: Validate the inputs (fail closed, env only)
+        id: input
+        env:
+          EMAIL_INPUT: ${{ inputs.email }}
+          STATUS_INPUT: ${{ inputs.status }}
+          LC_ALL: C
+        run: |
+          email="$EMAIL_INPUT"
+          status="$STATUS_INPUT"
+          fail() { echo "::error::$1"; exit 1; }
+          [ -n "$email" ] || fail "inputs.email is empty; refusing."
+          [ "${#email}" -le 254 ] || fail "inputs.email is longer than 254 characters; refusing."
+          case "$email" in
+            *[[:cntrl:]]*) fail "inputs.email contains a control character; refusing." ;;
+            *[[:space:]]*) fail "inputs.email contains a space; refusing." ;;
+          esac
+          ats="${email//[^@]/}"
+          [ "${#ats}" -eq 1 ] || fail "inputs.email must contain exactly one @; refusing."
+          pattern='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+          [[ "$email" =~ $pattern ]] || fail "inputs.email must match ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$; refusing."
+          case "$status" in
+            approved|pending) ;;
+            *) fail "inputs.status must be approved or pending; refusing." ;;
+          esac
+          echo "email=$email" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "Inputs accepted: email (${#email} characters), status $status."
+      - name: Refuse anything but the test deployment key (value never printed)
+        env:
+          KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Secret CONVEX_DEPLOY_KEY_TEST is not set; cannot run against $EXPECTED_DEPLOYMENT."
+            exit 1
+          fi
+          case "$KEY" in
+            *"|"*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY_TEST is not a deployment deploy key (no '<kind>:<name>|' prefix); refusing."; exit 1;;
+          esac
+          target="${KEY%%|*}"
+          if [ "$target" != "dev:$EXPECTED_DEPLOYMENT" ]; then
+            echo "::error::CONVEX_DEPLOY_KEY_TEST does not target the test deployment dev:$EXPECTED_DEPLOYMENT; refusing to run."
+            exit 1
+          fi
+          echo "Key targets the test deployment $EXPECTED_DEPLOYMENT."
+      # github.ref is refs/heads/integration (checked above), so this is integration at the dispatched commit.
+      - name: Check out integration
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Install dependencies (lifecycle scripts skipped)
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Run approval:setStatusByEmail on ceaseless-dog-617 (output redacted and bounded)
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+          EMAIL: ${{ steps.input.outputs.email }}
+          STATUS: ${{ steps.input.outputs.status }}
+        run: |
+          if [ "${RUNNER_DEBUG:-}" = "1" ]; then
+            echo "::error::Actions debug logging is on (RUNNER_DEBUG=1); refusing to run with the TEST key. Turn it off and re-run."
+            exit 1
+          fi
+          unset CONVEX_VERBOSE DEBUG NODE_DEBUG
+          args="$(jq -cn --arg email "$EMAIL" --arg status "$STATUS" '{email: $email, status: $status}')"
+          out="$RUNNER_TEMP/convex-run.out"
+          err="$RUNNER_TEMP/convex-run.err"
+          rc=0
+          npx --no-install convex run approval:setStatusByEmail "$args" > "$out" 2> "$err" || rc=$?
+          echo "convex run exit code: $rc"
+          if [ "$rc" -eq 0 ]; then
+            got_status="$(jq -r 'if type == "object" then (.status // "") else "" end' "$out" 2>/dev/null)" || got_status=""
+            got_email="$(jq -r 'if type == "object" then (.email // "") else "" end' "$out" 2>/dev/null)" || got_email=""
+            want_email="$(printf '%s' "$EMAIL" | tr '[:upper:]' '[:lower:]')"
+            rm -f "$out" "$err"
+            case "$got_status" in
+              approved|pending) ;;
+              *) echo "::error::convex run returned no recognizable status; treating as failed."; exit 1 ;;
+            esac
+            if [ "$got_email" = "$want_email" ]; then matched=yes; else matched=no; fi
+            echo "Result status: $got_status. Email matched the input: $matched."
+            echo "### convex-test-admin (TEST $EXPECTED_DEPLOYMENT): status $got_status, email matched: $matched" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$got_status" != "$STATUS" ] || [ "$matched" != "yes" ]; then
+              echo "::error::Result does not match the request (wanted status $STATUS for the input email)."
+              exit 1
+            fi
+            exit 0
+          fi
+          echo "--- last 20 lines after redaction (lines with '=', key, token, secret and similar are dropped) ---"
+          { cat "$out" "$err" | grep -viE '=|key|token|secret|password|bearer|authoriz|credential|environment|\|' || true; } | cut -c1-300 | tail -n 20
+          rm -f "$out" "$err"
+          exit "$rc"
