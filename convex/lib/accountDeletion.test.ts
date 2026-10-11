@@ -115,6 +115,11 @@ function fixture<T extends OwnedTableName>(
 
 const NO_ID = (table: string) => `${table}:fixture`;
 
+/** Synthetic request ids and digests for page-ledger fixtures. Not real keys or note content. */
+const REQUEST_ULID_PREFIX = "01ARZ3NDEKTSV4RRFFQ69G5F";
+const fakeRequestId = (n: number) => `req_${REQUEST_ULID_PREFIX}${String(n).padStart(2, "0")}`;
+const fakeDigest = (n: number) => String(n).padStart(64, "0");
+
 /** One typed live-row builder per application table that carries `userId`. */
 const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
   tasks: fixture("owned-table-soft-delete", (userId) => ({
@@ -269,6 +274,58 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  pageOperations: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    noteId: NO_ID("notes") as Id<"notes">,
+    requestId: fakeRequestId(1),
+    requestDigest: fakeDigest(1),
+    kind: "save",
+    source: "ui",
+    result: "applied",
+    affectsBody: true,
+    baseRevision: 0,
+    resultRevision: 1,
+    baseBodyDigest: fakeDigest(2),
+    resultBodyDigest: fakeDigest(3),
+    delta: [{ startUtf16: 0, removedLengthUtf16: 0, insertedLengthUtf16: 4 }],
+    appliedAtMs: 1,
+    undoUntilMs: 2,
+    metadataExpiresAtMs: 3,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  pageOperationPayloads: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    noteId: NO_ID("notes") as Id<"notes">,
+    operationId: NO_ID("pageOperations") as Id<"pageOperations">,
+    undoUntilMs: 2,
+    cleanupDueAtMs: 3,
+    payload: {
+      state: "available",
+      splices: [{ startUtf16: 0, removedText: "", insertedText: "text" }],
+    },
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  pageProposals: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    kind: "add_task_to_today",
+    schemaVersion: 1,
+    noteId: NO_ID("notes") as Id<"notes">,
+    localDate: "2026-10-11",
+    conversationId: NO_ID("conversations") as Id<"conversations">,
+    sourceRequestKey: "req_1",
+    proposalRevision: 0,
+    expectedPageRevision: 0,
+    blockId: "blk_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    status: "pending",
+    proposalExpiresAtMs: 2,
+    cleanupDueAtMs: 3,
+    metadataExpiresAtMs: 4,
+    payload: { state: "available", task: { title: "task", durationMin: 15 } },
+    createdAt: 1,
+    updatedAt: 1,
+  })),
   nags: fixture("additional-soft-delete", (userId) => ({
     userId,
     label: "nag",
@@ -387,6 +444,78 @@ function fieldShape(table: string): Record<string, string> {
   );
 }
 
+/** Like `describeValidator`, but descends into objects and arrays so nested shapes are exact. */
+function describeDeep(validator: GenericValidator): string {
+  switch (validator.kind) {
+    case "id":
+      return `id:${validator.tableName}`;
+    case "literal":
+      return `literal:${String(validator.value)}`;
+    case "array":
+      return `array<${describeDeep(validator.element)}>`;
+    case "object":
+      return `{${Object.entries(validator.fields)
+        .map(
+          ([name, field]) =>
+            `${name}${field.isOptional === "optional" ? "?" : ""}:${describeDeep(field)}`,
+        )
+        .join(",")}}`;
+    case "union":
+      return `union(${validator.members.map(describeDeep).join("|")})`;
+    default:
+      return validator.kind;
+  }
+}
+
+/** `name -> deep shape`, with a trailing `?` on optional fields. Top-level object tables only. */
+function deepFieldShape(table: string): Record<string, string> {
+  const maps = fieldMaps(schemaTables[table].validator);
+  expect(maps).toHaveLength(1);
+  return Object.fromEntries(
+    Object.entries(maps[0]).map(([name, field]) => [
+      name,
+      `${describeDeep(field)}${field.isOptional === "optional" ? "?" : ""}`,
+    ]),
+  );
+}
+
+/** Every validator kind reachable from a table, so blob-like kinds can be ruled out. */
+function reachableKinds(validator: GenericValidator): Set<string> {
+  const kinds = new Set<string>([validator.kind]);
+  const children: GenericValidator[] =
+    validator.kind === "object"
+      ? Object.values(validator.fields)
+      : validator.kind === "union"
+        ? validator.members
+        : validator.kind === "array"
+          ? [validator.element]
+          : [];
+  for (const child of children) {
+    for (const kind of reachableKinds(child)) {
+      kinds.add(kind);
+    }
+  }
+  return kinds;
+}
+
+/** Dotted paths of every string-valued leaf, e.g. `payload.splices[].removedText`. */
+function stringLeafPaths(validator: GenericValidator, path = ""): string[] {
+  switch (validator.kind) {
+    case "string":
+      return [path];
+    case "object":
+      return Object.entries(validator.fields).flatMap(([name, field]) =>
+        stringLeafPaths(field, path ? `${path}.${name}` : name),
+      );
+    case "union":
+      return validator.members.flatMap((member) => stringLeafPaths(member, path));
+    case "array":
+      return stringLeafPaths(validator.element, `${path}[]`);
+    default:
+      return [];
+  }
+}
+
 function fixtureFor(table: string): {
   lifecycle: Lifecycle;
   live: (userId: Id<"users">) => Record<string, unknown>;
@@ -443,6 +572,9 @@ describe("account lifecycle coverage is derived from the schema", () => {
     expect(derived).toEqual(FIXTURE_TABLE_NAMES);
     expect(derived).toContain("chatRequests");
     expect(derived).toContain("noteBlocks");
+    expect(derived).toContain("pageOperations");
+    expect(derived).toContain("pageOperationPayloads");
+    expect(derived).toContain("pageProposals");
   });
 
   test("excluding authTables is not vacuous, and the account and parent-owned tables are explicit", () => {
@@ -494,6 +626,9 @@ describe("account lifecycle coverage is derived from the schema", () => {
     expect(exported).toEqual(generic);
     expect(USER_OWNED_TABLES).toContain("chatRequests");
     expect(USER_OWNED_TABLES).toContain("noteBlocks");
+    expect(USER_OWNED_TABLES).toContain("pageOperations");
+    expect(USER_OWNED_TABLES).toContain("pageOperationPayloads");
+    expect(USER_OWNED_TABLES).toContain("pageProposals");
   });
 
   test("each lifecycle's tables declare the fields and by_userId index deletion relies on", () => {
@@ -901,6 +1036,615 @@ describe("chat lifecycle schema contract (#807)", () => {
     const added = indexesOf("memories").at(-1);
     expect(added?.fields.slice(0, 2)).toEqual(["userId", "deletedAt"]);
     expect(added?.fields.slice(2)).toEqual(["salience", "updatedAt"]);
+  });
+});
+
+const PAGE_LEDGER_TABLES = ["pageOperations", "pageOperationPayloads", "pageProposals"] as const;
+
+describe("page ledger account lifecycle (#828)", () => {
+  const now = 1_800_000_000_000;
+  const earlier = now - 10;
+  const appliedAt = now - 1_000_000;
+
+  async function seed() {
+    const { ctx, forbiddenCalls } = lifecycleCtx("users:a", ["users:b"]);
+    const userA = asUserId("users:a");
+    const userB = asUserId("users:b");
+
+    // Legacy notes: no `revision` key anywhere. Deleting the account must not add one.
+    const note = (userId: Id<"users">) => ({
+      userId,
+      title: "note",
+      body: "body",
+      pinned: false,
+      periodType: "none",
+      createdAt: 1,
+      updatedAt: 5,
+    });
+    const noteA = await ctx.db.insert("notes", note(userA));
+    const noteB = await ctx.db.insert("notes", note(userB));
+
+    const operation = (
+      userId: Id<"users">,
+      noteId: string,
+      n: number,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      userId,
+      noteId,
+      requestId: fakeRequestId(n),
+      requestDigest: fakeDigest(n),
+      kind: "save",
+      source: "ui",
+      result: "applied",
+      affectsBody: true,
+      baseRevision: n,
+      resultRevision: n + 1,
+      baseBodyDigest: fakeDigest(n + 100),
+      resultBodyDigest: fakeDigest(n + 101),
+      delta: [{ startUtf16: 0, removedLengthUtf16: 1, insertedLengthUtf16: 2 }],
+      appliedAtMs: appliedAt,
+      undoUntilMs: appliedAt + 7,
+      metadataExpiresAtMs: appliedAt + 11,
+      createdAt: appliedAt,
+      updatedAt: appliedAt,
+      ...overrides,
+    });
+    const opApplied = await ctx.db.insert("pageOperations", operation(userA, noteA, 1));
+    const opUndo = await ctx.db.insert(
+      "pageOperations",
+      operation(userA, noteA, 2, {
+        kind: "undo",
+        undoOfOperationId: opApplied,
+        undoUntilMs: undefined,
+      }),
+    );
+    await ctx.db.patch(opApplied, { undoneAtMs: appliedAt + 3, undoneByOperationId: opUndo });
+    const opNoop = await ctx.db.insert(
+      "pageOperations",
+      operation(userA, noteA, 3, {
+        result: "noop",
+        affectsBody: false,
+        baseRevision: 2,
+        resultRevision: 2,
+        resultBodyDigest: fakeDigest(103),
+        delta: [],
+        undoUntilMs: undefined,
+      }),
+    );
+    const opAlreadyDeleted = await ctx.db.insert(
+      "pageOperations",
+      operation(userA, noteA, 4, { deletedAt: earlier, updatedAt: earlier }),
+    );
+    const opB = await ctx.db.insert("pageOperations", operation(userB, noteB, 1));
+
+    const payload = (
+      userId: Id<"users">,
+      noteId: string,
+      operationId: string,
+      state: Record<string, unknown>,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      userId,
+      noteId,
+      operationId,
+      undoUntilMs: appliedAt + 7,
+      cleanupDueAtMs: appliedAt + 9,
+      payload: state,
+      createdAt: appliedAt,
+      updatedAt: appliedAt,
+      ...overrides,
+    });
+    const available = {
+      state: "available",
+      splices: [{ startUtf16: 4, removedText: "synthetic-old", insertedText: "synthetic-new" }],
+    };
+    const expired = { state: "expired", expiredAtMs: appliedAt + 10 };
+    const payloadAvailable = await ctx.db.insert(
+      "pageOperationPayloads",
+      payload(userA, noteA, opApplied, available),
+    );
+    const payloadExpired = await ctx.db.insert(
+      "pageOperationPayloads",
+      payload(userA, noteA, opNoop, expired),
+    );
+    const payloadAlreadyDeleted = await ctx.db.insert(
+      "pageOperationPayloads",
+      payload(userA, noteA, opAlreadyDeleted, available, { deletedAt: earlier, updatedAt: earlier }),
+    );
+    const payloadB = await ctx.db.insert(
+      "pageOperationPayloads",
+      payload(userB, noteB, opB, available),
+    );
+
+    const proposal = (
+      userId: Id<"users">,
+      noteId: string,
+      conversationId: string,
+      key: string,
+      status: string,
+      state: Record<string, unknown>,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      userId,
+      kind: "add_task_to_today",
+      schemaVersion: 1,
+      noteId,
+      localDate: "2026-10-11",
+      conversationId,
+      sourceRequestKey: key,
+      proposalRevision: 0,
+      expectedPageRevision: 1,
+      blockId: "blk_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      status,
+      proposalExpiresAtMs: appliedAt + 5,
+      cleanupDueAtMs: appliedAt + 6,
+      metadataExpiresAtMs: appliedAt + 13,
+      payload: state,
+      createdAt: appliedAt,
+      updatedAt: appliedAt,
+      ...overrides,
+    });
+    const taskAvailable = {
+      state: "available",
+      task: { title: "Synthetic task", durationMin: 15 },
+    };
+    const taskExpired = { state: "expired", expiredAtMs: appliedAt + 12 };
+    const conversationA = NO_ID("conversations");
+    const conversationB = "conversations:other";
+    const proposalPending = await ctx.db.insert(
+      "pageProposals",
+      proposal(userA, noteA, conversationA, "pending_1", "pending", taskAvailable),
+    );
+    const proposalConfirmed = await ctx.db.insert(
+      "pageProposals",
+      proposal(userA, noteA, conversationA, "confirmed_1", "confirmed", taskExpired, {
+        decidedAtMs: appliedAt + 2,
+        confirmedOperationId: opApplied,
+        confirmDigest: fakeDigest(9),
+      }),
+    );
+    const proposalRejected = await ctx.db.insert(
+      "pageProposals",
+      proposal(userA, noteA, conversationA, "rejected_1", "rejected", taskExpired, {
+        decidedAtMs: appliedAt + 2,
+      }),
+    );
+    const proposalExpired = await ctx.db.insert(
+      "pageProposals",
+      proposal(userA, noteA, conversationA, "expired_1", "expired", taskExpired),
+    );
+    const proposalAlreadyDeleted = await ctx.db.insert(
+      "pageProposals",
+      proposal(userA, noteA, conversationA, "gone_1", "cancelled", taskExpired, {
+        deletedAt: earlier,
+        updatedAt: earlier,
+      }),
+    );
+    const proposalB = await ctx.db.insert(
+      "pageProposals",
+      proposal(userB, noteB, conversationB, "pending_1", "pending", taskAvailable),
+    );
+
+    return {
+      ctx,
+      forbiddenCalls,
+      userA,
+      noteA,
+      liveOperations: [opApplied, opUndo, opNoop],
+      livePayloads: [payloadAvailable, payloadExpired],
+      liveProposals: [proposalPending, proposalConfirmed, proposalRejected, proposalExpired],
+      alreadyDeleted: [opAlreadyDeleted, payloadAlreadyDeleted, proposalAlreadyDeleted],
+      foreign: [opB, payloadB, proposalB, noteB],
+      payloadAvailable,
+      payloadExpired,
+      proposalConfirmed,
+    };
+  }
+
+  const liveLedgerIds = (s: Awaited<ReturnType<typeof seed>>) => [
+    ...s.liveOperations,
+    ...s.livePayloads,
+    ...s.liveProposals,
+  ];
+
+  test("operations, payloads and proposals are tombstoned with one timestamp and nothing else changes", async () => {
+    const s = await seed();
+    const ids = liveLedgerIds(s);
+    const before = await readAll(s.ctx, ids);
+    const beforeNote = await s.ctx.db.get(s.noteA);
+
+    // Account row, the legacy note, 3 operations, 2 payloads and 4 proposals.
+    expect(await softDeleteUserAccount(s.ctx, s.userA, now)).toEqual({
+      deletedCount: 1 + 1 + ids.length,
+    });
+
+    const after = await readAll(s.ctx, ids);
+    after.forEach((row, index) => {
+      expect(row.deletedAt).toBe(now);
+      expect(row.updatedAt).toBe(now);
+      expect(changedKeys(before[index], row)).toEqual(["deletedAt", "updatedAt"]);
+    });
+
+    // The legacy note is tombstoned like any note and does not gain a revision.
+    const afterNote = await s.ctx.db.get(s.noteA);
+    expect(changedKeys(beforeNote, afterNote)).toEqual(["deletedAt", "updatedAt"]);
+    expect("revision" in afterNote).toBe(false);
+
+    // No hard delete, Agent or component call, or scheduled cleanup.
+    expect(s.forbiddenCalls).toEqual([]);
+  });
+
+  test("available and expired payload variants keep their fragments, markers and expiry metadata", async () => {
+    const s = await seed();
+    const [availableBefore, expiredBefore] = await readAll(s.ctx, [
+      s.payloadAvailable,
+      s.payloadExpired,
+    ]);
+    await softDeleteUserAccount(s.ctx, s.userA, now);
+    const [availableAfter, expiredAfter] = await readAll(s.ctx, [
+      s.payloadAvailable,
+      s.payloadExpired,
+    ]);
+
+    // Soft deletion is a tombstone, not cleanup: the available form is not rewritten to expired
+    // and its fragments are not erased.
+    expect(availableAfter.payload).toEqual(availableBefore.payload);
+    expect(availableAfter.payload.state).toBe("available");
+    expect(availableAfter.payload.splices).toHaveLength(1);
+    expect(expiredAfter.payload).toEqual(expiredBefore.payload);
+    expect(expiredAfter.payload.state).toBe("expired");
+    expect("splices" in expiredAfter.payload).toBe(false);
+    for (const [beforeRow, afterRow] of [
+      [availableBefore, availableAfter],
+      [expiredBefore, expiredAfter],
+    ]) {
+      expect(afterRow.undoUntilMs).toBe(beforeRow.undoUntilMs);
+      expect(afterRow.cleanupDueAtMs).toBe(beforeRow.cleanupDueAtMs);
+      expect(afterRow.operationId).toBe(beforeRow.operationId);
+      expect(afterRow.noteId).toBe(beforeRow.noteId);
+    }
+    expect(s.forbiddenCalls).toEqual([]);
+  });
+
+  test("operation receipts and proposals keep their links, statuses and expiry metadata", async () => {
+    const s = await seed();
+    const ids = [...s.liveOperations, ...s.liveProposals];
+    const before = await readAll(s.ctx, ids);
+    await softDeleteUserAccount(s.ctx, s.userA, now);
+    const after = await readAll(s.ctx, ids);
+    const keep = [
+      "status",
+      "payload",
+      "result",
+      "kind",
+      "affectsBody",
+      "undoUntilMs",
+      "undoneAtMs",
+      "undoneByOperationId",
+      "undoOfOperationId",
+      "confirmedOperationId",
+      "confirmDigest",
+      "decidedAtMs",
+      "proposalExpiresAtMs",
+      "cleanupDueAtMs",
+      "metadataExpiresAtMs",
+    ];
+    after.forEach((row, index) => {
+      for (const key of keep) {
+        expect(row[key], `${row._id}.${key}`).toEqual(before[index][key]);
+      }
+    });
+    expect(s.forbiddenCalls).toEqual([]);
+  });
+
+  test("already-deleted rows keep their timestamps and foreign-user rows are untouched", async () => {
+    const s = await seed();
+    const keep = [...s.alreadyDeleted, ...s.foreign];
+    const before = await readAll(s.ctx, keep);
+    await softDeleteUserAccount(s.ctx, s.userA, now);
+    expect(await readAll(s.ctx, keep)).toEqual(before);
+    for (const id of s.alreadyDeleted) {
+      const row = await s.ctx.db.get(id);
+      expect(row.deletedAt).toBe(earlier);
+      expect(row.updatedAt).toBe(earlier);
+    }
+    for (const id of s.foreign) {
+      expect((await s.ctx.db.get(id)).deletedAt).toBeUndefined();
+    }
+  });
+
+  test("repeated deletion preserves the first deletion timestamp", async () => {
+    const s = await seed();
+    const ids = [...liveLedgerIds(s), ...s.alreadyDeleted];
+    await softDeleteUserAccount(s.ctx, s.userA, now);
+    const afterFirst = await readAll(s.ctx, ids);
+    expect(await softDeleteUserAccount(s.ctx, s.userA, now + 5_000)).toEqual({ deletedCount: 0 });
+    expect(await readAll(s.ctx, ids)).toEqual(afterFirst);
+    expect(s.forbiddenCalls).toEqual([]);
+  });
+
+  test("account restoration does not resurrect tombstoned rows or expired Undo and proposal eligibility", async () => {
+    const s = await seed();
+    const ids = [...liveLedgerIds(s), ...s.alreadyDeleted];
+    const before = await readAll(s.ctx, ids);
+    await softDeleteUserAccount(s.ctx, s.userA, now);
+    const restore = signInRestorePatch(await s.ctx.db.get("users:a"), now + 1);
+    expect(restore).not.toBeNull();
+    await s.ctx.db.patch("users:a", restore);
+
+    const after = await readAll(s.ctx, ids);
+    after.forEach((row, index) => {
+      // Restoring the account row restores nothing else: live rows stay tombstoned at the
+      // account deletion time and independently deleted children keep their earlier time.
+      expect(row.deletedAt).toBe(before[index].deletedAt ?? now);
+      expect(row.payload).toEqual(before[index].payload);
+      expect(row.status).toBe(before[index].status);
+      expect(row.undoUntilMs).toBe(before[index].undoUntilMs);
+      expect(row.cleanupDueAtMs).toBe(before[index].cleanupDueAtMs);
+    });
+    expect((await s.ctx.db.get(s.payloadExpired)).payload.state).toBe("expired");
+    expect((await s.ctx.db.get(s.proposalConfirmed)).payload.state).toBe("expired");
+    expect(s.forbiddenCalls).toEqual([]);
+  });
+
+  test("with no page-ledger rows the deletion count and behaviour are unchanged", async () => {
+    const { ctx, forbiddenCalls } = lifecycleCtx("users:a");
+    const noteId = await ctx.db.insert("notes", {
+      userId: asUserId("users:a"),
+      title: "legacy",
+      body: "body",
+      pinned: false,
+      periodType: "none",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    expect(await softDeleteUserAccount(ctx, asUserId("users:a"), now)).toEqual({ deletedCount: 2 });
+    expect((await ctx.db.get(noteId)).deletedAt).toBe(now);
+    expect(forbiddenCalls).toEqual([]);
+  });
+});
+
+describe("page ledger schema contract (#828)", () => {
+  const LEGACY_NOTE_SHAPE = {
+    userId: "id:users",
+    title: "string",
+    body: "string",
+    pinned: "boolean",
+    periodType: "union(literal:daily|literal:weekly|literal:monthly|literal:none)",
+    pageType: "union(literal:daily|literal:weekly|literal:project|literal:plain|literal:template)?",
+    date: "string?",
+    aiGenerated: "boolean?",
+    createdAt: "float64",
+    updatedAt: "float64",
+    deletedAt: "float64?",
+  };
+
+  test("notes gains exactly one optional revision and keeps every legacy field and index", () => {
+    expect(deepFieldShape("notes")).toEqual({ ...LEGACY_NOTE_SHAPE, revision: "float64?" });
+    expect(indexesOf("notes")).toEqual([
+      { indexDescriptor: "by_userId", fields: ["userId"] },
+      { indexDescriptor: "by_userId_pinned", fields: ["userId", "pinned"] },
+      { indexDescriptor: "by_userId_updatedAt", fields: ["userId", "updatedAt"] },
+      { indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] },
+      {
+        indexDescriptor: "by_userId_deletedAt_pageType_date",
+        fields: ["userId", "deletedAt", "pageType", "date"],
+      },
+    ]);
+  });
+
+  test("a legacy note row validates: revision is optional and body stays the canonical required text", () => {
+    const [fields] = fieldMaps(schemaTables.notes.validator);
+    expect(fields.revision.isOptional).toBe("optional");
+    expect(fields.body.isOptional).toBe("required");
+    const required = Object.entries(fields)
+      .filter(([, field]) => field.isOptional === "required")
+      .map(([name]) => name)
+      .sort();
+    expect(required).toEqual(
+      ["body", "createdAt", "periodType", "pinned", "title", "updatedAt", "userId"].sort(),
+    );
+  });
+
+  test("pageOperations is one content-free table with the agreed fields and indexes", () => {
+    expect(deepFieldShape("pageOperations")).toEqual({
+      userId: "id:users",
+      noteId: "id:notes",
+      requestId: "string",
+      requestDigest: "string",
+      kind: "union(literal:save|literal:patch_block|literal:add_task|literal:undo)",
+      source: "union(literal:ui|literal:coach|literal:mcp|literal:legacy)",
+      result: "union(literal:applied|literal:noop)",
+      affectsBody: "boolean",
+      baseRevision: "float64",
+      resultRevision: "float64",
+      baseBodyDigest: "string",
+      resultBodyDigest: "string",
+      delta: "array<{startUtf16:float64,removedLengthUtf16:float64,insertedLengthUtf16:float64}>",
+      appliedAtMs: "float64",
+      undoUntilMs: "float64?",
+      undoneAtMs: "float64?",
+      undoneByOperationId: "id:pageOperations?",
+      undoOfOperationId: "id:pageOperations?",
+      proposalId: "id:pageProposals?",
+      metadataExpiresAtMs: "float64",
+      createdAt: "float64",
+      updatedAt: "float64",
+      deletedAt: "float64?",
+    });
+    expect(indexesOf("pageOperations")).toEqual([
+      { indexDescriptor: "by_userId", fields: ["userId"] },
+      { indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] },
+      { indexDescriptor: "by_userId_requestId", fields: ["userId", "requestId"] },
+      {
+        indexDescriptor: "by_userId_noteId_affectsBody_resultRevision",
+        fields: ["userId", "noteId", "affectsBody", "resultRevision"],
+      },
+      { indexDescriptor: "by_metadataExpiresAtMs", fields: ["metadataExpiresAtMs"] },
+    ]);
+  });
+
+  test("pageOperationPayloads is a strict available or expired union with the agreed indexes", () => {
+    expect(deepFieldShape("pageOperationPayloads")).toEqual({
+      userId: "id:users",
+      noteId: "id:notes",
+      operationId: "id:pageOperations",
+      undoUntilMs: "float64",
+      cleanupDueAtMs: "float64",
+      payload:
+        "union({state:literal:available,splices:array<{startUtf16:float64,removedText:string,insertedText:string}>}|{state:literal:expired,expiredAtMs:float64})",
+      createdAt: "float64",
+      updatedAt: "float64",
+      deletedAt: "float64?",
+    });
+    expect(indexesOf("pageOperationPayloads")).toEqual([
+      { indexDescriptor: "by_userId", fields: ["userId"] },
+      { indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] },
+      { indexDescriptor: "by_userId_operationId", fields: ["userId", "operationId"] },
+      {
+        indexDescriptor: "by_userId_noteId_deletedAt",
+        fields: ["userId", "noteId", "deletedAt"],
+      },
+      { indexDescriptor: "by_cleanupDueAtMs", fields: ["cleanupDueAtMs"] },
+    ]);
+  });
+
+  test("pageProposals is one pending add-task action with the agreed fields and indexes", () => {
+    expect(deepFieldShape("pageProposals")).toEqual({
+      userId: "id:users",
+      kind: "literal:add_task_to_today",
+      schemaVersion: "literal:1",
+      noteId: "id:notes",
+      localDate: "string",
+      conversationId: "id:conversations",
+      sourceRequestKey: "string",
+      sourceAgentPromptId: "string?",
+      proposalRevision: "float64",
+      expectedPageRevision: "float64",
+      blockId: "string",
+      status:
+        "union(literal:pending|literal:confirmed|literal:rejected|literal:cancelled|literal:expired)",
+      proposalExpiresAtMs: "float64",
+      cleanupDueAtMs: "float64",
+      metadataExpiresAtMs: "float64",
+      payload:
+        "union({state:literal:available,task:{title:string,durationMin:float64}}|{state:literal:expired,expiredAtMs:float64})",
+      decidedAtMs: "float64?",
+      confirmedOperationId: "id:pageOperations?",
+      confirmDigest: "string?",
+      createdAt: "float64",
+      updatedAt: "float64",
+      deletedAt: "float64?",
+    });
+    expect(indexesOf("pageProposals")).toEqual([
+      { indexDescriptor: "by_userId", fields: ["userId"] },
+      { indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] },
+      {
+        indexDescriptor: "by_userId_noteId_deletedAt",
+        fields: ["userId", "noteId", "deletedAt"],
+      },
+      {
+        indexDescriptor: "by_userId_conversationId_sourceRequestKey",
+        fields: ["userId", "conversationId", "sourceRequestKey"],
+      },
+      { indexDescriptor: "by_cleanupDueAtMs", fields: ["cleanupDueAtMs"] },
+      { indexDescriptor: "by_metadataExpiresAtMs", fields: ["metadataExpiresAtMs"] },
+    ]);
+  });
+
+  test("every new table carries the owner, audit and soft-delete fields and the owner indexes", () => {
+    for (const table of PAGE_LEDGER_TABLES) {
+      const [fields] = fieldMaps(schemaTables[table].validator);
+      expect(fields.userId.kind, table).toBe("id");
+      expect(fields.createdAt.isOptional, table).toBe("required");
+      expect(fields.updatedAt.isOptional, table).toBe("required");
+      expect(fields.deletedAt.isOptional, table).toBe("optional");
+      const names = indexesOf(table).map((index) => index.indexDescriptor);
+      expect(names, table).toContain("by_userId");
+      expect(names, table).toContain("by_userId_deletedAt");
+      expect(fixtureFor(table).lifecycle, table).toBe("owned-table-soft-delete");
+    }
+  });
+
+  test("no unknown-content blobs, and source text appears only in the private payload table", () => {
+    for (const table of PAGE_LEDGER_TABLES) {
+      const kinds = reachableKinds(schemaTables[table].validator);
+      for (const blob of ["any", "record", "bytes", "int64"]) {
+        expect(kinds.has(blob), `${table} must not use ${blob}`).toBe(false);
+      }
+    }
+    const strings = Object.fromEntries(
+      PAGE_LEDGER_TABLES.map((table) => [
+        table,
+        stringLeafPaths(schemaTables[table].validator).sort(),
+      ]),
+    );
+    expect(strings.pageOperations).toEqual([
+      "baseBodyDigest",
+      "requestDigest",
+      "requestId",
+      "resultBodyDigest",
+    ]);
+    expect(strings.pageOperationPayloads).toEqual([
+      "payload.splices[].insertedText",
+      "payload.splices[].removedText",
+    ]);
+    expect(strings.pageProposals).toEqual([
+      "blockId",
+      "confirmDigest",
+      "localDate",
+      "payload.task.title",
+      "sourceAgentPromptId",
+      "sourceRequestKey",
+    ]);
+    // No copied prompt, reply, memory, audio, error or whole-body field anywhere.
+    const forbidden = [
+      "prompt",
+      "reply",
+      "content",
+      "text",
+      "body",
+      "error",
+      "memory",
+      "audio",
+      "snapshot",
+    ];
+    for (const table of PAGE_LEDGER_TABLES) {
+      for (const field of declaredFieldNames(table)) {
+        expect(forbidden, `${table}.${field}`).not.toContain(field);
+      }
+    }
+  });
+
+  test("Agent ids stay strings and are never cast to host table ids", () => {
+    const [fields] = fieldMaps(schemaTables.pageProposals.validator);
+    expect(fields.sourceAgentPromptId.kind).toBe("string");
+    expect(fields.sourceRequestKey.kind).toBe("string");
+    expect(fields.conversationId.kind).toBe("id");
+    // chatRequests is resolved through (owner, conversation, key), not stored as an id.
+    expect(declaredFieldNames("pageProposals").has("chatRequestId")).toBe(false);
+  });
+
+  test("payload variants are strict unions at the type level", () => {
+    type OperationPayload = Doc<"pageOperationPayloads">["payload"];
+    type ProposalPayload = Doc<"pageProposals">["payload"];
+    const operationPayloads: OperationPayload[] = [
+      { state: "available", splices: [{ startUtf16: 0, removedText: "a", insertedText: "b" }] },
+      { state: "expired", expiredAtMs: 1 },
+      // @ts-expect-error an expired marker carries no fragments
+      { state: "expired", expiredAtMs: 1, splices: [] },
+      // @ts-expect-error an available payload has no expiry marker and needs its splices
+      { state: "available", expiredAtMs: 1 },
+    ];
+    const proposalPayloads: ProposalPayload[] = [
+      { state: "available", task: { title: "t", durationMin: 15 } },
+      { state: "expired", expiredAtMs: 1 },
+      // @ts-expect-error an expired marker carries no task content
+      { state: "expired", expiredAtMs: 1, task: { title: "t", durationMin: 15 } },
+    ];
+    expect(operationPayloads).toHaveLength(4);
+    expect(proposalPayloads).toHaveLength(3);
   });
 });
 
