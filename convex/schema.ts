@@ -264,6 +264,17 @@ export default defineSchema({
       v.literal("monthly"),
       v.literal("none"),
     ),
+    pageType: v.optional(
+      v.union(
+        v.literal("daily"),
+        v.literal("weekly"),
+        v.literal("project"),
+        v.literal("plain"),
+        v.literal("template"),
+      ),
+    ),
+    /** Local calendar date (YYYY-MM-DD). Writers validate real dates before storing them. */
+    date: v.optional(v.string()),
     aiGenerated: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -272,7 +283,111 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_pinned", ["userId", "pinned"])
     .index("by_userId_updatedAt", ["userId", "updatedAt"])
-    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_deletedAt_pageType_date", ["userId", "deletedAt", "pageType", "date"]),
+
+  /** Disposable, derived index of validated `json tempo` blocks in notes.body. */
+  noteBlocks: defineTable(
+    v.union(
+      v.object({
+        userId: v.id("users"),
+        noteId: v.id("notes"),
+        type: v.literal("page-meta"),
+        blockId: v.string(),
+        v: v.literal(1),
+        data: v.object({
+          pageType: v.union(
+            v.literal("daily"),
+            v.literal("weekly"),
+            v.literal("project"),
+            v.literal("plain"),
+            v.literal("template"),
+          ),
+          date: v.optional(v.string()),
+          tags: v.array(v.string()),
+        }),
+        position: v.number(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        deletedAt: v.optional(v.number()),
+      }),
+      v.object({
+        userId: v.id("users"),
+        noteId: v.id("notes"),
+        type: v.literal("task"),
+        blockId: v.string(),
+        v: v.literal(1),
+        data: v.object({
+          title: v.string(),
+          durationMin: v.number(),
+          status: v.union(v.literal("now"), v.literal("later"), v.literal("done")),
+          order: v.number(),
+          inelastic: v.boolean(),
+          reason: v.optional(v.string()),
+          scheduledAt: v.optional(v.union(v.string(), v.null())),
+          doneAt: v.optional(v.union(v.string(), v.null())),
+        }),
+        position: v.number(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        deletedAt: v.optional(v.number()),
+      }),
+      v.object({
+        userId: v.id("users"),
+        noteId: v.id("notes"),
+        type: v.literal("template"),
+        blockId: v.string(),
+        v: v.literal(1),
+        data: v.object({
+          name: v.string(),
+          forPageType: v.union(
+            v.literal("daily"),
+            v.literal("weekly"),
+            v.literal("project"),
+            v.literal("plain"),
+            v.literal("template"),
+          ),
+          isDefault: v.boolean(),
+          tokens: v.array(v.string()),
+          origin: v.union(v.literal("builtin"), v.literal("user")),
+          status: v.union(v.literal("draft"), v.literal("live")),
+          enabled: v.boolean(),
+        }),
+        position: v.number(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        deletedAt: v.optional(v.number()),
+      }),
+      v.object({
+        userId: v.id("users"),
+        noteId: v.id("notes"),
+        type: v.literal("broken"),
+        blockId: v.optional(v.string()),
+        position: v.number(),
+        errorCode: v.union(
+          v.literal("body_too_large"),
+          v.literal("too_many_blocks"),
+          v.literal("block_too_large"),
+          v.literal("unclosed_fence"),
+          v.literal("malformed_json"),
+          v.literal("invalid_envelope"),
+          v.literal("unsupported_type"),
+          v.literal("unsupported_version"),
+          v.literal("invalid_data"),
+          v.literal("duplicate_id"),
+          v.literal("duplicate_page_meta"),
+          v.literal("nesting_too_deep"),
+        ),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+        deletedAt: v.optional(v.number()),
+      }),
+    ),
+  )
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_noteId_deletedAt_position", ["userId", "noteId", "deletedAt", "position"])
+    .index("by_userId_noteId_blockId", ["userId", "noteId", "blockId"]),
 
   habits: defineTable({
     userId: v.id("users"),
