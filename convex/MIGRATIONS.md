@@ -108,3 +108,18 @@ deployment `ceaseless-dog-617` via `convex-deploy-test`. Live is Amit's.
   Requests with no Origin (server-side MCP clients) and localhost always pass.
 - Deploy: merge to `integration` deploys test (`ceaseless-dog-617`). Live is Amit's.
 
+## 2026-10-09 — TEMPO-B06-00 inactive page/block foundation
+
+Ticket #786. Additive only; no backfill or data migration.
+
+- `notes` keeps its existing required `periodType` and gains optional `pageType` and `date`
+  fields, plus `by_userId_deletedAt_pageType_date`.
+- New `noteBlocks` table is a disposable derived index of `notes.body`. It stores strictly
+  shaped `page-meta`, `task`, and `template` rows, or bounded `broken` metadata, with ownership,
+  audit/soft-delete fields, and indexes for user, note, position, and block ID access.
+- This change does not activate a writer, rebuild existing notes, or assert uniqueness through
+  an index. Future writers must validate dates, enforce daily uniqueness transactionally, and
+  update the body and derived rows atomically.
+
+Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
+separate; live is not touched here.
