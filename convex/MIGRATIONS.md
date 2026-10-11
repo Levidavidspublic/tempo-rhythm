@@ -201,3 +201,89 @@ enrollment. No backfill, no data migration, no deployment by this writer. Old ro
 
 Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
 separate; live is not touched here.
+
+## 2026-10-11 — TEMPO-B06-SUPPORT-PAGE-LEDGER inactive page operations and proposals
+
+Ticket #828. Additive only: one new optional field, three new tables and their indexes, plus
+account-deletion enrollment. No backfill, no data migration, no deployment by this writer. Old rows
+validate unchanged. Builds on #786 (`5fc1e67`, PR #826) and #807 (`edeb073`, PR #877). D1-D5 in the
+ticket were adopted by the coordinator on 11 Oct 2026. This slice implements only their structural
+shapes and indexes; the semantic limits stay with the later helper.
+
+- **`notes.revision`** — optional number. A missing value means revision 0 for a legacy row. Nothing
+  writes it yet and nothing backfills it. `notes.body` stays canonical. No existing field or index
+  changed.
+- **New table `pageOperations`** — lightweight, content-free write receipts. Required: `userId`,
+  `noteId`, `requestId`, `requestDigest`, `kind` (`save | patch_block | add_task | undo`), `source`
+  (`ui | coach | mcp | legacy`), `result` (`applied | noop`), `affectsBody` (boolean),
+  `baseRevision`, `resultRevision`, `baseBodyDigest`, `resultBodyDigest`, `delta` (array of
+  `{startUtf16, removedLengthUtf16, insertedLengthUtf16}`, offsets and lengths only), `appliedAtMs`,
+  `metadataExpiresAtMs`, `createdAt`, `updatedAt`. Optional: `undoUntilMs`, `undoneAtMs`,
+  `undoneByOperationId`, `undoOfOperationId`, `proposalId`, `deletedAt`. Indexes: `by_userId`,
+  `by_userId_deletedAt`, `by_userId_requestId`, `by_userId_noteId_affectsBody_resultRevision`,
+  `by_metadataExpiresAtMs`.
+- **New table `pageOperationPayloads`** — the only operation table that holds source fragments, and
+  it is private and separately expiring. Required: `userId`, `noteId`, `operationId`, `undoUntilMs`,
+  `cleanupDueAtMs`, `payload`, `createdAt`, `updatedAt`. `payload` is a strict union:
+  `{state: "available", splices: [{startUtf16, removedText, insertedText}]}` or
+  `{state: "expired", expiredAtMs}`. Optional: `deletedAt`. Indexes: `by_userId`,
+  `by_userId_deletedAt`, `by_userId_operationId`, `by_userId_noteId_deletedAt`, `by_cleanupDueAtMs`.
+- **New table `pageProposals`** — one pending page action, not another chat store. Required: `userId`,
+  `kind` (`add_task_to_today`), `schemaVersion` (literal 1), `noteId`, `localDate`, `conversationId`,
+  `sourceRequestKey`, `proposalRevision`, `expectedPageRevision`, `blockId`, `status`
+  (`pending | confirmed | rejected | cancelled | expired`), `proposalExpiresAtMs`, `cleanupDueAtMs`,
+  `metadataExpiresAtMs`, `payload`, `createdAt`, `updatedAt`. `payload` is a strict union:
+  `{state: "available", task: {title, durationMin}}` or `{state: "expired", expiredAtMs}`. Optional:
+  `sourceAgentPromptId` (an opaque Agent string, never a host table id), `decidedAtMs`,
+  `confirmedOperationId`, `confirmDigest`, `deletedAt`. Indexes: `by_userId`, `by_userId_deletedAt`,
+  `by_userId_noteId_deletedAt`, `by_userId_conversationId_sourceRequestKey`, `by_cleanupDueAtMs`,
+  `by_metadataExpiresAtMs`. A proposal stores only the proposed action content, never a copied prompt,
+  reply, memory or raw audio.
+- None of the three tables uses `v.any`, a record or bytes. All indexes are ordinary, not unique
+  constraints: a committing writer enforces uniqueness (`userId + requestId`, `operationId`, `userId +
+  conversationId + sourceRequestKey`) inside its own transaction.
+- **Validators are structural only.** Convex `v.string` and `v.number` do not enforce the adopted
+  ranges. Each new table's comment in `convex/schema.ts` lists what the later helper must validate:
+  safe-integer revisions, `req_` plus ULID request ids, 64-character lowercase SHA-256 hex digests,
+  delta and splice length agreement, the nonempty-delta and noop rules, Undo field pairing, real
+  `YYYY-MM-DD` dates, proposal title and duration limits against the block codec, and the 5-minute
+  Undo and 48-hour metadata windows. Every later committing writer must call those validators.
+- **Account deletion** (`convex/lib/accountDeletion.ts`): `pageOperations`, `pageOperationPayloads`
+  and `pageProposals` join `USER_OWNED_TABLES` and the ordinary soft-delete path. Each live row gets
+  `deletedAt` and `updatedAt` from one timestamp, an earlier `deletedAt` is kept, and another user's
+  rows are never touched. Soft deletion is a tombstone only: it does not rewrite an `available` payload
+  to `expired`, erase a fragment, change `undoUntilMs`, `cleanupDueAtMs` or any other expiry value,
+  schedule cleanup, call an Agent or component API, or hard-delete. #777 token revocation and every
+  #807 behaviour are unchanged. Sign-in restoration restores the account row only; it does not restore
+  tombstoned rows and does not resurrect an expired Undo or proposal window.
+- `convex/lib/accountDeletion.test.ts` keeps the schema-derived exhaustive lifecycle check from #807.
+  The three new tables have typed fixtures there, so a new owned table with no fixture still fails
+  typecheck or the focused test. It also asserts the exact field, union and index shapes, that no
+  unknown-content blob exists, and that source text appears only in the payload table.
+
+### Still inactive, and the gates that remain open
+
+- No writer, endpoint, `pageLedger` helper, scheduler registration, cleanup execution, migration or
+  backfill is added here. `notes.revision` is never set.
+- **Semantic helper and inverse planning:** TEMPO-B06-SUPPORT-PAGE-INVERSES (#831) owns
+  `convex/lib/pageLedger.ts`, the bounds above, digest and request identity behaviour, and the
+  surgical inverse transform.
+- **Activation and privacy guards:** #808 must deny reads and writes on a deleted account, note or
+  conversation. Enrolling the tables in account deletion does not prove those endpoint guards.
+- **Cleanup:** the reviewed transient-payload cleanup that turns `available` into `expired`, and the
+  scheduling, catch-up and evidence for it, are not implemented. Payload-producing activation stays
+  held until it is reviewed and implemented. A timestamp or a UI countdown alone does not bound
+  physical retention.
+- **Consumers:** #787 (atomic page writes, revisions, request idempotency, Undo), #793 (proposal
+  confirmation) and #792/#794 (preview acceptance) stay held behind the slices above.
+- **Account deletion read size:** `softDeleteUserAccount` still reads each owned table with an
+  unpaginated `collect()` inside one mutation. That is fine while the new tables have no writer, but
+  it must be chunked or continued before any of them can hold thousands of rows per person.
+- **Retention:** the 30-day account restore window does not set a minimum for inverse fragments or
+  proposal content. Whatever is kept for an audit or restoration policy needs its own reviewed
+  decision, and source text is not retained by default.
+- Transaction isolation, real cleanup, browser persistence and preview Undo are not proven by this
+  slice. Fake-context tests here are not transaction-concurrency proof.
+
+Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
+separate; live is not touched here.

@@ -351,6 +351,11 @@ export default defineSchema({
     /** Local calendar date (YYYY-MM-DD). Writers validate real dates before storing them. */
     date: v.optional(v.string()),
     aiGenerated: v.optional(v.boolean()),
+    // TEMPO-B06-SUPPORT-PAGE-LEDGER (#828) — body revision. Optional so legacy rows validate
+    // with no backfill: a missing value means revision 0. Nothing writes it yet. A future writer
+    // advances it by exactly one per body-changing write, in the same transaction as the body,
+    // derived index and operation receipt (a safe integer in [0, MAX_SAFE_INTEGER - 1]).
+    revision: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
@@ -463,6 +468,182 @@ export default defineSchema({
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
     .index("by_userId_noteId_deletedAt_position", ["userId", "noteId", "deletedAt", "position"])
     .index("by_userId_noteId_blockId", ["userId", "noteId", "blockId"]),
+
+  /**
+   * TEMPO-B06-SUPPORT-PAGE-LEDGER (#828) — lightweight, immutable page-write receipt facts.
+   * Content-free: offsets and lengths only. Source fragments live in `pageOperationPayloads`.
+   * Inactive: nothing writes here yet (#787 owns the first writer).
+   * Structural types only. The indexes are ordinary, not unique constraints. The later helper
+   * (#831) owns semantic validation; every committing writer must call it. Bounds it enforces,
+   * none of which these validators express: timestamps are finite safe nonnegative integer epoch
+   * milliseconds; revisions are safe integers in [0, MAX_SAFE_INTEGER - 1]; `requestId` is `req_`
+   * plus a valid 26-character ULID; digests are 64-character lowercase SHA-256 hex; delta offsets
+   * and lengths are nonnegative integers; an applied body write has affectsBody = true,
+   * resultRevision = baseRevision + 1 and a nonempty delta; a noop has affectsBody = false, equal
+   * revisions and digests, an empty delta and no Undo fields; `undoUntilMs` is present only for
+   * an applied non-undo operation; `undoneAtMs` and `undoneByOperationId` are both absent or both
+   * present; `undoOfOperationId` is required only when kind = "undo"; `metadataExpiresAtMs` is
+   * appliedAtMs + 48 hours.
+   */
+  pageOperations: defineTable({
+    userId: v.id("users"),
+    noteId: v.id("notes"),
+    requestId: v.string(),
+    /** Lowercase SHA-256 hex of a versioned, deterministic encoding of the accepted request. */
+    requestDigest: v.string(),
+    kind: v.union(
+      v.literal("save"),
+      v.literal("patch_block"),
+      v.literal("add_task"),
+      v.literal("undo"),
+    ),
+    /** Assigned by the trusted endpoint, never by the caller. */
+    source: v.union(v.literal("ui"), v.literal("coach"), v.literal("mcp"), v.literal("legacy")),
+    result: v.union(v.literal("applied"), v.literal("noop")),
+    affectsBody: v.boolean(),
+    baseRevision: v.number(),
+    resultRevision: v.number(),
+    /** Lowercase SHA-256 hex of the exact UTF-8 body before and after the write. */
+    baseBodyDigest: v.string(),
+    resultBodyDigest: v.string(),
+    /** UTF-16 code-unit offsets and lengths of the forward change. No text. */
+    delta: v.array(
+      v.object({
+        startUtf16: v.number(),
+        removedLengthUtf16: v.number(),
+        insertedLengthUtf16: v.number(),
+      }),
+    ),
+    appliedAtMs: v.number(),
+    undoUntilMs: v.optional(v.number()),
+    undoneAtMs: v.optional(v.number()),
+    undoneByOperationId: v.optional(v.id("pageOperations")),
+    undoOfOperationId: v.optional(v.id("pageOperations")),
+    proposalId: v.optional(v.id("pageProposals")),
+    metadataExpiresAtMs: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_requestId", ["userId", "requestId"])
+    .index("by_userId_noteId_affectsBody_resultRevision", [
+      "userId",
+      "noteId",
+      "affectsBody",
+      "resultRevision",
+    ])
+    .index("by_metadataExpiresAtMs", ["metadataExpiresAtMs"]),
+
+  /**
+   * TEMPO-B06-SUPPORT-PAGE-LEDGER (#828) — separately expiring, private inverse fragments.
+   * The only operation table that holds source text. Never a second current page and never a
+   * model-context source. One row per applied non-undo operation; none for a noop or an undo
+   * receipt. Inactive: nothing writes here yet. A future cleanup handler (#808 and its
+   * follow-ups) replaces the `available` form with the `expired` marker; nothing here schedules
+   * or runs that. Writer validation (not expressed by these validators): each splice's lengths
+   * equal the matching delta lengths, and the adopted splice-count and byte budgets hold.
+   */
+  pageOperationPayloads: defineTable({
+    userId: v.id("users"),
+    noteId: v.id("notes"),
+    operationId: v.id("pageOperations"),
+    undoUntilMs: v.number(),
+    cleanupDueAtMs: v.number(),
+    payload: v.union(
+      v.object({
+        state: v.literal("available"),
+        splices: v.array(
+          v.object({
+            startUtf16: v.number(),
+            removedText: v.string(),
+            insertedText: v.string(),
+          }),
+        ),
+      }),
+      v.object({
+        state: v.literal("expired"),
+        expiredAtMs: v.number(),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_operationId", ["userId", "operationId"])
+    .index("by_userId_noteId_deletedAt", ["userId", "noteId", "deletedAt"])
+    .index("by_cleanupDueAtMs", ["cleanupDueAtMs"]),
+
+  /**
+   * TEMPO-B06-SUPPORT-PAGE-LEDGER (#828) — one pending page action. Not another chat store: it
+   * holds only the proposed action content, never a copied prompt, reply, memory or raw audio.
+   * `sourceAgentPromptId` is an opaque Agent-component string, never cast to a host table id.
+   * `sourceRequestKey` must resolve through #807's chatRequests contract to this same owner and
+   * conversation. Inactive: nothing writes here yet (#793 owns confirmation). Writer validation
+   * (not expressed by these validators): `localDate` is a real YYYY-MM-DD; `sourceRequestKey` is
+   * 1-128 ASCII identifier characters; `sourceAgentPromptId` is 1-256 characters;
+   * `proposalRevision` and `expectedPageRevision` are safe nonnegative integers; `blockId` is
+   * `blk_` plus a valid ULID; `task.title` is nonblank, at most 500 Unicode code points and within
+   * the block codec's BLOCK_CODEC_LIMITS.maxTextChars (UTF-16 code units); `durationMin` is an
+   * integer in 1-1440 (stored default 15); `confirmDigest` is lowercase SHA-256 hex.
+   */
+  pageProposals: defineTable({
+    userId: v.id("users"),
+    kind: v.literal("add_task_to_today"),
+    schemaVersion: v.literal(1),
+    noteId: v.id("notes"),
+    localDate: v.string(),
+    conversationId: v.id("conversations"),
+    sourceRequestKey: v.string(),
+    sourceAgentPromptId: v.optional(v.string()),
+    /** Guards an edited or replaced proposal. Distinct from `expectedPageRevision`. */
+    proposalRevision: v.number(),
+    /** Guards the target page: the notes.revision the preview was built against. */
+    expectedPageRevision: v.number(),
+    blockId: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("confirmed"),
+      v.literal("rejected"),
+      v.literal("cancelled"),
+      v.literal("expired"),
+    ),
+    proposalExpiresAtMs: v.number(),
+    cleanupDueAtMs: v.number(),
+    metadataExpiresAtMs: v.number(),
+    payload: v.union(
+      v.object({
+        state: v.literal("available"),
+        task: v.object({
+          title: v.string(),
+          durationMin: v.number(),
+        }),
+      }),
+      v.object({
+        state: v.literal("expired"),
+        expiredAtMs: v.number(),
+      }),
+    ),
+    decidedAtMs: v.optional(v.number()),
+    confirmedOperationId: v.optional(v.id("pageOperations")),
+    confirmDigest: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_noteId_deletedAt", ["userId", "noteId", "deletedAt"])
+    .index("by_userId_conversationId_sourceRequestKey", [
+      "userId",
+      "conversationId",
+      "sourceRequestKey",
+    ])
+    .index("by_cleanupDueAtMs", ["cleanupDueAtMs"])
+    .index("by_metadataExpiresAtMs", ["metadataExpiresAtMs"]),
 
   habits: defineTable({
     userId: v.id("users"),
