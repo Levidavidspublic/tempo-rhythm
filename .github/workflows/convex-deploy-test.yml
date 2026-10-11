@@ -31,9 +31,14 @@
 #     comes only from `inputs.ref`. LIMIT: this prevents accidental use of an unreviewed workflow copy. It does
 #     not stop a user with write access from pushing a modified workflow on another trigger, which only repo
 #     rules (branch protection, secret environments) can prevent.
-#   - Concurrency: the one workflow-level group below covers both jobs, so deploy and codegen never overlap.
-#     GitHub keeps one PENDING run per group, so a dispatch queued behind a running deploy can replace a pending
-#     push run (and the reverse). Check the Actions tab before dispatching.
+#   - Concurrency: each job has its OWN job-level group (deploy: convex-deploy-test, codegen:
+#     convex-codegen-test, both cancel-in-progress: false). There is deliberately no workflow-level group.
+#     GitHub keeps one PENDING run per group, so deploy and codegen no longer share a queue: a codegen
+#     dispatch can never cancel or replace a pending integration push deploy, so a merged convex/ change
+#     still reaches TEST. The cost is that the two jobs are no longer serialized against each other. DISCLOSED
+#     REMAINING RISK: codegen can stage schema and component state on ceaseless-dog-617 while a deploy to the
+#     same deployment is running. Dispatch only when no convex-deploy-test deploy run is in progress (check the
+#     Actions tab first).
 name: convex-deploy-test
 
 on:
@@ -51,10 +56,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: convex-deploy-test
-  cancel-in-progress: false
-
 env:
   BUN_VERSION: "1.3.9"
   EXPECTED_DEPLOYMENT: ceaseless-dog-617
@@ -64,6 +65,10 @@ jobs:
     name: Convex deploy (test ceaseless-dog-617)
     # push only: a workflow_dispatch run (the codegen job below) must never reach this deploy job.
     if: github.event_name == 'push' && github.ref == 'refs/heads/integration'
+    # Own group, never shared with codegen: a dispatch must not displace a pending push deploy.
+    concurrency:
+      group: convex-deploy-test
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -105,6 +110,10 @@ jobs:
     name: Convex codegen only (test ceaseless-dog-617)
     # Must be dispatched on integration: the workflow file that runs (and holds the key) is the reviewed copy.
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration'
+    # Own group, separate from the deploy job's: a dispatch queues only behind other codegen runs.
+    concurrency:
+      group: convex-codegen-test
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
