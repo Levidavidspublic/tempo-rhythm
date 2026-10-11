@@ -62,45 +62,79 @@ export const SUPPORTED_AI_PROVIDERS = ["codex", "claude"];
 // or the PR author asserting their own code is clean) is not evidence this function will accept.
 const VERIFIED_AI_EVIDENCE_KINDS = ["verified-provider", "native-result"];
 const FULL_SHA_RE = /^[0-9a-f]{40}$/i;
-const TUPLE_KEYS = ["repo", "pr", "headSha", "baseSha", "requestId"];
+const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+const isNonEmptyString = (v) => typeof v === "string" && v.length > 0;
+// Every tuple field must be present with the right type on BOTH sides. `undefined === undefined` must
+// never count as a match, or an adapter that drops a field would produce an unbound approval.
+const TUPLE_FIELD_VALID = {
+  repo: isNonEmptyString,
+  pr: (v) => Number.isSafeInteger(v) && v > 0,
+  headSha: isNonEmptyString,
+  baseSha: isNonEmptyString,
+  requestId: isNonEmptyString,
+};
+const TUPLE_KEYS = Object.keys(TUPLE_FIELD_VALID);
 
+// Returns the first tuple key that is missing/mistyped on either side or differs, else null.
 function tupleMismatchKey(expected, observed) {
-  if (!expected || !observed) return TUPLE_KEYS[0];
-  return TUPLE_KEYS.find((k) => expected[k] !== observed[k]) || null;
+  if (!isObject(expected) || !isObject(observed)) return TUPLE_KEYS[0];
+  return TUPLE_KEYS.find((k) => !TUPLE_FIELD_VALID[k](expected[k]) || !TUPLE_FIELD_VALID[k](observed[k]) || expected[k] !== observed[k]) || null;
 }
 
-// A finding blocks clean if it is unresolved (an outdated thread that was never resolved still counts —
-// unlike bugbotState, which lets the gate's own Bugbot ignore outdated threads), or carries severity
-// "P2" or no recognized severity at all (unknown severity is treated as the worst case, not the best).
+// A finding blocks clean unless it is explicitly resolved (`resolved === true`; a truthy string like
+// "false" is not resolution) AND carries a recognized non-P2 severity. An outdated thread that was never
+// resolved still counts — unlike bugbotState, which lets the gate's own Bugbot ignore outdated threads.
+// Unknown severity or any wrong field type is treated as the worst case, not the best.
 function blocksClean(f) {
-  return !f.resolved || f.severity === "P2" || !["P0", "P1", "P3"].includes(f.severity);
+  return f.resolved !== true || f.severity === "P2" || !["P0", "P1", "P3"].includes(f.severity);
 }
 
-export function aiReviewState({ expected, observed, result, otherFindings = [], competingReview = false } = {}) {
+// A findings collection is usable only if it is a real array whose every entry is a plain object.
+// Missing/null/non-array collections or null/non-object entries mean the evidence is incomplete or
+// malformed, which is never clean (and must not throw). No `|| []` fallback: an omitted collection can
+// mean the evidence was never collected or paginated.
+const isWellFormedFindings = (list) => Array.isArray(list) && list.every(isObject);
+
+const notClean = (detail) => ({ state: "pending", findings: [], detail });
+
+function evaluate({ expected, observed, result, otherFindings, competingReview = false }) {
   const idKey = tupleMismatchKey(expected, observed);
-  if (idKey) return { state: "pending", findings: [], detail: `${idKey} mismatch between the expected and freshly observed request identity` };
+  if (idKey) return notClean(`${idKey} missing, wrong type, or mismatched between the expected and freshly observed request identity`);
   if (!FULL_SHA_RE.test(expected.headSha) || !FULL_SHA_RE.test(expected.baseSha)) {
-    return { state: "pending", findings: [], detail: "headSha/baseSha must be the full 40-character SHA, not an abbreviated one" };
+    return notClean("headSha/baseSha must be the full 40-character SHA, not an abbreviated one");
   }
 
-  const blocking = (otherFindings || []).filter(blocksClean);
+  if (!isWellFormedFindings(otherFindings)) return notClean("otherFindings must be an array of finding objects (missing/null/non-array or non-object entries are never clean)");
+  const blocking = otherFindings.filter(blocksClean);
   if (blocking.length) return { state: "findings", findings: blocking, detail: `${blocking.length} unresolved/P2/unknown-severity finding(s) from an already-used reviewer block clean` };
 
-  if (competingReview) return { state: "pending", findings: [], detail: "another review is active on this request; can't call it clean yet" };
+  if (competingReview !== false) return notClean("another review is active on this request (or competingReview is not a boolean false); can't call it clean yet");
 
-  if (!result) return { state: "pending", findings: [], detail: "no independent AI review result yet" };
+  if (result === undefined || result === null) return notClean("no independent AI review result yet");
+  if (!isObject(result)) return notClean("review result is not an object (malformed results are never clean)");
   if (result.status === "usage_limit") return { state: "blocked", findings: [], detail: `${result.provider || "provider"} usage limit reached` };
   if (result.status !== "completed") {
-    return { state: "pending", findings: [], detail: `review data is ${result.status || "missing"} (incomplete/error/malformed results are never clean)` };
+    return notClean(`review data is ${result.status || "missing"} (incomplete/error/malformed results are never clean)`);
   }
-  if (!SUPPORTED_AI_PROVIDERS.includes(result.provider)) return { state: "pending", findings: [], detail: `unsupported provider: ${result.provider || "none"}` };
+  if (!SUPPORTED_AI_PROVIDERS.includes(result.provider)) return notClean(`unsupported provider: ${result.provider || "none"}`);
   if (!VERIFIED_AI_EVIDENCE_KINDS.includes(result.evidenceKind)) {
-    return { state: "pending", findings: [], detail: `evidence "${result.evidenceKind || "none"}" is not verified-provider/native-result evidence (no bare reactions, generic summaries, Actions success, or author self-attestation)` };
+    return notClean(`evidence "${result.evidenceKind || "none"}" is not verified-provider/native-result evidence (no bare reactions, generic summaries, Actions success, or author self-attestation)`);
   }
-  if (tupleMismatchKey(expected, result.tuple)) return { state: "pending", findings: [], detail: "the review result's own tuple does not match the expected/observed request" };
+  if (tupleMismatchKey(expected, result.tuple)) return notClean("the review result's own tuple is missing, malformed, or does not match the expected/observed request");
 
-  const own = (result.findings || []).filter(blocksClean);
+  if (!isWellFormedFindings(result.findings)) return notClean("result.findings must be an array of finding objects (missing/null/non-array or non-object entries are never clean)");
+  const own = result.findings.filter(blocksClean);
   if (own.length) return { state: "findings", findings: own, detail: `${own.length} unresolved finding(s) from ${result.provider}` };
 
   return { state: "clean", findings: [], detail: `${result.provider} gave a verified clean result on ${expected.headSha.slice(0, 7)}` };
+}
+
+// Public entry point. Fail closed: any malformed input (including a non-object argument or a hostile
+// getter) yields a non-clean state instead of throwing.
+export function aiReviewState(input) {
+  try {
+    return evaluate(isObject(input) ? input : {});
+  } catch {
+    return notClean("evaluator could not read the input safely (malformed input); never clean");
+  }
 }

@@ -11,6 +11,7 @@ const identity = { repo: "tempo/tempo-rhythm", pr: 700, headSha: HEAD, baseSha: 
 const clean = () => ({
   expected: { ...identity },
   observed: { ...identity },
+  otherFindings: [],
   result: { provider: "claude", status: "completed", evidenceKind: "verified-provider", tuple: { ...identity }, findings: [] },
 });
 
@@ -101,6 +102,120 @@ t("pending: incomplete, error, and malformed review data", () => {
 t("pending: missing result (genuinely missing/in-flight)", () => {
   const f = clean(); f.result = undefined;
   assert.equal(aiReviewState(f).state, "pending");
+});
+
+// ---- Fail-closed hardening: malformed input can never yield "clean" and never throws. ----
+const notClean = (f, label) => {
+  let r;
+  assert.doesNotThrow(() => { r = aiReviewState(f); }, `${label}: threw`);
+  assert.notEqual(r.state, "clean", `${label}: returned clean`);
+  return r;
+};
+
+t("pending: a tuple field missing from expected, observed, and result.tuple is never an accepted match (undefined !== a value)", () => {
+  for (const key of ["repo", "pr", "headSha", "baseSha", "requestId"]) {
+    const strip = (o) => { const c = { ...o }; delete c[key]; return c; };
+    const f = clean(); f.expected = strip(f.expected); f.observed = strip(f.observed); f.result = { ...f.result, tuple: strip(f.result.tuple) };
+    const r = notClean(f, `all three tuples omit ${key}`);
+    assert.equal(r.state, "pending", key);
+    assert.ok(r.detail.includes(key), r.detail);
+    const fo = clean(); fo.observed = strip(fo.observed);
+    assert.equal(notClean(fo, `observed omits ${key}`).state, "pending", key);
+    const fe = clean(); fe.expected = strip(fe.expected);
+    assert.equal(notClean(fe, `expected omits ${key}`).state, "pending", key);
+    const fr = clean(); fr.result = { ...fr.result, tuple: strip(fr.result.tuple) };
+    assert.equal(notClean(fr, `result.tuple omits ${key}`).state, "pending", key);
+  }
+});
+
+t("pending: tuple fields of the wrong type or empty, even when identical on every side", () => {
+  const bad = { repo: [123, "", null, {}], pr: ["700", 0, -1, 1.5, NaN, null, Infinity], headSha: [123, "", null], baseSha: [123, "", null], requestId: [123, "", null, {}] };
+  for (const [key, values] of Object.entries(bad)) {
+    for (const v of values) {
+      const f = clean();
+      f.expected = { ...f.expected, [key]: v }; f.observed = { ...f.observed, [key]: v }; f.result = { ...f.result, tuple: { ...f.result.tuple, [key]: v } };
+      assert.equal(notClean(f, `${key}=${String(v)}`).state, "pending", `${key}=${String(v)}`);
+    }
+  }
+});
+
+t("pending: missing/null/non-object expected, observed, result.tuple", () => {
+  for (const v of [undefined, null, "x", 7, []]) {
+    const fe = clean(); fe.expected = v;
+    assert.equal(notClean(fe, "expected").state, "pending");
+    const fo = clean(); fo.observed = v;
+    assert.equal(notClean(fo, "observed").state, "pending");
+    const fr = clean(); fr.result = { ...fr.result, tuple: v };
+    assert.equal(notClean(fr, "result.tuple").state, "pending");
+  }
+});
+
+t("pending: otherFindings missing, null, or not an array (no silent [] fallback)", () => {
+  const missing = clean(); delete missing.otherFindings;
+  assert.equal(notClean(missing, "otherFindings missing").state, "pending");
+  for (const v of [null, {}, "none", 0, 1, true, { length: 0 }]) {
+    const f = clean(); f.otherFindings = v;
+    assert.equal(notClean(f, `otherFindings=${JSON.stringify(v)}`).state, "pending");
+  }
+});
+
+t("pending: result.findings missing, null, or not an array (no silent [] fallback)", () => {
+  const missing = clean(); delete missing.result.findings;
+  assert.equal(notClean(missing, "result.findings missing").state, "pending");
+  for (const v of [null, {}, "none", 0, 1, true, { length: 0 }]) {
+    const f = clean(); f.result = { ...f.result, findings: v };
+    assert.equal(notClean(f, `result.findings=${JSON.stringify(v)}`).state, "pending");
+  }
+});
+
+t("pending: arrays containing null or non-object entries do not throw and are not clean", () => {
+  for (const entry of [null, undefined, 0, 1, "P1", true, [], [{ resolved: true, severity: "P1" }]]) {
+    const fo = clean(); fo.otherFindings = [entry];
+    assert.equal(notClean(fo, `otherFindings entry ${String(entry)}`).state, "pending");
+    const fr = clean(); fr.result = { ...fr.result, findings: [entry] };
+    assert.equal(notClean(fr, `result.findings entry ${String(entry)}`).state, "pending");
+    // A valid-looking resolved finding next to a malformed entry must not rescue the collection.
+    const fm = clean(); fm.otherFindings = [{ resolved: true, severity: "P1" }, entry];
+    assert.equal(notClean(fm, `mixed otherFindings ${String(entry)}`).state, "pending");
+  }
+});
+
+t("findings: only resolved === true counts as resolved; wrong-typed resolved or severity blocks", () => {
+  for (const resolved of ["false", "true", "yes", 1, 0, null, undefined, {}, [], false]) {
+    const fo = clean(); fo.otherFindings = [{ resolved, severity: "P1" }];
+    assert.equal(notClean(fo, `otherFindings resolved=${String(resolved)}`).state, "findings", `resolved=${String(resolved)}`);
+    const fr = clean(); fr.result = { ...fr.result, findings: [{ resolved, severity: "P1" }] };
+    assert.equal(notClean(fr, `result.findings resolved=${String(resolved)}`).state, "findings", `resolved=${String(resolved)}`);
+  }
+  for (const severity of [1, null, {}, ["P1"], "p1", "P4"]) {
+    const f = clean(); f.otherFindings = [{ resolved: true, severity }];
+    assert.equal(notClean(f, `severity=${JSON.stringify(severity)}`).state, "findings", JSON.stringify(severity));
+  }
+  // Positive control: resolved === true with a recognized non-P2 severity is the only non-blocking shape.
+  const ok = clean(); ok.otherFindings = [{ resolved: true, severity: "P3" }]; ok.result.findings = [{ resolved: true, severity: "P0" }];
+  assert.equal(aiReviewState(ok).state, "clean");
+});
+
+t("pending: competingReview other than boolean false, and a malformed result, are never clean", () => {
+  for (const v of [true, "false", "", 0, null, {}]) {
+    const f = clean(); f.competingReview = v;
+    assert.equal(notClean(f, `competingReview=${JSON.stringify(v)}`).state, "pending");
+  }
+  for (const v of ["completed", 7, true, []]) {
+    const f = clean(); f.result = v;
+    assert.equal(notClean(f, `result=${JSON.stringify(v)}`).state, "pending");
+  }
+});
+
+t("never throws: non-object input, empty input, and hostile getters fail closed", () => {
+  for (const input of [undefined, null, 0, "x", true, [], {}, { expected: null, observed: null }]) {
+    assert.equal(notClean(input, `input=${JSON.stringify(input)}`).state, "pending");
+  }
+  const hostile = clean();
+  Object.defineProperty(hostile, "otherFindings", { get() { throw new Error("boom"); } });
+  assert.equal(notClean(hostile, "throwing getter").state, "pending");
+  const sym = clean(); sym.result = { ...sym.result, status: Symbol("bad") };
+  assert.equal(notClean(sym, "symbol status").state, "pending");
 });
 
 console.log(`all ${n} passed`);
