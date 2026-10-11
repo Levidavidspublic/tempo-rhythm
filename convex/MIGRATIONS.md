@@ -287,3 +287,82 @@ shapes and indexes; the semantic limits stay with the later helper.
 
 Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
 separate; live is not touched here.
+
+## 2026-10-11 — TEMPO-CORE-NOTE-SCHEMA-01 note kind, archive and task link (inactive)
+
+Ticket #841. Contract #837 (`docs/contracts/CORE-WEB-NOTES.md`, PR #878 at `de1bdfd`, §4, §5.3, §6,
+§8.1, §8.2, §8.4-§8.6), with the OWNER-DECISION defaults adopted provisionally by the coordinator on
+ledger #444 (OD-1: the typed `tasks._id` is the one TODO identity; OD-2: archiving or trashing a note
+does not touch its tasks). Builds on #786 (`5fc1e67`), #807 (`edeb073`) and #828 (`52cf6e5`) at
+integration `e752319`. Additive only: optional fields and new indexes on two existing tables. No new
+table, no backfill, no data migration, no writer, no endpoint and no deployment by this writer.
+Legacy rows validate unchanged.
+
+- **`notes`** gains four optional fields. Absent is the legacy meaning of each, so no row needs a
+  value:
+  - `kind`: `quick` or `todo`. Absent means `note`, the kind of every existing row; writing `note`
+    stores nothing. Independent of `periodType` and `pageType`. The name "Blinko" is never stored.
+  - `archivedAt`: epoch ms. Absent means not archived. Trash (`deletedAt`) outranks archive, and
+    `archivedAt` is kept while a note is trashed, so restoring from trash returns it to Archived.
+  - `isTemplate`: the literal `true` only. It is derived from `pageType`: `true` exactly when
+    `pageType` is `template`, absent otherwise, so `false` cannot be stored and "not a template" has
+    one stored form. Whatever writes `pageType` must set or clear it in the same insert or patch. No
+    writer of `pageType` exists yet, so no row carries either field.
+  - `preview`: derived card text, at most 280 UTF-16 code units, from the safe projection
+    `projectPageText(body, { summaryChars: 280 }).summary` (#803), never a raw slice of `body`. Every
+    future body writer sets it in the same insert or patch; rows without it (all legacy rows) are
+    projected on read. `notes.body` stays the canonical text.
+- **`notes`** gains three indexes; the existing five are unchanged. Field order is binding:
+  - `by_userId_deletedAt_isTemplate_archivedAt_pinned_updatedAt` — Active view
+    (`deletedAt`, `isTemplate`, `archivedAt` all undefined; pinned first, then newest) and Archived
+    view (`archivedAt >= 0`, newest first).
+  - `by_userId_deletedAt_isTemplate_archivedAt_kind_pinned_updatedAt` — Active view with an
+    index-backed kind filter (`kind` undefined selects `note`). 63 characters; Convex's documented
+    limits (16 fields, 32 indexes per table) hold, and no server-side name-length rule was verified.
+  - `by_userId_isTemplate_deletedAt` — Trash view (`isTemplate` undefined, `deletedAt >= nowMs -
+    GRACE_MS`, the existing inclusive 30-day restore boundary, newest first). Older rows are hidden
+    from Trash, not erased.
+  Template pages are excluded by fixing `isTemplate = undefined` in every feed and Trash range, never
+  by a filter after the index. A kind filter is not offered in the Archived or Trash views.
+- **`tasks`** gains `sourceNoteId` (`Id<"notes">`) and `sourceBlockId` (string), both optional, set
+  together or both absent (absent = no note anchor), plus two indexes:
+  - `by_userId_sourceNoteId_deletedAt_sourceBlockId` — the only note-link index. `deletedAt` comes
+    before `sourceBlockId`, so every read of a note's links fixes `deletedAt` (live: undefined;
+    removed: `>= 0`) and removed links never enter a live read, however many there are.
+  - `by_userId_deletedAt_status_dueAt` — the bounded TODO list per status (undated first, then by
+    `dueAt`).
+  Writer validation, not expressed by these validators: `sourceBlockId` is `blk_` plus a valid
+  26-character ULID; the note has the same owner; at most one live row holds a given
+  `(userId, sourceNoteId, sourceBlockId)` (checked in the creating transaction; indexes are not
+  unique constraints); only the future `note_tasks.*` writer (#856) sets the fields, never
+  `tasks.create`, `tasks.update`, `createQuick`, MCP or the coach; `spawnRepeatAfterCompletion`
+  keeps copying an explicit field list, so a repeat occurrence carries no link.
+- **Account deletion:** unchanged. `notes` and `tasks` are already in `USER_OWNED_TABLES`; the new
+  fields ride along. Account soft deletion stamps live and archived notes and linked tasks with one
+  `deletedAt`/`updatedAt`, keeps an earlier `deletedAt`, and leaves `kind`, `archivedAt`,
+  `isTemplate`, `preview` and the link fields as they were. No table was added, so nothing new is
+  enrolled.
+- `convex/note_lifecycle_schema.test.ts` proves the declared fields and index field order, and runs
+  the real schema under `convex-test` with schema validation on: legacy rows, each kind, archive
+  states, template and preview values and linked tasks are accepted; invalid literals (`kind: "note"`,
+  `"blinko"`, `isTemplate: false`, ...), wrong-table ids and undeclared fields are refused; the
+  Active, kind, Archived, Trash, link and TODO ranges return the contract's rows in the contract's
+  order, exclude template pages by prefix, and cannot skip `isTemplate` or `deletedAt`.
+
+### Still inactive, and the gates that remain open
+
+- No reader or writer uses any of these fields or indexes. Nothing is backfilled.
+- **Readers and writers:** #842 (`notes.feed`, `setKind`, `archive`, `unarchive`, the archive
+  filter in `listNotesForUser`, `preview` on every body write, server-set `maximumRowsRead` and
+  `maximumBytesRead`), #856 (`note_tasks.*`), #849 (search filters). `templates.applyToNote` and #787's
+  writers also write bodies and must set `preview`; until they do, readers project on read.
+- **Validator gate before any link is written (§5.9):** `taskReturnValidator` (`convex/tasks.ts`) and
+  `dayPlans.taskValidator` (`convex/dayPlans.ts`, which also lacks `flexibility`) must accept
+  `sourceNoteId` and `sourceBlockId` first, or `tasks.list`, `listDueInRange`, `listToday` and
+  `dayPlans.listCarryOver` fail on the first linked row.
+- **Any writer of `pageType`** must set or clear `isTemplate` in the same patch.
+- Read bounds, pagination byte limits and concurrent link creation are not proven here: `convex-test`
+  evaluates a range by filtering every row and runs one transaction at a time.
+
+Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
+separate; live is not touched here.

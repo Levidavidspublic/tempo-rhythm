@@ -249,6 +249,16 @@ export default defineSchema({
         }),
       ),
     ),
+    // TEMPO-CORE-NOTE-SCHEMA-01 (#841, contract #837 §5.3, §8.2) — inactive note anchor. The typed
+    // tasks._id stays the one TODO identity; a task block in a note points at this row. Both
+    // fields are set together or both absent (absent = no note anchor). Nothing writes them yet:
+    // the future writer (#856 `note_tasks.*`) is the only one allowed to, and only after the strict
+    // task return validators accept both fields (§5.9). `tasks.remove` keeps them, so the index
+    // below also holds removed rows. Writer validation (not expressed here): `sourceBlockId` is
+    // `blk_` plus a valid 26-character ULID, the note has the same owner, and at most one live row
+    // holds a given (userId, sourceNoteId, sourceBlockId).
+    sourceNoteId: v.optional(v.id("notes")),
+    sourceBlockId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
@@ -257,7 +267,18 @@ export default defineSchema({
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_dueAt", ["userId", "dueAt"])
     .index("by_userId_projectId", ["userId", "projectId"])
-    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    // #841 — the only note-link index. `deletedAt` sits BEFORE `sourceBlockId` (binding order), so
+    // every read of a note's links fixes `deletedAt` (live: undefined; removed: >= 0) and removed
+    // links never enter a live read, however many there are.
+    .index("by_userId_sourceNoteId_deletedAt_sourceBlockId", [
+      "userId",
+      "sourceNoteId",
+      "deletedAt",
+      "sourceBlockId",
+    ])
+    // #841 — bounded TODO list per status: live rows, undated first, then by dueAt.
+    .index("by_userId_deletedAt_status_dueAt", ["userId", "deletedAt", "status", "dueAt"]),
 
   /**
    * TF-OSS-01 — recurrence series config. Field design lifted from
@@ -356,6 +377,32 @@ export default defineSchema({
     // advances it by exactly one per body-changing write, in the same transaction as the body,
     // derived index and operation receipt (a safe integer in [0, MAX_SAFE_INTEGER - 1]).
     revision: v.optional(v.number()),
+    // TEMPO-CORE-NOTE-SCHEMA-01 (#841, contract #837 §4, §6, §8.1, §8.6) — inactive. Every field is
+    // optional so legacy rows validate with no backfill, and nothing writes any of them yet.
+    /**
+     * Note kind. Absent means "note" (every legacy row). Only the two non-default kinds are ever
+     * stored: writing "note" stores nothing. Independent of `periodType` and `pageType`.
+     */
+    kind: v.optional(v.union(v.literal("quick"), v.literal("todo"))),
+    /**
+     * Epoch ms the note was archived. Absent = not archived. Trash (`deletedAt`) outranks archive,
+     * and `archivedAt` is kept while a note is trashed so restore returns it to Archived.
+     */
+    archivedAt: v.optional(v.number()),
+    /**
+     * Template-page discriminator, derived from `pageType`: `true` exactly when `pageType` is
+     * "template", absent otherwise. `false` is not storable, so "not a template" has one stored
+     * form and feed/Trash ranges fix it to undefined in the index prefix (never a filter after the
+     * index). Whatever writes `pageType` sets or clears this in the same insert or patch.
+     */
+    isTemplate: v.optional(v.literal(true)),
+    /**
+     * Derived card text: the safe projection of `body` (#803 `projectPageText(body,
+     * { summaryChars: 280 }).summary`), at most 280 UTF-16 code units, never a raw slice of
+     * `body`. Every future body writer sets it in the same insert or patch. Absent on legacy rows;
+     * readers project those on read. `body` stays the canonical text.
+     */
+    preview: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
@@ -364,7 +411,30 @@ export default defineSchema({
     .index("by_userId_pinned", ["userId", "pinned"])
     .index("by_userId_updatedAt", ["userId", "updatedAt"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
-    .index("by_userId_deletedAt_pageType_date", ["userId", "deletedAt", "pageType", "date"]),
+    .index("by_userId_deletedAt_pageType_date", ["userId", "deletedAt", "pageType", "date"])
+    // #841 — feed indexes. Field order is binding: `isTemplate` comes before `archivedAt`, so the
+    // Active (archivedAt = undefined) and Archived (archivedAt >= 0) ranges both fix
+    // isTemplate = undefined and template pages are never read.
+    .index("by_userId_deletedAt_isTemplate_archivedAt_pinned_updatedAt", [
+      "userId",
+      "deletedAt",
+      "isTemplate",
+      "archivedAt",
+      "pinned",
+      "updatedAt",
+    ])
+    // #841 — Active view with an index-backed kind filter (kind = undefined selects "note").
+    .index("by_userId_deletedAt_isTemplate_archivedAt_kind_pinned_updatedAt", [
+      "userId",
+      "deletedAt",
+      "isTemplate",
+      "archivedAt",
+      "kind",
+      "pinned",
+      "updatedAt",
+    ])
+    // #841 — Trash view: isTemplate = undefined, then deletedAt >= nowMs - GRACE_MS.
+    .index("by_userId_isTemplate_deletedAt", ["userId", "isTemplate", "deletedAt"]),
 
   /** Disposable, derived index of validated `json tempo` blocks in notes.body. */
   noteBlocks: defineTable(
