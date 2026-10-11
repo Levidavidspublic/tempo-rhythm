@@ -18,12 +18,26 @@ section here. Add the entry in the same PR that adds the dependency.
 
 ---
 
+### @ai-sdk/provider-utils
+
+- Version: 3.0.14
+- License: Apache-2.0
+- Source: https://github.com/vercel/ai
+- Used by: package.json
+
 ### @auth/core
 
 - Version: 0.37.4
 - License: ISC
 - Source: https://github.com/nextauthjs/next-auth
 - Used by: package.json (convex/auth.ts Resend magic-link provider)
+
+### @convex-dev/agent
+
+- Version: 0.3.2
+- License: Apache-2.0
+- Source: https://github.com/get-convex/agent
+- Used by: package.json
 
 ### @convex-dev/auth
 
@@ -124,6 +138,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://www.npmjs.com/package/@rn-primitives/types
 - Used by: apps/mobile/package.json
 
+### ai
+
+- Version: 5.0.82
+- License: Apache-2.0
+- Source: https://github.com/vercel/ai
+- Used by: package.json
+
 ### class-variance-authority
 
 - Version: 0.7.1
@@ -151,6 +172,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: Apache-2.0
 - Source: https://convex.dev
 - Used by: package.json, apps/web/package.json, apps/mobile/package.json
+
+### convex-helpers
+
+- Version: 0.1.104
+- License: Apache-2.0
+- Source: https://github.com/get-convex/convex-helpers
+- Used by: package.json
 
 ### expo
 
@@ -347,3 +375,10 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT
 - Source: https://github.com/dcastil/tailwind-merge
 - Used by: apps/web/package.json, apps/mobile/package.json
+
+### zod
+
+- Version: 4.3.6
+- License: MIT
+- Source: https://github.com/colinhacks/zod
+- Used by: package.json, packages/utils/package.json

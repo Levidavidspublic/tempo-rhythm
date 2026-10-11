@@ -113,7 +113,7 @@ type UserId = Doc<"users">["_id"];
 async function loadSettings(ctx: Db, userId: UserId) {
   return ctx.db
     .query("coachSettings")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
     .first();
 }
 
@@ -249,7 +249,9 @@ export function isOpenTask(t: Pick<Doc<"tasks">, "status" | "deletedAt">): boole
 async function pendingProposal(ctx: Db, userId: UserId) {
   return ctx.db
     .query("coachProposals")
-    .withIndex("by_userId_status", (q) => q.eq("userId", userId).eq("status", "pending"))
+    .withIndex("by_userId_status_deletedAt", (q) =>
+      q.eq("userId", userId).eq("status", "pending").eq("deletedAt", undefined),
+    )
     .first();
 }
 
@@ -339,7 +341,7 @@ export const decideProposal = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const p = await ctx.db.get(args.proposalId);
-    if (!p || p.userId !== user._id) {
+    if (!p || p.userId !== user._id || p.deletedAt !== undefined) {
       throw new Error("Proposal not found");
     }
     if (p.status !== "pending") {

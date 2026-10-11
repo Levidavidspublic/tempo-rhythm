@@ -429,7 +429,9 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
-  }).index("by_userId_deletedAt", ["userId", "deletedAt"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   /** One row per person. Missing row means the defaults in convex/coach.ts. */
   coachSettings: defineTable({
@@ -441,7 +443,10 @@ export default defineSchema({
     panicUntil: v.optional(v.number()),
     acceptedStreak: v.number(),
     updatedAt: v.number(),
-  }).index("by_userId", ["userId"]),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   /** A proposal built by code. The person accepts or rejects it. */
   coachProposals: defineTable({
@@ -457,7 +462,12 @@ export default defineSchema({
     }),
     createdAt: v.number(),
     decidedAt: v.optional(v.number()),
-  }).index("by_userId_status", ["userId", "status"]),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_userId_status_deletedAt", ["userId", "status", "deletedAt"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
   notifications: defineTable({
     userId: v.id("users"),
