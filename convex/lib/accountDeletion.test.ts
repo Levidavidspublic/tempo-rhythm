@@ -18,6 +18,8 @@ import {
   NOTE_CHILD_TABLES,
   type PagePrivacyDenial,
   PagePrivacyError,
+  PROPOSAL_CONTENT_FIELDS,
+  PROPOSAL_RECEIPT_FIELDS,
   readLivePageBlocks,
   requireActiveOwner,
   requireLiveAgentThread,
@@ -2500,7 +2502,10 @@ describe("page privacy guards (#808)", () => {
     expect(receipt.proposal.confirmedOperationId).toBe(opId(s, "live"));
     expect(receipt.proposal.confirmDigest).toBe(fakeDigest(9));
     // The content is still stored, but only the receipt is readable.
-    expect(receipt.proposal.payload.state).toBe("available");
+    const stored = await s.ctx.db.get(propId(s, "confirmed"));
+    expect(stored.payload.state).toBe("available");
+    expect("payload" in receipt.proposal).toBe(false);
+    expect(JSON.stringify(receipt)).not.toContain("Synthetic task");
     expect(
       await codeOf(() =>
         requirePendingProposal(s.ctx, {
@@ -2515,6 +2520,165 @@ describe("page privacy guards (#808)", () => {
     expect(await codeOf(() => requireLiveProposal(s.ctx, s.userA, propId(s, "confirmed")))).toBe(
       "page_unavailable",
     );
+  });
+
+  test("proposal receipts never carry content, whatever the status or how late cleanup runs", async () => {
+    const s = await seed();
+    const title = "Synthetic task";
+    const expiresAt = appliedAt + proposalWindowMs;
+    const receiptFields: readonly string[] = PROPOSAL_RECEIPT_FIELDS;
+
+    // Every row below still holds its content in storage (cleanup has not run), except the two
+    // that already carry an expired marker. The guard must not depend on that.
+    const stored: Record<string, string> = {};
+    const names = [
+      "pending",
+      "confirmed",
+      "rejected",
+      "cancelled",
+      "expiredStatus",
+      "markerOnly",
+    ] as const;
+    for (const name of names) {
+      stored[name] = (await s.ctx.db.get(propId(s, name))).payload.state;
+    }
+    expect(stored).toEqual({
+      pending: "available",
+      confirmed: "available",
+      rejected: "available",
+      cancelled: "available",
+      expiredStatus: "expired",
+      markerOnly: "expired",
+    });
+
+    for (const name of names) {
+      const result = await requireLiveProposal(s.ctx, s.userA, propId(s, name));
+      const extraKeys = Object.keys(result.proposal).filter((key) => !receiptFields.includes(key));
+      expect({
+        name,
+        hasPayload: "payload" in result.proposal,
+        extraKeys,
+        leaked: JSON.stringify(result).includes(title),
+        id: result.proposal._id,
+      }).toEqual({
+        name,
+        hasPayload: false,
+        extraKeys: [],
+        leaked: false,
+        id: propId(s, name),
+      });
+    }
+    const confirmed = await requireLiveProposal(s.ctx, s.userA, propId(s, "confirmed"));
+    expect(confirmed.proposal).toMatchObject({
+      status: "confirmed",
+      proposalRevision: 0,
+      expectedPageRevision: 1,
+      confirmDigest: fakeDigest(9),
+      confirmedOperationId: opId(s, "live"),
+      decidedAtMs: appliedAt + 2,
+      proposalExpiresAtMs: expiresAt,
+    });
+
+    // Late cleanup: the proposal is still `pending` with its content stored, but past its expiry
+    // (and past the point cleanup was due). Neither guard returns the content.
+    const cleanupDue = appliedAt + proposalWindowMs + undoWindowMs;
+    const late = await requireLiveProposal(s.ctx, s.userA, propId(s, "pending"));
+    expect(late.proposal.cleanupDueAtMs).toBe(cleanupDue);
+    expect("payload" in late.proposal).toBe(false);
+    for (const now of [expiresAt, cleanupDue - 1, cleanupDue, cleanupDue + 3_600_000]) {
+      const error = await requirePendingProposal(s.ctx, {
+        userId: s.userA,
+        proposalId: propId(s, "pending"),
+        now,
+      }).then(
+        () => null,
+        (caught: unknown) => caught,
+      );
+      expect({ now, code: (error as PagePrivacyError | null)?.code }).toEqual({
+        now,
+        code: "proposal_expired",
+      });
+      expect(String((error as PagePrivacyError).message)).not.toContain(title);
+    }
+
+    // A decided proposal never reaches the content path at any time, in or out of the window.
+    for (const name of ["confirmed", "rejected", "cancelled"] as const) {
+      for (const now of [inWindow, expiresAt - 1, expiresAt, cleanupDue + 1]) {
+        expect({
+          name,
+          now,
+          code: await codeOf(() =>
+            requirePendingProposal(s.ctx, { userId: s.userA, proposalId: propId(s, name), now }),
+          ),
+        }).toEqual({
+          name,
+          now,
+          code: "proposal_unavailable",
+        });
+      }
+    }
+  });
+
+  test("a pending, unexpired proposal returns its task, and only as `task`", async () => {
+    const s = await seed();
+    const title = "Synthetic task";
+    const expiresAt = appliedAt + proposalWindowMs;
+    for (const now of [appliedAt, inWindow, expiresAt - 1]) {
+      const result = await requirePendingProposal(s.ctx, {
+        userId: s.userA,
+        proposalId: propId(s, "pending"),
+        now,
+      });
+      expect(result.task).toEqual({ title, durationMin: 15 });
+      expect(result.proposal._id).toBe(propId(s, "pending"));
+      expect(result.proposal.status).toBe("pending");
+      expect("payload" in result.proposal).toBe(false);
+      // The title is not reachable through any other field of the result.
+      expect(JSON.stringify({ ...result, task: undefined })).not.toContain(title);
+    }
+  });
+
+  test("Undo fragments are returned only to an eligible operation inside its window", async () => {
+    const s = await seed();
+    const windowEnd = appliedAt + undoWindowMs;
+    const times = [
+      appliedAt - 1,
+      appliedAt,
+      inWindow,
+      lastGoodMs,
+      closedMs,
+      closedMs + 1,
+      closedMs + 4 * 60_000,
+      closedMs + 10 * 60_000,
+    ];
+    const eligibleOps = new Set(["live", "onPageTwo"]);
+    const observed: Record<string, boolean> = {};
+    const expected: Record<string, boolean> = {};
+    for (const name of Object.keys(s.ops)) {
+      for (const now of times) {
+        const key = `${name}@${now - appliedAt}`;
+        let text: string;
+        try {
+          text = JSON.stringify(
+            await requireUndoAccess(s.ctx, { userId: s.userA, operationId: opId(s, name), now }),
+          );
+        } catch (error) {
+          if (!(error instanceof PagePrivacyError)) {
+            throw error;
+          }
+          text = JSON.stringify({ code: error.code, message: error.message });
+        }
+        observed[key] = text.includes("insertedText") || text.includes("removedText");
+        expected[key] = eligibleOps.has(name) && now >= appliedAt && now < windowEnd;
+      }
+    }
+    expect(observed).toEqual(expected);
+    // The fragments themselves are still stored when the window has closed; only access ended.
+    const stored = (await s.ctx.db.query("pageOperationPayloads").collect()).filter(
+      (row: { operationId: string }) => row.operationId === s.ops.live,
+    );
+    expect(stored).toHaveLength(1);
+    expect(stored[0].payload.state).toBe("available");
   });
 
   test("page block reads are live, owner-scoped and bounded", async () => {
@@ -2793,6 +2957,29 @@ describe("page privacy coverage is derived from the schema (#808)", () => {
       expect(USER_OWNED_TABLES as readonly string[]).toContain(table);
       expect(FIXTURE_TABLE_NAMES).toContain(table);
     }
+  });
+
+  test("every pageProposals field is classified as receipt or content, so a new field is withheld until reviewed", () => {
+    const declared = [...declaredFieldNames("pageProposals"), "_id", "_creationTime"].sort();
+    const receipt: readonly string[] = PROPOSAL_RECEIPT_FIELDS;
+    const content: readonly string[] = PROPOSAL_CONTENT_FIELDS;
+    expect([...receipt, ...content].sort()).toEqual(declared);
+    expect(receipt.filter((field) => content.includes(field))).toEqual([]);
+    expect(content).toEqual(["payload"]);
+
+    // Outside `payload`, the only strings are ids, keys, a date and a digest. Free text
+    // (the task title) lives under `payload`, which no receipt carries.
+    const leaves = stringLeafPaths(schemaTables.pageProposals.validator);
+    expect(leaves.filter((path) => !path.startsWith("payload.")).sort()).toEqual([
+      "blockId",
+      "confirmDigest",
+      "localDate",
+      "sourceAgentPromptId",
+      "sourceRequestKey",
+    ]);
+    expect(leaves.filter((path) => path.startsWith("payload.")).sort()).toEqual([
+      "payload.task.title",
+    ]);
   });
 
   test("a newly added page or conversation child table without a guard is reported", () => {

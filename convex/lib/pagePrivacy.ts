@@ -34,6 +34,13 @@ import { BLOCK_CODEC_LIMITS } from "./blocks";
  *   client, and every lookup is owner-scoped through an approved `by_userId*` index.
  * - Bounded. Index reads use `take`, never `collect`, and return references to the stored rows
  *   rather than copies of their content.
+ * - Transient content never outlives its eligibility. Undo fragments and the proposed action are
+ *   stored until a cleanup job replaces them, and that job can run late, so a guard never decides
+ *   by "is it still stored". Fragments come back only while `now < undoUntilMs`. The proposed
+ *   action comes back only for a `pending` proposal while `now < proposalExpiresAtMs`. Every
+ *   other guard hands back receipt-shaped data (ids, status, revisions, digests, timestamps) and
+ *   never the `payload` field, so a confirmed, rejected, cancelled, expired or late-cleanup
+ *   proposal exposes no content however long its row lingers.
  * - Parent checks are live, not cached. A deleted account, note or conversation makes its derived
  *   rows unreachable on the very next read, even though those rows are not individually
  *   tombstoned (a single note or conversation delete does not cascade). Restoring the account row
@@ -109,6 +116,45 @@ export const CONVERSATION_CHILD_TABLES = [
   "pageProposals",
 ] as const satisfies readonly TableNames[];
 
+/**
+ * `pageProposals` fields that hold the proposed action. Only `requirePendingProposal` may expose
+ * it, and only as `task`. A test derives the full field list from the schema, so a new field must
+ * be classified here or in `PROPOSAL_RECEIPT_FIELDS` before the focused test passes.
+ */
+export const PROPOSAL_CONTENT_FIELDS = [
+  "payload",
+] as const satisfies readonly (keyof Doc<"pageProposals">)[];
+
+/** `pageProposals` fields a receipt may carry: ids, status, revisions, digest and timestamps. */
+export const PROPOSAL_RECEIPT_FIELDS = [
+  "_id",
+  "_creationTime",
+  "userId",
+  "kind",
+  "schemaVersion",
+  "noteId",
+  "localDate",
+  "conversationId",
+  "sourceRequestKey",
+  "sourceAgentPromptId",
+  "proposalRevision",
+  "expectedPageRevision",
+  "blockId",
+  "status",
+  "proposalExpiresAtMs",
+  "cleanupDueAtMs",
+  "metadataExpiresAtMs",
+  "decidedAtMs",
+  "confirmedOperationId",
+  "confirmDigest",
+  "createdAt",
+  "updatedAt",
+  "deletedAt",
+] as const satisfies readonly (keyof Doc<"pageProposals">)[];
+
+/** A proposal without its content. Built from an allowlist, so a new field is withheld by default. */
+export type ProposalReceipt = Pick<Doc<"pageProposals">, (typeof PROPOSAL_RECEIPT_FIELDS)[number]>;
+
 type AvailableUndoPayload = Extract<
   Doc<"pageOperationPayloads">["payload"],
   { state: "available" }
@@ -116,6 +162,16 @@ type AvailableUndoPayload = Extract<
 
 function denial(code: PagePrivacyDenial): PagePrivacyError {
   return new PagePrivacyError(code);
+}
+
+function toProposalReceipt(proposal: Doc<"pageProposals">): ProposalReceipt {
+  const receipt: Partial<Record<keyof ProposalReceipt, unknown>> = {};
+  for (const field of PROPOSAL_RECEIPT_FIELDS) {
+    if (proposal[field] !== undefined) {
+      receipt[field] = proposal[field];
+    }
+  }
+  return receipt as ProposalReceipt;
 }
 
 async function loadActiveOwner(ctx: PrivacyCtx, userId: Id<"users">): Promise<Doc<"users">> {
@@ -321,6 +377,8 @@ export type UndoAccess =
  * window that has closed, a payload already replaced by its expired marker, and a missing or
  * ambiguous payload row. The window is `appliedAtMs <= now < undoUntilMs` on both the receipt and
  * the payload: once it passes, the fragments are unreachable even if the cleanup job is late.
+ * The fragments (`splices`) are returned only in the `eligible` state. `already_undone` and every
+ * refusal carry receipt data or nothing, never fragments.
  * Nothing here proves the inverse is still safe to apply; a conflicting later edit is the Undo
  * mutation's calm failure to report.
  */
@@ -377,12 +435,7 @@ export async function requireUndoAccess(
   return { state: "eligible", operation, note, payloadId: row._id, splices: row.payload.splices };
 }
 
-/**
- * A live `pageProposals` row on a live page and a live conversation, whatever its status. Use for
- * receipts (for example a repeated confirm that returns `confirmedOperationId`). It does not
- * return the proposed action; `requirePendingProposal` does.
- */
-export async function requireLiveProposal(
+async function loadLiveProposal(
   ctx: PrivacyCtx,
   userId: Id<"users">,
   proposalId: Id<"pageProposals">,
@@ -408,26 +461,48 @@ export async function requireLiveProposal(
 }
 
 /**
+ * The receipt of a live `pageProposals` row on a live page and a live conversation, whatever its
+ * status. Use for receipts (for example a repeated confirm that returns `confirmedOperationId`).
+ * The result is receipt-shaped and never carries `payload`: a confirmed, rejected, cancelled or
+ * expired proposal, and a pending one past `proposalExpiresAtMs`, exposes no content here even
+ * while the cleanup job is late and the content is still stored. `requirePendingProposal` is the
+ * only guard that returns the proposed action.
+ */
+export async function requireLiveProposal(
+  ctx: PrivacyCtx,
+  userId: Id<"users">,
+  proposalId: Id<"pageProposals">,
+): Promise<{
+  user: Doc<"users">;
+  proposal: ProposalReceipt;
+  note: Doc<"notes">;
+  conversation: Doc<"conversations">;
+}> {
+  const { proposal, ...rest } = await loadLiveProposal(ctx, userId, proposalId);
+  return { ...rest, proposal: toProposalReceipt(proposal) };
+}
+
+/**
  * The proposed action of a pending, unexpired proposal, for preview or confirmation. Beyond
  * `requireLiveProposal` it requires status `pending`, `now < proposalExpiresAtMs` (a late expiry
  * sweep does not extend access) and an `available` payload, and that the owner's live
  * `chatRequests` row named by `sourceRequestKey` still exists in the same conversation. A
  * rejected, cancelled, expired or already confirmed proposal never exposes its content here.
+ * The content comes back only as `task`; `proposal` is the receipt, without `payload`.
  */
 export async function requirePendingProposal(
   ctx: PrivacyCtx,
   args: { userId: Id<"users">; proposalId: Id<"pageProposals">; now?: number },
 ): Promise<{
   user: Doc<"users">;
-  proposal: Doc<"pageProposals">;
+  proposal: ProposalReceipt;
   note: Doc<"notes">;
   conversation: Doc<"conversations">;
   task: { title: string; durationMin: number };
 }> {
   const { userId, proposalId } = args;
   const now = args.now ?? Date.now();
-  const live = await requireLiveProposal(ctx, userId, proposalId);
-  const { proposal } = live;
+  const { proposal, ...rest } = await loadLiveProposal(ctx, userId, proposalId);
 
   if (proposal.status !== "pending") {
     throw denial("proposal_unavailable");
@@ -451,5 +526,5 @@ export async function requirePendingProposal(
   if (sources.length !== 1 || sources[0].deletedAt !== undefined) {
     throw denial("proposal_unavailable");
   }
-  return { ...live, task: proposal.payload.task };
+  return { ...rest, proposal: toProposalReceipt(proposal), task: proposal.payload.task };
 }
