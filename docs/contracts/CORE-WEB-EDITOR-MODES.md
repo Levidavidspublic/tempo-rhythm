@@ -36,7 +36,7 @@ Precedence used: the owner's 10 October doc pack, Part A, wins over the repo doc
 2. **Live Preview and full Rich Text need a new editor engine.** That is OD-01. Recommended default: no engine in the next-week scope. If Amit wants Live Preview, authorize a time-boxed spike of a source-as-document engine (CodeMirror 6 edits the Markdown text itself, so unedited regions cannot change; document-model engines do not). Defer full Rich Text.
 3. **The Markdown string in `notes.body` stays the only persisted representation** (AE-01). Any second persisted representation is OD-02. Recommended default: reject.
 4. **A boundary hazard was reproduced on the unmerged codec.** Deleting the one line break between a prose line and a following Tempo fence turns a valid block into plain visible prose. Appending text directly after a closing fence at end of body turns it into an unclosed fence that swallows the text. Section 5 (AE-04) and section 7 (BD-01 to BD-07) fix the rule and the tests.
-5. **Candidates.** Each candidate's own packages are MIT in registry metadata. Plate is excluded by default because its resolved tree pulls in `jotai` and `zustand`, which HARD_RULES section 2 forbids. BlockNote's XL packages are `GPL-3.0 OR PROPRIETARY`. Blinko's editor code is GPL-3.0 and must not be copied. MDXEditor has one transitive package with no license field (UNKNOWN).
+5. **Candidates.** Each candidate's own packages are MIT in registry metadata. Plate is excluded by default because its resolved tree pulls in client-state libraries that HARD_RULES section 2 forbids (the names are in that file and are not repeated here). BlockNote's XL packages are `GPL-3.0 OR PROPRIETARY`. Blinko's editor code is GPL-3.0 and must not be copied. MDXEditor has one transitive package with no license field (UNKNOWN).
 6. **The repo's component test harness cannot prove bidi, IME, selection or clipboard behavior.** Those need a real browser. Signed-in Playwright specs skip without `TEMPO_E2E_STORAGE_STATE`, so preview proof is a separate later gate.
 7. **Seven later splits** are proposed in section 12, each at most 3 files plus 1 test, none admitted.
 
@@ -140,10 +140,10 @@ Persisted truth is the body string. "Source" below means user-visible and user-o
 | B-09 | AE | Re-segmentation happens only at commit points (load, successful save response, mode switch, blur), never per keystroke and never while an IME composition is active. Text typed or pasted into a prose segment is user prose, kept as bytes, and classified by the codec at the next commit like any loaded text. Invariant: visible prose plus protected spans equals the saved body. Nothing visible is dropped. Nothing hidden is saved that a protected span does not own. | BD-07 |
 | B-10 | AE | Block deletion and reorder are never side effects of text editing. Backspace or Delete at a boundary, select-all then delete, and cut across a placeholder leave every protected block in place. No ticket defines an explicit remove or reorder control (UNKNOWN), so Tier 0 has none. | BD-05 |
 | B-11 | AE | Raw HTML in the source is preserved but never rendered or executed. No `dangerouslySetInnerHTML`. Observed: react-markdown escapes it as literal text. | #790 DO NOT; section 7.5 |
-| B-12 | AE | A body over the codec's 1,048,576 unit limit is never truncated, rewritten or shown as a single hidden card with an empty editor. The editor opens it read-only with a calm notice and makes no write. | K-03; FT-03 |
+| B-12 | AE | A body over the codec's 1,048,576 unit limit is never truncated, rewritten or shown as a single hidden card with an empty editor. The editor opens it read-only: a calm notice, no editable control, no write. The codec cannot classify such a body (K-03), so no surface may render its content in-page, because a Tempo fence payload could sit inside it (B-07). The access path is an explicit, owner-initiated download of the raw bytes (OD-06, recommended default, D until Amit answers). The notice never implies the content is lost. | K-03; FT-03 |
 | B-13 | AE | Errors and logs never include body text or block source. A failed save keeps the draft and shows a calm message. | #791 step 3 |
 | B-14 | AE | Accessibility: every mode control and block control is keyboard reachable, labelled, with a visible focus state. Mode changes are announced politely. Textareas have labels. Block placeholders have accessible names built from permitted visible fields, never JSON. | `docs/HARD_RULES.md:207-215` |
-| B-15 | AE, EXTRAPOLATED | Direction: every prose textarea and every rendered paragraph, list item, heading, blockquote and table cell carries `dir="auto"`. Code blocks and block cards are `ltr`. | `docs/PRD.md:166-167`; C-11 |
+| B-15 | AE, EXTRAPOLATED | Direction: every prose textarea and every rendered paragraph, list item, heading, blockquote and table cell carries `dir="auto"`. Code blocks and inline code are `ltr`. A block card does not force a direction: each visible user-authored field in it (task title, template name) carries `dir="auto"`, and the card chrome follows the page direction. Only technical strings are `ltr`. | `docs/PRD.md:166-167`; C-11 |
 | B-16 | OWNER-DECISION (OD-04) | Whether a user may see the source of a block, and how a broken block is recovered. Recommended default in section 10.2. | |
 
 ## 6. Mode-by-format matrix
@@ -175,7 +175,7 @@ Live Preview and Rich Text are D in every row because both need OD-01. The engin
 | FM-19 | Look-alike fences | S | S | S | D | D | RT-07, RT-08, RT-09, RT-14 to RT-17. Ordinary text or code. |
 | FM-20 | Line endings (LF, CRLF, CR) and final newline | S | S | S | D | D | RT-04, RT-02, BD-06. Rich Text risks normalization. |
 | FM-21 | Unicode: emoji, joiners, combining marks (niqqud) | S | S | S | D | D | MD-12 |
-| FM-22 | Body over 1,048,576 units | U | U | U | U | U | RT-12, RT-18. B-12. |
+| FM-22 | Body over 1,048,576 units | P | P | P | D | D | RT-12, RT-18. B-12: read-only safe state with a calm notice, no edit, no write, no in-page render of the body (it cannot be classified, K-03). Bytes are preserved. Access is the owner-initiated download (OD-06). |
 | FM-23 | Undo and redo | S (within one segment) | n/a | S (within one segment) | D | D | Native per textarea. Cross-segment undo is U at Tier 0 (CG-05). |
 | FM-24 | Spellcheck, autocorrect, IME, mobile keyboards, find in page | S | S | S | D | D | Native textarea. Contenteditable and canvas-like engines trade these off (EXTRAPOLATED). |
 | FM-25 | Front matter, math, diagrams, footnotes, callouts | S (as text) | U | U | U | U | No source requires them. |
@@ -316,6 +316,7 @@ Registry metadata was read from `registry.npmjs.org` on 2026-10-11. Dependency t
 | Lexical: `lexical`, `@lexical/react`, `@lexical/markdown` 0.52.0 | Document model | MIT | `>=18.x` | 38 packages, all MIT. | Rich Text | Pre-1.0 version number; API stability is an inference. Serializer normalization. |
 | Milkdown: `@milkdown/kit`, `@milkdown/react` 7.22.3 | ProseMirror plus remark pipeline | MIT | `*` | 215 packages: MIT 211, one `(MPL-2.0 OR Apache-2.0)`, BSD-2 1, BSD-3 1, ISC 1. Includes `prosemirror-model` and `remark-parse`. | Rich Text | Large tree. Theme CSS against Tailwind v4 and the design lock. |
 | MDXEditor: `@mdxeditor/editor` 4.3.2 | Packaged editor | MIT | `>= 18 \|\| >= 19` | 249 packages. Includes `lexical` 0.48.0 and `codemirror` 6.0.2. **One transitive package, `format` 0.2.2 (via `fault`), declares no license: UNKNOWN.** | Rich Text, source view | The unlicensed transitive package blocks it until resolved. MDX orientation is an assumption. |
+| `@blocknote/core`, `@blocknote/react` 0.55.0 | Block-tree document model | MPL-2.0 (registry) | Not recorded | Not screened: UNKNOWN | Rich Text | Its in-memory block tree is permitted (B-01). Its Markdown import and export fidelity (section 9.4) and its transitive screen (AE-11) are UNKNOWN. It is ruled out only for an implementation that persists the tree or its JSON (OD-02). |
 | `@uiw/react-md-editor` 4.1.2 | Packaged textarea plus preview | MIT | `>=16.8.0` | 149 packages: MIT 143, ISC 4, BSD-2 2. Includes `react-markdown` 10.1.0 and `rehype-raw` 7.0.0. | Split-like | Ships its own renderer, including raw-HTML support. Competes with #790 and #791, which #264's 9 October amendment forbids. Not recommended. |
 | `vditor` 4.0.0 | Packaged editor | MIT | n/a | 2 packages: MIT 1, Apache-2.0 1 (`diff-match-patch`). | Possibly several modes (project documentation, unverified here) | Runtime asset loading, React fit and Tailwind fit are UNKNOWN. Not recommended without a spike. |
 
@@ -323,9 +324,8 @@ Registry metadata was read from `registry.npmjs.org` on 2026-10-11. Dependency t
 
 | Item | License or fact | Reason |
 |---|---|---|
-| `platejs` 53.3.15 and `@platejs/markdown` | MIT (129 packages, 128 MIT and 1 Apache-2.0) | The resolved tree requires `jotai`, `jotai-x`, `zustand`, `zustand-x` through `@platejs/core`. HARD_RULES section 2 forbids both for client state (`docs/HARD_RULES.md:28`; `docs/PRD.md:249`). Overriding is OD-07. |
+| `platejs` 53.3.15 and `@platejs/markdown` | MIT (129 packages, 128 MIT and 1 Apache-2.0) | The resolved tree requires four packages, two families, that HARD_RULES section 2 lists as forbidden client-state libraries, reached through `@platejs/core`. The names are in `docs/HARD_RULES.md:28` and are deliberately not repeated here (`docs/HARD_RULES.md:19`; `docs/PRD.md:249`). Overriding is OD-07. |
 | `@blocknote/xl-*` (for example `xl-multi-column` 0.55.0) | `GPL-3.0 OR PROPRIETARY` | HARD_RULES section 3 (`docs/HARD_RULES.md:40-41`). |
-| `@blocknote/core`, `@blocknote/react` 0.55.0 | MPL-2.0 | The license is allowed by HARD_RULES section 3, but BlockNote stores a block tree. That is a second persisted representation (OD-02), so excluded by default. |
 | Blinko editor code | `LICENSE` at the repository root is GNU GPL version 3 (header read 2026-10-11) | #840 DO NOT, HARD_RULES section 3, and BSL 1.1 conversion. Blinko stays a product comparator. Only the LICENSE header and the root `package.json` were read. No source code was read or reused. Clean-room behavior only. |
 | Code from Memos or Joplin | Forbidden | `docs/TRD.md:228`; `docs/PRD.md:249` |
 | 21st.dev components | License UNKNOWN (owner doc pack, Part A) | Not usable until the license is known. |
@@ -376,20 +376,20 @@ A spike is a separate, separately admitted ticket. It must output, per candidate
 | AE-09 | Mode preference is per device, `localStorage` in `try/catch`, never in Convex or the body. | SP-07 |
 | AE-10 | Bidi, IME, selection and clipboard claims require a real-browser test. A hand-rolled DOM test cannot support them. Skipped signed-in specs are not preview proof. | C-13, C-15 |
 | AE-11 | Every engine candidate passes HARD_RULES section 3 (license) and a transitive HARD_RULES section 2 screen. GPL code is never copied. | `docs/HARD_RULES.md:19-43` |
-| AE-12 | An oversize body opens read-only with a notice. It is never truncated or rewritten. | B-12 |
-| AE-13 | `dir="auto"` on prose textareas and rendered text blocks. Code and cards `ltr`. | B-15 (EXTRAPOLATED) |
+| AE-12 | An oversize body opens read-only with a notice, no edit and no write, and is not rendered in-page. It is never truncated or rewritten. The owner reaches it through the explicit download of OD-06. | B-12 |
+| AE-13 | `dir="auto"` on prose textareas, rendered text blocks and the visible user-authored fields of block cards. Only code and technical strings are `ltr`. No block card forces `ltr`. | B-15 (EXTRAPOLATED) |
 
 ### 10.2 OWNER-DECISION
 
 | ID | Question | Recommended default | Holds |
 |---|---|---|---|
 | OD-01 | Adopt a new editor framework for Live Preview or Rich Text? | No, not in the next-week scope. Ship Raw, Read and Split. If Live Preview is wanted, authorize a time-boxed, separately admitted spike of CodeMirror 6 (section 9.5). Defer full Rich Text. | Any Live Preview or Rich Text ticket; S-07 |
-| OD-02 | Allow any second persisted representation (document tree, CRDT, block store, HTML)? | No. Keep `notes.body` Markdown as the sole truth (AE-01). | Rich Text engines that store trees; BlockNote |
+| OD-02 | Allow any second persisted representation (document tree, CRDT, block store, HTML)? | No. Keep `notes.body` Markdown as the sole truth (AE-01). The rule is no second persisted representation. An in-memory editor tree that is serialized back to Markdown only is not one. | Any implementation that persists a tree or its JSON (an in-memory tree is allowed, B-01) |
 | OD-03 | If a Rich Text mode ever ships: may it normalize Markdown inside a segment the user edited? | No. Byte-exact or do not ship. Never normalize untouched segments. | Rich Text |
 | OD-04 | May a user ever see the source of a block, and how is a broken or unclosed block recovered? | No source view for valid blocks (PRD F-02). Broken blocks: a quiet card only in the first slice, with honest "no Undo" where no operation handle exists. Later, an explicit "show as plain text" action with confirmation and a 5 minute Undo through #787 and #828. | Any recovery ticket |
 | OD-05 | May the preview load remote images or other remote media? | No. Alt text or a link only. Coordinate with #838 and #854. | Image rendering |
-| OD-06 | What do search, list and MCP readers get for a structured body? | Search and list use the #803 safe projection. MCP gets the safe projection plus block ids and titles. Raw bytes only in an explicit owner-initiated export. (EXTRAPOLATED) | A reader ticket not named in #803's scope |
-| OD-07 | Admit each new dependency? | `remark-gfm` yes, through its own preflight. Any engine only after OD-01. Plate stays excluded unless Amit overrides the `jotai`/`zustand` rule. | S-03 and S-07 |
+| OD-06 | What do search, list and MCP readers get for a structured body? | Search and list use the #803 safe projection. MCP gets the safe projection plus block ids and titles. Raw bytes only in an explicit owner-initiated export. That export is also the way to reach an oversized body (B-12); no in-page display of one. (EXTRAPOLATED) | A reader ticket not named in #803's scope |
+| OD-07 | Admit each new dependency? | `remark-gfm` yes, through its own preflight. Any engine only after OD-01. Plate stays excluded unless Amit overrides the client-state rule in HARD_RULES section 2. | S-03 and S-07 |
 | OD-08 | Is a Markdown `- [ ]` item a Tempo task? | No. It is prose with a read-only checkbox in Read. The task mapping is owned by #837 and #856. | TODO integration |
 | OD-09 | How do `[[wiki links]]` render? | Literal text until `noteLinks` exists. | Link rendering |
 
@@ -407,7 +407,7 @@ Synthetic data only. No real notes, secrets or provider calls.
 | BT-04 | BD-01 to BD-06: after compose and re-parse, the block set equals the set before the edit. |
 | BT-05 | The editor's segmentation equals the shared codec's for every RT fixture. The test imports the codec and compares kinds and spans. |
 | BT-06 | RT-07, RT-09, RT-14 to RT-17 appear in Raw exactly as typed and in Read as ordinary text or code. |
-| BT-07 | MD-13, MD-14 and RTL-1: each rendered text block has `dir="auto"` and each prose textarea has `dir="auto"`. Real-browser check of the visual base direction (S-06). |
+| BT-07 | MD-13, MD-14 and RTL-1: each rendered text block has `dir="auto"` and each prose textarea has `dir="auto"`. A block card with a Hebrew title has `dir="auto"` on the title field and no `dir="ltr"` on the card. Real-browser check of the visual base direction (S-06). |
 | BT-08 | No re-segmentation and no save fires between `compositionstart` and `compositionend`. |
 | BT-09 | The renderer is never called with a string that contains a Tempo fence (B-08). |
 
@@ -417,7 +417,7 @@ Synthetic data only. No real notes, secrets or provider calls.
 |---|---|
 | FT-01 | A rejected save keeps the draft, shows a calm error without body text, and a retry works. No duplicate writes. |
 | FT-02 | A stale revision surfaces a conflict and never overwrites the newer server body or discards the local draft. |
-| FT-03 | RT-12 and RT-18: over the limit opens read-only with a notice and no write. At the limit behaves normally. |
+| FT-03 | RT-12 and RT-18: over the limit opens read-only with a notice, no editable control, no in-page render of the body and no write. The owner-initiated download, if OD-06 admits it, returns the exact bytes. At the limit behaves normally. |
 | FT-04 | RT-06: the broken card shows, the text after the opener is preserved, and no fabricated Undo appears. |
 | FT-05 | RT-10 and pasting a copied block: the second block is a broken card. Both are preserved. |
 | FT-06 | Mode switch with a dirty draft and an in-flight save: nothing lost, one save. |
@@ -432,7 +432,7 @@ Synthetic data only. No real notes, secrets or provider calls.
 |---|---|
 | OT-01 | Mode and engine components import nothing from `@/convex/_generated/api`. They take props and emit typed callbacks. A static import-graph test enforces this. |
 | OT-02 | Only the host component calls save or patch APIs. A test counts calls. |
-| OT-03 | The browser stores only the mode preference (SP-07). A test lists every `localStorage` key and expects one. |
+| OT-03 | The editor's own browser storage is only the documented mode-preference key (SP-07; the name is set in S-01). A test snapshots `localStorage` before mounting, uses the editor in every mode, and expects the only added or changed entry to be that key. It never asserts a total key count, because other features legitimately own other keys (theme and dyslexia preferences, task views, calendar events, tracking migration state). It also expects no new `sessionStorage` entry and no new IndexedDB database. |
 | OT-04 | Each split PR touches only its SCOPE. The existing `scope-guard` check enforces this. |
 | OT-05 | A soft-deleted or foreign note never reaches an editor component (C-17). |
 
