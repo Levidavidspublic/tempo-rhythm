@@ -263,6 +263,42 @@ async function insertOperationWithPayload(
   return { operationId, payloadId };
 }
 
+/**
+ * An applied operation and the undo receipt that reverted it, linked both ways in one transaction
+ * as the Undo writer stores them (#828 D5). By default the undo lands two minutes after the
+ * original and one revision above it, and has the usual 48-hour metadata window of its own.
+ */
+async function insertUndoPair(
+  t: TestConvex,
+  world: Pick<World, "userA" | "noteA">,
+  originalOverrides: Partial<OperationInput> = {},
+  undoOverrides: Partial<OperationInput> = {}
+) {
+  const originalId = await insertOperation(t, operation(world, originalOverrides));
+  const original = (await getDoc(t, originalId)) as Doc<"pageOperations">;
+  const undoAppliedAtMs = undoOverrides.appliedAtMs ?? original.appliedAtMs + 2 * MIN;
+  const undoInput = operation(world, {
+    kind: "undo",
+    noteId: original.noteId,
+    resultRevision: original.resultRevision + 1,
+    appliedAtMs: undoAppliedAtMs,
+    undoUntilMs: undefined,
+    metadataExpiresAtMs: undoAppliedAtMs + 48 * HOUR,
+    undoOfOperationId: originalId,
+    ...undoOverrides,
+  });
+  const undoId = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("pageOperations", undoInput);
+    await ctx.db.patch(originalId, {
+      undoneAtMs: undoAppliedAtMs,
+      undoneByOperationId: id,
+      updatedAt: undoAppliedAtMs,
+    });
+    return id;
+  });
+  return { originalId, undoId };
+}
+
 type Tables = {
   operations: Doc<"pageOperations">[];
   payloads: Doc<"pageOperationPayloads">[];
@@ -281,6 +317,21 @@ async function readTables(t: TestConvex): Promise<Tables> {
 function changedRows<T extends { _id: string }>(before: T[], after: T[]): number {
   const originals = new Map(before.map((row) => [row._id, JSON.stringify(row)]));
   return after.filter((row) => originals.get(row._id) !== JSON.stringify(row)).length;
+}
+
+/** Every Undo link stored on a receipt still names a receipt that exists. */
+function expectNoDanglingUndoLinks(tables: Tables) {
+  const byId = new Map(tables.operations.map((row) => [row._id as string, row]));
+  for (const row of tables.operations) {
+    for (const link of [row.undoneByOperationId, row.undoOfOperationId]) {
+      if (link === undefined) continue;
+      expect({ from: row._id, to: link, exists: byId.has(link) }).toEqual({
+        from: row._id,
+        to: link,
+        exists: true,
+      });
+    }
+  }
 }
 
 async function scheduledJobs(t: TestConvex) {
@@ -1418,6 +1469,378 @@ describe("pageCleanup.runBatch", () => {
     expect(later.operations).toHaveLength(0);
     expect(later.payloads).toHaveLength(0);
     expect(later.proposals).toHaveLength(0);
+  });
+
+  // -------------------------------------------------------------------------------------------
+  // Undo pairs (#828 D5): an original and its undo receipt name each other and leave together.
+  // -------------------------------------------------------------------------------------------
+
+  test("16. Undo pair: neither row goes while the other is inside its window, in both directions", async () => {
+    const t = newTestConvex();
+    const world = await seedWorld(t);
+
+    // (a) The original's window ended a minute ago; its undo receipt's window ends in a minute.
+    const originalApplied = NOW - 48 * HOUR - MIN;
+    const a = await insertUndoPair(
+      t,
+      world,
+      { appliedAtMs: originalApplied, resultRevision: 40 },
+      { metadataExpiresAtMs: NOW + MIN }
+    );
+    const aMarker = await insertPayload(
+      t,
+      payload(a.originalId, world, {
+        undoUntilMs: originalApplied + 5 * MIN,
+        cleanupDueAtMs: originalApplied + 10 * MIN,
+        payload: expiredMarker(originalApplied + 10 * MIN),
+      })
+    );
+    // (b) The other way round: the undo receipt is past its window, the original is not.
+    const b = await insertUndoPair(
+      t,
+      { userA: world.userA, noteA: world.noteA2 },
+      { appliedAtMs: NOW - 49 * HOUR, metadataExpiresAtMs: NOW + HOUR, resultRevision: 60 },
+      { metadataExpiresAtMs: NOW - MIN }
+    );
+    const before = await readTables(t);
+
+    const first = await runChain(t);
+    expect(sum(first, (r) => r.deletedOperations + r.deletedPayloadMarkers)).toBe(0);
+    // One hold per reviewed receipt: each is kept for its partner's open window.
+    expect(sum(first, (r) => r.skipped.retained)).toBe(2);
+    expect(await readTables(t)).toEqual(before);
+    // However many times it runs before the later deadline.
+    await runChain(t);
+    at(NOW + MIN - 1);
+    await runChain(t);
+    expect(await readTables(t)).toEqual(before);
+    expectNoDanglingUndoLinks(await readTables(t));
+
+    // (a) The undo receipt's window ends: both rows and the original's marker go in one run.
+    at(NOW + MIN);
+    const aRun = await runOnce(t);
+    expect(aRun.deletedOperations).toBe(2);
+    expect(aRun.deletedPayloadMarkers).toBe(1);
+    expect(await getDoc(t, a.originalId)).toBeNull();
+    expect(await getDoc(t, a.undoId)).toBeNull();
+    expect(await getDoc(t, aMarker)).toBeNull();
+    expect(await getDoc(t, b.originalId)).not.toBeNull();
+    expect(await getDoc(t, b.undoId)).not.toBeNull();
+    expectNoDanglingUndoLinks(await readTables(t));
+
+    // (b) The original's window ends: both go in one run.
+    at(NOW + HOUR);
+    const bRun = await runOnce(t);
+    expect(bRun.deletedOperations).toBe(2);
+    expect((await readTables(t)).operations).toHaveLength(0);
+  });
+
+  test("17. Undo pair: once both lapse, both rows and their markers go in the same invocation", async () => {
+    const t = newTestConvex();
+    const world = await seedWorld(t);
+    // Pair 2's undo receipt is scanned first, then pair 1's original. Their partners both sort
+    // after the last row this invocation scans (2 receipts per invocation), and still go with them.
+    const one = await insertUndoPair(
+      t,
+      world,
+      { appliedAtMs: NOW - 50 * HOUR, resultRevision: 70 },
+      {}
+    );
+    const oneMarker = await insertPayload(
+      t,
+      payload(one.originalId, world, { payload: expiredMarker(NOW - 49 * HOUR) })
+    );
+    const two = await insertUndoPair(
+      t,
+      { userA: world.userA, noteA: world.noteA2 },
+      { appliedAtMs: NOW - 51 * HOUR, metadataExpiresAtMs: NOW - MIN, resultRevision: 80 },
+      { metadataExpiresAtMs: NOW - 3 * HOUR }
+    );
+    const twoMarker = await insertPayload(
+      t,
+      payload(
+        two.originalId,
+        { userA: world.userA, noteA: world.noteA2 },
+        { payload: expiredMarker(NOW - 50 * HOUR) }
+      )
+    );
+    expect(pageCleanupModule.MAX_OPERATION_ROWS_PER_INVOCATION).toBe(2);
+
+    const first = await runOnce(t);
+
+    // Four receipts, both pairs, both markers: all gone after the first invocation.
+    expect(first.deletedOperations).toBe(4);
+    expect(first.deletedPayloadMarkers).toBe(2);
+    expect(first.rowsWritten).toBe(6);
+    expect(first.skipped).toEqual({
+      alreadyExpired: 2,
+      windowOpen: 0,
+      retained: 0,
+      inconsistent: 0,
+    });
+    for (const id of [one.originalId, one.undoId, two.originalId, two.undoId]) {
+      expect(await getDoc(t, id)).toBeNull();
+    }
+    expect(await getDoc(t, oneMarker)).toBeNull();
+    expect(await getDoc(t, twoMarker)).toBeNull();
+    // The continuation it queued finds nothing left and writes nothing.
+    if (first.hasMore) {
+      const jobs = await scheduledJobs(t);
+      const rest = await runChain(t, jobs[jobs.length - 1].args[0] as RunArgs);
+      expect(sum(rest, (r) => r.rowsWritten)).toBe(0);
+    }
+    expect(await readTables(t)).toEqual({ operations: [], payloads: [], proposals: [] });
+  });
+
+  test("18. Undo pair: anything that still needs either row keeps both", async () => {
+    const t = newTestConvex();
+    const world = await seedWorld(t);
+    const onNote2 = { userA: world.userA, noteA: world.noteA2 };
+
+    // (a) Gap-free chain: an eligible operation sits between the original and its undo, so the
+    // undo receipt is in its chain. The original alone is not, but it stays with its partner.
+    const chained = await insertUndoPair(
+      t,
+      onNote2,
+      { appliedAtMs: NOW - 50 * HOUR, resultRevision: 30 },
+      { resultRevision: 32, metadataExpiresAtMs: NOW - 2 * HOUR }
+    );
+    const between = await insertOperation(
+      t,
+      operation(onNote2, {
+        resultRevision: 31,
+        appliedAtMs: NOW - MIN,
+        undoUntilMs: NOW + 2 * MIN,
+        metadataExpiresAtMs: NOW + 40 * HOUR,
+      })
+    );
+
+    // (b) The original's proposal is still inside its window; the undo receipt names no proposal.
+    const openProposal = await insertProposal(
+      t,
+      proposal(world, {
+        status: "confirmed",
+        cleanupDueAtMs: NOW - HOUR,
+        payload: expiredMarker(NOW - HOUR),
+        metadataExpiresAtMs: NOW + 3 * HOUR,
+      })
+    );
+    const proposed = await insertUndoPair(
+      t,
+      world,
+      { appliedAtMs: NOW - 52 * HOUR, resultRevision: 90, proposalId: openProposal },
+      {}
+    );
+
+    // (c) The original still has an available fragment that is not due yet.
+    const fragment = await insertUndoPair(
+      t,
+      world,
+      { appliedAtMs: NOW - 53 * HOUR, resultRevision: 95 },
+      {}
+    );
+    const fragmentPayload = await insertPayload(
+      t,
+      payload(fragment.originalId, world, {
+        cleanupDueAtMs: NOW + 5 * MIN,
+        undoUntilMs: NOW - HOUR,
+      })
+    );
+
+    const before = await readTables(t);
+    const results = await runChain(t);
+    expect(await readTables(t)).toEqual(before);
+    expect(sum(results, (r) => r.deletedOperations)).toBe(0);
+    expect(sum(results, (r) => r.skipped.retained)).toBeGreaterThanOrEqual(3);
+    expectNoDanglingUndoLinks(await readTables(t));
+
+    // Each pair goes as soon as the last thing holding it lapses, and only then.
+    at(NOW + 3 * MIN);
+    await runChain(t);
+    expect(await getDoc(t, chained.originalId)).toBeNull();
+    expect(await getDoc(t, chained.undoId)).toBeNull();
+    expect(await getDoc(t, between)).not.toBeNull();
+    expect(await getDoc(t, fragment.originalId)).not.toBeNull();
+    expectNoDanglingUndoLinks(await readTables(t));
+
+    at(NOW + 5 * MIN);
+    await runChain(t);
+    expect(await getDoc(t, fragment.originalId)).toBeNull();
+    expect(await getDoc(t, fragment.undoId)).toBeNull();
+    expect(await getDoc(t, fragmentPayload)).toBeNull();
+    expect(await getDoc(t, proposed.originalId)).not.toBeNull();
+    expect(await getDoc(t, proposed.undoId)).not.toBeNull();
+    expectNoDanglingUndoLinks(await readTables(t));
+
+    at(NOW + 3 * HOUR);
+    await runChain(t);
+    expect(await getDoc(t, proposed.originalId)).toBeNull();
+    expect(await getDoc(t, proposed.undoId)).toBeNull();
+    expect(await getDoc(t, openProposal)).toBeNull();
+    expectNoDanglingUndoLinks(await readTables(t));
+  });
+
+  test("19. Undo links that do not fit the contract keep the rows; links never cross users", async () => {
+    const t = newTestConvex();
+    const world = await seedWorld(t);
+    const onNote2 = { userA: world.userA, noteA: world.noteA2 };
+
+    // (a) Three rows chained by Undo links, all past their windows: more than one pair can hold.
+    const third = await insertOperation(t, operation(world, { resultRevision: 100 }));
+    const overLinked = await insertUndoPair(
+      t,
+      world,
+      { resultRevision: 101 },
+      { resultRevision: 102, undoOfOperationId: third }
+    );
+    // (b) One-sided links, each partner still inside its window, each named row past its own.
+    // A lower row names an undo receipt that does not name it back...
+    const namedFromBelow = await insertOperation(
+      t,
+      operation(onNote2, { kind: "undo", resultRevision: 201, undoUntilMs: undefined })
+    );
+    const namesFromBelow = await insertOperation(
+      t,
+      operation(onNote2, {
+        resultRevision: 200,
+        undoneAtMs: NOW - 49 * HOUR,
+        undoneByOperationId: namedFromBelow,
+        metadataExpiresAtMs: NOW + 40 * HOUR,
+      })
+    );
+    // ...and a higher undo receipt names an original that does not name it back.
+    const namedFromAbove = await insertOperation(t, operation(onNote2, { resultRevision: 300 }));
+    const namesFromAbove = await insertOperation(
+      t,
+      operation(onNote2, {
+        kind: "undo",
+        resultRevision: 301,
+        undoUntilMs: undefined,
+        undoOfOperationId: namedFromAbove,
+        metadataExpiresAtMs: NOW + 40 * HOUR,
+      })
+    );
+    const before = await readTables(t);
+
+    const results = await runChain(t);
+
+    // Deleting any named row would leave a link pointing at nothing: every row stays.
+    expect(await readTables(t)).toEqual(before);
+    expect(sum(results, (r) => r.skipped.inconsistent)).toBe(5);
+    expect(sum(results, (r) => r.rowsWritten)).toBe(0);
+    expectNoDanglingUndoLinks(await readTables(t));
+    for (const id of [
+      third,
+      overLinked.originalId,
+      overLinked.undoId,
+      namedFromBelow,
+      namesFromBelow,
+      namedFromAbove,
+      namesFromAbove,
+    ]) {
+      expect(await getDoc(t, id)).not.toBeNull();
+    }
+
+    // (c) Another user's row named by an Undo link neither holds A's receipt nor goes with it.
+    const foreign = await insertOperation(
+      t,
+      operation(
+        { userA: world.userB, noteA: world.noteB },
+        {
+          kind: "undo",
+          resultRevision: 5,
+          undoUntilMs: undefined,
+          metadataExpiresAtMs: NOW + 40 * HOUR,
+        }
+      )
+    );
+    const foreignBefore = await getDoc(t, foreign);
+    const mine = await insertOperation(
+      t,
+      operation(world, {
+        resultRevision: 400,
+        undoneAtMs: NOW - 49 * HOUR,
+        undoneByOperationId: foreign,
+      })
+    );
+    await runChain(t);
+    expect(await getDoc(t, mine)).toBeNull();
+    expect(await getDoc(t, foreign)).toEqual(foreignBefore);
+  });
+
+  test("20. no dangling Undo link after any run, and every pair leaves in one run", async () => {
+    const t = newTestConvex();
+    const world = await seedWorld(t);
+    const pairs: { originalId: Id<"pageOperations">; undoId: Id<"pageOperations"> }[] = [];
+    const revisions = new Map<string, number>();
+    const nextRevision = (noteId: Id<"notes">) => {
+      const revision = (revisions.get(noteId) ?? 0) + 1;
+      revisions.set(noteId, revision);
+      return revision;
+    };
+
+    for (let i = 0; i < 12; i++) {
+      const note = i % 2 === 0 ? world.noteA : world.noteA2;
+      const where = { userA: world.userA, noteA: note };
+      const appliedAtMs = NOW - 50 * HOUR + i * 3 * HOUR;
+      // Either partner may outlive the other by up to two hours.
+      const jitter = ((i % 5) - 2) * HOUR;
+      const originalRevision = nextRevision(note);
+      const pair = await insertUndoPair(
+        t,
+        where,
+        {
+          appliedAtMs,
+          resultRevision: originalRevision,
+          metadataExpiresAtMs: appliedAtMs + 48 * HOUR + Math.max(jitter, 0),
+        },
+        {
+          resultRevision: nextRevision(note),
+          metadataExpiresAtMs: appliedAtMs + 2 * MIN + 48 * HOUR - Math.min(jitter, 0),
+        }
+      );
+      pairs.push(pair);
+      await insertPayload(
+        t,
+        payload(pair.originalId, where, {
+          undoUntilMs: appliedAtMs + 5 * MIN,
+          cleanupDueAtMs: appliedAtMs + 10 * MIN,
+        })
+      );
+      // A plain operation between pairs.
+      await insertOperation(
+        t,
+        operation(where, {
+          appliedAtMs: appliedAtMs + HOUR,
+          resultRevision: nextRevision(note),
+        })
+      );
+    }
+
+    const results: Result[] = [];
+    for (let step = 0; step <= 40; step++) {
+      at(NOW - 4 * HOUR + step * HOUR);
+      // One invocation at a time, so the links are checked after every transaction, not only
+      // after a whole chain.
+      let args: RunArgs = {};
+      for (let guard = 0; guard < 50; guard++) {
+        const result = await runOnce(t, args);
+        results.push(result);
+        const tables = await readTables(t);
+        expectNoDanglingUndoLinks(tables);
+        const ids = new Set(tables.operations.map((row) => row._id as string));
+        for (const pair of pairs) expect(ids.has(pair.originalId)).toBe(ids.has(pair.undoId));
+        if (!result.hasMore) break;
+        const jobs = await scheduledJobs(t);
+        args = jobs[jobs.length - 1].args[0] as RunArgs;
+      }
+    }
+    // Every pair, plain operation and marker is gone once the last window has ended.
+    expect(sum(results, (r) => r.deletedOperations)).toBe(36);
+    expect(sum(results, (r) => r.deletedPayloadMarkers)).toBe(12);
+    expect(sum(results, (r) => r.skipped.inconsistent)).toBe(0);
+    expect(await readTables(t)).toEqual({ operations: [], payloads: [], proposals: [] });
+    await expectNoSentinel(t, results);
   });
 });
 

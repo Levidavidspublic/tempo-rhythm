@@ -21,6 +21,10 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
  *   proposal's `status`.
  * - Receipts are hard-deleted only when every reference to them has lapsed (see `reviewOperation`
  *   and `reviewProposalReceipt`). Content-free rows only; an `available` fragment is never deleted.
+ * - An Undo pair is one unit (#828 D5): the original names its undo in `undoneByOperationId` and
+ *   the undo names the original in `undoOfOperationId`. Neither row is deleted until both pass
+ *   every receipt check, and then both go in the same transaction. A row that is named by a link
+ *   from outside its unit is kept, so no stored link is left pointing at a deleted row.
  * - Rows with `deletedAt` (account soft deletion) get their content expired in place, like any
  *   live row, without touching `deletedAt` or `updatedAt`. Their receipts wait for their own
  *   windows and then follow the same rule as every other receipt. Restoring an account cannot
@@ -40,9 +44,10 @@ import { internalMutation, type MutationCtx } from "./_generated/server";
  * read, 16 MiB written, 32,000 documents scanned, 16,000 documents written, 4,096 index ranges
  * read (`db.get` plus `db.query` calls), 1 second of user code. One run can read at most about
  * 5 MiB of fragments (20 payload rows at the 256 KiB-per-operation bound), at most
- * 5 operations x 257 chain rows of content-free metadata (the chain rows are the only
- * unbounded-in-theory read: each is under a few KiB), about 1,500 documents scanned and at most
- * about 125 index ranges, so every limit above keeps a wide margin.
+ * 2 receipts x 2 operations per Undo pair x 2 directions x 257 chain rows (2,056) of content-free
+ * metadata (the chain rows are the only unbounded-in-theory read: each is under a few KiB), about
+ * 2,200 documents scanned and at most about 135 index ranges, so every limit above keeps a wide
+ * margin.
  */
 
 /** Most rows one run may examine or write across all steps. */
@@ -52,15 +57,26 @@ export const MAX_ROWS_PER_INVOCATION = 100;
  * fragments, so this is the byte guard for both the read and the write side of the transaction.
  */
 export const MAX_PAYLOAD_ROWS_PER_INVOCATION = 20;
-/** Most operation receipts one run may review: each one reads up to `UNDO_CHAIN_LOOKBACK` rows. */
-export const MAX_OPERATION_ROWS_PER_INVOCATION = 5;
+/**
+ * Most operation receipts one run may review. Each one reads up to `UNDO_CHAIN_LOOKBACK` rows
+ * below and above itself on its note, and as many again for its Undo partner.
+ */
+export const MAX_OPERATION_ROWS_PER_INVOCATION = 2;
 /** 256 intervening revisions bound one Undo (#828 D4); one more detects an overflowing chain. */
 export const UNDO_CHAIN_LOOKBACK = 257;
 /** One payload row per applied operation is the contract; a few extra are tolerated and counted. */
 export const MAX_PAYLOAD_ROWS_PER_OPERATION = 2;
+/**
+ * An Undo pair: an applied operation and the undo receipt that reverted it. An undo receipt has
+ * no Undo window of its own, so it cannot be undone, and no link chain is longer than this.
+ */
+export const MAX_OPERATIONS_PER_UNDO_UNIT = 2;
 
-/** Rows a run reserves for one reviewed operation: itself plus its payload rows it may delete. */
-const OPERATION_ROW_COST = 1 + MAX_PAYLOAD_ROWS_PER_OPERATION;
+/**
+ * Rows a run reserves for one reviewed operation: every row of its Undo unit plus the payload
+ * rows of each, all of which it may delete together.
+ */
+const OPERATION_ROW_COST = MAX_OPERATIONS_PER_UNDO_UNIT * (1 + MAX_PAYLOAD_ROWS_PER_OPERATION);
 
 const STAGES = ["payloads", "proposals", "operations", "proposalReceipts"] as const;
 type Stage = (typeof STAGES)[number];
@@ -95,7 +111,14 @@ type Counts = Omit<PageCleanupResult, "hasMore">;
 
 type Budget = { rows: number; payloadRows: number; operationRows: number };
 
-type RunState = { ctx: MutationCtx; now: number; counts: Counts; budget: Budget };
+type RunState = {
+  ctx: MutationCtx;
+  now: number;
+  counts: Counts;
+  budget: Budget;
+  /** Operation receipts this run already deleted, for example as the partner in an Undo pair. */
+  deletedOperations: Set<Id<"pageOperations">>;
+};
 
 /** A place in an index scan: the last row handled, as its deadline and creation time. */
 type Position = { at: number; creationTime: number };
@@ -306,44 +329,88 @@ async function expireProposalContent(
 // Step 3: operation receipts
 // ---------------------------------------------------------------------------------------------
 
+/** Why a receipt, or the Undo unit it belongs to, is kept this run. */
+type Hold = "windowOpen" | "retained" | "inconsistent";
+
 /**
- * True when an operation on the same note with a lower revision can still be undone, so this
- * operation's metadata is part of that Undo's chain. The 257 highest lower revisions are enough
- * to see a chain of up to 256 plus the entry that shows it overflows.
+ * The operations on the same note with the 257 nearest lower (`"earlier"`) or higher (`"later"`)
+ * revisions: enough to see an Undo chain of up to 256 plus the entry that shows it overflows, and
+ * any undo receipt of this operation, which D4 places inside that same bound.
  */
-async function hasEligibleEarlierOperation(
+async function neighbouringOperations(
   ctx: MutationCtx,
   operation: Doc<"pageOperations">,
-  now: number
-): Promise<boolean> {
-  const earlier = await ctx.db
+  direction: "earlier" | "later"
+): Promise<Doc<"pageOperations">[]> {
+  return await ctx.db
     .query("pageOperations")
-    .withIndex("by_userId_noteId_affectsBody_resultRevision", (q) =>
-      q
+    .withIndex("by_userId_noteId_affectsBody_resultRevision", (q) => {
+      const note = q
         .eq("userId", operation.userId)
         .eq("noteId", operation.noteId)
-        .eq("affectsBody", true)
-        .lt("resultRevision", operation.resultRevision)
-    )
-    .order("desc")
+        .eq("affectsBody", true);
+      return direction === "earlier"
+        ? note.lt("resultRevision", operation.resultRevision)
+        : note.gt("resultRevision", operation.resultRevision);
+    })
+    .order(direction === "earlier" ? "desc" : "asc")
     .take(UNDO_CHAIN_LOOKBACK);
-  return earlier.some(
-    (other) =>
-      other.undoneAtMs === undefined && other.undoUntilMs !== undefined && other.undoUntilMs > now
+}
+
+/** True when the operation can still be undone, so every later operation in its chain is needed. */
+function isUndoEligible(operation: Doc<"pageOperations">, now: number): boolean {
+  return (
+    operation.undoneAtMs === undefined &&
+    operation.undoUntilMs !== undefined &&
+    operation.undoUntilMs > now
+  );
+}
+
+function namesAny(operation: Doc<"pageOperations">, ids: Set<Id<"pageOperations">>): boolean {
+  return (
+    (operation.undoneByOperationId !== undefined && ids.has(operation.undoneByOperationId)) ||
+    (operation.undoOfOperationId !== undefined && ids.has(operation.undoOfOperationId))
   );
 }
 
 /**
- * Hard-deletes one receipt whose own `metadataExpiresAtMs` is reached, but only if nothing that
- * is still inside its window needs it. Every lookup is scoped to the receipt's own `userId`.
+ * The receipt plus every receipt its Undo links name (`undoneByOperationId`,
+ * `undoOfOperationId`), followed until no new row appears. Links are followed only within the
+ * receipt's own user: another user's row has only its owner compared, never holds the receipt and
+ * is never deleted. A link to a row that is already gone holds nothing. More rows than an Undo
+ * pair can hold means the links do not fit the contract.
  */
-async function reviewOperation(state: RunState, operation: Doc<"pageOperations">): Promise<void> {
-  const { ctx, now, counts } = state;
-
-  if (operation.undoUntilMs !== undefined && operation.undoUntilMs > now) {
-    counts.skipped.windowOpen += 1;
-    return;
+async function collectUndoUnit(
+  ctx: MutationCtx,
+  operation: Doc<"pageOperations">
+): Promise<Doc<"pageOperations">[] | "inconsistent"> {
+  const unit = [operation];
+  for (let i = 0; i < unit.length; i++) {
+    const member = unit[i];
+    for (const linkedId of [member.undoneByOperationId, member.undoOfOperationId]) {
+      if (linkedId === undefined || unit.some((row) => row._id === linkedId)) continue;
+      const linked = await ctx.db.get(linkedId);
+      if (linked === null || linked.userId !== operation.userId) continue;
+      if (unit.length >= MAX_OPERATIONS_PER_UNDO_UNIT) return "inconsistent";
+      unit.push(linked);
+    }
   }
+  return unit;
+}
+
+/**
+ * The checks one receipt must pass on its own, cheapest first. Returns the payload rows to delete
+ * with it, or why it is kept.
+ */
+async function checkReceipt(
+  state: RunState,
+  operation: Doc<"pageOperations">
+): Promise<Doc<"pageOperationPayloads">[] | Hold> {
+  const { ctx, now } = state;
+
+  // The scan only returns receipts past this deadline; an Undo partner may not be past it yet.
+  if (operation.metadataExpiresAtMs > now) return "retained";
+  if (operation.undoUntilMs !== undefined && operation.undoUntilMs > now) return "windowOpen";
 
   const payloadRows = await ctx.db
     .query("pageOperationPayloads")
@@ -351,15 +418,9 @@ async function reviewOperation(state: RunState, operation: Doc<"pageOperations">
       q.eq("userId", operation.userId).eq("operationId", operation._id)
     )
     .take(MAX_PAYLOAD_ROWS_PER_OPERATION + 1);
-  if (payloadRows.length > MAX_PAYLOAD_ROWS_PER_OPERATION) {
-    counts.skipped.inconsistent += 1;
-    return;
-  }
+  if (payloadRows.length > MAX_PAYLOAD_ROWS_PER_OPERATION) return "inconsistent";
   // An available fragment means the content step has not caught up: leave everything.
-  if (payloadRows.some((row) => row.payload.state !== "expired")) {
-    counts.skipped.retained += 1;
-    return;
-  }
+  if (payloadRows.some((row) => row.payload.state !== "expired")) return "retained";
 
   if (operation.proposalId !== undefined) {
     const proposal = await ctx.db.get(operation.proposalId);
@@ -368,22 +429,71 @@ async function reviewOperation(state: RunState, operation: Doc<"pageOperations">
       proposal.userId === operation.userId &&
       proposal.metadataExpiresAtMs > now
     ) {
+      return "retained";
+    }
+  }
+  return payloadRows;
+}
+
+/**
+ * Hard-deletes one receipt whose own `metadataExpiresAtMs` is reached, together with its Undo
+ * partner, but only if every row of that unit is past its own window and nothing that is still
+ * inside its window needs any of them: no available fragment, no open proposal, and no
+ * still-eligible lower revision on the same note whose gap-free chain (#828 D4/D5) runs through
+ * them. A row on the same note, above or below, that names a row of the unit without being part
+ * of it (a one-sided link) keeps the unit and is counted as inconsistent, so no stored link is
+ * ever left pointing at a deleted row. Every lookup is scoped to the receipt's own `userId`.
+ */
+async function reviewOperation(state: RunState, operation: Doc<"pageOperations">): Promise<void> {
+  const { ctx, now, counts } = state;
+  // Already deleted earlier in this run as the partner of an Undo pair.
+  if (state.deletedOperations.has(operation._id)) return;
+
+  const unit = await collectUndoUnit(ctx, operation);
+  if (unit === "inconsistent") {
+    counts.skipped.inconsistent += 1;
+    return;
+  }
+
+  const payloadRowsByMember: Doc<"pageOperationPayloads">[][] = [];
+  for (const member of unit) {
+    const checked = await checkReceipt(state, member);
+    if (typeof checked === "string") {
+      counts.skipped[checked] += 1;
+      return;
+    }
+    payloadRowsByMember.push(checked);
+  }
+
+  const unitIds = new Set(unit.map((member) => member._id));
+  const namesUnitFromOutside = (other: Doc<"pageOperations">) =>
+    !unitIds.has(other._id) && namesAny(other, unitIds);
+  for (const member of unit) {
+    const earlier = await neighbouringOperations(ctx, member, "earlier");
+    if (earlier.some((other) => isUndoEligible(other, now))) {
       counts.skipped.retained += 1;
+      return;
+    }
+    if (earlier.some(namesUnitFromOutside)) {
+      counts.skipped.inconsistent += 1;
+      return;
+    }
+    const later = await neighbouringOperations(ctx, member, "later");
+    if (later.some(namesUnitFromOutside)) {
+      counts.skipped.inconsistent += 1;
       return;
     }
   }
 
-  if (await hasEligibleEarlierOperation(ctx, operation, now)) {
-    counts.skipped.retained += 1;
-    return;
+  for (const [index, member] of unit.entries()) {
+    for (const row of payloadRowsByMember[index]) {
+      await deleteReceiptRow(state, row._id);
+      counts.deletedPayloadMarkers += 1;
+    }
+    await deleteReceiptRow(state, member._id);
+    state.deletedOperations.add(member._id);
+    counts.deletedOperations += 1;
   }
-
-  for (const row of payloadRows) {
-    await deleteReceiptRow(state, row._id);
-    counts.deletedPayloadMarkers += 1;
-  }
-  await deleteReceiptRow(state, operation._id);
-  counts.deletedOperations += 1;
 }
 
 async function reviewOperationReceipts(
@@ -537,6 +647,7 @@ export const runBatch = internalMutation({
         payloadRows: MAX_PAYLOAD_ROWS_PER_INVOCATION,
         operationRows: MAX_OPERATION_ROWS_PER_INVOCATION,
       },
+      deletedOperations: new Set(),
     };
 
     let stageIndex = args.stage === undefined ? 0 : STAGES.indexOf(args.stage);
