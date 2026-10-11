@@ -173,6 +173,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://convex.dev
 - Used by: package.json, apps/web/package.json, apps/mobile/package.json
 
+### convex-test
+
+- Version: 0.0.38
+- License: Apache-2.0
+- Source: https://github.com/get-convex/convex-test
+- Used by: package.json
+
 ### convex-helpers
 
 - Version: 0.1.104

@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "check": "turbo run check",
-    "test": "bun test convex apps/web/lib tests/unit",
+    "test": "bun test convex apps/web/lib tests/unit packages",
     "check:notices": "bun scripts/check-notices.ts",
     "scan:forbidden-tech": "bun scripts/scan-forbidden-tech.ts",
     "scan:ram-only-audit": "bun scripts/scan-ram-only-audit.ts",
@@ -42,6 +42,7 @@
     "@playwright/test": "^1.61.1",
     "@types/bun": "^1.3.13",
     "@types/node": "^20.19.0",
+    "convex-test": "0.0.38",
     "turbo": "^2.3.3"
   }
 }
