@@ -740,6 +740,99 @@ describe("history normalization (synthetic fixtures only)", () => {
     }
   });
 
+  // Peak-RSS growth is a size/allocation bound (not wall-clock). The pre-fix per-element frames
+  // grew peak RSS by roughly 580 MB for this input; bounded handling stays far below the limit.
+  const MAX_PEAK_RSS_GROWTH_KB = 300 * 1024;
+  const hugeArray = (length: number) => `[${"1,".repeat(length - 1)}1]`;
+  const withMalformedField = (field: "role" | "date", value: string) =>
+    field === "role"
+      ? `[{"id":"c","mapping":{"n":{"message":{"id":"m","author":{"role":${value}},"content":{"content_type":"text","parts":["hi"]}}}}}]`
+      : `[{"id":"c","mapping":{"n":{"message":{"id":"m","author":{"role":"user"},"create_time":${value},"content":{"content_type":"text","parts":["hi"]}}}}}]`;
+
+  test.each([
+    "role",
+    "date",
+  ] as const)("several-MB malformed %s array completes within input bounds without per-element frames", (field) => {
+    const elements = 3_000_000;
+    const text = withMalformedField(field, hugeArray(elements));
+    // ASCII-only, so string length is the UTF-8 byte length: several MB, still under the cap.
+    expect(text.length).toBeGreaterThan(5 * 1024 * 1024);
+    expect(text.length).toBeLessThan(MAX_HISTORY_IMPORT_BYTES);
+    const before = process.resourceUsage().maxRSS;
+    const result = parsed(parseHistoryImport(text, "chatgpt"));
+    expect(process.resourceUsage().maxRSS - before).toBeLessThan(MAX_PEAK_RSS_GROWTH_KB);
+    expect(result.coverage.scannedMessages).toBe(1);
+    if (field === "role") {
+      expect(result.records).toEqual([]);
+      expect(result.coverage.omittedRoles).toBe(1);
+      expect(result.coverage.invalidDates).toBe(0);
+    } else {
+      expect(result.records.map((r) => [r.sourceMessageId, r.dateStatus])).toEqual([
+        ["m", "invalid"],
+      ]);
+      expect(result.records[0]).not.toHaveProperty("occurredAtMs");
+      expect(result.coverage.invalidDates).toBe(1);
+    }
+    expect(result.incomplete).toBe(true);
+  });
+
+  test("duplicate identities compare large and deep malformed fields structurally", () => {
+    const elements = 1_000_000;
+    const big = hugeArray(elements);
+    const duplicate = (first: string, second: string, field: "role" | "date") => {
+      const message = (value: string) =>
+        field === "role"
+          ? `{"id":"m","author":{"role":${value}},"content":{"content_type":"text","parts":["x"]}}`
+          : `{"id":"m","author":{"role":"user"},"create_time":${value},"content":{"content_type":"text","parts":["x"]}}`;
+      return `[{"id":"c","mapping":{"a":{"message":${message(first)}},"b":{"message":${message(second)}}}}]`;
+    };
+    const lastDiffers = `${big.slice(0, -2)}2]`;
+    const deep = (depth: number, leaf: string) => `${"[".repeat(depth)}${leaf}${"]".repeat(depth)}`;
+    for (const field of ["role", "date"] as const) {
+      const before = process.resourceUsage().maxRSS;
+      const same = parsed(parseHistoryImport(duplicate(big, big, field), "chatgpt"));
+      expect(same.coverage.duplicateRecords).toBe(1);
+      expect(process.resourceUsage().maxRSS - before).toBeLessThan(MAX_PEAK_RSS_GROWTH_KB);
+      rejected(
+        parseHistoryImport(duplicate(big, lastDiffers, field), "chatgpt"),
+        "conflicting_identity"
+      );
+      rejected(
+        parseHistoryImport(duplicate(big, hugeArray(elements - 1), field), "chatgpt"),
+        "conflicting_identity"
+      );
+      // Same key set in a different order is equal; arrays, objects and scalars never alias.
+      const orderA = '{"a":[1,{"x":null,"y":"z"}],"b":{}}';
+      const orderB = '{"b":{},"a":[1,{"y":"z","x":null}]}';
+      expect(
+        parsed(parseHistoryImport(duplicate(orderA, orderB, field), "chatgpt")).coverage
+          .duplicateRecords
+      ).toBe(1);
+      for (const other of [
+        "[]",
+        "{}",
+        '"0"',
+        '{"a":1}',
+        '{"a":[]}',
+        "[[0]]",
+        '{"a":[1,{"x":null,"y":"q"}],"b":{}}',
+      ])
+        rejected(
+          parseHistoryImport(duplicate("[[]]", other, field), "chatgpt"),
+          "conflicting_identity"
+        );
+      // 15000-deep nesting is compared iteratively: equal duplicates collapse, leaf changes conflict.
+      expect(
+        parsed(parseHistoryImport(duplicate(deep(15000, "0"), deep(15000, "0"), field), "chatgpt"))
+          .coverage.duplicateRecords
+      ).toBe(1);
+      rejected(
+        parseHistoryImport(duplicate(deep(15000, "0"), deep(15000, "1"), field), "chatgpt"),
+        "conflicting_identity"
+      );
+    }
+  });
+
   test("errors do not leak source content or identities", () => {
     for (const result of [
       parseHistoryImport('{"private marker"', "chatgpt"),

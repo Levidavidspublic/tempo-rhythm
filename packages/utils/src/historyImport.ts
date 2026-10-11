@@ -95,37 +95,82 @@ function validId(value: unknown): value is string {
   return true;
 }
 
-// Iterative canonical encoding avoids recursive serialization of malformed dates/roles.
-// Only JSON values and our scalar fields enter this transient comparison; nothing escapes.
-function identityFingerprint(value: unknown): string {
-  const pending: ({ value: unknown } | { token: string })[] = [{ value }];
-  const tokens: string[] = [];
-  while (pending.length > 0) {
-    const frame = pending.pop()!;
-    if ("token" in frame) {
-      tokens.push(frame.token);
-      continue;
-    }
-    const current = frame.value;
-    if (Array.isArray(current)) {
-      tokens.push("[");
-      pending.push({ token: "]" });
-      for (let i = current.length - 1; i >= 0; i--) pending.push({ value: current[i] });
-    } else if (isObject(current)) {
-      tokens.push("{");
-      pending.push({ token: "}" });
-      const keys = Object.keys(current).sort(compare);
-      for (let i = keys.length - 1; i >= 0; i--) {
-        const key = keys[i]!;
-        pending.push({ value: current[key] }, { token: `${JSON.stringify(key)}:` });
+type Container = unknown[] | ObjectValue;
+type Comparison = { left: Container; right: Container; keys: string[] | undefined; next: number };
+const isContainer = (value: unknown): value is Container =>
+  value !== null && typeof value === "object";
+
+// Structural equality for untrusted parsed JSON, run only when an identity repeats. It walks the
+// original parsed values in place: no serialization and no per-element allocation, so memory is
+// bounded by nesting depth (one small frame per open container) however large a malformed
+// role/date array is. Iterative, so deep nesting cannot overflow the call stack. Object key order
+// is irrelevant; JSON.parse numbers use === (both infinities from overflow stay distinct).
+function sameJson(left: unknown, right: unknown): boolean {
+  if (!isContainer(left) || !isContainer(right)) return left === right;
+  const stack: Comparison[] = [];
+  let frame: Comparison | undefined = { left, right, keys: undefined, next: 0 };
+  while (frame !== undefined) {
+    const a: Container = frame.left;
+    const b: Container = frame.right;
+    let child: [unknown, unknown] | undefined;
+    if (Array.isArray(a)) {
+      if (!Array.isArray(b) || a.length !== b.length) return false;
+      while (frame.next < a.length) {
+        const i = frame.next++;
+        const x = a[i];
+        const y = b[i];
+        if (isContainer(x) && isContainer(y)) {
+          child = [x, y];
+          break;
+        }
+        if (x !== y) return false;
       }
     } else {
-      tokens.push(`${typeof current}:${JSON.stringify(current)};`);
-      // JSON encodes both infinities as null; preserve their distinct source values.
-      if (typeof current === "number" && !Number.isFinite(current)) tokens.push(String(current));
+      if (Array.isArray(b)) return false;
+      let keys = frame.keys;
+      if (keys === undefined) {
+        keys = Object.keys(a);
+        if (keys.length !== Object.keys(b).length) return false;
+        frame.keys = keys;
+      }
+      while (frame.next < keys.length) {
+        const key = keys[frame.next++]!;
+        if (!Object.hasOwn(b, key)) return false;
+        const x = a[key];
+        const y = b[key];
+        if (isContainer(x) && isContainer(y)) {
+          child = [x, y];
+          break;
+        }
+        if (x !== y) return false;
+      }
+    }
+    if (child === undefined) {
+      frame = stack.pop();
+    } else {
+      stack.push(frame);
+      frame = {
+        left: child[0] as Container,
+        right: child[1] as Container,
+        keys: undefined,
+        next: 0,
+      };
     }
   }
-  return tokens.join("");
+  return true;
+}
+
+// What must match when a source identity repeats. role/dateValue are untrusted parsed values kept
+// by reference (never copied or serialized); dateValue only matters while the date is invalid.
+type Identity = { role: unknown; content: string; date: SourceDate; dateValue: unknown };
+function sameIdentity(a: Identity, b: Identity): boolean {
+  return (
+    a.content === b.content &&
+    a.date.dateStatus === b.date.dateStatus &&
+    a.date.occurredAtMs === b.date.occurredAtMs &&
+    sameJson(a.role, b.role) &&
+    (a.date.dateStatus !== "invalid" || sameJson(a.dateValue, b.dateValue))
+  );
 }
 
 function sourceDate(value: unknown, provider: HistoryImportProvider): SourceDate {
@@ -225,7 +270,7 @@ export function parseHistoryImport(
     if (coverage.scannedMessages > MAX_HISTORY_MESSAGES) return reject("too_many_messages");
     conversations.push({ id, nodes });
   }
-  const identities = new Map<string, string>();
+  const identities = new Map<string, Identity>();
   const records: HistoryImportRecord[] = [];
   for (const conversation of conversations) {
     for (const [key, node] of conversation.nodes) {
@@ -290,16 +335,11 @@ export function parseHistoryImport(
       content = normalize(content);
       const candidateId = JSON.stringify(["history-v1", provider, conversation.id, messageId]);
       // Compare complete normalized text before truncation/selection, including omitted roles.
-      // Invalid source dates retain their value only inside this temporary conflict check.
-      const fingerprint = identityFingerprint([
-        sourceRole,
-        content,
-        date.dateStatus,
-        date.occurredAtMs,
-        date.dateStatus === "invalid" ? dateValue : null,
-      ]);
+      // Invalid source dates are compared by their parsed value, only when an identity repeats.
+      const identity: Identity = { role: sourceRole, content, date, dateValue };
       const previous = identities.get(candidateId);
-      if (previous !== undefined && previous !== fingerprint) return reject("conflicting_identity");
+      if (previous !== undefined && !sameIdentity(previous, identity))
+        return reject("conflicting_identity");
       coverage.omittedNonText += nonText;
       if (date.dateStatus === "invalid") coverage.invalidDates++;
       if (role !== "user" && role !== "assistant") coverage.omittedRoles++;
@@ -308,7 +348,7 @@ export function parseHistoryImport(
         coverage.duplicateRecords++;
         continue;
       }
-      identities.set(candidateId, fingerprint);
+      identities.set(candidateId, identity);
       if ((role !== "user" && role !== "assistant") || content === "") continue;
       records.push({
         candidateId,
