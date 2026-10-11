@@ -46,15 +46,15 @@ Out of scope, and unadopted here: resources and attachments (#838), note version
 | AE-1 | Note kind is an optional stored literal `quick` or `todo`; an absent value means `note`. Kind is independent of `periodType` and `pageType`. | ADOPTED-ENGINEERING | §4 |
 | AE-2 | Lifecycle is `deletedAt` (existing, trash) plus a new optional `archivedAt`. Trash outranks archive. Restoring from trash returns the note to its earlier archived or active state. | ADOPTED-ENGINEERING | §6 |
 | AE-3 | Three new owner-scoped `notes` indexes (two feed, one trash) serve every feed view without a scan. The kind filter is index-backed in the Active view only. | ADOPTED-ENGINEERING | §8.1 |
-| AE-4 | Feeds page with Convex `paginate`, default 20 and maximum 50 per page, and return safe summaries, never `body`. No counts API. The page read is byte-bounded as well (AE-21). | ADOPTED-ENGINEERING | §9.1, §11.1 |
+| AE-4 | Feeds page with Convex `paginate`, default and maximum 20 per page (a To-do card may read up to six linked task rows, AE-22), and return safe summaries, never `body`. No counts API. The page read is byte-bounded as well (AE-21) and split-aware (AE-23). | ADOPTED-ENGINEERING | §9.1, §11.1 |
 | AE-5 | The one TODO identity is the typed `tasks._id`. A task block in a note is an anchor to it. The link is two optional fields on `tasks` plus one index. No new table. | ADOPTED-ENGINEERING, conditional on OD-1 | §5 |
 | AE-6 | For a linked task the row is authoritative; the block is an anchor plus a snapshot; readers overlay the row; writes to the typed form never rewrite note bodies. | ADOPTED-ENGINEERING | §5.5 |
-| AE-7 | Link invariants: at most one live row per `(note, block)`, a dangling link is tolerated, `tasks.restore` clears a link that was taken meanwhile, repeat occurrences are new unlinked tasks, there is no unlink in v1. | ADOPTED-ENGINEERING | §5.4 |
+| AE-7 | Link invariants: at most one live row per `(note, block)`, at most 50 live links per note, a dangling link is tolerated, `tasks.restore` clears a link that was taken meanwhile or that would be the note's 51st live link, repeat occurrences are new unlinked tasks, there is no unlink in v1. | ADOPTED-ENGINEERING | §5.4 |
 | AE-8 | Once #856 exists and the editor and composer call it, "+ Task" in a page and the To-do composer create linked tasks. Until then, and for Markdown edits, MCP and the coach, blocks are page-local. No ticket owns the editor change yet (§14). | ADOPTED-ENGINEERING | §5.6 |
 | AE-9 | New mutations validate first, write last, and return `{ ok:false, code }` for expected failures. Existing functions keep their shapes; they only gain optional result fields. | ADOPTED-ENGINEERING | §9.0 |
 | AE-10 | Hard gate: no row may carry a link until both strict task return validators accept it. Today they already disagree with each other. | ADOPTED-ENGINEERING | §5.9 |
-| AE-11 | Search stays bounded: a fixed scan window per call plus a continuation cursor. A `searchIndex` is a named alternative that needs a schema owner. | ADOPTED-ENGINEERING | §9.4 |
-| AE-12 | Tags are relational: `noteTags` plus `noteTagLinks`, both enrolled in account deletion in the same slice. Limits, normalization, duplicate, cycle, idempotency and deletion rules are fixed in §10. | ADOPTED-ENGINEERING | §10 |
+| AE-11 | Search stays bounded: a fixed, byte-bounded scan window per call, continued and split with Convex's own cursors (AE-23), and every match in a window is returned. A `searchIndex` is a named alternative that needs a schema owner. | ADOPTED-ENGINEERING | §9.4 |
+| AE-12 | Tags are relational: `noteTags` plus `noteTagLinks`, both enrolled in account deletion in the same slice. Limits, normalization, duplicate, cycle, idempotency and deletion rules are fixed in §10. Every write that adds live children to a parent (create, move, restore, and the promotion in remove) checks the parent's resulting child count before it writes. | ADOPTED-ENGINEERING | §10 |
 | AE-13 | Only new Convex modules touch `convex/_generated/api.d.ts`. No ticket here runs codegen. | ADOPTED-ENGINEERING | §11.3 |
 | AE-14 | Kind, archive, template and link fields need no new account-deletion enrollment. The two tag tables do. `noteBlocks` was already enrolled by #807 (merged). | ADOPTED-ENGINEERING | §6.5 |
 | AE-15 | Tests must apply `args`/`returns` validators, multi-field index ranges and pagination. The current fake context cannot. | ADOPTED-ENGINEERING | §12.1 |
@@ -64,6 +64,8 @@ Out of scope, and unadopted here: resources and attachments (#838), note version
 | AE-19 | Every bounded read of a note's linked tasks fixes `deletedAt` in the index prefix: the task-link index carries `deletedAt` before `sourceBlockId`, so soft-deleted links never enter a live read. | ADOPTED-ENGINEERING | §5.3, §8.2 |
 | AE-20 | A tag link carries `linkedAt`, set on insert and reset on revival, and `notesByTag` orders by it. | ADOPTED-ENGINEERING | §8.3, §10.4 |
 | AE-21 | A page of notes never reads an unbounded number of bytes. Convex reads whole documents, so the returned card being small does not make the read small. Every paginated read of `notes` carries server-set `maximumRowsRead` and `maximumBytesRead`; the card's `preview` is a stored derived field written with every body write (rows without one are projected on read); only single-note views read `body` into a response. | ADOPTED-ENGINEERING | §8.6, §11.1 |
+| AE-22 | Every row that carries a task link is size-capped: `note_tasks.link` admits an existing task only within the caps, and `updateTaskForUser` enforces them on linked rows. Readers of linked rows (`taskPreview`, `listForNote`, the L1/L6/L8 checks) use `take(n)`, which has no byte option, so the caps are what bound their bytes. Unlinked and legacy rows are not capped and are never read by those readers. | ADOPTED-ENGINEERING | §5.10 |
+| AE-23 | Every paginated API that sets `maximumRowsRead`/`maximumBytesRead` (`notes.feed` in all three views, `note_tags.notesByTag`, `note_tasks.list`, the `search.all` note scan) accepts `endCursor` and returns `continueCursor`, `isDone`, `splitCursor` and `pageStatus` unchanged. A `SplitRequired` result carries no items, and the caller replaces it with the two split ranges. | ADOPTED-ENGINEERING | §11.1 |
 | OD-1 | Is the typed `tasks` row the canonical TODO identity for core web, or do typed tasks later retire into blocks (the 20 Sep design)? | OWNER-DECISION | Default: typed `tasks._id` is canonical for core web. Retiring typed tasks stays unadopted. |
 | OD-2 | Does archiving or trashing a note change its linked tasks? | OWNER-DECISION | Default: no. The tasks stay live in Today, the planner, Tasks and TODO, with a provenance label. |
 | OD-3 | User-facing names for the kinds, and whether a separate quick kind exists. | OWNER-DECISION | Default: stored `quick`/`note`/`todo`; labels "Quick note", "Note", "To-do". Hebrew strings are the owner's. |
@@ -285,11 +287,12 @@ sourceBlockId: v.optional(v.string()),   // "blk_" + 26-char ULID, validated by 
 | L3 | A link never crosses owners. | Every lookup starts with `userId`; a foreign `noteId` or `taskId` is reported as not found, never as foreign. |
 | L4 | Retrying any link operation does not create a second row. | Natural key `(noteId, blockId)` for row-only operations; `requestId` receipts for operations that also write the body (§9.2). |
 | L5 | A dangling link is allowed. If the block is no longer in the body, or the note is trashed, the task stays exactly as it is and reports `source.state` (`block_missing`, `note_trashed`). Deleting a line of Markdown never deletes a task. | Detection by lookup, never by cascade. |
-| L6 | `tasks.restore` never revives a link that was taken meanwhile. | If another live row now holds the same `(note, block)` (the same live-prefix read as L1), the restore succeeds but clears the restored row's link fields and returns `linkCleared: true`. |
+| L6 | `tasks.restore` never revives a link that was taken meanwhile, and never revives one past L8. | A restored row with link fields is checked before the patch, in this order: (1) another live row now holds the same `(note, block)` (the same live-prefix read as L1, `take(2)`); (2) the note already has `MAX_LINKED_TASKS_PER_NOTE` live links (the L8 read, `take(51)`; the row being restored is not live yet, so it is not counted). If either holds, the restore still succeeds but writes `sourceNoteId` and `sourceBlockId` as `undefined` in the same patch and returns `linkCleared: true` with `linkClearedReason: "block_taken"` or `"note_task_limit"`. The task comes back unlinked; its block stays in the body as a page-local item. Restore never fails because of a link. |
 | L7 | A repeat occurrence is a new logical task and carries no link. | `spawnRepeatAfterCompletion` copies an explicit field list (`convex/tasks.ts:427-450`) and must keep doing so. The original stays linked, done. |
-| L8 | **Live** linked tasks per note are bounded. | `MAX_LINKED_TASKS_PER_NOTE = 50` (EXTRAPOLATED). The check is `take(51)` on `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined)` of the L1 index, so removed rows are neither read nor counted, and a note may carry any number of removed linked tasks. The 51st live link is `NOTE_TASK_LIMIT`. Removed rows are read only by `listForNote`, under their own cap (§9.2). |
+| L8 | **Live** linked tasks per note are bounded. | `MAX_LINKED_TASKS_PER_NOTE = 50` (EXTRAPOLATED). The check is `take(51)` on `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined)` of the L1 index, so removed rows are neither read nor counted, and a note may carry any number of removed linked tasks. The 51st live link is `NOTE_TASK_LIMIT`. Every path that makes a link live runs this check: `link`, `addTask`, `captureTodo` (a new note, so it always passes) and `tasks.restore` (L6, which clears the link instead of failing). Removed rows are read only by `listForNote`, under their own cap (§9.2). |
 | L9 | No unlink in v1. | To detach, delete the task or remove the block. Unlink would need a body write to refresh the snapshot; it is unadopted (§13.2). |
 | L10 | Archived notes accept link operations. Trashed notes do not. | Same rule as `updateNoteForUser` (`convex/notes.ts:156`), extended by AE-2. |
+| L11 | Every row that carries link fields, live or removed, is within the linked-task caps. | Admission in `note_tasks.link` and the cap check in `updateTaskForUser` (§5.10, AE-22). No row carries link fields at the baseline (§4.2), so there is no legacy linked row to grandfather. |
 
 ### 5.5 Field authority and state mapping (AE-6)
 
@@ -325,7 +328,7 @@ Rules:
 | Make a page-local block a TODO | `note_tasks.link` without `taskId` | insert, linked | none | yes | `(noteId, blockId)` |
 | Attach an existing task to a page-local block | `note_tasks.link` with `taskId` | patch link fields | none | yes | `(noteId, blockId)` |
 | Tick, untick, rename, reschedule | existing `tasks.*`, `dayPlans.moveTaskToDay` | patch | none | n/a | existing |
-| Delete, restore a task | `tasks.remove`, `tasks.restore` (+ hook, L6) | soft delete / restore | none | n/a | existing |
+| Delete, restore a task | `tasks.remove`, `tasks.restore` (+ hook, L6, which also applies L8) | soft delete / restore; restore may clear the link | none | n/a | existing |
 | Change note kind | `notes.setKind` | none | none | n/a | same-kind no-op |
 | Delete a line of Markdown that holds a block | `notes.update` / #787 | none | change | n/a | n/a. Link dangles (L5). |
 | Undo an add or a capture | `note_tasks.undoCreate` | soft-delete the created row | page undo or note removal | yes | `requestId` |
@@ -361,7 +364,42 @@ Page-local blocks remain legitimate (#792, #787). The UI must label them honestl
 
 Gate: **before any code path can write `sourceNoteId`, both validators accept `sourceNoteId` and `sourceBlockId`, and the `dayPlans` copy also accepts `flexibility`.** The `tasks.ts` half fits #856's scope (`convex/tasks.ts`). The `dayPlans.ts` half does not fit any listed ticket, so a one-file slice is needed before #856 is admitted (name proposed: `TEMPO-CORE-TASK-VALIDATOR-PARITY`, EXTRAPOLATED; no issue exists). If it is not created, #856 stops with `blocked: scope overflow`. The same slice should make `dayPlans` import one shared validator, so the drift cannot recur.
 
-`tasks.restore` also has a strict `returns` (`convex/tasks.ts:301`); the `linkCleared` field in L6 changes it, inside #856's scope.
+`tasks.restore` also has a strict `returns` (`convex/tasks.ts:301`); the `linkCleared` and `linkClearedReason` fields in L6 change it to `v.object({ success: v.boolean(), linkCleared: v.optional(v.boolean()), linkClearedReason: v.optional(v.union(v.literal("block_taken"), v.literal("note_task_limit"))) })`, inside #856's scope.
+
+### 5.10 Linked-task size caps (AE-22)
+
+**Why.** Every reader of linked rows reads whole task documents with `take(n)`: `taskPreview` (6 per To-do card, §9.1), `listForNote` (51 live and 21 removed), and the L1, L6 and L8 checks (2 and 51). `take(n)` has only a count (installed `convex` 1.32.0: `take(n: number)` is `limit(n).collect()`, `dist/esm/server/impl/query_impl.js`); `maximumBytesRead` is a `PaginationOptions` field, honoured only by `paginate`. And a task document has no size bound today: `tasks.create` and `tasks.update` accept a `title`, `description`, `projectId` and `projectName` of any length (`convex/tasks.ts:137-156`, `:173-195`, `:197-217`, `:247-250`, `:265-270`), and `normalizeChecklist` caps a checklist at 20 items (`convex/lib/taskChecklists.ts:3`, `:69`) but not the length of an item's `text` or `id`. So 51 rows could be 51 times the vendor's per-document ceiling (about 1 MiB, UK-5), and a single To-do card could exhaust a function.
+
+**The caps** (UTF-16 code units of the value as stored, the unit `String.length` counts):
+
+| Field | Cap | Source |
+|---|---|---|
+| `title` | 1–280 | existing bounds: `createQuick` (`convex/tasks.ts:317`), MCP `task_create`/`task_update` (`convex/lib/mcp/tools.ts:58`, `:77`); §5.5 |
+| `description` | ≤ 10,000 | existing MCP bound on `notes`, which maps to `description` (`convex/lib/mcp/tools.ts:59`, `:78`; `convex/mcpTools.ts:138`, `:153`) |
+| `checklist` | ≤ 20 items (existing `MAX_CHECKLIST_ITEMS`); each `text` ≤ 280, each `id` ≤ 64 | item caps EXTRAPOLATED; generated ids are `check-<index>-<slug of ≤ 24>` (`convex/lib/taskChecklists.ts:25-28`) |
+| `projectId`, `projectName` | ≤ 200 each | EXTRAPOLATED |
+| `timeSpentOnDay` | absent, or `JSON.stringify` of it ≤ 2,000 | EXTRAPOLATED. `v.any()` (`convex/schema.ts:233`) and no writer at the baseline (`grep timeSpentOnDay convex` finds only the schema and the two return validators); whoever adds a writer must keep linked rows inside this cap |
+
+Every other field is an id, a number, a boolean or a literal. A row inside every cap holds at most 280 + 10,000 + 20 × (280 + 64) + 2 × 200 + 2,000 = 19,560 UTF-16 units, at most 3 UTF-8 bytes each, plus under 2 KiB of fixed fields: `LINKED_TASK_MAX_BYTES` ≈ 60 KiB (EXTRAPOLATED; how Convex counts a document's bytes is UNKNOWN, UK-13). The read budgets in §8.6 use that figure.
+
+**Which rows are capped.** Only rows that carry link fields (L11). Capping every task would change today's `tasks.create` and `tasks.update` for no reader in this contract: unlinked rows are read only by `note_tasks.list`, which pages under `maximumBytesRead` (§8.6 R2), and by the existing unbounded readers (§11.2), which already read everything.
+
+**Who enforces it.** Every writer of `tasks`, with what it must do:
+
+| Writer | Lines | Can it write a linked row? | Rule |
+|---|---|---|---|
+| `note_tasks.link` with `taskId` (#856) | new | it creates the link | Admission: reads the stored row and checks every cap above. Any field over → `{ ok:false, code:"TASK_TOO_LARGE" }`, nothing written. |
+| `note_tasks.link` without `taskId`, `addTask`, `captureTodo` (#856) | new | yes, as an insert through `createTaskForUser` | Title 1–280 (`TITLE_INVALID`); they write no other capped field. |
+| `createTaskForUser` (`tasks.create`; MCP `task_create`, `convex/mcpTools.ts:136`) | `convex/tasks.ts:173-195` | only when `note_tasks` passes link fields | With link fields, the caller has checked the caps first. Without them: unchanged. |
+| `updateTaskForUser` (`tasks.update`; MCP `task_update`, `convex/mcpTools.ts:150`) | `convex/tasks.ts:235-282` | yes | When the stored row has `sourceNoteId`, every capped field the call writes is checked before the patch; one over → throws `Task text too long`, nothing written. Unlinked rows: unchanged. A call that writes no capped field is not checked. |
+| `createQuick` | `convex/tasks.ts:320-351` | no (never links, §5.3) | unchanged; it already shortens a title over 280 (`:335-336`) |
+| `spawnRepeatAfterCompletion` | `convex/tasks.ts:405-455` | no (L7) | unchanged; it copies stored values and never truncates them |
+| `acceptPlanForUser` (brain dump) | `convex/brain_dump.ts:134-164` | no | unchanged; title already ≤ 200 (`:112`, `:143`) |
+| `toggleCompletion`, `remove`, `restore`, `setTaskRepeatCfg` (`convex/tasks.ts:379-403`, `:284-315`, `:551-575`); `dayPlans.moveTaskToDay` (`convex/dayPlans.ts:219`); coach accept (`convex/coach.ts:357`); account deletion | as cited | yes | They write no capped field (`restore` may clear link fields, L6). Nothing to check. |
+
+**Owner.** #856. Every writer that can put a capped field on a linked row is in `convex/tasks.ts` or in `convex/note_tasks.ts`, both in #856's scope; MCP reaches tasks only through the two `convex/tasks.ts` helpers, and the writers in other files (last row above) touch no capped field. The caps ship in the same PR as the first link writer, so no link is ever live without them. No other slice changes.
+
+**Legacy and oversized rows.** No row carries link fields at the baseline (§4.2), so there is no linked row to grandfather. A row over a cap stays exactly as it is (never truncated) and cannot be linked until the user shortens it: `TASK_TOO_LARGE` names the reason (copy is #857's, under OD-3). A removed linked row cannot be edited (`updateTaskForUser` refuses removed rows, `convex/tasks.ts:242`), so ghosts stay inside the caps too.
 
 ## 6. Lifecycle
 
@@ -519,11 +557,12 @@ The first index is the only link index (AE-19). Its field order is binding, with
 
 | Read | Range | Bound |
 |---|---|---|
-| Live links of a note (L8, `taskPreview`, `listForNote`) | `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined)` | `take(MAX_LINKED_TASKS_PER_NOTE + 1)`; ordered by `sourceBlockId` |
+| Live links of a note (L8, L6, `listForNote`) | `eq(userId).eq(sourceNoteId, n).eq(deletedAt, undefined)` | `take(MAX_LINKED_TASKS_PER_NOTE + 1)`; ordered by `sourceBlockId` |
+| A To-do card's preview (`taskPreview`, §9.1) | the same | `take(TASK_PREVIEW_ITEMS + 1)` = `take(6)` |
 | The live link of one block (L1, L6) | the same, then `eq(sourceBlockId, b)` | `take(2)` |
 | Removed links of a note (ghosts, `listForNote` only) | `eq(userId).eq(sourceNoteId, n).gte(deletedAt, 0)`, `.order("desc")` | `take(MAX_REMOVED_SHOWN + 1)`; newest removal first |
 
-None of them reads a soft-deleted row when it wants a live one. **Schema requirement for #841:** without `deletedAt` in the index prefix, a note with more than 50 removed linked tasks could not give a bounded, correct live read (`take(51)` would fill with removed rows, or a post-limit filter would drop live ones).
+None of them reads a soft-deleted row when it wants a live one, and every row any of them reads carries link fields, so it is inside the linked-task caps (L11, §5.10). **Schema requirement for #841:** without `deletedAt` in the index prefix, a note with more than 50 removed linked tasks could not give a bounded, correct live read (`take(51)` would fill with removed rows, or a post-limit filter would drop live ones).
 
 The second index serves the TODO list (`note_tasks.list`, §9.2) without scanning every task: `eq(userId).eq(deletedAt, undefined).eq(status, s)` returns undated items first, then by `dueAt` ascending. The existing task readers keep their `collect()` (§11.2); the TODO list must not reuse them.
 
@@ -566,7 +605,7 @@ Both tables join `USER_OWNED_TABLES` in the same slice (`convex/lib/accountDelet
 
 Nonzero cases for: a legacy note row with none of the new fields; each kind; archived and not archived; an invalid `kind` literal, `isTemplate: false` and an invalid `sourceNoteId` rejected by the validator; `isTemplate: true` accepted; `preview` optional (a legacy row without it validates, a string validates, a non-string is rejected); the exact index field order (read from the schema definition), including `isTemplate` before `archivedAt` in the two feed indexes and `deletedAt` before `sourceBlockId` in the link index; the new `tasks` fields optional; all existing indexes still present.
 
-### 8.6 Bounded note reads (AE-21): schema requirement for #841, rules for #842, #847 and #849
+### 8.6 Bounded note reads (AE-21): schema requirement for #841, rules for #842, #847, #849 and #856
 
 **Why a small card is not enough.** A Convex query reads whole documents; there is no column projection. `paginate` over `notes` therefore loads every row's full `body` into the function, however small the returned `NoteCard` is. Bodies have no length bound at the baseline (§2.1; the only ceiling is the vendor's per-document limit of about 1 MiB, not verified here: UNKNOWN), and one function may read only a limited volume (about 16 MiB; UK-5). A page of large but valid bodies could fail the feed. #803's projection makes what is *returned* safe; it does not make what is *read* smaller. Three rules follow.
 
@@ -577,21 +616,36 @@ Nonzero cases for: a legacy note row with none of the new fields; each kind; arc
 - A row without `preview` (a legacy row, or a row from a writer not yet updated) is valid. `notes.feed` then projects its `body` with the same function and the same 280 limit; it never slices raw text. No backfill (UA-9).
 - R1 saves the projection's CPU time on every read and keeps cards stable between reads. It does **not** shrink the bytes read, because the row is read whole. R2 does that.
 
-**R2. A byte bound on every page that reads `notes` rows (#842, #847, #849).**
+**R2. A byte bound on every paginated read (#842, #847, #849, #856).**
 
-- `notes.feed`, `note_tags.notesByTag` and the search scan take the caller's `paginationOpts`, clamp `numItems` (§11.1) and overwrite `maximumRowsRead` and `maximumBytesRead` with server constants; `cursor`, `endCursor` and `id` pass through as given. A caller can neither raise nor remove the bounds, and a caller-supplied value is replaced, not compared.
+- `notes.feed` (all three views), `note_tags.notesByTag`, `note_tasks.list` and the `search.all` note scan take the caller's pagination options, clamp `numItems` to their ceiling (below) and overwrite `maximumRowsRead` and `maximumBytesRead` with server constants; `cursor`, `endCursor` and `id` pass through as given. A caller can neither raise nor remove the bounds, and a caller-supplied value is replaced, not compared. Each returns Convex's split metadata unchanged, and a `SplitRequired` result carries no items (§11.1, AE-23).
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `FEED_PAGE_MAX` | 50 | `numItems` ceiling (§11.1) |
-| `FEED_MAX_ROWS_READ` | 100 | rows entering the query, twice the page ceiling (EXTRAPOLATED) |
-| `FEED_MAX_BYTES_READ` | 4 MiB (4,194,304) | a quarter of the vendor read limit, leaving the rest for `taskPreview` and tag reads (EXTRAPOLATED) |
-| `TAGGED_PAGE_MAX` | 8 | page ceiling for readers that fetch notes by id (below); 8 × the 1 MiB document ceiling is half the vendor read limit (EXTRAPOLATED) |
+| `FEED_PAGE_MAX` | 20 | `numItems` ceiling, and default, of `notes.feed` (§11.1). It also caps the To-do cards on a page, so `taskPreview` reads at most 20 × 6 task rows |
+| `FEED_MAX_ROWS_READ` | 40 | rows entering the query, twice the feed ceiling (EXTRAPOLATED); every API in this list uses it |
+| `FEED_MAX_BYTES_READ` | 4 MiB (4,194,304) | byte bound of the feed, `notesByTag` and the search scan; a quarter of the vendor read limit, the rest left for task-preview and by-id reads (EXTRAPOLATED) |
+| `TAGGED_PAGE_MAX` | 8 | `numItems` ceiling of readers that fetch notes by id (below): `notesByTag`, search with `tagId`, `note_tasks.list`; 8 × the 1 MiB document ceiling is half the vendor read limit (EXTRAPOLATED) |
+| `TODO_MAX_BYTES_READ` | 2 MiB (2,097,152) | byte bound of `note_tasks.list`'s task page, lower than the feed's because that page also reads up to 8 notes by id (EXTRAPOLATED) |
+| `SEARCH_SCAN_NOTES` | 25 | `numItems` of the search note scan without `tagId` (§9.4, EXTRAPOLATED) |
 
-- The installed `convex` 1.32.0 types document both options (`node_modules/convex/dist/esm-types/server/pagination.d.ts`, `PaginationOptions`): they limit rows and bytes "entering the query pipeline", and when the byte limit is reached "the query may return an incomplete page and require a page split". The result then carries `pageStatus` and `splitCursor`. The feed returns Convex's result with only `page` mapped, so those fields reach the client; the installed `convex/react` `usePaginatedQuery` reads them (`dist/esm/react/use_paginated_query.js`). A page may therefore be shorter than `numItems`; only `isDone` ends the list.
-- **Runtime behaviour is UNKNOWN** (UK-11). No merged Tempo code passes either option, and the types do not say whether a cut page always holds at least one row, whether `isDone` stays truthful on it, or how a document's bytes are counted. #842 must show the bound in a harness that applies it (NL-24) or report UNKNOWN; an option that is not shown to cut the page is not a bound, and the feed does not ship on it.
-- **Readers that fetch notes by id** (`note_tags.notesByTag` paginates link rows, then reads each note) are not covered by `maximumBytesRead`, which sees only the paginated table. Their page ceiling is `TAGGED_PAGE_MAX`, set so that even a ceiling-sized body per row stays inside the vendor limit.
-- `taskPreview` reads (at most 51 task rows per To-do card, §9.1) are bounded in rows, not in bytes. The byte bound covers note rows only.
+Every byte bound is at least twice the vendor's per-document ceiling, so no single document is larger than a bound on its own.
+
+**Read budget per call** (worst case, EXTRAPOLATED; vendor limit about 16 MiB per function, UK-5; `LINKED_TASK_MAX_BYTES` ≈ 60 KiB, §5.10; a page under a byte bound can read one more row than the bound allows, the row that crosses it):
+
+| Function | Reads at most | Worst case |
+|---|---|---|
+| `notes.feed` | note rows under `FEED_MAX_BYTES_READ`; `taskPreview` for ≤ 20 To-do cards × 6 linked task rows | 4 + 1 + 120 × 60 KiB ≈ 12 MiB |
+| `note_tags.notesByTag` | ≤ 40 link rows (each well under 1 KiB); 8 notes by id; `taskPreview` for ≤ 8 cards × 6 linked task rows | 8 + 48 × 60 KiB ≈ 11 MiB |
+| `search.all` note scan | without `tagId`: note rows under `FEED_MAX_BYTES_READ`; with `tagId`: ≤ 40 link rows and 8 notes by id | 5 MiB; 8 MiB. The task, habit and goal groups keep today's `collect()` (§9.4, §11.2) and are not counted |
+| `note_tasks.list` | task rows under `TODO_MAX_BYTES_READ` (unlinked and legacy rows are uncapped, up to the 1 MiB ceiling); ≤ 8 source notes by id; ≤ 8 `noteBlocks` rows (a block is at most 65,536 characters, `packages/utils/src/blocks.ts:5`) | 2 + 1 + 8 + 8 × 192 KiB ≈ 12.5 MiB |
+| `note_tasks.listForNote` | one note; 51 live and 21 removed linked task rows | 1 + 72 × 60 KiB ≈ 5.2 MiB |
+| `note_tasks.link`, `addTask`, `tasks.restore` | one note, one block row, the task being linked or restored (unlinked, so up to 1 MiB), `take(2)` and `take(51)` of linked rows | ≈ 5.3 MiB |
+
+- The installed `convex` 1.32.0 types document both options (`node_modules/convex/dist/esm-types/server/pagination.d.ts`, `PaginationOptions`): they limit rows and bytes "entering the query pipeline", and when the byte limit is reached "the query may return an incomplete page and require a page split". The installed `paginate` forwards `cursor`, `endCursor`, `maximumRowsRead` and `maximumBytesRead` to the backend and returns `page`, `isDone`, `continueCursor`, `splitCursor` and `pageStatus` (`dist/esm/server/impl/query_impl.js`). Convex's pagination guide says a page that would exceed either value "will return a status forcing the client to split the pages" (docs.convex.dev/database/pagination, read through Context7 on 2026-10-11), and the open-source backend sets `SplitRequired` when a row or byte limit, built-in or caller-set, is hit while a page is read (`crates/isolate/src/environment/udf/async_syscall.rs`, `read_page_from_query`, same source). A page may therefore be shorter than `numItems`, and a `SplitRequired` page may be incomplete; §11.1 says what callers do.
+- **Runtime behaviour is still UNKNOWN in this repo** (UK-11). No merged Tempo code passes either option, and nothing read says whether a cut page always holds at least one row, whether a `SplitRequired` result always carries a `splitCursor`, or how a document's bytes are counted. #842 must show the bound in a harness that applies it (NL-24) or report UNKNOWN; an option that is not shown to cut the page is not a bound, and the feed does not ship on it.
+- **Readers that fetch notes by id** (`note_tags.notesByTag` and search with `tagId` page link rows, then read each note; `note_tasks.list` pages tasks, then reads each linked item's source note) are not covered by `maximumBytesRead`, which sees only the paginated table. Their page ceiling is `TAGGED_PAGE_MAX`, set so that even a ceiling-sized body per row stays inside the vendor limit.
+- **Task rows.** Readers of linked rows (`taskPreview`, `listForNote`, the L1, L6 and L8 checks) use `take(n)`, which has no byte option; their bytes are bounded by the linked-task caps (§5.10, AE-22), which every row they can read satisfies (L11). `note_tasks.list` is the one paginated reader of `tasks`; it also reads unlinked and legacy rows, which are not capped, so it carries this rule's byte bound (`TODO_MAX_BYTES_READ`).
 - **Alternative, not proposed:** a separate 1:1 summary table that holds only card fields and carries the feed indexes, so a feed page never reads a body at all. It needs a schema owner, a backfill of every legacy note (reversing UA-9) and every note writer to keep it in step inside one transaction. If NL-24 cannot be shown, or Amit prefers it, #842 stops and a schema slice is raised first. This is the same choice the §9.4 `searchIndex` alternative describes.
 
 **R3. Bodies reach a response only from single-note views.** `notes.get`, `notes.getSafe`, the editor and MCP `noteView` (one id) may return `body`. No feed, Archived, Trash, tag or search-card path does. Search reads bodies to build `searchText` (it cannot use the 280-unit `preview`), which is why its scan carries R2 and returns snippets only (§9.4). The legacy `notes.list` and MCP `notes_list` stay unbounded and are listed in §11.2.
@@ -604,7 +658,7 @@ Nonzero cases for: a legacy note row with none of the new fields; each kind; arc
 - **Validate everything, then write.** A mutation that returns normally commits its writes, so an expected failure returns `{ ok:false, code }` only before any write. A failure after a write throws, and Convex rolls the whole transaction back.
 - Foreign, missing and soft-deleted rows give the same `*_NOT_FOUND` code (no enumeration).
 - Existing functions keep their argument and result shapes. They gain optional result fields only. Their `throws "Note not found"` behaviour stays (`convex/notes.ts:156`, `:191`).
-- Page arguments use `paginationOptsValidator`. `numItems` is clamped to 1–50 (default 20), not rejected. A query that reads `notes` rows also overwrites `maximumRowsRead` and `maximumBytesRead` with server constants (§8.6 R2).
+- Page arguments use `paginationOptsValidator` and page results use `paginationResultValidator(item)` from `convex/server` (installed 1.32.0: the first carries `endCursor`, `id`, `maximumRowsRead` and `maximumBytesRead`, the second `splitCursor` and `pageStatus`). `numItems` is clamped to 1 and the API's ceiling (§11.1), not rejected. Every paginated API here overwrites `maximumRowsRead` and `maximumBytesRead` with server constants (§8.6 R2) and follows the split protocol (§11.1, AE-23).
 - Types used below:
 
 ```ts
@@ -622,9 +676,15 @@ args: {
   view: "active" | "archived" | "trash",
   kind?: NoteKind,            // active view only; any other view throws "kind filter needs the active view"
   nowMs?: number,             // required iff view === "trash" (finite integer ≥ 0); else throws "nowMs required"
-  paginationOpts: PaginationOptions,
+  paginationOpts: PaginationOptions,   // numItems clamped to 1–FEED_PAGE_MAX (20); cursor, endCursor, id passed through; row and byte bounds set by the server
 }
-returns: { page: NoteCard[]; isDone: boolean; continueCursor: string /* + splitCursor, pageStatus, passed through */ }
+returns: {                    // paginationResultValidator(noteCard)
+  page: NoteCard[];           // [] when pageStatus is "SplitRequired"
+  isDone: boolean;
+  continueCursor: string;
+  splitCursor?: string | null;
+  pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+}
 
 type NoteCard = {
   _id: Id<"notes">; kind: NoteKind; title: string;
@@ -634,16 +694,17 @@ type NoteCard = {
   archivedAt?: number;
   deletedAt?: number; restorableUntilMs?: number;   // trash view only: deletedAt + GRACE_MS
   taskPreview?: {                                   // kind === "todo" only
-    total: number; open: number; truncated: boolean;
-    items: { taskId: Id<"tasks">; title: string; status: TaskStatus }[];   // ≤ 5
+    items: { taskId: Id<"tasks">; title: string; status: TaskStatus }[];   // ≤ TASK_PREVIEW_ITEMS (5)
+    truncated: boolean;                             // a sixth live linked task exists
   };
 }
 ```
 
 - Reads: the index and range in §8.1. Every range fixes `isTemplate = undefined`, so template pages are excluded by the index prefix, not by a `filter` before `paginate`; the number of template pages does not change the reads per page (NL-23).
-- `taskPreview` reads `by_userId_sourceNoteId_deletedAt_sourceBlockId` with `eq(userId).eq(sourceNoteId, noteId).eq(deletedAt, undefined)` and `take(MAX_LINKED_TASKS_PER_NOTE + 1)` per To-do card, so removed tasks are never read. The cost is page size × 51 reads at most.
+- `taskPreview` reads `by_userId_sourceNoteId_deletedAt_sourceBlockId` with `eq(userId).eq(sourceNoteId, noteId).eq(deletedAt, undefined)` and `take(TASK_PREVIEW_ITEMS + 1)` = `take(6)` per To-do card, so removed tasks are never read. `items` are the first five in index order (`sourceBlockId`, a ULID, so roughly the order the blocks were created, not their order in the page); `truncated` says a sixth exists. No `total` or `open` count is returned: counting needs the whole live range (up to 51 rows), and no count API is adopted (UA-8). The editor and #857 get the full list from `note_tasks.listForNote`.
+- **Task bytes.** Every row `taskPreview` reads carries link fields, so it is inside the linked-task caps (L11, §5.10): at most 6 × `LINKED_TASK_MAX_BYTES` (≈ 360 KiB) per card, and at most 20 To-do cards per page (`FEED_PAGE_MAX`), so at most 120 task rows (≈ 7 MiB) per page. A legacy or oversized task cannot be linked (`TASK_TOO_LARGE`), so it never reaches this read. The budget for the whole call is in §8.6 R2.
 - Blocked until #803's projection is merged (the stored `preview` is written with it). The feed has no raw-body fallback: a row without a stored `preview` is projected with the same function, never sliced.
-- Byte-bounded (§8.6 R2): a page can be shorter than `numItems`, and Convex's `pageStatus` and `splitCursor` pass through unchanged. `taskPreview` reads are bounded in rows (51 per To-do card), not in bytes.
+- Byte-bounded (§8.6 R2) and split-aware (§11.1): a page can be shorter than `numItems`; `continueCursor`, `isDone`, `splitCursor` and `pageStatus` are Convex's, unchanged. On `pageStatus: "SplitRequired"` the page may be incomplete, so the feed returns `page: []` and hydrates no `taskPreview` for it; the caller replaces it with the two split ranges. All three views (Active, Archived, Trash) follow this.
 - The card is built from the row's `preview` and metadata; `body` is read into the function (Convex reads whole rows) and never copied to the result.
 
 **`notes.create`** — existing; adds `kind?: NoteKind`. Returns `Id<"notes">` as today. `kind: "todo"` through this call creates a To-do note with no tasks.
@@ -684,18 +745,18 @@ Everything touching the body depends on #787 and #828 (UNKNOWN shapes, §3).
 type LinkCode =
   | "NOTE_NOT_FOUND" | "TASK_NOT_FOUND" | "BLOCK_NOT_FOUND" | "BLOCK_NOT_TASK" | "BLOCK_BROKEN"
   | "TASK_ALREADY_LINKED" | "BLOCK_ALREADY_LINKED" | "NOTE_TASK_LIMIT" | "TITLE_INVALID"
-  | "REVISION_CONFLICT" | "REQUEST_ID_INVALID" | "REQUEST_ID_REUSED";
+  | "TASK_TOO_LARGE" | "REVISION_CONFLICT" | "REQUEST_ID_INVALID" | "REQUEST_ID_REUSED";
 type SourceState = "ok" | "block_missing" | "note_trashed";
 ```
 
 | Function | Kind | Args | Returns |
 |---|---|---|---|
-| `note_tasks.link` | mutation | `{ noteId, blockId: string, taskId?: Id<"tasks"> }` | `{ ok:true; taskId; created: boolean } \| Fail<LinkCode>`. No `taskId`: create a row from the block (§5.5 mapping). With `taskId`: attach the existing row. A second call for the same `(noteId, blockId)` returns the same `taskId` with `created:false`. Block lookup: `noteBlocks.by_userId_noteId_blockId`; type `task` and not deleted → ok; type `broken` → `BLOCK_BROKEN`; other type → `BLOCK_NOT_TASK`; none → `BLOCK_NOT_FOUND`. |
+| `note_tasks.link` | mutation | `{ noteId, blockId: string, taskId?: Id<"tasks"> }` | `{ ok:true; taskId; created: boolean } \| Fail<LinkCode>`. No `taskId`: create a row from the block (§5.5 mapping). With `taskId`: attach the existing row, after the admission check (§5.10): a stored field over its cap → `TASK_TOO_LARGE`, nothing written. Both paths check L1 and L8 first. A second call for the same `(noteId, blockId)` returns the same `taskId` with `created:false`. Block lookup: `noteBlocks.by_userId_noteId_blockId`; type `task` and not deleted → ok; type `broken` → `BLOCK_BROKEN`; other type → `BLOCK_NOT_TASK`; none → `BLOCK_NOT_FOUND`. |
 | `note_tasks.addTask` | mutation | `{ noteId, requestId, expectedRevision: number, title: string, afterBlockId?: string, dueAt?: number }` | `{ ok:true; taskId; blockId; noteRevision: number; operationId; undoUntilMs } \| Fail<LinkCode>`. Row insert, block insert, receipt, and link in one transaction. Title 1–280. |
 | `note_tasks.captureTodo` | mutation | `{ requestId, text: string, title?: string }` | `{ ok:true; noteId; taskId; blockId } \| Fail<LinkCode>`. Creates a `todo` note whose body holds one block, and the linked row. |
 | `note_tasks.undoCreate` | mutation | `{ requestId }` | `{ ok:true } \| Fail<"REQUEST_ID_INVALID" \| "UNDO_EXPIRED" \| "UNDO_CONFLICT" \| "NOTE_NOT_FOUND">`. Within the 5-minute window, removes what the add or capture created and soft-deletes the created row, in one transaction. Never touches work done after the create. Shape follows #787/#828. |
 | `note_tasks.listForNote` | query | `{ noteId }` | `{ ok:true; items: { blockId; taskId; title; status: TaskStatus; completedAt?: number; dueAt?: number; deletedAt?: number; restorableUntilMs?: number }[]; truncated: boolean; removedTruncated: boolean } \| Fail<"NOTE_NOT_FOUND">`. Two bounded reads on the link index (§8.2). Live: `eq(userId).eq(sourceNoteId, noteId).eq(deletedAt, undefined)`, `take(51)`; the first 50 are returned and `truncated` is true when a 51st exists. Removed: `eq(userId).eq(sourceNoteId, noteId).gte(deletedAt, 0)`, `.order("desc")`, `take(MAX_REMOVED_SHOWN + 1)` with `MAX_REMOVED_SHOWN = 20` (EXTRAPOLATED); the newest 20 are appended with `deletedAt` and `restorableUntilMs` so the editor can draw a "removed task" ghost, and `removedTruncated` is true when older removals exist. A removed row whose `blockId` already has a live row in the result is dropped. The live read never touches a soft-deleted row, so any number of removed tasks leaves it bounded and correct. |
-| `note_tasks.list` | query | `{ status: TaskStatus, paginationOpts }` | page of `TodoItem`, below. Index `by_userId_deletedAt_status_dueAt`: ascending (undated first) for `todo` and `in_progress`, descending for `done` and `cancelled`. Page ≤ 50. |
+| `note_tasks.list` | query | `{ status: TaskStatus, paginationOpts }` | `PaginationResult<TodoItem>` (`paginationResultValidator`), with `continueCursor`, `isDone`, `splitCursor` and `pageStatus` passed through and `page: []` on `SplitRequired` (§11.1). Index `by_userId_deletedAt_status_dueAt`: ascending (undated first) for `todo` and `in_progress`, descending for `done` and `cancelled`. `numItems` is clamped to 1–`TAGGED_PAGE_MAX` (8), because each item may read its source note by id; `maximumRowsRead` = `FEED_MAX_ROWS_READ` and `maximumBytesRead` = `TODO_MAX_BYTES_READ`, set by the server (§8.6 R2). This is the one paginated reader of `tasks`, and it reads unlinked and legacy rows, which are not capped. |
 
 ```ts
 type TodoItem = {
@@ -705,7 +766,7 @@ type TodoItem = {
 };
 ```
 
-`source.state` costs one note read and one `noteBlocks` lookup per item, at most 100 extra reads per page.
+`source` costs one note read (deduplicated by `noteId` within the call) and one `noteBlocks` lookup per linked item: at most 8 notes and 8 block rows per page, inside the §8.6 read budget.
 
 Narrow hooks in `convex/tasks.ts` (inside #856's scope):
 
@@ -713,8 +774,9 @@ Narrow hooks in `convex/tasks.ts` (inside #856's scope):
 |---|---|
 | `taskReturnValidator` gains `sourceNoteId?` and `sourceBlockId?` | §5.9 |
 | `createTaskForUser` accepts server-set link fields | so rows keep one insert helper and its defaults (`:173-195`) |
-| `tasks.restore` clears a conflicting link and returns `linkCleared` | L6 |
-| nothing else | `spawnRepeatAfterCompletion` is left alone (L7) |
+| `updateTaskForUser` checks the linked-task caps on a row that has `sourceNoteId`, before its patch | §5.10, L11 |
+| `tasks.restore` clears a link that is taken or that would be the note's 51st live link, and returns `linkCleared` and `linkClearedReason` | L6, L8 |
+| nothing else | `spawnRepeatAfterCompletion`, `createQuick` and every other writer are left alone (L7, §5.10) |
 
 ### 9.3 `convex/note_tags.ts` (#847; new module)
 
@@ -730,13 +792,13 @@ type TagCode =
 | `note_tags.list` | query | `{}` | `{ tags: { _id; name; parentId?: Id<"noteTags">; createdAt: number }[]; truncated: boolean }`. All live tags, `take(TAG_MAX_PER_USER + 1)`; `truncated` should never be true if the limit holds. |
 | `note_tags.create` | mutation | `{ name, parentId?: Id<"noteTags"> }` | `{ ok:true; tagId } \| Fail<TagCode>`. `TAG_NAME_TAKEN` carries `existingTagId` so a composer can reuse it. |
 | `note_tags.rename` | mutation | `{ tagId, name }` | `{ ok:true; changed: boolean } \| Fail<TagCode>` |
-| `note_tags.move` | mutation | `{ tagId, parentId: Id<"noteTags"> \| null }` | `{ ok:true; changed: boolean } \| Fail<TagCode>` |
-| `note_tags.remove` | mutation | `{ tagId }` | `{ ok:true; restorableUntilMs: number; childrenMovedTo: Id<"noteTags"> \| null } \| Fail<TagCode>` (OD-6 default) |
-| `note_tags.restore` | mutation | `{ tagId }` | `{ ok:true; reparentedToRoot: boolean; renamedTo?: string } \| Fail<TagCode>`. Eligible while `now - deletedAt <= GRACE_MS`, the same rule as notes. Children that moved up are not moved back. A name that a live sibling now holds is not an error: the tag comes back as `Name (2)`, `Name (3)`, … and `renamedTo` says so (§10.5). `TAG_NAME_TAKEN` only when all 21 candidates are taken. |
+| `note_tags.move` | mutation | `{ tagId, parentId: Id<"noteTags"> \| null }` | `{ ok:true; changed: boolean } \| Fail<TagCode>`. `TAG_LIMIT` when the new parent already has `TAG_MAX_CHILDREN` live children (§10.2). |
+| `note_tags.remove` | mutation | `{ tagId }` | `{ ok:true; restorableUntilMs: number; childrenMovedTo: Id<"noteTags"> \| null } \| Fail<TagCode>` (OD-6 default). `TAG_LIMIT` when promoting the children would leave the destination with more than `TAG_MAX_CHILDREN` live children; `TAG_NAME_TAKEN` (with `childTagId`) on a name collision there. Both are preflighted before any write (§10.5). |
+| `note_tags.restore` | mutation | `{ tagId }` | `{ ok:true; reparentedToRoot: boolean; renamedTo?: string } \| Fail<TagCode>`. Eligible while `now - deletedAt <= GRACE_MS`, the same rule as notes. Children that moved up are not moved back. A name that a live sibling now holds is not an error: the tag comes back as `Name (2)`, `Name (3)`, … and `renamedTo` says so (§10.5). `TAG_NAME_TAKEN` only when all 21 candidates are taken. `TAG_LIMIT` when the user already has `TAG_MAX_PER_USER` live tags or the target parent has `TAG_MAX_CHILDREN`; `TAG_DEPTH_EXCEEDED` when the old parent now sits at `TAG_MAX_DEPTH`. Nothing is written on any failure. |
 | `note_tags.attach` | mutation | `{ noteId, tagId }` | `{ ok:true; attached: boolean } \| Fail<TagCode>`. `attached:false` when the pair is already live. |
 | `note_tags.detach` | mutation | `{ noteId, tagId }` | `{ ok:true; detached: boolean } \| Fail<TagCode>` |
 | `note_tags.forNotes` | query | `{ noteIds: Id<"notes">[] }` (≤ 50) | `{ byNote: Record<string, Id<"noteTags">[]> }`. Only live links to live tags, ≤ 20 per note. |
-| `note_tags.notesByTag` | query | `{ tagId, view: "active" \| "archived", paginationOpts }` | page of `NoteCard`, ordered by `linkedAt`, the time the pair last became live (newest first; a re-attach moves the note to the top, §10.4). Index `by_userId_tagId_deletedAt_linkedAt`, range `eq(userId).eq(tagId, t).eq(deletedAt, undefined)`, `.order("desc")`; each note is read and filtered by state (live, the requested archive state, not a template). Short pages are possible; `isDone` and the cursor are truthful. `numItems` is clamped to `TAGGED_PAGE_MAX = 8`: the notes are fetched by id, which `maximumBytesRead` does not see (§8.6 R2). |
+| `note_tags.notesByTag` | query | `{ tagId, view: "active" \| "archived", paginationOpts }` | `PaginationResult<NoteCard>` (`paginationResultValidator`, split fields passed through, `page: []` on `SplitRequired`, §11.1), ordered by `linkedAt`, the time the pair last became live (newest first; a re-attach moves the note to the top, §10.4). Index `by_userId_tagId_deletedAt_linkedAt`, range `eq(userId).eq(tagId, t).eq(deletedAt, undefined)`, `.order("desc")`; each note is read and filtered by state (live, the requested archive state, not a template). Short pages are possible; `isDone` and the cursor are truthful. `numItems` is clamped to 1–`TAGGED_PAGE_MAX` (8): the notes are fetched by id, which `maximumBytesRead` does not see (§8.6 R2); `maximumRowsRead` and `maximumBytesRead` on the link page are set by the server. A To-do card's `taskPreview` is read as in §9.1. |
 
 Ordering by the note's own `updatedAt` is not offered: it would need a denormalised timestamp on every link row, kept in step with every note write.
 
@@ -753,19 +815,28 @@ args: {
     createdFrom?: number, createdTo?: number,   // finite, from < to
     archived?: "exclude" | "only" | "include",  // default "exclude"
   },
-  cursor?: string | null,
+  notesPage?: PaginationOptions,                // paginationOptsValidator; absent = { numItems: 25, cursor: null }
 }
-returns: today's four groups (unchanged) + notesPage?: { nextCursor: string | null; scanned: number }
+returns: today's four groups + notesPage?: {
+  continueCursor: string;                       // Convex's, unchanged
+  isDone: boolean;
+  splitCursor?: string | null;
+  pageStatus?: "SplitRecommended" | "SplitRequired" | null;
+  scanned: number;                              // rows in the window; 0 on "SplitRequired"
+}
 ```
+
+`notesPage` replaces the earlier draft's `cursor`/`nextCursor` pair, which could not carry a split. The server treats it as R2 says (§8.6): `numItems` is clamped to 1–`SEARCH_SCAN_NOTES` (25), or 1–`TAGGED_PAGE_MAX` (8) with `tagId`; `maximumRowsRead` and `maximumBytesRead` are overwritten; `cursor`, `endCursor` and `id` pass through. The four group arrays keep their names and item shapes; only the notes group's length rule changes (below).
 
 Behaviour (AE-11):
 
-- Notes are scanned in feed order, **at most `SEARCH_SCAN_NOTES = 25` per call** (EXTRAPOLATED), through the first feed index (Active or Archived range, `isTemplate` fixed to `undefined`, so template pages are never scanned), and the matches among them are returned (≤ 8, the existing `GROUP_LIMIT`, `convex/search.ts:6`). `nextCursor` continues the scan. A user may need "search older notes". This replaces today's `collect()` of every note, task, habit and goal (`:80-97`).
+- Notes are scanned in feed order, **at most `SEARCH_SCAN_NOTES = 25` per call** (EXTRAPOLATED), through the first feed index (Active or Archived range, `isTemplate` fixed to `undefined`, so template pages are never scanned), and **every** match in the window is returned, at most `SEARCH_SCAN_NOTES` because a match is a scanned row. The existing `GROUP_LIMIT` of 8 (`convex/search.ts:6`) no longer cuts the notes group: a match dropped from a window the cursor has already passed could never be found again. It still applies to tasks, habits and goals. `continueCursor` continues the scan. A user may need "search older notes". This replaces today's `collect()` of every note, task, habit and goal (`:80-97`).
 - Matching and snippets use the safe projection (#803/#804), never raw `body`.
-- With `tagId`, iteration runs over `noteTagLinks` for that tag, not over the feed. The notes are then fetched by id, so the scan is at most `TAGGED_PAGE_MAX = 8` notes per call (§8.6 R2).
+- With `tagId`, iteration runs over `noteTagLinks` for that tag, not over the feed, through the same `notesPage` options and the same split protocol. The notes are then fetched by id, so the scan is at most `TAGGED_PAGE_MAX = 8` notes per call (§8.6 R2). A cursor belongs to one query, so changing `tagId` or any filter starts again from `cursor: null`.
 - `createdFrom/To` filters inside the scan window (no `createdAt` index is proposed).
-- Why 25: bodies are unbounded today (§2.1) and one function may read only a limited volume (Convex documents about 16 MiB and 32,000 documents per function; vendor figure, not verified here, UNKNOWN). #828 D4 proposes a 128 KiB body cap for the new paths. Until a body cap exists on every writer, the window size is a guess to be validated. What protects the read is not the 25 but the byte bound (§8.6 R2: server-set `maximumRowsRead` and `maximumBytesRead` on the feed-order scan), so a call may scan fewer than 25 notes; `scanned` and `nextCursor` say how many.
-- Alternative: a Convex `searchIndex` on a derived plain-text field. It needs a schema owner and a field written by every body writer, and it stores a second copy of private text. Not proposed here. If chosen, #849 stops and a schema slice is raised first.
+- **Split-aware (AE-23, §11.1).** The note scan is a Convex `paginate` under a byte bound, so a window can come back `SplitRequired`, meaning it may be incomplete. The server then returns `notes: []` for that call (no partial matches) with Convex's `splitCursor`, `continueCursor` and `pageStatus`, and the caller replaces the window with the two split ranges, as §11.1 says. `search.all` returns four groups, not a `PaginationResult`, so `usePaginatedQuery` cannot drive it; #850 implements the §11.1 rules itself. With them, no window is skipped, and a match is never lost to a split or to a group limit.
+- Why 25: bodies are unbounded today (§2.1) and one function may read only a limited volume (Convex documents about 16 MiB and 32,000 documents per function; vendor figure, not verified here, UNKNOWN). #828 D4 proposes a 128 KiB body cap for the new paths. Until a body cap exists on every writer, the window size is a guess to be validated. What protects the read is not the 25 but the byte bound (§8.6 R2: server-set `maximumRowsRead` and `maximumBytesRead` on the feed-order scan), so a call may scan fewer than 25 notes; `scanned` says how many, and `continueCursor`, `isDone` and the split fields say where to go next.
+- Alternative: a Convex `searchIndex` on a derived plain-text field. It needs a schema owner and a field written by every body writer, and it stores a second copy of private text; and `maximumRowsRead`/`maximumBytesRead` are "not enforced for search queries" (installed `PaginationOptions`), so it would need a different read bound (the scan above uses `withIndex`, not a search index, so the options apply to it). Not proposed here. If chosen, #849 stops and a schema slice is raised first.
 - Resource search stays gated until a resources API exists (#849 step 2).
 - Tasks, habits and goals groups keep their current behaviour; making them bounded is outside this contract (listed in §11.2).
 
@@ -774,11 +845,11 @@ Behaviour (AE-11):
 | Ticket | May call | May not |
 |---|---|---|
 | #843 composer | `notes.create` (+`kind`), `note_tasks.captureTodo` once it exists, `note_tags.attach` after create | write `localStorage` as content; show a kind whose API is missing; parse `#tag` or `- [ ]` from text (OD-8) |
-| #844 feed | `notes.feed` (active), `notes.togglePin`, `note_tags.forNotes` | read `body`; count rows; scan |
-| #845 archive and trash | `notes.feed` (archived, trash), `archive`, `unarchive`, `remove`, `restore` | show a delete-forever or empty-trash control; promise anything beyond OD-4 |
-| #848 tags UI | `note_tags.*` | build its own hierarchy rules |
-| #850 search UI | `search.all` (+filters, cursor) | collect locally |
-| #857 TODO view | `note_tasks.list`, `listForNote`, existing `tasks.toggleCompletion`, `tasks.remove`, `tasks.restore` | create a task by viewing a note; invent a second task identity, Kanban or recurrence |
+| #844 feed | `notes.feed` (active) through `usePaginatedQuery`, `notes.togglePin`, `note_tags.forNotes` | read `body`; count rows; scan; page by hand without the §11.1 split rules |
+| #845 archive and trash | `notes.feed` (archived, trash) through `usePaginatedQuery`, `archive`, `unarchive`, `remove`, `restore` | show a delete-forever or empty-trash control; promise anything beyond OD-4; page by hand without the §11.1 split rules |
+| #848 tags UI | `note_tags.*` (`notesByTag` through `usePaginatedQuery`) | build its own hierarchy rules |
+| #850 search UI | `search.all` (+filters, `notesPage`), following the §11.1 split rules | collect locally; show a `SplitRequired` window's matches; say "no results" before the scan is done |
+| #857 TODO view | `note_tasks.list` through `usePaginatedQuery`, `listForNote`, existing `tasks.toggleCompletion`, `tasks.remove`, `tasks.restore` (showing `linkCleared` honestly) | create a task by viewing a note; invent a second task identity, Kanban or recurrence |
 
 ## 10. Nested tags
 
@@ -805,17 +876,18 @@ Duplicate policy: among **live** tags with the same `parentId` (roots share `par
 |---|---|---|
 | `TAG_NAME_MAX` | 64 code points | §10.1 |
 | `TAG_MAX_DEPTH` | 5 (a root is depth 1) | walk up from the parent, at most 5 steps |
-| `TAG_MAX_PER_USER` | 500 live tags | `take(501)` on `by_userId_deletedAt` before create |
-| `TAG_MAX_CHILDREN` | 100 | `take(101)` on `by_userId_deletedAt_parentId_nameKey` with `parentId` fixed |
+| `TAG_MAX_PER_USER` | 500 live tags | `take(501)` on `by_userId_deletedAt` before create and before restore |
+| `TAG_MAX_CHILDREN` | 100 live children per parent; the root counts as a parent (`parentId` absent), so at most 100 root tags | `take(101)` on `by_userId_deletedAt_parentId_nameKey` with `deletedAt` undefined and `parentId` fixed, before every write that adds live children to that parent: create, move, restore, and the promotion in remove (§10.3, §10.5) |
 | `NOTE_MAX_TAGS` | 20 live links per note | `take(21)` on `by_userId_noteId_deletedAt` |
 
-Exceeding returns `TAG_LIMIT` or `NOTE_TAG_LIMIT`. No limit check scans an unbounded range.
+Exceeding returns `TAG_LIMIT` or `NOTE_TAG_LIMIT`, before any write. No limit check scans an unbounded range. Every write that makes a tag live (create, restore) checks `TAG_MAX_PER_USER`.
 
 ### 10.3 Hierarchy, cycles, moves
 
 - `move(tag, newParent)`: reject `newParent == tag` and any newParent whose ancestor chain contains `tag` (`TAG_CYCLE`). The chain walk stops after `TAG_MAX_DEPTH + 1` steps; a longer chain means stored data is already corrupt and returns `TAG_CORRUPT_HIERARCHY` instead of looping.
 - The new depth is `depth(newParent) + 1 + height(subtree of tag)`. The subtree is read level by level, at most `TAG_MAX_DEPTH` levels, `take(TAG_MAX_CHILDREN + 1)` per level, never more than `TAG_MAX_PER_USER` rows in total. A result above `TAG_MAX_DEPTH` is `TAG_DEPTH_EXCEEDED`.
 - `parentId` must belong to the same owner and be live (`TAG_PARENT_NOT_FOUND`).
+- Capacity: a move to a different parent first reads the new parent's live children (`take(TAG_MAX_CHILDREN + 1)`); if there are already `TAG_MAX_CHILDREN`, the move returns `TAG_LIMIT` and writes nothing. A move within the same parent (`changed:false`) adds no child and is not checked.
 - No `depth` is stored. It is derived on demand, so a move never rewrites descendants.
 - Two concurrent conflicting renames or moves: the sibling-name check reads the index range that the other writer inserts into, so Convex's optimistic concurrency control retries one of them and it then sees the other (vendor behaviour, EXTRAPOLATED; to be shown by TG-14 in §12.4, or reported UNKNOWN if the harness cannot run two transactions).
 
@@ -829,13 +901,18 @@ Exceeding returns `TAG_LIMIT` or `NOTE_TAG_LIMIT`. No limit check scans an unbou
 ### 10.5 Deleting a tag
 
 - `remove` soft-deletes the tag only. It does not write any link row, so it is O(children) and unbounded cascades cannot happen. Links to a deleted tag simply stop being visible.
-- Children move to the removed tag's parent (OD-6 default). If a moved child's name collides with a live sibling there, the whole operation returns `TAG_NAME_TAKEN` with `childTagId` and changes nothing.
-- `restore` returns `TAG_RESTORE_EXPIRED` after 30 days. Otherwise it brings the tag back under its old parent if that parent is live, otherwise under the root (`reparentedToRoot:true`). It does not fail because a live tag holds the name, and that matters because removal can cause it: a tag and its child may share a name (different parents, §10.1), and removing the parent promotes the child into the parent's own sibling set, where it collides with nothing because the parent is gone; restoring the parent would then collide with it. The name is resolved deterministically:
+- Children move to the removed tag's parent, the destination `D` (the root when the tag is a root; OD-6 default). Remove is validate-first (AE-9): every check below runs before any write, in this order, and any failure returns its code with nothing written.
+  1. The tag is owned and live, else `TAG_NOT_FOUND`.
+  2. Read the tag's live children: `take(TAG_MAX_CHILDREN + 1)` on `by_userId_deletedAt_parentId_nameKey` with `parentId` = the tag. A 101st row means the limit was broken in stored data: `TAG_CORRUPT_HIERARCHY`.
+  3. **Capacity.** Read `D`'s live children the same way; that count includes the tag itself. The result after the remove is `count(D) − 1 + count(children)`. Above `TAG_MAX_CHILDREN` → `TAG_LIMIT`. Example: `D` holds the tag and 99 siblings (100) and the tag has 2 children → 101 → `TAG_LIMIT`; with 1 child → 100 → allowed.
+  4. **Names.** For each child, one point read of its `nameKey` among `D`'s live children (at most 100 reads). A hit on any tag other than the one being removed → `TAG_NAME_TAKEN` with `childTagId`. A hit on the tag being removed is not a collision: it is deleted in the same transaction (a child may share its parent's name, §10.1; §10.5 restore handles the return).
+  5. Then, in the same transaction, the tag gets `deletedAt` and `updatedAt`, and each child gets `parentId` = `D` and `updatedAt`. A concurrent create or move into `D` reads the same index range, so Convex's optimistic concurrency control retries one of them and the cap holds (vendor behaviour, EXTRAPOLATED; TG-14).
+- `restore` returns `TAG_RESTORE_EXPIRED` after 30 days. Otherwise it brings the tag back under its old parent if that parent is live, otherwise under the root (`reparentedToRoot:true`). Before any write it checks, in order: `TAG_MAX_PER_USER` (`take(501)` on `by_userId_deletedAt`; already 500 live → `TAG_LIMIT`), depth (the restored tag has no children, because removal promoted them, so its depth is `depth(target) + 1`; above `TAG_MAX_DEPTH` → `TAG_DEPTH_EXCEEDED`, which can happen when the old parent was moved deeper meanwhile), and the target's capacity (already `TAG_MAX_CHILDREN` live children → `TAG_LIMIT`). There is no fallback to another parent: the user can make room and restore again inside the 30 days. It does not fail because a live tag holds the name, and that matters because removal can cause it: a tag and its child may share a name (different parents, §10.1), and removing the parent promotes the child into the parent's own sibling set, where it collides with nothing because the parent is gone; restoring the parent would then collide with it. The name is resolved deterministically:
   - Candidate 1 is the stored `name`. Candidate k, for k = 2 … 21, is that name followed by `" (k)"`; the name is first cut at a code-point boundary to `TAG_NAME_MAX` minus the suffix length and trimmed at the end, so every candidate satisfies §10.1 steps 1–5. The digits make the suffix language-neutral (no English word is written into a Hebrew or Arabic name).
   - Each candidate's `nameKey` is computed by §10.1 step 6. The first candidate whose `nameKey` no live tag under the target parent holds is the restored name. Each check is one point read on `by_userId_deletedAt_parentId_nameKey` with all four fields fixed, so at most 21 reads.
   - The patch clears `deletedAt` and sets `parentId`, `name`, `nameKey` and `updatedAt` together. `renamedTo` is in the result only when the name changed, so the UI can say so (copy is OD-3 territory). Children that moved up are not moved back, and the live sibling is not touched.
   - If all 21 candidates are held, the result is `TAG_NAME_TAKEN` (with `existingTagId` of the holder of candidate 1) and nothing is written.
-  - Why not the alternatives: moving the promoted child back under the restored tag needs a record of which children removal moved (a new field) and would undo any move the user made since; refusing the removal ahead of time would block a legitimate delete. Neither is adopted.
+  - Why not the alternatives: moving the promoted child back under the restored tag needs a record of which children removal moved (a new field) and would undo any move the user made since; refusing the removal because a later restore might collide would block a legitimate delete. Neither is adopted. Removal is refused only when the promotion itself would break a rule (a name collision or `TAG_LIMIT` in step 3 or 4 above).
 - No physical deletion. Membership rows follow account soft deletion with the tables.
 
 ### 10.6 Relationship to other tag-like things
@@ -846,14 +923,29 @@ Exceeding returns `TAG_LIMIT` or `NOTE_TAG_LIMIT`. No limit check scans an unbou
 
 ## 11. Paging, boundedness, generated API
 
-### 11.1 Paging (AE-4)
+### 11.1 Paging and the split protocol (AE-4, AE-23)
 
-- Argument `paginationOpts` (`numItems`, `cursor`); result `page`, `isDone`, `continueCursor` (Convex 1.32.0 `.paginate()`).
-- Page size default 20, maximum 50 (`FEED_PAGE_DEFAULT`, `FEED_PAGE_MAX`, EXTRAPOLATED); smaller values accepted, larger clamped.
+- Argument `paginationOpts` (`paginationOptsValidator`: `numItems`, `cursor`, optional `endCursor`, `id`, `maximumRowsRead`, `maximumBytesRead`); result `page`, `isDone`, `continueCursor`, optional `splitCursor` and `pageStatus` (`paginationResultValidator`). Both validators come from `convex/server` (installed 1.32.0, `dist/esm-types/server/pagination.d.ts`), so a strict `returns` cannot drop the split fields. Search carries the same options and fields inside `notesPage` (§9.4).
+- Every paginated API in this contract, with its server-set values (constants in §8.6 R2; all EXTRAPOLATED):
+
+| API | Slice | Paginated table | `numItems` | `maximumRowsRead` | `maximumBytesRead` |
+|---|---|---|---|---|---|
+| `notes.feed`, Active, Archived and Trash views | #842 | `notes` | 1–20, default 20 (`FEED_PAGE_MAX`) | `FEED_MAX_ROWS_READ` (40) | `FEED_MAX_BYTES_READ` (4 MiB) |
+| `note_tags.notesByTag` | #847 | `noteTagLinks` | 1–8 (`TAGGED_PAGE_MAX`) | 40 | 4 MiB |
+| `note_tasks.list` | #856 | `tasks` | 1–8 | 40 | `TODO_MAX_BYTES_READ` (2 MiB) |
+| `search.all` `notesPage`, no `tagId` | #849 | `notes` | 1–25 (`SEARCH_SCAN_NOTES`) | 40 | 4 MiB |
+| `search.all` `notesPage`, with `tagId` | #849 | `noteTagLinks` | 1–8 | 40 | 4 MiB |
+
+- `cursor`, `endCursor` and `id` pass through unchanged; `continueCursor`, `isDone`, `splitCursor` and `pageStatus` are returned unchanged. The server never invents, drops or rewrites a cursor. A `SplitRequired` result carries no items (`page: []`, or `notes: []` in search), because its page may be incomplete.
+- **The caller's rules** (verified against the installed `convex/react` `usePaginatedQuery`, `dist/esm/react/use_paginated_query.js`, which does exactly this; the web feed, Archive, Trash, tag and TODO views use that hook; anything else, including #850's search, tests and scripts, applies the rules itself):
+  1. `pageStatus === "SplitRequired"`: the result for range `(cursor, continueCursor]` is not used. The caller asks for `(cursor, splitCursor]` with `{ cursor, endCursor: splitCursor }` and for `(splitCursor, continueCursor]` with `{ cursor: splitCursor, endCursor: continueCursor }`, keeps `numItems`, and applies these rules to each answer (either may split again). Their items, in that order, replace the range.
+  2. `pageStatus === "SplitRecommended"`: the page is complete and is used. A reactive caller may split it the same way to keep later re-runs small; a one-shot caller need not.
+  3. Otherwise the page is used, and the next page starts at `{ cursor: continueCursor }` with no `endCursor`, until `isDone` is true. Only `isDone` ends the list; a short or empty page does not.
+  4. `SplitRequired` without a `splitCursor` is not something the sources say can happen (UNKNOWN, UK-11). A caller that meets it reports the list or search as incomplete ("some notes could not be loaded") and never shows it as finished or as "no results".
 - Order is total: index fields then `_creationTime`. The feed's order is pinned first, then newest `updatedAt`.
 - "Stable paging without duplicates" (#844) is a property of the order **and** of the client keeping loaded pages pinned (`usePaginatedQuery`). A repeated one-shot call with an old cursor can repeat or skip a note whose `updatedAt` changed between calls. #844's test has to show it, not assume it.
 - Paged results carry safe summaries only. `body` and fence text never appear in a page.
-- Byte bound (AE-21, §8.6): a query that reads `notes` rows sets `maximumRowsRead` and `maximumBytesRead` itself, so a page can be shorter than `numItems`. Only `isDone` ends the list; `splitCursor` and `pageStatus` reach the client unchanged.
+- Byte bound (AE-21, §8.6 R2): a page can be shorter than `numItems`, and a `SplitRequired` page is empty by the rule above.
 
 ### 11.2 Boundedness rule and the legacy exceptions (AE-16)
 
@@ -906,8 +998,8 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | NL-12 | Archive then remove then restore | `restoredTo:"archived"`; appears in Archived, not Active |
 | NL-13 | Restore a live note | `{success:false, reason:"not_in_trash"}` |
 | NL-14 | B calls every function against A's notes | nothing visible or changed; restore throws |
-| NL-15 | 120 notes, `numItems` 0, 1, 50, 1000, `NaN` | clamped to 1–50 or rejected as specified; walking all pages returns each note once; pinned first; equal `updatedAt` ordered deterministically |
-| NL-16 | Instrumented context during `feed` | reads go through the §8.1 index and range; no `collect()` of `notes`; documents read ≤ page size + small constant |
+| NL-15 | 120 notes, `numItems` 0, 1, 20, 21, 50, 1000, `NaN` | clamped to 1–20 or rejected as specified; walking all pages returns each note once; pinned first; equal `updatedAt` ordered deterministically |
+| NL-16 | Instrumented context during `feed` | reads go through the §8.1 index and range; no `collect()` of `notes`; `notes` documents read ≤ page size + small constant; `tasks` documents read ≤ 6 per To-do card (NL-27) |
 | NL-17 | Legacy `notes.list` and MCP `notes_list` with an archived note | excluded |
 | NL-18 | Inactive account (`deletedAt` set) | every function throws `This account is not active` |
 | NL-19 | `pageType:"template"` note (stored with `isTemplate:true`) | never in any feed view, Trash or search |
@@ -915,8 +1007,10 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | NL-21 | `kind` filter with view `archived`/`trash`; `nowMs` missing for trash | throws the specified message |
 | NL-22 | Account deletion with live, archived, already-trashed notes | live and archived get the account `deletedAt`; the already-trashed keeps its older one |
 | NL-23 | Instrumented context: 200 template notes (`isTemplate:true`) that sort ahead of 30 ordinary notes in every index order, in Active, Archived and Trash; `isTemplate:false` written directly | the first page of each view holds ordinary notes only; documents read ≤ page size + small constant, the same as with no templates; no `filter` on `pageType`; `isTemplate:false` rejected by the validator |
-| NL-24 | Byte bound (§8.6 R2), in a harness that applies `maximumBytesRead`: 50 notes whose bodies are each about 900 KiB (under the vendor document ceiling, UNKNOWN); default page; then caller `paginationOpts` carrying `maximumBytesRead` of 1e12 and of 1; then walk every `continueCursor`, honouring `splitCursor` | bytes read ≤ `FEED_MAX_BYTES_READ` plus one document; the page holds fewer than 20 cards and `isDone` is false; the caller's byte and row values change nothing (replaced by the server constants); each note appears once; no card has a `body` key. If no harness can apply the option, UNKNOWN (UK-11), never a mock that passes; the feed then does not ship on it (§8.6) |
+| NL-24 | Byte bound (§8.6 R2), in a harness that applies `maximumBytesRead`: 50 notes whose bodies are each about 900 KiB (under the vendor document ceiling, UNKNOWN); default page; then caller `paginationOpts` carrying `maximumBytesRead` of 1e12 and of 1; then walk the whole list with the §11.1 rules | bytes read per call ≤ `FEED_MAX_BYTES_READ` plus one document; a call that hits the bound returns `pageStatus:"SplitRequired"`, `page: []`, a `splitCursor` and `isDone:false`; the caller's byte and row values change nothing (replaced by the server constants); the walk, splits included, returns each of the 50 notes exactly once and ends with `isDone:true`; no card has a `body` key. If no harness can apply the option, UNKNOWN (UK-11), never a mock that passes; the feed then does not ship on it (§8.6) |
 | NL-25 | Preview writers (§8.6 R1): `createNoteForUser` and `updateNoteForUser`, also through MCP `note_create` and `note_update`, with a valid, a malformed and an unclosed fence, and with a body over 1 MiB; a pin toggle; a legacy row with no `preview` | the stored `preview` equals `projectPageText(body, { summaryChars: 280 }).summary`, is ≤ 280 UTF-16 units and holds no fence text, JSON or block id; an update that changes `body` changes `preview` in the same patch; a pin toggle leaves it; every inserted and patched row is read, none holds a `preview` that disagrees with its `body`; the legacy row appears in the feed with a projected preview and no `body` key |
+| NL-26 | Split protocol (§11.1) in the Active, Archived and Trash views, in a harness that applies the byte bound: large bodies as in NL-24; a call with `endCursor`; the `returns` validator | `endCursor` is honoured (the call returns exactly `(cursor, endCursor]`); `continueCursor`, `isDone`, `splitCursor` and `pageStatus` equal what `paginate` returned; a `SplitRequired` call returns `page: []` and reads no `tasks` row (instrumented); the validator is `paginationResultValidator` and accepts both split fields. UNKNOWN (UK-11) without such a harness |
+| NL-27 | `taskPreview` bound (§9.1, §5.10): 20 To-do notes, each with 50 live linked tasks at every cap; one To-do note with 5 live linked tasks; default page, then `numItems` 50 | each full card has 5 items and `truncated:true`; the 5-task card has `truncated:false`; no card has `total` or `open`; `tasks` documents read per call ≤ 120 (instrumented); `numItems` 50 returns at most 20 cards |
 
 ### 12.3 TODO identity
 
@@ -932,7 +1026,7 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | TK-08 | Tick through `tasks.toggleCompletion` | `listForNote` shows done; `notes.body` byte-identical; no revision or receipt written |
 | TK-09 | The same row via `listToday`, a `dayPlans` top task and `listForNote` after reload | one `_id` |
 | TK-10 | Complete a repeating linked task | two rows; the new one has no link fields; the original keeps its link |
-| TK-11 | `tasks.remove` then `tasks.restore` | link intact; then: remove, link a new row to the same block, restore the old row → success with `linkCleared:true`, exactly one live row linked |
+| TK-11 | `tasks.remove` then `tasks.restore` | link intact; then: remove, link a new row to the same block, restore the old row → success with `linkCleared:true`, `linkClearedReason:"block_taken"`, exactly one live row linked |
 | TK-12 | Trash the note | tasks stay live; `source.state = "note_trashed"`; restore the note → `ok` |
 | TK-13 | Remove the block from the body | task untouched; `block_missing` |
 | TK-14 | With a linked row present, call `tasks.list`, `listDueInRange`, `listToday` and `dayPlans.listCarryOver` through validators | none throws a return-validation error (and `dayPlans` accepts `flexibility`) |
@@ -940,10 +1034,12 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | TK-16 | MCP `task_update completed:true` on a linked task | overlay shows done |
 | TK-17 | `undoCreate` after `addTask` and after `captureTodo`; again after the window; after an unrelated later edit | row and block gone; `UNDO_EXPIRED`; `UNDO_CONFLICT` without deleting the later work |
 | TK-18 | Forged link: `tasks.create`/`update`/MCP with `sourceNoteId` | rejected by the validator or ignored; no link written |
-| TK-19 | `note_tasks.list` for each status | correct order (undated first for open), no deleted or foreign row, ≤ 50 per page |
+| TK-19 | `note_tasks.list` for each status; `numItems` 50; 30 unlinked tasks whose `description` is about 900 KiB each (written directly, as legacy rows) | correct order (undated first for open), no deleted or foreign row; at most 8 items per page; the result validator accepts `splitCursor` and `pageStatus`; bytes read per call ≤ `TODO_MAX_BYTES_READ` plus one document, and at most 8 notes read by id; walking with the §11.1 rules returns each task exactly once. UNKNOWN (UK-11) without a harness that applies the byte bound |
 | TK-20 | Two concurrent `link` calls for one block | one row. UNKNOWN if the harness cannot run two transactions |
 | TK-21 | `captureTodo` / `addTask` when the body write is rejected (stale revision, oversized body) | no row exists afterwards |
 | TK-22 | Note with 120 removed linked tasks and 3 live ones; `listForNote`, `taskPreview`, then one more `link` | the live read returns exactly the 3 live rows, `truncated:false`, and its documents read stay ≤ 3 + small constant (instrumented); the removed read returns the 20 newest removals with `removedTruncated:true`; the extra link is ok; a removed row whose block has a live row is not shown as a ghost |
+| TK-23 | Restore against L8 (L6): note N with 50 live linked tasks; remove one (49 live); link a new task to another block (50 live); restore the removed one. Then the same with 49 live after the removal. Then a removed task whose block is taken **and** whose note is full | the first restore succeeds with `linkCleared:true`, `linkClearedReason:"note_task_limit"`; the restored row has neither link field; N still has exactly 50 live linked rows; the old block reads as page-local. The second keeps its link, no `linkCleared`. The third reports `"block_taken"` (checked first). Nothing throws |
+| TK-24 | Linked-task caps (§5.10): `link` with `taskId` of rows stored directly with a `description` of 10,001 units, a 281-unit `title`, a checklist item `text` of 281, a `projectName` of 201, a `timeSpentOnDay` whose JSON is over 2,000; the same rows exactly at every cap; on a linked row, `tasks.update` and MCP `task_update` with a 10,001-unit `description`; on an unlinked row, the same update; `createQuick`, brain dump and `tasks.create` with long text | `TASK_TOO_LARGE` and no write for each over-cap row; ok at the caps; the linked-row updates throw `Task text too long` and leave the row unchanged; the unlinked update is accepted as today; the three creators behave as today and produce unlinked rows |
 
 ### 12.4 Tags
 
@@ -963,22 +1059,26 @@ All fixtures are synthetic. Two users, A and B. Fixed clock `NOW = 1_800_000_000
 | TG-12 | Restore at `GRACE` and `GRACE + 1`; restore with a live same-name sibling; with a deleted parent | ok; `TAG_RESTORE_EXPIRED`; ok, restored as `Name (2)` with `renamedTo` (TG-19, TG-20); `reparentedToRoot:true` |
 | TG-13 | Account deletion | both tag tables soft-deleted (schema-derived exhaustive coverage), foreign rows untouched, earlier timestamps kept |
 | TG-14 | Two concurrent conflicting renames or moves | exactly one succeeds. UNKNOWN if the harness cannot run two transactions |
-| TG-15 | `notesByTag` paging with archived and trashed notes mixed in | only notes in the requested view; each once; truthful `isDone` |
+| TG-15 | `notesByTag` paging with archived and trashed notes mixed in; `numItems` 50; a call with `endCursor` | only notes in the requested view; each once; truthful `isDone`; at most 8 items per page; `endCursor` honoured; `splitCursor` and `pageStatus` passed through, `page: []` on `SplitRequired` |
 | TG-16 | Attach tag T to note X, then to note Y; detach X and attach it again | `notesByTag(T)` order is Y, X before the re-attach and X, Y after it; X's link row is the same row, `createdAt` unchanged |
 | TG-17 | Case folding at one parent: `Σ`, `σ`, `ς`; `ß`, `ẞ`, `SS`, `ss`; `ſ`, `s` | within each group the second spelling gets `TAG_NAME_TAKEN` with `existingTagId`; the three groups are three tags; the same spelling under another parent is allowed. A `NFKC(name).toLowerCase()` key would accept `Σ`/`ς` and `ß`/`SS`, so this case fails it |
 | TG-18 | The documented limits of the key: `İ`, `I`/`i` and `ı`; Cyrillic `а` and Latin `a`; `ab` and `a` + U+200C + `b` | `I` and `i` are one tag; every other pair is two tags, each accepted (the key's equivalence is not wider than §10.1) |
 | TG-19 | Create `Work` at the root and a child `Work` under it; remove the parent; restore the parent | ok; the parent returns to the root as `Work (2)` with `renamedTo:"Work (2)"`; the promoted child is still `Work`, still at the root and not written; both are live |
 | TG-20 | Restore a removed `Work` into a target parent that already holds live: (a) `Work`; (b) `Work` and `Work (2)`; (c) `Work` and `Work (2)` … `Work (21)`; (d) a removed 64-code-point name whose target already holds the same name; (e) a name nothing holds | (a) `Work (2)`; (b) `Work (3)`; (c) `TAG_NAME_TAKEN`, nothing written, the tag stays removed; (d) the candidate is cut to exactly 64 code points and is unique; (e) the stored name is kept and `renamedTo` is absent. Point reads ≤ 21 in every case |
+| TG-21 | Remove capacity (§10.5 step 3): parent P holds tag T and 99 sibling tags; T has 2 children. Then T has 1 child. Then the same with T a root among 100 roots. Then T's 2 children where one also collides by name at P | `TAG_LIMIT` with nothing written: T still live, both children still under T, no `updatedAt` changed; with 1 child the remove succeeds and P has exactly 100 live children; the root case behaves the same; `TAG_LIMIT` is returned before the name check |
+| TG-22 | Other writes that add a child or a live tag: move a tag into a parent with 100 live children; restore a tag whose target has 100 live children; restore when the user has 500 live tags; restore under a live old parent that was moved to depth 5 | `TAG_LIMIT`; `TAG_LIMIT`; `TAG_LIMIT`; `TAG_DEPTH_EXCEEDED`; nothing written in each; a move within the same parent is `changed:false` and not refused |
 
 ### 12.5 Search
 
 | ID | Case | Expected |
 |---|---|---|
 | SR-01 | Old caller `{ query }` | same four groups; archived and trashed notes absent |
-| SR-02 | 60 notes, match only in the oldest | first call returns `nextCursor`, not an empty "no results"; continuing finds it |
+| SR-02 | 60 notes, match only in the oldest | first call returns `notesPage` with `isDone:false` and a `continueCursor`, not an empty "no results"; continuing finds it |
 | SR-03 | Valid, malformed and unclosed fence in a body | snippet has no fence text or JSON keys |
 | SR-04 | `kinds`, `tagId`, date range, `archived` modes; `createdFrom > createdTo`; unknown `tagId` | filters applied; invalid input rejected |
 | SR-05 | B's data | never returned |
+| SR-06 | Split protocol (§9.4, §11.1), in a harness that applies the byte bound: 25 notes of about 900 KiB, the query matching the 3rd, 12th and 24th; caller `notesPage` with `maximumBytesRead` 1e12; then the same with `tagId` | a call that hits the bound returns `notes: []`, `pageStatus:"SplitRequired"`, a `splitCursor`, `scanned: 0`; following the §11.1 rules finds all three matches, each once, and no window is skipped; the caller's byte value is replaced; with `tagId` the same holds with at most 8 notes per call. UNKNOWN (UK-11) without such a harness |
+| SR-07 | 25 small notes in one window, 12 of them matching | all 12 are returned in that window (the notes group is not cut to `GROUP_LIMIT`); tasks, habits and goals are still cut to 8 |
 
 ## 13. Unresolved decisions
 
@@ -1002,6 +1102,7 @@ See the index in §1: OD-1 to OD-8. Each states its recommended default there. I
 | UA-10 | Tag subtree filter, tag cascade delete, tag sharing | OD-6, OD-7 |
 | UA-11 | Hebrew niqqud-insensitive tag matching, Turkish case rules and cross-script confusable matching | §10.1 |
 | UA-12 | A separate 1:1 note-card summary table that would carry the feed indexes | §8.6 alternative; needs a schema owner and a backfill |
+| UA-13 | Size caps on unlinked task rows; `total`/`open` counts on a To-do card | §5.10 caps linked rows only; §9.1 returns five items and `truncated` (UA-8) |
 
 ### 13.3 UNKNOWN
 
@@ -1011,14 +1112,15 @@ See the index in §1: OD-1 to OD-8. Each states its recommended default there. I
 | UK-2 | The owner's Blinko/Note/TODO inventory file (§0.3). |
 | UK-3 | Whether `convex-test` runs Tempo's own modules under `bun test`, applies their `returns` validators and models multi-field index ranges. #815 shows it runs the Agent component (`convex/lib/agentComponent.test.ts`). |
 | UK-4 | Whether any stored task has `flexibility` set (the `dayPlans` validator drift, §5.9). |
-| UK-5 | Convex per-function read limits (about 16 MiB, 32,000 documents) and the per-document ceiling (about 1 MiB) are the vendor's published figures and were not verified in this worktree; they set the search window and the §8.6 constants. |
+| UK-5 | Convex per-function read limits (about 16 MiB, 32,000 documents) and the per-document ceiling (about 1 MiB) are the vendor's published figures and were not verified in this worktree; they set the search window, the §8.6 constants and read budgets, and the §5.10 caps. |
 | UK-6 | Whether the deployed backend matches this revision (#837). |
 | UK-7 | Whether concurrent-transaction behaviour can be tested in the chosen harness. |
 | UK-8 | Which route generates `api.d.ts` for new modules (§11.3). |
 | UK-9 | Owner of the MCP raw-`body` exposure and of the `analytics.overview` count (§7.3). |
 | UK-10 | Export of kinds, tags and links (#273). |
-| UK-11 | How `maximumRowsRead` and `maximumBytesRead` behave at runtime (§8.6 R2). Only the installed `convex` 1.32.0 types were read; no Tempo code passes either option. |
+| UK-11 | How `maximumRowsRead` and `maximumBytesRead` behave at runtime (§8.6 R2, §11.1). Read: the installed `convex` 1.32.0 types, `paginate` (`dist/esm/server/impl/query_impl.js`) and `usePaginatedQuery` (`dist/esm/react/use_paginated_query.js`); the Convex pagination guide and the backend's `read_page_from_query` through Context7 on 2026-10-11. Not shown: whether a cut page always holds at least one row; whether `SplitRequired` always carries a `splitCursor`; whether one function may call `paginate` more than once (no function in this contract does). No Tempo code passes either option. |
 | UK-12 | Which `caseFold` source #847 uses (a dependency or a pinned table), and its licence (§10.1). |
+| UK-13 | How Convex counts a document's bytes against `maximumBytesRead` and the function limit (UTF-8 string length is assumed). `LINKED_TASK_MAX_BYTES` ≈ 60 KiB and every §8.6 read budget rest on that assumption (§5.10). |
 
 ## 14. Notes for ticket sync
 
@@ -1040,6 +1142,7 @@ Follow-ups for the coordinator. This file edits no ticket.
 14. **Guard note for this PR**: `docs/contracts/**` may change only in a PR that changes nothing else, carries the `config` label added by `Division6066`, and links no ticket (`scripts/factory/config-guard.mjs:14-16`, `:61-66`; `scope-guard` accepts a `config` PR with no ticket, `scripts/factory/scope-guard.mjs:3-4`). The PR therefore cannot go green on `config-guard` and `scope-guard` until that label is applied, which the author did not do.
 15. **Fix round 2 widens #841, #842, #847 and #849 again.** #841 also adds `notes.preview` (§8.1, §8.6 R1). #842's `createNoteForUser` and `updateNoteForUser` set it with every body write; #842, #847 and #849 overwrite the pagination byte options on every page that reads notes (§8.6 R2). `templates.applyToNote` (`convex/templates.ts:169`) inserts note bodies and is in no slice's scope, and #787's writers are not built: until someone owns them their rows carry no `preview` and the feed projects those on read. R1 saves CPU only and R2 is the bound, so a writer that is not updated costs a projection on read, not a failure. MCP `note_create` and `note_update` need nothing extra: they go through the two `convex/notes.ts` helpers.
 16. **#847 picks the `caseFold` source** for `nameKey` (§10.1) and records it in its PR; no dependency or Unicode table was chosen or licence-checked here. A key change later is a migration.
+17. **Fix round 3 widens #842, #847, #849 and #856.** #856: the linked-task caps in `updateTaskForUser` and the admission check in `note_tasks.link` (`TASK_TOO_LARGE`), shipped with the first link writer (§5.10); `tasks.restore` also applies L8 and returns `linkClearedReason` (L6); `note_tasks.list` pages at most 8 items under its own byte bound and passes the split fields through. #842: the feed page ceiling drops from 50 to 20, `taskPreview` reads six rows and loses `total`/`open`, and a `SplitRequired` page is returned empty. #849: `search.all` takes and returns `notesPage` (Convex's pagination options and split fields) instead of `cursor`/`nextCursor`, and the notes group is no longer cut to 8. #847: `remove`, `move` and `restore` check child capacity (and `restore` the per-user limit and depth) before any write. UI: #844, #845, #848 and #857 read pages through `usePaginatedQuery`; #850 implements the §11.1 split rules itself. Nobody owns telling the user, in the web task editor, that a linked task's text is capped (§5.10); until someone does, an over-cap edit of a linked task fails with an error.
 
 ## 15. Verification record
 
@@ -1056,7 +1159,7 @@ Document-only change. One file: `docs/contracts/CORE-WEB-NOTES.md`.
 | DONE clause: conflicting task stores and unbounded scans rejected by rule | §5.8, §11.2 |
 | Tag contract coverage | §10 |
 | Citation check: every `path:line` resolves in the baseline tree | fix round 1 re-pinned every `convex/schema.ts`, `convex/lib/accountDeletion.ts` and block-codec citation to 9cf7985; the result is recorded in the PR body |
-| Review rounds | round 1 (Codex, links, templates, tag order): §5.3, §8.1–§8.3, §10.4. Round 2 (Codex on `236043f`): bounded note reads §8.6 and AE-21; restore-name resolution §10.5, TG-19, TG-20; Unicode case folding §10.1, TG-17, TG-18. Nothing was run against Convex: the byte-bound behaviour is UNKNOWN (UK-11). |
+| Review rounds | round 1 (Codex, links, templates, tag order): §5.3, §8.1–§8.3, §10.4. Round 2 (Codex on `236043f`): bounded note reads §8.6 and AE-21; restore-name resolution §10.5, TG-19, TG-20; Unicode case folding §10.1, TG-17, TG-18. Round 3 (Codex on `de1bdfd`): linked-task size caps §5.10, AE-22, L11, the `taskPreview` read cut to six rows and the feed page to 20, read budgets §8.6 R2, TK-24, NL-27; the split protocol for every byte-bounded paginated API §11.1, AE-23, search's `notesPage` and the end of the notes `GROUP_LIMIT` §9.4, NL-26, TK-19, TG-15, SR-06, SR-07; restore against L8 L6, TK-23; tag child capacity on remove, move and restore §10.2, §10.3, §10.5, TG-21, TG-22. Nothing was run against Convex: the byte-bound behaviour is UNKNOWN (UK-11, UK-13). |
 | Path ownership of `docs/contracts/CORE-WEB-NOTES.md` | absent at the baseline. No open PR title in the 50 most recent suggests it. PR file lists were not read: UNKNOWN. |
 | Repository checks | recorded in the PR body with the head SHA: `bun install --frozen-lockfile`, `bun run lint`, `bun run typecheck`, `bun run test`, the four scans/notices, local Playwright, build |
 | Preview evidence | none. This is a contract, not a feature; nothing is coded, locally tested or preview-proven. |
