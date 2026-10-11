@@ -1,7 +1,14 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 
-/** User-owned tables that carry `by_userId` + `deletedAt`. */
+/**
+ * User-owned tables that carry `by_userId`, `deletedAt` and `updatedAt`. Account deletion
+ * stamps `deletedAt` and `updatedAt` with one timestamp and keeps an earlier `deletedAt`.
+ *
+ * `chatRequests` links to Agent-component messages by opaque id. Soft delete only tombstones
+ * the host row: it never calls an Agent delete API, because component tables have no
+ * `deletedAt` and a hard delete would end the 30-day recoverable grace window.
+ */
 export const USER_OWNED_TABLES = [
   "tasks",
   "notes",
@@ -17,6 +24,8 @@ export const USER_OWNED_TABLES = [
   "templates",
   "userPreferences",
   "notifications",
+  "noteBlocks",
+  "chatRequests",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

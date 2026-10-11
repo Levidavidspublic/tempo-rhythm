@@ -123,3 +123,81 @@ Ticket #786. Additive only; no backfill or data migration.
 
 Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
 separate; live is not touched here.
+
+## 2026-10-11 — TEMPO-B06-SUPPORT-CHAT-STATE Agent lifecycle metadata + bounded memory index
+
+Ticket #807. Additive only: new optional fields, one new table, one new index, plus account-deletion
+enrollment. No backfill, no data migration, no deployment by this writer. Old rows validate unchanged.
+
+- **`conversations`** gains four optional fields: `agentThreadId` (string), `nextChatSequence`
+  (number), `chatGenerationEpoch` (number) and `activeChatRequestId` (`Id<"chatRequests">`). A missing
+  sequence or epoch means zero to a consumer; nothing writes a default. No existing field or index
+  changed. `agentThreadId` is an opaque Agent-component string, not a host table id.
+- **New table `chatRequests`** — content-free request/lifecycle metadata. Required: `userId`,
+  `conversationId`, `requestKey` (string), `payloadDigest` (string), `sequence` (number), `status`
+  (`queued | running | completed | failed | cancelled`), `agentPromptMessageId` (string),
+  `generationEpoch` (number), `createdAt`, `updatedAt`. Optional: `agentResultMessageId` (string),
+  `generationLeaseExpiresAtMs` (number), `deletedAt`. Indexes: `by_userId`, `by_userId_deletedAt`,
+  `by_userId_conversationId_requestKey`, `by_userId_conversationId_deletedAt_sequence`,
+  `by_userId_conversationId_deletedAt_status_sequence`. These are ordinary indexes, not unique
+  constraints. The table holds no prompt, reply, memory text, exception, provider payload or page
+  content; Agent stays the store for new message content.
+- **`memories`** gains index `by_userId_deletedAt_salience_updatedAt` over
+  `[userId, deletedAt, salience, updatedAt]`. Existing indexes are kept.
+- **Account deletion** (`convex/lib/accountDeletion.ts`): `chatRequests` and #786's `noteBlocks` join
+  the ordinary soft-delete path. Each live row gets `deletedAt` and `updatedAt` from one timestamp, an
+  earlier `deletedAt` is kept, and another user's rows are never touched. No Agent delete API is
+  called, nothing is hard-deleted and stored Agent ids are not cleared: component tables have no
+  `deletedAt`, so a delete there would end the 30-day recoverable window. The tombstones are what
+  deny access. Sign-in restoration restores the account row only; independently deleted child rows
+  stay deleted, so this is not complete account-data recovery.
+- `convex/lib/accountDeletion.test.ts` now derives the owned tables from the schema (everything with a
+  `userId`, minus the `authTables` keys) and requires a typed fixture for each. A new owned table
+  with no fixture fails typecheck or the focused test, then must also pass the deletion, isolation
+  and idempotence run.
+
+### Contract a later chat implementation adopts (not implemented here)
+
+- **Identity.** One row per owner + conversation + `requestKey`. A writer must look the key up and
+  insert in one transaction, because the index does not enforce uniqueness. Validate `requestKey` as
+  1-128 ASCII letters, digits, underscore or hyphen. `payloadDigest` is lowercase SHA-256 hex of a
+  versioned, deterministic encoding of the exact accepted payload, with no trimming before the
+  comparison. Same key and same digest is a retry: reuse the saved `agentPromptMessageId` (and
+  `agentResultMessageId` once completed), and take no second claim or prompt. Same key with a
+  different digest fails. Different keys with identical text are different requests.
+- **Order and claim.** FIFO by `sequence`, reserved from `conversations.nextChatSequence`. At most one
+  running request per conversation, recorded in `activeChatRequestId`. Claiming and completing
+  compare `activeChatRequestId` and `generationEpoch`, and recheck the account, conversation and
+  request tombstones. Cancel, replacement or lease reclaim bumps `chatGenerationEpoch`, so a late
+  completion is rejected. Provider output may reach Agent storage only through the guarded
+  committing mutation. Sequence and epochs are nonnegative safe integers, checked for overflow
+  before mutating; timestamps are finite server epoch milliseconds. Convex validators here
+  establish structural types only.
+- **Context.** Queued later prompts must not leak into the current request's context; assemble it up
+  to the claimed `sequence`.
+- **Live-memory read.** Exact `userId`, `deletedAt = undefined`, `.order("desc")`, `.take(20)` on
+  `by_userId_deletedAt_salience_updatedAt`. Ties follow `updatedAt`, then Convex's appended creation
+  time. No `collect()` and sort, and no newest-N-then-filter substitute.
+- The fields do not prove exactly-once provider execution. Retry, lease length, reclaim, scheduling
+  and interrupted-call cost need to be specified and tested by the chat implementation.
+
+### Activation gates still open
+
+- #806 Agent registration, types and real component tests. This ticket registers nothing and adds no
+  endpoint, scheduler, provider call or Workflow dependency.
+- The chat implementation proves duplicate request, changed payload, competing sends, interrupted
+  generation, late completion and large live/deleted memory fixtures. Fake-context tests here are not
+  Agent-integration or transaction-concurrency proof.
+- **Known gap, outside this ticket's scope:** `convex/conversations.ts` `remove` still hard-deletes the
+  conversation and its messages. Until that is repaired, deleting a conversation that way would leave
+  its `chatRequests` rows and Agent thread behind and skip the grace window. #808 keeps the
+  activation and privacy guards.
+- `softDeleteUserAccount` reads each owned table with an unpaginated `collect()` inside one mutation.
+  That is fine while `chatRequests` and `noteBlocks` have no writer, but it must be chunked or
+  continued before either table can hold thousands of rows per person, or one account deletion can
+  exceed Convex's per-transaction read limits.
+- Expiry and retention proposals D1-D5 and the page/Undo records (#786 follow-ups, #831) are separate
+  slices and are not part of this change.
+
+Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
+separate; live is not touched here.

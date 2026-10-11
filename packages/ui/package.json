@@ -18,6 +18,12 @@
     "lint": "biome lint .",
     "check": "biome check ."
   },
+  "dependencies": {
+    "@json-render/core": "0.21.0",
+    "@json-render/react": "0.21.0",
+    "@tempo/utils": "workspace:*",
+    "zod": "4.3.6"
+  },
   "peerDependencies": {
     "react": "^19.0.0"
   },
