@@ -36,6 +36,14 @@ export {
   type ValidBlockSegment,
 } from "./blocks";
 
+export {
+  PAGE_TEXT_LIMITS,
+  type PageTextOptions,
+  type PageTextProjection,
+  pageSnippet,
+  projectPageText,
+} from "./page-summary";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */
