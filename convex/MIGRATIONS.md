@@ -348,6 +348,9 @@ Legacy rows validate unchanged.
   `"blinko"`, `isTemplate: false`, ...), wrong-table ids and undeclared fields are refused; the
   Active, kind, Archived, Trash, link and TODO ranges return the contract's rows in the contract's
   order, exclude template pages by prefix, and cannot skip `isTemplate` or `deletedAt`.
+- `convex/lib/accountDeletion.test.ts`: #828's exact `notes` shape and index list now also names the
+  four new fields and three new indexes. It stays an exact `toEqual`, so any further `notes` field or
+  index must be added to it explicitly.
 
 ### Still inactive, and the gates that remain open
 

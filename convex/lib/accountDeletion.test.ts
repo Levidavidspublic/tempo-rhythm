@@ -1440,8 +1440,17 @@ describe("page ledger schema contract (#828)", () => {
     deletedAt: "float64?",
   };
 
-  test("notes gains exactly one optional revision and keeps every legacy field and index", () => {
-    expect(deepFieldShape("notes")).toEqual({ ...LEGACY_NOTE_SHAPE, revision: "float64?" });
+  // Exact notes shape and index list. Each later serial notes writer extends this list explicitly:
+  // #841 (TEMPO-CORE-NOTE-SCHEMA-01) adds four optional fields and three indexes.
+  test("notes gains exactly one optional revision (#828) plus the #841 optional fields and keeps every legacy field and index", () => {
+    expect(deepFieldShape("notes")).toEqual({
+      ...LEGACY_NOTE_SHAPE,
+      revision: "float64?",
+      kind: "union(literal:quick|literal:todo)?",
+      archivedAt: "float64?",
+      isTemplate: "literal:true?",
+      preview: "string?",
+    });
     expect(indexesOf("notes")).toEqual([
       { indexDescriptor: "by_userId", fields: ["userId"] },
       { indexDescriptor: "by_userId_pinned", fields: ["userId", "pinned"] },
@@ -1450,6 +1459,18 @@ describe("page ledger schema contract (#828)", () => {
       {
         indexDescriptor: "by_userId_deletedAt_pageType_date",
         fields: ["userId", "deletedAt", "pageType", "date"],
+      },
+      {
+        indexDescriptor: "by_userId_deletedAt_isTemplate_archivedAt_pinned_updatedAt",
+        fields: ["userId", "deletedAt", "isTemplate", "archivedAt", "pinned", "updatedAt"],
+      },
+      {
+        indexDescriptor: "by_userId_deletedAt_isTemplate_archivedAt_kind_pinned_updatedAt",
+        fields: ["userId", "deletedAt", "isTemplate", "archivedAt", "kind", "pinned", "updatedAt"],
+      },
+      {
+        indexDescriptor: "by_userId_isTemplate_deletedAt",
+        fields: ["userId", "isTemplate", "deletedAt"],
       },
     ]);
   });
