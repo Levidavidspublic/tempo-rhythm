@@ -31,7 +31,7 @@ Precedence applied: owner doc pack Part A (10 Oct) over Part B; `docs/HARD_RULES
 |---|---|---|---|
 | OD-1 | **Data classes.** Which file types may be stored; privacy-text update | Allow PNG, JPEG, WebP, GIF, PDF, plain text, Markdown. Exclude audio, video, archives, JSON, CSV, HTML, SVG, Office files, executables. Update the user-facing privacy text before activation. | BLK-1 |
 | OD-2 | **Limits, quota, spend.** Per-file size, per-user bytes and rows, rate, global storage budget, how soft-deleted bytes count | 4 MiB per file; 50 MiB and 100 ready files per user; 3 open uploads; 20 uploads per hour; soft-deleted bytes keep counting until purged; storage budget and spend approved separately (UNK-1). Full table in section 7. | BLK-2 |
-| OD-3 | **Retention, restore, export.** Restore window; account-restore behavior; export shape and byte delivery | Per-resource restore window = existing `GRACE_MS` (30 days); account restore does not bulk-restore resources (same as every other table); export = metadata manifest plus per-file authenticated download, no bulk ZIP and no emailed link. | BLK-3 |
+| OD-3 | **Retention, restore, export.** Restore window; account-restore behavior; export shape and byte delivery | Per-resource restore window = existing `GRACE_MS` (30 days); account restore does not bulk-restore resources (same as every other table); export = metadata manifest plus per-file authenticated download of **live** resources only (soft-deleted resources are not exported, so every manifest entry is readable through the content route, 11.5), no bulk ZIP and no emailed link. | BLK-3 |
 | OD-4 | **Physical deletion.** (a) scheduled purge of bytes after soft delete or account deletion. (b) deleting a blob that the system itself just stored and failed to commit | (a) Not approved now; decide before quota UX is relied on (section 11.4). (b) Approve, limited to the same-request blob that failed commit and was never referenced. | BLK-3 |
 | OD-5 | **Note deletion vs attached resources** | Resources survive note deletion. Only the note-to-resource link becomes invisible, and returns on note restore. | BLK-3 |
 | OD-6 | **Preview and download disposition** | Inline only for PNG, JPEG, WebP, GIF. PDF and text are download-only. | BLK-1 |
@@ -145,7 +145,7 @@ resourceFolders: defineTable({
   parentId: v.optional(v.id("resourceFolders")), // undefined = library root
   name: v.string(),     // NFC, trimmed, 1..80 code points (section 12.3)
   nameKey: v.string(),  // name.normalize("NFKC").toLowerCase(); sibling-uniqueness key
-  depth: v.number(),    // 0 for children of the root; at most RESOURCE_FOLDER_MAX_DEPTH - 1
+  depth: v.number(),    // 0 for children of the root; at most RESOURCE_FOLDER_MAX_DEPTH - 1; subtree re-derived on move (8.3 rule 5)
   createdAt: v.number(),
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
@@ -211,13 +211,14 @@ resourceLinks: defineTable({
   .index("by_userId_noteId_resourceId", ["userId", "noteId", "resourceId"]),
 ```
 
-Invariants the schema cannot express (enforced by the internal commit and checked by test INV-01 to INV-04):
+Invariants the schema cannot express (enforced by the internal commit and checked by test INV-01 to INV-05):
 
 1. `state = "ready"` implies `contentKind, mimeType, sizeBytes, sha256, storageId, readyAt` are all set, and `sizeBytes === declaredSizeBytes`.
 2. Any other state implies `storageId` is unset. (Upload validation runs before `store`; a failed attempt leaves no row-linked blob.)
 3. At most one `resources` row per `storageId`; at most one link row per `(userId, noteId, resourceId)`; at most one live sibling folder per `(userId, parentId, nameKey)`.
 4. `extension`, `mimeType`, `sizeBytes`, `sha256` and `storageId` never change after `ready`.
 5. A note or resource may be hidden or deleted without any `resourceLinks` write (AE-14).
+6. `resourceFolders.depth` equals the folder's number of ancestors (0 for children of the root) in every row state, and no folder exceeds `RESOURCE_FOLDER_MAX_DEPTH - 1`. `createFolder`, `moveFolder` and `restoreFolder` maintain it, including every descendant on a move (8.3 rule 5). Checked by FLD-03, FLD-09 and INV-05.
 
 **Identity.** A folder is identified by its `_id`, not its path or name. Rename and move keep the id. Resources reference `folderId`; links reference `resourceId` and `noteId`. Renaming or moving a folder or resource never breaks a link.
 
@@ -255,7 +256,15 @@ Worst-case storage at the recommended defaults: 50 MiB per approved user; with t
 
 Convex modules proposed: `convex/resources.ts` (public + internal metadata, #852) and `convex/resource_access.ts` (HTTP handlers + internal authorization, #853). The names below are the contract: component tickets call only these, and generated `api.d.ts` must list exactly what is exported. No function accepts a `userId` or a storage id from the client.
 
-Common rules: every public function starts with `requireApprovedUser` (which includes `requireUser`; AE-19), so a pending account can neither upload nor read. Queries return `null` or `[]` for missing, foreign, deleted or not-ready rows (matches `convex/notes.ts:50-60`). Mutations throw `ConvexError({ code, message })` (AE-17; `message` never echoes a filename or note text). Queries take `nowMs` where they need the clock (C-26); mutations use server time.
+Common rules: every public function starts with `requireApprovedUser` (which includes `requireUser`; AE-19), so a pending account can neither upload nor read. Queries return `null` or `[]` for missing and foreign rows without exception (matches `convex/notes.ts:50-60`); no visibility exception below relaxes ownership. **Default visibility:** library and note queries (`list`, `listForNote`, `exportManifest`) return live `ready` rows only: soft-deleted and not-ready rows are hidden. **Explicit exceptions, and no others:**
+
+| Query | Visibility exception |
+|---|---|
+| `resources.get` | The owner's own row in **any upload state** (`reserved`, `ready`, `rejected`, `cancelled`, `expired`), so a client can reconcile after a POST or a failure (9.3). A soft-deleted row is still `null` here; trash is read through `listTrash`, so `resourceView.deletedAt` and `restorableUntilMs` are non-null only in `listTrash` results. |
+| `resources.listUploads` | The owner's own **non-ready** rows (`reserved`, `rejected`, `cancelled`, `expired`) by definition, never `ready` rows. |
+| `resources.listTrash` | The owner's own soft-deleted `ready` rows inside the restore window, by definition. |
+
+These exceptions are metadata only. Visibility of a row in a query never grants byte access: the content route (10.2, check 3) and `linkToNote` still require a live `ready` row. Mutations throw `ConvexError({ code, message })` (AE-17; `message` never echoes a filename or note text). Queries take `nowMs` where they need the clock (C-26); mutations use server time.
 
 ```ts
 const resourceViewValidator = v.object({
@@ -292,10 +301,10 @@ const folderViewValidator = v.object({
 
 | Function | Args | Returns | Notes |
 |---|---|---|---|
-| `resources.get` (query) | `{ resourceId: v.string() }` | `resourceView \| null` | String id, `normalizeId("resources", …)`; bad, foreign or other-table ids return `null` (C-6). Owner can see own non-ready rows. |
+| `resources.get` (query) | `{ resourceId: v.string() }` | `resourceView \| null` | String id, `normalizeId("resources", …)`; bad, foreign, soft-deleted or other-table ids return `null` (C-6). Exception to default visibility: the owner sees own rows in any upload state (section 8 common rules). |
 | `resources.list` (query) | `{ folderId: v.union(v.id("resourceFolders"), v.null()), paginationOpts }` | `PaginationResult<resourceView>` | Live `ready` rows only, `by_userId_folderId_deletedAt`. `numItems` clamped to 100. Foreign or deleted `folderId` returns an empty page. |
 | `resources.listTrash` (query) | `{ nowMs: v.number(), paginationOpts }` | `PaginationResult<resourceView>` | Soft-deleted `ready` rows with `nowMs - deletedAt <= restore window`. |
-| `resources.listUploads` (query) | `{ nowMs: v.number() }` | `resourceView[]` (at most 20) | Own rows in `reserved, rejected, cancelled, expired`, newest first, created within 24 h before `nowMs`. Feeds the orphan/failed-upload status in #854. |
+| `resources.listUploads` (query) | `{ nowMs: v.number() }` | `resourceView[]` (at most 20) | Exception to default visibility (section 8 common rules): own rows in `reserved, rejected, cancelled, expired`, newest first, created within 24 h before `nowMs`. Feeds the orphan/failed-upload status in #854. |
 | `resources.listForNote` (query) | `{ noteId: v.id("notes") }` | `resourceView[]` (at most 20) | `[]` when the note is foreign, missing or soft-deleted. Only links where link, resource (ready) and note are all live. |
 | `resources.listFolders` (query) | `{ parentId: v.union(v.id("resourceFolders"), v.null()), paginationOpts }` | `PaginationResult<folderView>` | Live folders only. |
 | `resources.getUsage` (query) | `{ nowMs: v.number() }` | `{ usedBytes, reservedBytes, limitBytes, readyCount, limitCount }` all `v.number()` | `usedBytes` counts ready rows including soft-deleted (OD-2). Display only; enforcement is in mutations. |
@@ -309,9 +318,9 @@ const folderViewValidator = v.object({
 | `resources.restoreResource` (mutation) | `{ resourceId: v.id("resources") }` | `{ success: v.boolean() }` | `false` outside the window (same as `convex/notes.ts:209-211`). Restores to its folder if live, else to the root. |
 | `resources.createFolder` (mutation) | `{ name: v.string(), parentId: v.optional(v.id("resourceFolders")) }` | `folderView` | |
 | `resources.renameFolder` (mutation) | `{ folderId: v.id("resourceFolders"), name: v.string() }` | `folderView` | |
-| `resources.moveFolder` (mutation) | `{ folderId: v.id("resourceFolders"), parentId: v.union(v.id("resourceFolders"), v.null()) }` | `folderView` | Cycle, depth and sibling-name checks (section 8.3). |
+| `resources.moveFolder` (mutation) | `{ folderId: v.id("resourceFolders"), parentId: v.union(v.id("resourceFolders"), v.null()) }` | `folderView` | Cycle, depth and sibling-name checks, and the bounded subtree depth recompute (section 8.3 rules 3 and 5). |
 | `resources.deleteFolder` (mutation) | `{ folderId: v.id("resourceFolders") }` | `{ success: v.boolean() }` | Only when it has no live sub-folder and no live resource: else `FOLDER_NOT_EMPTY`. |
-| `resources.restoreFolder` (mutation) | `{ folderId: v.id("resourceFolders") }` | `{ success: v.boolean() }` | Window as above; `NAME_TAKEN` if a live sibling now has the name; parent deleted: restores under root. |
+| `resources.restoreFolder` (mutation) | `{ folderId: v.id("resourceFolders") }` | `{ success: v.boolean() }` | Window as above; `NAME_TAKEN` if a live sibling now has the name; parent deleted: restores under root, with the same subtree depth recompute as `moveFolder` (section 8.3 rule 5). |
 
 Export manifest (shape for #273; OD-3 decides bytes). Read-only query `resources.exportManifest({})` returning:
 
@@ -319,43 +328,54 @@ Export manifest (shape for #273; OD-3 decides bytes). Read-only query `resources
 type ResourceExportManifestV1 = {
   version: 1;
   exportedAt: number;
-  folders: { id: string; parentId: string | null; name: string; createdAt: number; deletedAt: number | null }[];
+  folders: { id: string; parentId: string | null; name: string; createdAt: number }[];
   resources: {
     id: string; folderId: string | null; filename: string; mimeType: string;
-    sizeBytes: number; sha256: string; createdAt: number; deletedAt: number | null;
+    sizeBytes: number; sha256: string; createdAt: number;
     linkedNoteIds: string[];
   }[];
   bytes: "per_file_authenticated_download"; // OD-3 default; never a URL
 };
 ```
 
-Only `ready` rows; at most `RESOURCE_MAX_READY_PER_USER` resources and `RESOURCE_FOLDER_MAX_COUNT` folders, so the result is bounded.
+**Export and the content route agree (11.5):** the manifest lists **live `ready` resources only** (`state === "ready"`, `deletedAt === undefined`) and live folders only. A soft-deleted resource and its metadata are absent, so no manifest entry advertises a download that the content route (10.2, check 3) would answer with 404. Hence no `deletedAt` field in the shape. `linkedNoteIds` lists only notes whose link and note are both live. At most `RESOURCE_MAX_READY_PER_USER` resources and `RESOURCE_FOLDER_MAX_COUNT` folders, so the result is bounded.
 
 ### 8.2 Internal functions (not callable by clients)
 
 | Function | Args | Returns | Used by |
 |---|---|---|---|
-| `internal.resources.authorizeUpload` (mutation) | `{ subject: v.string(), email: v.optional(v.string()), resourceId: v.string() }` | `{ ok: true, userId, declaredSizeBytes, extension, declaredMimeType } or { ok: false, code }` | Upload handler, before reading the body. Resolves the user (AE-6), checks approval, ownership, `state === "reserved"`, deadline (lazily expiring), and `attempts < RESOURCE_MAX_ATTEMPTS`; increments `attempts`. |
+| `internal.resources.authorizeUpload` (mutation) | `{ subject: v.string(), email: v.optional(v.string()), resourceId: v.string() }` | `{ ok: true, userId, declaredSizeBytes, extension, declaredMimeType } or { ok: false, code }` | Upload handler, before reading the body. Resolves the user (AE-6; no user or an inactive account gives `NOT_AUTHENTICATED`, 401), checks approval, ownership, `state === "reserved"`, deadline (lazily expiring), and `attempts < RESOURCE_MAX_ATTEMPTS`; increments `attempts`. |
 | `internal.resources.rejectUpload` (mutation) | `{ userId: v.id("users"), resourceId: v.id("resources"), reason: rejectReasonValidator }` | `null` | Upload handler on validation failure. `reserved` to `rejected`. |
-| `internal.resources.commitUpload` (mutation) | `{ userId: v.id("users"), resourceId: v.id("resources"), storageId: v.id("_storage"), contentKind: contentKindValidator, mimeType: v.string() }` | `{ ok: true } or { ok: false, code }` | Upload handler after `ctx.storage.store`. Single transaction: re-check account active, `state === "reserved"`, deadline, `by_storageId` unused, `ctx.db.system.get("_storage", storageId).size === declaredSizeBytes`; write verified facts; `reserved` to `ready`. |
+| `internal.resources.commitUpload` (mutation) | `{ userId: v.id("users"), resourceId: v.id("resources"), storageId: v.id("_storage"), contentKind: contentKindValidator, mimeType: v.string() }` | `{ ok: true } or { ok: false, code }` | Upload handler after `ctx.storage.store`. Single transaction: re-check account active (else `NOT_AUTHENTICATED`), `state === "reserved"`, deadline, `by_storageId` unused, `ctx.db.system.get("_storage", storageId).size === declaredSizeBytes`; write verified facts; `reserved` to `ready`. |
 | `internal.resource_access.authorizeRead` (query) | `{ subject: v.string(), email: v.optional(v.string()), resourceId: v.string(), noteId: v.optional(v.string()) }` | `{ ok: true, storageId, filename, mimeType, contentKind, sizeBytes } or { ok: false, status: 401 \| 403 \| 404 }` | Content handler (section 10). |
 
 ```ts
 type AuthorizeUploadResult =
   | { ok: true; userId: Id<"users">; declaredSizeBytes: number; extension: string; declaredMimeType: string }
-  | { ok: false; code: "NOT_FOUND" | "ACCOUNT_PENDING_APPROVAL" | "UPLOAD_NOT_OPEN" | "UPLOAD_EXPIRED" | "TOO_MANY_ATTEMPTS" };
-type CommitUploadResult = { ok: true } | { ok: false; code: "UPLOAD_NOT_OPEN" | "UPLOAD_EXPIRED" | "SIZE_MISMATCH" | "STORAGE_ID_IN_USE" | "NOT_FOUND" };
+  | { ok: false; code: "NOT_AUTHENTICATED" | "NOT_FOUND" | "ACCOUNT_PENDING_APPROVAL" | "UPLOAD_NOT_OPEN" | "UPLOAD_EXPIRED" | "TOO_MANY_ATTEMPTS" };
+type CommitUploadResult =
+  | { ok: true }
+  | { ok: false; code: "NOT_AUTHENTICATED" | "UPLOAD_NOT_OPEN" | "UPLOAD_EXPIRED" | "SIZE_MISMATCH" | "STORAGE_ID_IN_USE" | "NOT_FOUND" };
 type AuthorizeReadResult =
   | { ok: true; storageId: Id<"_storage">; filename: string; mimeType: string; contentKind: "image" | "pdf" | "text"; sizeBytes: number }
   | { ok: false; status: 401 | 403 | 404 };
 ```
 
+`NOT_AUTHENTICATED` is the 401 arm of the two upload-side unions, matching the 401 of `AuthorizeReadResult`. It is returned when the identity resolves to no user row, or to an inactive (soft-deleted or deactivated) account (`isInactiveAccount`, C-4), including an account deleted **after** `beginUpload` and before the POST (`authorizeUpload`) or between `store` and `commit` (`commitUpload`, 11.3 item 4). The handler maps it to HTTP 401 `{ "error": { "code": "NOT_AUTHENTICATED" } }` with no further detail, never to a 404 or an invented code. A call that returns `NOT_AUTHENTICATED` writes nothing: no `attempts` increment, no state change. A missing or unverifiable JWT never reaches these functions (the handler answers 401 at check 1 of 10.2).
+
 ### 8.3 Folder rules
 
 1. Names: section 12.3. Duplicate sibling `nameKey` among live folders: `NAME_TAKEN`.
-2. `createFolder` and `moveFolder` compute `depth = parent.depth + 1` (root children: 0). `depth > RESOURCE_FOLDER_MAX_DEPTH - 1` gives `FOLDER_TOO_DEEP`. For `moveFolder`, also reject if the moved subtree's height would exceed the bound (subtree size is at most `RESOURCE_FOLDER_MAX_COUNT`, so the traversal is bounded).
+2. `createFolder` computes `depth = parent.depth + 1` (root children: 0); `depth > RESOURCE_FOLDER_MAX_DEPTH - 1` gives `FOLDER_TOO_DEEP`. `depth` is a stored field that must equal the folder's number of ancestors at all times (invariant 6, section 6), so every operation that changes a folder's parent also re-derives the depth of its whole subtree (rule 5).
 3. Cycle rejection: moving a folder into itself or into any descendant gives `FOLDER_CYCLE`. The ancestry walk from the target parent is capped at `RESOURCE_FOLDER_MAX_DEPTH + 1` steps and **fails closed** with `FOLDER_CYCLE` if it does not reach the root (protects against corrupt data).
 4. More than `RESOURCE_FOLDER_MAX_COUNT` folders gives `FOLDER_LIMIT`.
+5. **Subtree depth recompute** (`moveFolder`, and `restoreFolder` when the restored folder's parent changes, e.g. to the root because the old parent was deleted). Stored `depth` is kept; it is not dropped for compute-on-read, because list views and create/move checks read it with no ancestry walk. In one mutation (one transaction, all or nothing):
+   1. `newDepth = target parent ? parent.depth + 1 : 0`; `delta = newDepth - folder.depth`.
+   2. Collect the moved folder's subtree **in every row state** (live and soft-deleted, so `restoreFolder` can never expose a stale depth) breadth first, reading children with `by_userId_parentId_nameKey` (`userId` and `parentId` equality only). Keep a visited set. Fail closed with `FOLDER_CYCLE`, and write nothing, if a node repeats, if the subtree has more than `RESOURCE_FOLDER_MAX_COUNT` nodes, or if it is more than `RESOURCE_FOLDER_MAX_DEPTH` levels deep (all of these mean corrupt data).
+   3. If any node has `node.depth + delta > RESOURCE_FOLDER_MAX_DEPTH - 1`: `FOLDER_TOO_DEEP`, nothing written.
+   4. Otherwise patch the moved folder (`parentId`, `depth`, `updatedAt`) and, when `delta !== 0`, every descendant's `depth` and `updatedAt`.
+
+   Cost bound: at most `RESOURCE_FOLDER_MAX_COUNT` (100) folder reads, 100 index ranges and 100 writes per move, far below the per-transaction limits (32,000 documents scanned, 16,000 written, 4,096 index ranges, C-16). The `createFolder` and `renameFolder` paths never need this because a new folder has no descendants and a rename keeps the parent.
 
 ### 8.4 Error codes
 
@@ -371,7 +391,7 @@ type AuthorizeReadResult =
 | `NAME_TAKEN`, `FOLDER_CYCLE`, `FOLDER_TOO_DEEP`, `FOLDER_LIMIT`, `FOLDER_NOT_EMPTY`, `LINK_LIMIT` | folders, links | n/a |
 | `STORAGE_ID_IN_USE`, `STORAGE_UNAVAILABLE` | internal commit, `ctx.storage` failure | 500 / 503 |
 
-Missing or invalid credentials return HTTP 401 with `{ "error": { "code": "NOT_AUTHENTICATED" } }` and no body detail.
+Missing or invalid credentials, and an unknown or inactive account (including one deleted mid-upload), return HTTP 401 with `{ "error": { "code": "NOT_AUTHENTICATED" } }` and no body detail. On the upload side this is the `NOT_AUTHENTICATED` arm of `AuthorizeUploadResult` and `CommitUploadResult` (8.2).
 
 ## 9. Upload: state machine, idempotency, cancellation, orphans
 
@@ -454,7 +474,7 @@ Authorization: Bearer <Convex Auth JWT>
 Order of checks, each failing closed and each before any storage access:
 
 1. `Authorization` present and `ctx.auth.getUserIdentity()` non-null, else 401.
-2. `internal.resource_access.authorizeRead` (AE-6): resolve the user with `resolveUserFromIdentity`; `isInactiveAccount` gives 401; not approved gives 403.
+2. `internal.resource_access.authorizeRead` (AE-6): resolve the user with `resolveUserFromIdentity`; no user row or `isInactiveAccount` gives 401; not approved gives 403.
 3. `ctx.db.normalizeId("resources", resourceId)`; row exists; `row.userId === user._id`; `state === "ready"`; `deletedAt === undefined`; `storageId` set. Any failure gives 404 (same response for missing, foreign, deleted, not ready, wrong table).
 4. If `noteId` is present: normalized, owned, `deletedAt === undefined`, and a live link row exists for `(user, note, resource)`. Else 404. This is the "stale reference denial".
 5. Only now `ctx.storage.get(storageId)`; `null` gives 404 (never reveal storage detail).
@@ -473,12 +493,12 @@ Authorization: Bearer <Convex Auth JWT>
 Content-Type: <declared>      Content-Length: <bytes>      body: raw file bytes
 ```
 
-1. Identity, then `internal.resources.authorizeUpload` (checks 1 to 3 of 10.2 for a `reserved` row, deadline, attempts; increments `attempts`).
+1. Identity (no identity: 401), then `internal.resources.authorizeUpload` (checks 1 to 3 of 10.2 for a `reserved` row, deadline, attempts; increments `attempts` only on `ok: true`). Its `NOT_AUTHENTICATED` arm is HTTP 401, same as check 1 and 2 of 10.2; `store` is not called.
 2. If `Content-Length` is present and differs from `declaredSizeBytes`: `rejectUpload("size_mismatch")`, 400, **nothing stored**. Read the body as bytes; if its length differs: same.
 3. Extension to expected type (12.2); non-empty `declaredMimeType` other than `application/octet-stream` must equal it, else `rejectUpload("type_mismatch")`.
 4. Signature and text checks (12.2) on the bytes; failure: `rejectUpload("content_mismatch")`.
 5. `ctx.storage.store(new Blob([bytes], { type: mimeType }))`, optionally with `{ sha256 }` when the client sent a digest header. A thrown error leaves the row `reserved` and returns 503 `STORAGE_UNAVAILABLE`.
-6. `internal.resources.commitUpload`. On `ok: false` the blob is an orphan O1 and the handler returns the code.
+6. `internal.resources.commitUpload`. On `ok: false` the blob is an orphan O1 and the handler returns the code (`NOT_AUTHENTICATED` as 401).
 7. 200 `{ "resourceId", "state": "ready" }`.
 
 Validation happens **before** `store`, so a rejected upload never creates a blob. This is why a Convex upload URL is not used: with an upload URL the bytes land first, Convex does not limit their size (C-14), and validation would have to follow, so oversize or wrong-type blobs could accumulate before any check.
@@ -492,7 +512,16 @@ GET  /api/resources/<resourceId>/content   -> Convex GET  /resources/content
 POST /api/resources/<resourceId>/upload    -> Convex POST /resources/upload
 ```
 
-They run server-side, read the session JWT with `convexAuthNextjsToken()` (C-21), send it as `Authorization: Bearer`, forward only the headers the route needs (never `Cookie`, never `Origin`), stream the upstream body, use `export const dynamic = "force-dynamic"` (as `route.ts:1`), set no caching, and map an absent token to 401 (the middleware would otherwise redirect a signed-out request to the sign-in page as HTML, `rootEntry.ts:48-52`, so image elements must treat a non-image content type as failure). The browser never sees the JWT, `<img src="/api/resources/…/content">` works with the session cookie, and the Convex routes need no CORS (browsers cannot read their responses cross-origin). Revocation latency for this route is zero: the next request re-runs 10.2.
+They run server-side, read the session JWT with `convexAuthNextjsToken()` (C-21), send it as `Authorization: Bearer`, forward only the headers the route needs (never `Cookie`, never `Origin`), stream the upstream body, use `export const dynamic = "force-dynamic"` (as `route.ts:1`), set no caching, and map an absent token to 401 JSON. The browser never sees the JWT, `<img src="/api/resources/…/content">` works with the session cookie, and the Convex routes need no CORS (browsers cannot read their responses cross-origin). Revocation latency for this route is zero: the next request re-runs 10.2.
+
+**Requirement: the middleware must let a signed-out request reach the handler.** Today it does not, so a handler that maps an absent token to 401 would never run for a signed-out request:
+
+- `apps/web/proxy.ts:59-64`: the matcher includes `/(api|trpc)(.*)`, so `/api/resources/...` goes through the auth middleware.
+- `apps/web/proxy.ts:47-56`: for a signed-out request the middleware calls `decideEntryRedirect` and, when it returns a path, answers with `nextjsMiddlewareRedirect` instead of calling the route.
+- `apps/web/lib/rootEntry.ts:48-52`: every route that is not public, not the calendar bypass and not authenticated is redirected to `/sign-in?next=...` (an HTML page).
+- `apps/web/lib/rootEntry.ts:14-25` and `apps/web/proxy.ts:10`: the public list (`PUBLIC_ROUTE_PATTERNS`, turned into `isPublicRoute`) holds `/api/health` and `/api/mcp` and no `/api/resources/...`.
+
+So the proxy work **must** add `"/api/resources/(.*)"` to `PUBLIC_ROUTE_PATTERNS` in `apps/web/lib/rootEntry.ts`, in the same way `/api/mcp` is listed (`rootEntry.ts:23-24`: the route authenticates itself) and with the same pattern style as `"/projects/(.*)"` (`proxy.ts:19`), and must update the exact-array assertion in `apps/web/lib/rootEntry.test.ts:13-23` (test ACC-16). This removes only the redirect. Authentication stays in the handler (no token: 401 JSON `NOT_AUTHENTICATED`) and in Convex (10.2 re-runs on every request); the exemption exposes no data because the Next handler holds no bytes and sends the token it was given. It is deliberately no wider than the `/api/resources/` prefix. `apps/web/proxy.ts` itself and its `config.matcher` do not change: excluding the path from the matcher instead would also skip the Convex Auth middleware for it, which is not verified here to be compatible with `convexAuthNextjsToken()` (UNK-3, FG-2), whereas a public pattern keeps the middleware running. If the implementing ticket cannot add the pattern, the fallback is to document the real behaviour instead: a signed-out request gets a redirect to `/sign-in`, and ACC-15 changes to expect that redirect; that fallback is not recommended because image elements and `fetch` callers would then receive HTML for a denied request and must treat any non-image content type as failure.
 
 Honest limit: bytes already delivered to a browser, a disk or a screenshot cannot be recalled. `no-store` only prevents the app from caching them.
 
@@ -506,7 +535,7 @@ None is proven here; this ticket has no credentialed deployment and runs no Conv
 |---|---|---|
 | FG-1 | A request with a valid Bearer JWT gets `ctx.auth.getUserIdentity()` in an HTTP action; no or bad token gets `null` | Route not feasible; owner re-decides auth for bytes |
 | FG-2 | The Next route obtains the session JWT with `convexAuthNextjsToken()` and the Convex route accepts it | Route 1 not feasible; consider Route 2 (OD-7) |
-| FG-3 | Owner reads own bytes; foreign, deleted, not-ready, stale-note and signed-out requests are denied with the codes in 10.2 | Fix before any UI |
+| FG-3 | Owner reads own bytes; foreign, deleted, not-ready, stale-note and signed-out requests are denied with the codes in 10.2; a signed-out request through the Next proxy gets 401 JSON, not a redirect (needs the `/api/resources/(.*)` public pattern, 10.4) | Fix before any UI |
 | FG-4 | Upload at `RESOURCE_MAX_FILE_BYTES` succeeds end to end; `Content-Length`/length checks fire; `store(new Blob([...], { type }))` records the server-determined `contentType` in `_storage` | Lower the cap or change transport |
 | FG-5 | No CORS header, env var or Convex setting is needed in Route 1 | Escalate as OD-7 |
 | FG-6 | The Vercel function body and streaming limits for the proxy at the cap (UNK-4) | Lower `RESOURCE_MAX_FILE_BYTES` |
@@ -526,7 +555,7 @@ Deleting a note writes nothing to resources. `listForNote` returns `[]` while th
 1. `resourceFolders`, `resources`, `resourceLinks` are added to `USER_OWNED_TABLES` (C-8) and the exact-list test is updated in the same #851 slice (C-9, AE-16). Soft delete stamps `deletedAt`/`updatedAt`; blobs are untouched.
 2. The byte route returns 401 for an inactive account even if rows and blobs exist (`isInactiveAccount`, C-4).
 3. Sign-in restore revives the account only; resource rows stay deleted, like every other table (C-10). The user can restore individual resources within the window. This is the existing gap #808 already reports, not a new promise; **no document may claim full account restoration** (OD-3).
-4. Mid-upload account deletion: `commitUpload` re-checks the account, so the blob is an O1 orphan and the row never becomes `ready`.
+4. Mid-upload account deletion: before the POST, `authorizeUpload` returns `NOT_AUTHENTICATED` (401) and nothing is stored; between `store` and commit, `commitUpload` re-checks the account and returns `NOT_AUTHENTICATED` (401), so the blob is an O1 orphan and the row never becomes `ready` (8.2).
 
 ### 11.4 Physical deletion and quota (OD-4)
 
@@ -534,12 +563,12 @@ No code in this contract calls `ctx.storage.delete` or `ctx.db.delete`. Therefor
 
 - Bytes of soft-deleted resources and deleted accounts remain in storage with no read path. `docs/HARD_RULES.md:237` ("after 30 days, a scheduled job hard-deletes") describes a job that does not exist (C-11).
 - With the recommended quota rule (soft-deleted bytes keep counting) a user's quota is only freed by a purge. Without a purge, quota behaves as a lifetime allowance. If the owner chooses to stop counting soft-deleted bytes instead, storage can grow without account (bounded only by `RESOURCE_BEGIN_PER_HOUR`). This is part of OD-2 and OD-4(a).
-- A purge, when approved, must: run only on resources soft-deleted longer than the restore window (and not exported-in-progress), be bounded per run and idempotent, call `ctx.storage.delete`, record a tombstone (new optional `purgedAt`, additive), and be a separately reviewed ticket. `scan:ram-only-audit` does not detect `ctx.storage.delete` (C-20), so that review is manual until the scan is extended.
+- A purge, when approved, must: run only on resources soft-deleted longer than the restore window (soft-deleted rows are never in an export, 11.5), be bounded per run and idempotent, call `ctx.storage.delete`, record a tombstone (new optional `purgedAt`, additive), and be a separately reviewed ticket. `scan:ram-only-audit` does not detect `ctx.storage.delete` (C-20), so that review is manual until the scan is extended.
 - Do **not** assume deleting a row revokes a leaked URL: the design avoids the question by never issuing one.
 
 ### 11.5 Export (OD-3)
 
-`resources.exportManifest` (8.1) lists metadata only. Bytes: per-file download through the same authenticated route. A bulk ZIP produced by an action and delivered as a stored file plus an emailed link, as `docs/HARD_RULES.md:236` describes for data export, would create exactly the bearer URL this contract forbids; #273 must reconcile that with this contract before any export of resource bytes.
+`resources.exportManifest` (8.1) lists metadata of **live `ready` resources only**. Bytes: per-file download through the same authenticated route, which serves exactly the live `ready` rows (10.2, check 3), so every manifest entry is downloadable and none is advertised that would 404. **Soft-deleted resources are not exported**, neither their metadata nor their bytes; their retained blobs have no read path by design (R, section 9.5). To export a soft-deleted resource the owner restores it first, inside the restore window. After the window the bytes are retained but unexportable until OD-4(a) decides their fate; this is stated, not hidden. If the owner instead wants trash exported, that needs a separate export-scoped authenticated read route and its own OD-3 decision; it is **not** specified or adopted here, and the content route stays 404 for soft-deleted rows. A bulk ZIP produced by an action and delivered as a stored file plus an emailed link, as `docs/HARD_RULES.md:236` describes for data export, would create exactly the bearer URL this contract forbids; #273 must reconcile that with this contract before any export of resource bytes.
 
 ## 12. Validation
 
@@ -616,6 +645,7 @@ Fixtures: users A and B; notes `nA1` (A), `nA2` (A, soft-deleted), `nB1` (B); fo
 | OWN-11 | No public function has a `storageId` or `userId` argument or return field (reflect over exports and view validators) | holds |
 | OWN-12 | Internal `commitUpload` with a `storageId` already bound to `rB1` | `STORAGE_ID_IN_USE`; `rAr` stays `reserved` |
 | OWN-13 | Pending-approval account calls `beginUpload` and the read route | `ACCOUNT_PENDING_APPROVAL` / 403; no row |
+| OWN-14 | Visibility exceptions (section 8): A calls `get` on `rAr`, `rAx`, `rA1`, `rAd`; A calls `list`, `listForNote`, `listUploads`, `listTrash`; B calls `get` on `rAr` and `listUploads` | `get` returns the view for `rAr`, `rAx`, `rA1` and `null` for `rAd`; `list` and `listForNote` omit `rAr`, `rAx`, `rAd`; `listUploads` returns exactly `rAr` and `rAx` and never a `ready` row; `listTrash` returns only `rAd` (non-null `deletedAt`, `restorableUntilMs`); B gets `null` and an empty `listUploads` |
 | **ACC-01** | Read route, no `Authorization` | 401, empty detail |
 | ACC-02 | Read route, malformed/expired token (identity `null`) | 401 |
 | ACC-03 | A reads `rA1` | 200, bytes equal, headers per 10.2, `Cache-Control: private, no-store`, `nosniff`, `Content-Type` is the stored type |
@@ -625,6 +655,8 @@ Fixtures: users A and B; notes `nA1` (A), `nA2` (A, soft-deleted), `nB1` (B); fo
 | ACC-07 | A reads `rA1` with `noteId = nA1` and a live link | 200 |
 | ACC-08 | Same, link unlinked; or `nA1` soft-deleted; or `noteId = nB1`; or malformed `noteId` | 404 each (stale reference) |
 | ACC-09 | A's account soft-deleted (`users.deletedAt` set), valid token | 401; blob untouched |
+| ACC-15 | Signed out through the Next proxy (no session cookie), GET `/api/resources/<id>/content` and POST `/api/resources/<id>/upload` | HTTP 401 `{ "error": { "code": "NOT_AUTHENTICATED" } }`, not a 307 to `/sign-in`; the route handler ran (10.4) |
+| ACC-16 | The public-route list (`PUBLIC_ROUTE_PATTERNS`) and the matcher built from it as at `proxy.ts:10`: `/api/resources/<id>/content`, `/api/resources/<id>/upload`; then `/api/resources`, `/api/resources-x`, `/api/notes`; each signed out through `decideEntryRedirect` | the first two are public and give `null`; the others are not public and give `/sign-in?next=...` (the exemption is no wider than the `/api/resources/` prefix). Whether the matcher is unit-testable under `bun test` is not verified here; if not, the test pins the list and a regex-equivalent check |
 | ACC-10 | `Range: bytes=0-9`, `bytes=-4`, `bytes=5-`, `bytes=0-1,3-4`, `bytes=999999999-` | 206, 206, 206, 416, 416; `Content-Range` correct; no range gives 200 |
 | ACC-11 | `disposition=inline` for PNG; for PDF; for text | `inline` only for PNG (OD-6); others `attachment` |
 | ACC-12 | Filename `evil"\r\nX: y.png` stored via the normalizer | header contains no quote, CR or LF; RFC 5987 form present |
@@ -654,16 +686,19 @@ Fixtures: users A and B; notes `nA1` (A), `nA2` (A, soft-deleted), `nB1` (B); fo
 | UPL-22 | `_storage.size` differs from declared at commit | not `ready` |
 | UPL-23 | Replay of a `rejected` request id | returns `rejected` with the same reason; no new row |
 | UPL-24 | Slot recycling at the row cap | the oldest eligible terminal row is overwritten (all fields, `createdAt` reset); no `.db.delete` |
+| UPL-25 | A `beginUpload`, then A's account is soft-deleted, then POST with a valid token | `authorizeUpload` returns `{ ok: false, code: "NOT_AUTHENTICATED" }`; handler 401; `store` not called; `attempts` unchanged |
+| UPL-26 | `store` succeeds, then A's account is soft-deleted, then `commitUpload` | `{ ok: false, code: "NOT_AUTHENTICATED" }`; handler 401; row never `ready`; the blob is recorded as an O1 orphan |
 | **FIL-01** | Every row of the 12.1 table | exact outputs |
 | FIL-02 | Property: for 1,000 generated inputs, output never contains a control, bidi override, path separator or any of `< > : " \| ? *`; UTF-8 length at most 200; idempotent on its own output | holds |
 | **FLD-01** | Create sibling with the same `nameKey` (`Résumé`, `RÉSUMÉ`, NFD form) | `NAME_TAKEN` |
 | FLD-02 | `moveFolder` into itself; into a descendant | `FOLDER_CYCLE` |
-| FLD-03 | Chain to `RESOURCE_FOLDER_MAX_DEPTH`; one deeper; move that makes the subtree too deep | `FOLDER_TOO_DEEP` |
+| FLD-03 | Chain to `RESOURCE_FOLDER_MAX_DEPTH`; one deeper; move that makes the subtree too deep | `FOLDER_TOO_DEEP`; no folder row written |
 | FLD-04 | Fixture with a corrupt parent loop | ancestry walk stops after the bound and returns `FOLDER_CYCLE`; no infinite loop |
 | FLD-05 | 101st folder | `FOLDER_LIMIT` |
 | FLD-06 | `deleteFolder` with a live resource or sub-folder; then empty | `FOLDER_NOT_EMPTY`; then success |
 | FLD-07 | `restoreResource` whose folder was deleted | restored at the root |
 | FLD-08 | `list` with `numItems` 1,000 | clamped to 100; page cursor stable |
+| FLD-09 | At `RESOURCE_FOLDER_MAX_DEPTH` 4 (deepest allowed depth 3): folder `f` (depth 0) with child `c` (1), grandchild `g` (2) and a soft-deleted child `d` (1); root-level `p` (0) and `q` (0) with child `q1` (1). `moveFolder(f, p)`; then `moveFolder(f, q1)`; then `moveFolder(f, null)` | after the first move `f`, `c`, `g`, `d` have depth 1, 2, 3, 2; the second is `FOLDER_TOO_DEEP` (`g` would be 4) and no row is written; after the last they have 0, 1, 2, 1; in a separate run, after the first move only, `createFolder` under `c` gets depth 3 (`c.depth + 1`) and under `g` gets `FOLDER_TOO_DEEP`; `restoreFolder(d)` exposes the correct depth; a corrupt loop or a subtree over `RESOURCE_FOLDER_MAX_COUNT` nodes gives `FOLDER_CYCLE` with no write; reads and writes stay at most 100 each |
 | **LIF-01** | `softDeleteUserAccount` with two owners and rows in all three tables | only the target user's rows get `deletedAt`; repeat run keeps timestamps; other owner untouched |
 | LIF-02 | `USER_OWNED_TABLES` exact-list test | includes the three tables; adding a table without registering fails |
 | LIF-03 | Account soft delete with resource rows and a blob | zero `storage.delete` calls; blob still present |
@@ -673,10 +708,12 @@ Fixtures: users A and B; notes `nA1` (A), `nA2` (A, soft-deleted), `nB1` (B); fo
 | LIF-07 | `unlinkFromNote`, link again | same link row reused (row count unchanged) |
 | LIF-08 | Link limits: 21st link on a note, on a resource; 1,001st for the user | `LINK_LIMIT` |
 | LIF-09 | `exportManifest` | no `storageId`, no URL; counts bounded |
+| LIF-10 | `exportManifest` for A with `rA1` (live), `rAd` (soft-deleted), `rAr`/`rAx` (not ready), then read each listed id through the read route | only `rA1` is listed (no `rAd` row or metadata, no `deletedAt` field); every listed `id` returns 200; `rAd` returns 404 and is not in the manifest; after `restoreResource(rAd)` it is listed and returns 200 |
 | **INV-01** | Property over random op sequences | `ready` rows always carry all verified fields (6, invariant 1) |
 | INV-02 | Property | non-`ready` rows never carry `storageId` |
 | INV-03 | Property | no two resources share a `storageId`; no duplicate link triple |
 | INV-04 | `scan:ram-only-audit` on the implementation branch | passes at baseline 10; no schema line matches the raw-content pattern |
+| INV-05 | Property over random folder create, move, delete and restore sequences | every folder's stored `depth` equals its ancestor count in every row state; none exceeds `RESOURCE_FOLDER_MAX_DEPTH - 1` |
 
 Section 13 states what the tests must prove. It is not evidence that any of them ran.
 
@@ -687,7 +724,7 @@ Section 13 states what the tests must prove. It is not evidence that any of them
 | #851 schema | Add exactly the section 6 tables, `MIGRATIONS.md` entry (additive, inactive), `USER_OWNED_TABLES` entries and the updated exact-list test (LIF-01, LIF-02). No endpoints, no storage calls, no upload URL. |
 | #852 API | Implement section 8 `convex/resources.ts` and `convex/lib/resource_policy.ts` (constants, `normalizeFilename`, type table, sniff, `parseRequestId`). No function in #852 calls a `ctx.storage` method; storage calls exist only in the #853 handlers. `commitUpload` may read `ctx.db.system.get("_storage", id)` for size and hash. Test OWN, UPL (policy half), FLD, LIF. |
 | #853 access | Implement both HTTP handlers (read **and** upload) in `convex/resource_access.ts`, registered in `convex/http.ts`; no CORS, no `OPTIONS`. Its title and DONE widen from "serve" to "serve and accept" (section 16). Test ACC, UPL (handler half). |
-| (new, proposed) proxy | The two Next.js route handlers of 10.4, held, after FG-1 and FG-2. |
+| (new, proposed) proxy | (a) The `/api/resources/(.*)` public-route pattern and its test, then (b) the two Next.js route handlers of 10.4 (section 16 item 2), held, after FG-1 and FG-2. |
 | #854 attach UI | Call `beginUpload`, then POST bytes to `/api/resources/<id>/upload` with an `AbortController`; cancel calls `cancelUpload`; retry re-POSTs while `reserved`, or uses a new request id after a terminal state; show `listUploads` rows as "not completed"; attach only a `ready` resource with `linkToNote`; never keep a URL; treat a non-image content type from a preview request as failure. |
 | #855 library | Use `list`, `listFolders`, `listTrash`, `moveResource`, `renameResource`, `deleteResource`, `restoreResource`; preview via the proxy with `disposition=inline` for images only; download is `attachment`; text and PDF are never rendered in the app origin. |
 | #273 export | Use `exportManifest`; reconcile the emailed-link export in `docs/HARD_RULES.md:236` with AE-4 before exporting bytes. |
@@ -717,7 +754,7 @@ Section 13 states what the tests must prove. It is not evidence that any of them
 ## 16. Notes for ticket sync (not done here)
 
 1. **#853 scope and wording.** The upload handler is proposed in `convex/resource_access.ts`/`convex/http.ts` (no new file), so #853's title, GOAL and DONE should widen to serve **and accept** bytes. #852 keeps only metadata and internal authorization/commit.
-2. **New held ticket for the Next.js proxy** (two route files, a small shared helper and a test: three source files plus one test). No middleware change is needed (`apps/web/proxy.ts:59-64` already matches `/api`).
+2. **New held tickets for the Next.js proxy, two parts** (AGENTS.md rule 2: at most 3 files + 1 test each). (a) *Middleware exemption*: add `"/api/resources/(.*)"` to `PUBLIC_ROUTE_PATTERNS` in `apps/web/lib/rootEntry.ts` and update `apps/web/lib/rootEntry.test.ts` (one source file, one test). It is required, not optional: `apps/web/proxy.ts:47-56` and `apps/web/lib/rootEntry.ts:48-52` redirect every signed-out non-public `/api/*` request to `/sign-in`, and `/api/resources/...` is not in `rootEntry.ts:14-25`, so without it the handlers of (b) never see a signed-out request and cannot return 401 (10.4). `apps/web/proxy.ts` and its matcher stay unchanged. (b) *Route handlers*: the two route files of 10.4 and one test, no shared helper file (if one is needed the ticket splits). (b) must not activate before (a) merges (ACC-15 fails without it).
 3. **#851/#846 serial schema order** and the exact-list test (C-9) must be amended in the same slice. At `5fc1e67f` the user-owned `noteBlocks` table (#826) is not in `USER_OWNED_TABLES`; the schema-derived exhaustiveness check LIF-02 asks for will flag it, which is #808's slice, not this one.
 4. **Doc errors found, not edited:** `docs/HARD_RULES.md:237` describes a 30-day hard-delete job that does not exist (C-11); `docs/HARD_RULES.md:235` names `convex/dsr.ts`, which does not exist (C-24); `docs/HARD_RULES.md:236` export-by-emailed-link conflicts with AE-4; `convex/schema.ts:5-7` says hard deletes are forbidden while seven exist (C-20).
 5. **Scan gap:** `scan:ram-only-audit` does not detect `ctx.storage.delete`, `getUrl` or `generateUploadUrl`. A scan extension needs its own ticket (config-guarded files).
@@ -731,7 +768,7 @@ Section 13 states what the tests must prove. It is not evidence that any of them
 |---|---|
 | Exact schemas | Section 6 |
 | API signatures | Section 8 (plus 10.2, 10.3 for the HTTP routes) |
-| Cross-user and foreign-note cases | Section 13 (OWN-01 to OWN-13, ACC-04, ACC-08) |
+| Cross-user and foreign-note cases | Section 13 (OWN-01 to OWN-14, ACC-04, ACC-08) |
 | Upload state machine | Section 9 |
 | Blocks implementation on data classes, size and quota limits, retention/restore/export policy, feasible revocable access route | Section 1.2 (BLK-1 to BLK-4), OD-1 to OD-5, FG-1 to FG-6 |
 | No automatic ingestion, transcription, indexing, public sharing or purge assumed | Sections 1.3, 4, 11.4 |
