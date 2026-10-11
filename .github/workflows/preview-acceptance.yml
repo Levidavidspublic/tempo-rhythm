@@ -1,0 +1,336 @@
+# TEST ONLY. Manually dispatched: end-to-end acceptance run of preview.tempoflow.dev (the integration
+# build, which uses the TEST Convex deployment ceaseless-dog-617) with a brand-new SYNTHETIC account.
+#
+# Why: the orchestrator sandbox cannot open the Convex WebSocket (its egress proxy blocks upgrades), so
+# signed-in checks of the preview must run on a GitHub-hosted runner. e2e-preview.yml runs only the
+# unauthenticated smoke spec; every authenticated spec skips without TEMPO_E2E_STORAGE_STATE. New accounts
+# start `pending` and AI features refuse them (docs/ops/APPROVAL-GATE.md), so the run approves its own
+# synthetic account first. Owner-authorized on 11 Oct 2026 (ledger #444).
+#
+# What one dispatch does (`gh workflow run preview-acceptance.yml --ref integration`):
+#   1. creates one disposable mail.tm inbox (scripts/e2e/new-inbox.mjs), masks its address and password;
+#   2. signs in to preview with the magic link (scripts/e2e/magic-link-login.mjs) and keeps the
+#      Playwright storage state in the runner temp dir; prints the deployed commit next to this run's
+#      integration head;
+#   3. approve=true: runs `approval:setStatusByEmail {email, status: approved}` for THAT address only, on
+#      ceaseless-dog-617, with the same guard and redaction as convex-test-admin.yml;
+#   4. runs Playwright (default tests/e2e/acceptance) against preview with traces OFF;
+#   5. uploads screenshots + the HTML report, writes a results table to the job summary, deletes the
+#      storage state, the inbox credentials and the raw results.
+#
+# Safety:
+#   - TEST only. CONVEX_DEPLOY_KEY_TEST must start with `dev:ceaseless-dog-617|` (checked in memory, value
+#     never printed). The key is in the env of the guard step and the one `convex run` step only. No
+#     `convex deploy`, no `convex dev`, no `--prod`, no `--push` anywhere in this file.
+#   - Dispatch on integration ONLY: the job `if` requires refs/heads/integration and the first step
+#     re-checks it (fail closed); the checkout is that integration commit, installed with lifecycle
+#     scripts skipped. LIMIT: this prevents accidental use of an unreviewed copy of this file; it does not
+#     stop a user with write access from pushing a modified workflow on another trigger.
+#   - Inputs reach shell only through env (never `${{ }}` inside a script). Spec paths must match
+#     ^tests/e2e/[A-Za-z0-9/_.-]+$, contain no `..` and exist. The approval email comes from the inbox
+#     file (never from an input), is validated, and the convex args JSON is built with jq.
+#   - Synthetic only: the account is a fresh tempo-accept-<hex>@<mail.tm domain> inbox made by this run.
+#     Never a real person. The address (and its local part) and the inbox password are masked in logs.
+#   - Traces are OFF (`--trace off` overrides playwright.config.ts, which turns traces on for preview
+#     runs): a trace would hold the session's auth tokens. A step refuses to upload any .zip / trace.
+#     The artifact holds only test-results/**/*.png and playwright-report/ (screenshots of the synthetic
+#     account's screens, error text, annotations), 7-day retention.
+#   - Coach replies may spend provider credit: tests/e2e/acceptance sends exactly ONE coach message per
+#     run, and Playwright runs with no retries. Choosing other specs may send more.
+#   - Logs: Actions debug logging is refused in the convex step; on success it prints only the resulting
+#     status and an email-matched yes/no; on failure only the last 20 lines that survive a redaction
+#     filter.
+#   - Concurrency: one run at a time (group preview-acceptance, cancel-in-progress: false).
+name: preview-acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      specs:
+        description: "Space-separated Playwright paths, each under tests/e2e/ (no '..'). Dispatch on integration."
+        required: false
+        type: string
+        default: tests/e2e/acceptance
+      approve:
+        description: "Approve the new synthetic account on TEST ceaseless-dog-617 first (needs CONVEX_DEPLOY_KEY_TEST)."
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-acceptance
+  cancel-in-progress: false
+
+env:
+  BUN_VERSION: "1.3.9"
+  EXPECTED_DEPLOYMENT: ceaseless-dog-617
+  PREVIEW_URL: https://preview.tempoflow.dev
+
+jobs:
+  acceptance:
+    name: Preview acceptance (synthetic approved account, test ceaseless-dog-617)
+    # Must be dispatched on integration: the workflow file that runs (and holds the key) is the reviewed copy.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Refuse to run unless dispatched on integration (fail closed, env only)
+        env:
+          RUN_REF: ${{ github.ref }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/integration" ] || [ "$RUN_REF" != "refs/heads/integration" ]; then
+            echo "::error::Dispatch this workflow on integration only (run ref is not refs/heads/integration). Refusing."
+            exit 1
+          fi
+          echo "Workflow dispatched on integration."
+      - name: Refuse anything but the test deployment key (value never printed)
+        if: inputs.approve
+        env:
+          KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Secret CONVEX_DEPLOY_KEY_TEST is not set; cannot run against $EXPECTED_DEPLOYMENT."
+            exit 1
+          fi
+          case "$KEY" in
+            *"|"*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY_TEST is not a deployment deploy key (no '<kind>:<name>|' prefix); refusing."; exit 1;;
+          esac
+          target="${KEY%%|*}"
+          if [ "$target" != "dev:$EXPECTED_DEPLOYMENT" ]; then
+            echo "::error::CONVEX_DEPLOY_KEY_TEST does not target the test deployment dev:$EXPECTED_DEPLOYMENT; refusing to run."
+            exit 1
+          fi
+          echo "Key targets the test deployment $EXPECTED_DEPLOYMENT."
+      # github.ref is refs/heads/integration (checked above), so this is integration at the dispatched commit.
+      - name: Check out integration
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - name: Validate the spec paths (fail closed, env only)
+        id: specs
+        env:
+          SPECS_INPUT: ${{ inputs.specs }}
+          LC_ALL: C
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          [ -n "$SPECS_INPUT" ] || fail "inputs.specs is empty; refusing."
+          [ "${#SPECS_INPUT}" -le 1000 ] || fail "inputs.specs is longer than 1000 characters; refusing."
+          case "$SPECS_INPUT" in
+            *[[:cntrl:]]*) fail "inputs.specs contains a control character; refusing." ;;
+          esac
+          read -r -a paths <<< "$SPECS_INPUT"
+          [ "${#paths[@]}" -ge 1 ] || fail "inputs.specs names no path; refusing."
+          [ "${#paths[@]}" -le 20 ] || fail "inputs.specs names more than 20 paths; refusing."
+          pattern='^tests/e2e/[A-Za-z0-9/_.-]+$'
+          n=0
+          for p in "${paths[@]}"; do
+            n=$((n + 1))
+            [[ "$p" =~ $pattern ]] || fail "spec path #$n must match ^tests/e2e/[A-Za-z0-9/_.-]+\$; refusing."
+            case "$p" in
+              *..*) fail "spec path #$n contains '..'; refusing." ;;
+            esac
+            [ -e "$p" ] || fail "spec path #$n does not exist at this integration commit; refusing."
+          done
+          echo "list=${paths[*]}" >> "$GITHUB_OUTPUT"
+          echo "Spec paths accepted: ${paths[*]}"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Install dependencies (lifecycle scripts skipped) and Chromium
+        run: |
+          bun install --frozen-lockfile --ignore-scripts
+          bunx playwright install --with-deps chromium
+      # scripts/e2e/magic-link-login.mjs launches Playwright's chromium with channel "chrome" (the installed
+      # Google Chrome). GitHub's ubuntu-latest image ships it at /opt/google/chrome; install it if not.
+      - name: Check Google Chrome for the magic-link sign-in
+        run: |
+          if [ -x /opt/google/chrome/chrome ]; then
+            echo "Google Chrome found: $(/opt/google/chrome/chrome --version)"
+          else
+            echo "Google Chrome is not on this runner; installing it through Playwright."
+            bunx playwright install --with-deps chrome
+          fi
+      - name: Create a disposable mail.tm inbox (address and password masked)
+        run: |
+          set -euo pipefail
+          inbox="$RUNNER_TEMP/inbox.json"
+          node scripts/e2e/new-inbox.mjs --out "$inbox"
+          address="$(jq -r '.address // empty' "$inbox")"
+          password="$(jq -r '.password // empty' "$inbox")"
+          if [ -z "$address" ] || [ -z "$password" ]; then
+            echo "::error::The inbox file has no address or password; refusing."
+            exit 1
+          fi
+          echo "::add-mask::$address"
+          echo "::add-mask::${address%%@*}"
+          echo "::add-mask::$password"
+          echo "Inbox file mode: $(stat -c '%a' "$inbox")."
+      - name: Sign in to preview with the magic link (storage state kept in the runner temp dir)
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          inbox="$RUNNER_TEMP/inbox.json"
+          state="$RUNNER_TEMP/state.json"
+          log="$RUNNER_TEMP/login.log"
+          TEMPO_TEST_EMAIL="$(jq -r '.address' "$inbox")"
+          TEMPO_TEST_INBOX_PASSWORD="$(jq -r '.password' "$inbox")"
+          export TEMPO_TEST_EMAIL TEMPO_TEST_INBOX_PASSWORD
+          # The script prints step names, hosts, paths and the deployed commit only (never the code,
+          # the inbox password or the storage state). The masks above cover the address anyway.
+          node scripts/e2e/magic-link-login.mjs --base "$PREVIEW_URL" --out "$state" 2>&1 | tee "$log"
+          chmod 600 "$state"
+          deployed="$(sed -n '/^step=health .* commit=/{s/^.* commit=\([^ ]*\).*$/\1/p;q;}' "$log")"
+          head_sha="$(git rev-parse --short=7 HEAD)"
+          if [ -n "$deployed" ] && [ "$deployed" = "$head_sha" ]; then on_head=yes; else on_head=no; fi
+          echo "Preview deployed commit: ${deployed:-unknown}. Integration head (this run): $head_sha. Preview is on the head: $on_head."
+          {
+            echo "### preview-acceptance"
+            echo ""
+            echo "| Preview deployed commit | Integration head (this run) | Preview on head |"
+            echo "|---|---|---|"
+            echo "| \`${deployed:-unknown}\` | \`$head_sha\` | $on_head |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Approve the synthetic account on ceaseless-dog-617 (output redacted and bounded)
+        if: inputs.approve
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+          STATUS: approved
+          LC_ALL: C
+        run: |
+          if [ "${RUNNER_DEBUG:-}" = "1" ]; then
+            echo "::error::Actions debug logging is on (RUNNER_DEBUG=1); refusing to run with the TEST key. Turn it off and re-run."
+            exit 1
+          fi
+          unset CONVEX_VERBOSE DEBUG NODE_DEBUG
+          # The email is the synthetic inbox this run created (never an input). Stricter than
+          # convex-test-admin.yml: only a tempo-accept-<hex>@<domain> address is accepted.
+          EMAIL="$(jq -r '.address // empty' "$RUNNER_TEMP/inbox.json")"
+          fail() { echo "::error::$1"; exit 1; }
+          [ -n "$EMAIL" ] || fail "The inbox file has no address; refusing."
+          [ "${#EMAIL}" -le 254 ] || fail "The inbox address is longer than 254 characters; refusing."
+          pattern='^tempo-accept-[0-9a-f]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+          [[ "$EMAIL" =~ $pattern ]] || fail "The inbox address is not a tempo-accept-<hex> synthetic address; refusing."
+          args="$(jq -cn --arg email "$EMAIL" --arg status "$STATUS" '{email: $email, status: $status}')"
+          out="$RUNNER_TEMP/convex-run.out"
+          err="$RUNNER_TEMP/convex-run.err"
+          rc=0
+          npx --no-install convex run approval:setStatusByEmail "$args" > "$out" 2> "$err" || rc=$?
+          echo "convex run exit code: $rc"
+          if [ "$rc" -eq 0 ]; then
+            got_status="$(jq -r 'if type == "object" then (.status // "") else "" end' "$out" 2>/dev/null)" || got_status=""
+            got_email="$(jq -r 'if type == "object" then (.email // "") else "" end' "$out" 2>/dev/null)" || got_email=""
+            want_email="$(printf '%s' "$EMAIL" | tr '[:upper:]' '[:lower:]')"
+            rm -f "$out" "$err"
+            case "$got_status" in
+              approved|pending) ;;
+              *) echo "::error::convex run returned no recognizable status; treating as failed."; exit 1 ;;
+            esac
+            if [ "$got_email" = "$want_email" ]; then matched=yes; else matched=no; fi
+            echo "Result status: $got_status. Email matched the input: $matched."
+            echo "Approval on TEST $EXPECTED_DEPLOYMENT: status $got_status, email matched: $matched." >> "$GITHUB_STEP_SUMMARY"
+            if [ "$got_status" != "$STATUS" ] || [ "$matched" != "yes" ]; then
+              echo "::error::Result does not match the request (wanted status $STATUS for the synthetic email)."
+              exit 1
+            fi
+            exit 0
+          fi
+          echo "--- last 20 lines after redaction (lines with '=', key, token, secret and similar are dropped) ---"
+          { cat "$out" "$err" | grep -viE '=|key|token|secret|password|bearer|authoriz|credential|environment|\|' || true; } | cut -c1-300 | tail -n 20
+          rm -f "$out" "$err"
+          exit "$rc"
+      - name: Note that approval was skipped
+        if: ${{ !inputs.approve }}
+        run: |
+          echo "::warning::approve=false: the new account stays pending, so signed-in screens show the waiting screen."
+          echo "Approval skipped (approve=false): a new account stays pending; most checks will fail on the waiting screen." >> "$GITHUB_STEP_SUMMARY"
+      # --trace off is a CLI override: Playwright merges it over config.use and project.use, so it beats
+      # the `trace: "on"` that playwright.config.ts sets for preview runs. Traces would hold auth tokens.
+      - name: Playwright against preview (traces off, no retries)
+        id: playwright
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.PREVIEW_URL }}
+          TEMPO_E2E_STORAGE_STATE: ${{ runner.temp }}/state.json
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/results.json
+          SPEC_PATHS: ${{ steps.specs.outputs.list }}
+          CI: "true"
+        run: |
+          set -euo pipefail
+          read -r -a paths <<< "$SPEC_PATHS"
+          bunx playwright test "${paths[@]}" --reporter=list,html,json --trace off
+      - name: Summarize the test results
+        if: always() && steps.playwright.outcome != 'skipped'
+        run: |
+          set -euo pipefail
+          results="$RUNNER_TEMP/results.json"
+          if [ ! -s "$results" ]; then
+            echo "No Playwright results file was written." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Table cells: strip characters that could break the table or inject markup.
+          jq -r '
+            def cell: tostring | gsub("[|<>`\\r\\n]"; " ");
+            def specs: [.suites[]? | recurse(.suites[]?) | .specs[]?];
+            def tests: [specs[] as $s | $s.tests[]? | {
+              name: ((($s.file // "") | cell) + " › " + (($s.title // "") | cell)),
+              status: (.status // "unknown"),
+              notes: ([(.annotations // [])[], ((.results // [])[] | (.annotations // [])[])]
+                | map(select(.type == "coach-reply")) | unique | map(.description // "" | cell))
+            }];
+            . as $r
+            | "#### Test results",
+              "",
+              "| Passed | Failed | Flaky | Skipped |",
+              "|---|---|---|---|",
+              "| \($r.stats.expected // 0) | \($r.stats.unexpected // 0) | \($r.stats.flaky // 0) | \($r.stats.skipped // 0) |",
+              "",
+              (if ([tests[] | select(.status == "unexpected")] | length) > 0
+               then "**Failed tests**", "", (tests[] | select(.status == "unexpected") | "- \(.name)"), ""
+               else "No failed tests.", "" end),
+              (if ([tests[] | select(.notes | length > 0)] | length) > 0
+               then "| Test | Coach reply (first 80 characters) |", "|---|---|",
+                    (tests[] | select(.notes | length > 0) | "| \(.name) | \(.notes | join(" / ")) |"), ""
+               else empty end)
+          ' "$results" >> "$GITHUB_STEP_SUMMARY"
+      - name: Refuse to upload traces (fail closed)
+        if: always() && steps.playwright.outcome != 'skipped'
+        run: |
+          found="$(find test-results playwright-report \( -name '*.zip' -o -name 'trace' -o -name '*.trace' -o -name '*.network' \) 2>/dev/null || true)"
+          if [ -n "$found" ]; then
+            find test-results playwright-report \( -name '*.zip' -o -name '*.trace' -o -name '*.network' \) -type f -delete 2>/dev/null || true
+            find test-results playwright-report -name 'trace' -type d -prune -exec rm -rf {} + 2>/dev/null || true
+            echo "::error::Trace files were found and deleted before upload; check that --trace off still applies."
+            exit 1
+          fi
+          echo "No trace files in test-results/ or playwright-report/."
+      - name: Upload screenshots and the HTML report (no traces)
+        if: always() && steps.playwright.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: preview-acceptance-evidence
+          path: |
+            test-results/**/*.png
+            playwright-report/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Delete the storage state, inbox credentials and raw results
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/state.json" "$RUNNER_TEMP/inbox.json" "$RUNNER_TEMP/results.json" \
+            "$RUNNER_TEMP/login.log" "$RUNNER_TEMP/convex-run.out" "$RUNNER_TEMP/convex-run.err"
+          echo "Deleted the storage state, inbox credentials and raw results."
