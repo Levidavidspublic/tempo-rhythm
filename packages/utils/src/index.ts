@@ -57,3 +57,17 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return `${str.substring(0, maxLength - 3)}...`;
 }
+
+export {
+  type HistoryImportCoverage,
+  type HistoryImportProvider,
+  type HistoryImportRecord,
+  type HistoryImportResult,
+  MAX_HISTORY_CONTENT_CHARS,
+  MAX_HISTORY_CONVERSATIONS,
+  MAX_HISTORY_IMPORT_BYTES,
+  MAX_HISTORY_MESSAGES,
+  MAX_HISTORY_RECORDS,
+  MAX_HISTORY_SOURCE_ID_CHARS,
+  parseHistoryImport,
+} from "./historyImport";
