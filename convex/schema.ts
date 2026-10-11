@@ -94,6 +94,17 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
+    // TEMPO-B06-SUPPORT-CHAT-STATE (#807) — host-owned Agent lifecycle metadata.
+    // All four are optional, so existing rows stay valid with no backfill. Missing
+    // `nextChatSequence` / `chatGenerationEpoch` mean zero to future consumers.
+    /** Opaque Agent-component thread id (a string at the host boundary, not a host table id). */
+    agentThreadId: v.optional(v.string()),
+    /** Next FIFO sequence to reserve for a chatRequests row in this conversation. */
+    nextChatSequence: v.optional(v.number()),
+    /** Fencing epoch. A completion carrying an older epoch is rejected by the consumer. */
+    chatGenerationEpoch: v.optional(v.number()),
+    /** The one chatRequests row that currently holds this conversation's generation claim. */
+    activeChatRequestId: v.optional(v.id("chatRequests")),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_updatedAt", ["userId", "updatedAt"])
@@ -112,6 +123,61 @@ export default defineSchema({
     .index("by_conversationId", ["conversationId"])
     .index("by_conversationId_createdAt", ["conversationId", "createdAt"])
     .index("by_conversationId_deletedAt", ["conversationId", "deletedAt"]),
+
+  /**
+   * TEMPO-B06-SUPPORT-CHAT-STATE (#807) — content-free request/lifecycle metadata for Agent chat.
+   * The Agent component stays canonical for prompt and reply content; this table links to those
+   * message ids as opaque strings and never copies text, provider payloads or raw errors.
+   * Inactive: nothing writes here yet. The indexes are ordinary, not unique constraints, so a
+   * future writer must dedupe on owner + conversation + requestKey inside its own transaction.
+   * Writer validation bounds (not enforced by these validators): requestKey 1-128 ASCII
+   * letters/digits/underscore/hyphen; payloadDigest lowercase SHA-256 hex; sequence and
+   * generationEpoch nonnegative safe integers; timestamps finite server epoch milliseconds.
+   */
+  chatRequests: defineTable({
+    userId: v.id("users"),
+    conversationId: v.id("conversations"),
+    /** Caller-supplied idempotency key. */
+    requestKey: v.string(),
+    /** Lowercase SHA-256 hex of a versioned, deterministic encoding of the accepted payload. */
+    payloadDigest: v.string(),
+    /** FIFO position within the conversation. */
+    sequence: v.number(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    /** Opaque Agent id of the one saved prompt message. */
+    agentPromptMessageId: v.string(),
+    /** Fencing value copied from the conversation when the claim is taken. */
+    generationEpoch: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    /** Opaque Agent id of the canonical reply, set when the request completes. */
+    agentResultMessageId: v.optional(v.string()),
+    /** Server-owned epoch ms after which a running claim may be reclaimed. */
+    generationLeaseExpiresAtMs: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_conversationId_requestKey", ["userId", "conversationId", "requestKey"])
+    .index("by_userId_conversationId_deletedAt_sequence", [
+      "userId",
+      "conversationId",
+      "deletedAt",
+      "sequence",
+    ])
+    .index("by_userId_conversationId_deletedAt_status_sequence", [
+      "userId",
+      "conversationId",
+      "deletedAt",
+      "status",
+      "sequence",
+    ]),
 
   memories: defineTable({
     userId: v.id("users"),
@@ -134,7 +200,16 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_salience", ["userId", "salience"])
-    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    // TEMPO-B06-SUPPORT-CHAT-STATE (#807) — bounded live-memory read. Consumers use the exact
+    // owner, deletedAt = undefined, descending order and take(20); ties follow updatedAt, then
+    // Convex's appended creation time. No collect-and-sort.
+    .index("by_userId_deletedAt_salience_updatedAt", [
+      "userId",
+      "deletedAt",
+      "salience",
+      "updatedAt",
+    ]),
 
   tasks: defineTable({
     userId: v.id("users"),
