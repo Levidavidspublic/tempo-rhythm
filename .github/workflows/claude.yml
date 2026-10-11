@@ -343,9 +343,22 @@ jobs:
           fi
           # Token stays in the environment of this one git process. It is not
           # written to .git/config and it is not printed.
+          # Optional second argument: the verified remote head sha. It is sent as an
+          # explicit expected value, so the push is rejected unless the remote branch
+          # is exactly that commit. This is a compare-and-swap guard, not a history
+          # rewrite: the ancestry check above already guarantees HEAD descends from
+          # that sha, so every accepted update is a fast-forward. It closes the gap
+          # where the remote head is reset to an ancestor of the verified head while
+          # this job runs; a plain push would fast-forward it and restore commits
+          # that were removed on purpose.
           auth_push() {
             local branch="$1"
+            local lease_sha="${2:-}"
             local header
+            local -a lease_args=()
+            if [ -n "$lease_sha" ]; then
+              lease_args=("--force-with-lease=refs/heads/${branch}:${lease_sha}")
+            fi
             header=$(sudo -n cat /usr/local/lib/tempo-git-extraheader)
             case "$header" in
               ''|*'['*|*']'*|*$'\n'*)
@@ -361,14 +374,20 @@ jobs:
                   -c core.hooksPath=/dev/null \
                   -c core.fsmonitor= \
                   -c core.sshCommand= \
-                  push --no-verify -u origin "$branch"; then
+                  push --no-verify "${lease_args[@]}" -u origin "$branch"; then
               unset header
               return 0
             fi
             unset header
             return 1
           }
-          if ! auth_push "$head"; then
+          # Only the pull request head path leases on the verified sha. claude/*
+          # publishing is unchanged.
+          lease_sha=""
+          if [ "$pr_head" = "true" ]; then
+            lease_sha="$PR_HEAD_SHA"
+          fi
+          if ! auth_push "$head" "$lease_sha"; then
             echo "::error::Push of $head failed. Refusing to force-push."
             exit 1
           fi
