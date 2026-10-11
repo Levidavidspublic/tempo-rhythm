@@ -26,9 +26,13 @@ export function ApprovalGate({ children }: { children: ReactNode }) {
 
 function ApprovalGateInner({ children }: { children: ReactNode }) {
   const me = useQuery(api.approval.myStatus);
+  if (me === undefined) {
+    // Loading: never mount protected children before the status is known.
+    return <div aria-busy="true" data-testid="approval-loading" />;
+  }
   if (me && me.status !== "approved") {
     return <WaitingForApproval email={me.email} revoked={me.status === "revoked"} />;
   }
-  // undefined (loading) or null (signed out: the proxy redirects) or approved.
+  // null (signed out: the proxy redirects) or approved.
   return <>{children}</>;
 }

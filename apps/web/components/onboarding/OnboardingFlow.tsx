@@ -36,7 +36,7 @@ export function OnboardingFlow() {
   const name = typed ?? prefilled;
 
   const finish = async (withName: boolean) => {
-    if (pending) return;
+    if (pending || finishing.current) return;
     setPending(true);
     setError("");
     finishing.current = true;
@@ -94,7 +94,7 @@ export function OnboardingFlow() {
               type="button"
               className="text-primary underline"
               disabled={pending}
-              onClick={() => void finish(false)}
+              onClick={() => void finish(true)}
             >
               Skip
             </button>
