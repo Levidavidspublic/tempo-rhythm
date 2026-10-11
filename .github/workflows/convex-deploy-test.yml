@@ -3,6 +3,29 @@
 # Never targets a live deployment: the deploy key must be a `dev:` key for ceaseless-dog-617, checked
 # in memory (never printed) before anything is installed. Live (precious-wildcat-890) deploys are Amit's (R5).
 # Supersedes the unmerged PR #506 (convex-test-deploy.yml, which skipped silently without the key).
+#
+# Added 11 Oct 2026 for #806: a SEPARATE `codegen` job, run only by workflow_dispatch. It is an exact-branch,
+# TEST-only, codegen-only route that returns the generated files for review. It never deploys.
+#   - TEST only. Same key guard as the deploy job: CONVEX_DEPLOY_KEY_TEST must start with
+#     `dev:ceaseless-dog-617|`, checked in memory, value never printed. Live (precious-wildcat-890) is never
+#     touched: no `convex deploy`, no `convex dev`, no `--prod` anywhere in the codegen job.
+#   - DISCLOSED RISK: Convex 1.32.0 `convex codegen` is NOT read-only. It runs start_push against the target
+#     (finishPush is skipped, but that is not zero mutation), which can stage schema and component state on
+#     ceaseless-dog-617 (component namespaces, system tables, indexes, pending schemas). The exact effect on the
+#     hosted TEST revision is UNKNOWN, and `--dry-run` is not a safety workaround. The owner authorized this
+#     on 11 Oct 2026 for #806 only, against TEST only, through this workflow only.
+#   - Branch code runs while the key is in the environment: codegen evaluates the branch's convex/ sources and
+#     installed packages in the one step that holds the key. Only ticket branches (`t/<issue>-<slug>`) are
+#     accepted and install scripts are skipped, but dispatch only branches you have looked at.
+#   - Logs: no --verbose, CONVEX_VERBOSE/DEBUG unset, Actions debug logging refused. Codegen output goes to a
+#     file, and only the last 20 lines that survive a redaction filter are printed (responses can carry
+#     environment variable values).
+#   - Output: only convex/_generated/** is uploaded, as the artifact `convex-generated-<short sha>` (3 days).
+#     A human or agent reviews it, and the ticket worker commits it to the ticket branch. The job has
+#     `contents: read` and no persisted credentials, so it cannot push, and it opens no PR.
+#   - Concurrency: the one workflow-level group below covers both jobs, so deploy and codegen never overlap.
+#     GitHub keeps one PENDING run per group, so a dispatch queued behind a running deploy can replace a pending
+#     push run (and the reverse). Check the Actions tab before dispatching.
 name: convex-deploy-test
 
 on:
@@ -10,6 +33,12 @@ on:
     branches: [integration]
     paths:
       - "convex/**"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ticket branch for TEST-only codegen, exactly t/<issue>-<slug> (never integration, master, main or live)"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -25,7 +54,8 @@ env:
 jobs:
   deploy:
     name: Convex deploy (test ceaseless-dog-617)
-    if: github.ref == 'refs/heads/integration'
+    # push only: a workflow_dispatch run (the codegen job below) must never reach this deploy job.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/integration'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -60,3 +90,133 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
         run: npx convex deploy
+
+  # workflow_dispatch only. TEST-only codegen for one ticket branch, returns convex/_generated/** as an artifact.
+  # Never runs `convex deploy`, `convex dev` or anything `--prod`. See the header for the disclosed risk.
+  codegen:
+    name: Convex codegen only (test ceaseless-dog-617)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Validate the ticket branch name (fail closed)
+        id: ref
+        env:
+          REF_INPUT: ${{ inputs.ref }}
+        run: |
+          ref="$REF_INPUT"
+          fail() { echo "::error::$1"; exit 1; }
+          [ -n "$ref" ] || fail "inputs.ref is empty; expected t/<issue>-<slug>."
+          [ "${#ref}" -le 200 ] || fail "inputs.ref is longer than 200 characters; refusing."
+          case "$ref" in
+            *[[:cntrl:]]*) fail "inputs.ref contains a control character; refusing." ;;
+          esac
+          pattern='^t/[0-9]+-[a-z0-9._-]+$'
+          [[ "$ref" =~ $pattern ]] || fail "inputs.ref must match ^t/[0-9]+-[a-z0-9._-]+\$ (a ticket branch); refusing."
+          case "$ref" in
+            -*|*..*|*.|*.lock|master|main|integration|live|HEAD) fail "inputs.ref is not an allowed ticket branch; refusing." ;;
+          esac
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Ticket branch accepted: $ref"
+      - name: Refuse anything but the test deployment key (value never printed)
+        env:
+          KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "::error::Secret CONVEX_DEPLOY_KEY_TEST is not set; cannot run codegen against $EXPECTED_DEPLOYMENT."
+            exit 1
+          fi
+          case "$KEY" in
+            *"|"*) ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY_TEST is not a deployment deploy key (no '<kind>:<name>|' prefix); refusing."; exit 1;;
+          esac
+          target="${KEY%%|*}"
+          if [ "$target" != "dev:$EXPECTED_DEPLOYMENT" ]; then
+            echo "::error::CONVEX_DEPLOY_KEY_TEST does not target the test deployment dev:$EXPECTED_DEPLOYMENT; refusing to run codegen."
+            exit 1
+          fi
+          echo "Key targets the test deployment $EXPECTED_DEPLOYMENT."
+      - name: Check out the validated ticket branch
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: refs/heads/${{ steps.ref.outputs.ref }}
+          persist-credentials: false
+      - name: Record the commit under test
+        id: head
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          short="$(git rev-parse --short=12 HEAD)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short=$short" >> "$GITHUB_OUTPUT"
+          {
+            echo "### convex codegen (TEST $EXPECTED_DEPLOYMENT, codegen only, no deploy)"
+            echo "- branch: \`$REF\`"
+            echo "- commit: \`$sha\`"
+            echo "- artifact: \`convex-generated-$short\` (convex/_generated/** only, kept 3 days)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Checked out $REF at $sha."
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Install dependencies (lifecycle scripts skipped)
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Run convex codegen against ceaseless-dog-617 (output redacted and bounded)
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY_TEST }}
+        run: |
+          if [ "${RUNNER_DEBUG:-}" = "1" ]; then
+            echo "::error::Actions debug logging is on (RUNNER_DEBUG=1); refusing to run codegen with the TEST key. Turn it off and re-run."
+            exit 1
+          fi
+          unset CONVEX_VERBOSE DEBUG NODE_DEBUG
+          log="$RUNNER_TEMP/convex-codegen.log"
+          rc=0
+          npx --no-install convex codegen > "$log" 2>&1 || rc=$?
+          echo "convex codegen exit code: $rc"
+          echo "--- last 20 lines after redaction (lines with '=', key, token, secret and similar are dropped) ---"
+          { grep -viE '=|key|token|secret|password|bearer|authoriz|credential|environment|\|' "$log" || true; } | cut -c1-300 | tail -n 20
+          rm -f "$log"
+          exit "$rc"
+      - name: Stage convex/_generated for upload (regular files only)
+        run: |
+          src=convex/_generated
+          fail() { echo "::error::$1"; exit 1; }
+          [ -d "$src" ] || fail "$src does not exist after codegen."
+          [ -z "$(find "$src" -type l -print -quit)" ] || fail "$src contains a symbolic link; refusing to upload."
+          count="$(find "$src" -type f | wc -l)"
+          kb="$(du -sk "$src" | cut -f1)"
+          [ "$count" -gt 0 ] || fail "$src has no files after codegen."
+          [ "$kb" -le 5120 ] || fail "$src is larger than 5 MB; refusing to upload."
+          out="$RUNNER_TEMP/convex-generated"
+          rm -rf "$out"
+          mkdir -p "$out"
+          find "$src" -type f -print0 | xargs -0 cp --parents -t "$out"
+          outside="$(git status --porcelain=v1 --untracked-files=all | grep -vF ' convex/_generated/' || true)"
+          {
+            echo "- uploaded files: $count ($kb KB)"
+            echo ""
+            echo "#### Paths changed by codegen (first 50, names only)"
+            echo '```'
+            git status --porcelain=v1 --untracked-files=all | head -n 50 | cut -c1-200
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$outside" ]; then
+            echo "::warning::codegen changed paths outside convex/_generated; they are NOT uploaded. See the job summary."
+          fi
+      - name: Upload the generated files only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: convex-generated-${{ steps.head.outputs.short }}
+          path: ${{ runner.temp }}/convex-generated
+          if-no-files-found: error
+          retention-days: 3
