@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { CRISIS_CARD, crisisCardText } from "./lib/crisisWords";
 import { hashToken } from "./lib/mcp/token";
 import { makeFakeCtx, run } from "./lib/testFakeCtx";
 import * as mcp from "./mcp";
@@ -151,6 +152,31 @@ describe("mcp.resolveToken / authorizeCall", () => {
 });
 
 describe("mcp tools", () => {
+	test("brain_dump returns crisis resources without calling the model or saving tasks", async () => {
+		const ctx = ctxFor(A);
+		let mutationCalls = 0;
+		(ctx as typeof ctx & { runMutation: () => never }).runMutation = () => {
+			mutationCalls++;
+			throw new Error("must not save crisis text");
+		};
+
+		const result = await run(mcpTools.runBrainDump, ctx, {
+			userId: A,
+			text: "I want to die",
+			accept: true,
+		});
+
+		expect(result).toEqual({
+			crisis: true,
+			accepted: false,
+			created: 0,
+			plan: { priorities: [] },
+			resources: crisisCardText(CRISIS_CARD),
+		});
+		expect(mutationCalls).toBe(0);
+		expect(await ctx.db.query("tasks").collect()).toEqual([]);
+	});
+
 	test("task_create then tasks_list sees it; task_update completes it", async () => {
 		const ctx = ctxFor(A);
 		const created = await run(mcpTools.runWriteTool, ctx, {

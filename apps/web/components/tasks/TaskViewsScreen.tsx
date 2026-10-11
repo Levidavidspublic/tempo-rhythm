@@ -4,6 +4,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TaskRowEditor, type TaskEditorUpdate } from "@/components/tasks/TaskRowEditor";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
@@ -50,6 +51,7 @@ type Draft = {
   priority: TaskPriority;
   energy: TaskEnergy;
   dueToday: boolean;
+  dueDate: string;
   repeat: RepeatDraft;
   checklistText: string;
 };
@@ -71,6 +73,7 @@ const defaultDraft: Draft = {
   priority: "medium",
   energy: "medium",
   dueToday: false,
+  dueDate: "",
   repeat: "none",
   checklistText: "",
 };
@@ -156,6 +159,12 @@ function saveLocalTasks(tasks: LocalTaskRecord[]) {
   window.localStorage.setItem(localStorageKey, JSON.stringify(tasks));
 }
 
+function localEndOfDay(value: string): number | undefined {
+  if (!value) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day + 1).getTime() - 1;
+}
+
 function getViewTitle(view: TaskView, projectSlug?: string): string {
   if (view === "today") return "Today";
   if (view === "inbox") return "Inbox";
@@ -189,6 +198,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const createRepeatCfg = useMutation(api.tasks.createRepeatCfg);
   const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
+  const removeTask = useMutation(api.tasks.remove);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const [localTasks, setLocalTasks] = useState<LocalTaskRecord[]>([]);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -197,7 +207,6 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     projectName: view === "project" ? getViewTitle(view, projectSlug) : defaultDraft.projectName,
   }));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState("");
 
   useEffect(() => {
     if (allowLocalTaskViews) {
@@ -268,7 +277,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     // display title alone, or URL slug and stored id can diverge.
     const normalizedProjectId =
       view === "project" && projectId ? projectId : slugifyProjectName(normalizedProjectName);
-    const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
+    const dueAt = draft.dueToday ? bounds.endMs - 1 : localEndOfDay(draft.dueDate);
     const checklist = parseChecklistText(draft.checklistText);
 
     if (usesConvex) {
@@ -285,6 +294,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         const cfgId = await createRepeatCfg({
           repeatCycle: draft.repeat === "daily" ? "DAILY" : "WEEKLY",
           repeatEvery: 1,
+          // The repeat engine compares weekdays in UTC, so keep the stored
+          // value in that same time basis until repeat configs carry a zone.
           weekdays: draft.repeat === "weekly" ? [new Date().getUTCDay()] : [],
           skipOverdue: true,
         });
@@ -340,19 +351,25 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 
   const startEditing = (task: TaskViewRecord) => {
     setEditingId(task.id);
-    setEditingTitle(task.title);
   };
 
-  const saveEdit = async (task: TaskViewRecord) => {
-    const title = editingTitle.trim();
-    if (!title || !taskStoreReady) return;
+  const saveEdit = async (task: TaskViewRecord, update: TaskEditorUpdate) => {
+    if (!update.title || !taskStoreReady) return;
 
     if (usesConvex) {
-      await updateTask({ taskId: task.id as Id<"tasks">, title });
+      await updateTask({ taskId: task.id as Id<"tasks">, ...update });
     } else if (usesLocalStore) {
       persistLocal((tasks) =>
         tasks.map((item) =>
-          item.id === task.id ? { ...item, title, updatedAt: Date.now() } : item
+          item.id === task.id
+            ? {
+                ...item,
+                ...update,
+                dueAt: update.dueAt ?? undefined,
+                checklist: update.checklist ?? undefined,
+                updatedAt: Date.now(),
+              }
+            : item
         )
       );
     } else {
@@ -360,7 +377,16 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     }
 
     setEditingId(null);
-    setEditingTitle("");
+  };
+
+  const handleDelete = async (task: TaskViewRecord) => {
+    if (!taskStoreReady) return;
+    if (usesConvex) {
+      await removeTask({ taskId: task.id as Id<"tasks"> });
+    } else if (usesLocalStore) {
+      persistLocal((tasks) => tasks.filter((item) => item.id !== task.id));
+    }
+    setEditingId((current) => (current === task.id ? null : current));
   };
 
   const handleChecklistToggle = async (task: TaskViewRecord, itemId: string) => {
@@ -511,18 +537,41 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
               Add task
             </Button>
           </div>
-          <label className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={draft.dueToday}
-              disabled={!taskStoreReady}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, dueToday: event.target.checked }))
-              }
-              className="h-4 w-4 rounded border-border text-primary"
-            />
-            Show on Today
-          </label>
+          <div className="mt-4 flex flex-wrap items-end gap-4">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={draft.dueToday}
+                disabled={!taskStoreReady}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    dueToday: event.target.checked,
+                    dueDate: event.target.checked ? "" : current.dueDate,
+                  }))
+                }
+                className="h-4 w-4 rounded border-border text-primary"
+              />
+              Show on Today
+            </label>
+            <label className="space-y-2">
+              <span className="block text-sm font-medium text-foreground">Due date</span>
+              <input
+                type="date"
+                aria-label="Due date"
+                value={draft.dueDate}
+                disabled={!taskStoreReady}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    dueDate: event.target.value,
+                    dueToday: false,
+                  }))
+                }
+                className="min-h-11 rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
+              />
+            </label>
+          </div>
           <label className="mt-4 block space-y-2">
             <span className="text-sm font-medium text-foreground">
               Checklist (one step per line)
@@ -546,11 +595,10 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
             groups={groupTasksByPriority(visibleTasks)}
             labels={priorityLabels}
             editingId={editingId}
-            editingTitle={editingTitle}
             actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
             onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
+            onSave={(task, update) => void saveEdit(task, update)}
+            onDelete={(task) => void handleDelete(task)}
             onToggle={(task) => void handleToggle(task)}
             onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
           />
@@ -559,11 +607,10 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
             groups={groupTasksByEnergy(visibleTasks)}
             labels={energyLabels}
             editingId={editingId}
-            editingTitle={editingTitle}
             actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
             onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
+            onSave={(task, update) => void saveEdit(task, update)}
+            onDelete={(task) => void handleDelete(task)}
             onToggle={(task) => void handleToggle(task)}
             onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
           />
@@ -571,11 +618,10 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           <TaskList
             tasks={visibleTasks}
             editingId={editingId}
-            editingTitle={editingTitle}
             actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
             onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
+            onSave={(task, update) => void saveEdit(task, update)}
+            onDelete={(task) => void handleDelete(task)}
             onToggle={(task) => void handleToggle(task)}
             onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
           />
@@ -588,11 +634,10 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 type TaskListProps = {
   tasks: TaskViewRecord[];
   editingId: string | null;
-  editingTitle: string;
   actionsDisabled: boolean;
-  onEditingTitleChange: (title: string) => void;
   onEdit: (task: TaskViewRecord) => void;
-  onSave: (task: TaskViewRecord) => void;
+  onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
@@ -600,11 +645,10 @@ type TaskListProps = {
 function TaskList({
   tasks,
   editingId,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: TaskListProps) {
@@ -624,11 +668,10 @@ function TaskList({
           key={task.id}
           task={task}
           editing={editingId === task.id}
-          editingTitle={editingTitle}
           actionsDisabled={actionsDisabled}
-          onEditingTitleChange={onEditingTitleChange}
           onEdit={onEdit}
           onSave={onSave}
+          onDelete={onDelete}
           onToggle={onToggle}
           onChecklistToggle={onChecklistToggle}
         />
@@ -646,11 +689,10 @@ function GroupedTaskList<TGroup extends string>({
   groups,
   labels,
   editingId,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: GroupedTaskListProps<TGroup>) {
@@ -667,11 +709,10 @@ function GroupedTaskList<TGroup extends string>({
           <TaskList
             tasks={groups[group]}
             editingId={editingId}
-            editingTitle={editingTitle}
             actionsDisabled={actionsDisabled}
-            onEditingTitleChange={onEditingTitleChange}
             onEdit={onEdit}
             onSave={onSave}
+            onDelete={onDelete}
             onToggle={onToggle}
             onChecklistToggle={onChecklistToggle}
           />
@@ -684,11 +725,10 @@ function GroupedTaskList<TGroup extends string>({
 type TaskRowProps = {
   task: TaskViewRecord;
   editing: boolean;
-  editingTitle: string;
   actionsDisabled: boolean;
-  onEditingTitleChange: (title: string) => void;
   onEdit: (task: TaskViewRecord) => void;
-  onSave: (task: TaskViewRecord) => void;
+  onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
@@ -696,16 +736,16 @@ type TaskRowProps = {
 function TaskRow({
   task,
   editing,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: TaskRowProps) {
   const isDone = task.status === "done";
   const checklistProgress = getChecklistProgress(task.checklist);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
     <li
@@ -731,23 +771,12 @@ function TaskRow({
         </button>
         <div className="min-w-0 flex-1 space-y-2">
           {editing ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                aria-label="Edit task title"
-                value={editingTitle}
-                disabled={actionsDisabled}
-                onChange={(event) => onEditingTitleChange(event.target.value)}
-                className="min-h-11 flex-1 rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              />
-              <Button
-                type="button"
-                disabled={actionsDisabled || !editingTitle.trim()}
-                onClick={() => onSave(task)}
-                className="min-h-11"
-              >
-                Save task
-              </Button>
-            </div>
+            <TaskRowEditor
+              key={task.id}
+              task={task}
+              disabled={actionsDisabled}
+              onSave={(update) => onSave(task, update)}
+            />
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <p className={cn("text-lg font-medium text-foreground", isDone && "line-through")}>
@@ -774,7 +803,7 @@ function TaskRow({
               </span>
             ) : null}
           </div>
-          {task.checklist && task.checklist.length > 0 ? (
+          {!editing && task.checklist && task.checklist.length > 0 ? (
             <ul className="space-y-2 pt-1" aria-label={`${task.title} checklist`}>
               {task.checklist.map((item) => (
                 <li key={item.id}>
@@ -795,17 +824,36 @@ function TaskRow({
             </ul>
           ) : null}
         </div>
-        {!editing ? (
+        <div className="flex flex-wrap gap-2">
+          {!editing ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={actionsDisabled}
+              aria-label={`Edit ${task.title}`}
+              onClick={() => onEdit(task)}
+            >
+              Edit
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
             disabled={actionsDisabled}
-            aria-label={`Edit ${task.title}`}
-            onClick={() => onEdit(task)}
+            aria-label={
+              confirmingDelete ? `Confirm delete ${task.title}` : `Delete ${task.title}`
+            }
+            onClick={() => {
+              if (confirmingDelete) {
+                onDelete(task);
+              } else {
+                setConfirmingDelete(true);
+              }
+            }}
           >
-            Edit
+            {confirmingDelete ? "Confirm delete" : "Delete"}
           </Button>
-        ) : null}
+        </div>
       </div>
     </li>
   );

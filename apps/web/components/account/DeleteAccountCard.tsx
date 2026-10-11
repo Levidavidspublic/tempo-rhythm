@@ -40,7 +40,8 @@ export function DeleteAccountCard() {
       <CardHeader>
         <CardTitle>Delete account</CardTitle>
         <CardDescription>
-          You can restore this account by signing in again within 30 days.
+          Deleting your account removes your tasks, notes, habits, templates and settings, and ends
+          your subscription. Signing in again later does not bring them back.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">

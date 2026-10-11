@@ -4,6 +4,12 @@ export type ChecklistStep = {
   completed: boolean;
 };
 
+export function undoFeedback(result: { success: boolean }) {
+  return result.success
+    ? "Task restored."
+    : "That undo has expired, so the task stays deleted.";
+}
+
 export function addStep(
   steps: readonly ChecklistStep[],
   text: string,

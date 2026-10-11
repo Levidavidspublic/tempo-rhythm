@@ -94,6 +94,22 @@ export async function softDeleteUserAccount(
     deletedCount += await softDeleteRowsByUserId(ctx, table, userId, now);
   }
 
+  for (const table of ["nags", "coachSettings", "coachProposals"] as const) {
+    deletedCount += await softDeleteAdditionalRows(ctx, table, userId, now);
+  }
+
+  const tokens = await ctx.db
+    .query("mcpTokens")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const token of tokens) {
+    if (token.revokedAt === undefined) {
+      await ctx.db.patch(token._id, { revokedAt: now });
+      deletedCount += 1;
+    }
+  }
+
   const conversations = await ctx.db
     .query("conversations")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -132,6 +148,30 @@ export async function softDeleteUserAccount(
   }
 
   return { deletedCount };
+}
+
+async function softDeleteAdditionalRows(
+  ctx: MutationCtx,
+  table: "nags" | "coachSettings" | "coachProposals",
+  userId: Id<"users">,
+  now: number,
+): Promise<number> {
+  const rows = await ctx.db
+    .query(table)
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  let count = 0;
+  for (const row of rows) {
+    if (row.deletedAt === undefined) {
+      await ctx.db.patch(
+        row._id,
+        table === "coachProposals" ? { deletedAt: now } : { deletedAt: now, updatedAt: now },
+      );
+      count += 1;
+    }
+  }
+  return count;
 }
 
 async function softDeleteRowsByUserId(

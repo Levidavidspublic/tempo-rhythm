@@ -1,7 +1,7 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
@@ -12,6 +12,7 @@ import {
   renameStep,
   toggleStep,
   type ChecklistStep,
+  undoFeedback,
 } from "./checklistOps";
 
 type OpenTask = Doc<"tasks"> & { checklist?: ChecklistStep[] };
@@ -34,6 +35,7 @@ export function ChecklistBoard() {
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<{ taskId: Id<"tasks">; undoUntilMs: number } | null>(null);
   const [feedback, setFeedback] = useState("");
+  const undoInFlight = useRef(false);
 
   useEffect(() => {
     if (!removed) return;
@@ -86,16 +88,18 @@ export function ChecklistBoard() {
   }
 
   async function handleUndo() {
-    if (!removed) return;
+    if (!removed || undoInFlight.current) return;
+    undoInFlight.current = true;
     setPendingTaskId(removed.taskId);
     setFeedback("");
     try {
-      await restoreTask({ taskId: removed.taskId });
+      const result = await restoreTask({ taskId: removed.taskId });
       setRemoved(null);
-      setFeedback("Task restored.");
+      setFeedback(undoFeedback(result));
     } catch (error) {
       setFeedback(messageFor(error));
     } finally {
+      undoInFlight.current = false;
       setPendingTaskId(null);
     }
   }
@@ -114,7 +118,12 @@ export function ChecklistBoard() {
         {removed ? (
           <span>
             Task removed. {" "}
-            <button className="font-semibold text-primary underline" type="button" onClick={handleUndo}>
+            <button
+              className="font-semibold text-primary underline disabled:cursor-not-allowed disabled:opacity-50"
+              type="button"
+              disabled={pendingTaskId === removed.taskId}
+              onClick={handleUndo}
+            >
               Undo
             </button>
           </span>

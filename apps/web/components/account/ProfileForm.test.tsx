@@ -421,7 +421,9 @@ describe("account profile", () => {
   test("Delete stays disabled until DELETE is typed", async () => {
     activeMutation = deleteMyAccount;
     const view = await render((<DeleteAccountCard />) as ReactElement);
-    expect(view.textContent).toContain("signing in again within 30 days");
+    expect(view.textContent).toContain(
+      "Deleting your account removes your tasks, notes, habits, templates and settings, and ends your subscription. Signing in again later does not bring them back.",
+    );
     const button = findByTag(view, "BUTTON", "Delete account");
     expect(button.disabled).toBe(true);
 

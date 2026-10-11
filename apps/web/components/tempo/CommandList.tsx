@@ -8,16 +8,14 @@ import { TEMPO_SCREENS } from "@/lib/tempo-nav";
 // These routes still render ScaffoldScreen. Keep the command page focused on
 // usable destinations until those routes are implemented.
 const SCAFFOLD_ROUTES = new Set([
-  "/activity",
   "/ask-founder",
   "/empty-states",
   "/goals",
   "/journal",
   "/routines",
-  "/settings/integrations",
 ]);
 
-const REAL_SCREENS = TEMPO_SCREENS.filter(
+export const REAL_SCREENS = TEMPO_SCREENS.filter(
   (screen) => !screen.bare && !SCAFFOLD_ROUTES.has(screen.route),
 );
 
