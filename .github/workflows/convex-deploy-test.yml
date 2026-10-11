@@ -23,6 +23,14 @@
 #   - Output: only convex/_generated/** is uploaded, as the artifact `convex-generated-<short sha>` (3 days).
 #     A human or agent reviews it, and the ticket worker commits it to the ticket branch. The job has
 #     `contents: read` and no persisted credentials, so it cannot push, and it opens no PR.
+#   - Dispatch this workflow on `integration` ONLY (`gh workflow run convex-deploy-test.yml --ref integration
+#     -f ref=t/<issue>-<slug>`). A dispatch run executes the workflow file of the ref it was started on, so a
+#     run started on a ticket branch would use that branch's unreviewed copy of this file (and its key guard)
+#     while holding CONVEX_DEPLOY_KEY_TEST. The codegen job therefore requires `github.ref ==
+#     refs/heads/integration` in its `if` and re-checks it in its first step. The ticket branch to generate for
+#     comes only from `inputs.ref`. LIMIT: this prevents accidental use of an unreviewed workflow copy. It does
+#     not stop a user with write access from pushing a modified workflow on another trigger, which only repo
+#     rules (branch protection, secret environments) can prevent.
 #   - Concurrency: the one workflow-level group below covers both jobs, so deploy and codegen never overlap.
 #     GitHub keeps one PENDING run per group, so a dispatch queued behind a running deploy can replace a pending
 #     push run (and the reverse). Check the Actions tab before dispatching.
@@ -36,7 +44,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Ticket branch for TEST-only codegen, exactly t/<issue>-<slug> (never integration, master, main or live)"
+        description: "Ticket branch for TEST-only codegen, exactly t/<issue>-<slug> (never integration, master, main or live). Dispatch the workflow itself on integration."
         required: true
         type: string
 
@@ -95,7 +103,8 @@ jobs:
   # Never runs `convex deploy`, `convex dev` or anything `--prod`. See the header for the disclosed risk.
   codegen:
     name: Convex codegen only (test ceaseless-dog-617)
-    if: github.event_name == 'workflow_dispatch'
+    # Must be dispatched on integration: the workflow file that runs (and holds the key) is the reviewed copy.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -104,6 +113,15 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Refuse to run unless dispatched on integration (fail closed, env only)
+        env:
+          RUN_REF: ${{ github.ref }}
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/integration" ] || [ "$RUN_REF" != "refs/heads/integration" ]; then
+            echo "::error::Dispatch this workflow on integration only (run ref is not refs/heads/integration); the ticket branch goes in the 'ref' input. Refusing."
+            exit 1
+          fi
+          echo "Workflow dispatched on integration."
       - name: Validate the ticket branch name (fail closed)
         id: ref
         env:
