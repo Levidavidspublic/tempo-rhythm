@@ -123,3 +123,167 @@ Ticket #786. Additive only; no backfill or data migration.
 
 Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
 separate; live is not touched here.
+
+## 2026-10-11 — TEMPO-B06-SUPPORT-CHAT-STATE Agent lifecycle metadata + bounded memory index
+
+Ticket #807. Additive only: new optional fields, one new table, one new index, plus account-deletion
+enrollment. No backfill, no data migration, no deployment by this writer. Old rows validate unchanged.
+
+- **`conversations`** gains four optional fields: `agentThreadId` (string), `nextChatSequence`
+  (number), `chatGenerationEpoch` (number) and `activeChatRequestId` (`Id<"chatRequests">`). A missing
+  sequence or epoch means zero to a consumer; nothing writes a default. No existing field or index
+  changed. `agentThreadId` is an opaque Agent-component string, not a host table id.
+- **New table `chatRequests`** — content-free request/lifecycle metadata. Required: `userId`,
+  `conversationId`, `requestKey` (string), `payloadDigest` (string), `sequence` (number), `status`
+  (`queued | running | completed | failed | cancelled`), `agentPromptMessageId` (string),
+  `generationEpoch` (number), `createdAt`, `updatedAt`. Optional: `agentResultMessageId` (string),
+  `generationLeaseExpiresAtMs` (number), `deletedAt`. Indexes: `by_userId`, `by_userId_deletedAt`,
+  `by_userId_conversationId_requestKey`, `by_userId_conversationId_deletedAt_sequence`,
+  `by_userId_conversationId_deletedAt_status_sequence`. These are ordinary indexes, not unique
+  constraints. The table holds no prompt, reply, memory text, exception, provider payload or page
+  content; Agent stays the store for new message content.
+- **`memories`** gains index `by_userId_deletedAt_salience_updatedAt` over
+  `[userId, deletedAt, salience, updatedAt]`. Existing indexes are kept.
+- **Account deletion** (`convex/lib/accountDeletion.ts`): `chatRequests` and #786's `noteBlocks` join
+  the ordinary soft-delete path. Each live row gets `deletedAt` and `updatedAt` from one timestamp, an
+  earlier `deletedAt` is kept, and another user's rows are never touched. No Agent delete API is
+  called, nothing is hard-deleted and stored Agent ids are not cleared: component tables have no
+  `deletedAt`, so a delete there would end the 30-day recoverable window. The tombstones are what
+  deny access. Sign-in restoration restores the account row only; independently deleted child rows
+  stay deleted, so this is not complete account-data recovery.
+- `convex/lib/accountDeletion.test.ts` now derives the owned tables from the schema (everything with a
+  `userId`, minus the `authTables` keys) and requires a typed fixture for each. A new owned table
+  with no fixture fails typecheck or the focused test, then must also pass the deletion, isolation
+  and idempotence run.
+
+### Contract a later chat implementation adopts (not implemented here)
+
+- **Identity.** One row per owner + conversation + `requestKey`. A writer must look the key up and
+  insert in one transaction, because the index does not enforce uniqueness. Validate `requestKey` as
+  1-128 ASCII letters, digits, underscore or hyphen. `payloadDigest` is lowercase SHA-256 hex of a
+  versioned, deterministic encoding of the exact accepted payload, with no trimming before the
+  comparison. Same key and same digest is a retry: reuse the saved `agentPromptMessageId` (and
+  `agentResultMessageId` once completed), and take no second claim or prompt. Same key with a
+  different digest fails. Different keys with identical text are different requests.
+- **Order and claim.** FIFO by `sequence`, reserved from `conversations.nextChatSequence`. At most one
+  running request per conversation, recorded in `activeChatRequestId`. Claiming and completing
+  compare `activeChatRequestId` and `generationEpoch`, and recheck the account, conversation and
+  request tombstones. Cancel, replacement or lease reclaim bumps `chatGenerationEpoch`, so a late
+  completion is rejected. Provider output may reach Agent storage only through the guarded
+  committing mutation. Sequence and epochs are nonnegative safe integers, checked for overflow
+  before mutating; timestamps are finite server epoch milliseconds. Convex validators here
+  establish structural types only.
+- **Context.** Queued later prompts must not leak into the current request's context; assemble it up
+  to the claimed `sequence`.
+- **Live-memory read.** Exact `userId`, `deletedAt = undefined`, `.order("desc")`, `.take(20)` on
+  `by_userId_deletedAt_salience_updatedAt`. Ties follow `updatedAt`, then Convex's appended creation
+  time. No `collect()` and sort, and no newest-N-then-filter substitute.
+- The fields do not prove exactly-once provider execution. Retry, lease length, reclaim, scheduling
+  and interrupted-call cost need to be specified and tested by the chat implementation.
+
+### Activation gates still open
+
+- #806 Agent registration, types and real component tests. This ticket registers nothing and adds no
+  endpoint, scheduler, provider call or Workflow dependency.
+- The chat implementation proves duplicate request, changed payload, competing sends, interrupted
+  generation, late completion and large live/deleted memory fixtures. Fake-context tests here are not
+  Agent-integration or transaction-concurrency proof.
+- **Known gap, outside this ticket's scope:** `convex/conversations.ts` `remove` still hard-deletes the
+  conversation and its messages. Until that is repaired, deleting a conversation that way would leave
+  its `chatRequests` rows and Agent thread behind and skip the grace window. #808 keeps the
+  activation and privacy guards.
+- `softDeleteUserAccount` reads each owned table with an unpaginated `collect()` inside one mutation.
+  That is fine while `chatRequests` and `noteBlocks` have no writer, but it must be chunked or
+  continued before either table can hold thousands of rows per person, or one account deletion can
+  exceed Convex's per-transaction read limits.
+- Expiry and retention proposals D1-D5 and the page/Undo records (#786 follow-ups, #831) are separate
+  slices and are not part of this change.
+
+Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
+separate; live is not touched here.
+
+## 2026-10-11 — TEMPO-B06-SUPPORT-PAGE-LEDGER inactive page operations and proposals
+
+Ticket #828. Additive only: one new optional field, three new tables and their indexes, plus
+account-deletion enrollment. No backfill, no data migration, no deployment by this writer. Old rows
+validate unchanged. Builds on #786 (`5fc1e67`, PR #826) and #807 (`edeb073`, PR #877). D1-D5 in the
+ticket were adopted by the coordinator on 11 Oct 2026. This slice implements only their structural
+shapes and indexes; the semantic limits stay with the later helper.
+
+- **`notes.revision`** — optional number. A missing value means revision 0 for a legacy row. Nothing
+  writes it yet and nothing backfills it. `notes.body` stays canonical. No existing field or index
+  changed.
+- **New table `pageOperations`** — lightweight, content-free write receipts. Required: `userId`,
+  `noteId`, `requestId`, `requestDigest`, `kind` (`save | patch_block | add_task | undo`), `source`
+  (`ui | coach | mcp | legacy`), `result` (`applied | noop`), `affectsBody` (boolean),
+  `baseRevision`, `resultRevision`, `baseBodyDigest`, `resultBodyDigest`, `delta` (array of
+  `{startUtf16, removedLengthUtf16, insertedLengthUtf16}`, offsets and lengths only), `appliedAtMs`,
+  `metadataExpiresAtMs`, `createdAt`, `updatedAt`. Optional: `undoUntilMs`, `undoneAtMs`,
+  `undoneByOperationId`, `undoOfOperationId`, `proposalId`, `deletedAt`. Indexes: `by_userId`,
+  `by_userId_deletedAt`, `by_userId_requestId`, `by_userId_noteId_affectsBody_resultRevision`,
+  `by_metadataExpiresAtMs`.
+- **New table `pageOperationPayloads`** — the only operation table that holds source fragments, and
+  it is private and separately expiring. Required: `userId`, `noteId`, `operationId`, `undoUntilMs`,
+  `cleanupDueAtMs`, `payload`, `createdAt`, `updatedAt`. `payload` is a strict union:
+  `{state: "available", splices: [{startUtf16, removedText, insertedText}]}` or
+  `{state: "expired", expiredAtMs}`. Optional: `deletedAt`. Indexes: `by_userId`,
+  `by_userId_deletedAt`, `by_userId_operationId`, `by_userId_noteId_deletedAt`, `by_cleanupDueAtMs`.
+- **New table `pageProposals`** — one pending page action, not another chat store. Required: `userId`,
+  `kind` (`add_task_to_today`), `schemaVersion` (literal 1), `noteId`, `localDate`, `conversationId`,
+  `sourceRequestKey`, `proposalRevision`, `expectedPageRevision`, `blockId`, `status`
+  (`pending | confirmed | rejected | cancelled | expired`), `proposalExpiresAtMs`, `cleanupDueAtMs`,
+  `metadataExpiresAtMs`, `payload`, `createdAt`, `updatedAt`. `payload` is a strict union:
+  `{state: "available", task: {title, durationMin}}` or `{state: "expired", expiredAtMs}`. Optional:
+  `sourceAgentPromptId` (an opaque Agent string, never a host table id), `decidedAtMs`,
+  `confirmedOperationId`, `confirmDigest`, `deletedAt`. Indexes: `by_userId`, `by_userId_deletedAt`,
+  `by_userId_noteId_deletedAt`, `by_userId_conversationId_sourceRequestKey`, `by_cleanupDueAtMs`,
+  `by_metadataExpiresAtMs`. A proposal stores only the proposed action content, never a copied prompt,
+  reply, memory or raw audio.
+- None of the three tables uses `v.any`, a record or bytes. All indexes are ordinary, not unique
+  constraints: a committing writer enforces uniqueness (`userId + requestId`, `operationId`, `userId +
+  conversationId + sourceRequestKey`) inside its own transaction.
+- **Validators are structural only.** Convex `v.string` and `v.number` do not enforce the adopted
+  ranges. Each new table's comment in `convex/schema.ts` lists what the later helper must validate:
+  safe-integer revisions, `req_` plus ULID request ids, 64-character lowercase SHA-256 hex digests,
+  delta and splice length agreement, the nonempty-delta and noop rules, Undo field pairing, real
+  `YYYY-MM-DD` dates, proposal title and duration limits against the block codec, and the 5-minute
+  Undo and 48-hour metadata windows. Every later committing writer must call those validators.
+- **Account deletion** (`convex/lib/accountDeletion.ts`): `pageOperations`, `pageOperationPayloads`
+  and `pageProposals` join `USER_OWNED_TABLES` and the ordinary soft-delete path. Each live row gets
+  `deletedAt` and `updatedAt` from one timestamp, an earlier `deletedAt` is kept, and another user's
+  rows are never touched. Soft deletion is a tombstone only: it does not rewrite an `available` payload
+  to `expired`, erase a fragment, change `undoUntilMs`, `cleanupDueAtMs` or any other expiry value,
+  schedule cleanup, call an Agent or component API, or hard-delete. #777 token revocation and every
+  #807 behaviour are unchanged. Sign-in restoration restores the account row only; it does not restore
+  tombstoned rows and does not resurrect an expired Undo or proposal window.
+- `convex/lib/accountDeletion.test.ts` keeps the schema-derived exhaustive lifecycle check from #807.
+  The three new tables have typed fixtures there, so a new owned table with no fixture still fails
+  typecheck or the focused test. It also asserts the exact field, union and index shapes, that no
+  unknown-content blob exists, and that source text appears only in the payload table.
+
+### Still inactive, and the gates that remain open
+
+- No writer, endpoint, `pageLedger` helper, scheduler registration, cleanup execution, migration or
+  backfill is added here. `notes.revision` is never set.
+- **Semantic helper and inverse planning:** TEMPO-B06-SUPPORT-PAGE-INVERSES (#831) owns
+  `convex/lib/pageLedger.ts`, the bounds above, digest and request identity behaviour, and the
+  surgical inverse transform.
+- **Activation and privacy guards:** #808 must deny reads and writes on a deleted account, note or
+  conversation. Enrolling the tables in account deletion does not prove those endpoint guards.
+- **Cleanup:** the reviewed transient-payload cleanup that turns `available` into `expired`, and the
+  scheduling, catch-up and evidence for it, are not implemented. Payload-producing activation stays
+  held until it is reviewed and implemented. A timestamp or a UI countdown alone does not bound
+  physical retention.
+- **Consumers:** #787 (atomic page writes, revisions, request idempotency, Undo), #793 (proposal
+  confirmation) and #792/#794 (preview acceptance) stay held behind the slices above.
+- **Account deletion read size:** `softDeleteUserAccount` still reads each owned table with an
+  unpaginated `collect()` inside one mutation. That is fine while the new tables have no writer, but
+  it must be chunked or continued before any of them can hold thousands of rows per person.
+- **Retention:** the 30-day account restore window does not set a minimum for inverse fragments or
+  proposal content. Whatever is kept for an audit or restoration policy needs its own reviewed
+  decision, and source text is not retained by default.
+- Transaction isolation, real cleanup, browser persistence and preview Undo are not proven by this
+  slice. Fake-context tests here are not transaction-concurrency proof.
+
+Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
+separate; live is not touched here.

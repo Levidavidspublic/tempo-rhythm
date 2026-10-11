@@ -67,6 +67,20 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://expo.github.io/vector-icons
 - Used by: apps/mobile/package.json
 
+### @json-render/core
+
+- Version: 0.21.0
+- License: Apache-2.0
+- Source: https://github.com/vercel-labs/json-render
+- Used by: packages/ui/package.json
+
+### @json-render/react
+
+- Version: 0.21.0
+- License: Apache-2.0
+- Source: https://github.com/vercel-labs/json-render
+- Used by: packages/ui/package.json
+
 ### @polar-sh/nextjs
 
 - Version: 0.9.4
@@ -306,6 +320,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://react.dev/
 - Used by: apps/web/package.json, apps/mobile/package.json
 
+### react-markdown
+
+- Version: 10.1.0
+- License: MIT
+- Source: https://github.com/remarkjs/react-markdown
+- Used by: apps/web/package.json
+- Notes: the unified, remark, micromark, hast and unist packages it pulls in transitively are all MIT. Raw HTML stays disabled (no rehype-raw installed).
+
 ### react-native
 
 - Version: 0.81.5
@@ -388,4 +410,4 @@ section here. Add the entry in the same PR that adds the dependency.
 - Version: 4.3.6
 - License: MIT
 - Source: https://github.com/colinhacks/zod
-- Used by: package.json, packages/utils/package.json
+- Used by: package.json, packages/ui/package.json, packages/utils/package.json
