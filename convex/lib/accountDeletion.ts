@@ -8,6 +8,12 @@ import type { MutationCtx } from "../_generated/server";
  * `chatRequests` links to Agent-component messages by opaque id. Soft delete only tombstones
  * the host row: it never calls an Agent delete API, because component tables have no
  * `deletedAt` and a hard delete would end the 30-day recoverable grace window.
+ *
+ * `pageOperations`, `pageOperationPayloads` and `pageProposals` (#828) take the same ordinary
+ * tombstone. Soft delete only stamps `deletedAt` and `updatedAt`: it never erases inverse
+ * fragments, rewrites an `available` payload to `expired`, edits expiry metadata or schedules
+ * cleanup. Those belong to a separately reviewed cleanup path, and the 30-day account grace
+ * window does not extend an expired Undo or proposal window.
  */
 export const USER_OWNED_TABLES = [
   "tasks",
@@ -26,6 +32,9 @@ export const USER_OWNED_TABLES = [
   "notifications",
   "noteBlocks",
   "chatRequests",
+  "pageOperations",
+  "pageOperationPayloads",
+  "pageProposals",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
