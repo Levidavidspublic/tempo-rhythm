@@ -210,4 +210,65 @@ describe("takeLiveMemories", () => {
     expect(await takeLiveMemories(iterable, 5, 0)).toEqual([]);
     expect(state.pulled).toBe(0);
   });
+
+  describe("with a tie key", () => {
+    type Ranked = Row & { salience: number };
+    const bySalience = (row: Ranked) => row.salience;
+    const rank = (salience: number, n: number, deletedAt?: number): Ranked[] =>
+      Array.from({ length: n }, (_, i) => ({
+        content: `s${salience} #${i}`,
+        salience,
+        ...(deletedAt === undefined ? {} : { deletedAt }),
+      }));
+    const ranked = (rows: Ranked[]) => {
+      const { iterable, state } = source(rows);
+      return { iterable: iterable as AsyncIterable<Ranked>, state };
+    };
+
+    test("keeps reading past the live limit while the next row ties the last kept one", async () => {
+      const { iterable, state } = ranked([...rank(9, 2), ...rank(5, 6), ...rank(1, 4)]);
+      const out = await takeLiveMemories(iterable, 4, 100, bySalience);
+      // 2 at salience 9, then the whole salience-5 group (6 rows), not just the 2 that fill the limit.
+      expect(out).toHaveLength(8);
+      expect(out.filter((row) => row.salience === 5)).toHaveLength(6);
+      expect(out.some((row) => row.salience === 1)).toBe(false);
+      // The first row of the next group is read to see that it differs, and is not kept.
+      expect(state.pulled).toBe(9);
+    });
+
+    test("stops right at the limit when the next row has a lower key", async () => {
+      const { iterable, state } = ranked([...rank(9, 4), ...rank(5, 4)]);
+      const out = await takeLiveMemories(iterable, 4, 100, bySalience);
+      expect(out.map((row) => row.salience)).toEqual([9, 9, 9, 9]);
+      expect(state.pulled).toBe(5);
+    });
+
+    test("skips soft-deleted rows inside the tie group", async () => {
+      const { iterable } = ranked([...rank(5, 3), ...rank(5, 2, 1), ...rank(5, 2), ...rank(1, 2)]);
+      const out = await takeLiveMemories(iterable, 3, 100, bySalience);
+      expect(out).toHaveLength(5);
+      expect(out.every((row) => row.salience === 5 && row.deletedAt === undefined)).toBe(true);
+    });
+
+    test("the scan limit still caps a long tie group", async () => {
+      const { iterable, state } = ranked(rank(5, 50));
+      const out = await takeLiveMemories(iterable, 4, 10, bySalience);
+      expect(state.pulled).toBe(10);
+      expect(out).toHaveLength(10);
+    });
+
+    test("a scan limit equal to the live limit ends the scan at the limit", async () => {
+      const { iterable, state } = ranked(rank(5, 50));
+      const out = await takeLiveMemories(iterable, 4, 4, bySalience);
+      expect(state.pulled).toBe(4);
+      expect(out).toHaveLength(4);
+    });
+
+    test("without a tie key the scan still stops at the live limit", async () => {
+      const { iterable, state } = ranked(rank(5, 50));
+      const out = await takeLiveMemories(iterable, 4, 100);
+      expect(state.pulled).toBe(4);
+      expect(out).toHaveLength(4);
+    });
+  });
 });

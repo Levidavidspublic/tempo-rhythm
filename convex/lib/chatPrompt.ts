@@ -99,19 +99,33 @@ export function truncateForStorage(text: string, max: number): string {
  * Walk `rows` (already in the order to keep, e.g. a salience index read descending) and collect live rows.
  * Stops after `liveLimit` live rows or `scanLimit` rows read, whichever comes first, so soft-deleted rows
  * cannot crowd out live ones yet the read stays bounded. Pulls rows one at a time and never collects.
+ *
+ * `tieKey` (optional) names the value the rows are ranked by. Once `liveLimit` live rows are held, the scan
+ * keeps going while the next row has the same key as the last one kept, still within `scanLimit`, and stops
+ * at the first row with a different key (that row is read but not kept). The index breaks ties by creation
+ * time, so without this a row that outranks its tied peers on a later tiebreak (a newer `updatedAt`) would be
+ * cut at random. The result may then hold more than `liveLimit` rows; the caller sorts and trims it.
  */
 export async function takeLiveMemories<T extends { deletedAt?: number }>(
   rows: AsyncIterable<T>,
   liveLimit: number,
   scanLimit: number,
+  tieKey?: (row: T) => unknown,
 ): Promise<T[]> {
   const live: T[] = [];
   if (liveLimit <= 0 || scanLimit <= 0) return live;
   let scanned = 0;
+  /** Set once `liveLimit` live rows are held: the key of the last one. */
+  let tie: { key: unknown } | undefined;
   for await (const row of rows) {
     scanned += 1;
+    if (tie && tieKey?.(row) !== tie.key) break;
     if (row.deletedAt === undefined) live.push(row);
-    if (live.length >= liveLimit || scanned >= scanLimit) break;
+    if (!tie && live.length >= liveLimit) {
+      if (!tieKey) break;
+      tie = { key: tieKey(row) };
+    }
+    if (scanned >= scanLimit) break;
   }
   return live;
 }

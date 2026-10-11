@@ -859,12 +859,77 @@ describe("chat turns over the db", () => {
     expect(CONTEXT_MEMORIES).toBe(20);
     expect(world.takes.filter((entry) => entry.table === "memories")).toEqual([]);
     expect(world.collects).not.toContain("memories");
-    // The deleted row plus the 20 live ones; the other 230 rows are never read.
-    expect(world.scans.memories).toBe(21);
+    // The deleted row, the 20 live ones, and the one row after them that shows the salience tie group ended;
+    // the other 229 rows are never read.
+    expect(world.scans.memories).toBe(22);
     expect(turn.memories).toHaveLength(20);
     expect(turn.memories.map((memory) => memory.content)).toEqual(
       Array.from({ length: 20 }, (_, i) => `memory ${249 - i}`),
     );
+  });
+
+  test("memories tied on salience are ranked by newest update even when the index order would drop them", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    // 30 memories at the default salience. The index breaks the tie by creation time, newest first, so a
+    // scan that stopped at 20 live rows would never see memory 0, the oldest-created one.
+    for (let i = 0; i < 30; i += 1) {
+      await world.db.insert("memories", {
+        userId: world.ownerId,
+        content: `memory ${i}`,
+        salience: 0.5,
+        // Memory 0 is the most recently updated of all.
+        updatedAt: i === 0 ? 10_000 : i,
+      });
+    }
+
+    const turn = (await run(beginTurn, world.ctx, {
+      conversationId,
+      content: "Hi",
+      withContext: true,
+    })) as Extract<TurnStart, { status: "ready" }>;
+
+    expect(turn.memories).toHaveLength(20);
+    expect(turn.memories[0]).toEqual({ content: "memory 0" });
+    // Then the 19 next most recently updated: memories 29 down to 11.
+    expect(turn.memories.map((memory) => memory.content)).toEqual([
+      "memory 0",
+      ...Array.from({ length: 19 }, (_, i) => `memory ${29 - i}`),
+    ]);
+    // The whole tie group was read (the index ran out), nothing was taken or collected.
+    expect(world.scans.memories).toBe(30);
+    expect(world.takes.filter((entry) => entry.table === "memories")).toEqual([]);
+    expect(world.collects).not.toContain("memories");
+  });
+
+  test("a salience tie larger than MEMORY_SCAN_LIMIT is still read only up to the cap", async () => {
+    setSystemTime(new Date(T0));
+    const world = makeDb();
+    const conversationId = await seedConversation(world);
+    const total = MEMORY_SCAN_LIMIT + 100;
+    for (let i = 0; i < total; i += 1) {
+      await world.db.insert("memories", {
+        userId: world.ownerId,
+        content: `memory ${i}`,
+        salience: 0.5,
+        // Memory 0 was created first (so it is read last) and updated most recently.
+        updatedAt: i === 0 ? 100_000 : i,
+      });
+    }
+
+    const turn = (await run(beginTurn, world.ctx, {
+      conversationId,
+      content: "Hi",
+      withContext: true,
+    })) as Extract<TurnStart, { status: "ready" }>;
+
+    expect(world.scans.memories).toBe(MEMORY_SCAN_LIMIT);
+    expect(turn.memories).toHaveLength(20);
+    // Newest-created first in the index: the 500 rows read are memories 599 down to 100, and memory 0 is past the cap.
+    expect(turn.memories.some((memory) => memory.content === "memory 0")).toBe(false);
+    expect(turn.memories[0]).toEqual({ content: `memory ${total - 1}` });
+    expect(world.collects).not.toContain("memories");
   });
 
   test("live memories behind many soft-deleted, higher-salience ones are still found", async () => {

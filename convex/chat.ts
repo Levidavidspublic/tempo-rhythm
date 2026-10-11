@@ -33,7 +33,8 @@ const CONTEXT_MESSAGES = 20;
 export const CONTEXT_MEMORIES = 20;
 /**
  * Hard cap on memory rows read per turn. The salience index is read highest first and the scan stops
- * after CONTEXT_MEMORIES live rows or this many rows, so soft-deleted rows cannot crowd out live ones.
+ * after CONTEXT_MEMORIES live rows (plus any rows tied with the last one's salience, so the `updatedAt`
+ * tiebreak sees the whole tie) or this many rows, so soft-deleted rows cannot crowd out live ones.
  */
 export const MEMORY_SCAN_LIMIT = 500;
 /**
@@ -445,6 +446,8 @@ export const beginTurn = internalMutation({
     // Reads after the write see it, so the newest message here is this turn's user message.
     const newest = await liveMessages(ctx, args.conversationId).order("desc").take(CONTEXT_MESSAGES);
     // Highest salience first, skipping soft-deleted rows; bounded by live count and rows scanned, no collect.
+    // The index breaks salience ties by creation time, so the scan runs on through the last row's tie group
+    // (still capped) and pickTopMemories then applies the real tiebreak, newest `updatedAt`.
     const memoryRows = await takeLiveMemories(
       ctx.db
         .query("memories")
@@ -452,6 +455,7 @@ export const beginTurn = internalMutation({
         .order("desc"),
       CONTEXT_MEMORIES,
       MEMORY_SCAN_LIMIT,
+      (memory) => memory.salience,
     );
 
     return {
