@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import {
   type HistoryImportProvider,
   type HistoryImportResult,
@@ -506,6 +506,86 @@ describe("history normalization (synthetic fixtures only)", () => {
   test("null mapping nodes still consume the scan budget", () => {
     const mapping = Object.fromEntries(Array.from({ length: 20001 }, (_, i) => [String(i), null]));
     rejected(parse([{ id: "c", mapping }]), "too_many_messages");
+  });
+
+  // JSON.parse is stubbed so the parsed tree can carry instrumented containers: reading any node
+  // value is counted, and key enumeration is not. Structural, so no wall-clock or memory asserts.
+  const withParsedRoot = (root: unknown, provider: HistoryImportProvider) => {
+    const spy = spyOn(JSON, "parse").mockReturnValue(root);
+    try {
+      return parseHistoryImport("[]", provider);
+    } finally {
+      spy.mockRestore();
+    }
+  };
+  const countedMapping = (nodes: number) => {
+    const mapping: Record<string, unknown> = {};
+    const reads = { count: 0 };
+    for (let i = 0; i < nodes; i++)
+      Object.defineProperty(mapping, `n${i}`, {
+        enumerable: true,
+        get: () => {
+          reads.count++;
+          return null;
+        },
+      });
+    return { mapping, reads };
+  };
+
+  test("an over-limit ChatGPT mapping is rejected before any node is visited", () => {
+    const control = countedMapping(MAX_HISTORY_MESSAGES);
+    const ok = parsed(withParsedRoot([{ id: "c", mapping: control.mapping }], "chatgpt"));
+    expect(ok.coverage.scannedMessages).toBe(MAX_HISTORY_MESSAGES);
+    expect(control.reads.count).toBe(MAX_HISTORY_MESSAGES); // the instrument sees every node read
+
+    const over = countedMapping(MAX_HISTORY_MESSAGES * 5);
+    rejected(withParsedRoot([{ id: "c", mapping: over.mapping }], "chatgpt"), "too_many_messages");
+    expect(over.reads.count).toBeLessThanOrEqual(MAX_HISTORY_MESSAGES + 1);
+
+    // The budget is cumulative: a later oversize mapping is still never visited.
+    const first = countedMapping(MAX_HISTORY_MESSAGES / 2);
+    const second = countedMapping(MAX_HISTORY_MESSAGES * 5);
+    rejected(
+      withParsedRoot(
+        [
+          { id: "a", mapping: first.mapping },
+          { id: "b", mapping: second.mapping },
+        ],
+        "chatgpt"
+      ),
+      "too_many_messages"
+    );
+    expect(first.reads.count + second.reads.count).toBeLessThanOrEqual(MAX_HISTORY_MESSAGES + 1);
+  });
+
+  test("an over-limit Claude message array is rejected from its length without element reads", () => {
+    const reads = { count: 0 };
+    const counted = (length: number) =>
+      new Proxy(new Array<unknown>(length), {
+        get(target, key, receiver) {
+          if (typeof key === "string" && /^\d+$/.test(key)) reads.count++;
+          return Reflect.get(target, key, receiver);
+        },
+      });
+    rejected(
+      withParsedRoot([{ uuid: "c", chat_messages: counted(MAX_HISTORY_MESSAGES * 5) }], "claude"),
+      "too_many_messages"
+    );
+    expect(reads.count).toBeLessThanOrEqual(MAX_HISTORY_MESSAGES + 1);
+  });
+
+  test("truncation is by code point and walks only to the cut", () => {
+    const emoji = "😀";
+    const over = emoji.repeat(MAX_HISTORY_CONTENT_CHARS + 1);
+    const exact = emoji.repeat(MAX_HISTORY_CONTENT_CHARS);
+    const result = parsed(
+      parse([gConversation("c", [gMessage("a", over), gMessage("b", exact), gMessage("c", "x")])])
+    );
+    const [a, b, c] = result.records;
+    expect([a?.content, a?.contentTruncated]).toEqual([exact, true]);
+    expect([b?.content, b?.contentTruncated]).toEqual([exact, false]);
+    expect([c?.content, c?.contentTruncated]).toEqual(["x", false]);
+    expect(result.coverage.truncatedRecords).toBe(1);
   });
 
   test.each([

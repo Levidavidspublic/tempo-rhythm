@@ -104,7 +104,9 @@ const isContainer = (value: unknown): value is Container =>
 // original parsed values in place: no serialization and no per-element allocation, so memory is
 // bounded by nesting depth (one small frame per open container) however large a malformed
 // role/date array is. Iterative, so deep nesting cannot overflow the call stack. Object key order
-// is irrelevant; JSON.parse numbers use === (both infinities from overflow stay distinct).
+// is irrelevant; JSON.parse numbers use === (both infinities from overflow stay distinct). The only
+// enumeration is one Object.keys per open object: an array of pointers to key strings that already
+// exist, so it is bounded by the 10 MiB input (no per-key entry/pair objects are ever built).
 function sameJson(left: unknown, right: unknown): boolean {
   if (!isContainer(left) || !isContainer(right)) return left === right;
   const stack: Comparison[] = [];
@@ -171,6 +173,19 @@ function sameIdentity(a: Identity, b: Identity): boolean {
     sameJson(a.role, b.role) &&
     (a.date.dateStatus !== "invalid" || sameJson(a.dateValue, b.dateValue))
   );
+}
+
+// First `max` code points of `text`, or undefined when it has no more than `max`. Walks lazily and
+// stops at the cut, so a message near the 10 MiB cap never becomes a multi-million-element array.
+function truncateCodePoints(text: string, max: number): string | undefined {
+  let points = 0;
+  let units = 0;
+  for (const char of text) {
+    if (points === max) return text.slice(0, units);
+    points++;
+    units += char.length;
+  }
+  return undefined;
 }
 
 function sourceDate(value: unknown, provider: HistoryImportProvider): SourceDate {
@@ -265,10 +280,20 @@ export function parseHistoryImport(
       return reject("conflicting_identity");
     const id = firstId ?? secondId;
     if (!validId(id)) return reject("invalid_identity");
-    const nodes = Object.entries(container as ObjectValue);
-    coverage.scannedMessages += nodes.length;
-    if (coverage.scannedMessages > MAX_HISTORY_MESSAGES) return reject("too_many_messages");
-    conversations.push({ id, nodes });
+    // Enforce the scan budget before materializing any node: Object.entries would allocate one
+    // [key, node] pair per node (hundreds of bytes each) however small the node is. Count keys
+    // lazily and stop at the first node over the limit; arrays expose their length for free.
+    if (provider === "chatgpt") {
+      for (const key in container as ObjectValue) {
+        if (!Object.hasOwn(container as ObjectValue, key)) continue;
+        if (++coverage.scannedMessages > MAX_HISTORY_MESSAGES) return reject("too_many_messages");
+      }
+    } else {
+      coverage.scannedMessages += (container as unknown[]).length;
+      if (coverage.scannedMessages > MAX_HISTORY_MESSAGES) return reject("too_many_messages");
+    }
+    // Only now is the total, across all conversations so far, known to be within the budget.
+    conversations.push({ id, nodes: Object.entries(container as ObjectValue) });
   }
   const identities = new Map<string, Identity>();
   const records: HistoryImportRecord[] = [];
@@ -370,9 +395,9 @@ export function parseHistoryImport(
   coverage.omittedOverLimit = Math.max(0, records.length - MAX_HISTORY_RECORDS);
   const retained = records.slice(0, MAX_HISTORY_RECORDS);
   for (const record of retained) {
-    const points = Array.from(record.content);
-    if (points.length > MAX_HISTORY_CONTENT_CHARS) {
-      record.content = points.slice(0, MAX_HISTORY_CONTENT_CHARS).join("");
+    const truncated = truncateCodePoints(record.content, MAX_HISTORY_CONTENT_CHARS);
+    if (truncated !== undefined) {
+      record.content = truncated;
       record.contentTruncated = true;
       coverage.truncatedRecords++;
     }
