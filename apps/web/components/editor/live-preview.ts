@@ -12,6 +12,7 @@ import {
   EditorState,
   type Extension,
   type Range,
+  StateEffect,
   StateField,
   type Transaction,
   type TransactionSpec,
@@ -19,7 +20,7 @@ import {
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { parseTempoBlocks, type TempoBlock } from "@tempo/utils";
-import { type BlockRange, LINE_SEPARATOR, setTaskDone, tempoBlockRanges } from "@/lib/editor/markdown-model";
+import { type BlockRange, LINE_SEPARATOR, setTaskDone, setTaskTitle, tempoBlockRanges } from "@/lib/editor/markdown-model";
 
 export type EditorLabels = {
   minutes: string;
@@ -27,7 +28,15 @@ export type EditorLabels = {
   brokenBlock: string;
   template: string;
   taskDone: string;
+  /** Accessible name of a task card's title field. */
+  taskTitle: string;
 };
+
+/** A task card whose title should take focus when it is drawn (set right after the slash menu inserts it). */
+let pendingTitleFocus: string | null = null;
+export function focusTaskTitleWhenDrawn(blockId: string): void {
+  pendingTitleFocus = blockId;
+}
 
 /** Marks a change made by a block card (tick, remove); the boundary guard lets it through. */
 export const blockEdit = Annotation.define<boolean>();
@@ -154,6 +163,45 @@ class TempoBlockWidget extends WidgetType {
       const insert = next.slice(r.from, next.length - (body.length - r.to));
       view.dispatch({ changes: { from: r.from, to: r.to, insert }, annotations: blockEdit.of(true), userEvent: "input.block" });
     });
+    // The title is a field: Enter or leaving it saves (only this fence changes), Esc undoes.
+    const title = el("input", {
+      class: "tp-task-row__title cm-tp-title",
+      dir: "auto",
+      "aria-label": this.labels.taskTitle,
+      maxlength: "500",
+    });
+    title.value = block.data.title;
+    const commitTitle = () => {
+      const r = resolve();
+      if (!r) return;
+      const body = view.state.doc.toString();
+      const next = setTaskTitle(body, r, title.value);
+      if (next === body) {
+        title.value = block.data.title;
+        return;
+      }
+      const insert = next.slice(r.from, next.length - (body.length - r.to));
+      view.dispatch({ changes: { from: r.from, to: r.to, insert }, annotations: blockEdit.of(true), userEvent: "input.block" });
+    };
+    title.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        title.blur();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        title.value = block.data.title;
+        title.blur();
+        view.focus();
+      }
+    });
+    title.addEventListener("blur", commitTitle);
+    if (pendingTitleFocus === block.id) {
+      pendingTitleFocus = null;
+      window.requestAnimationFrame(() => {
+        title.focus();
+        title.select();
+      });
+    }
     const removeButton = el(
       "button",
       { type: "button", class: "tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon", "aria-label": this.labels.removeBlock },
@@ -168,7 +216,7 @@ class TempoBlockWidget extends WidgetType {
         el("li", { class: "tp-task-row", "data-component": "TaskRow", "data-done": String(done) }, [
           check,
           el("div", { class: "tp-task-row__body" }, [
-            el("span", { class: "tp-task-row__title", dir: "auto" }, [block.data.title]),
+            title,
             meta,
           ]),
           removeButton,
@@ -242,6 +290,10 @@ function activeLineNumbers(state: EditorState): Set<number> {
 
 let currentLabels: EditorLabels | null = null;
 
+/** Sent after the labels change (UI language switch): every card and checkbox redraws. */
+export const labelsChanged = StateEffect.define<null>();
+const relabels = (tr: Transaction) => tr.effects.some((e) => e.is(labelsChanged));
+
 function computeBlocks(state: EditorState, labels: EditorLabels): BlocksValue {
   const body = state.doc.toString();
   const ranges = tempoBlockRanges(body);
@@ -280,7 +332,7 @@ export const tempoBlocksField = StateField.define<BlocksValue>({
     return computeBlocks(state, currentLabels ?? DEFAULT_LABELS);
   },
   update(value, tr) {
-    if (tr.docChanged || tr.selection || syntaxTree(tr.state) !== syntaxTree(tr.startState)) {
+    if (tr.docChanged || tr.selection || relabels(tr) || syntaxTree(tr.state) !== syntaxTree(tr.startState)) {
       return computeBlocks(tr.state, currentLabels ?? DEFAULT_LABELS);
     }
     return value;
@@ -297,6 +349,7 @@ const DEFAULT_LABELS: EditorLabels = {
   brokenBlock: "This part has a problem. The rest of your page is safe.",
   template: "Template",
   taskDone: "Done",
+  taskTitle: "Task title",
 };
 
 /* ------------------------------------------------------------------ */
@@ -364,14 +417,15 @@ class CheckboxWidget extends WidgetType {
   constructor(
     readonly checked: boolean,
     readonly at: number,
+    readonly label: string,
   ) {
     super();
   }
   eq(other: CheckboxWidget): boolean {
-    return other.checked === this.checked && other.at === this.at;
+    return other.checked === this.checked && other.at === this.at && other.label === this.label;
   }
   toDOM(view: EditorView): HTMLElement {
-    const box = el("input", { type: "checkbox", class: "cm-tp-checkbox", "aria-label": "Done" });
+    const box = el("input", { type: "checkbox", class: "cm-tp-checkbox", "aria-label": this.label });
     (box as HTMLInputElement).checked = this.checked;
     box.addEventListener("mousedown", (e) => e.preventDefault());
     box.addEventListener("click", (e) => {
@@ -521,7 +575,7 @@ function buildInline(view: EditorView): DecorationSet {
             const listStart = state.doc.sliceString(line.from, node.from);
             const markFrom = line.from + listStart.search(/[-*+]\s+$/);
             const replaceFrom = markFrom >= line.from && markFrom < node.from ? markFrom : node.from;
-            decos.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from) }).range(replaceFrom, node.to));
+            decos.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from, (currentLabels ?? DEFAULT_LABELS).taskDone) }).range(replaceFrom, node.to));
             return;
           }
           case "HorizontalRule":
@@ -593,6 +647,7 @@ const inlinePreview = ViewPlugin.fromClass(
         update.docChanged ||
         update.selectionSet ||
         update.viewportChanged ||
+        update.transactions.some(relabels) ||
         syntaxTree(update.state) !== syntaxTree(update.startState)
       ) {
         this.decorations = buildInline(update.view);
@@ -670,6 +725,19 @@ const tempoTheme = EditorView.theme({
   },
   ".cm-tp-hr": { display: "inline-block", width: "100%", borderTop: "1px solid var(--tp-line)", verticalAlign: "middle" },
   ".cm-tp-block": { margin: "var(--tp-space-2) 0" },
+  // A task card's title is a field that reads as plain text until it is focused.
+  ".cm-tp-title": {
+    font: "inherit",
+    color: "inherit",
+    background: "transparent",
+    border: "0",
+    padding: "0",
+    width: "100%",
+    minWidth: "0",
+    borderRadius: "var(--tp-radius-sm)",
+  },
+  ".cm-tp-title:focus-visible": { outline: "2px solid var(--tp-accent)", outlineOffset: "2px" },
+  "[data-done='true'] .cm-tp-title": { textDecoration: "line-through", color: "var(--tp-ink-muted)" },
   ".cm-tp-meta": { margin: "0", height: "0", overflow: "hidden" },
   ".cm-tp-tablewrap": { overflowX: "auto" },
   ".cm-tp-table": { borderCollapse: "collapse", width: "100%", fontSize: "var(--tp-text-sm)" },

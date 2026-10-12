@@ -49,10 +49,12 @@ export async function listNotesForUser(
   return rows;
 }
 
-/** Most pages the rail shows (pinned first, then most recently edited). */
-export const RAIL_PAGE_LIMIT_MAX = 20;
-/** Most rows the rail reads per index; past this many pins or tombstones the rail shows fewer. */
-export const RAIL_SCAN_MAX = 400;
+/**
+ * Most pages the rail shows: pinned first, then the newest pages. Every read loads whole
+ * documents (bodies included), and Convex caps one query at 16 MiB read with documents of up
+ * to 1 MiB, so the rail reads at most 2 * RAIL_PAGE_LIMIT_MAX = 14 documents.
+ */
+export const RAIL_PAGE_LIMIT_MAX = 7;
 
 export type RailPage = Pick<Doc<"notes">, "_id" | "title" | "pinned" | "updatedAt">;
 
@@ -73,34 +75,39 @@ export async function listRailPagesForUser(
   userId: Id<"users">,
   requested: number | undefined,
 ): Promise<RailPage[]> {
-  const limit = Math.min(Math.max(Math.floor(requested ?? 8), 1), RAIL_PAGE_LIMIT_MAX);
+  const limit = Math.min(Math.max(Math.floor(requested ?? RAIL_PAGE_LIMIT_MAX), 1), RAIL_PAGE_LIMIT_MAX);
   const toRow = (note: Doc<"notes">): RailPage => ({
     _id: note._id,
     title: note.title,
     pinned: note.pinned,
     updatedAt: note.updatedAt,
   });
-  // by_userId_pinned is in creation order, so read the pins (bounded) and order them by edit.
+  // At most `limit` reads each. Pins: the newest pinned pages, live ones ordered by last edit.
   const pins = await ctx.db
     .query("notes")
     .withIndex("by_userId_pinned", (q) => q.eq("userId", userId).eq("pinned", true))
-    .take(RAIL_SCAN_MAX);
+    .order("desc")
+    .take(limit);
   const out = pins
     .filter((n) => n.deletedAt === undefined)
     .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, limit)
     .map(toRow);
   if (out.length >= limit) return out;
-  // Walk recent edits newest first and skip tombstones until the rail is full, so recently
-  // deleted pages never crowd out older live ones. The scan stops after RAIL_SCAN_MAX rows.
-  let scanned = 0;
-  for await (const note of ctx.db
+  // Then the newest live pages: by_userId_deletedAt holds only live rows under
+  // deletedAt = undefined, so soft-deleted pages never use up the bound.
+  const live = await ctx.db
     .query("notes")
-    .withIndex("by_userId_updatedAt", (q) => q.eq("userId", userId))
-    .order("desc")) {
-    scanned += 1;
-    if (note.deletedAt === undefined && !note.pinned) out.push(toRow(note));
-    if (out.length >= limit || scanned >= RAIL_SCAN_MAX) break;
+    .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
+    .order("desc")
+    .take(limit);
+  // Dedupe by id, not by the pinned flag: a live pin the pinned window missed (its newest
+  // pins were tombstones) can still show among the newest live pages.
+  const seen = new Set<string>(out.map((row) => row._id));
+  for (const note of live) {
+    if (out.length >= limit) break;
+    if (seen.has(note._id)) continue;
+    seen.add(note._id);
+    out.push(toRow(note));
   }
   return out;
 }

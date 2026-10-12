@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goals · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — goals.html */
+  .gl-stack { display: grid; gap: var(--tp-space-6); }
+  .gl-card { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+  .gl-card__projects { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .gl-card__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  .gl-cards [data-filtered="true"] { display: none; }
+</style>
+</head>
+<body>
+<!--
+@screen   Goals
+@route    apps/web/app/(tempo)/goals/page.tsx
+@layout   TempoShell
+@data     goals = goals.list({ status })                                   // Convex query: title, why, status, linked project ids
+@data     projects = projects.listByGoals({ goalIds })                     // Convex query: name, status, open + done task counts
+@actions  filter goals -> router.replace("?status=all|active|resting|done")  // client arg to goals.list
+@actions  add a goal -> goals.create({ title })                            // optimistic, Undo 5 min -> goals.remove({ id })
+@actions  open a goal -> link /goals/[id]
+@actions  open a project -> link /projects/[id]
+@actions  see progress -> link /goals/progress
+@states   default | empty | loading | error | offline  (?state=)   + filtered-to-nothing (inline, kind copy)
+@flow     1. Show every goal as a card: the goal in Maya's words, a status word with an icon, and the projects linked to it.
+          2. Progress is gentle text only ("Moving along", "4 of 9 linked tasks done"). No scores, no percentages, nothing called late.
+          3. A goal with no linked project says so plainly and offers to link one from the goal page.
+          4. The filter (All, Active, Resting, Done) narrows the cards; if nothing fits, say so kindly and offer "Show all".
+          5. "New goal" adds a draft card at the top and shows an Undo toast for 5 minutes.
+          6. Empty: kind copy + "Write a first goal". Error: "Your data is safe." + Retry. Offline: cards stay readable.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'goals' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Goals'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="nav.goals">Goals</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'wide' } | events: — -->
+    <div class="tp-page tp-page--wide gl-stack" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Goals', subtitle, actions: ['See progress','New goal'] } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="gl.title">Goals</h1>
+          <p class="tp-pagehead__sub" data-i18n="gl.sub">What you'd like to be true, and the projects that carry it. No scores, just where things are.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--secondary" href="goals-progress.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chart"/></svg><span data-i18n="gl.progress">See progress</span></a>
+          <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> goals.create({ title }) -->
+          <button class="tp-btn tp-btn--primary" type="button" id="gl-new" data-component="Button" data-state-hide><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="gl.new">New goal</span></button>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component Toolbar | shadcn: — | props: { children: Segmented } | events: — -->
+      <div class="tp-toolbar" data-component="Toolbar" data-state-hide>
+        <span class="tp-label" id="gl-filter-label" data-i18n="gl.filter">Show</span>
+        <!-- @component Segmented | shadcn: toggle-group | props: { options: ['all','active','resting','done'], value: 'all' } | events: onChange -> router.replace("?status=") -->
+        <div class="tp-segmented" role="radiogroup" aria-labelledby="gl-filter-label" id="gl-seg" data-component="Segmented">
+          <button class="tp-seg__opt" type="button" role="radio" data-filter="all" aria-checked="true" tabindex="0"><span data-i18n="gl.all">All</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-filter="active" aria-checked="false" tabindex="-1"><span data-i18n="status.active">Active</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-filter="paused" aria-checked="false" tabindex="-1"><span data-i18n="status.resting">Resting</span></button>
+          <button class="tp-seg__opt" type="button" role="radio" data-filter="done" aria-checked="false" tabindex="-1"><span data-i18n="status.done">Done</span></button>
+        </div>
+        <span class="tp-muted tp-small tp-toolbar__end" aria-live="polite"><span data-i18n="gl.showing">Showing</span> <span class="tp-num" id="gl-shown">4</span> <span data-i18n="gl.goals">goals</span></span>
+      </div>
+
+      <!-- @component CardGrid | shadcn: — | props: { size: 'md' } | events: — -->
+      <div class="tp-cards gl-cards" id="gl-cards" data-component="CardGrid" data-state-hide>
+
+        <!-- @component Card ×4 | shadcn: card | props: { goal: {id,title,why,status,projects:{id,name,status}[],doneTasks,linkedTasks,nextStep?} } | events: link -> /goals/[id], link -> /projects/[id] -->
+        <article class="tp-card gl-card" data-component="Card" data-status="active" aria-labelledby="g1-t">
+          <div class="tp-card__head">
+            <!-- @component ProjectStatus | shadcn: badge | props: { status: 'active', label: 'Active' } | events: — -->
+            <span class="tp-status" data-status="active" data-component="ProjectStatus"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span>
+          </div>
+          <h2 class="tp-h3" id="g1-t"><a href="goal-detail.html" dir="auto" data-i18n="g1.title">Feel settled at home</a></h2>
+          <p class="tp-muted" dir="auto" data-i18n="g1.why">Coming home should feel easy, not like another list.</p>
+          <div>
+            <span class="tp-eyebrow" data-i18n="gl.linked">Linked projects</span>
+            <div class="gl-card__projects">
+              <a class="tp-chip" href="project-detail.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg><span data-i18n="pr.moving">Moving flat</span></a>
+              <a class="tp-chip" href="projects.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg><span data-i18n="pr.home">Home reset</span></a>
+            </div>
+          </div>
+          <p class="tp-small gl-card__foot"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-leaf"/></svg><span><span data-i18n="gl.along">Moving along.</span> <span class="tp-num">4</span> <span data-i18n="gl.of">of</span> <span class="tp-num">9</span> <span data-i18n="gl.linkedtasks">linked tasks done.</span></span></p>
+        </article>
+
+        <article class="tp-card gl-card" data-component="Card" data-status="active" aria-labelledby="g2-t">
+          <div class="tp-card__head">
+            <span class="tp-status" data-status="active" data-component="ProjectStatus"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span>
+          </div>
+          <h2 class="tp-h3" id="g2-t"><a href="goal-detail.html" dir="auto" data-i18n="g2.title">Speak calmly on Thursday</a></h2>
+          <p class="tp-muted" dir="auto" data-i18n="g2.why">I know this topic. I want my voice to show it.</p>
+          <div>
+            <span class="tp-eyebrow" data-i18n="gl.linked">Linked projects</span>
+            <div class="gl-card__projects">
+              <a class="tp-chip" href="page-blocks.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg><span data-i18n="pr.talk">Thursday talk</span></a>
+            </div>
+          </div>
+          <p class="tp-small gl-card__foot"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-leaf"/></svg><span><span data-i18n="gl.started">Started this week.</span> <span class="tp-num">1</span> <span data-i18n="gl.of">of</span> <span class="tp-num">4</span> <span data-i18n="gl.linkedtasks">linked tasks done.</span></span></p>
+        </article>
+
+        <article class="tp-card gl-card" data-component="Card" data-status="paused" aria-labelledby="g3-t">
+          <div class="tp-card__head">
+            <span class="tp-status" data-status="paused" data-component="ProjectStatus"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-i18n="status.resting">Resting</span></span>
+          </div>
+          <h2 class="tp-h3" id="g3-t"><a href="goal-detail.html" dir="auto" data-i18n="g3.title">Rest on purpose</a></h2>
+          <p class="tp-muted" dir="auto" data-i18n="g3.why">One evening a week with nothing planned.</p>
+          <div>
+            <span class="tp-eyebrow" data-i18n="gl.linked">Linked projects</span>
+            <p class="tp-small tp-muted" data-i18n="gl.noproj">No projects linked yet. You can link one from the goal page.</p>
+          </div>
+          <p class="tp-small gl-card__foot"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-i18n="gl.resting">Resting for now. Pick it up when it feels right.</span></p>
+        </article>
+
+        <article class="tp-card gl-card" data-component="Card" data-status="done" aria-labelledby="g4-t">
+          <div class="tp-card__head">
+            <span class="tp-status" data-status="done" data-component="ProjectStatus"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="status.done">Done</span></span>
+          </div>
+          <h2 class="tp-h3" id="g4-t"><a href="goal-detail.html" dir="auto" data-i18n="g4.title">Sign the new lease</a></h2>
+          <p class="tp-muted" dir="auto" data-i18n="g4.why">A date for the move, so the rest can follow.</p>
+          <div>
+            <span class="tp-eyebrow" data-i18n="gl.linked">Linked projects</span>
+            <div class="gl-card__projects">
+              <a class="tp-chip" href="project-detail.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg><span data-i18n="pr.moving">Moving flat</span></a>
+            </div>
+          </div>
+          <p class="tp-small gl-card__foot"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span><span data-i18n="gl.donewith">Done with Dana on</span> <span class="tp-num">2</span> <span data-i18n="gl.oct">October.</span></span></p>
+        </article>
+      </div>
+
+      <!-- Filtered to nothing (inline) -->
+      <div class="tp-state tp-state--empty" id="gl-nomatch" hidden>
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-filter"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="gl.none.title">Nothing here with this filter.</h2>
+        <p class="tp-state__body" data-i18n="gl.none.body">Your other goals are still safe. Show them all again?</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" id="gl-showall"><span data-i18n="gl.showall">Show all</span></button></div>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onAdd -> goals.create({ title }) -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-flag"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">No goals yet. That's okay.</h2>
+        <p class="tp-state__body" data-i18n="empty.body">A goal is just something you'd like to be true. Write one in your own words, and link a project later if you want.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="empty.add">Write a first goal</span></button></div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Loading your goals</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your goals." } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your goals.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> goals.remove({ id }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'more' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="nav.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="nav.calendar">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "gl.draft": "New goal", "gl.added": "Goal added", "gl.draftwhy": "Write why it matters, when you're ready.", "gl.noproj": "No projects linked yet. You can link one from the goal page.", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "מטרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.library": "ספרייה",
+    "nav.today": "היום", "nav.plan": "תכנון", "nav.dump": "פריקת מחשבות", "nav.coach": "מאמן",
+    "nav.tasks": "משימות", "nav.calendar": "לוח שנה", "nav.notes": "פתקים", "nav.habits": "הרגלים", "nav.goals": "מטרות", "nav.projects": "פרויקטים",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "gl.title": "מטרות", "gl.sub": "מה שהיית רוצה שיתקיים, והפרויקטים שנושאים את זה. בלי ציונים, רק איפה הדברים עומדים.",
+    "gl.progress": "לראות את ההתקדמות", "gl.new": "מטרה חדשה",
+    "gl.filter": "להציג", "gl.all": "הכול", "status.active": "פעילה", "status.resting": "במנוחה", "status.done": "הושלמה",
+    "gl.showing": "מוצגות", "gl.goals": "מטרות",
+    "g1.title": "להרגיש בבית", "g1.why": "לחזור הביתה צריך להרגיש קל, לא עוד רשימה.",
+    "g2.title": "לדבר ברוגע ביום חמישי", "g2.why": "אני מכירה את הנושא הזה. אני רוצה שהקול שלי יראה את זה.",
+    "g3.title": "לנוח בכוונה", "g3.why": "ערב אחד בשבוע בלי שום תוכנית.",
+    "g4.title": "לחתום על החוזה החדש", "g4.why": "תאריך למעבר, כדי שכל השאר יוכל להמשיך.",
+    "gl.linked": "פרויקטים מקושרים", "pr.moving": "מעבר דירה", "pr.home": "איפוס הבית", "pr.talk": "הרצאה ביום חמישי",
+    "gl.along": "מתקדם בנחת.", "gl.started": "התחיל השבוע.", "gl.of": "מתוך", "gl.linkedtasks": "משימות מקושרות בוצעו.",
+    "gl.noproj": "עדיין אין פרויקטים מקושרים. אפשר לקשר אחד מדף המטרה.",
+    "gl.resting": "במנוחה כרגע. אפשר לחזור לזה כשזה ירגיש נכון.",
+    "gl.donewith": "הושלם עם דנה ב־", "gl.oct": "באוקטובר.",
+    "gl.none.title": "אין כאן כלום עם הסינון הזה.", "gl.none.body": "שאר המטרות שלך שמורות. להציג את כולן שוב?", "gl.showall": "להציג הכול",
+    "empty.title": "עדיין אין מטרות. זה בסדר.", "empty.body": "מטרה היא פשוט משהו שהיית רוצה שיתקיים. כתבי אחת במילים שלך, ואפשר לקשר פרויקט אחר כך.", "empty.add": "לכתוב מטרה ראשונה",
+    "loading": "טוען את המטרות שלך", "error.title": "לא הצלחנו לטעון את המטרות שלך.",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "gl.draft": "מטרה חדשה", "gl.added": "המטרה נוספה", "gl.draftwhy": "כתבי למה זה חשוב, כשתהיי מוכנה.",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.pages": "דפים", "tab.more": "עוד"
+  }
+};
+
+TP.onReady = function () {
+  var cards = document.getElementById("gl-cards"), filter = "all";
+  function apply() {
+    var shown = 0;
+    cards.querySelectorAll(".gl-card").forEach(function (c) {
+      var ok = filter === "all" || c.getAttribute("data-status") === filter;
+      c.setAttribute("data-filtered", String(!ok));
+      if (ok) shown++;
+    });
+    document.getElementById("gl-shown").textContent = shown;
+    document.getElementById("gl-nomatch").hidden = shown > 0;
+  }
+  // REAL: convex goals.list({ status }) — the filter is a query arg; here cards are hidden client-side.
+  var seg = document.getElementById("gl-seg");
+  seg.addEventListener("click", function (e) { var o = e.target.closest("[data-filter]"); if (!o) return; filter = o.getAttribute("data-filter"); apply(); });
+  seg.addEventListener("keydown", function () { setTimeout(function () { var o = seg.querySelector('[aria-checked="true"]'); if (o) { filter = o.getAttribute("data-filter"); apply(); } }, 0); });
+  document.getElementById("gl-showall").addEventListener("click", function () {
+    filter = "all";
+    seg.querySelectorAll("[role=radio]").forEach(function (o) { var on = o.getAttribute("data-filter") === "all"; o.setAttribute("aria-checked", String(on)); o.tabIndex = on ? 0 : -1; });
+    apply(); seg.querySelector('[data-filter="all"]').focus();
+  });
+  // REAL: convex goals.create({ title }) — optimistic draft card; Undo -> goals.remove({ id }).
+  document.getElementById("gl-new").addEventListener("click", function () {
+    var card = cards.querySelector(".gl-card").cloneNode(true), id = "g" + Date.now();
+    card.setAttribute("data-status", "active"); card.setAttribute("aria-labelledby", id);
+    var h = card.querySelector("h2"); h.id = id;
+    var a = h.querySelector("a"); a.textContent = TP.t("gl.draft"); a.removeAttribute("data-i18n");
+    var why = card.querySelector("p.tp-muted"); why.textContent = TP.t("gl.draftwhy"); why.removeAttribute("data-i18n");
+    var proj = card.querySelector(".gl-card__projects"); if (proj) { var p = document.createElement("p"); p.className = "tp-small tp-muted"; p.textContent = TP.t("gl.noproj"); proj.replaceWith(p); }
+    card.querySelector(".gl-card__foot").remove();
+    cards.insertBefore(card, cards.firstChild);
+    apply(); a.focus();
+    TP.toast({ title: TP.t("gl.added"), onUndo: function () { card.remove(); apply(); } });
+  });
+  apply();
+};
+</script>
+</body>
+</html>

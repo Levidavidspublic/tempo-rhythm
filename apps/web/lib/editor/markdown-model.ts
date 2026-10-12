@@ -7,7 +7,7 @@
  * tests share one behaviour. Saves are byte-exact: helpers that edit a body touch only the range
  * they are asked to change and copy every other UTF-16 unit as it was.
  */
-import { type BlockSegment, type PageRef, parseTempoBlocks, type TempoBlock } from "@tempo/utils";
+import { BLOCK_CODEC_LIMITS, type BlockSegment, type PageRef, parseTempoBlocks, type TempoBlock } from "@tempo/utils";
 
 /** The editor must never normalise line breaks: CodeMirror gets this as its line separator. */
 export const LINE_SEPARATOR = "\n";
@@ -82,6 +82,28 @@ export function setTaskDone(body: string, range: BlockRange, done: boolean): str
   const fence = tempoFence(next);
   const replacement = trailing ? fence.slice(0, -1) : fence;
   return body.slice(0, range.from) + replacement + body.slice(range.to);
+}
+
+/**
+ * Renames one task block (the card's title field). Only that fence changes; an empty title is
+ * ignored (the codec needs one), and a long one is cut to the codec's limit.
+ */
+export function setTaskTitle(body: string, range: BlockRange, title: string): string {
+  if (range.segment.kind !== "valid" || range.segment.block.type !== "task") return body;
+  if (body.slice(range.from, range.to) !== range.segment.source) return body;
+  const clean = title.replace(/\s+/g, " ").trim().slice(0, BLOCK_CODEC_LIMITS.maxTextChars);
+  const block = range.segment.block;
+  if (!clean || clean === block.data.title) return body;
+  const next: TempoBlock = { ...block, data: { ...block.data, title: clean } };
+  const trailing = range.segment.source.endsWith("\n") ? "" : "\n";
+  const fence = tempoFence(next);
+  const replacement = trailing ? fence.slice(0, -1) : fence;
+  return body.slice(0, range.from) + replacement + body.slice(range.to);
+}
+
+/** The id of the block an inserted fence carries (to focus the new task card's title). */
+export function insertedBlockId(text: string): string | null {
+  return /"id"\s*:\s*"(blk_[0-9A-HJKMNP-TV-Z]{26})"/.exec(text)?.[1] ?? null;
 }
 
 /** Removes one block's source exactly (the "Remove block" action; Undo restores the same bytes). */
