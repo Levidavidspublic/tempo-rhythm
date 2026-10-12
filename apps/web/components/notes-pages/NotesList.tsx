@@ -226,7 +226,7 @@ export function NotesList() {
           </div>
           <ul className="tp-list" data-component="ListRow">
             {visible.map((note) => (
-              <li key={note._id} className="flex items-center gap-2">
+              <li key={note._id} className="flex flex-wrap items-center gap-2">
                 <Link className="tp-list-row min-w-0 flex-1" href={`/notes/${note._id}`}>
                   <span className="tp-list-row__icon">
                     <TpIcon name={note.periodType === "daily" ? "today" : "page"} size="sm" />
@@ -237,11 +237,11 @@ export function NotesList() {
                     </span>
                     <span className="tp-list-row__meta" dir="auto">
                       {note.pinned ? <span className="tp-tag">{t("notes.pinned")}</span> : null}
-                      <span>{plainPreview(note.body)}</span>
+                      <span>{plainPreview(note.body, t("notes.noContent"))}</span>
                     </span>
                   </span>
                 </Link>
-                <span className="tp-list-row__end">
+                <span className="tp-list-row__end flex-wrap justify-end">
                   <button
                     type="button"
                     className="tp-btn tp-btn--ghost tp-btn--sm"
