@@ -573,3 +573,8 @@ p {
   background-clip: text;
   color: transparent;
 }
+
+/* Search (search.html, layout only). */
+.sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.sr-results { display: grid; gap: var(--tp-space-6); }
+.sr-list { padding: var(--tp-space-1); }
