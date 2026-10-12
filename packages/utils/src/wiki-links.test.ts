@@ -28,6 +28,13 @@ describe("findWikiLinks", () => {
     expect(findWikiLinks(body).map((l) => l.title)).toEqual(["Kept", "Also kept"]);
   });
 
+  test("a code span that runs over a line break is code; a blank line ends the span", () => {
+    expect(findWikiLinks("Use `code\n[[Target]]` here").map((l) => l.title)).toEqual([]);
+    expect(findWikiLinks("A lone ` tick\n\n[[Real]] and `x`").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("A lone ` tick\r\n\r\n[[Real]] and `x`").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("A lone ` tick\r\r[[Real]] and `x`").map((l) => l.title)).toEqual(["Real"]);
+  });
+
   test("an unclosed fence hides the rest of the body", () => {
     expect(findWikiLinks("[[A]]\n```\n[[B]]").map((l) => l.title)).toEqual(["A"]);
   });

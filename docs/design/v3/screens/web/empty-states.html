@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empty, loading, error and offline states · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — empty-states.html */
+  .es-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+  .es-card__where { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-2); }
+  .es-toc { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .es-rules { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+</style>
+</head>
+<body>
+<!--
+@screen   Empty states
+@route    apps/web/app/(tempo)/empty-states/page.tsx   (internal reference; not linked from the product navigation)
+@layout   TempoShell
+@data     none — static reference built from the shared state components
+@actions  open a screen in that state -> link to "[screen].html?state=[state]"
+@states   default | offline  (?state=). empty / loading / error do not apply: this gallery is static, so it keeps showing in every state.
+@flow     1. One page that shows every empty, loading, error and offline pattern in Tempo, grouped by kind.
+          2. Each card names the screen it belongs to (a badge with the screen name) and links to that screen in the same state.
+          3. Copy rules sit at the top: kind and plain, never shaming, always a next step, "Your data is safe." on every error.
+          4. Builders copy the component and the words; nothing here is a new component.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to the gallery</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: null } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <a class="tp-btn tp-btn--secondary tp-rail__search" href="command.html" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </a>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Empty states'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="crumb">Empty states</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'wide' } | events: — -->
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="h1">Empty, loading, error and offline</h1>
+          <p class="tp-pagehead__sub" data-i18n="sub">Every in-between state in Tempo, in one place. Each card says which screen it belongs to.</p>
+        </div>
+      </header>
+
+      <!-- @component Card | shadcn: card | props: { rules: string[] } | events: — -->
+      <section class="tp-card" data-component="Card" aria-labelledby="rules-h">
+        <h2 class="tp-card__title" id="rules-h" data-i18n="rules.h">How these states talk</h2>
+        <ul class="es-rules">
+          <li data-i18n="rules.1">Kind and plain. Nothing is ever her fault, and nothing counts what she missed.</li>
+          <li data-i18n="rules.2">Always one next step, as a secondary button or a link.</li>
+          <li data-i18n="rules.3">Every error says "Your data is safe." and offers Retry.</li>
+          <li data-i18n="rules.4">Offline keeps the content on screen and says when changes will save.</li>
+          <li data-i18n="rules.5">Loading shows the shape of what is coming, plus words for screen readers.</li>
+        </ul>
+      </section>
+
+      <nav class="es-toc" aria-label="Jump to a kind of state" data-i18n-attr="aria-label:toc">
+        <a class="tp-btn tp-btn--secondary tp-btn--sm" href="#k-empty" data-i18n="k.empty">Empty</a>
+        <a class="tp-btn tp-btn--secondary tp-btn--sm" href="#k-loading" data-i18n="k.loading">Loading</a>
+        <a class="tp-btn tp-btn--secondary tp-btn--sm" href="#k-error" data-i18n="k.error">Error</a>
+        <a class="tp-btn tp-btn--secondary tp-btn--sm" href="#k-offline" data-i18n="k.offline">Offline</a>
+      </nav>
+
+      <!-- ================= EMPTY ================= -->
+      <!-- @component Section | shadcn: — | props: { title: 'Empty', count: 8 } | events: — -->
+      <section class="tp-section" data-component="Section" aria-labelledby="k-empty">
+        <div class="tp-section__head"><h2 class="tp-section__title" id="k-empty" tabindex="-1" data-i18n="k.empty">Empty</h2><span class="tp-section__count tp-num">8</span></div>
+        <!-- @component CardGrid | shadcn: — | props: { size: 'default' } | events: — -->
+        <div class="tp-cards" data-component="CardGrid">
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onAdd -> tasks.create -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></span><a class="tp-btn tp-btn--link" href="today.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-sun"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.today.t">A clear day.</h3>
+              <p class="tp-state__body" data-i18n="e.today.b">Nothing planned yet. Add one small thing, or ask the coach to help you pick.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="e.today.a">Add a task</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onDump -> router.push('/brain-dump') -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg><span data-i18n="nav.inbox">Inbox</span></span><a class="tp-btn tp-btn--link" href="brain-dump.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-inbox"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.inbox.t">Your inbox is empty.</h3>
+              <p class="tp-state__body" data-i18n="e.inbox.b">Anything on your mind? Put it here as it comes. Sorting can wait.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg><span data-i18n="e.inbox.a">Start a brain dump</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="w.tasks">Tasks</span></span><a class="tp-btn tp-btn--link" href="tasks.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-checklist"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.tasks.t">No tasks here.</h3>
+              <p class="tp-state__body" data-i18n="e.tasks.b">When you add one, it shows up here. There's no rush.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="e.today.a">Add a task</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg><span data-i18n="w.habits">Habits</span></span><a class="tp-btn tp-btn--link" href="habits.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-habit"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.habits.t">No habits yet.</h3>
+              <p class="tp-state__body" data-i18n="e.habits.b">Pick one small thing you'd like to do most days. There are no streaks to keep.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="e.habits.a">Add a habit</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg><span data-i18n="w.history">Coach history</span></span><a class="tp-btn tp-btn--link" href="coach-history.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-coach"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.coach.t">No chats yet.</h3>
+              <p class="tp-state__body" data-i18n="e.coach.b">Your coach is here whenever you want to talk something through.</p>
+              <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="coach.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="e.coach.a">Say hello</span></a></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, actions } | events: onMeaning -> search mode 'meaning' -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="w.search">Search · no results</span></span><a class="tp-btn tp-btn--link" href="search.html?results=none" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span>
+              <h3 class="tp-state__title"><span data-i18n="e.search.t">Nothing found for</span> <q dir="auto">zebra</q></h3>
+              <p class="tp-state__body" data-i18n="e.search.b">That happens. Try fewer words, check the spelling, or search by meaning.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="e.search.a">Search by meaning</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, actions } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="w.templates">Templates · yours</span></span><a class="tp-btn tp-btn--link" href="templates.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-template"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.tpl.t">No templates of your own yet.</h3>
+              <p class="tp-state__body" data-i18n="e.tpl.b">The built-in ones are always here. When a page keeps repeating, the coach can turn it into one.</p>
+              <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="template-sketch.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="e.tpl.a">Sketch an outline</span></a></div>
+            </div>
+          </article>
+
+          <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: onType -> pages.insertBlock -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="w.page">Page editor</span></span><a class="tp-btn tp-btn--link" href="page-editor.html?state=empty" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--empty" data-component="StateEmpty">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-text"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="e.page.t">This page is empty.</h3>
+              <p class="tp-state__body" data-i18n="e.page.b">Just start writing. Type / on a new line for tasks, time blocks and more.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ================= LOADING ================= -->
+      <!-- @component Section | shadcn: — | props: { title: 'Loading', count: 3 } | events: — -->
+      <section class="tp-section" data-component="Section" aria-labelledby="k-loading">
+        <div class="tp-section__head"><h2 class="tp-section__title" id="k-loading" tabindex="-1" data-i18n="k.loading">Loading</h2><span class="tp-section__count tp-num">3</span></div>
+        <div class="tp-cards" data-component="CardGrid">
+
+          <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="w.lists">Tasks, Inbox, Notes</span></span><a class="tp-btn tp-btn--link" href="tasks.html?state=loading" data-i18n="see">See it there</a></div>
+            <div class="tp-state--loading" role="status" data-component="StateLoading">
+              <span class="tp-sr-only" data-i18n="l.tasks">Loading your tasks</span>
+              <div class="tp-skel-list">
+                <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+                <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+                <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+              </div>
+            </div>
+            <p class="tp-muted tp-small" data-i18n="l.tasks.note">List rows: a box and two lines each. Screen readers hear "Loading your tasks".</p>
+          </article>
+
+          <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="w.pages">Pages and templates</span></span><a class="tp-btn tp-btn--link" href="page-editor.html?state=loading" data-i18n="see">See it there</a></div>
+            <div class="tp-state--loading" role="status" data-component="StateLoading">
+              <span class="tp-sr-only" data-i18n="l.page">Loading this page</span>
+              <div class="tp-skel-list">
+                <div class="tp-skeleton tp-skeleton--w60"></div>
+                <div class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></div>
+                <div class="tp-skeleton tp-skeleton--block"></div>
+                <div class="tp-skeleton tp-skeleton--w80"></div>
+              </div>
+            </div>
+            <p class="tp-muted tp-small" data-i18n="l.page.note">A title, a meta line, then a block. The shimmer stops with reduced motion.</p>
+          </article>
+
+          <!-- @component TypingIndicator | shadcn: — | props: { label: 'Coach is writing' } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="w.coach">Coach</span></span><a class="tp-btn tp-btn--link" href="coach-thread.html?state=loading" data-i18n="see">See it there</a></div>
+            <div class="tp-typing" role="status" data-component="TypingIndicator">
+              <span class="tp-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span data-i18n="l.coach">Coach is writing</span>
+            </div>
+            <p class="tp-muted tp-small" data-i18n="l.coach.note">The words carry the meaning; the dots only move without reduced motion.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ================= ERROR ================= -->
+      <!-- @component Section | shadcn: — | props: { title: 'Error', count: 3 } | events: — -->
+      <section class="tp-section" data-component="Section" aria-labelledby="k-error">
+        <div class="tp-section__head"><h2 class="tp-section__title" id="k-error" tabindex="-1" data-i18n="k.error">Error</h2><span class="tp-section__count tp-num">3</span></div>
+        <div class="tp-cards" data-component="CardGrid">
+
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your tasks." } | events: onRetry -> refetch -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="w.tasks">Tasks</span></span><a class="tp-btn tp-btn--link" href="tasks.html?state=error" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--error" data-component="StateError">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="x.tasks.t">Couldn't load your tasks.</h3>
+              <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component StateError | shadcn: alert | props: { what: "The coach couldn't answer just now." } | events: onRetry -> coach.retry -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="w.coach">Coach</span></span><a class="tp-btn tp-btn--link" href="coach-thread.html?state=error" data-i18n="see">See it there</a></div>
+            <div class="tp-state tp-state--error" data-component="StateError">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+              <h3 class="tp-state__title" data-i18n="x.coach.t">The coach couldn't answer just now.</h3>
+              <p class="tp-state__body" data-i18n="x.coach.b">Your message is saved. Try again in a moment.</p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+            </div>
+          </article>
+
+          <!-- @component BrokenBlock | shadcn: alert | props: { blockId, canUndo: true } | events: onUndo -> pages.revertBlock -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="w.block">Any page · one block</span></span><a class="tp-btn tp-btn--link" href="page-blocks.html" data-i18n="see">See it there</a></div>
+            <div class="tp-block-broken" data-component="BrokenBlock">
+              <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg>
+              <span class="tp-block-broken__text" data-i18n="x.block.t">This part has a problem. The rest of the page is fine.</span>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm tp-block-broken__action" type="button" data-action="noop"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-undo"/></svg><span data-i18n="x.block.a">Undo last change</span></button>
+            </div>
+            <p class="tp-muted tp-small" data-i18n="x.block.note">Only the broken block is replaced. Never shows code or raw data.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ================= OFFLINE ================= -->
+      <!-- @component Section | shadcn: — | props: { title: 'Offline', count: 3 } | events: — -->
+      <section class="tp-section" data-component="Section" aria-labelledby="k-offline">
+        <div class="tp-section__head"><h2 class="tp-section__title" id="k-offline" tabindex="-1" data-i18n="k.offline">Offline</h2><span class="tp-section__count tp-num">3</span></div>
+        <div class="tp-cards" data-component="CardGrid">
+
+          <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="w.most">Today, pages, tasks</span></span><a class="tp-btn tp-btn--link" href="today.html?state=offline" data-i18n="see">See it there</a></div>
+            <div class="tp-notice" data-tone="caution" data-component="StateOffline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+            <p class="tp-muted tp-small" data-i18n="o.most.note">Sits above the content. Everything stays on screen and editable.</p>
+          </article>
+
+          <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="w.coach">Coach</span></span><a class="tp-btn tp-btn--link" href="coach-thread.html?state=offline" data-i18n="see">See it there</a></div>
+            <div class="tp-notice" data-tone="caution" data-component="StateOffline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="o.coach">You're offline. Your message will send when you're back.</span></span></div>
+            <p class="tp-muted tp-small" data-i18n="o.coach.note">The chat stays readable. Voice calls wait for a connection.</p>
+          </article>
+
+          <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+          <article class="tp-card es-card">
+            <div class="es-card__where"><span class="tp-badge" data-tone="info"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="w.searchonly">Search and command bar</span></span><a class="tp-btn tp-btn--link" href="search.html?state=offline" data-i18n="see">See it there</a></div>
+            <div class="tp-notice" data-tone="caution" data-component="StateOffline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="o.search">You're offline. Pages and tasks on this device are still searched.</span></span></div>
+            <p class="tp-muted tp-small" data-i18n="o.search.note">Says what still works, not only what doesn't.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'more' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="w.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "state.retried": "Loaded." },
+  he: {
+    "doc.title": "מצבים ריקים, טעינה, שגיאה ואופליין · Tempo",
+    "skip": "דלגו לגלריה", "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.notes": "פתקים", "nav.templates": "תבניות",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן", "crumb": "מצבים ריקים",
+    "h1": "ריק, טעינה, שגיאה ואופליין", "sub": "כל מצבי הביניים של Tempo, במקום אחד. כל כרטיס אומר לאיזה מסך הוא שייך.",
+    "rules.h": "איך המצבים האלה מדברים",
+    "rules.1": "בטוב ובפשטות. שום דבר לא באשמתה, ושום דבר לא סופר מה היא פספסה.",
+    "rules.2": "תמיד צעד הבא אחד, ככפתור משני או כקישור.",
+    "rules.3": "כל שגיאה אומרת \"המידע שלך שמור.\" ומציעה לנסות שוב.",
+    "rules.4": "במצב אופליין התוכן נשאר על המסך, וכתוב מתי השינויים יישמרו.",
+    "rules.5": "בטעינה רואים את הצורה של מה שמגיע, ויש מילים לקוראי מסך.",
+    "toc": "מעבר לסוג מצב", "k.empty": "ריק", "k.loading": "טעינה", "k.error": "שגיאה", "k.offline": "אופליין",
+    "see": "לראות במסך",
+    "e.today.t": "יום פנוי.", "e.today.b": "עוד לא תוכנן כלום. אפשר להוסיף דבר קטן אחד, או לבקש מהמאמן עזרה בבחירה.", "e.today.a": "הוספת משימה",
+    "e.inbox.t": "תיבת הקליטה ריקה.", "e.inbox.b": "משהו מעסיק אותך? אפשר לשים אותו כאן כשהוא עולה. המיון יכול לחכות.", "e.inbox.a": "להתחיל פריקת מחשבות",
+    "w.tasks": "משימות", "e.tasks.t": "אין כאן משימות.", "e.tasks.b": "כשתוסיפי משימה, היא תופיע כאן. אין לחץ.",
+    "w.habits": "הרגלים", "e.habits.t": "עוד אין הרגלים.", "e.habits.b": "בחרי דבר קטן אחד שהיית רוצה לעשות ברוב הימים. אין רצפים לשמור עליהם.", "e.habits.a": "הוספת הרגל",
+    "w.history": "היסטוריית מאמן", "e.coach.t": "עוד אין שיחות.", "e.coach.b": "המאמן כאן בכל פעם שתרצי לדבר על משהו.", "e.coach.a": "להגיד שלום",
+    "w.search": "חיפוש · אין תוצאות", "e.search.t": "לא נמצא כלום עבור", "e.search.b": "זה קורה. אפשר לנסות פחות מילים, לבדוק את האיות, או לחפש לפי משמעות.", "e.search.a": "לחפש לפי משמעות",
+    "w.templates": "תבניות · שלך", "e.tpl.t": "עוד אין לך תבניות משלך.", "e.tpl.b": "התבניות המובנות תמיד כאן. כשדף חוזר על עצמו, המאמן יכול להפוך אותו לתבנית.", "e.tpl.a": "לשרטט מתווה",
+    "w.page": "עורך הדפים", "e.page.t": "הדף הזה ריק.", "e.page.b": "פשוט להתחיל לכתוב. הקלדת / בשורה חדשה מוסיפה משימות, בלוקי זמן ועוד.",
+    "w.lists": "משימות, תיבת קליטה, פתקים", "l.tasks": "טוען את המשימות שלך", "l.tasks.note": "שורות רשימה: ריבוע ושתי שורות בכל אחת. קוראי מסך שומעים \"טוען את המשימות שלך\".",
+    "w.pages": "דפים ותבניות", "l.page": "טוען את הדף", "l.page.note": "כותרת, שורת פרטים, ואז בלוק. ההבהוב נעצר כשמבקשים פחות תנועה.",
+    "w.coach": "מאמן", "l.coach": "המאמן כותב", "l.coach.note": "המילים נושאות את המשמעות; הנקודות זזות רק כשלא ביקשו פחות תנועה.",
+    "x.tasks.t": "לא הצלחנו לטעון את המשימות שלך.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב",
+    "x.coach.t": "המאמן לא הצליח לענות כרגע.", "x.coach.b": "ההודעה שלך שמורה. אפשר לנסות שוב עוד רגע.",
+    "w.block": "כל דף · בלוק אחד", "x.block.t": "בחלק הזה יש בעיה. שאר הדף בסדר.", "x.block.a": "לבטל את השינוי האחרון",
+    "x.block.note": "רק הבלוק השבור מוחלף. אף פעם לא מוצג קוד או מידע גולמי.",
+    "w.most": "היום, דפים, משימות", "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "o.most.note": "יושב מעל התוכן. הכל נשאר על המסך וניתן לעריכה.",
+    "o.coach": "אין חיבור כרגע. ההודעה שלך תישלח כשתחזרי לרשת.", "o.coach.note": "אפשר להמשיך לקרוא את השיחה. שיחות קוליות מחכות לחיבור.",
+    "w.searchonly": "חיפוש ושורת הפקודות", "o.search": "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר.", "o.search.note": "אומר מה עדיין עובד, לא רק מה לא.",
+    "state.retried": "נטען.",
+    "tab.label": "ראשי", "tab.pages": "דפים", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+/* No screen behaviour: a static reference. Buttons inside the cards are inert examples (data-action="noop"). */
+</script>
+</body>
+</html>

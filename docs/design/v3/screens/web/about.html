@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — about.html */
+  .ab-main { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .ab-block { display: grid; gap: var(--tp-space-6); padding-block: var(--tp-space-12); border-top: 1px solid var(--tp-line); min-width: 0; }
+  .ab-prose { display: grid; gap: var(--tp-space-4); max-width: var(--tp-measure); }
+  .ab-principles { display: grid; gap: var(--tp-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 3.5)), 1fr)); list-style: none; margin: 0; padding: 0; }
+  .ab-offline { margin-block-start: var(--tp-space-4); }
+</style>
+</head>
+<body>
+<!--
+@screen   About
+@route    apps/web/app/(marketing)/about/page.tsx
+@layout   Marketing
+@data     none — static page
+@actions  ask to join -> link to /sign-up                       // the one primary action
+@actions  switch language -> link ?lang=he | ?lang=en
+@states   default | empty | loading | error | offline  (?state=)   // nothing is fetched; offline adds a banner
+@flow     1. Same header and footer as the landing page.
+          2. Say why Tempo exists, in plain words: it started as a tool its maker needed for his own brain.
+          3. List five promises: calm, you decide, everything can be undone, prices always visible, your words stay yours.
+          4. Say clearly who it is for and that it is a coach, not a therapist.
+          5. End with one action: Ask to join.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component SiteHeader | shadcn: navigation-menu | props: { links: {href,label}[], current: 'about' } | events: — -->
+<header class="tp-site-header" data-component="SiteHeader">
+  <div class="tp-container tp-site-header__inner">
+    <a class="tp-site-header__brand" href="landing.html" data-i18n="brand">Tempo</a>
+    <nav class="tp-site-nav" aria-label="Main" data-i18n-attr="aria-label:nav.label">
+      <a class="tp-site-link tp-site-link--wide" href="landing.html#what" data-i18n="nav.what">What it is</a>
+      <a class="tp-site-link tp-site-link--wide" href="landing.html#pricing" data-i18n="nav.pricing">Pricing</a>
+      <a class="tp-site-link tp-site-link--wide" href="about.html" aria-current="page" data-i18n="nav.about">About</a>
+      <a class="tp-site-link" href="sign-in.html" data-i18n="nav.signin">Sign in</a>
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">EN</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עב</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="tp-container ab-main" tabindex="-1">
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline ab-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+    <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+    <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">This page still works. Asking to join needs a connection.</span></span>
+  </div>
+
+  <!-- @component Hero | shadcn: — | props: { eyebrow, title, lede } | events: — -->
+  <section class="tp-hero" data-component="Hero" aria-labelledby="ab-title">
+    <span class="tp-eyebrow" data-i18n="hero.eyebrow">About Tempo</span>
+    <h1 class="tp-hero__title" id="ab-title" data-i18n="hero.title">A calm place for a busy brain</h1>
+    <p class="tp-hero__lede" data-i18n="hero.lede">Tempo is an executive function aid for adults with ADHD, autism or learning disabilities. It is a coach, not a therapist or counselor.</p>
+  </section>
+
+  <section class="ab-block" aria-labelledby="why-title">
+    <h2 class="tp-h2" id="why-title" data-i18n="why.title">Why it exists</h2>
+    <div class="ab-prose">
+      <p data-i18n="why.p1">Most planners are made for brains that already start, switch and remember on their own. When that is the hard part, a long list just becomes one more thing to feel bad about.</p>
+      <p data-i18n="why.p2">Tempo started as a tool its maker needed for his own brain. It keeps your notes and plans as simple pages, and adds a coach that remembers, paces you, and nudges you in your own words.</p>
+      <p data-i18n="why.p3">The coach can also change the app itself: add a task, fill a template, or build a new one. It never does this without showing you first.</p>
+    </div>
+  </section>
+
+  <section class="ab-block" aria-labelledby="pr-title">
+    <h2 class="tp-h2" id="pr-title" data-i18n="pr.title">What we promise</h2>
+    <!-- @component Card ×5 | shadcn: card | props: { title, body } | events: — -->
+    <ul class="ab-principles" role="list">
+      <li class="tp-card" data-component="Card"><div class="tp-card__head"><h3 class="tp-card__title" data-i18n="p1.t">Calm by default</h3></div><p data-i18n="p1.b">No streaks, no badges, no red numbers. One next step at a time.</p></li>
+      <li class="tp-card" data-component="Card"><div class="tp-card__head"><h3 class="tp-card__title" data-i18n="p2.t">You decide</h3></div><p data-i18n="p2.b">The coach suggests. You accept, edit or reject. Nothing changes behind your back.</p></li>
+      <li class="tp-card" data-component="Card"><div class="tp-card__head"><h3 class="tp-card__title" data-i18n="p3.t">Everything can be undone</h3></div><p data-i18n="p3.b">Every change shows an Undo for 5 minutes.</p></li>
+      <li class="tp-card" data-component="Card"><div class="tp-card__head"><h3 class="tp-card__title" data-i18n="p4.t">Prices you can always see</h3></div><p data-i18n="p4.b">No hidden plans. We remind you before a trial ends.</p></li>
+      <li class="tp-card" data-component="Card"><div class="tp-card__head"><h3 class="tp-card__title" data-i18n="p5.t">Your words stay yours</h3></div><p data-i18n="p5.b">See everything Tempo remembers, forget any of it, and export it all as Markdown.</p></li>
+    </ul>
+  </section>
+
+  <section class="ab-block" aria-labelledby="not-title">
+    <h2 class="tp-h2" id="not-title" data-i18n="not.title">What Tempo is not</h2>
+    <div class="ab-prose">
+      <p data-i18n="not.p1">Tempo is not therapy and does not treat any condition. If you go three nights without sleep, or things feel like a crisis, Tempo stops coaching and shows real places to get help where you live.</p>
+    </div>
+    <div>
+      <a class="tp-btn tp-btn--primary" href="sign-up.html" data-i18n="cta.join">Ask to join</a>
+    </div>
+  </section>
+</main>
+
+<!-- @component SiteFooter | shadcn: — | props: { links, lang } | events: — -->
+<footer class="tp-site-footer" data-component="SiteFooter">
+  <div class="tp-container tp-site-footer__inner">
+    <nav class="tp-site-footer__links" aria-label="Footer" data-i18n-attr="aria-label:foot.label">
+      <a class="tp-site-link" href="#" data-i18n="foot.terms">Terms</a>
+      <a class="tp-site-link" href="#" data-i18n="foot.privacy">Privacy</a>
+      <a class="tp-site-link" href="#" data-i18n="foot.contact">Contact</a>
+      <a class="tp-site-link" href="changelog.html" data-i18n="foot.changelog">What's new</a>
+    </nav>
+    <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+    <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+      <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+      <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+    </div>
+    <p class="tp-site-footer__small" data-i18n="foot.small">Tempo Flow. A coach, not a therapist.</p>
+  </div>
+</footer>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "About · Tempo" },
+  he: {
+    "doc.title": "אודות · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "nav.label": "ראשי", "nav.what": "מה זה", "nav.pricing": "מחירים", "nav.about": "אודות", "nav.signin": "כניסה", "lang.label": "שפה",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "הדף עדיין עובד. כדי לבקש להצטרף צריך חיבור.",
+    "hero.eyebrow": "אודות Tempo", "hero.title": "מקום רגוע למוח עסוק",
+    "hero.lede": "Tempo הוא כלי עזר לתפקודים ניהוליים למבוגרים עם ADHD, אוטיזם או לקויות למידה. הוא מאמן, לא מטפל ולא יועץ.",
+    "why.title": "למה הוא קיים",
+    "why.p1": "רוב המתכננים בנויים למוחות שכבר מתחילים, עוברים בין דברים וזוכרים לבד. כשזה החלק הקשה, רשימה ארוכה הופכת לעוד דבר להרגיש רע בגללו.",
+    "why.p2": "Tempo התחיל ככלי שהיוצר שלו היה צריך בשביל המוח שלו. הוא שומר את הפתקים והתוכניות כדפים פשוטים, ומוסיף מאמן שזוכר, קובע קצב ומזכיר במילים שלך.",
+    "why.p3": "המאמן יכול גם לשנות את האפליקציה עצמה: להוסיף משימה, למלא תבנית או לבנות חדשה. הוא אף פעם לא עושה את זה בלי להראות לך קודם.",
+    "pr.title": "מה אנחנו מבטיחים",
+    "p1.t": "רגוע כברירת מחדל", "p1.b": "בלי רצפים, בלי תגים, בלי מספרים אדומים. צעד אחד בכל פעם.",
+    "p2.t": "את/ה מחליטים", "p2.b": "המאמן מציע. מאשרים, עורכים או דוחים. שום דבר לא משתנה מאחורי הגב.",
+    "p3.t": "אפשר לבטל הכול", "p3.b": "כל שינוי מציג אפשרות ביטול למשך 5 דקות.",
+    "p4.t": "מחירים שתמיד רואים", "p4.b": "אין מסלולים נסתרים. נזכיר לפני שתקופת הניסיון נגמרת.",
+    "p5.t": "המילים שלך נשארות שלך", "p5.b": "רואים כל מה ש-Tempo זוכר, מוחקים כל דבר, ומייצאים הכול כ-Markdown.",
+    "not.title": "מה Tempo לא",
+    "not.p1": "Tempo הוא לא טיפול ולא מטפל באף מצב. אם עברו שלושה לילות בלי שינה, או שמרגיש כמו משבר, Tempo מפסיק לאמן ומראה מקומות אמיתיים לקבל עזרה במקום שבו את/ה גרים.",
+    "cta.join": "בקשה להצטרף",
+    "foot.label": "כותרת תחתונה", "foot.terms": "תנאים", "foot.privacy": "פרטיות", "foot.contact": "יצירת קשר", "foot.changelog": "מה חדש", "foot.small": "Tempo Flow. מאמן, לא מטפל."
+  }
+};
+(function () {
+  var lang = document.documentElement.lang === "he" ? "he" : "en";
+  /* LanguageSwitch — REAL: next-intl locale cookie; here localStorage stands in. */
+  document.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () {
+      // REAL: convex profiles.updatePrefs({ language }) only when signed in; public pages use the locale cookie
+      try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>

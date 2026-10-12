@@ -11,6 +11,7 @@ import {
   type LivePreviewEditorHandle,
   type MenuKey,
 } from "@/components/editor/LivePreviewEditor";
+import { focusTaskTitleWhenDrawn } from "@/components/editor/live-preview";
 import { ReadView } from "@/components/editor/ReadView";
 import { type MenuItem, SlashMenu } from "@/components/editor/SlashMenu";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -20,6 +21,7 @@ import {
   exportContents,
   exportFileName,
   filterSlashCommands,
+  insertedBlockId,
   SLASH_COMMANDS,
   type SlashCommandId,
   slashInsertion,
@@ -61,6 +63,8 @@ type Props = {
   backHref?: string | null;
   /** Shown on the paper between the page header and the body (Today's Next up card). */
   lead?: ReactNode;
+  /** False hides Delete (Today's own page is deleted from Notes, where Undo lives). */
+  canDelete?: boolean;
 };
 
 /** Tags from the page's page-meta block (the only place tags live, NT-05). */
@@ -92,6 +96,15 @@ export function PageEditorView(props: Props) {
   const [trigger, setTrigger] = useState<EditorTrigger | null>(null);
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
   const [active, setActive] = useState(0);
+  // The text the editor mounts with: the loaded body first, then the current body each time
+  // Edit comes back after Read (the editor is uncontrolled; a stale seed would revert edits).
+  const [editSeed, setEditSeed] = useState(initialBody);
+
+  // Esc dismisses the menu for this trigger only; once the trigger is gone, a new one opens again.
+  const onTrigger = (next: EditorTrigger | null) => {
+    setTrigger(next);
+    if (!next) setDismissedAt(null);
+  };
 
   const open = trigger && trigger.from !== dismissedAt ? trigger : null;
   const wikiResults = useQuery(
@@ -143,6 +156,9 @@ export function PageEditorView(props: Props) {
     if (!open || !item) return;
     if (open.kind === "slash") {
       const insertion = slashInsertion(item.id as SlashCommandId, open.atLineStart);
+      // A new task card opens with its title selected, ready to be named.
+      const newBlock = item.id === "task" ? insertedBlockId(insertion.text) : null;
+      if (newBlock) focusTaskTitleWhenDrawn(newBlock);
       editor.current?.replace(open.from, open.to, insertion.text, insertion.cursor);
     } else {
       const text = `[[${item.name}]]`;
@@ -164,17 +180,25 @@ export function PageEditorView(props: Props) {
     return true;
   };
 
+  // One lookup-or-create per title at a time: a double click never makes two pages.
+  const opening = useRef(new Set<string>());
   const openLink = async (linkTitle: string) => {
-    if (!linkTitle.trim()) return;
-    const results = await convex.query(api.notes.searchTitles, { query: linkTitle, limit: 20 });
-    const hit = results.find((r) => sameTitle(r.title, linkTitle));
-    if (hit) {
-      router.push(`/notes/${hit._id}`);
-      return;
+    const key = linkTitle.trim().toLocaleLowerCase();
+    if (!key || opening.current.has(key)) return;
+    opening.current.add(key);
+    try {
+      const results = await convex.query(api.notes.searchTitles, { query: linkTitle, limit: 20 });
+      const hit = results.find((r) => sameTitle(r.title, linkTitle));
+      if (hit) {
+        router.push(`/notes/${hit._id}`);
+        return;
+      }
+      // Like a wiki: following a link to a page that doesn't exist yet makes it.
+      const id = await createNote({ title: linkTitle.trim(), body: "" });
+      router.push(`/notes/${id}`);
+    } finally {
+      opening.current.delete(key);
     }
-    // Like a wiki: following a link to a page that doesn't exist yet makes it.
-    const id = await createNote({ title: linkTitle.trim(), body: "" });
-    router.push(`/notes/${id}`);
   };
 
   const copyMarkdown = async () => {
@@ -206,6 +230,7 @@ export function PageEditorView(props: Props) {
     brokenBlock: t("editor.broken"),
     template: t("editor.template"),
     taskDone: t("editor.done"),
+    taskTitle: t("editor.taskTitle"),
   };
 
   return (
@@ -268,25 +293,28 @@ export function PageEditorView(props: Props) {
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        setMode((m) => (m === "edit" ? "read" : "edit"));
+                        if (mode === "read") setEditSeed(body);
+                        setMode(mode === "edit" ? "read" : "edit");
                         setMenuOpen(false);
                       }}
                     >
                       <TpIcon name={mode === "edit" ? "page" : "edit"} size="sm" />
                       {mode === "edit" ? t("page.read") : t("page.edit")}
                     </button>
-                    <button
-                      className="tp-menu__item"
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        props.onAskDelete();
-                      }}
-                    >
-                      <TpIcon name="x" size="sm" />
-                      {t("page.delete")}
-                    </button>
+                    {props.canDelete === false ? null : (
+                      <button
+                        className="tp-menu__item"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          props.onAskDelete();
+                        }}
+                      >
+                        <TpIcon name="x" size="sm" />
+                        {t("page.delete")}
+                      </button>
+                    )}
                   </div>
                 ) : null}
               </div>
@@ -315,12 +343,12 @@ export function PageEditorView(props: Props) {
           {mode === "edit" ? (
             <LivePreviewEditor
               ref={editor}
-              initialValue={initialBody}
+              initialValue={editSeed}
               ariaLabel={t("page.bodyLabel")}
               placeholder={t("editor.placeholder")}
               labels={labels}
               onChange={props.onBodyChange}
-              onTrigger={setTrigger}
+              onTrigger={onTrigger}
               onMenuKey={onMenuKey}
               onOpenLink={(linkTitle) => void openLink(linkTitle)}
             />

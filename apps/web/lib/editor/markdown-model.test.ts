@@ -7,16 +7,20 @@ import {
   exportFileName,
   filterSlashCommands,
   findWikiLinks,
+  insertedBlockId,
   isDirty,
   isoWeek,
   newBlockId,
+  newTaskBlock,
   pickPages,
   removeRange,
   SLASH_COMMANDS,
+  setTaskTitle,
   type SlashCommandId,
   slashInsertion,
   slashQuery,
   tempoBlockRanges,
+  tempoFence,
   wikiQuery,
 } from "./markdown-model";
 
@@ -147,5 +151,25 @@ describe("page menu", () => {
   test("dirty only when the text differs", () => {
     expect(isDirty("a", "a")).toBe(false);
     expect(isDirty("a", "a ")).toBe(true);
+  });
+});
+
+describe("task titles", () => {
+  test("renaming a task changes only its fence; empty or unchanged titles leave the body alone", () => {
+    const body = `Before\n${tempoFence(newTaskBlock("New task", 0, () => 0))}After`;
+    const range = tempoBlockRanges(body)[0]!;
+    const renamed = setTaskTitle(body, range, "  Call   the bank ");
+    expect(renamed.startsWith("Before\n")).toBe(true);
+    expect(renamed.endsWith("After")).toBe(true);
+    expect(parseTempoBlocks(renamed).find((s) => s.kind === "valid")).toMatchObject({ block: { data: { title: "Call the bank" } } });
+    expect(setTaskTitle(body, range, "   ")).toBe(body);
+    expect(setTaskTitle(body, range, "New task")).toBe(body);
+  });
+
+  test("the inserted fence's block id can be read back", () => {
+    const { text } = slashInsertion("task", true);
+    const id = insertedBlockId(text);
+    expect(id).toMatch(/^blk_[0-9A-Z]{26}$/);
+    expect(text).toContain(id!);
   });
 });
