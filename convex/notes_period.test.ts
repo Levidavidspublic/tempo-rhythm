@@ -58,6 +58,10 @@ function makeCtx(userId: string | null, rows: Row[]) {
 }
 
 type Handler = (ctx: never, args: object) => Promise<unknown>;
+
+/** A page-meta fence: dated page bodies must open with one that names their type and date. */
+const meta = (pageType: string, date?: string, tags: string[] = []) =>
+  `\`\`\`json tempo\n${JSON.stringify({ id: "blk_01JAAAAAAAAAAAAAAAAAAAAAAA", v: 1, type: "page-meta", data: { pageType, ...(date ? { date } : {}), tags } })}\n\`\`\`\n`;
 const getPage = (notes.getPeriodPage as unknown as { _handler: Handler })._handler;
 const ensurePage = (notes.ensurePeriodPage as unknown as { _handler: Handler })._handler;
 const listPages = (notes.listPeriodPages as unknown as { _handler: Handler })._handler;
@@ -99,15 +103,16 @@ describe("notes.ensurePeriodPage", () => {
   test("makes the page once, with its type and date, and returns the same id after that", async () => {
     const rows: Row[] = [];
     const ctx = makeCtx("users:a", rows);
-    const args = { pageType: "daily", date: "2026-10-12", title: "  Monday, 12 October ", body: "## Intention\n" };
+    const body = `${meta("daily", "2026-10-12")}## Intention\n`;
+    const args = { pageType: "daily", date: "2026-10-12", title: "  Monday, 12 October ", body };
     const first = await ensurePage(ctx, args);
-    const second = await ensurePage(ctx, { ...args, body: "something else" });
+    const second = await ensurePage(ctx, { ...args, body: `${meta("daily", "2026-10-12")}something else` });
     expect(second).toBe(first);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       userId: "users:a",
       title: "Monday, 12 October",
-      body: "## Intention\n",
+      body,
       pinned: false,
       periodType: "daily",
       pageType: "daily",
@@ -121,7 +126,7 @@ describe("notes.ensurePeriodPage", () => {
       pageType: "daily",
       date: "2026-10-12",
       title: "",
-      body: "",
+      body: meta("daily", "2026-10-12"),
     });
     expect(id).not.toBe("notes:d1");
     expect(rows[1]).toMatchObject({ title: "2026-10-12", pageType: "daily" });
@@ -130,11 +135,22 @@ describe("notes.ensurePeriodPage", () => {
   test("weekly pages are keyed by Monday only", async () => {
     const ctx = makeCtx("users:a", []);
     await expect(
-      ensurePage(ctx, { pageType: "weekly", date: "2026-10-14", title: "Week 42", body: "" }),
+      ensurePage(ctx, { pageType: "weekly", date: "2026-10-14", title: "Week 42", body: meta("weekly", "2026-10-14") }),
     ).rejects.toThrow();
     await expect(
-      ensurePage(ctx, { pageType: "weekly", date: "2026-10-12", title: "Week 42", body: "" }),
+      ensurePage(ctx, { pageType: "weekly", date: "2026-10-12", title: "Week 42", body: meta("weekly", "2026-10-12") }),
     ).resolves.toBeDefined();
+  });
+
+  test("refuses a body whose page-meta block is missing or names another page (NT-07)", async () => {
+    const rows: Row[] = [];
+    const ctx = makeCtx("users:a", rows);
+    const args = { pageType: "daily", date: "2026-10-12", title: "x" };
+    await expect(ensurePage(ctx, { ...args, body: "## Intention\n" })).rejects.toThrow("Page meta");
+    await expect(ensurePage(ctx, { ...args, body: meta("weekly", "2026-10-12") })).rejects.toThrow("Page meta");
+    await expect(ensurePage(ctx, { ...args, body: meta("daily", "2026-10-13") })).rejects.toThrow("Page meta");
+    await expect(ensurePage(ctx, { ...args, body: meta("daily") })).rejects.toThrow("Page meta");
+    expect(rows).toHaveLength(0);
   });
 
   test("rejects bad dates and oversized bodies", async () => {
@@ -195,15 +211,18 @@ describe("notes.restore with a dated page", () => {
 
   test("a restored daily page whose date already has a new page comes back as a plain page", async () => {
     const now = Date.now();
-    const rows = [daily({ _id: "notes:old", deletedAt: now - 1_000 }), daily({ _id: "notes:new" })];
+    const body = `${meta("daily", "2026-10-12", ["work"])}## Notes\r\nkept\n`;
+    const rows = [daily({ _id: "notes:old", deletedAt: now - 1_000, body }), daily({ _id: "notes:new" })];
     await expect(restore(withPatch(rows), { noteId: "notes:old" })).resolves.toEqual({ success: true });
     expect(rows[0]).toMatchObject({ deletedAt: undefined, pageType: "plain", date: undefined, periodType: "none" });
+    // The page-meta block, which the columns mirror, says plain too; tags and text are kept.
+    expect(rows[0]?.body).toBe(`${meta("plain", undefined, ["work"])}## Notes\r\nkept\n`);
     expect(rows[1]).toMatchObject({ pageType: "daily", date: "2026-10-12" });
   });
 
   test("without a clash the page comes back as it was", async () => {
     const rows = [daily({ _id: "notes:old", deletedAt: Date.now() - 1_000 })];
     await restore(withPatch(rows), { noteId: "notes:old" });
-    expect(rows[0]).toMatchObject({ deletedAt: undefined, pageType: "daily", date: "2026-10-12" });
+    expect(rows[0]).toMatchObject({ deletedAt: undefined, pageType: "daily", date: "2026-10-12", body: "secret body" });
   });
 });

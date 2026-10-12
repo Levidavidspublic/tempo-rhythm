@@ -299,6 +299,29 @@ export const getPeriodPage = query({
   },
 });
 
+/** Whether the body's page-meta block says it is the `pageType` page for `date` (NT-07). */
+function hasPeriodPageMeta(body: string, pageType: PeriodPageType, date: string): boolean {
+  return parseTempoBlocks(body).some(
+    (s) =>
+      s.kind === "valid" && s.block.type === "page-meta" && s.block.data.pageType === pageType && s.block.data.date === date,
+  );
+}
+
+/**
+ * The body with its page-meta block rewritten for a plain page (tags kept, no date). Every
+ * other byte is copied as it was.
+ */
+function asPlainPageBody(body: string): string {
+  return parseTempoBlocks(body)
+    .map((s) => {
+      if (s.kind !== "valid" || s.block.type !== "page-meta") return s.source;
+      const block = { ...s.block, data: { pageType: "plain" as const, tags: s.block.data.tags } };
+      const eol = /(?:\r\n|\r|\n)$/.exec(s.source)?.[0] ?? "";
+      return `\`\`\`json tempo\n${JSON.stringify(block)}\n\`\`\`${eol}`;
+    })
+    .join("");
+}
+
 /**
  * Opens the day's (or week's) page, making it from the given template text on first open.
  * Idempotent: when a live page for the date exists, its id comes back and nothing is written.
@@ -309,6 +332,8 @@ export const ensurePeriodPage = mutation({
     const user = await requireUser(ctx);
     if (!isPeriodDate(args.pageType, args.date)) throw new Error("Invalid page date");
     if (args.body.length > PERIOD_BODY_MAX) throw new Error("Page body is too long");
+    // The body's page-meta block is the truth; the pageType and date columns mirror it.
+    if (!hasPeriodPageMeta(args.body, args.pageType, args.date)) throw new Error("Page meta does not match");
     const existing = await findPeriodPage(ctx, user._id, args.pageType, args.date);
     if (existing) return existing._id;
     const now = Date.now();
@@ -489,13 +514,15 @@ export const restore = mutation({
       return { success: false };
     }
     // A dated page restored after a new page was made for the same date comes back as a plain
-    // page, so one date never has two live pages (its text is kept either way).
+    // page, so one date never has two live pages (its text is kept either way). Its page-meta
+    // block says so too, since the columns only mirror it.
     const kind = note.pageType === "daily" || note.pageType === "weekly" ? note.pageType : null;
     const clash = kind && note.date ? await findPeriodPage(ctx, user._id, kind, note.date) : null;
     if (clash && clash._id !== note._id) {
       await ctx.db.patch(args.noteId, {
         deletedAt: undefined,
         updatedAt: now,
+        body: asPlainPageBody(note.body),
         pageType: "plain",
         periodType: "none",
         date: undefined,
