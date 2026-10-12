@@ -74,4 +74,14 @@ describe("the mobile semantic aliases map to the same v3 tokens as the web", () 
       expect(alias(name)).toBe(tempoV3Colors[token].toUpperCase());
     });
   }
+
+  test("every other v3 colour is a NativeWind colour under its own name", () => {
+    // `accent`, `ink` and `line` reach NativeWind through the aliases above (`primary`,
+    // `foreground`, `border`); `accent` itself is the hover alias, as on the web.
+    const viaAlias = new Set(["accent", "ink", "line"]);
+    for (const [key, value] of Object.entries(tempoV3Colors)) {
+      if (viaAlias.has(key)) continue;
+      expect([key, alias(kebab(key))]).toEqual([key, value.toUpperCase()]);
+    }
+  });
 });

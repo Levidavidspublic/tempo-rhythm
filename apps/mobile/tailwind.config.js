@@ -42,6 +42,13 @@ module.exports = {
         info: '#36628C',
         caution: '#7E5A0C',
         danger: '#9E3B27',
+        'on-accent': '#FFFFFF',
+        'accent-wash': '#F3E2D6',
+        'done-wash': '#E3EBDF',
+        'info-wash': '#E0E7EE',
+        'caution-wash': '#F1E6CC',
+        'danger-wash': '#F3DFD7',
+        'glass-solid': '#FBF9F4',
 
         // Semantic aliases: the same mapping as the web's globals.css (v3 tokens).
         background: '#F3EEE4',
