@@ -1,0 +1,466 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (coach) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coach · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== coach — layout only ===== */
+    .coach-app { gap: var(--tp-space-4); padding-bottom: calc(var(--tp-tabbar-h) + var(--tp-space-20) * 2 + var(--tp-space-6)); }
+    .coach-thread { display: grid; gap: var(--tp-space-4); align-content: start; min-width: 0; }
+    .coach-thread .tp-msg--user { justify-self: end; max-width: 88%; }
+    .coach-thread .tp-msg:not(.tp-msg--user) { max-width: 94%; }
+    .coach-thread .tp-offline { position: static; }
+    .coach-day { text-align: center; }
+    .coach-suggest { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+    .coach-composer {
+      position: fixed; z-index: 22; inset-inline: 0;
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) - var(--tp-space-2));
+      padding: var(--tp-space-2) var(--tp-space-3) var(--tp-space-3);
+    }
+    .coach-composer .tp-composer__input { min-height: var(--tp-touch); }
+    [data-phone-content].coach-screen .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-20) * 2); }
+  </style>
+</head>
+<body>
+<!--
+@screen   Coach
+@route    apps/mobile/app/(tempo)/(tabs)/coach.tsx
+@layout   MobileTabs
+@data     thread = coach.getThread({ threadId })                          // Convex Agent thread, streamed replies
+@data     today = pages.getDaily({ date: localDate })                      // Convex query (context the coach reads)
+@actions  send message -> coach.send({ threadId, text })                    // streams a reply
+@actions  accept proposal -> coach.applyProposal({ proposalId })            // applies the exact preview, Undo 5 min -> coach.undoProposal
+@actions  edit proposal -> coach.editProposal({ proposalId, changes })     // inline titles become editable
+@actions  reject proposal -> coach.rejectProposal({ proposalId })          // nothing changes
+@actions  read aloud -> voice.speak({ text, lang })
+@actions  start voice call -> router.push("/voice-call")                     // voice.startSession({ lang })
+@states   default | empty | loading | error | offline  (?state=), plus undo (?state=undo)
+@flow     1. Open the Coach tab. Show the current conversation, newest at the bottom.
+          2. Maya asks for help. The coach answers in plain words and, when it wants to change something, shows a proposal card.
+          3. The proposal card shows exactly what changes (Add, Move, Remove, each with a word and an icon). Nothing changes yet.
+          4. Accept applies it and shows an Undo toast for 5 minutes. Edit makes the titles editable. Reject leaves everything as it was.
+          5. The composer sits above the tab bar: type and Send, or tap the mic to switch to a live voice call.
+          6. Empty: a new conversation; the coach says hello and offers three starting points.
+          7. Loading: "Opening your conversation" with a quiet typing indicator.
+          8. Error: the coach could not be reached; Today still works; Try again.
+          9. Offline: past messages stay readable; the composer is hidden and a banner says the coach needs a connection.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content coach-screen" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Coach
+        @route    apps/mobile/app/(tempo)/(tabs)/coach.tsx
+        @layout   MobileTabs
+        @data     thread = coach.getThread({ threadId })                          // Convex Agent thread, streamed replies
+        @data     today = pages.getDaily({ date: localDate })                      // Convex query
+        @actions  send message -> coach.send({ threadId, text })
+        @actions  accept / edit / reject proposal -> coach.applyProposal / coach.editProposal / coach.rejectProposal   // Undo 5 min -> coach.undoProposal
+        @actions  start voice call -> router.push("/voice-call")
+        @states   default | empty | loading | error | offline  (?state=), plus undo (?state=undo)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#composer" data-i18n="skip">Skip to the message box</a>
+        <div class="m-app coach-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Coach" } | events: onCall -> router.push("/voice-call"), onAvatar -> settings -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="voice-call.html" aria-label="Start a voice call" data-i18n-attr="aria-label:top.call"><svg class="tp-icon" aria-hidden="true"><use href="#i-phone"/></svg></a>
+            <h1 class="tp-mtopbar__title" data-i18n="top.title">Coach</h1>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="settings.html" aria-label="Settings for Maya Ronen" data-i18n-attr="aria-label:top.avatar">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+            </a>
+          </header>
+
+          <p class="tp-muted tp-small coach-day" data-i18n="coach.sub">Reads Today and your notes. Asks before changing anything.</p>
+
+          <div class="coach-thread" id="thread" role="log" aria-live="polite" aria-label="Conversation with the coach" data-i18n-attr="aria-label:thread.label">
+
+            <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text: "The coach needs a connection." } | events: — -->
+            <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+              <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+              <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">The coach needs a connection. Your list and notes still work.</span></span>
+            </div>
+
+            <p class="tp-eyebrow coach-day" data-state-hide><span data-i18n="day.today">Today</span> · <span class="tp-num tp-mono">08:52</span></p>
+
+            <!-- @component UserMessage | shadcn: scroll-area · NativeWind: View bubble | props: { who: "you", text } | events: — -->
+            <div class="tp-msg tp-msg--user" data-component="UserMessage" data-state-hide>
+              <span class="tp-msg__who" data-i18n="msg.you">You</span>
+              <p class="tp-msg__text" dir="auto" data-i18n="msg.user">Can you add "call the bank" to today, and move the slides to tomorrow? I'm wiped.</p>
+            </div>
+
+            <!-- @component CoachMessage | shadcn: scroll-area · NativeWind: View bubble | props: { who: "coach", text } | events: onReadAloud -> voice.speak({ text, lang }) -->
+            <div class="tp-msg" data-component="CoachMessage" data-state-hide>
+              <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+              <p class="tp-msg__text" dir="auto" data-i18n="msg.coach">A lighter day makes sense. Here is exactly what would change on Today. Nothing moves until you say yes.</p>
+              <div class="tp-msg__actions">
+                <!-- @component ReadAloudButton | shadcn: toggle · NativeWind: Pressable + expo-speech | props: { text } | events: onToggle -> voice.speak({ text, lang }) -->
+                <button class="tp-btn tp-btn--ghost tp-btn--sm tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg><span data-label data-i18n="read.aloud">Read aloud</span></button>
+              </div>
+            </div>
+
+            <!-- @component ProposalCard | shadcn: card + button ×3 · NativeWind: View card + Pressable ×3 | props: { target: "Mon 12 Oct", changes: {op,title,detail}[] } | events: onAccept -> coach.applyProposal({ proposalId }), onEdit -> coach.editProposal, onReject -> coach.rejectProposal; Undo 5 min -> coach.undoProposal -->
+            <section class="tp-proposal" data-component="ProposalCard" data-status="pending" aria-labelledby="prop-title" data-state-hide>
+              <div class="tp-proposal__head">
+                <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg>
+                <strong id="prop-title" data-i18n="prop.title">2 changes to Today</strong>
+                <span class="tp-proposal__target" data-i18n="prop.target">Mon 12 Oct</span>
+              </div>
+              <ul class="tp-proposal__changes" role="list">
+                <!-- @component ChangePreview ×2 | shadcn: — | props: { op: "add"|"move", title, detail } | events: — -->
+                <li class="tp-change" data-op="add" data-component="ChangePreview">
+                  <span class="tp-change__sign"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="op.add">Add</span></span>
+                  <span class="tp-change__body">
+                    <span class="tp-change__title" dir="auto" data-i18n="chg.bank">Call the bank</span>
+                    <span class="tp-change__detail"><span data-i18n="chg.bank.d">Task · 10 min · before</span> <span class="tp-num tp-mono">12:00</span></span>
+                  </span>
+                </li>
+                <li class="tp-change" data-op="move" data-component="ChangePreview">
+                  <span class="tp-change__sign"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="op.move">Move</span></span>
+                  <span class="tp-change__body">
+                    <span class="tp-change__title" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span>
+                    <span class="tp-change__detail"><span class="tp-change__from" data-i18n="chg.from">Today</span> → <span data-i18n="chg.to">Tomorrow, Tue 13 Oct</span></span>
+                  </span>
+                </li>
+              </ul>
+              <div class="tp-proposal__actions">
+                <button class="tp-btn tp-btn--primary" type="button" data-action="accept" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="proposal.accept">Accept</span></button>
+                <button class="tp-btn tp-btn--secondary" type="button" data-action="edit" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="proposal.edit">Edit</span></button>
+                <button class="tp-btn tp-btn--ghost" type="button" data-action="reject"><span data-i18n="proposal.reject">Reject</span></button>
+              </div>
+              <p class="tp-proposal__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+            </section>
+
+            <!-- ===== Empty: a new conversation ===== -->
+            <!-- @component CoachMessage | shadcn: scroll-area | props: { who: "coach", text: opener } | events: — -->
+            <div class="tp-msg" data-component="CoachMessage" data-state-show="empty">
+              <span class="tp-msg__who" data-i18n="coach.name">Coach</span>
+              <p class="tp-msg__text" dir="auto" data-i18n="empty.opener">Hi Maya. I can see Today. Ask me to plan, shrink or sort anything. Nothing changes until you say yes.</p>
+            </div>
+            <!-- @component Button ×3 (suggestions) | shadcn: button (secondary, sm) · NativeWind: Pressable chips | props: { label } | events: onPress -> coach.send({ threadId, text: label }) -->
+            <div class="coach-suggest" data-state-show="empty">
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-suggest data-i18n="sug.plan">Plan my day with me</button>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-suggest data-i18n="sug.smaller">Make a task smaller</button>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-suggest data-i18n="sug.stuck">I'm stuck</button>
+            </div>
+
+            <!-- ===== Loading ===== -->
+            <!-- @component TypingIndicator | shadcn: — · NativeWind: animated dots + Text | props: { label: "Opening your conversation" } | events: — -->
+            <div class="tp-typing" role="status" data-component="TypingIndicator" data-state-show="loading">
+              <span class="tp-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span data-i18n="loading">Opening your conversation</span>
+            </div>
+
+            <!-- ===== Error ===== -->
+            <!-- @component StateError | shadcn: alert | props: { what: "Couldn't reach the coach." } | events: onRetry -> refetch coach.getThread -->
+            <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+              <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+              <h2 class="tp-state__title" data-i18n="err.title">Couldn't reach the coach.</h2>
+              <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">Today works without the coach.</span></p>
+              <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- @component Composer | shadcn: textarea + button · NativeWind: KeyboardAvoidingView + TextInput + Pressable | props: — | events: onSend -> coach.send({ threadId, text }), onVoice -> router.push("/voice-call") -->
+        <form class="tp-composer tp-glass coach-composer" id="composer-form" data-component="Composer" onsubmit="return false" data-state-hide="offline">
+          <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+          <div class="tp-composer__box">
+            <textarea class="tp-composer__input" id="composer" rows="1" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+            <div class="tp-composer__bar">
+              <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk instead (voice call)" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+              <span class="tp-xs tp-muted" data-i18n="composer.hint">Every change waits for your yes.</span>
+              <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+            </div>
+          </div>
+        </form>
+
+        <!-- @component UndoToast | shadcn: sonner · NativeWind: burnt / sonner-native | props: { title: "2 changes made to Today", countdown: 5:00 } | events: onUndo -> coach.undoProposal({ proposalId }) -->
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "coach" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "proposal.accepted": "Done. Today has the new task, and the slides are on tomorrow.",
+    "proposal.rejected": "Left as it was. Nothing changed.",
+    "proposal.edit": "Edit", "proposal.doneEditing": "Done editing",
+    "toast.title": "2 changes made to Today", "toast.sub": "You can undo for", "toast.undo": "Undo", "toast.dismiss": "Dismiss",
+    "read.aloud": "Read aloud", "read.stop": "Stop reading",
+    "msg.you": "You", "coach.name": "Coach", "reply.wait": "Got it. Let me look at Today first.",
+    "undo.done": "Undone. Today is back the way it was."
+  },
+  he: {
+    "doc.title": "מאמן · Tempo",
+    "skip": "דלגי לתיבת ההודעה",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "top.call": "התחלת שיחה קולית", "top.title": "מאמן", "top.avatar": "הגדרות של מאיה רונן",
+    "coach.sub": "קורא את היום ואת הפתקים שלך. שואל לפני כל שינוי.",
+    "thread.label": "שיחה עם המאמן",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "המאמן צריך חיבור. הרשימה והפתקים שלך ממשיכים לעבוד.",
+    "day.today": "היום",
+    "msg.you": "את", "coach.name": "מאמן",
+    "msg.user": "אפשר להוסיף ״להתקשר לבנק״ להיום, ולהעביר את השקפים למחר? אני גמורה.",
+    "msg.coach": "יום קל יותר נשמע נכון. הנה בדיוק מה ישתנה בהיום. שום דבר לא זז עד שתגידי כן.",
+    "read.aloud": "הקראה", "read.stop": "עצירת ההקראה",
+    "prop.title": "2 שינויים בהיום", "prop.target": "שני 12 באוק׳",
+    "op.add": "הוספה", "op.move": "העברה",
+    "chg.bank": "להתקשר לבנק", "chg.bank.d": "משימה · 10 דק׳ · עד",
+    "task.slides": "לנסח 3 שקפים ליום חמישי", "chg.from": "היום", "chg.to": "מחר, שלישי 13 באוק׳",
+    "proposal.accept": "אישור", "proposal.edit": "עריכה", "proposal.doneEditing": "סיום עריכה", "proposal.reject": "דחייה",
+    "proposal.accepted": "בוצע. המשימה החדשה בהיום, והשקפים עברו למחר.",
+    "proposal.rejected": "נשאר כמו שהיה. שום דבר לא השתנה.",
+    "empty.opener": "היי מאיה. אני רואה את היום. אפשר לבקש ממני לתכנן, להקטין או לסדר כל דבר. שום דבר לא משתנה עד שתגידי כן.",
+    "sug.plan": "לתכנן איתי את היום", "sug.smaller": "להקטין משימה", "sug.stuck": "נתקעתי",
+    "loading": "פותחים את השיחה שלך",
+    "err.title": "לא הצלחנו להגיע למאמן.", "state.safe": "הנתונים שלך בטוחים.", "err.body": "היום עובד גם בלי המאמן.", "state.retry": "לנסות שוב", "state.retried": "נטען.",
+    "composer.label": "הודעה למאמן", "composer.ph": "לשאול, לתכנן, או לחשוב בקול", "composer.voice": "לדבר במקום (שיחה קולית)",
+    "composer.hint": "כל שינוי מחכה לאישור שלך.", "composer.send": "שליחה",
+    "toast.title": "בוצעו 2 שינויים בהיום", "toast.sub": "אפשר לבטל עוד", "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "reply.wait": "הבנתי. רגע, אני מסתכל על היום קודם.", "undo.done": "בוטל. היום חזר להיות כמו שהיה."
+  }
+};
+
+/* Coach thread: send a message, suggestion chips, proposal Accept / Edit / Reject with the 5-minute Undo (tempo.js).
+   REAL: convex coach.send({ threadId, text }) · coach.applyProposal({ proposalId }) · coach.undoProposal({ proposalId }) */
+(function () {
+  function bubble(who, text) {
+    var d = document.createElement("div");
+    d.className = "tp-msg" + (who === "you" ? " tp-msg--user" : "");
+    d.setAttribute("data-component", who === "you" ? "UserMessage" : "CoachMessage");
+    var w = document.createElement("span"); w.className = "tp-msg__who"; w.textContent = TP.t(who === "you" ? "msg.you" : "coach.name");
+    var p = document.createElement("p"); p.className = "tp-msg__text"; p.dir = "auto"; p.textContent = text;
+    d.appendChild(w); d.appendChild(p);
+    document.getElementById("thread").appendChild(d);
+    d.scrollIntoView({ block: "end" });
+  }
+  function send(text) {
+    text = (text || "").trim(); if (!text) return;
+    // REAL: convex coach.send({ threadId, text }) — the reply streams in from the Agent component
+    bubble("you", text);
+    setTimeout(function () { bubble("coach", TP.t("reply.wait")); }, 600);
+  }
+  TP.onReady = function () {
+    var box = document.getElementById("composer");
+    document.getElementById("composer-form").addEventListener("submit", function () { send(box.value); box.value = ""; box.focus(); });
+    box.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(box.value); box.value = ""; } });
+    document.querySelectorAll("[data-suggest]").forEach(function (b) {
+      b.addEventListener("click", function () { b.parentNode.hidden = true; send(b.textContent); });
+    });
+  };
+  // REAL: convex coach.applyProposal({ proposalId }) — runs once the card is accepted
+  TP.onAccept = function () {};
+  // REAL: convex coach.undoProposal({ proposalId }) — within 5 minutes
+  TP.onUndo = function () {
+    var live = document.getElementById("tp-live"); if (live) live.textContent = TP.t("undo.done");
+  };
+})();
+</script>
+</body>
+</html>

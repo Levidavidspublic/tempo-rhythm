@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check your email · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — link-sent.html */
+  .ls-foot { display: grid; gap: var(--tp-space-3); justify-items: center; }
+</style>
+</head>
+<body>
+<!--
+@screen   Link sent
+@route    apps/web/app/(auth)/sign-in/sent/page.tsx
+@layout   Auth
+@data     email = searchParams.email      // shown back so the person can spot a typo
+@actions  resend link -> auth.sendMagicLink({ email, next })    // allowed after a 30-second wait; the old link stops working
+@actions  use a different email -> link to /sign-in
+@states   default | empty | loading | error | offline  (?state=)   + resending, resent (?state=resending | ?state=resent)
+@flow     1. Say "Check your email" and show the address it went to.
+          2. Say the link works for 30 minutes and to check spam.
+          3. Say plainly: a link only arrives once your request to join is approved.
+          4. "Resend link" waits 30 seconds first. The wait is shown as words and a number, not just a disabled button.
+          5. After resending: "Sent again. Use the newest email." The wait starts again.
+          6. Error: "Couldn't send it again. Your first link still works." Offline: banner, resend disabled with a reason.
+          7. "Use a different email" goes back to sign in.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<main id="main" class="tp-auth" tabindex="-1">
+  <!-- @component AuthCard | shadcn: card | props: { children: StatusPanel } | events: — -->
+  <div class="tp-auth-card" data-component="AuthCard">
+    <a class="tp-auth-card__brand" href="landing.html" data-i18n="brand">Tempo</a>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">The link in your email still works once you're back online.</span></span>
+    </div>
+
+    <!-- @component StatusPanel | shadcn: card | props: { tone: 'neutral', icon: 'mail', title, body, meta: email, actions: [resend, different email] } | events: onResend -> auth.sendMagicLink -->
+    <section class="tp-status-panel" data-component="StatusPanel" aria-labelledby="ls-title">
+      <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--xl" aria-hidden="true"><use href="#i-mail"/></svg></span>
+      <h1 class="tp-status-panel__title" id="ls-title" tabindex="-1" data-i18n="title">Check your email</h1>
+      <p class="tp-status-panel__body" data-i18n="body">We sent a sign-in link to</p>
+      <p class="tp-status-panel__meta tp-ltr" dir="ltr" data-email>maya@example.com</p>
+      <p class="tp-status-panel__body"><span data-i18n="valid.a">The link works for</span> <span class="tp-num">30</span> <span data-i18n="valid.b">minutes. If you can't find it, check spam.</span></p>
+      <p class="tp-status-panel__body tp-small" data-i18n="approved">Still waiting to be let in? A link only arrives once your request is approved.</p>
+
+      <!-- @component Notice | shadcn: alert | props: { tone, text } | events: — -->
+      <div class="tp-notice" data-tone="done" role="status" id="ls-resent" hidden>
+        <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span>
+        <span class="tp-notice__text" data-i18n="resent">Sent again. Use the newest email.</span>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what: 'resend' } | events: onRetry -> auth.sendMagicLink -->
+      <div class="tp-notice" data-tone="danger" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="err.title">Couldn't send it again.</span> <span data-i18n="err.body">Your first link still works.</span></span>
+      </div>
+
+      <div class="tp-status-panel__actions">
+        <button class="tp-btn tp-btn--secondary" type="button" id="ls-resend" aria-describedby="ls-wait"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-resend-label data-i18n="resend">Resend link</span></button>
+        <a class="tp-btn tp-btn--ghost" href="sign-in.html" id="ls-different" data-i18n="different">Use a different email</a>
+      </div>
+      <p class="tp-small tp-muted" id="ls-wait" role="status" aria-live="polite"><span data-wait-text data-i18n="wait">You can resend in</span> <span class="tp-num tp-mono" data-wait-num>0:30</span></p>
+    </section>
+
+    <div class="tp-auth-card__foot ls-foot">
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "Check your email · Tempo", "sending": "Sending…", "ready": "You can resend now.", "offline.wait": "You're offline. Resend works when you're back." },
+  he: {
+    "doc.title": "בדקו את המייל · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "lang.label": "שפה",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "הקישור במייל עדיין יעבוד כשהחיבור יחזור.",
+    "title": "בדקו את המייל", "body": "שלחנו קישור כניסה אל",
+    "valid.a": "הקישור עובד במשך", "valid.b": "דקות. אם הוא לא מופיע, בדקו בספאם.",
+    "approved": "עדיין מחכים שיכניסו אותך? קישור מגיע רק אחרי שהבקשה שלך אושרה.",
+    "resent": "נשלח שוב. השתמשו במייל החדש ביותר.",
+    "err.title": "לא הצלחנו לשלוח שוב.", "err.body": "הקישור הראשון עדיין עובד.",
+    "resend": "שליחה חוזרת", "different": "להשתמש במייל אחר",
+    "wait": "אפשר לשלוח שוב בעוד", "sending": "שולחים…", "ready": "אפשר לשלוח שוב עכשיו.", "offline.wait": "אין חיבור. שליחה חוזרת תעבוד כשהחיבור יחזור."
+  }
+};
+
+(function () {
+  var doc = document, root = doc.documentElement;
+  var params = new URLSearchParams(location.search);
+  var resend = doc.getElementById("ls-resend"), label = resend.querySelector("[data-resend-label]");
+  var waitText = doc.querySelector("[data-wait-text]"), waitNum = doc.querySelector("[data-wait-num]"), resent = doc.getElementById("ls-resent");
+  var WAIT = 30, timer = null, base = {};
+
+  var lang = root.lang === "he" ? "he" : "en";
+  /* LanguageSwitch — REAL: next-intl locale cookie; here localStorage stands in. */
+  doc.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () { try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {} });
+  });
+
+  var email = params.get("email");
+  if (email) doc.querySelector("[data-email]").textContent = email;
+  if (params.get("lang")) doc.getElementById("ls-different").href = "sign-in.html?lang=" + params.get("lang");
+
+  /** Resend wait. STATE: button disabled, countdown text "You can resend in 0:30", then "You can resend now." */
+  function startWait() {
+    var left = WAIT;
+    resend.disabled = true; waitText.textContent = base.wait; waitNum.hidden = false;
+    clearInterval(timer);
+    function tick() {
+      waitNum.textContent = "0:" + String(left).padStart(2, "0");
+      if (left <= 0) { clearInterval(timer); resend.disabled = false; waitText.textContent = TP.t("ready"); waitNum.hidden = true; }
+      left--;
+    }
+    tick(); timer = setInterval(tick, 1000);
+  }
+
+  resend.addEventListener("click", function () {
+    if (root.getAttribute("data-state") === "offline") return;
+    resend.disabled = true; label.textContent = TP.t("sending"); resent.hidden = true;
+    // REAL: convex auth.sendMagicLink({ email, next }) — new link, valid 30 minutes; the older link stops working
+    setTimeout(function () {
+      label.textContent = base.label;
+      resent.hidden = false;
+      startWait();
+    }, 900);
+  });
+
+  TP.onReady = function (p) {
+    base.label = label.textContent; base.wait = waitText.textContent;
+    var s = p.get("state");
+    if (s === "offline") { resend.disabled = true; waitText.textContent = TP.t("offline.wait"); waitNum.hidden = true; return; }
+    if (s === "resending") { resend.disabled = true; label.textContent = TP.t("sending"); waitText.textContent = ""; waitNum.hidden = true; return; }
+    if (s === "resent") { resent.hidden = false; }
+    if (s === "error") { resend.disabled = false; waitText.textContent = TP.t("ready"); waitNum.hidden = true; return; }
+    startWait();
+    var h = doc.getElementById("ls-title"); if (h) h.focus();
+  };
+})();
+</script>
+</body>
+</html>

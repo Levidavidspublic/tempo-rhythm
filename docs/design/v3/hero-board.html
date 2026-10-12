@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempo v3 · Stage 1 hero board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tempo.css">
+<script src="tempo.js"></script>
+<style>
+  /* layout only — hero-board.html (review board, not product UI) */
+  .board { max-width: 1240px; margin-inline: auto; padding: var(--tp-space-10) var(--tp-space-6) var(--tp-space-20); display: grid; gap: var(--tp-space-12); }
+  .board-head { display: grid; gap: var(--tp-space-3); }
+  .board-head h1 { font-size: var(--tp-text-4xl); letter-spacing: -0.015em; }
+  .board-head p { max-width: var(--tp-measure); color: var(--tp-ink-muted); }
+  .board-filters { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); align-items: center; }
+  .board-filters fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--tp-space-2); align-items: center; }
+  .board-filters legend { float: left; margin-inline-end: var(--tp-space-2); font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+  .board-toggle { display: inline-flex; align-items: center; gap: var(--tp-space-2); min-height: var(--tp-touch); padding: 0 var(--tp-space-3); border: 1px solid var(--tp-line-control); border-radius: var(--tp-radius-pill); background: var(--tp-paper); font-size: var(--tp-text-sm); cursor: pointer; }
+  .board-toggle input { width: 18px; height: 18px; accent-color: var(--tp-ink); }
+  .board-hero { display: grid; gap: var(--tp-space-5); }
+  .board-hero__head { display: grid; gap: var(--tp-space-1); }
+  .board-hero__head h2 { font-size: var(--tp-text-2xl); }
+  .board-hero__head p { color: var(--tp-ink-muted); max-width: var(--tp-measure); }
+  .board-row { display: grid; gap: var(--tp-space-3); padding: var(--tp-space-4); background: var(--tp-paper); border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); }
+  .board-row__label { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); font-size: var(--tp-text-sm); }
+  .board-row__label strong { font-weight: 600; }
+  .board-row__frames { display: flex; flex-wrap: wrap; gap: var(--tp-space-4); align-items: flex-start; }
+  .board-frame { display: grid; gap: var(--tp-space-2); }
+  .board-frame__cap { display: flex; align-items: center; gap: var(--tp-space-2); font-size: var(--tp-text-xs); color: var(--tp-ink-muted); }
+  .board-frame__cap a { color: var(--tp-ink); }
+  .board-frame__view { overflow: hidden; border-radius: var(--tp-radius-md); border: 1px solid var(--tp-line-strong); background: var(--tp-ground); }
+  .board-frame__view iframe { display: block; border: 0; transform-origin: 0 0; }
+  .board-note { color: var(--tp-ink-muted); font-size: var(--tp-text-sm); max-width: var(--tp-measure); }
+  .board-gate { padding: var(--tp-space-6); background: var(--tp-paper); border: 1px solid var(--tp-line-strong); border-radius: var(--tp-radius-lg); display: grid; gap: var(--tp-space-2); }
+  .board-gate h2 { font-size: var(--tp-text-xl); }
+  @media (max-width: 767px) { .board { padding-inline: var(--tp-space-4); } .board-head h1 { font-size: var(--tp-text-3xl); } }
+</style>
+</head>
+<body>
+<main class="board">
+  <header class="board-head">
+    <span class="tp-eyebrow">Tempo v3 · Stage 1 · Direction</span>
+    <h1>Hero board</h1>
+    <p>Three hero screens, each at 390 px and 1280 px, in light and dark, English left-to-right and Hebrew right-to-left. Every frame is the real screen file, live and clickable. Use “Open” to see one at full size.</p>
+    <div class="board-filters">
+      <fieldset><legend>Theme</legend>
+        <label class="board-toggle"><input type="checkbox" data-filter="theme" value="light" checked> Light</label>
+        <label class="board-toggle"><input type="checkbox" data-filter="theme" value="dark" checked> Dark</label>
+      </fieldset>
+      <fieldset><legend>Language</legend>
+        <label class="board-toggle"><input type="checkbox" data-filter="lang" value="en" checked> English · LTR</label>
+        <label class="board-toggle"><input type="checkbox" data-filter="lang" value="he" checked> Hebrew · RTL</label>
+      </fieldset>
+      <fieldset><legend>Width</legend>
+        <label class="board-toggle"><input type="checkbox" data-filter="w" value="390" checked> 390</label>
+        <label class="board-toggle"><input type="checkbox" data-filter="w" value="1280" checked> 1280</label>
+      </fieldset>
+      <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-action="toggle-theme" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-moon"/></svg><span>Board theme</span></button>
+    </div>
+  </header>
+
+  <div id="heroes"></div>
+
+  <section class="board-gate" aria-labelledby="gate-h">
+    <h2 id="gate-h">Gate · waiting for approval</h2>
+    <p class="board-note">Stage 2 (every screen) starts only after the owner writes “approved”. Feedback instead revises Stage 1. Rules, tokens and contrast are in DESIGN.md; pattern sources are in references/mobbin-refs.md.</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var HEROES = [
+    { file: "today", title: "a · Today", note: "The daily page: Next up card with the one primary action, an energy check-in, tasks and fixed vs flexible time blocks inline, and Linked here." },
+    { file: "page-editor", title: "b · Page editor", note: "A page from the tree with cover, icon, tags, wikilinks and block handles, and the slash menu open over the page." },
+    { file: "coach", title: "c · Coach · proposal", note: "The coach shows the exact change on Today with Accept, Edit and Reject. Nothing changes until Accept." },
+    { file: "coach", state: "undo", title: "c · Coach · after Accept", note: "Accept applied the change to Today. The Undo toast counts down from 5 minutes." }
+  ];
+  var COMBOS = [
+    { theme: "light", lang: "en", label: "Light · English · LTR" },
+    { theme: "dark",  lang: "en", label: "Dark · English · LTR" },
+    { theme: "light", lang: "he", label: "Light · Hebrew · RTL" },
+    { theme: "dark",  lang: "he", label: "Dark · Hebrew · RTL" }
+  ];
+  var SIZES = [ { w: 390, h: 844, s: 0.6 }, { w: 1280, h: 800, s: 0.5 } ];
+  var host = document.getElementById("heroes");
+  HEROES.forEach(function (hero, hi) {
+    var sec = document.createElement("section");
+    sec.className = "board-hero"; sec.setAttribute("aria-labelledby", "hero-" + hi);
+    var head = document.createElement("div"); head.className = "board-hero__head";
+    var h2 = document.createElement("h2"); h2.id = "hero-" + hi; h2.textContent = hero.title;
+    var p = document.createElement("p"); p.textContent = hero.note;
+    head.appendChild(h2); head.appendChild(p); sec.appendChild(head);
+    COMBOS.forEach(function (c) {
+      var row = document.createElement("div"); row.className = "board-row";
+      row.dataset.theme = c.theme; row.dataset.lang = c.lang;
+      var lab = document.createElement("div"); lab.className = "board-row__label";
+      var strong = document.createElement("strong"); strong.textContent = c.label; lab.appendChild(strong);
+      row.appendChild(lab);
+      var frames = document.createElement("div"); frames.className = "board-row__frames";
+      SIZES.forEach(function (sz) {
+        var q = "?theme=" + c.theme + "&lang=" + c.lang + (hero.state ? "&state=" + hero.state : "");
+        var src = "screens/web/" + hero.file + ".html" + q;
+        var fig = document.createElement("figure"); fig.className = "board-frame"; fig.style.margin = "0"; fig.dataset.w = sz.w;
+        var cap = document.createElement("figcaption"); cap.className = "board-frame__cap";
+        var size = document.createElement("span"); size.className = "tp-num"; size.textContent = sz.w + " px";
+        var open = document.createElement("a"); open.href = src; open.target = "_blank"; open.rel = "noopener"; open.textContent = "Open";
+        cap.appendChild(size); cap.appendChild(open);
+        var view = document.createElement("div"); view.className = "board-frame__view";
+        view.style.width = Math.round(sz.w * sz.s) + "px"; view.style.height = Math.round(sz.h * sz.s) + "px";
+        var fr = document.createElement("iframe");
+        fr.src = src; fr.loading = "lazy"; fr.width = sz.w; fr.height = sz.h; fr.tabIndex = -1;
+        fr.title = hero.title + ", " + c.label + ", " + sz.w + " px";
+        fr.style.width = sz.w + "px"; fr.style.height = sz.h + "px"; fr.style.transform = "scale(" + sz.s + ")";
+        view.appendChild(fr);
+        fig.appendChild(cap); fig.appendChild(view);
+        frames.appendChild(fig);
+      });
+      row.appendChild(frames); sec.appendChild(row);
+    });
+    host.appendChild(sec);
+  });
+  host.style.display = "grid"; host.style.gap = "var(--tp-space-12)";
+
+  function filter() {
+    var on = {};
+    document.querySelectorAll("[data-filter]").forEach(function (i) { on[i.dataset.filter + ":" + i.value] = i.checked; });
+    document.querySelectorAll(".board-row").forEach(function (r) { r.hidden = !(on["theme:" + r.dataset.theme] && on["lang:" + r.dataset.lang]); });
+    document.querySelectorAll(".board-frame").forEach(function (f) { f.hidden = !on["w:" + f.dataset.w]; });
+  }
+  document.addEventListener("change", function (e) { if (e.target.matches("[data-filter]")) filter(); });
+})();
+</script>
+</body>
+</html>
