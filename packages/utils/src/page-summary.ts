@@ -8,7 +8,8 @@ import { parseTempoBlocks, type TempoBlock } from "./blocks";
  * query against one, must read this projection and never slice `body` itself.
  *
  * What the projection contains:
- * - the prose of the body, reduced to plain text (markdown markers, links and HTML tags removed);
+ * - the prose of the body, reduced to plain text (markdown markers, link destinations and titles,
+ *   and HTML tags removed);
  * - the title of every valid task block and the name of every valid template block, with any HTML
  *   in them removed the same way.
  *
@@ -22,14 +23,20 @@ import { parseTempoBlocks, type TempoBlock } from "./blocks";
  * parser).
  *
  * Block recognition is the shared codec (`parseTempoBlocks`); this module has no parser or schema
- * of its own. Its prose filter only decides what plain text to show for the markdown the codec did
- * not claim: it keeps fenced code and raw HTML (also inside quotes and list items) out of the text.
+ * of its own for Tempo blocks. Its prose filter only decides what plain text to show: it follows
+ * the markdown block structure (quotes, list items, paragraphs, fenced code, raw HTML and HTML
+ * blocks) the way micromark, the CommonMark parser the app renders with, reads it, so that fenced
+ * code and HTML stay out of the text. Reading more of a body as code or HTML than micromark does
+ * is no safer than reading less: it hides the fences and HTML that start inside it. So where a line
+ * is read differently by the spec and by micromark (condition 7 on a lazy line, for one),
+ * micromark is followed. Content nested deeper than the containers followed here is left out.
  *
  * The codec does not model CommonMark HTML blocks that end at a blank line (types 6 and 7, such as
- * a `<div>` line), so it can accept a Tempo-looking fence that is really literal HTML. The
- * projection gates the codec's result by line range: a fence that starts inside such an HTML block
- * is read as prose and contributes nothing, never as a structured block. That gap in the codec is
- * a follow-up for the codec's owner; nothing here replaces the codec.
+ * a `<div>` line), nor every way a fence ends, so it can accept a Tempo-looking fence that is
+ * really literal HTML, or that CommonMark ends at another line. The projection reads the whole body
+ * once, the codec's segments included, and counts a block only where that reading agrees it is a
+ * fence of its own from its first line to its last; anywhere else its lines are the prose they are.
+ * That gap in the codec is a follow-up for the codec's owner; nothing here replaces the codec.
  *
  * Pure: no I/O, no mutation, linear in the body length, output bounded by the limits below.
  */
@@ -196,7 +203,7 @@ const QUOTE_MARKER = /^ {0,3}> ?/;
 /** A list marker and the spaces after it (none at all only when the line ends there). */
 const ITEM_MARKER = /^( {0,3})([-*+]|\d{1,9}[.)])(?: ( *)|$)/;
 const LEADING_SPACES = /^ */;
-/** Quotes and list items open at once; deeper nesting is read as plain text. */
+/** Quotes and list items open at once. Deeper nesting is not followed, so it is hidden. */
 const MAX_CONTAINERS = 16;
 const THEMATIC_BREAK = /^([-*_=])(?: *\1){2,}$/;
 // The first class excludes "-" so the one required "-" can match in only one place (no backtracking).
@@ -206,7 +213,6 @@ const BLOCK_MARKER = /^(?:#{1,6} +|> ?|[-*+] +|\d{1,9}[.)] +)/;
 const CHECKBOX = /^\[[ xX]\] +/;
 /** Inline HTML that ends at a marker of its own: comment, processing instruction, CDATA, declaration. */
 const INLINE_DELIMITED = /<(?:!--|\?|!\[CDATA\[|![A-Za-z])/y;
-const LINK_OR_IMAGE = /!?\[([^[\]]{0,300})\]\([^)]{0,2000}\)/g;
 const EMPHASIS_PAIR = /(^|[^\p{L}\p{N}_])([*_]{1,2})(\S(?:[^*_]{0,200}\S)?)\2(?![\p{L}\p{N}_])/gu;
 
 /**
@@ -224,8 +230,11 @@ const HTML_BLOCK_6 = new RegExp(`^ {0,3}</?(?:${HTML_BLOCK_NAMES})(?:[ \\t]|/?>|
 /** A "<" and a tag name (or "</" and one) at the start of a line, up to three spaces in. */
 const TAG_LINE = /^ {0,3}<\/?[A-Za-z]/;
 const TRAILING_SPACE = /^[ \t]*$/;
-/** A line that certainly continues or starts a paragraph (under-reading only gates more). */
-const PLAIN_TEXT = /^ {0,3}[\p{L}\p{N}]/u;
+/** Lines that end a paragraph or never start one (CommonMark ATX headings and thematic breaks). */
+const ATX_HEADING = /^ {0,3}#{1,6}(?:[ \t]|$)/;
+const THEMATIC_LINE = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+/** Turns the open paragraph into a heading, and so ends it. */
+const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/;
 
 // ---------------------------------------------------------------------------------------------
 // HTML tags
@@ -267,12 +276,14 @@ type TagScan = {
   quote: number;
   closing: boolean;
   /**
-   * Reading for HTML block start condition 7, which also takes what micromark's block scanner takes
-   * beyond the spec (a value right after an unquoted one), so that no block is missed.
+   * Reading for HTML block start condition 7 as micromark's block scanner does: it takes a value
+   * right after an unquoted one, and ends an unquoted value at "/", which then must close the tag.
    */
   block: boolean;
   /** A "<" was read in a quoted value. Where the tag is not read as one, a tag may start there. */
   innerLt: boolean;
+  /** A "](" was read in the tag, where CommonMark may read a link destination instead. */
+  innerLink: boolean;
   /**
    * What the scan read may not be exactly what CommonMark reads: a later line (whose prefix this
    * module strips, or which may start a new block), a line with hidden characters, or a "/" in an
@@ -324,7 +335,7 @@ function tagAt(
   if (!isAsciiLetter(text.charCodeAt(first))) return undefined;
   const state = closing ? "closeName" : "name";
   return {
-    scan: { state, quote: 0, closing, block, innerLt: false, uncertain, at: 0 },
+    scan: { state, quote: 0, closing, block, innerLt: false, innerLink: false, uncertain, at: 0 },
     from: first + 1,
   };
 }
@@ -370,7 +381,7 @@ function stepTag(scan: TagScan, code: number): TagStep {
       }
       if (code === GREATER_THAN) return "end";
       if (code === SLASH) {
-        scan.state = scan.block ? "unquoted" : "unquotedSlash";
+        scan.state = scan.block ? "slash" : "unquotedSlash";
         return undefined;
       }
       if (code === EQUALS && scan.block) {
@@ -428,16 +439,15 @@ function scanTag(scan: TagScan, text: string, from: number): TagStep {
 }
 
 /**
- * HTML block start condition 7: a complete open or closing tag alone on its line. The tag is read by
- * the tag grammar, so a quoted value may hold `>`. No tag name is excluded: "<pre>" and the like
- * start condition 1, which is matched first, and micromark starts condition 7 at "</pre>" or
- * "<pre/>". On a line with hidden characters (CommonMark reads them, this module does not) any tag
- * start counts: reading too much as an HTML block only hides more. Linear in the line length.
+ * HTML block start condition 7: a complete open or closing tag alone on its line, read exactly as
+ * micromark (the parser the app renders with) reads it, so a quoted value may hold `>`. No tag
+ * name is excluded: "<pre>" and the like start condition 1, which is matched first, and micromark
+ * starts condition 7 at "</pre>" or "<pre/>". Exact both ways on purpose: reading a line as an HTML
+ * block that is not one would hide the fences and raw HTML that start in it. Linear in the line.
  */
-function startsTagBlock(rest: string, exact: boolean): boolean {
+function startsTagBlock(rest: string): boolean {
   const start = TAG_LINE.exec(rest);
   if (!start) return false;
-  if (!exact) return true;
   const tag = tagAt(rest, start[0].indexOf("<"), true, false);
   return (
     tag !== undefined &&
@@ -450,8 +460,14 @@ function startsTagBlock(rest: string, exact: boolean): boolean {
 // Prose lines
 // ---------------------------------------------------------------------------------------------
 
-/** A quote or a list item whose content a fence may sit in. `indent` is the item's content offset. */
-type Container = { kind: "quote" } | { kind: "item"; indent: number };
+/**
+ * A quote or a list item whose content a fence may sit in. `indent` is the item's content offset.
+ * An item whose first line is empty (`blankStart`) ends at the first line after a blank line that
+ * follows it (`blankAfter`): a list item can begin with at most one blank line.
+ */
+type Container =
+  | { kind: "quote" }
+  | { kind: "item"; indent: number; blankStart: boolean; blankAfter: boolean };
 
 /**
  * Inline HTML left open at the end of a line, which hides the lines after it up to its end:
@@ -466,7 +482,15 @@ type InlineOpen =
   | { kind: "untilGt" }
   | { kind: "paragraph" };
 
-type InlineState = { inline?: InlineOpen };
+type InlineState = {
+  inline?: InlineOpen;
+  /**
+   * Text earlier in the paragraph had a backtick or a "](": a code span or a link may cover what
+   * follows, and inside one CommonMark opens no HTML. Then an inline construct opened here may not
+   * be one to CommonMark, which reads its inside as markdown instead.
+   */
+  skew?: boolean;
+};
 
 type ProseState = InlineState & {
   /** Quotes and list items open before the current line, outermost first. */
@@ -477,25 +501,27 @@ type ProseState = InlineState & {
   htmlEnd?: RegExp;
   /** Container depth of an open HTML block that ends at a blank line (condition 6 or 7). */
   htmlBlock?: number;
-  /** The previous line was paragraph text, which condition 7 cannot interrupt. */
-  afterText: boolean;
+  /**
+   * Container depth of the open paragraph (micromark's "content", definitions included), which
+   * condition 7 cannot interrupt (except on a lazy line) and an empty or non-1 list item cannot.
+   */
+  paragraph?: number;
+  /**
+   * An indented code block is open: a paragraph does not start on its indented lines. "lazy" when it
+   * started on a line that did not continue every container: micromark reads that line in a flow of
+   * its own, so unlike other indented code it does not keep a list item from starting next.
+   */
+  indentedCode?: boolean | "lazy";
+  /**
+   * Set while lines nest deeper than MAX_CONTAINERS: what is in there (a fence, an HTML block) is
+   * not followed, so every line that still continues all the open containers is hidden. True when
+   * the last such line was not blank, so the next line may continue its paragraph lazily.
+   */
+  tooDeep?: boolean;
 };
 
 function createProseState(): ProseState {
-  return { containers: [], afterText: false };
-}
-
-/**
- * A new segment starts at the top level: only an open top-level HTML block carries over. A block's
- * fence interrupts a paragraph, so inline HTML left open before it ends there too.
- */
-function startSegment(state: ProseState): void {
-  state.containers.length = 0;
-  state.fence = undefined;
-  state.htmlEnd = undefined;
-  state.inline = undefined;
-  state.afterText = false;
-  if (state.htmlBlock !== 0) state.htmlBlock = undefined;
+  return { containers: [] };
 }
 
 /** Expands tabs to 4-column stops, so tab-indented container content lines up as CommonMark reads it. */
@@ -523,8 +549,11 @@ function continueContainers(
       const lead = LEADING_SPACES.exec(rest)![0].length;
       // A blank line keeps a list item open; any other line must be indented into its content.
       if (lead < rest.length) {
-        if (lead < container.indent) break;
+        if (lead < container.indent || container.blankAfter) break;
         rest = rest.slice(container.indent);
+        container.blankStart = false;
+      } else if (container.blankStart) {
+        container.blankAfter = true;
       }
     }
     matched += 1;
@@ -532,36 +561,51 @@ function continueContainers(
   return { matched, rest };
 }
 
-/** Opens the quotes and list items that start this line, and returns what follows their markers. */
-function openContainers(line: string, open: Container[]): string {
+/**
+ * Opens the quotes and list items that start this line, and returns what follows their markers, or
+ * undefined when the line nests deeper than MAX_CONTAINERS. With `interrupt` (a paragraph or
+ * indented code is open) a list item starts only when it is not empty and, if ordered, starts at 1,
+ * as in micromark, also inside a quote or item opened on the same line; otherwise the line goes on
+ * with the paragraph (or underlines it).
+ */
+function openContainers(line: string, open: Container[], interrupt: boolean): string | undefined {
   let rest = line;
-  while (open.length < MAX_CONTAINERS) {
+  for (;;) {
     const quote = QUOTE_MARKER.exec(rest);
-    if (quote) {
-      open.push({ kind: "quote" });
-      rest = rest.slice(quote[0].length);
-      continue;
+    const item = quote ? null : ITEM_MARKER.exec(rest);
+    if (!quote && (!item || THEMATIC_BREAK.test(rest.trim()))) return rest;
+    if (
+      item &&
+      interrupt &&
+      (TRAILING_SPACE.test(rest.slice(item[0].length)) || !/^(?:[-*+]|1[.)])$/.test(item[2]!))
+    ) {
+      return rest;
     }
-    const item = ITEM_MARKER.exec(rest);
-    if (!item || THEMATIC_BREAK.test(rest.trim())) break;
-    const markerEnd = item[1]!.length + item[2]!.length;
-    const spaces = item[3] === undefined ? 0 : item[3].length + 1;
-    // One to four spaces belong to the marker; more than that (or none) leaves the content indented.
-    const indent =
-      spaces >= 1 && spaces <= 4 && rest.length > markerEnd + spaces ? markerEnd + spaces : markerEnd + 1;
-    open.push({ kind: "item", indent });
-    rest = rest.slice(indent);
+    // One container more than this module follows: what is in it cannot be told.
+    if (open.length === MAX_CONTAINERS) return undefined;
+    if (item) {
+      const markerEnd = item[1]!.length + item[2]!.length;
+      const spaces = item[3] === undefined ? 0 : item[3].length + 1;
+      // One to four spaces belong to the marker; more than that (or none) leaves the content indented.
+      const indent =
+        spaces >= 1 && spaces <= 4 && rest.length > markerEnd + spaces
+          ? markerEnd + spaces
+          : markerEnd + 1;
+      rest = rest.slice(indent);
+      open.push({ kind: "item", indent, blankStart: TRAILING_SPACE.test(rest), blankAfter: false });
+    } else {
+      open.push({ kind: "quote" });
+      rest = rest.slice(quote![0].length);
+    }
   }
-  return rest;
 }
 
-/** A fence line, read once as the container-free text and, at top level, as the raw text too. */
-function fenceOf(rest: string, content: string, depth: number): RegExpExecArray | null {
-  return FENCE_LINE.exec(rest) ?? (depth === 0 ? FENCE_LINE.exec(content) : null);
-}
-
-function startsHtmlBlock(rest: string, afterText: boolean, exact: boolean): boolean {
-  return HTML_BLOCK_6.test(rest) || (!afterText && startsTagBlock(rest, exact));
+/** A fence or HTML block starts: the paragraph before it ends, and any inline HTML left open in it. */
+function endParagraph(state: ProseState): void {
+  state.paragraph = undefined;
+  state.indentedCode = false;
+  state.inline = undefined;
+  state.skew = undefined;
 }
 
 function stripBlockMarkers(line: string): string {
@@ -591,6 +635,11 @@ function isEscaped(text: string, at: number, from: number): boolean {
   return (at - index) % 2 === 1;
 }
 
+/** Text in which CommonMark may start something it hides: HTML, or a link destination. */
+function mayHide(text: string): boolean {
+  return text.includes("<") || text.includes("](");
+}
+
 const UNTIL_GT: InlineOpen = { kind: "untilGt" };
 const TO_PARAGRAPH_END: InlineOpen = { kind: "paragraph" };
 
@@ -599,11 +648,25 @@ const TO_PARAGRAPH_END: InlineOpen = { kind: "paragraph" };
  * before any `>` stops the hiding there instead, as a tag may start at it. With neither on the
  * line, the lines after it stay hidden too.
  */
-function untilGt(text: string, from: number, open: InlineState): number | undefined {
+function untilGt(
+  text: string,
+  from: number,
+  open: InlineState,
+  exact: boolean
+): number | undefined {
   for (let index = from; index < text.length; index += 1) {
     const code = text.charCodeAt(index);
     if (code === GREATER_THAN) return index + 1;
-    if (code === LESS_THAN) return index;
+    if (code !== LESS_THAN || !isEscaped(text, index, from)) {
+      if (code === LESS_THAN) return index;
+      continue;
+    }
+    // An escaped "<" is text (what is hidden here is plain text to CommonMark, backslash and all),
+    // unless a removed hidden character stood between the two: then it may start a tag.
+    if (!exact) {
+      open.inline = TO_PARAGRAPH_END;
+      return undefined;
+    }
   }
   open.inline = UNTIL_GT;
   return undefined;
@@ -616,18 +679,26 @@ function untilGt(text: string, from: number, open: InlineState): number | undefi
  * - A tag with a "<" in a quoted value hides the rest of the paragraph. Wherever CommonMark does not
  *   read that tag as one (a code span or link around its start, or a line read differently), a tag
  *   of its own may start at that "<" and run past the `>` found here.
+ * - So does a tag with a "](" in it, after a backtick or "](" earlier in the paragraph: where a code
+ *   span or link covers its start, CommonMark may read a link destination from there on.
  * - An open tag that fails on uncertain text hides the rest of the paragraph: CommonMark may still
  *   be in a quoted value there. A closing tag has no quotes, so it hides only up to the next `>`.
  * The caller handles a tag that fails on certain text: there the "<" is plain text, as in CommonMark.
  */
-function tagEnd(scan: TagScan, step: TagStep, text: string, open: InlineState): number | undefined {
+function tagEnd(
+  scan: TagScan,
+  step: TagStep,
+  text: string,
+  open: InlineState,
+  exact: boolean
+): number | undefined {
   if (step === undefined) {
     open.inline = { kind: "tag", scan };
     return undefined;
   }
-  if (!scan.innerLt) {
+  if (!scan.innerLt && !(open.skew && scan.innerLink)) {
     if (step === "end") return scan.at;
-    if (scan.closing) return untilGt(text, scan.at, open);
+    if (scan.closing) return untilGt(text, scan.at, open, exact);
   }
   open.inline = TO_PARAGRAPH_END;
   return undefined;
@@ -652,6 +723,15 @@ function stripInlineHtml(
 ): string {
   let kept = "";
   let from = 0;
+  // Text before this index (outside HTML) has been checked for what makes the paragraph skewed.
+  let checked = 0;
+  const readText = (to: number) => {
+    if (!open.skew && to > checked) {
+      const part = text.slice(Math.max(checked, from), to);
+      if (part.includes("`") || part.includes("](")) open.skew = true;
+    }
+    checked = Math.max(checked, to);
+  };
   for (let at = text.indexOf("<"); at !== -1; at = text.indexOf("<", at)) {
     // A backslash-escaped "<" is plain text in CommonMark, so nothing starts there. A hidden
     // character removed from uncertain text may have stood between the two, so there it may be
@@ -664,12 +744,20 @@ function stripInlineHtml(
       at += 1;
       continue;
     }
+    readText(at);
     INLINE_DELIMITED.lastIndex = at;
     const opener = INLINE_DELIMITED.exec(text);
     if (opener) {
       const end = inlineEndOf(opener[0]);
       const close = exact ? text.indexOf(end, at + 2) : -1;
       kept += `${text.slice(from, at)} `;
+      // In a skewed paragraph, what the construct hides may hold HTML or a link destination that
+      // CommonMark reads instead, running past the end found here.
+      const inside = text.slice(at + opener[0].length, close === -1 ? text.length : close);
+      if (open.skew && mayHide(inside)) {
+        open.inline = TO_PARAGRAPH_END;
+        return kept;
+      }
       if (close === -1) {
         open.inline = { kind: "marker", end };
         return kept;
@@ -680,17 +768,23 @@ function stripInlineHtml(
     }
     const tag = tagAt(text, at, false, !certain);
     const step = tag && scanTag(tag.scan, text, tag.from);
+    if (tag && step !== "fail") {
+      tag.scan.innerLink = text
+        .slice(at, step === "end" ? tag.scan.at : text.length)
+        .includes("](");
+    }
     // A "<" that starts no tag, or a tag that fails on certain text with no "<" in it, is plain text.
     if (!tag || (step === "fail" && !tag.scan.innerLt && !tag.scan.uncertain)) {
       at += 1;
       continue;
     }
     kept += `${text.slice(from, at)} `;
-    const resume = tagEnd(tag.scan, step, text, open);
+    const resume = tagEnd(tag.scan, step, text, open, exact);
     if (resume === undefined) return kept;
     from = resume;
     at = resume;
   }
+  readText(text.length);
   return `${kept}${text.slice(from)}`;
 }
 
@@ -708,15 +802,17 @@ function resumeInline(text: string, open: InlineState, exact: boolean): string |
     case "marker": {
       const close = exact ? text.indexOf(inline.end) : -1;
       const lt = text.indexOf("<");
-      // This line may start a new block (a quote, a list item), which ends the paragraph and the
-      // construct with it; a tag may then start at a "<" here and run past this end marker.
-      if (lt !== -1 && (close === -1 || lt < close)) open.inline = TO_PARAGRAPH_END;
+      // A backstop: lines that start a new block end the construct before this is reached, but
+      // should this line be read differently by CommonMark, a tag starting at a "<" here could run
+      // past this end marker, so a "<" before it hides the rest of the paragraph.
+      const link = open.skew && text.slice(0, close === -1 ? text.length : close).includes("](");
+      if (link || (lt !== -1 && (close === -1 || lt < close))) open.inline = TO_PARAGRAPH_END;
       else if (close === -1) open.inline = inline;
       else resume = close + inline.end.length;
       break;
     }
     case "untilGt":
-      resume = untilGt(text, 0, open);
+      resume = untilGt(text, 0, open, exact);
       break;
     case "tag": {
       const { scan } = inline;
@@ -726,7 +822,10 @@ function resumeInline(text: string, open: InlineState, exact: boolean): string |
       let step = stepTag(scan, LINE_FEED);
       if (step === undefined) step = scanTag(scan, text, 0);
       else scan.at = 0;
-      resume = tagEnd(scan, step, text, open);
+      if (text.slice(0, step === undefined ? text.length : scan.at).includes("](")) {
+        scan.innerLink = true;
+      }
+      resume = tagEnd(scan, step, text, open, exact);
       break;
     }
     case "paragraph":
@@ -736,100 +835,246 @@ function resumeInline(text: string, open: InlineState, exact: boolean): string |
   return resume === undefined ? undefined : text.slice(resume);
 }
 
-function stripMarkdownInline(text: string): string {
-  return text
-    .replace(LINK_OR_IMAGE, "$1")
-    .replace(/\*\*|~~|`+/g, "")
-    .replace(EMPHASIS_PAIR, "$1$3");
+function isAsciiPunctuation(code: number): boolean {
+  return (
+    (code >= 0x21 && code <= 0x2f) ||
+    (code >= 0x3a && code <= 0x40) ||
+    (code >= 0x5b && code <= 0x60) ||
+    (code >= 0x7b && code <= 0x7e)
+  );
+}
+
+function skipSpaces(text: string, from: number): number {
+  let index = from;
+  while (text.charCodeAt(index) === 0x20) index += 1;
+  return index;
+}
+
+/** The link ran on past the end of the line (a destination or title may continue there). */
+const LINK_OPEN = -1;
+/** What follows the `](` is not a link destination this module can read. */
+const NOT_A_LINK = -2;
+
+/**
+ * Where the `(destination "title")` of an inline link that starts at `from` (just past its `(`)
+ * ends: the index after its `)`, or LINK_OPEN or NOT_A_LINK. Read by CommonMark's rules: the
+ * destination is `<...>`, or text with no spaces whose parentheses are escaped or balanced; the
+ * optional title is in double quotes, single quotes or parentheses; a backslash escapes ASCII
+ * punctuation in either.
+ */
+function linkEnd(text: string, from: number): number {
+  let index = skipSpaces(text, from);
+  if (index >= text.length) return LINK_OPEN;
+  if (text.charCodeAt(index) === LESS_THAN) {
+    for (index += 1; ; index += 1) {
+      if (index >= text.length) return NOT_A_LINK;
+      const code = text.charCodeAt(index);
+      if (code === 0x5c && isAsciiPunctuation(text.charCodeAt(index + 1))) index += 1;
+      else if (code === GREATER_THAN) break;
+      else if (code === LESS_THAN) return NOT_A_LINK;
+    }
+    index += 1;
+  } else {
+    let depth = 0;
+    for (; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      if (code === 0x5c && isAsciiPunctuation(text.charCodeAt(index + 1))) index += 1;
+      else if (code <= 0x20 || code === 0x7f) break;
+      else if (code === 0x28) depth += 1;
+      else if (code === 0x29) {
+        if (depth === 0) break;
+        depth -= 1;
+      }
+    }
+    if (depth > 0) return index >= text.length ? LINK_OPEN : NOT_A_LINK;
+  }
+  index = skipSpaces(text, index);
+  if (index >= text.length) return LINK_OPEN;
+  const opener = text.charCodeAt(index);
+  if (opener === QUOTE || opener === APOSTROPHE || opener === 0x28) {
+    const closer = opener === 0x28 ? 0x29 : opener;
+    for (index += 1; ; index += 1) {
+      if (index >= text.length) return LINK_OPEN;
+      const code = text.charCodeAt(index);
+      if (code === 0x5c && isAsciiPunctuation(text.charCodeAt(index + 1))) index += 1;
+      else if (code === closer) break;
+    }
+    index = skipSpaces(text, index + 1);
+    if (index >= text.length) return LINK_OPEN;
+  }
+  return text.charCodeAt(index) === 0x29 ? index + 1 : NOT_A_LINK;
 }
 
 /**
- * Plain text of one markdown line, or "" when the line is not shown. Tracks fenced code and raw HTML
- * (also in quotes and list items) and, for the codec gate, HTML blocks that end at a blank line.
- * With `emit` false it only follows the state and skips the text work.
+ * Keeps the text of every inline link and image and drops its destination and title, which are
+ * never shown. The text may have started on an earlier line, so every `](` is read as the end of
+ * one. What follows a `](` that is not a link this module can read is hidden to the end of the line,
+ * and a destination or title still open there (they may run over lines) hides the rest of the
+ * paragraph. Each search starts past the last, so the work is linear.
+ */
+function stripLinks(text: string, open: InlineState): string {
+  let kept = "";
+  let from = 0;
+  for (let at = text.indexOf("]("); at !== -1; at = text.indexOf("](", from)) {
+    // Drops the "[" (or "![") that opened the link text, if it is on this line.
+    let bracket = at - 1;
+    while (bracket >= from && text.charCodeAt(bracket) !== 0x5b) bracket -= 1;
+    if (bracket < from) kept += text.slice(from, at);
+    else {
+      const bang = bracket > from && text.charCodeAt(bracket - 1) === 0x21 ? bracket - 1 : bracket;
+      kept += `${text.slice(from, bang)}${text.slice(bracket + 1, at)}`;
+    }
+    const end = linkEnd(text, at + 2);
+    if (end === LINK_OPEN) open.inline = TO_PARAGRAPH_END;
+    if (end < 0) return kept;
+    from = end;
+  }
+  return `${kept}${text.slice(from)}`;
+}
+
+function stripMarkdownInline(text: string): string {
+  return text.replace(/\*\*|~~|`+/g, "").replace(EMPHASIS_PAIR, "$1$3");
+}
+
+/**
+ * Plain text of one markdown line, or "" when the line is not shown. Tracks quotes, list items,
+ * paragraphs, indented and fenced code, raw HTML and HTML blocks that end at a blank line, as
+ * micromark does. With `emit` false it only follows the state and skips the text work.
  */
 function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   const raw = rawLine.replace(/(?:\r\n|\r|\n)$/, "");
   const content = tidy(raw);
+  // Block structure is read on the line as it is (tabs expanded), as CommonMark reads it: to it
+  // hidden and control characters are text, so a line that has any is not blank, does not open or
+  // close a fence or an HTML block it would not open or close without them, and holds no end
+  // marker they split. Inline HTML is read on the tidied line, where they are gone and could fake
+  // a marker: `exact` says whether the line had any.
   const expanded = raw.includes("\t") ? detab(raw) : raw;
-  const cleaned = expanded === raw ? content : tidy(expanded);
-  // CommonMark reads a line with its hidden characters, and to it they are text: a line that has
-  // any is not blank, not a closing fence, and holds no end marker they split. So such a line never
-  // ends a fence or an HTML block here either; when in doubt, keep hiding.
-  const exact = cleaned === expanded;
+  const exact = (expanded === raw ? content : tidy(expanded)) === expanded;
 
   // Quotes and list items decide where a fence or raw HTML block starts and ends: it lives only as
   // long as every container it opened in keeps continuing, and its lines are read without their
   // prefixes.
-  const { matched, rest: continued } = continueContainers(cleaned, state.containers);
-  if (matched < state.containers.length) {
-    state.containers.length = matched;
+  const { matched, rest: continued } = continueContainers(expanded, state.containers);
+  const allContinued = matched === state.containers.length;
+  // The open paragraph is in a container this line does not continue: the line may continue it
+  // lazily, and micromark lets condition 7 start on it.
+  const blank = /^ *$/.test(continued);
+  const lazy = !blank && state.paragraph !== undefined && state.paragraph > matched;
+  // Containers the line does not continue end, except on a lazy line: there micromark keeps them
+  // open, and they end only where the line turns out to start a block of its own (`close`).
+  let unmatched = !allContinued;
+  const close = () => {
+    if (unmatched) state.containers.length = matched;
+    unmatched = false;
+  };
+  if (!allContinued) {
+    if (!lazy) close();
     state.fence = undefined;
     state.htmlEnd = undefined;
-    // micromark lets condition 7 start on such a lazy line, even after paragraph text.
-    state.afterText = false;
+    state.indentedCode = false;
+    // Containers nested too deep end with these. After text in them, this line may continue that
+    // paragraph lazily, inline HTML and all, so the rest of the paragraph stays hidden.
+    if (state.tooDeep) state.inline = TO_PARAGRAPH_END;
+    state.tooDeep = undefined;
   }
-  const blank = exact && /^ *$/.test(continued);
-  // A blank line ends the paragraph, and with it any inline HTML left open in it.
-  if (blank) state.inline = undefined;
+  if (blank) {
+    // A blank line ends the paragraph, and with it any inline HTML left open in it.
+    state.inline = undefined;
+    state.skew = undefined;
+    state.paragraph = undefined;
+  }
   // A blank line ends an HTML block of condition 6 or 7 even where it falls inside a comment.
   if (state.htmlBlock !== undefined && (state.htmlBlock > matched || blank)) {
     state.htmlBlock = undefined;
   }
+  if (state.tooDeep !== undefined) {
+    state.tooDeep = !blank;
+    return "";
+  }
 
   if (state.htmlEnd) {
-    state.afterText = false;
-    if (exact && state.htmlEnd.test(continued)) state.htmlEnd = undefined;
+    if (state.htmlEnd.test(continued)) state.htmlEnd = undefined;
     return "";
   }
 
   if (state.fence) {
-    const closer = fenceOf(continued, content, state.containers.length);
+    const closer = FENCE_LINE.exec(continued);
     const { marker, length } = state.fence;
     if (
-      exact &&
       closer &&
       closer[2]![0] === marker &&
       closer[2]!.length >= length &&
-      closer[3]!.trim() === ""
+      TRAILING_SPACE.test(closer[3]!)
     ) {
       state.fence = undefined;
     }
-    state.afterText = false;
     return "";
   }
 
+  // Every line of an HTML block that ends at a blank line (condition 6 or 7) is literal HTML, not
+  // text. CommonMark starts no quote, list item, fence or raw HTML block in it, and neither does
+  // this module: a fence opened here would outlast the blank line that ends the block and then
+  // close at a fence CommonMark opens, showing that fence's code.
+  if (state.htmlBlock !== undefined) return "";
+
+  // On a lazy line micromark still has the paragraph's containers open, unmatched, so a list item
+  // may start there as it may after any container that ends.
+  const interrupt =
+    allContinued && !lazy && (state.paragraph !== undefined || state.indentedCode === true);
+  if (lazy && (QUOTE_MARKER.test(continued) || ITEM_MARKER.test(continued))) close();
   const depth = state.containers.length;
-  // An open HTML block takes its lines as they are: a ">" or "-" in it opens no quote or list item
-  // (one would make a line like "> " look blank and end the block too early).
-  const rest =
-    state.htmlBlock === undefined ? openContainers(continued, state.containers) : continued;
-  // A new quote or list item starts a new block, which no paragraph runs on into, so condition 7
-  // may start in it.
-  if (state.containers.length > depth) state.afterText = false;
-  const fence = fenceOf(rest, content, state.containers.length);
-  if (fence && (fence[2]![0] === "~" || !fence[3]!.includes("`"))) {
-    state.fence = { marker: fence[2]![0]!, length: fence[2]!.length };
-    state.afterText = false;
+  const rest = openContainers(continued, state.containers, interrupt);
+  if (rest === undefined) {
+    state.tooDeep = true;
+    state.paragraph = undefined;
     return "";
   }
-  const html = RAW_HTML_BLOCKS.find((block) => block.start.test(rest));
-  if (html) {
-    state.afterText = false;
-    if (!(exact && html.end.test(rest))) state.htmlEnd = html.end;
-    return "";
+  // A new quote or list item starts a new block: the paragraph before it ends, and with it any
+  // inline HTML left open in it.
+  if (state.containers.length > depth) endParagraph(state);
+  const indent = LEADING_SPACES.exec(rest)![0].length;
+  // Four spaces in, a line continues the paragraph or is indented code: it starts no block.
+  if (indent < 4) {
+    const fence = FENCE_LINE.exec(rest);
+    if (fence && (fence[2]![0] === "~" || !fence[3]!.includes("`"))) {
+      close();
+      state.fence = { marker: fence[2]![0]!, length: fence[2]!.length };
+      endParagraph(state);
+      return "";
+    }
+    const html = RAW_HTML_BLOCKS.find((block) => block.start.test(rest));
+    if (html) {
+      close();
+      if (!html.end.test(rest)) state.htmlEnd = html.end;
+      endParagraph(state);
+      return "";
+    }
+    // Condition 6 may interrupt a paragraph; condition 7 may not, except on a lazy line, where
+    // micromark keeps it in the container the line does not continue (so it ends at the next line
+    // that does not continue that container either). The first line of either is literal HTML too.
+    const sixth = HTML_BLOCK_6.test(rest);
+    if (sixth || ((state.paragraph === undefined || lazy) && startsTagBlock(rest))) {
+      if (sixth) close();
+      state.htmlBlock = state.containers.length;
+      endParagraph(state);
+      return "";
+    }
   }
-  if (state.htmlBlock === undefined && startsHtmlBlock(rest, state.afterText, exact)) {
-    state.htmlBlock = state.containers.length;
+  if (TRAILING_SPACE.test(rest)) {
+    state.paragraph = undefined;
+  } else if (indent >= 4 && (state.indentedCode || state.paragraph === undefined)) {
+    state.indentedCode = allContinued ? true : "lazy";
+  } else {
+    state.indentedCode = false;
+    const underline = state.paragraph !== undefined && !lazy && SETEXT_UNDERLINE.test(rest);
+    if (underline || ATX_HEADING.test(rest) || THEMATIC_LINE.test(rest)) {
+      close();
+      endParagraph(state);
+    } else {
+      state.paragraph ??= state.containers.length;
+    }
   }
-  // Every line of an HTML block that ends at a blank line (condition 6 or 7), its first line
-  // included, is literal HTML, not text. Fences and raw HTML in it were still followed above, so
-  // anything they open keeps hiding past the blank line: reading too much as HTML only hides more.
-  if (state.htmlBlock !== undefined) {
-    state.afterText = false;
-    return "";
-  }
-  state.afterText = PLAIN_TEXT.test(rest);
   if (!emit) return "";
 
   // Leading direction marks (common at the start of right-to-left lines) must not hide markers.
@@ -844,14 +1089,14 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
     text = after.trimStart();
     line = text;
   }
-  // Inline HTML is followed on every line that gets here, also on lines dropped below, because
-  // what it leaves open hides the lines after it.
-  const withoutHtml = stripInlineHtml(text, state, exact, exact);
+  // Inline HTML and links are followed on every line that gets here, also on lines dropped below,
+  // because what they leave open hides the lines after them.
+  const withoutLinks = stripLinks(stripInlineHtml(text, state, exact, exact), state);
   if (THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
   if (FENCE_SYNTAX.test(line.replace(ALL_FORMAT, ""))) return "";
   if (text === "" || TABLE_RULE.test(text) || looksLikeJson(line) || looksLikeJson(text)) return "";
 
-  const plain = collapse(stripMarkdownInline(withoutHtml));
+  const plain = collapse(stripMarkdownInline(withoutLinks));
   return plain === "" || isUnsafe(plain) ? "" : plain;
 }
 
@@ -920,6 +1165,42 @@ function addProse(source: string, out: Collector, state: ProseState, follow: boo
   }
 }
 
+/**
+ * Reads the lines of a codec block like any other markdown, and says how CommonMark (as followed
+ * here) reads its fence: `opens` when its first line opens a fence at the top level, and
+ * `closesAtEnd` when that fence then stays open up to the last line and closes there. Every line of
+ * a fence adds nothing; where the reading parts from the codec's, the lines after that point were
+ * added as the prose they are.
+ */
+function readBlock(
+  source: string,
+  out: Collector,
+  state: ProseState
+): { opens: boolean; closesAtEnd: boolean } {
+  const lines = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
+  let opens = false;
+  let closesAtEnd = false;
+  let first = true;
+  for (
+    let line = lines.exec(source);
+    line !== null && line[0].length > 0;
+    line = lines.exec(source)
+  ) {
+    const wasOpen = state.fence !== undefined;
+    out.add(proseLine(line[0], state, !out.full));
+    const isOpen = state.fence !== undefined;
+    if (first) {
+      opens = !wasOpen && isOpen && state.containers.length === 0;
+      closesAtEnd = opens;
+      first = false;
+    } else if (closesAtEnd) {
+      // Open on every line but the last, closed after the last.
+      closesAtEnd = lines.lastIndex >= source.length ? !isOpen : isOpen;
+    }
+  }
+  return { opens, closesAtEnd };
+}
+
 /** Only fields that are plain visible text. Everything else in a block stays out, by omission. */
 function addBlockText(block: TempoBlock, out: Collector): void {
   if (block.type === "task") out.add(fieldText(block.data.title));
@@ -936,21 +1217,30 @@ export function projectPageText(body: string, options: PageTextOptions = {}): Pa
   const out = createCollector(searchLimit);
   let omittedBlocks = 0;
   const segments = parseTempoBlocks(body);
+  const only = segments[0]!;
+  // A body the codec refuses as too large: its prose cannot be located without a second parser.
+  if (segments.length === 1 && only.kind === "broken" && only.errorCode === "body_too_large") {
+    return { summary: "", searchText: "", truncated: false, omittedBlocks: 1 };
+  }
   // Past the last block only text is left, and once `out` is full there is nothing to add or gate.
   let lastBlock = segments.length - 1;
   while (lastBlock >= 0 && segments[lastBlock]!.kind === "markdown") lastBlock -= 1;
+  // One reading of the whole body, segment boundaries included: the codec only says which fences
+  // are Tempo blocks. A block counts only where that reading agrees it is a fence of its own,
+  // which it is not inside an HTML block that runs to the next blank line, or where CommonMark ends
+  // the fence at another line than the codec does. Then its lines are the prose they are.
   const state = createProseState();
   for (const [index, segment] of segments.entries()) {
     if (out.full && index > lastBlock) break;
-    startSegment(state);
-    // The codec reads a fence at the top level as a block even where CommonMark has it inside an HTML
-    // block that runs to the next blank line. There it is literal markup, so it is prose, not a block.
-    if (segment.kind === "markdown" || state.htmlBlock === 0) {
+    if (segment.kind === "markdown") {
       addProse(segment.source, out, state, index < lastBlock);
-    } else {
-      state.htmlBlock = undefined;
-      if (segment.kind === "broken") omittedBlocks += 1;
-      else addBlockText(segment.block, out);
+      continue;
+    }
+    const { opens, closesAtEnd } = readBlock(segment.source, out, state);
+    if (segment.kind === "broken") {
+      if (opens) omittedBlocks += 1;
+    } else if (closesAtEnd) {
+      addBlockText(segment.block, out);
     }
   }
   const searchText = out.value();

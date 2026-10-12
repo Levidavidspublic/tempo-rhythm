@@ -343,7 +343,6 @@ describe("fenced and raw-HTML look-alikes", () => {
     commentWithId: `Hello <!-- ${ids.task} --> there\nAfter`,
     invisibleInId: `Copied from blk\u{200B}_${ids.task.slice(4)} and b\u{200F}lk_${ids.task.slice(4)}\nAfter`,
     invisibleInFence: `${TICKS}\u{200B}json\u{200D} tempo\n${JSON.stringify(task)}\n${TICKS}\nAfter`,
-    bidiOverrideFence: `\u{202E}${TICKS}json tempo\n${JSON.stringify(task)}\n${TICKS}\nAfter`,
     inlineFence: `Use ${TICKS}json tempo${TICKS} for blocks.\nAfter`,
   };
 
@@ -355,6 +354,15 @@ describe("fenced and raw-HTML look-alikes", () => {
       expect(result.searchText.endsWith("After")).toBe(true);
     });
   }
+
+  test("a fence line that starts with a bidi override is text, so the closing backticks open a fence", () => {
+    // CommonMark (micromark) reads U+202E as text: no fence opens on the first line, so the third
+    // line opens one and "After" is code in it.
+    const body = `\u{202E}${TICKS}json tempo\n${JSON.stringify(task)}\n${TICKS}\nAfter`;
+    expect(isAllMarkdown(body)).toBe(true);
+    expect(project(body).searchText).toBe("");
+    expect(project(`${body}\n${TICKS}\nEnd`).searchText).toBe("End");
+  });
 
   test("these fence look-alikes are all plain markdown to the shared codec", () => {
     for (const name of ["tildeFence", "spacedInfo", "uppercaseInfo", "indentedOneSpace"]) {
@@ -449,6 +457,26 @@ describe("fenced code inside quotes and list items", () => {
   test("a closer in another container does not close the fence", () => {
     const body = `> ${TICKS}js\n> ${secret}\n> - ${TICKS}\n> ${secret} again\n> ${TICKS}\nAfter`;
     expect(project(body).searchText).toBe("After");
+  });
+
+  test("content nested deeper than the container limit is hidden, up to where it ends", () => {
+    const quotes = "> ".repeat(17);
+    const bodies: Record<string, string> = {
+      quoteHtmlBlock: `${quotes}<div>\n${quotes}${secret}\n\npublic`,
+      quoteFence: `${quotes}${TICKS}\n${quotes}${secret}\n${quotes}${TICKS}\n\npublic`,
+      quoteText: `${quotes}${secret}\n\npublic`,
+      listHtmlBlock: `${"- ".repeat(17)}<div>\n${" ".repeat(34)}${secret}\n\npublic`,
+      listFence: `${"- ".repeat(17)}${TICKS}\n${" ".repeat(34)}${secret}\n\n${" ".repeat(34)}more\n\npublic`,
+      // A line after deep paragraph text may continue it lazily, comment and all.
+      lazyLine: `${quotes}x <!--\n${secret}\n-->\n\npublic`,
+    };
+    for (const [name, body] of Object.entries(bodies)) {
+      expect([name, project(body).searchText]).toEqual([name, "public"]);
+    }
+    // Up to the limit, nesting is read as usual.
+    expect(project(`${"> ".repeat(16)}deep text\n\npublic`).searchText).toEndWith(
+      "deep text public"
+    );
   });
 
   test("a real Tempo block after a container fence is still read", () => {
@@ -588,9 +616,18 @@ describe("inline HTML that runs over several lines", () => {
   test("a comment does not end on a later line where a tag may have started first", () => {
     // The quote ends the paragraph, and the comment with it, so the "-->" is inside a title.
     expect(project('visible <!--\n> <a title="--> private">public\n\nend').searchText).toBe(
-      "visible end"
+      "visible public end"
     );
     expect(project('visible <!--\n> <a title="\n--> private">public\n\nend').searchText).toBe(
+      "visible public end"
+    );
+    // A heading also ends the paragraph.
+    expect(project('visible <!--\n# <a title="--> private">public\n\nend').searchText).toBe(
+      "visible public end"
+    );
+    // Fail closed: a "<" before the end marker on a later line hides the rest of the paragraph,
+    // although here CommonMark ends the comment at that marker.
+    expect(project('visible <!--\n<a title="--> private">public\n\nend').searchText).toBe(
       "visible end"
     );
   });
@@ -805,6 +842,32 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
     }
   });
 
+  test("a fence line in an HTML block opens no fence, so a fence opened after its blank line hides", () => {
+    // The blank line in the payload ends the HTML block; the payload's closing backticks then open
+    // a fenced code block that runs to the next fence, so "secret code" is code, not text.
+    const spaced = JSON.stringify(task, null, 2).replace("{\n", "{\n\n");
+    const blankInPayload = `<div>\n${TICKS}json tempo\n${spaced}\n${TICKS}\nsecret code\n${TICKS}\n\nAfter`;
+    expect(parseTempoBlocks(blankInPayload).some((segment) => segment.kind === "valid")).toBe(true);
+    expect(project(blankInPayload).searchText).toBe("After");
+    // The same for raw HTML: a comment start in the HTML block is HTML, not a comment.
+    const commentInBlock = `<div>\n<!--\n\n${TICKS}\nsecret code\n-->\nmore secret\n${TICKS}\n\nAfter`;
+    expect(project(commentInBlock).searchText).toBe("After");
+  });
+
+  test("a block whose fence CommonMark closes early is prose from there on", () => {
+    // Four backticks close the fence for CommonMark but not for the codec, so "1}" is a paragraph
+    // and the codec's closing backticks open a fenced code block of their own.
+    const body = `Intro\n${TICKS}json tempo\n{"a":\n${TICKS}\`\n1}\n${TICKS}\nsecret code\n${TICKS}\nAfter`;
+    expect(parseTempoBlocks(body).map((segment) => segment.kind)).toEqual([
+      "markdown",
+      "broken",
+      "markdown",
+    ]);
+    const result = project(body);
+    expect(result.searchText).toBe("Intro 1} After");
+    expect(result.omittedBlocks).toBe(1);
+  });
+
   test("a gated block does not hide prose, only the block", () => {
     const result = project(`Intro\n\n<div>\n${payload}\nOutro`);
     expect(result.searchText).toBe("Intro Outro");
@@ -818,6 +881,65 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
     expect(result.omittedBlocks).toBe(0);
     const open = `${filler}\n\n${TICKS}json tempo\n{ nope\n${TICKS}\n`;
     expect(project(open, { searchChars: 50 }).omittedBlocks).toBe(1);
+  });
+});
+
+describe("block structure as CommonMark (micromark) reads it", () => {
+  const payload = fence(task);
+
+  /**
+   * Where a fence, raw HTML or HTML block starts decides what is hidden, both ways: reading a block
+   * that is not there hides the blocks that start in it. Each case is checked against micromark.
+   */
+  const cases: Record<string, { body: string; text: string }> = {
+    // Paragraph text, whatever its first character, keeps a tag line from starting condition 7, so
+    // the comment and the fence after it start their own blocks.
+    afterQuotedText: { body: '"quoted"\n<span>\n<!--\n\nprivate\n-->\nend', text: "end" },
+    afterEmphasis: { body: `*em*\n<span>\n${TICKS}\n\nprivate\n${TICKS}\nend`, text: "em end" },
+    // A hidden or control character at the start of a line is text, so it starts no block.
+    controlBeforeTag: {
+      body: `\u{7}</pre> x\n${payload}<!x\n2. )\n\nprivate`,
+      text: "x Email supervisor",
+    },
+    hiddenBeforeDeclaration: { body: `\u{200B}<!x\n\n<pre/>\n${payload}After`, text: "" },
+    controlBeforeInstruction: {
+      body: `\u{7}<?<!--\n<div>\n<!x private > b=\n${payload}After`,
+      text: "",
+    },
+    // An empty item or one not numbered 1 does not interrupt a paragraph: "- " underlines it.
+    emptyItemAfterText: { body: "text\n- \n  <!--\n\nprivate\n-->\nend", text: "text end" },
+    orderedTwoAfterText: { body: "text\n2. <!x\n  private x>\nend", text: "text end" },
+    emptyItemInQuote: {
+      body: 'text\n> - \nlazy\n<span title=x=" > private">\n\nend',
+      text: "text lazy end",
+    },
+    // On a lazy line any list item may start.
+    itemOnLazyLine: {
+      body: '- a\nlazy\n2. <span title=x=" > private">\n\nend',
+      text: "a lazy end",
+    },
+    // A list item can begin with at most one blank line.
+    emptyItemThenBlank: { body: `-\n\n  <div>\n${payload}After`, text: "" },
+    // Indented code is no paragraph, so a tag line after it starts condition 7.
+    tagAfterIndentedCode: { body: `    code\n<span>\n${payload}After`, text: "code" },
+    itemAfterLazyIndentedCode: {
+      body: '> <div>\n\t<div>\n10) <span title=x=" > private">\n\nend',
+      text: "end",
+    },
+    // Condition 7 on a lazy line stays in the list item, so the next unindented line is text.
+    tagOnLazyLine: { body: '- a\n<span title="x">\nmore\n\nend', text: "a more end" },
+  };
+
+  for (const [name, { body, text }] of Object.entries(cases)) {
+    test(`${name}: blocks start where CommonMark starts them`, () => {
+      const result = project(body);
+      expect(result.searchText).toBe(text);
+      expect(result.searchText).not.toContain("private");
+    });
+  }
+
+  test("an escaped < in hidden text after a closing tag that is not one starts nothing", () => {
+    expect(project("</a\n  x\\<!xy<span title='y > private'>z").searchText).toBe("z");
   });
 });
 
@@ -856,6 +978,34 @@ describe("prose", () => {
         "Last line",
       ].join(" ")
     );
+  });
+
+  test("a link's destination and title are never shown, whatever parentheses they hold", () => {
+    const links: Record<string, string> = {
+      "[public](https://host/a\\)PRIVATE_TOKEN) after": "public after",
+      "[public](https://host/a(b)PRIVATE_TOKEN) after": "public after",
+      '[public](https://host "PRIVATE ) title") after': "public after",
+      "[public](https://host 'PRIVATE ) title') after": "public after",
+      "[public](https://host (PRIVATE \\) title)) after": "public after",
+      "[public](<https://host/a b) PRIVATE>) after": "public after",
+      "![alt](x\\)PRIVATE) after": "alt after",
+      "[one](a) and [two](b(c)PRIVATE) after": "one and two after",
+      // The link text started on the line before.
+      "[multi\nline](https://host/PRIVATE) after": "[multi line after",
+    };
+    for (const [body, text] of Object.entries(links)) {
+      expect(project(body).searchText).toBe(text);
+    }
+  });
+
+  test("a link destination or title left open at the end of a line hides the rest of the paragraph", () => {
+    for (const body of [
+      '[public](\nhttps://host "PRIVATE\nmore PRIVATE") after\n\nend',
+      '[public](https://host "PRIVATE\nmore PRIVATE") after\n\nend',
+      "[public](https://host/(PRIVATE\nmore PRIVATE)) after\n\nend",
+    ]) {
+      expect(project(body).searchText).toBe("public end");
+    }
   });
 
   test("lines that look like raw JSON are dropped", () => {
@@ -968,6 +1118,13 @@ describe("pathological bodies stay linear", () => {
     closingTagsOpenOnEveryLine: () => "</a\n".repeat(size / 4),
     oneLongQuotedValue: () => '<a title="'.concat("x".repeat(size), '">'),
     manyAttributes: () => "<a".concat(' b="x > y"'.repeat(size / 10), ">"),
+    linkOpeners: () => "](".repeat(size / 2),
+    manyLinks: () => "[a](b) ".repeat(size / 7),
+    nestedLinkParens: () => "[a](".concat("(".repeat(size / 2), ")".repeat(size / 2)),
+    unclosedLinkTitles: () => '[a](b "'.repeat(size / 7),
+    deepQuoteLines: () => `${"> ".repeat(20)}x\n`.repeat(size / 42),
+    deepListLines: () => `${"- ".repeat(20)}x\n`.repeat(size / 42),
+    blocksInHtmlBlocks: () => `<div>\n${TICKS}json tempo\n{}\n\n${TICKS}\nx\n`.repeat(size / 36),
   };
 
   for (const [name, build] of Object.entries(bodies)) {
