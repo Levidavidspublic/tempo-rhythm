@@ -14,10 +14,12 @@ import { parseTempoBlocks, type TempoBlock } from "./blocks";
  *
  * What it never contains: Tempo envelopes or fence syntax, block ids, the content of any fenced
  * code block or HTML block (also one that ends at a blank line, such as a `<div>` line), inline
- * HTML (also where a comment or tag runs over several lines), JSON-looking lines, or
- * bidi/invisible control characters. Blocks that fail validation are left out whole, so there is
- * no raw-payload fallback. A body the codec refuses as too large is left out whole too (its prose
- * cannot be located without a second parser).
+ * HTML (also where a comment or tag runs over several lines, or a quoted attribute value holds a
+ * `>`), JSON-looking lines, or bidi/invisible control characters. Tags are read by CommonMark's tag
+ * grammar; where the end of one cannot be told for sure, the rest of its paragraph is left out.
+ * Blocks that fail validation are left out whole, so there is no raw-payload fallback. A body the
+ * codec refuses as too large is left out whole too (its prose cannot be located without a second
+ * parser).
  *
  * Block recognition is the shared codec (`parseTempoBlocks`); this module has no parser or schema
  * of its own. Its prose filter only decides what plain text to show for the markdown the codec did
@@ -203,19 +205,15 @@ const LINK_DEFINITION = /^\[[^\]]{1,200}\]: *<?\S+(?: +["'(].{0,200})?$/;
 const BLOCK_MARKER = /^(?:#{1,6} +|> ?|[-*+] +|\d{1,9}[.)] +)/;
 const CHECKBOX = /^\[[ xX]\] +/;
 /** Inline HTML that ends at a marker of its own: comment, processing instruction, CDATA, declaration. */
-const INLINE_DELIMITED = /<(?:!--|\?|!\[CDATA\[|![A-Za-z])/g;
-const HTML_TAG = /<\/?[A-Za-z][A-Za-z0-9-]{0,40}(?: [^<>]{0,500})?\/?>/g;
-/** The start of a tag (open or closing) that may run on past the end of its line. */
-const TAG_START = /<\/?[A-Za-z]/;
+const INLINE_DELIMITED = /<(?:!--|\?|!\[CDATA\[|![A-Za-z])/y;
 const LINK_OR_IMAGE = /!?\[([^[\]]{0,300})\]\([^)]{0,2000}\)/g;
 const EMPHASIS_PAIR = /(^|[^\p{L}\p{N}_])([*_]{1,2})(\S(?:[^*_]{0,200}\S)?)\2(?![\p{L}\p{N}_])/gu;
 
 /**
  * CommonMark HTML blocks that end at a blank line (start conditions 6 and 7). The codec does not
  * model them, so a fence inside one can look like a Tempo block to it; see `projectPageText`.
- * Condition 6 is a block-level tag name; condition 7 is any other complete tag alone on its line,
- * and cannot interrupt a paragraph. Both are anchored and bounded, so each line is tested in
- * constant time per character.
+ * Condition 6 is a block-level tag name; condition 7 is any other complete tag alone on its line
+ * (see `startsTagBlock`), and cannot interrupt a paragraph.
  */
 const HTML_BLOCK_NAMES =
   "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|" +
@@ -223,15 +221,254 @@ const HTML_BLOCK_NAMES =
   "hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|" +
   "search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
 const HTML_BLOCK_6 = new RegExp(`^ {0,3}</?(?:${HTML_BLOCK_NAMES})(?:[ \\t]|/?>|$)`, "i");
-const HTML_BLOCK_7 =
-  /^ {0,3}<\/?(?!(?:pre|script|style|textarea)(?![A-Za-z0-9-]))[A-Za-z][A-Za-z0-9-]*(?:[ \t/][^<>]{0,500})?>[ \t]*$/;
+/** A "<" and a tag name (or "</" and one) at the start of a line, up to three spaces in. */
+const TAG_LINE = /^ {0,3}<\/?[A-Za-z]/;
+const TRAILING_SPACE = /^[ \t]*$/;
 /** A line that certainly continues or starts a paragraph (under-reading only gates more). */
 const PLAIN_TEXT = /^ {0,3}[\p{L}\p{N}]/u;
+
+// ---------------------------------------------------------------------------------------------
+// HTML tags
+// ---------------------------------------------------------------------------------------------
+
+const QUOTE = 0x22;
+const APOSTROPHE = 0x27;
+const SLASH = 0x2f;
+const LESS_THAN = 0x3c;
+const EQUALS = 0x3d;
+const GREATER_THAN = 0x3e;
+const BACKTICK = 0x60;
+const LINE_FEED = 0x0a;
+
+/**
+ * Where a scan of one HTML tag is, in CommonMark's tag grammar (0.31.2, "Raw HTML"): a tag name,
+ * then attributes, each a name with an optional `=` and an unquoted, single-quoted or
+ * double-quoted value, each after whitespace, then an optional `/` and the closing `>`. A closing
+ * tag is a name and optional whitespace. A quoted value may hold `>` and run over lines, so the `>`
+ * that ends a tag is found only by following this grammar, never by searching for the next `>`.
+ */
+type TagState =
+  | "name"
+  | "space"
+  | "attr"
+  | "attrSpace"
+  | "value"
+  | "unquoted"
+  | "unquotedSlash"
+  | "quoted"
+  | "quotedEnd"
+  | "slash"
+  | "closeName"
+  | "closeSpace";
+
+type TagScan = {
+  state: TagState;
+  /** The quote mark of the quoted value the scan is in. */
+  quote: number;
+  closing: boolean;
+  /**
+   * Reading for HTML block start condition 7, which also takes what micromark's block scanner takes
+   * beyond the spec (a value right after an unquoted one), so that no block is missed.
+   */
+  block: boolean;
+  /** A "<" was read in a quoted value. Where the tag is not read as one, a tag may start there. */
+  innerLt: boolean;
+  /**
+   * What the scan read may not be exactly what CommonMark reads: a later line (whose prefix this
+   * module strips, or which may start a new block), a line with hidden characters, or a "/" in an
+   * unquoted value, which the spec keeps in the value and micromark reads as the end of the tag.
+   */
+  uncertain: boolean;
+  /** After "end": the index just past the closing `>`. After "fail": the index it failed at. */
+  at: number;
+};
+
+/** "end" when the tag ends at this character, "fail" when it is not a tag, undefined to read on. */
+type TagStep = "end" | "fail" | undefined;
+
+function isAsciiLetter(code: number): boolean {
+  const lower = code | 0x20;
+  return lower >= 0x61 && lower <= 0x7a;
+}
+
+function isDigit(code: number): boolean {
+  return code >= 0x30 && code <= 0x39;
+}
+
+/** Spaces, tabs and line endings: the whitespace of the tag grammar. */
+function isTagSpace(code: number): boolean {
+  return code === 0x20 || code === 0x09 || code === LINE_FEED || code === 0x0d;
+}
+
+function isTagNameChar(code: number): boolean {
+  return isAsciiLetter(code) || isDigit(code) || code === 0x2d;
+}
+
+function isAttrStart(code: number): boolean {
+  return isAsciiLetter(code) || code === 0x5f || code === 0x3a;
+}
+
+function isAttrChar(code: number): boolean {
+  return isAttrStart(code) || isDigit(code) || code === 0x2e || code === 0x2d;
+}
+
+/** The scan of a tag that starts at `at` (a "<"), and where it reads on; undefined when none starts there. */
+function tagAt(
+  text: string,
+  at: number,
+  block: boolean,
+  uncertain: boolean
+): { scan: TagScan; from: number } | undefined {
+  const closing = text.charCodeAt(at + 1) === SLASH;
+  const first = at + (closing ? 2 : 1);
+  if (!isAsciiLetter(text.charCodeAt(first))) return undefined;
+  const state = closing ? "closeName" : "name";
+  return {
+    scan: { state, quote: 0, closing, block, innerLt: false, uncertain, at: 0 },
+    from: first + 1,
+  };
+}
+
+function stepTag(scan: TagScan, code: number): TagStep {
+  const { state } = scan;
+  switch (state) {
+    case "quoted":
+      if (code === scan.quote) scan.state = "quotedEnd";
+      else if (code === LESS_THAN) scan.innerLt = true;
+      return undefined;
+    case "closeName":
+    case "closeSpace":
+      if (state === "closeName" && isTagNameChar(code)) return undefined;
+      if (isTagSpace(code)) {
+        scan.state = "closeSpace";
+        return undefined;
+      }
+      return code === GREATER_THAN ? "end" : "fail";
+    case "slash":
+      return code === GREATER_THAN ? "end" : "fail";
+    case "value":
+      if (isTagSpace(code)) return undefined;
+      if (code === QUOTE || code === APOSTROPHE) {
+        scan.quote = code;
+        scan.state = "quoted";
+        return undefined;
+      }
+      if (code === LESS_THAN || code === EQUALS || code === GREATER_THAN || code === BACKTICK) {
+        return "fail";
+      }
+      scan.state = "unquoted";
+      return undefined;
+    case "unquotedSlash":
+    case "unquoted":
+      if (state === "unquotedSlash") {
+        if (code === GREATER_THAN) return "end";
+        scan.uncertain = true;
+      }
+      if (isTagSpace(code)) {
+        scan.state = scan.block ? "attrSpace" : "space";
+        return undefined;
+      }
+      if (code === GREATER_THAN) return "end";
+      if (code === SLASH) {
+        scan.state = scan.block ? "unquoted" : "unquotedSlash";
+        return undefined;
+      }
+      if (code === EQUALS && scan.block) {
+        scan.state = "value";
+        return undefined;
+      }
+      if (
+        code === QUOTE ||
+        code === APOSTROPHE ||
+        code === LESS_THAN ||
+        code === EQUALS ||
+        code === BACKTICK
+      ) {
+        return "fail";
+      }
+      scan.state = "unquoted";
+      return undefined;
+    default: {
+      // "name", "space", "attr", "attrSpace" and "quotedEnd".
+      if (state === "name" && isTagNameChar(code)) return undefined;
+      if (state === "attr" && isAttrChar(code)) return undefined;
+      const afterName = state === "attr" || state === "attrSpace";
+      if (isTagSpace(code)) {
+        scan.state = afterName ? "attrSpace" : "space";
+        return undefined;
+      }
+      if (code === EQUALS && afterName) {
+        scan.state = "value";
+        return undefined;
+      }
+      // An attribute starts only after whitespace.
+      if (isAttrStart(code) && (state === "space" || state === "attrSpace")) {
+        scan.state = "attr";
+        return undefined;
+      }
+      if (code === SLASH) {
+        scan.state = "slash";
+        return undefined;
+      }
+      return code === GREATER_THAN ? "end" : "fail";
+    }
+  }
+}
+
+/** Reads `text` from `from` into `scan`: "end" or "fail" (`scan.at` says where), undefined at the end of `text`. */
+function scanTag(scan: TagScan, text: string, from: number): TagStep {
+  for (let index = from; index < text.length; index += 1) {
+    const step = stepTag(scan, text.charCodeAt(index));
+    if (step !== undefined) {
+      scan.at = step === "end" ? index + 1 : index;
+      return step;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * HTML block start condition 7: a complete open or closing tag alone on its line. The tag is read by
+ * the tag grammar, so a quoted value may hold `>`. No tag name is excluded: "<pre>" and the like
+ * start condition 1, which is matched first, and micromark starts condition 7 at "</pre>" or
+ * "<pre/>". On a line with hidden characters (CommonMark reads them, this module does not) any tag
+ * start counts: reading too much as an HTML block only hides more. Linear in the line length.
+ */
+function startsTagBlock(rest: string, exact: boolean): boolean {
+  const start = TAG_LINE.exec(rest);
+  if (!start) return false;
+  if (!exact) return true;
+  const tag = tagAt(rest, start[0].indexOf("<"), true, false);
+  return (
+    tag !== undefined &&
+    scanTag(tag.scan, rest, tag.from) === "end" &&
+    TRAILING_SPACE.test(rest.slice(tag.scan.at))
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Prose lines
+// ---------------------------------------------------------------------------------------------
 
 /** A quote or a list item whose content a fence may sit in. `indent` is the item's content offset. */
 type Container = { kind: "quote" } | { kind: "item"; indent: number };
 
-type ProseState = {
+/**
+ * Inline HTML left open at the end of a line, which hides the lines after it up to its end:
+ * - "marker": a comment, processing instruction, CDATA section or declaration, up to its end marker;
+ * - "tag": a tag, up to where the tag grammar ends it (`scan` reads on from the next line);
+ * - "untilGt": a closing tag that turned out not to be one, up to the next `>` (not past a `<`);
+ * - "paragraph": HTML whose end cannot be told for sure, up to the end of the paragraph.
+ */
+type InlineOpen =
+  | { kind: "marker"; end: string }
+  | { kind: "tag"; scan: TagScan }
+  | { kind: "untilGt" }
+  | { kind: "paragraph" };
+
+type InlineState = { inline?: InlineOpen };
+
+type ProseState = InlineState & {
   /** Quotes and list items open before the current line, outermost first. */
   containers: Container[];
   /** The open fenced code block, which lasts only while the containers it opened in continue. */
@@ -240,8 +477,6 @@ type ProseState = {
   htmlEnd?: RegExp;
   /** Container depth of an open HTML block that ends at a blank line (condition 6 or 7). */
   htmlBlock?: number;
-  /** End marker of inline HTML (a comment, a tag) left open on an earlier line of the paragraph. */
-  inlineEnd?: string;
   /** The previous line was paragraph text, which condition 7 cannot interrupt. */
   afterText: boolean;
 };
@@ -258,7 +493,7 @@ function startSegment(state: ProseState): void {
   state.containers.length = 0;
   state.fence = undefined;
   state.htmlEnd = undefined;
-  state.inlineEnd = undefined;
+  state.inline = undefined;
   state.afterText = false;
   if (state.htmlBlock !== 0) state.htmlBlock = undefined;
 }
@@ -325,8 +560,8 @@ function fenceOf(rest: string, content: string, depth: number): RegExpExecArray 
   return FENCE_LINE.exec(rest) ?? (depth === 0 ? FENCE_LINE.exec(content) : null);
 }
 
-function startsHtmlBlock(rest: string, afterText: boolean): boolean {
-  return HTML_BLOCK_6.test(rest) || (!afterText && HTML_BLOCK_7.test(rest));
+function startsHtmlBlock(rest: string, afterText: boolean, exact: boolean): boolean {
+  return HTML_BLOCK_6.test(rest) || (!afterText && startsTagBlock(rest, exact));
 }
 
 function stripBlockMarkers(line: string): string {
@@ -347,38 +582,158 @@ function inlineEndOf(opener: string): string {
 }
 
 /**
+ * An odd run of backslashes right before `at`, counted back to `from` (the start of the text not
+ * hidden yet). Each run is counted only by the "<" right after it, so the work stays linear.
+ */
+function isEscaped(text: string, at: number, from: number): boolean {
+  let index = at;
+  while (index > from && text.charCodeAt(index - 1) === 0x5c) index -= 1;
+  return (at - index) % 2 === 1;
+}
+
+const UNTIL_GT: InlineOpen = { kind: "untilGt" };
+const TO_PARAGRAPH_END: InlineOpen = { kind: "paragraph" };
+
+/**
+ * Hides text from `from` up to and including the next `>`, and returns the index after it. A `<`
+ * before any `>` stops the hiding there instead, as a tag may start at it. With neither on the
+ * line, the lines after it stay hidden too.
+ */
+function untilGt(text: string, from: number, open: InlineState): number | undefined {
+  for (let index = from; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (code === GREATER_THAN) return index + 1;
+    if (code === LESS_THAN) return index;
+  }
+  open.inline = UNTIL_GT;
+  return undefined;
+}
+
+/**
+ * Where text shows again after a tag scan stopped (`step` undefined: at the end of the line), or
+ * undefined when the rest of the line is hidden; `open.inline` then says up to where. Only a tag
+ * that certainly ends is followed by text:
+ * - A tag with a "<" in a quoted value hides the rest of the paragraph. Wherever CommonMark does not
+ *   read that tag as one (a code span or link around its start, or a line read differently), a tag
+ *   of its own may start at that "<" and run past the `>` found here.
+ * - An open tag that fails on uncertain text hides the rest of the paragraph: CommonMark may still
+ *   be in a quoted value there. A closing tag has no quotes, so it hides only up to the next `>`.
+ * The caller handles a tag that fails on certain text: there the "<" is plain text, as in CommonMark.
+ */
+function tagEnd(scan: TagScan, step: TagStep, text: string, open: InlineState): number | undefined {
+  if (step === undefined) {
+    open.inline = { kind: "tag", scan };
+    return undefined;
+  }
+  if (!scan.innerLt) {
+    if (step === "end") return scan.at;
+    if (scan.closing) return untilGt(text, scan.at, open);
+  }
+  open.inline = TO_PARAGRAPH_END;
+  return undefined;
+}
+
+/**
  * Removes inline HTML from one line. Inline HTML can run over several lines of a paragraph, so a
  * comment, processing instruction, CDATA section, declaration or tag still open where the line ends
- * hides the rest of the line, and `open.inlineEnd` hides the lines after it up to its end marker.
+ * hides the rest of the line, and `open.inline` hides the lines after it up to its end. A tag ends
+ * only where the tag grammar ends it, so a `>` in a quoted attribute value does not end it.
+ *
  * With `exact` false (the line had hidden characters, which can fake a marker) no end marker of a
- * delimited construct is trusted. Each search starts past the last, so the work is linear.
+ * delimited construct is trusted. With `certain` false (the text is not exactly what CommonMark
+ * reads) a tag that fails to parse is not trusted to be plain text, nor a backslash to escape the
+ * `<` after it. Every character is read a bounded number of times, so the work is linear.
  */
-function stripInlineHtml(text: string, open: { inlineEnd?: string }, exact: boolean): string {
+function stripInlineHtml(
+  text: string,
+  open: InlineState,
+  exact: boolean,
+  certain: boolean
+): string {
   let kept = "";
   let from = 0;
-  INLINE_DELIMITED.lastIndex = 0;
-  for (let opener = INLINE_DELIMITED.exec(text); opener; opener = INLINE_DELIMITED.exec(text)) {
-    const end = inlineEndOf(opener[0]);
-    const close = exact ? text.indexOf(end, opener.index + 2) : -1;
-    kept += `${text.slice(from, opener.index)} `;
-    if (close === -1) {
-      open.inlineEnd = end;
-      from = text.length;
+  for (let at = text.indexOf("<"); at !== -1; at = text.indexOf("<", at)) {
+    // A backslash-escaped "<" is plain text in CommonMark, so nothing starts there. A hidden
+    // character removed from uncertain text may have stood between the two, so there it may be
+    // either: hide the rest of the paragraph.
+    if (isEscaped(text, at, from)) {
+      if (!certain) {
+        open.inline = TO_PARAGRAPH_END;
+        return `${kept}${text.slice(from, at)} `;
+      }
+      at += 1;
+      continue;
+    }
+    INLINE_DELIMITED.lastIndex = at;
+    const opener = INLINE_DELIMITED.exec(text);
+    if (opener) {
+      const end = inlineEndOf(opener[0]);
+      const close = exact ? text.indexOf(end, at + 2) : -1;
+      kept += `${text.slice(from, at)} `;
+      if (close === -1) {
+        open.inline = { kind: "marker", end };
+        return kept;
+      }
+      from = close + end.length;
+      at = from;
+      continue;
+    }
+    const tag = tagAt(text, at, false, !certain);
+    const step = tag && scanTag(tag.scan, text, tag.from);
+    // A "<" that starts no tag, or a tag that fails on certain text with no "<" in it, is plain text.
+    if (!tag || (step === "fail" && !tag.scan.innerLt && !tag.scan.uncertain)) {
+      at += 1;
+      continue;
+    }
+    kept += `${text.slice(from, at)} `;
+    const resume = tagEnd(tag.scan, step, text, open);
+    if (resume === undefined) return kept;
+    from = resume;
+    at = resume;
+  }
+  return `${kept}${text.slice(from)}`;
+}
+
+/**
+ * The rest of a line that starts inside inline HTML, from where that HTML ends, or undefined when
+ * it does not end on this line. To a tag, the line ending before this line is whitespace.
+ */
+function resumeInline(text: string, open: InlineState, exact: boolean): string | undefined {
+  const inline = open.inline;
+  open.inline = undefined;
+  let resume: number | undefined;
+  switch (inline?.kind) {
+    case undefined:
+      return text;
+    case "marker": {
+      const close = exact ? text.indexOf(inline.end) : -1;
+      const lt = text.indexOf("<");
+      // This line may start a new block (a quote, a list item), which ends the paragraph and the
+      // construct with it; a tag may then start at a "<" here and run past this end marker.
+      if (lt !== -1 && (close === -1 || lt < close)) open.inline = TO_PARAGRAPH_END;
+      else if (close === -1) open.inline = inline;
+      else resume = close + inline.end.length;
       break;
     }
-    from = close + end.length;
-    INLINE_DELIMITED.lastIndex = from;
+    case "untilGt":
+      resume = untilGt(text, 0, open);
+      break;
+    case "tag": {
+      const { scan } = inline;
+      // This module strips the prefix of a line (list markers, direction marks), and a line may also
+      // start a new block, so what the scan reads from here on may differ from what CommonMark reads.
+      scan.uncertain = true;
+      let step = stepTag(scan, LINE_FEED);
+      if (step === undefined) step = scanTag(scan, text, 0);
+      else scan.at = 0;
+      resume = tagEnd(scan, step, text, open);
+      break;
+    }
+    case "paragraph":
+      open.inline = inline;
+      break;
   }
-  kept = `${kept}${text.slice(from)}`.replace(HTML_TAG, " ");
-  // A tag start with no ">" after it is a tag still open (or literal text): hide it either way.
-  const after = kept.lastIndexOf(">") + 1;
-  const tag = TAG_START.exec(kept.slice(after));
-  if (tag) {
-    kept = kept.slice(0, after + tag.index);
-    // A delimited construct left open after it needs its own, longer end marker.
-    open.inlineEnd ??= ">";
-  }
-  return kept;
+  return resume === undefined ? undefined : text.slice(resume);
 }
 
 function stripMarkdownInline(text: string): string {
@@ -411,10 +766,12 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
     state.containers.length = matched;
     state.fence = undefined;
     state.htmlEnd = undefined;
+    // micromark lets condition 7 start on such a lazy line, even after paragraph text.
+    state.afterText = false;
   }
   const blank = exact && /^ *$/.test(continued);
   // A blank line ends the paragraph, and with it any inline HTML left open in it.
-  if (blank) state.inlineEnd = undefined;
+  if (blank) state.inline = undefined;
   // A blank line ends an HTML block of condition 6 or 7 even where it falls inside a comment.
   if (state.htmlBlock !== undefined && (state.htmlBlock > matched || blank)) {
     state.htmlBlock = undefined;
@@ -442,7 +799,14 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
     return "";
   }
 
-  const rest = openContainers(continued, state.containers);
+  const depth = state.containers.length;
+  // An open HTML block takes its lines as they are: a ">" or "-" in it opens no quote or list item
+  // (one would make a line like "> " look blank and end the block too early).
+  const rest =
+    state.htmlBlock === undefined ? openContainers(continued, state.containers) : continued;
+  // A new quote or list item starts a new block, which no paragraph runs on into, so condition 7
+  // may start in it.
+  if (state.containers.length > depth) state.afterText = false;
   const fence = fenceOf(rest, content, state.containers.length);
   if (fence && (fence[2]![0] === "~" || !fence[3]!.includes("`"))) {
     state.fence = { marker: fence[2]![0]!, length: fence[2]!.length };
@@ -455,7 +819,7 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
     if (!(exact && html.end.test(rest))) state.htmlEnd = html.end;
     return "";
   }
-  if (state.htmlBlock === undefined && startsHtmlBlock(rest, state.afterText)) {
+  if (state.htmlBlock === undefined && startsHtmlBlock(rest, state.afterText, exact)) {
     state.htmlBlock = state.containers.length;
   }
   // Every line of an HTML block that ends at a blank line (condition 6 or 7), its first line
@@ -472,18 +836,17 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   let line = content.replace(/^[\s\u{200E}\u{200F}\u{61C}]+/u, "").trimEnd();
   if (line === "") return "";
   let text = stripBlockMarkers(line);
-  if (state.inlineEnd) {
-    // The line starts inside inline HTML: only what follows its end marker can be shown, and only
-    // that part is checked below.
-    const close = exact ? text.indexOf(state.inlineEnd) : -1;
-    if (close === -1) return "";
-    text = text.slice(close + state.inlineEnd.length).trimStart();
+  if (state.inline) {
+    // The line starts inside inline HTML: only what follows its end can be shown, and only that
+    // part is checked below.
+    const after = resumeInline(text, state, exact);
+    if (after === undefined) return "";
+    text = after.trimStart();
     line = text;
-    state.inlineEnd = undefined;
   }
   // Inline HTML is followed on every line that gets here, also on lines dropped below, because
   // what it leaves open hides the lines after it.
-  const withoutHtml = stripInlineHtml(text, state, exact);
+  const withoutHtml = stripInlineHtml(text, state, exact, exact);
   if (THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
   if (FENCE_SYNTAX.test(line.replace(ALL_FORMAT, ""))) return "";
   if (text === "" || TABLE_RULE.test(text) || looksLikeJson(line) || looksLikeJson(text)) return "";
@@ -496,11 +859,13 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
  * Plain text of a block field such as a task title, or "" when it is not safe to show. A field is
  * schema-checked text, not markup, so the HTML in it is removed the same way as in prose, and HTML
  * it leaves open hides the rest of the field. Removed hidden characters could fake an end marker,
- * so then none is trusted (tidy keeps the length when it only turns controls into spaces).
+ * so then none is trusted (tidy keeps the length when it only turns controls into spaces). Once
+ * tidy changed anything, a tag that fails to parse is not trusted to be plain text either.
  */
 function fieldText(value: string): string {
   const tidied = tidy(value);
-  const plain = collapse(stripInlineHtml(tidied, {}, tidied.length === value.length));
+  const exact = tidied.length === value.length;
+  const plain = collapse(stripInlineHtml(tidied, {}, exact, tidied === value));
   return plain === "" || isUnsafe(plain) ? "" : plain;
 }
 

@@ -15,6 +15,11 @@ import { PAGE_TEXT_LIMITS, pageSnippet, projectPageText } from "./page-summary";
  */
 
 const TICKS = "```";
+/**
+ * Time a stress test may take in all, building its body included: well above the 3 s each
+ * projection must stay under, so a slower runner does not time out before the real check runs.
+ */
+const PATHOLOGICAL_TIMEOUT_MS = 30_000;
 /** Lone surrogates cannot be written as escapes in every toolchain. */
 const HIGH = String.fromCharCode(0xd800);
 const LOW = String.fromCharCode(0xdc00);
@@ -157,6 +162,12 @@ describe("valid blocks", () => {
       "Call <?php hidden ?> mum": "Call mum",
       // A removed hidden character could fake the end marker, so the comment is not trusted to end.
       "Call <!-- hidden -\u{200B}-> mum": "Call",
+      // A quoted attribute value may hold ">": the tag ends only after the value.
+      'Call <a title="x > hidden">mum</a>': "Call mum",
+      "Call <a title='x > hidden'>mum</a>": "Call mum",
+      'Call <a title="x\n> hidden">mum': "Call mum",
+      'Call <a title="x > hidden': "Call",
+      'Call <a title="a < b">hidden</a> hidden': "Call",
     };
     for (const [title, text] of Object.entries(titles)) {
       const result = project(fence(withTitle(title)));
@@ -165,6 +176,11 @@ describe("valid blocks", () => {
     }
     const named = { ...template, data: { ...template.data, name: "<i>Gentle</i> <!-- x -->day" } };
     expect(project(fence(named)).searchText).toBe("Gentle day");
+    const quoted = {
+      ...template,
+      data: { ...template.data, name: '<i title="a > hidden">Gentle</i> day' },
+    };
+    expect(project(fence(quoted)).searchText).toBe("Gentle day");
   });
 });
 
@@ -294,7 +310,10 @@ describe("fenced and raw-HTML look-alikes", () => {
         "valid",
         "markdown",
       ]);
-      expect(project(body).searchText).toBe("Email supervisor After");
+      // The stray end tag after the block is alone on its line, so it starts an HTML block of its
+      // own (condition 7 in micromark) that runs to the next blank line, "After" included.
+      expect(project(body).searchText).toBe("Email supervisor");
+      expect(project(body.replace(/After$/, "\nAfter")).searchText).toBe("Email supervisor After");
     }
   });
 
@@ -503,6 +522,18 @@ describe("inline HTML that runs over several lines", () => {
     fakeEnd: "visible <!--\nnote -\u{200B}->\nprivate\n--> public",
     // The line is dropped as fence-looking, but the comment it opens still runs on.
     onDroppedLine: "visible\nsee ``` here <!--\nprivate\n--> public",
+    // A quoted attribute value may hold ">", so a tag ends only at the ">" after its last value.
+    quotedGt: 'visible <a title="x > private">public</a>',
+    singleQuotedGt: "visible <a title='x > private'>public</a>",
+    quotedGtSecondAttribute: "visible <a href=\"/x\" title='a > private'>public",
+    quotedGtSelfClosing: 'visible <img alt="x > private"/>public',
+    quotedGtOverLines: 'visible <a title="x >\nprivate > note">public',
+    quoteClosedOnNextLine: 'visible <span class="a\nprivate">public',
+    quotedGtInQuote: '> visible <a title="x > private">public',
+    // The spec reads "/" as part of an unquoted value, micromark ends the tag there: hide either way.
+    slashInUnquotedValue: 'visible <a href=/x/y title="z > private">public',
+    // A hidden character in a quoted value cannot end it.
+    hiddenInQuotedValue: 'visible <a title="x\u{200B} > private">public',
   };
 
   for (const [name, body] of Object.entries(cases)) {
@@ -530,6 +561,58 @@ describe("inline HTML that runs over several lines", () => {
       "visible public"
     );
     expect(project("> visible <!--\n> private\n>\n> public").searchText).toBe("visible public");
+    expect(project('visible <a title="x > private\nprivate\n\npublic').searchText).toBe(
+      "visible public"
+    );
+    expect(project("visible <a title='x > private\n\npublic").searchText).toBe("visible public");
+  });
+
+  test("a tag whose end is not certain hides the rest of its paragraph", () => {
+    const bodies = [
+      // A "<" in a quoted value: where that tag is not read as one (here a code span covers its
+      // start), the "<" can start a tag of its own, which hides what follows it.
+      'visible `x<a title="` <b c="> private">\nprivate\n\npublic',
+      'visible <a title="a < b">private</a> private\nprivate\n\npublic',
+      // Not a tag (no space before x), so CommonMark starts one at the inner "<" instead.
+      "visible <a b=\"<c d='\"x>private'> private\n\npublic",
+      // CommonMark reads "2." as a value here; without it, the line no longer parses as a tag.
+      'visible <a b=\n2. d="x > private">private\n\npublic',
+      // A control character is a value to CommonMark and a space here.
+      'visible <a b=\u{7} c="x > private">private\n\npublic',
+    ];
+    for (const body of bodies) {
+      expect(project(body).searchText).toMatch(/^visible (?:x )?public$/);
+    }
+  });
+
+  test("a comment does not end on a later line where a tag may have started first", () => {
+    // The quote ends the paragraph, and the comment with it, so the "-->" is inside a title.
+    expect(project('visible <!--\n> <a title="--> private">public\n\nend').searchText).toBe(
+      "visible end"
+    );
+    expect(project('visible <!--\n> <a title="\n--> private">public\n\nend').searchText).toBe(
+      "visible end"
+    );
+  });
+
+  test("a backslash-escaped < starts nothing, so a tag after it is still read as one", () => {
+    expect(project('visible \\<!x <a title="x > private">public').searchText).toBe(
+      "visible \\<!x public"
+    );
+    // An escaped backslash does not escape the "<" after it.
+    expect(project('visible \\\\<a title="x > private">public').searchText).toBe(
+      "visible \\\\ public"
+    );
+    // CommonMark keeps the hidden character, so there the "<" is not escaped and starts a tag.
+    expect(project('visible \\\u{200B}<a title="x > private">private\n\npublic').searchText).toBe(
+      "visible \\ public"
+    );
+  });
+
+  test("a < that starts no tag is text, as it is in CommonMark", () => {
+    expect(project("mail <a@b.example> or see <https://example.invalid/x>").searchText).toBe(
+      "mail <a@b.example> or see <https://example.invalid/x>"
+    );
   });
 
   test("a Tempo block ends the paragraph, and the inline HTML left open in it", () => {
@@ -592,6 +675,21 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
     selfClosingTag: `<br/>\n${payload}After`,
     closingCustomTag: `</my-widget>\n${payload}After`,
     afterBlankLine: `Before\n\n<span>\n${payload}After`,
+    // A quoted attribute value may hold ">": the tag is still complete and alone on its line.
+    quotedGt: `<span title="x > y">\n${payload}After`,
+    singleQuotedGt: `<span title='x > y'>\n${payload}After`,
+    quotedGtSelfClosing: `<span title="x > y"/>\n${payload}After`,
+    quotedGtCustomElement: `<my-widget data-a='1' data-b="x > y" hidden>\n${payload}After`,
+    // micromark also starts a block where a value follows an unquoted one.
+    chainedValue: `<span title=x=" > y">\n${payload}After`,
+    // Only "<pre>" and the like start a block that ends at an end tag; micromark reads these as
+    // condition 7.
+    closingPre: `</pre>\n${payload}After`,
+    closingScript: `</script>\n${payload}After`,
+    selfClosingPre: `<pre/>\n${payload}After`,
+    // Inside an HTML block "> " and "- " are HTML too, not a quote or list item with a blank line.
+    quoteMarkersInBlock: `<div>\n> \n> \n${payload}After`,
+    listMarkersInBlock: `<div>\n- \n- \n${payload}After`,
   };
 
   for (const [name, body] of Object.entries(gated)) {
@@ -651,6 +749,13 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
       text: "Email supervisor After",
     },
     inTildeFence: { body: `~~~\n<div>\n~~~\n${payload}After`, text: "Email supervisor After" },
+    quotedGtThenText: {
+      body: `<span title="x > y">text\n${payload}After`,
+      text: "text Email supervisor After",
+    },
+    // The quote never closes on its line, so the tag is not complete: a paragraph, which the fence
+    // interrupts.
+    unclosedQuote: { body: `<span title="x >\n${payload}After`, text: "Email supervisor After" },
     afterTrustedBlock: {
       body: `${payload}Text\n<span>\n${second}After`,
       text: "Email supervisor Text Second block After",
@@ -676,6 +781,13 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
       "</div>\nprivate\n\npublic": "public",
       "<span>\nprivate\n\npublic": "public",
       '<my-widget data-x="1">\nprivate\n\npublic': "public",
+      '<span title="x > private">\nprivate\n\npublic': "public",
+      "</pre>\nprivate\n\npublic": "public",
+      // A new list item or quote is a new block, so its tag line starts one after a paragraph too.
+      "Intro\n- <span>\n  private\n\npublic": "Intro public",
+      "Intro\n> <span>\n> private\n\npublic": "Intro public",
+      // micromark starts one on a line that does not continue the list item, too.
+      '- item\n<span title=x=" > private">\n\npublic': "item public",
       "Intro\n<section>\nprivate\n\npublic": "Intro public",
       // A tag alone on a line cannot interrupt a paragraph (condition 7), so this stays text.
       "Intro\n<span>\nstill text\n\npublic": "Intro still text public",
@@ -809,48 +921,68 @@ describe("limits", () => {
       PAGE_TEXT_LIMITS.maxChars
     );
   });
+});
 
-  test("pathological bodies stay linear", () => {
-    const size = 1_000_000;
-    const bodies = [
-      "x ".concat("<!--".repeat(size / 4)),
-      "[".repeat(size),
-      "<a ".repeat(size / 3),
-      "-".repeat(size).concat("x"),
-      "a".concat(" ".repeat(size), "b #"),
-      "*_".repeat(size / 2),
-      '"'.concat("\\".repeat(size / 2)),
-      `[${" ".repeat(size)}x`,
-      "`".repeat(size),
-      "> ".repeat(size / 2),
-      "- ".repeat(size / 2),
-      ">".repeat(size),
-      "1. ".repeat(size / 3),
-      "> - ".repeat(size / 4).concat("```js"),
-      `- ${TICKS}js\n`.repeat(size / 8),
-      `> ${TICKS}\n  x\n`.repeat(size / 12),
-      "<div>\n".repeat(size / 6),
-      "<a ".repeat(size / 3).concat(">"),
-      `<span>\n${TICKS}json tempo\n{}\n${TICKS}\n`.repeat(size / 40),
-      "\t".repeat(size),
-      `- ${"\t".repeat(size / 2)}x`,
-      "🇮🇱".repeat(size / 4),
-      "x🇮".concat("🇮🇱".repeat(size / 4)),
-      "> <!--\n".repeat(size / 7),
-      `- <pre>\n${"  x\n".repeat(size / 4)}`,
-      "a <!-- -->".repeat(size / 10),
-      "a <?".repeat(size / 4),
-      "x <b\n".repeat(size / 5),
-      "x <!--\ny\n".repeat(size / 9),
-      "<div>\nx\n".repeat(size / 8),
-    ];
-    for (const body of bodies) {
-      const started = performance.now();
-      const result = projectPageText(body);
-      expectSafe(result.searchText);
-      expect(performance.now() - started).toBeLessThan(3000);
-    }
-  });
+describe("pathological bodies stay linear", () => {
+  const size = 1_000_000;
+  /**
+   * One test per body, each built inside its test, so a slow runner never has to fit all of them in
+   * one test's time. Every body must still project within the same 3 s.
+   */
+  const bodies: Record<string, () => string> = {
+    commentOpeners: () => "x ".concat("<!--".repeat(size / 4)),
+    brackets: () => "[".repeat(size),
+    tagStarts: () => "<a ".repeat(size / 3),
+    dashes: () => "-".repeat(size).concat("x"),
+    spacesBeforeHash: () => "a".concat(" ".repeat(size), "b #"),
+    emphasisMarkers: () => "*_".repeat(size / 2),
+    backslashes: () => '"'.concat("\\".repeat(size / 2)),
+    bracketAndSpaces: () => `[${" ".repeat(size)}x`,
+    backticks: () => "`".repeat(size),
+    quoteMarkers: () => "> ".repeat(size / 2),
+    listMarkers: () => "- ".repeat(size / 2),
+    greaterThans: () => ">".repeat(size),
+    orderedMarkers: () => "1. ".repeat(size / 3),
+    nestedContainersAndFence: () => "> - ".repeat(size / 4).concat("```js"),
+    fencesInItems: () => `- ${TICKS}js\n`.repeat(size / 8),
+    fencesInQuotes: () => `> ${TICKS}\n  x\n`.repeat(size / 12),
+    htmlBlockLines: () => "<div>\n".repeat(size / 6),
+    tagStartsClosedAtEnd: () => "<a ".repeat(size / 3).concat(">"),
+    gatedFences: () => `<span>\n${TICKS}json tempo\n{}\n${TICKS}\n`.repeat(size / 40),
+    tabs: () => "\t".repeat(size),
+    itemAndTabs: () => `- ${"\t".repeat(size / 2)}x`,
+    flags: () => "🇮🇱".repeat(size / 4),
+    flagsAfterLoneIndicator: () => "x🇮".concat("🇮🇱".repeat(size / 4)),
+    quotedCommentOpeners: () => "> <!--\n".repeat(size / 7),
+    preInItem: () => `- <pre>\n${"  x\n".repeat(size / 4)}`,
+    closedComments: () => "a <!-- -->".repeat(size / 10),
+    instructionOpeners: () => "a <?".repeat(size / 4),
+    tagsOpenOnEveryLine: () => "x <b\n".repeat(size / 5),
+    commentsOpenOnEveryLine: () => "x <!--\ny\n".repeat(size / 9),
+    htmlBlocksWithText: () => "<div>\nx\n".repeat(size / 8),
+    unclosedQuotedValues: () => '<a b="'.repeat(size / 6),
+    quotedGtInEveryTag: () => '<a title="x > y">z'.repeat(size / 18),
+    quotedGtTagLines: () => '<a title="x > y">\n'.repeat(size / 18),
+    quotesOpenOverLines: () => 'x <a title="\n'.repeat(size / 13),
+    slashesInUnquotedValues: () => "<a b=c/".repeat(size / 7),
+    closingTagsOpenOnEveryLine: () => "</a\n".repeat(size / 4),
+    oneLongQuotedValue: () => '<a title="'.concat("x".repeat(size), '">'),
+    manyAttributes: () => "<a".concat(' b="x > y"'.repeat(size / 10), ">"),
+  };
+
+  for (const [name, build] of Object.entries(bodies)) {
+    test(
+      name,
+      () => {
+        const body = build();
+        const started = performance.now();
+        const result = projectPageText(body);
+        expectSafe(result.searchText);
+        expect(performance.now() - started).toBeLessThan(3000);
+      },
+      PATHOLOGICAL_TIMEOUT_MS
+    );
+  }
 });
 
 describe("Hebrew and bidirectional text", () => {
