@@ -661,6 +661,14 @@ const tempoTheme = EditorView.theme({
   ".cm-tp-table th": { background: "var(--tp-sunken)", fontWeight: "600" },
 });
 
+/** The copied text with every closed `json tempo` fence removed. */
+export function withoutTempoBlocks(text: string): string {
+  return parseTempoBlocks(text)
+    .filter((s) => s.kind === "markdown" || (s.kind === "broken" && s.errorCode === "unclosed_fence"))
+    .map((s) => s.source)
+    .join("");
+}
+
 /* ------------------------------------------------------------------ */
 /* Public extension                                                     */
 /* ------------------------------------------------------------------ */
@@ -681,6 +689,10 @@ export function livePreview(options: LivePreviewOptions): Extension {
     boundaryGuard,
     inlinePreview,
     tempoTheme,
+    // Copy gives Markdown: a Tempo block inside the selection adds nothing to the clipboard,
+    // so its JSON never leaves the page this way (contract ED-07, B-07). A fence the user is
+    // still typing (unclosed) is ordinary text and is kept.
+    EditorView.clipboardOutputFilter.of((text) => withoutTempoBlocks(text)),
     EditorView.domEventHandlers({
       mousedown(event) {
         const target = event.target as HTMLElement | null;
