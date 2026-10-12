@@ -40,8 +40,10 @@ export {
   type Backlink,
   backlinksFor,
   findWikiLinks,
+  isLinkableTitle,
   type PageRef,
   sameTitle,
+  titleKey,
   type WikiLink,
 } from "./wiki-links";
 

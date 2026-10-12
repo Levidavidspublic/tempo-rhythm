@@ -263,6 +263,7 @@ const en = {
   "tplRun.error": "Could not make the page. You can try again.",
   "tplRun.checking": "Checking which outline fits…",
   "tplRun.why": "Why this outline",
+  "notes.noContent": "No content yet.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -502,6 +503,7 @@ const he: Record<MessageKey, string> = {
   "tplRun.error": "לא הצלחנו ליצור את הדף. אפשר לנסות שוב.",
   "tplRun.checking": "בודקים איזו תבנית מתאימה…",
   "tplRun.why": "למה התבנית הזו",
+  "notes.noContent": "עוד אין תוכן.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, he };

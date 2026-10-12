@@ -59,7 +59,8 @@ const PRO_INCLUDES = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    // English-only page: keep it left to right even when the app language is Hebrew.
+    <div className="min-h-screen bg-background text-foreground" dir="ltr" lang="en">
       <nav className={`${wrap} flex flex-wrap items-center gap-4 py-6 md:gap-8`}>
         <Link href="/" className="flex items-center gap-3" aria-label="Tempo Flow home">
           <BrandMark size={32} />
