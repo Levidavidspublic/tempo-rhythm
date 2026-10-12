@@ -135,7 +135,7 @@ export function SearchScreen() {
           <p className="tp-muted">{t("search.none").replace("{q}", query)}</p>
         ) : (
           <>
-            <p className="tp-muted tp-small">{t("search.results").replace("{n}", String(total))}</p>
+            <p className="tp-muted tp-small">{total === 1 ? t("search.result") : t("search.results").replace("{n}", String(total))}</p>
             {show("notes") ? (
               <ResultGroup
                 kind="notes"
