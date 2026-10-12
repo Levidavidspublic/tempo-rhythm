@@ -23,7 +23,7 @@
 <body>
 <!--
 @screen   Page with every block (reference)
-@route    apps/web/app/(tempo)/p/[pageId]/page.tsx
+@route    apps/web/app/(tempo)/notes/[id]/page.tsx   (/p/[pageId] is only a redirect to it)
 @layout   TempoShell
 @data     page = pages.get({ pageId })                                   // Convex query: Markdown body + blocks (rendered with json-render; the JSON is never shown)
 @data     backlinks = pages.backlinks({ pageId })                        // Convex query
@@ -496,7 +496,7 @@
     <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
     <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
     <a class="tp-tab" href="page-editor.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
-    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
     <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
   </nav>
 </div>

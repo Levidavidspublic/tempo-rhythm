@@ -36,7 +36,7 @@ Sources: each file's `@screen` header comment (the first block inside `<body>`),
 | HTML file | Target route | shadcn | Data | States (extras) |
 |---|---|---|---|---|
 | `web/page-editor.html` | `apps/web/app/(tempo)/notes/[id]/page.tsx` (inventory `note-detail`) | card list, checkbox, badge, dropdown-menu, command in popover (slash menu) | `pages.get`, `pages.backlinks` | — |
-| `web/page-blocks.html` | `apps/web/app/(tempo)/p/[pageId]/page.tsx` [NEW] | card list, checkbox, radio-group, dropdown-menu, toggle, toggle-group, sonner | `pages.get`, `pages.backlinks` | — |
+| `web/page-blocks.html` | `apps/web/app/(tempo)/notes/[id]/page.tsx` (the one page route; `/p/[pageId]` only redirects there) | card list, checkbox, radio-group, dropdown-menu, toggle, toggle-group, sonner | `pages.get`, `pages.backlinks` | — |
 | `web/weekly-page.html` | `apps/web/app/(tempo)/notes/[id]/page.tsx` (type weekly, from `/week/2026-W42`) [NEW] | card list, checkbox, badge, dropdown-menu, command in popover, toggle-group | `pages.getWeekly`, `tasks.listForWeek`, `pages.backlinks` | — |
 | `web/new-page.html` | `apps/web/app/(tempo)/notes/new/page.tsx` [NEW] | radio-group (cards), card, button, sonner | `templates.suggest`, `templates.list` | — |
 | `web/templates.html` | `apps/web/app/(tempo)/templates/page.tsx` | card, badge, input, dropdown-menu, toggle-group | `templates.listBuiltIn`, `templates.listMine` | empty = no own templates (built-ins still show) |
@@ -137,7 +137,7 @@ Common: `tabs` nav variant (tab bar), `sheet` (side, the "more" menu), `avatar`.
 |---|---|---|
 | history | `web/coach-history.html` | `(tempo)/history` |
 | voice-call (web) | `web/voice-call.html` | `components/voice/VoiceCall.tsx` over `/today` |
-| page-blocks | `web/page-blocks.html` | `(tempo)/p/[pageId]` |
+| page-blocks | `web/page-blocks.html` | `(tempo)/notes/[id]` (alias `/p/[pageId]` redirects) |
 | weekly-page | `web/weekly-page.html` | `(tempo)/notes/[id]` (weekly type), entry `/week/[isoWeek]` |
 | new-page | `web/new-page.html` | `(tempo)/notes/new` |
 | modules | `web/modules.html` | `(tempo)/modules` |

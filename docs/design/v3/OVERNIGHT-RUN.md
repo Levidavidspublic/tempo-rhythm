@@ -27,10 +27,11 @@ By morning, preview.tempoflow.dev runs the v3 redesign as a markdown-first app. 
 - Builder (you) and checker (Codex) stay different models.
 
 ## Order
-1. Open and merge the design docs: PR `batch/v3-markdown-first` -> `integration`.
+1. Open and merge the design docs: PR `batch/v3-markdown-first` -> `integration` (opened from `v3/design-docs`, the same commits, because scope-guard judges `batch/*` heads as factory batch PRs).
 2. Finish the open PRs this work depends on: #826 (if still open), #874, #878, #893, #891, #884, #887, #896, #873. For each: update from integration; if it passes and matches the decisions above, merge it. If it is broken or contradicts them, redo it as a new `v3/` PR from integration, link the old one, then close the old one with a comment. Leave every other open PR alone.
 3. Build, one small PR per group, merging as you go: tokens + tempo.css -> TempoShell -> markdown model + editor + round-trip test -> Page editor, slash menu, blocks -> Today / Daily / Weekly -> Notes, Templates, Journal, Brain dump -> Coach panel -> remaining web screens -> mobile shell + mobile screens.
 4. Preview check after the last merge: with Playwright, open every route on preview.tempoflow.dev at 390 and 1280, light/dark, en/he, and list anything that doesn't render. Screenshots under /tmp only. Fix what you can with more PRs.
+   This is an owner-authorised, read-only pass (an exception to AGENTS.md "Testing (cloud agents)", which stays local for every PR): page loads and screenshots only. No test suite, no `PLAYWRIGHT_BASE_URL`, no sign-in with real keys, no form submits or other writes, nothing used as PR evidence.
 
 If time or budget runs out, stop cleanly after the current PR and write the report. A merged half beats a broken whole.
 
