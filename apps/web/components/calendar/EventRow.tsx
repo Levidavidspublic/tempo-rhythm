@@ -171,37 +171,40 @@ export function UndoToast({
   }, [undoUntilMs, onExpire]);
 
   return (
-    <output className="tp-toast tp-glass cal-toast">
-      <span className="tp-toast__text">
-        <span className="tp-toast__title">Event removed.</span>
-      </span>
-      <button
-        className="tp-btn tp-btn--secondary tp-btn--sm"
-        disabled={isUndoing}
-        aria-busy={isUndoing}
-        onClick={() => {
-          if (undoingRef.current) return;
-          undoingRef.current = true;
-          setIsUndoing(true);
-          setError(null);
-          onUndo()
-            .catch((err: unknown) =>
-              setError(err instanceof Error ? err.message : "Could not undo that yet.")
-            )
-            .finally(() => {
-              undoingRef.current = false;
-              setIsUndoing(false);
-            });
-        }}
-        type="button"
-      >
-        Undo
-      </button>
-      {error ? (
-        <span className="tp-error-text" role="alert">
-          {error}
+    // The region positions the toast; the toast itself only animates.
+    <div className="tp-toast-region">
+      <output className="tp-toast tp-glass">
+        <span className="tp-toast__text">
+          <span className="tp-toast__title">Event removed.</span>
         </span>
-      ) : null}
-    </output>
+        <button
+          className="tp-btn tp-btn--secondary tp-btn--sm"
+          disabled={isUndoing}
+          aria-busy={isUndoing}
+          onClick={() => {
+            if (undoingRef.current) return;
+            undoingRef.current = true;
+            setIsUndoing(true);
+            setError(null);
+            onUndo()
+              .catch((err: unknown) =>
+                setError(err instanceof Error ? err.message : "Could not undo that yet.")
+              )
+              .finally(() => {
+                undoingRef.current = false;
+                setIsUndoing(false);
+              });
+          }}
+          type="button"
+        >
+          Undo
+        </button>
+        {error ? (
+          <span className="tp-error-text" role="alert">
+            {error}
+          </span>
+        ) : null}
+      </output>
+    </div>
   );
 }
