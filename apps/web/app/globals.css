@@ -619,3 +619,5 @@ p {
 .bd-group { display: grid; gap: var(--tp-space-2); }
 .bd-group__title { margin: 0; font-size: var(--tp-text-sm); }
 .bd-row__actions { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-inline-start: auto; }
+.bd-saved { flex-wrap: wrap; }
+.bd-saved .tp-notice__action { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }

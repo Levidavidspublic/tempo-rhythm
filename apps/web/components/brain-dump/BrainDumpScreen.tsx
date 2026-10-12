@@ -1,11 +1,12 @@
 "use client";
 
 import { useAction, useConvex, useMutation } from "convex/react";
-import { useRouter } from "next/navigation";
-import { useCallback, useId, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { brainDumpPageBody } from "@/lib/brain-dump-page";
 import { dayTokens } from "@/lib/editor/markdown-model";
 import { localIsoDate } from "@/lib/period-pages";
@@ -25,6 +26,9 @@ type ResourcesCard = {
   resources: { label: string; detail: string }[];
 };
 
+/** A saved page can be undone in one click for 5 minutes (HARD_RULES: AI-made changes stay reversible). */
+const SAVE_UNDO_MS = 5 * 60 * 1000;
+
 const URGENCY_KEY = { now: "bd.now", soon: "bd.soon", later: "bd.later" } as const;
 const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon: "info", later: undefined };
 
@@ -36,11 +40,11 @@ const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon
 export function BrainDumpScreen() {
   const textareaId = `${useId()}-brain-dump`;
   const { t, lang } = useLocale();
-  const router = useRouter();
   const convex = useConvex();
   const prioritize = useAction(api.brain_dump.prioritize);
   const acceptPlan = useMutation(api.brain_dump.acceptPlan);
   const createNote = useMutation(api.notes.create);
+  const removeNote = useMutation(api.notes.remove);
 
   const [draft, setDraft] = useState("");
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -52,6 +56,19 @@ export function BrainDumpScreen() {
   const [isSorting, setIsSorting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // The page "Save as a page" just made: a link to open it, and Undo until `undoUntil`.
+  const [saved, setSaved] = useState<{ id: string; undoUntil: number } | null>(null);
+  const [canUndoSave, setCanUndoSave] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+
+  useEffect(() => {
+    if (!saved) return;
+    const remaining = saved.undoUntil - Date.now();
+    setCanUndoSave(remaining > 0);
+    if (remaining <= 0) return;
+    const timer = window.setTimeout(() => setCanUndoSave(false), remaining);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
 
   const groups = useMemo(() => (plan ? groupByUrgency(plan) : []), [plan]);
   const toAdd = useMemo(() => (plan ? acceptedItems(plan, accepted) : []), [plan, accepted]);
@@ -123,12 +140,29 @@ export function BrainDumpScreen() {
         labels: { now: t("bd.now"), soon: t("bd.soon"), later: t("bd.later") },
       });
       const id = await createNote({ title: t("bd.pageTitle").replace("{day}", day), body });
-      router.push(`/notes/${id}`);
+      // Stay here with Open and Undo: the page holds AI-sorted text, so it is one click to take back.
+      setDoneMessage("");
+      setSaved({ id, undoUntil: Date.now() + SAVE_UNDO_MS });
     } catch {
       setError(t("bd.saveError"));
+    } finally {
       setIsSaving(false);
     }
-  }, [createNote, isSaving, lang, plan, rejected, router, t]);
+  }, [createNote, isSaving, lang, plan, rejected, t]);
+
+  const handleUndoSave = useCallback(async () => {
+    if (!saved || isUndoing) return;
+    setIsUndoing(true);
+    try {
+      await removeNote({ noteId: saved.id as Id<"notes"> });
+      setSaved(null);
+      setDoneMessage(t("bd.pageRemoved"));
+    } catch {
+      setError(t("bd.undoError"));
+    } finally {
+      setIsUndoing(false);
+    }
+  }, [isUndoing, removeNote, saved, t]);
 
   if (crisisCard) {
     return (
@@ -191,6 +225,26 @@ export function BrainDumpScreen() {
         {doneMessage ? (
           <output className="tp-notice" data-tone="done">
             <span className="tp-notice__text">{doneMessage}</span>
+          </output>
+        ) : null}
+        {saved ? (
+          <output className="tp-notice bd-saved" data-tone="done" data-component="SavedPageNotice">
+            <span className="tp-notice__text">{t("bd.saved")}</span>
+            <span className="tp-notice__action">
+              <Link className="tp-btn tp-btn--secondary tp-btn--sm" href={`/notes/${saved.id}`}>
+                {t("bd.openPage")}
+              </Link>
+              {canUndoSave ? (
+                <button
+                  type="button"
+                  className="tp-btn tp-btn--ghost tp-btn--sm"
+                  onClick={() => void handleUndoSave()}
+                  disabled={isUndoing}
+                >
+                  {t("bd.undoSave")}
+                </button>
+              ) : null}
+            </span>
           </output>
         ) : null}
         <div className="bd-actions">
@@ -318,7 +372,12 @@ export function BrainDumpScreen() {
               </span>
             </button>
             {visibleCount > 0 ? (
-              <button type="button" className="tp-btn tp-btn--secondary" onClick={() => void handleSavePage()} disabled={busy}>
+              <button
+                type="button"
+                className="tp-btn tp-btn--secondary"
+                onClick={() => void handleSavePage()}
+                disabled={busy || saved !== null}
+              >
                 <TpIcon name="page" size="sm" />
                 <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
               </button>
