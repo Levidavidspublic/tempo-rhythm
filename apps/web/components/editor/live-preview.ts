@@ -11,16 +11,32 @@ import {
   EditorSelection,
   EditorState,
   type Extension,
+  Prec,
   type Range,
   StateEffect,
   StateField,
   type Transaction,
   type TransactionSpec,
 } from "@codemirror/state";
-import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view";
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  keymap,
+  ViewPlugin,
+  type ViewUpdate,
+  WidgetType,
+} from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { parseTempoBlocks, type TempoBlock } from "@tempo/utils";
-import { type BlockRange, LINE_SEPARATOR, setTaskDone, setTaskTitle, tempoBlockRanges } from "@/lib/editor/markdown-model";
+import {
+  type BlockRange,
+  LINE_SEPARATOR,
+  setTaskDone,
+  setTaskTitle,
+  tempoBlockRanges,
+  wikiLinkAtOffset,
+} from "@/lib/editor/markdown-model";
 
 export type EditorLabels = {
   minutes: string;
@@ -762,6 +778,20 @@ export type LivePreviewOptions = {
   onOpenLink?: (title: string) => void;
 };
 
+/** The title of the `[[link]]` at the cursor, outside code and Tempo blocks, or null. */
+function wikiLinkAtCursor(state: EditorState): string | null {
+  const sel = state.selection.main;
+  if (!sel.empty) return null;
+  const line = state.doc.lineAt(sel.head);
+  if (state.field(tempoBlocksField).ranges.some((r) => sel.head >= r.from && sel.head < r.to)) return null;
+  let node: ReturnType<ReturnType<typeof syntaxTree>["resolveInner"]> | null = syntaxTree(state).resolveInner(sel.head, -1);
+  while (node) {
+    if (node.name === "InlineCode" || node.name === "FencedCode" || node.name === "CodeBlock") return null;
+    node = node.parent;
+  }
+  return wikiLinkAtOffset(line.text, sel.head - line.from);
+}
+
 /** Everything the page editor needs on top of Markdown, history and keymaps. */
 export function livePreview(options: LivePreviewOptions): Extension {
   currentLabels = options.labels;
@@ -777,6 +807,20 @@ export function livePreview(options: LivePreviewOptions): Extension {
     // so its JSON never leaves the page this way (contract ED-07, B-07). A fence the user is
     // still typing (unclosed) is ordinary text and is kept.
     EditorView.clipboardOutputFilter.of((text) => withoutTempoBlocks(text)),
+    // Keyboard users open the [[link]] under the cursor with Mod-Enter (a click opens it too).
+    Prec.high(
+      keymap.of([
+        {
+          key: "Mod-Enter",
+          run: (view) => {
+            const title = options.onOpenLink ? wikiLinkAtCursor(view.state) : null;
+            if (!title) return false;
+            options.onOpenLink?.(title);
+            return true;
+          },
+        },
+      ]),
+    ),
     EditorView.domEventHandlers({
       mousedown(event) {
         const target = event.target as HTMLElement | null;

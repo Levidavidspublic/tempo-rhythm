@@ -223,6 +223,19 @@ export function wikiQuery(lineBefore: string): { query: string; offset: number }
   return { query: match[1]!, offset: match.index };
 }
 
+/**
+ * The page title of the `[[link]]` that holds `offset` on one line (its brackets included), or
+ * null. Keyboard users open a link with Mod-Enter, so the editor asks this at the cursor.
+ */
+export function wikiLinkAtOffset(lineText: string, offset: number): string | null {
+  const re = /\[\[([^[\]\n|]{1,200})(?:\|[^[\]\n]{1,200})?\]\]/g;
+  for (let m = re.exec(lineText); m !== null; m = re.exec(lineText)) {
+    if (offset < m.index) return null;
+    if (offset <= m.index + m[0].length) return m[1]!.trim() || null;
+  }
+  return null;
+}
+
 /** Titles for the "[[" picker, best match first. */
 export function pickPages(query: string, pages: readonly PageRef[], selfId: string, limit = 8): PageRef[] {
   const q = query.trim().toLocaleLowerCase();
