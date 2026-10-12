@@ -16,7 +16,9 @@ export type PeriodPageState =
   | { status: "signed-out" }
   | { status: "loading" }
   | { status: "error"; retry: () => void }
-  | { status: "ready"; noteId: string };
+  | { status: "ready"; noteId: string }
+  /** The page was opened, then deleted (from Notes or another tab). Nothing is remade on its own. */
+  | { status: "gone"; makeNew: () => void };
 
 /**
  * The daily page for a local date (or the weekly page for a Monday). Made from the template on
@@ -34,13 +36,21 @@ export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPage
   const asked = useRef<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const key = `${kind}:${date}`;
+  // The key whose page this view already showed. If that page then disappears it was deleted:
+  // say so instead of silently making a fresh one (the deleted page stays restorable in Notes).
+  const [shown, setShown] = useState<string | null>(null);
+  const [remake, setRemake] = useState<string | null>(null);
+  useEffect(() => {
+    if (page) setShown(key);
+  }, [page, key]);
+  const gone = page === null && shown === key && remake !== key;
 
   useEffect(() => {
-    if (!ready || page !== null || template === undefined || asked.current === key) return;
+    if (!ready || page !== null || template === undefined || asked.current === key || gone) return;
     asked.current = key;
     const draft = periodPageDraft(kind, date, template?.body ?? "", lang);
     ensure({ pageType: kind, date, title: draft.title, body: draft.body }).catch(() => setFailed(key));
-  }, [ready, page, template, key, kind, date, lang, ensure]);
+  }, [ready, page, template, key, kind, date, lang, ensure, gone]);
 
   if (!isLoading && !isAuthenticated) return { status: "signed-out" };
   if (failed === key) {
@@ -53,5 +63,14 @@ export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPage
     };
   }
   if (page) return { status: "ready", noteId: page._id };
+  if (gone) {
+    return {
+      status: "gone",
+      makeNew: () => {
+        asked.current = null;
+        setRemake(key);
+      },
+    };
+  }
   return { status: "loading" };
 }

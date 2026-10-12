@@ -28,6 +28,7 @@ export function WeekOpener({ weekKey }: { weekKey: string | null }) {
   if (weekKey !== null && monday === null) message = t("week.bad");
   else if (state.status === "signed-out") message = t("week.signIn");
   else if (state.status === "error") message = t("week.error");
+  else if (state.status === "gone") message = t("week.gone");
   else message = t("week.loading");
 
   return (

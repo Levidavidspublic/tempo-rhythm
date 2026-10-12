@@ -61,6 +61,8 @@ type Props = {
   backHref?: string | null;
   /** Shown on the paper between the page header and the body (Today's Next up card). */
   lead?: ReactNode;
+  /** False hides Delete (Today's own page is deleted from Notes, where Undo lives). */
+  canDelete?: boolean;
 };
 
 /** Tags from the page's page-meta block (the only place tags live, NT-05). */
@@ -285,18 +287,20 @@ export function PageEditorView(props: Props) {
                       <TpIcon name={mode === "edit" ? "page" : "edit"} size="sm" />
                       {mode === "edit" ? t("page.read") : t("page.edit")}
                     </button>
-                    <button
-                      className="tp-menu__item"
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        props.onAskDelete();
-                      }}
-                    >
-                      <TpIcon name="x" size="sm" />
-                      {t("page.delete")}
-                    </button>
+                    {props.canDelete === false ? null : (
+                      <button
+                        className="tp-menu__item"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          props.onAskDelete();
+                        }}
+                      >
+                        <TpIcon name="x" size="sm" />
+                        {t("page.delete")}
+                      </button>
+                    )}
                   </div>
                 ) : null}
               </div>
