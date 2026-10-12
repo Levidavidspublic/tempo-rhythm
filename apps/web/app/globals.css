@@ -575,6 +575,11 @@ p {
 }
 
 /* ---- v3 shell: a page's side column (apps/web/components/tempo/ShellSlots.tsx) ---- */
+/* /coach: the thread scrolls inside a bounded surface, so the composer stays in reach. */
+.tp-coach-page { display: flex; flex-direction: column; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
+.tp-coach-page > * { flex: none; }
+.tp-coach-page > .tp-coach-thread { flex: 1 1 auto; min-height: 0; }
+
 /* /coach puts the push dial and today's proposal beside the chat, outside main. */
 .tp-app__aside { grid-area: aside; min-width: 0; padding: var(--tp-space-8) var(--tp-space-6) var(--tp-space-20) 0; display: grid; gap: var(--tp-space-6); align-content: start; }
 .tp-app__aside[hidden] { display: none; }

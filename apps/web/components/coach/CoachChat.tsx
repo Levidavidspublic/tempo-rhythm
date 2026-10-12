@@ -207,7 +207,7 @@ export function CoachChat() {
           <p className="tp-pagehead__sub">{t("coachChat.sub")}</p>
         </div>
       </header>
-      <section className="tp-surface" style={{ padding: 0, gap: 0 }} aria-label={t("coach.name")}>
+      <section className="tp-surface tp-coach-page" style={{ padding: 0, gap: 0 }} aria-label={t("coach.name")}>
         <CoachConversation variant="page" />
       </section>
     </div>

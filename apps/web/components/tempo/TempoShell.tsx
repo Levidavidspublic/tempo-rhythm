@@ -12,17 +12,16 @@ import { TabBar } from "./TabBar";
 import { Topbar } from "./Topbar";
 import { TpIconSprite } from "./TpIcon";
 
-/** Under 1024 px the rail is a drawer (tempo.css "Responsive"). */
-function useNarrowViewport(): boolean {
-  const [narrow, setNarrow] = useState(false);
+function useMaxWidth(px: number): boolean {
+  const [matches, setMatches] = useState(false);
   useEffect(() => {
-    const mql = window.matchMedia("(max-width: 1023px)");
-    const update = () => setNarrow(mql.matches);
+    const mql = window.matchMedia(`(max-width: ${px}px)`);
+    const update = () => setMatches(mql.matches);
     update();
     mql.addEventListener("change", update);
     return () => mql.removeEventListener("change", update);
-  }, []);
-  return narrow;
+  }, [px]);
+  return matches;
 }
 
 /**
@@ -34,7 +33,10 @@ function useNarrowViewport(): boolean {
 export function TempoShell({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
-  const narrow = useNarrowViewport();
+  // Under 1024 px the rail is a drawer; under 1280 px the coach panel is a sheet over the page
+  // (tempo.css "Responsive").
+  const narrow = useMaxWidth(1023);
+  const coachSheet = useMaxWidth(1279);
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLocale();
@@ -46,11 +48,41 @@ export function TempoShell({ children }: { children: ReactNode }) {
   const [asideHost, setAsideHost] = useState<HTMLElement | null>(null);
   const [asideClaims, setAsideClaims] = useState(0);
   const panelOpen = coachOpen && !onCoachRoute;
+  const appRef = useRef<HTMLDivElement | null>(null);
+  // Closing the panel puts focus back on the coach button, once the shell is no longer inert.
+  const refocusCoachButton = useRef(false);
+
+  // On /coach the coach is the page, so a panel left open does not come back on the next page.
+  useEffect(() => {
+    if (onCoachRoute) setCoachOpen(false);
+  }, [onCoachRoute]);
+
+  // As a sheet the panel is modal: everything else in the shell is inert until it closes.
+  useEffect(() => {
+    const app = appRef.current;
+    if (!(panelOpen && coachSheet) || !app) return;
+    const made = Array.from(app.children).filter(
+      (el): el is HTMLElement =>
+        el instanceof HTMLElement &&
+        !el.classList.contains("tp-coach-panel") &&
+        !el.classList.contains("tp-scrim") &&
+        !el.hasAttribute("inert"),
+    );
+    for (const el of made) el.inert = true;
+    return () => {
+      for (const el of made) el.inert = false;
+    };
+  }, [panelOpen, coachSheet]);
+
+  useEffect(() => {
+    if (panelOpen || !refocusCoachButton.current) return;
+    refocusCoachButton.current = false;
+    coachButton.current?.focus();
+  }, [panelOpen]);
 
   const closeCoach = useCallback(() => {
+    refocusCoachButton.current = true;
     setCoachOpen(false);
-    // Back to where the coach was opened from.
-    window.requestAnimationFrame(() => coachButton.current?.focus());
   }, []);
   const claimAside = useCallback(() => {
     setAsideClaims((n) => n + 1);
@@ -87,7 +119,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
       } else if (e.key === "Escape") {
         setRailOpen(false);
         setCoachOpen((open) => {
-          if (open) window.requestAnimationFrame(() => coachButton.current?.focus());
+          if (open) refocusCoachButton.current = true;
           return false;
         });
       }
@@ -99,6 +131,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
   return (
     <ShellSlotsContext.Provider value={slots}>
     <div
+      ref={appRef}
       className="tp-app"
       data-component="TempoShell"
       data-rail={railOpen ? "open" : "closed"}
@@ -126,7 +159,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
       {onCoachRoute ? null : (
         <CoachButton ref={coachButton} expanded={panelOpen} onOpen={() => setCoachOpen(true)} />
       )}
-      {panelOpen ? <CoachPanel onClose={closeCoach} /> : null}
+      {panelOpen ? <CoachPanel onClose={closeCoach} modal={coachSheet} /> : null}
       <button
         type="button"
         className="tp-scrim"
