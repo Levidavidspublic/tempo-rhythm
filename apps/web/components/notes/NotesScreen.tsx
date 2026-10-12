@@ -5,6 +5,8 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LivePreviewEditor } from "@/components/editor/LivePreviewEditor";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
@@ -208,6 +210,7 @@ type SaveState = "idle" | "saving" | "saved";
 
 function NoteEditor({ noteId }: { noteId: string }) {
   const router = useRouter();
+  const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
   // During sign-in getProfile resolves safely while the user record is being created.
@@ -386,17 +389,23 @@ function NoteEditor({ noteId }: { noteId: string }) {
           />
         </label>
 
-        <label className="block space-y-2">
-          <span className="sr-only">Note body</span>
-          <textarea
-            aria-label="Note body"
-            value={body}
-            onChange={(event) => handleBodyChange(event.target.value)}
-            rows={16}
-            placeholder="Write whatever is on your mind."
-            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        <div className="min-h-64 rounded-xl border border-border bg-card px-4 py-3">
+          {/* Live preview over the exact Markdown body; an untouched page saves back identical. */}
+          <LivePreviewEditor
+            key={note?._id ?? "draft"}
+            initialValue={note?.body ?? body}
+            ariaLabel="Note body"
+            placeholder={t("editor.placeholder")}
+            labels={{
+              minutes: t("editor.minutes"),
+              removeBlock: t("editor.remove"),
+              brokenBlock: t("editor.broken"),
+              template: t("editor.template"),
+              taskDone: t("editor.done"),
+            }}
+            onChange={handleBodyChange}
           />
-        </label>
+        </div>
       </div>
     </main>
   );
