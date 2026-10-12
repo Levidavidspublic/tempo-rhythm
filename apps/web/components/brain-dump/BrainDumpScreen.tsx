@@ -1,20 +1,21 @@
 "use client";
 
 import { useAction, useConvex, useMutation } from "convex/react";
-import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useId, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
+import { brainDumpPageBody } from "@/lib/brain-dump-page";
+import { dayTokens } from "@/lib/editor/markdown-model";
+import { localIsoDate } from "@/lib/period-pages";
 import {
   acceptedItems,
   canSubmit,
   groupByUrgency,
   MAX_ACCEPTED,
-  toggleItem,
-  URGENCY_LABEL,
   type Plan,
+  toggleItem,
   type Urgency,
 } from "./brainDumpState";
 
@@ -24,19 +25,22 @@ type ResourcesCard = {
   resources: { label: string; detail: string }[];
 };
 
-const urgencyTone: Record<Urgency, string> = {
-  now: "border-[color:var(--color-tempo-orange)]/30 bg-[color:var(--color-tempo-orange)]/10 text-[color:var(--color-tempo-orange)]",
-  soon: "border-primary/20 bg-primary/10 text-primary",
-  later: "border-border bg-muted/60 text-muted-foreground",
-};
+const URGENCY_KEY = { now: "bd.now", soon: "bd.soon", later: "bd.later" } as const;
+const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon: "info", later: undefined };
 
-const FALLBACK_ERROR = "That did not work. Your text is still here, so try again in a moment.";
-
+/**
+ * Brain dump (docs/design/v3/screens/web/brain-dump.html): type everything, sort it into a
+ * proposal, accept lines one by one. Nothing reaches the lists until "Add accepted"; "Save as a
+ * page" keeps the sorted plan as an ordinary Markdown page instead (decision 6).
+ */
 export function BrainDumpScreen() {
   const textareaId = `${useId()}-brain-dump`;
+  const { t, lang } = useLocale();
+  const router = useRouter();
   const convex = useConvex();
   const prioritize = useAction(api.brain_dump.prioritize);
   const acceptPlan = useMutation(api.brain_dump.acceptPlan);
+  const createNote = useMutation(api.notes.create);
 
   const [draft, setDraft] = useState("");
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -47,14 +51,16 @@ export function BrainDumpScreen() {
   const [doneMessage, setDoneMessage] = useState("");
   const [isSorting, setIsSorting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const groups = useMemo(() => (plan ? groupByUrgency(plan) : []), [plan]);
   const toAdd = useMemo(() => (plan ? acceptedItems(plan, accepted) : []), [plan, accepted]);
   const visibleCount = plan ? plan.priorities.length - rejected.length : 0;
+  const busy = isSorting || isAdding || isSaving;
 
   const handleSort = useCallback(async () => {
     if (!canSubmit(draft)) {
-      setError("Type or paste whatever is on your mind first. A rough list is enough.");
+      setError(t("bd.needText"));
       return;
     }
     setError("");
@@ -72,11 +78,11 @@ export function BrainDumpScreen() {
       }
       setPlan(await prioritize({ rawText: draft }));
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : FALLBACK_ERROR);
+      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
     } finally {
       setIsSorting(false);
     }
-  }, [convex, draft, prioritize]);
+  }, [convex, draft, prioritize, t]);
 
   const handleAccept = useCallback((index: number) => {
     setRejected((prev) => prev.filter((i) => i !== index));
@@ -94,169 +100,232 @@ export function BrainDumpScreen() {
     setIsAdding(true);
     try {
       const result = await acceptPlan({ items: toAdd });
-      setDoneMessage(`${result.created} added to your tasks`);
+      setDoneMessage(t("bd.added").replace("{n}", String(result.created)));
       setDraft("");
       setPlan(null);
       setAccepted([]);
       setRejected([]);
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : FALLBACK_ERROR);
+      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
     } finally {
       setIsAdding(false);
     }
-  }, [acceptPlan, toAdd]);
+  }, [acceptPlan, toAdd, t]);
+
+  const handleSavePage = useCallback(async () => {
+    if (!plan || isSaving) return;
+    setError("");
+    setIsSaving(true);
+    try {
+      const day = dayTokens(localIsoDate(new Date()), lang).day ?? "";
+      const body = brainDumpPageBody(plan, {
+        skip: rejected,
+        labels: { now: t("bd.now"), soon: t("bd.soon"), later: t("bd.later") },
+      });
+      const id = await createNote({ title: t("bd.pageTitle").replace("{day}", day), body });
+      router.push(`/notes/${id}`);
+    } catch {
+      setError(t("bd.saveError"));
+      setIsSaving(false);
+    }
+  }, [createNote, isSaving, lang, plan, rejected, router, t]);
 
   if (crisisCard) {
     return (
-      <Card role="region" aria-label={crisisCard.title}>
-        <CardHeader>
-          <CardTitle>{crisisCard.title}</CardTitle>
-          <CardDescription>{crisisCard.body}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ul className="space-y-2">
+      <div className="tp-page tp-page--narrow" data-component="PageLayout">
+        <section className="tp-surface" aria-label={crisisCard.title}>
+          <h1 className="tp-pagehead__title">{crisisCard.title}</h1>
+          <p>{crisisCard.body}</p>
+          <ul className="tpl-card__adds">
             {crisisCard.resources.map((resource) => (
-              <li key={resource.label} className="text-sm">
-                <span className="font-medium">{resource.label}</span>
-                <span className="text-muted-foreground"> — {resource.detail}</span>
+              <li key={resource.label}>
+                <strong>{resource.label}</strong>
+                <span className="tp-muted"> — {resource.detail}</span>
               </li>
             ))}
           </ul>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setCrisisCard(null);
-            }}
-          >
-            Back to my dump
-          </Button>
-        </CardContent>
-      </Card>
+          <div className="bd-actions">
+            <button type="button" className="tp-btn tp-btn--secondary" onClick={() => setCrisisCard(null)}>
+              {t("bd.back")}
+            </button>
+          </div>
+        </section>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Brain dump</CardTitle>
-          <CardDescription>
-            Put it all here, in any order. Nothing is saved until you choose it.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <label htmlFor={textareaId} className="sr-only">
-            Your brain dump
+    <div className="tp-page tp-page--narrow" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title">{t("bd.title")}</h1>
+          <p className="tp-pagehead__sub">{t("bd.sub")}</p>
+        </div>
+      </header>
+
+      <section className="tp-surface" data-component="Surface" aria-labelledby={`${textareaId}-label`}>
+        <div className="tp-field" data-component="Field">
+          <label className="tp-label" htmlFor={textareaId} id={`${textareaId}-label`}>
+            {t("bd.label")}
           </label>
           <textarea
+            className="tp-textarea"
             id={textareaId}
+            rows={7}
+            dir="auto"
             value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
-            }}
-            rows={8}
-            disabled={isSorting || isAdding}
-            placeholder="Everything on your mind, messy is fine."
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onChange={(event) => setDraft(event.target.value)}
+            disabled={busy}
+            placeholder={t("bd.ph")}
+            aria-describedby={`${textareaId}-help`}
           />
-          {error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
+          <p className="tp-help" id={`${textareaId}-help`}>
+            {t("bd.help")}
+          </p>
+        </div>
+        {error ? (
+          <p role="alert" className="tp-notice" data-tone="caution">
+            <span className="tp-notice__text">{error}</span>
+          </p>
+        ) : null}
+        {doneMessage ? (
+          <output className="tp-notice" data-tone="done">
+            <span className="tp-notice__text">{doneMessage}</span>
+          </output>
+        ) : null}
+        <div className="bd-actions">
+          <button
+            type="button"
+            className="tp-btn tp-btn--primary"
+            onClick={() => void handleSort()}
+            disabled={busy || !canSubmit(draft)}
+          >
+            <TpIcon name="sparkle" size="sm" />
+            <span>{isSorting ? t("bd.sorting") : t("bd.sort")}</span>
+          </button>
+          {draft ? (
+            <button
+              type="button"
+              className="tp-btn tp-btn--ghost"
+              disabled={busy}
+              onClick={() => {
+                setDraft("");
+                setPlan(null);
+                setAccepted([]);
+                setRejected([]);
+                setError("");
+              }}
+            >
+              {t("bd.clear")}
+            </button>
           ) : null}
-          {doneMessage ? (
-            <output className="block text-sm text-muted-foreground">{doneMessage}</output>
-          ) : null}
-          <Button onClick={() => void handleSort()} disabled={isSorting || isAdding || !canSubmit(draft)}>
-            {isSorting ? <Loader2 className="animate-spin" aria-hidden /> : null}
-            {isSorting ? "Sorting" : "Sort it"}
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      {isSorting ? (
+        <div className="tp-section" aria-busy="true">
+          <output className="tp-sr-only">{t("bd.loading")}</output>
+          <div className="tp-skeleton" style={{ minHeight: 56 }} />
+          <div className="tp-skeleton" style={{ minHeight: 56 }} />
+          <div className="tp-skeleton" style={{ minHeight: 56 }} />
+        </div>
+      ) : null}
 
       {plan ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your order</CardTitle>
-            <CardDescription>{plan.summary}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {plan.priorities.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nothing to sort yet. Try adding a few more words.
-              </p>
-            ) : visibleCount === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                You set everything aside. Your dump is still above if you want to sort it again.
-              </p>
-            ) : null}
-            {groups.map((group) => {
-              const rows = group.items.filter((entry) => !rejected.includes(entry.index));
-              if (rows.length === 0) return null;
-              return (
-                <section key={group.urgency} aria-label={URGENCY_LABEL[group.urgency]}>
-                  <h3
-                    className={cn(
-                      "mb-2 inline-block rounded-full border px-2 py-0.5 text-xs font-medium",
-                      urgencyTone[group.urgency],
-                    )}
-                  >
-                    {URGENCY_LABEL[group.urgency]}
-                  </h3>
-                  <ul className="space-y-2">
-                    {rows.map(({ index, item }) => {
-                      const isAccepted = accepted.includes(index);
-                      return (
-                        <li
-                          key={index}
-                          className="flex flex-wrap items-start justify-between gap-2 rounded-md border p-3"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium">{item.title}</p>
-                            <p className="text-sm text-muted-foreground">{item.reason}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant={isAccepted ? "default" : "outline"}
+        <section className="tp-section" data-component="Section" aria-labelledby="bd-order">
+          <div className="tp-section__head">
+            <h2 className="tp-section__title" id="bd-order">
+              {t("bd.order")}
+            </h2>
+            <span className="tp-section__count tp-num">{t("bd.count").replace("{n}", String(visibleCount))}</span>
+          </div>
+          {plan.summary ? (
+            <p className="tp-muted" dir="auto">
+              {plan.summary}
+            </p>
+          ) : null}
+          {plan.priorities.length === 0 ? (
+            <p className="tp-muted">{t("bd.empty")}</p>
+          ) : visibleCount === 0 ? (
+            <p className="tp-muted">{t("bd.allAside")}</p>
+          ) : (
+            <p className="tp-small tp-muted">{t("bd.reviewHelp")}</p>
+          )}
+          {groups.map((group) => {
+            const rows = group.items.filter((entry) => !rejected.includes(entry.index));
+            if (rows.length === 0) return null;
+            return (
+              <section key={group.urgency} className="bd-group" aria-label={t(URGENCY_KEY[group.urgency])}>
+                <h3 className="bd-group__title">
+                  <span className="tp-badge" data-tone={URGENCY_TONE[group.urgency]}>
+                    {t(URGENCY_KEY[group.urgency])}
+                  </span>
+                </h3>
+                <ul className="tp-import-list" data-component="ImportReview">
+                  {rows.map(({ index, item }) => {
+                    const isAccepted = accepted.includes(index);
+                    return (
+                      <li key={index} className="tp-import-row" data-choice={isAccepted ? "keep" : undefined}>
+                        <p className="tp-import-row__text" dir="auto">
+                          <strong>{item.title}</strong>
+                        </p>
+                        <div className="tp-import-row__bar">
+                          {item.reason ? (
+                            <span className="tp-chip" dir="auto">
+                              {item.reason}
+                            </span>
+                          ) : null}
+                          <span className="bd-row__actions">
+                            <button
+                              type="button"
+                              className={isAccepted ? "tp-btn tp-btn--primary tp-btn--sm" : "tp-btn tp-btn--secondary tp-btn--sm"}
                               aria-pressed={isAccepted}
-                              disabled={isAdding || (!isAccepted && accepted.length >= MAX_ACCEPTED)}
-                              onClick={() => {
-                                handleAccept(index);
-                              }}
+                              disabled={isAdding || isSaving || (!isAccepted && accepted.length >= MAX_ACCEPTED)}
+                              onClick={() => handleAccept(index)}
                             >
-                              {isAccepted ? "Accepted" : "Accept"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={isAdding}
-                              onClick={() => {
-                                handleReject(index);
-                              }}
+                              <TpIcon name="check" size="sm" />
+                              <span>{isAccepted ? t("bd.accepted") : t("bd.accept")}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="tp-btn tp-btn--ghost tp-btn--sm"
+                              disabled={isAdding || isSaving}
+                              onClick={() => handleReject(index)}
                             >
-                              Reject
-                            </Button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              );
-            })}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => void handleAddAccepted()}
-                disabled={toAdd.length === 0 || isAdding}
-              >
-                {isAdding ? <Loader2 className="animate-spin" aria-hidden /> : null}
-                Add accepted{toAdd.length > 0 ? ` (${toAdd.length})` : ""}
-              </Button>
-              <p className="text-xs text-muted-foreground">Up to {MAX_ACCEPTED} at a time.</p>
-            </div>
-          </CardContent>
-        </Card>
+                              <TpIcon name="x" size="sm" />
+                              <span>{t("bd.reject")}</span>
+                            </button>
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })}
+          <div className="bd-actions">
+            <button
+              type="button"
+              className="tp-btn tp-btn--primary"
+              onClick={() => void handleAddAccepted()}
+              disabled={toAdd.length === 0 || busy}
+            >
+              <TpIcon name="plus" size="sm" />
+              <span>
+                {t("bd.add")}
+                {toAdd.length > 0 ? ` (${toAdd.length})` : ""}
+              </span>
+            </button>
+            {visibleCount > 0 ? (
+              <button type="button" className="tp-btn tp-btn--secondary" onClick={() => void handleSavePage()} disabled={busy}>
+                <TpIcon name="page" size="sm" />
+                <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
+              </button>
+            ) : null}
+            <p className="tp-small tp-muted">{t("bd.max").replace("{n}", String(MAX_ACCEPTED))}</p>
+          </div>
+        </section>
       ) : null}
     </div>
   );
