@@ -73,6 +73,12 @@ const en = {
   "tab.cal": "Calendar",
   "tab.more": "More",
   "page.untitled": "Untitled",
+  "editor.minutes": "min",
+  "editor.remove": "Remove",
+  "editor.broken": "This part has a problem. The rest of your page is safe.",
+  "editor.template": "Template",
+  "editor.done": "Done",
+  "editor.placeholder": "Write whatever is on your mind. Type / for blocks, [[ to link a page.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -122,6 +128,12 @@ const he: Record<MessageKey, string> = {
   "tab.cal": "לוח שנה",
   "tab.more": "עוד",
   "page.untitled": "ללא כותרת",
+  "editor.minutes": "דק׳",
+  "editor.remove": "הסרה",
+  "editor.broken": "יש בעיה בחלק הזה. שאר הדף שלך שמור.",
+  "editor.template": "תבנית",
+  "editor.done": "בוצע",
+  "editor.placeholder": "אפשר לכתוב כל מה שעל הלב. / לבלוקים, [[ לקישור לדף.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, he };

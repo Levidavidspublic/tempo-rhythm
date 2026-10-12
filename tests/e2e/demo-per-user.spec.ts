@@ -59,7 +59,7 @@ test.describe("demo: notes stay per user", () => {
     await expect(pageA.getByRole("status")).toHaveText("Saved");
 
     await pageA.reload();
-    await expect(pageA.getByLabel("Note body")).toHaveValue("edited");
+    await expect(pageA.getByLabel("Note body")).toHaveText("edited");
 
     expect(consoleErrorsA).toEqual([]);
     await contextA.close();
