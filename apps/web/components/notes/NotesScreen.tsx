@@ -72,7 +72,10 @@ function NotesList() {
   const createNote = useMutation(api.notes.create);
   const togglePin = useMutation(api.notes.togglePin);
   const removeNote = useMutation(api.notes.remove);
+  const restoreNote = useMutation(api.notes.restore);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // The last page deleted from this list, with its 5-minute Undo (the same window as a page's own).
+  const [removed, setRemoved] = useState<{ id: Id<"notes">; undoUntilMs: number } | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [pinningId, setPinningId] = useState<string | null>(null);
   const [pinMessage, setPinMessage] = useState<string | null>(null);
@@ -105,8 +108,15 @@ function NotesList() {
   };
 
   const handleDelete = async (id: Id<"notes">) => {
-    await removeNote({ noteId: id });
+    const result = await removeNote({ noteId: id });
     setPendingDeleteId(null);
+    setRemoved({ id, undoUntilMs: result.undoUntilMs });
+  };
+
+  const handleUndo = async () => {
+    if (!removed) return;
+    const result = await restoreNote({ noteId: removed.id });
+    if (result.success) setRemoved(null);
   };
 
   return (
@@ -200,6 +210,14 @@ function NotesList() {
           </ul>
         )}
       </div>
+      {removed ? (
+        <UndoDeleteToast
+          key={removed.id}
+          undoUntilMs={removed.undoUntilMs}
+          onUndo={handleUndo}
+          onExpire={() => setRemoved(null)}
+        />
+      ) : null}
     </main>
   );
 }
