@@ -29,6 +29,8 @@ type ResourcesCard = {
 /** A saved page can be undone in one click for 5 minutes (HARD_RULES: AI-made changes stay reversible). */
 const SAVE_UNDO_MS = 5 * 60 * 1000;
 
+type SavedPage = { id: string; undoUntil: number; plan: Plan };
+
 const URGENCY_KEY = { now: "bd.now", soon: "bd.soon", later: "bd.later" } as const;
 const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon: "info", later: undefined };
 
@@ -56,20 +58,10 @@ export function BrainDumpScreen() {
   const [isSorting, setIsSorting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  // The page "Save as a page" just made: a link to open it, and Undo until `undoUntil`. `plan`
-  // is the plan it was made from, so a new plan can be saved while this one's Undo still shows.
-  const [saved, setSaved] = useState<{ id: string; undoUntil: number; plan: Plan } | null>(null);
-  const [canUndoSave, setCanUndoSave] = useState(false);
-  const [isUndoing, setIsUndoing] = useState(false);
-
-  useEffect(() => {
-    if (!saved) return;
-    const remaining = saved.undoUntil - Date.now();
-    setCanUndoSave(remaining > 0);
-    if (remaining <= 0) return;
-    const timer = window.setTimeout(() => setCanUndoSave(false), remaining);
-    return () => window.clearTimeout(timer);
-  }, [saved]);
+  // Pages "Save as a page" made here, newest first: each keeps its Open link and its own Undo
+  // until `undoUntil`. `plan` is the plan it was made from, so that plan is not saved twice.
+  const [savedPages, setSavedPages] = useState<SavedPage[]>([]);
+  const [undoingId, setUndoingId] = useState<string | null>(null);
 
   const groups = useMemo(() => (plan ? groupByUrgency(plan) : []), [plan]);
   const toAdd = useMemo(() => (plan ? acceptedItems(plan, accepted) : []), [plan, accepted]);
@@ -143,7 +135,7 @@ export function BrainDumpScreen() {
       const id = await createNote({ title: t("bd.pageTitle").replace("{day}", day), body });
       // Stay here with Open and Undo: the page holds AI-sorted text, so it is one click to take back.
       setDoneMessage("");
-      setSaved({ id, undoUntil: Date.now() + SAVE_UNDO_MS, plan });
+      setSavedPages((prev) => [{ id, undoUntil: Date.now() + SAVE_UNDO_MS, plan }, ...prev]);
     } catch {
       setError(t("bd.saveError"));
     } finally {
@@ -151,19 +143,22 @@ export function BrainDumpScreen() {
     }
   }, [createNote, isSaving, lang, plan, rejected, t]);
 
-  const handleUndoSave = useCallback(async () => {
-    if (!saved || isUndoing) return;
-    setIsUndoing(true);
-    try {
-      await removeNote({ noteId: saved.id as Id<"notes"> });
-      setSaved(null);
-      setDoneMessage(t("bd.pageRemoved"));
-    } catch {
-      setError(t("bd.undoError"));
-    } finally {
-      setIsUndoing(false);
-    }
-  }, [isUndoing, removeNote, saved, t]);
+  const handleUndoSave = useCallback(
+    async (id: string) => {
+      if (undoingId) return;
+      setUndoingId(id);
+      try {
+        await removeNote({ noteId: id as Id<"notes"> });
+        setSavedPages((prev) => prev.filter((page) => page.id !== id));
+        setDoneMessage(t("bd.pageRemoved"));
+      } catch {
+        setError(t("bd.undoError"));
+      } finally {
+        setUndoingId(null);
+      }
+    },
+    [removeNote, t, undoingId],
+  );
 
   if (crisisCard) {
     return (
@@ -228,26 +223,14 @@ export function BrainDumpScreen() {
             <span className="tp-notice__text">{doneMessage}</span>
           </output>
         ) : null}
-        {saved ? (
-          <output className="tp-notice bd-saved" data-tone="done" data-component="SavedPageNotice">
-            <span className="tp-notice__text">{t("bd.saved")}</span>
-            <span className="tp-notice__action">
-              <Link className="tp-btn tp-btn--secondary tp-btn--sm" href={`/notes/${saved.id}`}>
-                {t("bd.openPage")}
-              </Link>
-              {canUndoSave ? (
-                <button
-                  type="button"
-                  className="tp-btn tp-btn--ghost tp-btn--sm"
-                  onClick={() => void handleUndoSave()}
-                  disabled={isUndoing}
-                >
-                  {t("bd.undoSave")}
-                </button>
-              ) : null}
-            </span>
-          </output>
-        ) : null}
+        {savedPages.map((page) => (
+          <SavedPageNotice
+            key={page.id}
+            page={page}
+            undoing={undoingId !== null}
+            onUndo={() => void handleUndoSave(page.id)}
+          />
+        ))}
         <div className="bd-actions">
           <button
             type="button"
@@ -377,7 +360,7 @@ export function BrainDumpScreen() {
                 type="button"
                 className="tp-btn tp-btn--secondary"
                 onClick={() => void handleSavePage()}
-                disabled={busy || saved?.plan === plan}
+                disabled={busy || savedPages.some((page) => page.plan === plan)}
               >
                 <TpIcon name="page" size="sm" />
                 <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
@@ -388,5 +371,50 @@ export function BrainDumpScreen() {
         </section>
       ) : null}
     </div>
+  );
+}
+
+/** "Saved as a page." with an Open link, and Undo until the page's own 5-minute window ends. */
+function SavedPageNotice({
+  page,
+  undoing,
+  onUndo,
+}: {
+  page: SavedPage;
+  undoing: boolean;
+  onUndo: () => void;
+}) {
+  const { t } = useLocale();
+  const [canUndo, setCanUndo] = useState(() => page.undoUntil > Date.now());
+
+  useEffect(() => {
+    const remaining = page.undoUntil - Date.now();
+    if (remaining <= 0) {
+      setCanUndo(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setCanUndo(false), remaining);
+    return () => window.clearTimeout(timer);
+  }, [page.undoUntil]);
+
+  return (
+    <output className="tp-notice bd-saved" data-tone="done" data-component="SavedPageNotice">
+      <span className="tp-notice__text">{t("bd.saved")}</span>
+      <span className="tp-notice__action">
+        <Link className="tp-btn tp-btn--secondary tp-btn--sm" href={`/notes/${page.id}`}>
+          {t("bd.openPage")}
+        </Link>
+        {canUndo ? (
+          <button
+            type="button"
+            className="tp-btn tp-btn--ghost tp-btn--sm"
+            onClick={onUndo}
+            disabled={undoing}
+          >
+            {t("bd.undoSave")}
+          </button>
+        ) : null}
+      </span>
+    </output>
   );
 }
