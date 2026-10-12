@@ -12,6 +12,7 @@ import {
   EditorState,
   type Extension,
   type Range,
+  StateEffect,
   StateField,
   type Transaction,
   type TransactionSpec,
@@ -289,6 +290,10 @@ function activeLineNumbers(state: EditorState): Set<number> {
 
 let currentLabels: EditorLabels | null = null;
 
+/** Sent after the labels change (UI language switch): every card and checkbox redraws. */
+export const labelsChanged = StateEffect.define<null>();
+const relabels = (tr: Transaction) => tr.effects.some((e) => e.is(labelsChanged));
+
 function computeBlocks(state: EditorState, labels: EditorLabels): BlocksValue {
   const body = state.doc.toString();
   const ranges = tempoBlockRanges(body);
@@ -327,7 +332,7 @@ export const tempoBlocksField = StateField.define<BlocksValue>({
     return computeBlocks(state, currentLabels ?? DEFAULT_LABELS);
   },
   update(value, tr) {
-    if (tr.docChanged || tr.selection || syntaxTree(tr.state) !== syntaxTree(tr.startState)) {
+    if (tr.docChanged || tr.selection || relabels(tr) || syntaxTree(tr.state) !== syntaxTree(tr.startState)) {
       return computeBlocks(tr.state, currentLabels ?? DEFAULT_LABELS);
     }
     return value;
@@ -412,14 +417,15 @@ class CheckboxWidget extends WidgetType {
   constructor(
     readonly checked: boolean,
     readonly at: number,
+    readonly label: string,
   ) {
     super();
   }
   eq(other: CheckboxWidget): boolean {
-    return other.checked === this.checked && other.at === this.at;
+    return other.checked === this.checked && other.at === this.at && other.label === this.label;
   }
   toDOM(view: EditorView): HTMLElement {
-    const box = el("input", { type: "checkbox", class: "cm-tp-checkbox", "aria-label": "Done" });
+    const box = el("input", { type: "checkbox", class: "cm-tp-checkbox", "aria-label": this.label });
     (box as HTMLInputElement).checked = this.checked;
     box.addEventListener("mousedown", (e) => e.preventDefault());
     box.addEventListener("click", (e) => {
@@ -569,7 +575,7 @@ function buildInline(view: EditorView): DecorationSet {
             const listStart = state.doc.sliceString(line.from, node.from);
             const markFrom = line.from + listStart.search(/[-*+]\s+$/);
             const replaceFrom = markFrom >= line.from && markFrom < node.from ? markFrom : node.from;
-            decos.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from) }).range(replaceFrom, node.to));
+            decos.push(Decoration.replace({ widget: new CheckboxWidget(checked, node.from, (currentLabels ?? DEFAULT_LABELS).taskDone) }).range(replaceFrom, node.to));
             return;
           }
           case "HorizontalRule":
@@ -641,6 +647,7 @@ const inlinePreview = ViewPlugin.fromClass(
         update.docChanged ||
         update.selectionSet ||
         update.viewportChanged ||
+        update.transactions.some(relabels) ||
         syntaxTree(update.state) !== syntaxTree(update.startState)
       ) {
         this.decorations = buildInline(update.view);

@@ -6,7 +6,7 @@ import { Compartment, EditorSelection, EditorState, Prec } from "@codemirror/sta
 import { EditorView, keymap, placeholder as placeholderExtension } from "@codemirror/view";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { slashQuery, wikiQuery } from "@/lib/editor/markdown-model";
-import { type EditorLabels, livePreview } from "./live-preview";
+import { type EditorLabels, labelsChanged, livePreview } from "./live-preview";
 
 /** What the page editor needs to draw the slash menu or the [[ picker under the caret. */
 export type EditorTrigger = {
@@ -148,7 +148,7 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: localizedKey stands for labels, placeholder and ariaLabel
   useEffect(() => {
-    viewRef.current?.dispatch({ effects: localized.current.reconfigure(localizedExtensions()) });
+    viewRef.current?.dispatch({ effects: [localized.current.reconfigure(localizedExtensions()), labelsChanged.of(null)] });
   }, [localizedKey]);
 
   return <div ref={host} className="tp-editor" data-component="PageEditorSurface" />;
