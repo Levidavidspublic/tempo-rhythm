@@ -62,13 +62,25 @@ function icon(name: string, size: "sm" | "md" = "md"): SVGSVGElement {
 /* Tempo block cards                                                    */
 /* ------------------------------------------------------------------ */
 
-function findBlock(state: EditorState, id: string | undefined, fallbackFrom: number): BlockRange | undefined {
-  const ranges = state.field(tempoBlocksField).ranges;
-  if (id) {
-    const hit = ranges.find((r) => (r.segment.kind === "valid" ? r.segment.block.id : r.segment.blockId) === id);
-    if (hit) return hit;
+/**
+ * The block a card stands for, found by the card's own position in the document, so a pasted
+ * fence that repeats another block's id still resolves to the card the user clicked. If the
+ * position can't be read, only a block with the same exact source counts; ambiguity does nothing.
+ */
+function findBlock(view: EditorView, dom: HTMLElement, range: BlockRange): BlockRange | undefined {
+  const ranges = view.state.field(tempoBlocksField).ranges;
+  let at: number | null = null;
+  try {
+    at = view.posAtDOM(dom);
+  } catch {
+    at = null;
   }
-  return ranges.find((r) => r.from === fallbackFrom);
+  if (at !== null) {
+    const hit = ranges.find((r) => r.from === at);
+    if (hit && hit.segment.source === range.segment.source) return hit;
+  }
+  const same = ranges.filter((r) => r.segment.source === range.segment.source);
+  return same.length === 1 ? same[0] : undefined;
 }
 
 class TempoBlockWidget extends WidgetType {
@@ -93,9 +105,11 @@ class TempoBlockWidget extends WidgetType {
 
   toDOM(view: EditorView): HTMLElement {
     const { segment } = this.range;
-    const id = segment.kind === "valid" ? segment.block.id : segment.blockId;
+    // Set below to the card's root; handlers only run after toDOM returns.
+    let root: HTMLElement | null = null;
+    const resolve = () => (root ? findBlock(view, root, this.range) : undefined);
     const remove = () => {
-      const r = findBlock(view.state, id, this.range.from);
+      const r = resolve();
       if (!r) return;
       view.dispatch({ changes: { from: r.from, to: r.to }, annotations: blockEdit.of(true), userEvent: "delete.block" });
       view.focus();
@@ -105,11 +119,12 @@ class TempoBlockWidget extends WidgetType {
         this.labels.removeBlock,
       ]);
       button.addEventListener("click", remove);
-      return el("div", { class: "cm-tp-block tp-block-broken", "data-component": "BrokenBlock", role: "note" }, [
+      root = el("div", { class: "cm-tp-block tp-block-broken", "data-component": "BrokenBlock", role: "note" }, [
         icon("alert", "sm"),
         el("span", { class: "tp-block-broken__text" }, [this.labels.brokenBlock]),
         button,
       ]);
+      return root;
     }
     const block: TempoBlock = segment.block;
     if (block.type === "page-meta") {
@@ -131,7 +146,7 @@ class TempoBlockWidget extends WidgetType {
       [el("span", { class: "tp-check__box" }, [icon("check")])],
     );
     check.addEventListener("click", () => {
-      const r = findBlock(view.state, block.id, this.range.from);
+      const r = resolve();
       if (!r) return;
       const body = view.state.doc.toString();
       const next = setTaskDone(body, r, !done);
@@ -148,7 +163,7 @@ class TempoBlockWidget extends WidgetType {
     const meta = el("span", { class: "tp-task-row__meta" }, [
       el("span", {}, [el("span", { class: "tp-num" }, [String(block.data.durationMin)]), ` ${this.labels.minutes}`]),
     ]);
-    return el("div", { class: "cm-tp-block tp-block", "data-component": "TaskBlock" }, [
+    root = el("div", { class: "cm-tp-block tp-block", "data-component": "TaskBlock" }, [
       el("ul", { class: "tp-block-task" }, [
         el("li", { class: "tp-task-row", "data-component": "TaskRow", "data-done": String(done) }, [
           check,
@@ -160,6 +175,7 @@ class TempoBlockWidget extends WidgetType {
         ]),
       ]),
     ]);
+    return root;
   }
 }
 
