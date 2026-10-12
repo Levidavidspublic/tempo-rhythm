@@ -36,6 +36,17 @@ export {
   type ValidBlockSegment,
 } from "./blocks";
 
+export {
+  type Backlink,
+  backlinksFor,
+  findWikiLinks,
+  isLinkableTitle,
+  type PageRef,
+  sameTitle,
+  titleKey,
+  type WikiLink,
+} from "./wiki-links";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */

@@ -1,26 +1,34 @@
 "use client";
 
-import { parseTempoBlocks } from "@tempo/utils";
-import Link from "next/link";
+import { findWikiLinks, parseTempoBlocks } from "@tempo/utils";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TpIcon } from "@/components/tempo/TpIcon";
 
 type Props = {
   body: string;
-  /** Resolves a [[Title]] to a page href, or null when no page has that title. */
-  resolveLink: (title: string) => string | null;
+  /** Opens the page a [[Title]] points to (or makes it, like the editor does). */
+  onOpenLink: (title: string) => void;
   labels: { minutes: string; brokenBlock: string; template: string };
 };
 
-const WIKI = /\[\[([^[\]\n|]{1,200})(?:\|([^[\]\n]{1,200}))?\]\]/g;
+const WIKI = /^\[\[([^[\]\n|]{1,200})(?:\|([^[\]\n]{1,200}))?\]\]$/;
 
-/** [[Title]] → a Markdown link with a `wiki:` URL the link renderer resolves. */
+/**
+ * [[Title]] → a Markdown link with a `wiki:` URL the link renderer resolves. Only the links
+ * findWikiLinks finds are rewritten, so `[[...]]` written as code stays exactly as typed.
+ */
 function linkWikis(markdown: string): string {
-  return markdown.replace(WIKI, (_whole, title: string, shown?: string) => {
-    const text = (shown ?? title).replace(/[[\]]/g, "");
-    return `[${text}](wiki:${encodeURIComponent(title.trim())})`;
-  });
+  let out = "";
+  let at = 0;
+  for (const link of findWikiLinks(markdown)) {
+    const m = WIKI.exec(markdown.slice(link.from, link.to));
+    if (!m) continue;
+    const text = (m[2] ?? m[1] ?? "").replace(/[[\]]/g, "");
+    out += `${markdown.slice(at, link.from)}[${text}](wiki:${encodeURIComponent(link.title)})`;
+    at = link.to;
+  }
+  return out + markdown.slice(at);
 }
 
 /**
@@ -28,7 +36,7 @@ function linkWikis(markdown: string): string {
  * (tables, task lists, strikethrough); Tempo blocks render as the same quiet cards as the
  * editor and never show their JSON. Raw HTML stays escaped and remote images never load.
  */
-export function ReadView({ body, resolveLink, labels }: Props) {
+export function ReadView({ body, onOpenLink, labels }: Props) {
   const segments = parseTempoBlocks(body);
   return (
     <div className="tp-page-content tp-prose" data-component="ReadView" dir="auto">
@@ -42,13 +50,11 @@ export function ReadView({ body, resolveLink, labels }: Props) {
               components={{
                 a({ href, children }) {
                   if (href?.startsWith("wiki:")) {
-                    const target = resolveLink(decodeURIComponent(href.slice(5)));
-                    return target ? (
-                      <Link className="tp-wikilink" href={target}>
+                    const title = decodeURIComponent(href.slice(5));
+                    return (
+                      <button className="tp-wikilink" type="button" onClick={() => onOpenLink(title)}>
                         {children}
-                      </Link>
-                    ) : (
-                      <span className="tp-wikilink">{children}</span>
+                      </button>
                     );
                   }
                   return (
