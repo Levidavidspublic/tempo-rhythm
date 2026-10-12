@@ -51,6 +51,11 @@ export function TempoShell({ children }: { children: ReactNode }) {
   const appRef = useRef<HTMLDivElement | null>(null);
   // Closing the panel puts focus back on the coach button, once the shell is no longer inert.
   const refocusCoachButton = useRef(false);
+  // The palette replaced the coach sheet: closing the palette returns focus to the coach button
+  // (the control focused before it is gone with the sheet).
+  const paletteReplacedCoach = useRef(false);
+  const paletteOpenRef = useRef(paletteOpen);
+  paletteOpenRef.current = paletteOpen;
 
   // On /coach the coach is the page, so a panel left open does not come back on the next page.
   useEffect(() => {
@@ -77,13 +82,26 @@ export function TempoShell({ children }: { children: ReactNode }) {
     };
   }, [coachModal]);
 
-  // The palette and the coach sheet are both modal: opening one closes the other.
+  // The palette and the coach sheet are both modal: opening one closes the other. Opening the
+  // coach also closes the rail drawer, whose scrim would sit above the sheet.
   useEffect(() => {
-    if (paletteOpen && coachSheet) setCoachOpen(false);
+    if (!(paletteOpen && coachSheet)) return;
+    setCoachOpen((open) => {
+      if (open) paletteReplacedCoach.current = true;
+      return false;
+    });
   }, [paletteOpen, coachSheet]);
   useEffect(() => {
-    if (panelOpen) setPaletteOpen(false);
+    if (!panelOpen) return;
+    setPaletteOpen(false);
+    setRailOpen(false);
   }, [panelOpen]);
+  const returnFocusFromPalette = useCallback(() => {
+    if (!paletteReplacedCoach.current) return false;
+    paletteReplacedCoach.current = false;
+    coachButton.current?.focus();
+    return true;
+  }, []);
 
   useEffect(() => {
     if (panelOpen || !refocusCoachButton.current) return;
@@ -133,6 +151,9 @@ export function TempoShell({ children }: { children: ReactNode }) {
             return !open;
           });
       } else if (e.key === "Escape") {
+        // An overlay above (the palette, an editor popup) already took this Escape: only the
+        // topmost one closes.
+        if (e.defaultPrevented || paletteOpenRef.current) return;
         setRailOpen(false);
         setCoachOpen((open) => {
           if (open) refocusCoachButton.current = true;
@@ -187,7 +208,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
         }}
       />
       <TabBar railOpen={railOpen} onToggleRail={() => setRailOpen((open) => !open)} />
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} returnFocus={returnFocusFromPalette} />
     </div>
     </ShellSlotsContext.Provider>
   );
