@@ -30,6 +30,9 @@ function makeCtx(userId: string | null, rows: Row[]) {
           ),
         ),
       take: async (n: number) => selected.slice(0, n),
+      async *[Symbol.asyncIterator]() {
+        yield* selected;
+      },
       collect: async () => selected,
       first: async () => selected[0] ?? null,
       unique: async () => selected[0] ?? null,
@@ -76,6 +79,20 @@ describe("notes.listForRail", () => {
     const rows = [note("9", { deletedAt: 10 }), note("8", { userId: "users:b" }), note("7")];
     const result = await handler(makeCtx("users:a", rows), {});
     expect(result.map((r) => r._id)).toEqual(["notes:7"]);
+  });
+
+  test("recent soft-deleted pages never crowd out older live pages", async () => {
+    const tombstones = Array.from({ length: 30 }, (_, i) => note(String(100 + i), { deletedAt: 200 + i }));
+    const rows = [...tombstones, note("3"), note("2")];
+    const result = await handler(makeCtx("users:a", rows), { limit: 8 });
+    expect(result.map((r) => r._id)).toEqual(["notes:3", "notes:2"]);
+  });
+
+  test("with many pinned pages, the most recently edited pinned pages win", async () => {
+    // Created oldest-first, so a creation-order window would hold only the oldest pins.
+    const rows = Array.from({ length: 30 }, (_, i) => note(String(i + 1), { pinned: true, createdAt: i + 1 }));
+    const result = await handler(makeCtx("users:a", rows), { limit: 3 });
+    expect(result.map((r) => r._id)).toEqual(["notes:30", "notes:29", "notes:28"]);
   });
 
   test("clamps the limit to 1..20", async () => {
