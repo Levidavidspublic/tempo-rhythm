@@ -33,15 +33,15 @@ export function TemplateRun({ templateId }: { templateId: string }) {
 
   if (template === undefined) {
     return (
-      <div className="tp-page tp-run" data-component="PageLayout">
+      <main className="tp-page tp-run" id="main" data-component="PageLayout">
         <output className="tp-muted">{t("tplRun.loading")}</output>
-      </div>
+      </main>
     );
   }
 
   if (template === null) {
     return (
-      <div className="tp-page tp-run" data-component="PageLayout">
+      <main className="tp-page tp-run" id="main" data-component="PageLayout">
         <header className="tp-pagehead">
           <div className="tp-pagehead__text">
             <h1 className="tp-pagehead__title">{t("tplRun.missing")}</h1>
@@ -51,7 +51,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <Link className="tp-btn tp-btn--secondary" href="/templates">
           {t("tplRun.back")}
         </Link>
-      </div>
+      </main>
     );
   }
 
@@ -80,7 +80,8 @@ export function TemplateRun({ templateId }: { templateId: string }) {
   };
 
   return (
-    <div className="tp-page tp-run" data-component="PageLayout">
+    // The (bare) layout has no shell, so this page holds its own main landmark.
+    <main className="tp-page tp-run" id="main" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
           <span className="tp-eyebrow">{t("tplRun.eyebrow")}</span>
@@ -129,6 +130,6 @@ export function TemplateRun({ templateId }: { templateId: string }) {
           {t("tplRun.reject")}
         </button>
       </div>
-    </div>
+    </main>
   );
 }

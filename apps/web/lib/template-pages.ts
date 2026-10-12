@@ -11,12 +11,12 @@ export type TemplateLike = { source: "starter" | "user"; name: string; descripti
 
 /** The templates a scope and a search show, in their listed order. */
 export function filterTemplates<T extends TemplateLike>(templates: readonly T[], scope: TemplateScope, query: string): T[] {
-  const q = query.trim().toLocaleLowerCase();
+  const q = query.trim().toLowerCase();
   return templates.filter((template) => {
     if (scope === "starter" && template.source !== "starter") return false;
     if (scope === "mine" && template.source !== "user") return false;
     if (!q) return true;
-    return `${template.name} ${template.description ?? ""}`.toLocaleLowerCase().includes(q);
+    return `${template.name} ${template.description ?? ""}`.toLowerCase().includes(q);
   });
 }
 
