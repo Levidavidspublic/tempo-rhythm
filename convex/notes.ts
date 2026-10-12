@@ -6,7 +6,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
-import { backlinksFor } from "@tempo/utils";
+import { backlinksFor, titleKey } from "@tempo/utils";
 import { isLocalDate } from "./lib/habitCheckInStreak";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
@@ -112,8 +112,60 @@ export async function listRailPagesForUser(
   return out;
 }
 
-/** How many of the owner's most recently edited pages the link queries read. */
+/** How many of the owner's most recently edited pages the link queries read, at most. */
 export const LINK_SCAN_LIMIT = 500;
+/**
+ * And how many bytes. Convex stops a query that reads 16 MiB, and one document can be up to
+ * 1 MiB, so the scan reads in batches no larger than the budget left for worst-case pages and
+ * stops before 12 MiB. Big notebooks therefore see fewer recent pages, never an error.
+ */
+export const LINK_SCAN_BYTES = 12 * 1024 * 1024;
+const MAX_DOC_BYTES = 1024 * 1024;
+const LINK_SCAN_BATCH = 32;
+
+/** An upper bound of a stored note's size: each UTF-16 unit of its JSON as 3 UTF-8 bytes. */
+export function noteSizeBound(note: Doc<"notes">): number {
+  return JSON.stringify(note).length * 3;
+}
+
+/**
+ * The owner's most recently edited notes (live and deleted; callers filter), newest first,
+ * bounded by LINK_SCAN_LIMIT and LINK_SCAN_BYTES. Reads walk by_userId_updatedAt in small
+ * batches from a (updatedAt, _creationTime) cursor (every index ends in _creationTime), so
+ * each row is read once, ties included.
+ */
+async function recentNotesForLinks(ctx: QueryCtx, userId: Id<"users">): Promise<Doc<"notes">[]> {
+  const out: Doc<"notes">[] = [];
+  let bytes = 0;
+  let cursor: { updatedAt: number; created: number } | null = null;
+  const take = async (size: number, range: "first" | "tie" | "older"): Promise<Doc<"notes">[]> => {
+    const at = cursor;
+    return ctx.db
+      .query("notes")
+      .withIndex("by_userId_updatedAt", (q) => {
+        const mine = q.eq("userId", userId);
+        if (range === "first" || !at) return mine;
+        if (range === "tie") return mine.eq("updatedAt", at.updatedAt).lt("_creationTime", at.created);
+        return mine.lt("updatedAt", at.updatedAt);
+      })
+      .order("desc")
+      .take(size);
+  };
+  while (out.length < LINK_SCAN_LIMIT) {
+    const room = Math.min(Math.floor((LINK_SCAN_BYTES - bytes) / MAX_DOC_BYTES), LINK_SCAN_BATCH, LINK_SCAN_LIMIT - out.length);
+    if (room < 1) break;
+    let batch: Doc<"notes">[] = cursor ? await take(room, "tie") : await take(room, "first");
+    if (cursor && batch.length < room) batch = [...batch, ...(await take(room - batch.length, "older"))];
+    for (const note of batch) {
+      bytes += noteSizeBound(note);
+      out.push(note);
+    }
+    if (batch.length < room) break;
+    const last: Doc<"notes"> = batch[batch.length - 1]!;
+    cursor = { updatedAt: last.updatedAt, created: last._creationTime };
+  }
+  return out;
+}
 
 export type PageTitle = Pick<Doc<"notes">, "_id" | "title" | "pinned" | "updatedAt">;
 
@@ -126,12 +178,8 @@ export const searchTitles = query({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const limit = Math.min(Math.max(Math.floor(args.limit ?? 8), 1), 20);
-    const q = args.query.trim().toLocaleLowerCase();
-    const rows = await ctx.db
-      .query("notes")
-      .withIndex("by_userId_updatedAt", (iq) => iq.eq("userId", user._id))
-      .order("desc")
-      .take(LINK_SCAN_LIMIT);
+    const q = titleKey(args.query);
+    const rows = await recentNotesForLinks(ctx, user._id);
     // Exact titles first, so resolving a clicked [[Title]] never misses its page behind
     // newer prefix matches; then titles that start with the query; then the rest.
     const exact: PageTitle[] = [];
@@ -139,7 +187,7 @@ export const searchTitles = query({
     const contains: PageTitle[] = [];
     for (const n of rows) {
       if (n.deletedAt !== undefined || !n.title.trim()) continue;
-      const title = n.title.trim().toLocaleLowerCase();
+      const title = titleKey(n.title);
       const row = { _id: n._id, title: n.title, pinned: n.pinned, updatedAt: n.updatedAt };
       if (q && title === q) exact.push(row);
       else if (!q || title.startsWith(q)) starts.push(row);
@@ -162,11 +210,7 @@ export const backlinks = query({
     if (!id) return [];
     const self = await ctx.db.get(id);
     if (!self || self.userId !== user._id || self.deletedAt !== undefined || !self.title.trim()) return [];
-    const rows = await ctx.db
-      .query("notes")
-      .withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .take(LINK_SCAN_LIMIT);
+    const rows = await recentNotesForLinks(ctx, user._id);
     const pages = rows
       .filter((n) => n.deletedAt === undefined)
       .map((n) => ({ id: n._id as string, title: n.title, body: n.body }));
