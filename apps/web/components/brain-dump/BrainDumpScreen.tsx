@@ -56,8 +56,9 @@ export function BrainDumpScreen() {
   const [isSorting, setIsSorting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  // The page "Save as a page" just made: a link to open it, and Undo until `undoUntil`.
-  const [saved, setSaved] = useState<{ id: string; undoUntil: number } | null>(null);
+  // The page "Save as a page" just made: a link to open it, and Undo until `undoUntil`. `plan`
+  // is the plan it was made from, so a new plan can be saved while this one's Undo still shows.
+  const [saved, setSaved] = useState<{ id: string; undoUntil: number; plan: Plan } | null>(null);
   const [canUndoSave, setCanUndoSave] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
 
@@ -142,7 +143,7 @@ export function BrainDumpScreen() {
       const id = await createNote({ title: t("bd.pageTitle").replace("{day}", day), body });
       // Stay here with Open and Undo: the page holds AI-sorted text, so it is one click to take back.
       setDoneMessage("");
-      setSaved({ id, undoUntil: Date.now() + SAVE_UNDO_MS });
+      setSaved({ id, undoUntil: Date.now() + SAVE_UNDO_MS, plan });
     } catch {
       setError(t("bd.saveError"));
     } finally {
@@ -376,7 +377,7 @@ export function BrainDumpScreen() {
                 type="button"
                 className="tp-btn tp-btn--secondary"
                 onClick={() => void handleSavePage()}
-                disabled={busy || saved !== null}
+                disabled={busy || saved?.plan === plan}
               >
                 <TpIcon name="page" size="sm" />
                 <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
