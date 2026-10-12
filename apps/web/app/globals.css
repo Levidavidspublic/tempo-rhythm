@@ -573,3 +573,7 @@ p {
   background-clip: text;
   color: transparent;
 }
+
+/* Sign-up: the auth card, then the terms line under it at the card's width. */
+.tp-auth-stack { display: grid; gap: var(--tp-space-4); justify-items: center; width: min(100%, calc(var(--tp-space-20) * 5 + var(--tp-space-10))); }
+.tp-auth-stack > .tp-auth-card { width: 100%; }
