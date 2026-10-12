@@ -1,159 +1,63 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useEffect, useRef, useState } from "react";
+import { ReadView } from "@/components/editor/ReadView";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import { localIsoDate } from "@/lib/period-pages";
+import { templatePageDraft } from "@/lib/template-pages";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { ProposalBanner } from "./ProposalBanner";
 
-type Block =
-  | { kind: "h2" | "h3" | "h4" | "p"; text: string }
-  | { kind: "list"; items: { text: string; checked: boolean | null }[] };
-
-function parseMarkdown(body: string): Block[] {
-  const blocks: Block[] = [];
-  let items: { text: string; checked: boolean | null }[] | null = null;
-
-  const flushList = () => {
-    if (!items) return;
-    blocks.push({ kind: "list", items });
-    items = null;
-  };
-
-  for (const line of body.replaceAll("\r\n", "\n").split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      flushList();
-      continue;
-    }
-
-    const heading = /^(#{1,3})\s+(.*)$/.exec(trimmed);
-    if (heading) {
-      flushList();
-      const level = heading[1]?.length ?? 1;
-      const kind = level === 1 ? "h2" : level === 2 ? "h3" : "h4";
-      blocks.push({ kind, text: heading[2] ?? "" });
-      continue;
-    }
-
-    const check = /^[-*]\s+\[( |x|X)\]\s*(.*)$/.exec(trimmed);
-    if (check) {
-      items ??= [];
-      items.push({
-        text: check[2] ?? "",
-        checked: (check[1] ?? " ").toLowerCase() === "x",
-      });
-      continue;
-    }
-
-    const bullet = /^[-*]\s+(.*)$/.exec(trimmed);
-    if (bullet) {
-      items ??= [];
-      items.push({ text: bullet[1] ?? "", checked: null });
-      continue;
-    }
-
-    flushList();
-    blocks.push({ kind: "p", text: trimmed });
-  }
-
-  flushList();
-  return blocks;
-}
-
-function MarkdownPreview({ body }: { body: string }) {
-  const blocks = parseMarkdown(body);
-  return (
-    <div className="flex flex-col gap-3">
-      {blocks.map((block, index) => {
-        if (block.kind === "list") {
-          return (
-            <ul className="flex flex-col gap-2" key={`list-${index}`}>
-              {block.items.map((item, itemIndex) => (
-                <li key={`item-${index}-${itemIndex}`}>
-                  {item.checked === null ? (
-                    <span>{item.text}</span>
-                  ) : (
-                    <label className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={item.checked}
-                        disabled
-                        onChange={() => undefined}
-                      />
-                      <span>{item.text}</span>
-                    </label>
-                  )}
-                </li>
-              ))}
-            </ul>
-          );
-        }
-        if (block.kind === "h2") {
-          return (
-            <h2 className="font-heading text-2xl text-foreground" key={`h2-${index}`}>
-              {block.text}
-            </h2>
-          );
-        }
-        if (block.kind === "h3") {
-          return (
-            <h3 className="font-heading text-xl text-foreground" key={`h3-${index}`}>
-              {block.text}
-            </h3>
-          );
-        }
-        if (block.kind === "h4") {
-          return (
-            <h4 className="font-medium text-foreground" key={`h4-${index}`}>
-              {block.text}
-            </h4>
-          );
-        }
-        return (
-          <p className="text-foreground" key={`p-${index}`}>
-            {block.text}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
+/**
+ * Template run (v3, OVERNIGHT-RUN.md decision 6): a preview of the page a template makes, with
+ * today's {{tokens}} filled, and one choice. "Make the page" creates an ordinary Markdown page
+ * and opens it at /notes/[id]; nothing is made until then.
+ */
 export function TemplateRun({ templateId }: { templateId: string }) {
   const router = useRouter();
+  const { t, lang } = useLocale();
   const template = useQuery(api.templates.get, { templateId });
-  const applyToNote = useMutation(api.templates.applyToNote);
+  const createNote = useMutation(api.notes.create);
+  const bounds = useLocalDayBounds();
+  const [mounted, setMounted] = useState(false);
   const [title, setTitle] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const declined = useRef(false);
+  useEffect(() => setMounted(true), []);
 
   if (template === undefined) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-12">
-        <p aria-live="polite">Loading this template…</p>
+      <main className="tp-page tp-run" id="main" data-component="PageLayout">
+        <output className="tp-muted">{t("tplRun.loading")}</output>
       </main>
     );
   }
 
   if (template === null) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-12">
-        <h1 className="font-heading text-3xl text-foreground">This template was not found</h1>
-        <p className="mt-3 text-muted-foreground">
-          It may have been removed. You can pick another outline.
-        </p>
-        <a className="mt-6 inline-block text-primary underline" href="/templates">
-          Back to templates
-        </a>
+      <main className="tp-page tp-run" id="main" data-component="PageLayout">
+        <header className="tp-pagehead">
+          <div className="tp-pagehead__text">
+            <h1 className="tp-pagehead__title">{t("tplRun.missing")}</h1>
+            <p className="tp-pagehead__sub">{t("tplRun.missingHint")}</p>
+          </div>
+        </header>
+        <Link className="tp-btn tp-btn--secondary" href="/templates">
+          {t("tplRun.back")}
+        </Link>
       </main>
     );
   }
+
+  // The local date is read after mount, so the server render and the first client render agree.
+  const today = mounted ? localIsoDate(new Date(bounds.startMs)) : null;
+  const draft = today ? templatePageDraft(template, { title, isoDate: today, lang }) : null;
 
   const onReject = () => {
     declined.current = true;
@@ -161,61 +65,70 @@ export function TemplateRun({ templateId }: { templateId: string }) {
   };
 
   const onAccept = async () => {
-    if (pending || declined.current) return;
+    if (pending || declined.current || !draft) return;
     setPending(true);
     setError("");
-    const trimmed = title.trim();
     try {
-      const id = await applyToNote(
-        trimmed.length > 0 ? { templateId, title: trimmed } : { templateId }
-      );
+      const id = await createNote({ title: draft.title, body: draft.body, periodType: template.periodType });
       if (declined.current) return;
       router.push(`/notes/${id}`);
     } catch {
       if (declined.current) return;
-      setError("Could not create the page. You can try again.");
+      setError(t("tplRun.error"));
       setPending(false);
     }
   };
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12">
-      <header className="flex flex-col gap-2">
-        <p className="font-eyebrow text-muted-foreground">Template</p>
-        <h1 className="font-heading text-4xl text-foreground">{template.name}</h1>
-        {template.description ? (
-          <p className="text-muted-foreground">{template.description}</p>
-        ) : null}
+    <main className="tp-page tp-run" id="main" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <span className="tp-eyebrow">{t("tplRun.eyebrow")}</span>
+          <h1 className="tp-pagehead__title" dir="auto">
+            {template.name}
+          </h1>
+          {template.description ? (
+            <p className="tp-pagehead__sub" dir="auto">
+              {template.description}
+            </p>
+          ) : null}
+        </div>
       </header>
       <ProposalBanner periodType={template.periodType} title={title} />
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="template-run-title">Page title</Label>
-        <Input
+      <div className="tp-field">
+        <label className="tp-label" htmlFor="template-run-title">
+          {t("tplRun.title")}
+        </label>
+        <input
+          className="tp-input"
           id="template-run-title"
+          dir="auto"
           value={title}
-          placeholder="Optional"
+          placeholder={t("tplRun.optional")}
           onChange={(event) => setTitle(event.target.value)}
         />
       </div>
-      <Card>
-        <CardContent className="pt-6">
-          <section aria-label="Preview">
-            <MarkdownPreview body={template.body} />
-          </section>
-        </CardContent>
-      </Card>
+      <section className="tp-surface" aria-label={t("tplRun.preview")}>
+        <p className="tp-small tp-muted">{t("tplRun.previewHint")}</p>
+        <ReadView
+          body={draft?.body ?? template.body}
+          onOpenLink={() => undefined}
+          labels={{ minutes: t("editor.minutes"), brokenBlock: t("editor.broken"), template: t("editor.template") }}
+        />
+      </section>
       {error ? (
-        <p className="text-destructive" role="alert">
-          {error}
+        <p className="tp-notice" data-tone="caution" role="alert">
+          <span className="tp-notice__text">{error}</span>
         </p>
       ) : null}
-      <div className="flex gap-3">
-        <Button type="button" onClick={onAccept} disabled={pending}>
-          {pending ? "Creating the page…" : "Accept"}
-        </Button>
-        <Button type="button" variant="outline" onClick={onReject} disabled={pending}>
-          Reject
-        </Button>
+      <div className="tp-pagehead__actions">
+        <button type="button" className="tp-btn tp-btn--primary" onClick={onAccept} disabled={pending || !draft}>
+          <TpIcon name="play" size="sm" />
+          <span>{pending ? t("tplRun.creating") : t("tplRun.accept")}</span>
+        </button>
+        <button type="button" className="tp-btn tp-btn--ghost" onClick={onReject} disabled={pending}>
+          {t("tplRun.reject")}
+        </button>
       </div>
     </main>
   );
