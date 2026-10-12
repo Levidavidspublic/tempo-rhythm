@@ -55,7 +55,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="grain-bg flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 py-12">
+    // English-only page: keep it left to right even when the app language is Hebrew.
+    <div
+      className="grain-bg flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 py-12"
+      dir="ltr"
+      lang="en"
+    >
       <SignUpForm variant="page" nextPath={nextPath} />
     </div>
   );
