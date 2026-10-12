@@ -6,7 +6,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
-import { backlinksFor } from "@tempo/utils";
+import { backlinksFor, parseTempoBlocks } from "@tempo/utils";
 import { isLocalDate } from "./lib/habitCheckInStreak";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
@@ -180,6 +180,48 @@ async function findPeriodPage(ctx: QueryCtx, userId: Id<"users">, pageType: Peri
     )
     .first();
 }
+
+/** Most dated pages one listPeriodPages call returns (whole documents are read; keep it small). */
+export const PERIOD_LIST_MAX = 10;
+
+export type PeriodPageRow = { _id: Id<"notes">; title: string; date: string; updatedAt: number; tags: string[] };
+
+/** Tags from a body's page-meta block (the only place tags live, NT-05). */
+function pageMetaTags(body: string): string[] {
+  for (const segment of parseTempoBlocks(body)) {
+    if (segment.kind === "valid" && segment.block.type === "page-meta") return segment.block.data.tags.slice(0, 12);
+  }
+  return [];
+}
+
+/**
+ * The owner's live daily (or weekly) pages, newest date first, `limit` at a time: the Journal is
+ * the run of daily pages (decision 6). `before` is the last date already shown. Metadata only.
+ */
+export const listPeriodPages = query({
+  args: { pageType: periodPageType, before: v.optional(v.string()), limit: v.optional(v.number()) },
+  handler: async (ctx, args): Promise<PeriodPageRow[]> => {
+    const user = await requireUser(ctx);
+    const limit = Math.min(Math.max(Math.floor(args.limit ?? PERIOD_LIST_MAX), 1), PERIOD_LIST_MAX);
+    const before = args.before;
+    if (before !== undefined && !isLocalDate(before)) return [];
+    const rows = await ctx.db
+      .query("notes")
+      .withIndex("by_userId_deletedAt_pageType_date", (q) => {
+        const base = q.eq("userId", user._id).eq("deletedAt", undefined).eq("pageType", args.pageType);
+        return before === undefined ? base : base.lt("date", before);
+      })
+      .order("desc")
+      .take(limit);
+    return rows.map((n) => ({
+      _id: n._id,
+      title: n.title,
+      date: n.date ?? "",
+      updatedAt: n.updatedAt,
+      tags: pageMetaTags(n.body),
+    }));
+  },
+});
 
 /** The owner's live daily or weekly page for a date: id and title only, or null. */
 export const getPeriodPage = query({

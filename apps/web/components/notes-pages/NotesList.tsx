@@ -4,7 +4,8 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { filterByPeriod, type PeriodType, plainPreview } from "./filterNotes";
@@ -13,6 +14,7 @@ import { PeriodFilter } from "./PeriodFilter";
 type RemovedNote = { noteId: Id<"notes">; undoUntilMs: number };
 
 export function NotesList() {
+  const { t } = useLocale();
   const router = useRouter();
   const params = useSearchParams();
   const rawType = params.get("type");
@@ -67,215 +69,237 @@ export function NotesList() {
     try {
       await action();
     } catch {
-      setError("That change could not be saved. Please try again.");
+      setError(t("notes.error"));
     } finally {
       busyRef.current = false;
       setBusy(false);
     }
   }
 
+  const label = (note: { title: string }) => note.title || t("notes.untitled");
+  const filtered = Boolean(search || pinnedOnly || type !== "all");
+
   return (
-    <main className="container mx-auto max-w-4xl px-6 py-12">
-      <div className="space-y-8">
-        <header>
-          <p className="font-eyebrow text-muted-foreground">Library</p>
-          <h1 className="font-heading text-4xl font-semibold text-foreground">Notes</h1>
-          <p className="mt-2 text-muted-foreground">
+    <div className="tp-page tp-page--wide" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title">{t("notes.title")}</h1>
+          <output className="tp-pagehead__sub">
             {isLoading
-              ? "Loading your notes."
-              : `${visible.length} ${visible.length === 1 ? "note" : "notes"}, pinned first.`}
-          </p>
-        </header>
-        <form
-          className="flex flex-wrap items-end gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void perform(async () => {
-              const id = await create({
-                title: title.trim() || "Untitled note",
-                body: "",
-                periodType,
-              });
-              router.push(`/notes/${id}`);
+              ? t("notes.loading")
+              : visible.length === 1
+                ? t("notes.count.one")
+                : t("notes.count.many").replace("{n}", String(visible.length))}
+          </output>
+        </div>
+      </header>
+
+      <form
+        className="tp-toolbar"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void perform(async () => {
+            const id = await create({
+              title: title.trim() || t("notes.untitled"),
+              body: "",
+              periodType,
             });
-          }}
-        >
-          <label className="grid gap-2 text-sm">
-            New note title
-            <input
-              className="rounded-xl border border-border bg-background px-3 py-2"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Untitled note"
-            />
+            router.push(`/notes/${id}`);
+          });
+        }}
+      >
+        <div className="tp-field tp-toolbar__grow">
+          <label className="tp-label" htmlFor="nt-new-title">
+            {t("notes.newTitle")}
           </label>
-          <label className="grid gap-2 text-sm">
-            New note page type
-            <select
-              className="rounded-xl border border-border bg-background px-3 py-2"
-              value={periodType}
-              onChange={(event) => setPeriodType(event.target.value as PeriodType)}
-            >
-              <option value="none">Plain note</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+          <input
+            id="nt-new-title"
+            className="tp-input"
+            dir="auto"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder={t("notes.untitled")}
+          />
+        </div>
+        <div className="tp-field">
+          <label className="tp-label" htmlFor="nt-new-type">
+            {t("notes.newType")}
           </label>
-          <Button type="submit" disabled={busy || !isAuthenticated}>
-            New note
-          </Button>
-        </form>
-        <div className="space-y-4">
-          <label className="grid gap-2 text-sm">
-            Search notes
+          <select
+            id="nt-new-type"
+            className="tp-input"
+            value={periodType}
+            onChange={(event) => setPeriodType(event.target.value as PeriodType)}
+          >
+            <option value="none">{t("notes.type.none")}</option>
+            <option value="daily">{t("notes.type.daily")}</option>
+            <option value="weekly">{t("notes.type.weekly")}</option>
+            <option value="monthly">{t("notes.type.monthly")}</option>
+          </select>
+        </div>
+        <button className="tp-btn tp-btn--primary" type="submit" disabled={busy || !isAuthenticated}>
+          <TpIcon name="plus" size="sm" />
+          <span>{t("notes.new")}</span>
+        </button>
+      </form>
+
+      <div className="tp-toolbar" data-component="Toolbar">
+        <div className="tp-search tp-toolbar__grow" data-component="SearchInput">
+          <label className="tp-label" htmlFor="nt-search">
+            {t("notes.search")}
+          </label>
+          <div className="tp-search__box">
+            <span className="tp-search__icon">
+              <TpIcon name="search" size="sm" />
+            </span>
             <input
+              id="nt-search"
               type="search"
-              className="rounded-xl border border-border bg-background px-3 py-2"
+              className="tp-input"
+              dir="auto"
+              autoComplete="off"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search your notes"
+              placeholder={t("notes.searchHint")}
             />
-          </label>
-          <div className="flex flex-wrap items-center gap-4">
-            <PeriodFilter value={type} />
-            <Button
-              type="button"
-              variant="outline"
-              aria-pressed={pinnedOnly}
-              onClick={() => setPinnedOnly(!pinnedOnly)}
-            >
-              Pinned only
-            </Button>
           </div>
         </div>
-        {error ? (
-          <p role="alert" className="text-destructive">
-            {error}
-          </p>
-        ) : null}
-        {removed.map((item) => (
-          <output
-            key={item.noteId}
-            className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
+        <div className="tp-toolbar__end">
+          <PeriodFilter value={type} />
+          <button
+            type="button"
+            className="tp-btn tp-btn--secondary"
+            aria-pressed={pinnedOnly}
+            onClick={() => setPinnedOnly(!pinnedOnly)}
           >
-            <span>Note removed. Undo is available for 5 minutes.</span>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() =>
-                void perform(async () => {
-                  if (Date.now() >= item.undoUntilMs) {
-                    setRemoved((items) => items.filter((entry) => entry.noteId !== item.noteId));
-                    setError("The undo window has ended.");
-                    return;
-                  }
-                  const result = await restore({ noteId: item.noteId });
+            <TpIcon name="pin" size="sm" />
+            <span>{t("notes.pinnedOnly")}</span>
+          </button>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="tp-notice" data-tone="danger" role="alert">
+          <span className="tp-notice__icon">
+            <TpIcon name="alert" size="sm" />
+          </span>
+          <span className="tp-notice__text">{error}</span>
+        </div>
+      ) : null}
+      {removed.map((item) => (
+        <output key={item.noteId} className="tp-notice" data-tone="info">
+          <span className="tp-notice__text">{t("notes.removed")}</span>
+          <button
+            type="button"
+            className="tp-btn tp-btn--secondary tp-btn--sm tp-notice__action"
+            disabled={busy}
+            onClick={() =>
+              void perform(async () => {
+                if (Date.now() >= item.undoUntilMs) {
                   setRemoved((items) => items.filter((entry) => entry.noteId !== item.noteId));
-                  if (!result.success) setError("The undo window has ended.");
-                })
-              }
-            >
-              Undo
-            </Button>
-          </output>
-        ))}
-        {!isLoading && visible.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
-            <p className="text-lg font-medium">
-              {search || pinnedOnly || type !== "all"
-                ? "No notes match these filters."
-                : "No notes yet."}
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {search || pinnedOnly || type !== "all"
-                ? "Try another filter whenever you like."
-                : "Start with whatever is on your mind."}
-            </p>
+                  setError(t("notes.undoEnded"));
+                  return;
+                }
+                const result = await restore({ noteId: item.noteId });
+                setRemoved((items) => items.filter((entry) => entry.noteId !== item.noteId));
+                if (!result.success) setError(t("notes.undoEnded"));
+              })
+            }
+          >
+            {t("notes.undo")}
+          </button>
+        </output>
+      ))}
+
+      {!isLoading && visible.length === 0 ? (
+        <div className="tp-empty" data-component="Empty">
+          <TpIcon name="page" size="lg" />
+          <p className="tp-h3">{filtered ? t("notes.noMatch") : t("notes.none")}</p>
+          <p>{filtered ? t("notes.noMatchHint") : t("notes.noneHint")}</p>
+        </div>
+      ) : (
+        <section className="tp-section tp-surface" aria-labelledby="nt-all-h" data-component="Section">
+          <div className="tp-section__head">
+            <h2 className="tp-section__title" id="nt-all-h">
+              {t("notes.all")}
+            </h2>
           </div>
-        ) : (
-          <ul className="space-y-3">
+          <ul className="tp-list" data-component="ListRow">
             {visible.map((note) => (
-              <li
-                key={note._id}
-                className="rounded-2xl border border-border bg-card p-4 shadow-card"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <Link href={`/notes/${note._id}`} className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-medium">{note.title || "Untitled note"}</p>
-                      {note.pinned ? (
-                        <span className="rounded-pill bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                          Pinned
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{plainPreview(note.body)}</p>
-                  </Link>
-                  <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={busy}
-                      aria-label={`${note.pinned ? "Unpin" : "Pin"} ${note.title || "Untitled note"}`}
-                      onClick={() =>
-                        void perform(async () => {
-                          await togglePin({ noteId: note._id });
-                        })
-                      }
-                    >
-                      {note.pinned ? "Unpin" : "Pin"}
-                    </Button>
-                    {pendingDelete === note._id ? (
-                      <>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          disabled={busy}
-                          aria-label={`Confirm delete ${note.title || "Untitled note"}`}
-                          onClick={() =>
-                            void perform(async () => {
-                              const result = await remove({ noteId: note._id });
-                              if (result.success) {
-                                setRemoved((items) => [
-                                  ...items,
-                                  { noteId: note._id, undoUntilMs: result.undoUntilMs },
-                                ]);
-                                setPendingDelete(null);
-                              }
-                            })
-                          }
-                        >
-                          Confirm delete
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() => setPendingDelete(null)}
-                        >
-                          Cancel
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
+              <li key={note._id} className="flex items-center gap-2">
+                <Link className="tp-list-row min-w-0 flex-1" href={`/notes/${note._id}`}>
+                  <span className="tp-list-row__icon">
+                    <TpIcon name={note.periodType === "daily" ? "today" : "page"} size="sm" />
+                  </span>
+                  <span className="tp-list-row__body">
+                    <span className="tp-list-row__title" dir="auto">
+                      {label(note)}
+                    </span>
+                    <span className="tp-list-row__meta" dir="auto">
+                      {note.pinned ? <span className="tp-tag">{t("notes.pinned")}</span> : null}
+                      <span>{plainPreview(note.body)}</span>
+                    </span>
+                  </span>
+                </Link>
+                <span className="tp-list-row__end">
+                  <button
+                    type="button"
+                    className="tp-btn tp-btn--ghost tp-btn--sm"
+                    disabled={busy}
+                    aria-label={`${note.pinned ? t("notes.unpin") : t("notes.pin")} ${label(note)}`}
+                    onClick={() =>
+                      void perform(async () => {
+                        await togglePin({ noteId: note._id });
+                      })
+                    }
+                  >
+                    {note.pinned ? t("notes.unpin") : t("notes.pin")}
+                  </button>
+                  {pendingDelete === note._id ? (
+                    <>
+                      <button
                         type="button"
-                        variant="outline"
+                        className="tp-btn tp-btn--danger tp-btn--sm"
                         disabled={busy}
-                        aria-label={`Delete ${note.title || "Untitled note"}`}
-                        onClick={() => setPendingDelete(note._id)}
+                        aria-label={`${t("notes.confirmDelete")} ${label(note)}`}
+                        onClick={() =>
+                          void perform(async () => {
+                            const result = await remove({ noteId: note._id });
+                            if (result.success) {
+                              setRemoved((items) => [...items, { noteId: note._id, undoUntilMs: result.undoUntilMs }]);
+                              setPendingDelete(null);
+                            }
+                          })
+                        }
                       >
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                        {t("notes.confirmDelete")}
+                      </button>
+                      <button
+                        type="button"
+                        className="tp-btn tp-btn--ghost tp-btn--sm"
+                        disabled={busy}
+                        onClick={() => setPendingDelete(null)}
+                      >
+                        {t("notes.cancel")}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="tp-btn tp-btn--ghost tp-btn--sm"
+                      disabled={busy}
+                      aria-label={`${t("notes.delete")} ${label(note)}`}
+                      onClick={() => setPendingDelete(note._id)}
+                    >
+                      {t("notes.delete")}
+                    </button>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
-        )}
-      </div>
-    </main>
+        </section>
+      )}
+    </div>
   );
 }

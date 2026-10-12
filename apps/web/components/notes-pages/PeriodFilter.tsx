@@ -1,31 +1,35 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import type { PeriodFilterValue } from "./filterNotes";
 
+/** v3 segmented filter (tempo.css .tp-segmented): one choice, kept in ?type=. */
 export function PeriodFilter({ value }: { value: PeriodFilterValue }) {
+  const { t } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   return (
-    <fieldset aria-label="Page type" className="flex flex-wrap gap-2">
+    <div className="tp-segmented" role="radiogroup" aria-label={t("notes.typeLabel")}>
       {(["all", "daily", "weekly", "monthly"] as const).map((type) => (
-        <Button
+        // biome-ignore lint/a11y/useSemanticElements: one option of the v3 segmented control
+        <button
           key={type}
           type="button"
-          variant={value === type ? "default" : "outline"}
-          aria-pressed={value === type}
+          role="radio"
+          className="tp-seg__opt"
+          aria-checked={value === type}
           onClick={() => {
             const params = new URLSearchParams(searchParams.toString());
             params.set("type", type);
             router.replace(`${pathname}?${params.toString()}`, { scroll: false });
           }}
         >
-          {type[0].toUpperCase() + type.slice(1)}
-        </Button>
+          {t(`notes.type.${type}`)}
+        </button>
       ))}
-    </fieldset>
+    </div>
   );
 }
