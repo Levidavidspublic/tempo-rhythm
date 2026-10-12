@@ -14,6 +14,10 @@ import type { MutationCtx } from "../_generated/server";
  * fragments, rewrites an `available` payload to `expired`, edits expiry metadata or schedules
  * cleanup. Those belong to a separately reviewed cleanup path, and the 30-day account grace
  * window does not extend an expired Undo or proposal window.
+ *
+ * A tombstone alone does not stop an endpoint from reading a row. The read side lives in
+ * `pagePrivacy.ts` (#808): every page, Undo, proposal and Agent-linked chat path calls one of its
+ * guards, which deny a deleted account, note or conversation and any tombstoned row immediately.
  */
 export const USER_OWNED_TABLES = [
   "tasks",
