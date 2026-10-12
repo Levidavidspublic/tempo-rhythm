@@ -1,0 +1,58 @@
+{
+  "$comment": "Settings for check.mjs. Edit here, not in the script. Variants use the design's own URL switches (tempo.js: ?theme=light|dark&lang=en|he); if a page ignores them, the script sets data-theme / dir on <html> itself and marks the run 'forced'.",
+  "pages": ["screens/**/*.html", "hero-board.html"],
+  "widths": [390, 1280],
+  "heights": { "390": 844, "1280": 900 },
+  "themes": ["light", "dark"],
+  "dirs": ["ltr", "rtl"],
+  "query": {
+    "light": "theme=light",
+    "dark": "theme=dark",
+    "ltr": "lang=en",
+    "rtl": "lang=he"
+  },
+  "force": {
+    "themeAttr": "data-theme",
+    "darkClass": "dark"
+  },
+  "contactSheets": [
+    { "width": 1280, "theme": "light", "dir": "ltr", "columns": 4, "thumbWidth": 320, "cropHeight": 900 },
+    { "width": 390, "theme": "dark", "dir": "ltr", "columns": 7, "thumbWidth": 180, "cropHeight": 844 }
+  ],
+  "groupsFallback": [
+    { "group": "marketing", "match": "^(landing|about|changelog|pricing)" },
+    { "group": "auth", "match": "^(sign-|link-sent|pending|onboarding|welcome)" },
+    { "group": "flow", "match": "^(today|daily-note|brain-dump|coach|plan|proposal|focus)" },
+    { "group": "library", "match": "^(tasks|notes?|note-|journal|calendar|habit|routine|goal|project)" },
+    { "group": "you", "match": "^(insights|activity|template|search|command|empty-states|import)" },
+    { "group": "settings", "match": "^(settings|notifications|billing|trial|ask-founder)" }
+  ],
+  "forbidden": [
+    { "label": "EXTRAPOLATED", "pattern": "\\bEXTRAPOLATED\\b", "flags": "i" },
+    { "label": "UNKNOWN", "pattern": "\\bUNKNOWN\\b", "flags": "" },
+    { "label": "Sample data", "pattern": "\\bsample data\\b", "flags": "i" },
+    { "label": "undefined", "pattern": "\\bundefined\\b", "flags": "" },
+    { "label": "null", "pattern": "\\bnull\\b", "flags": "" },
+    { "label": "lorem", "pattern": "\\blorem\\b", "flags": "i" },
+    { "label": "raw JSON", "pattern": "[\\{\\[]\\s*\"[A-Za-z_][\\w-]*\"\\s*:", "flags": "" },
+    { "label": "raw JSON", "pattern": "\\[object Object\\]", "flags": "" }
+  ],
+  "axeRules": [
+    "color-contrast",
+    "label",
+    "button-name",
+    "link-name",
+    "image-alt",
+    "input-image-alt",
+    "input-button-name",
+    "select-name",
+    "aria-input-field-name",
+    "aria-toggle-field-name",
+    "svg-img-alt",
+    "role-img-alt"
+  ],
+  "interactiveSelector": "a[href], button, input:not([type=hidden]), select, textarea, summary, [role=button], [role=link], [role=tab], [role=switch], [role=checkbox], [role=radio], [role=menuitem], [tabindex]:not([tabindex='-1'])",
+  "navSelector": "#rail, nav[aria-label], [role=navigation], aside",
+  "timeoutMs": 30000,
+  "settleMs": 350
+}

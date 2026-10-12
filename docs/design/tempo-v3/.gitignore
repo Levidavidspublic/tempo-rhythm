@@ -1,0 +1,6 @@
+# Open Design working files: never commit these
+.file-versions/
+.od-*/
+.od-*
+*.artifact.json
+.remember/

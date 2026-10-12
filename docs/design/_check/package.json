@@ -1,0 +1,13 @@
+{
+  "name": "tempo-design-check",
+  "private": true,
+  "type": "module",
+  "description": "Renders the Tempo design screens in Chromium and reports overflow, console/font errors, overlaps, forbidden words and axe contrast/labels. Not part of the app build.",
+  "scripts": {
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "axe-core": "4.13.0",
+    "playwright": "1.62.1"
+  }
+}
