@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New page · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — new-page.html */
+  .np-stack { display: grid; gap: var(--tp-space-8); }
+  .np-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+</style>
+</head>
+<body>
+<!--
+@screen   New page
+@route    apps/web/app/(tempo)/notes/new/page.tsx   (creates the page, then lives at /notes/[id])
+@layout   TempoShell
+@data     suggestion = templates.suggest({ title, date: "2026-10-12" })     // Convex query: ONE proposed template + what it adds
+@data     templates = templates.list({})                                     // Convex query: built-in + Maya's own templates
+@actions  use the proposed template -> templates.apply({ pageId, templateId: "daily" })   // one tap, optimistic, Undo 5 min
+@actions  not now -> templates.dismissOffer({ pageId })                      // the page stays as it is
+@actions  pick another template -> templates.apply({ pageId, templateId })  // optimistic, Undo 5 min
+@actions  start a plain note -> pages.create({ title, templateId: null })   // blank Markdown page
+@actions  make this page a template -> templates.createFromPage({ pageId, name })  // works on any page; Undo 5 min
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. A new page opens with a title line. The app proposes ONE template that fits (here: Daily, because the title is a day).
+          2. One tap on "Use Daily template" fills the page; Undo is offered for 5 minutes.
+          3. "Not now" keeps the page empty; the full picker stays below for a different choice.
+          4. The picker is a set of cards (Daily, Weekly, Project, Plain note, plus Maya's own); choose one, then "Use this one".
+          5. "Start a plain note" skips templates; a page can be one line.
+          6. "Make this page a template" saves the current page's structure (not its text) as a new template in Templates.
+          7. Empty (no own templates yet): built-ins still show, plus a kind hint. Error: "Your data is safe." + Retry. Offline: writing works, templates load later.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to page</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'templates' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li><a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a></li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Pages','New page'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="top.crumb">Pages</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="top.new">New page</strong>
+    </div>
+    <span class="tp-muted tp-small tp-topbar__hide-sm" data-state-hide="offline" data-i18n="top.saved">Saved</span>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main: a new, empty page ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. You can still write; templates load when you're back.</span></span></div>
+
+    <!-- @component PageEditor | shadcn: — | props: { page: {id, title, blocks: []} } | events: onRename -> pages.rename({ id, title }) -->
+    <article class="tp-paper" data-component="PageEditor" aria-labelledby="page-title">
+      <div class="tp-page__body">
+        <!-- @component PageHead | shadcn: — | props: { variant: 'note', title } | events: onRename -> pages.rename({ id, title }) -->
+        <div class="tp-page-head" data-variant="note" data-component="PageHead">
+          <h1 class="tp-page-title" id="page-title" contenteditable="true" spellcheck="true" dir="auto"><span data-i18n="page.title">Tuesday, 13 October</span></h1>
+          <!-- @component PageMeta | shadcn: — | props: { created: 'just now' } | events: — -->
+          <div class="tp-page-meta" data-component="PageMeta"><span data-i18n="page.meta">New page · created just now</span></div>
+        </div>
+
+        <div class="tp-page-content np-stack">
+
+          <!-- The one-tap proposal -->
+          <!-- @component TemplateBlock | shadcn: card + button | props: { template: {id:'daily', name:'Daily', adds[]}, why } | events: onUse -> templates.apply({ pageId, templateId: 'daily' }), onDismiss -> templates.dismissOffer({ pageId }) -->
+          <div class="tp-block-template" data-component="TemplateBlock" data-state-hide="offline">
+            <div class="tp-template-offer" data-status="offered" id="offer">
+              <div class="tp-template-offer__head">
+                <span class="tp-template-offer__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-sun"/></svg></span>
+                <div>
+                  <h2 class="tp-template-offer__title" data-i18n="offer.title">Use the Daily template?</h2>
+                  <p class="tp-template-offer__desc" data-i18n="offer.why">The title is a day, so a day plan fits. You can delete any part of it.</p>
+                </div>
+              </div>
+              <ul class="tp-template-offer__adds">
+                <li data-i18n="offer.a1">Intention</li><li data-i18n="offer.a2">Energy check-in</li><li data-i18n="offer.a3">Top three tasks</li><li data-i18n="offer.a4">End of day</li>
+              </ul>
+              <div class="tp-template-offer__actions">
+                <button class="tp-btn tp-btn--primary" type="button" data-action="template-use"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="offer.use">Use Daily template</span></button>
+                <button class="tp-btn tp-btn--ghost" type="button" data-action="template-dismiss"><span data-i18n="offer.no">Not now</span></button>
+              </div>
+              <p class="tp-template-offer__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+            </div>
+          </div>
+
+          <!-- Template picker -->
+          <!-- @component Section | shadcn: — | props: { title: 'Or pick another' } | events: — -->
+          <section class="tp-section" data-component="Section" aria-labelledby="pick-h" data-state-hide>
+            <div class="tp-section__head">
+              <h2 class="tp-section__title" id="pick-h" data-i18n="pick.title">Or pick another</h2>
+              <span class="tp-section__count"><span class="tp-num">5</span> <span data-i18n="pick.count">templates</span></span>
+            </div>
+            <!-- @component TemplatePicker | shadcn: radio-group (cards) | props: { templates: {id,name,desc,icon,own?}[], selected: 'daily' } | events: onChoose (role=radio) -> pages.create({ templateId }) -->
+            <div class="tp-template-picker" role="radiogroup" aria-labelledby="pick-h" data-component="TemplatePicker" id="picker">
+              <button class="tp-template-option" type="button" role="radio" aria-checked="true" tabindex="0" data-template="daily">
+                <span class="tp-template-option__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-sun"/></svg></span>
+                <span class="tp-template-option__name" data-i18n="tpl.daily">Daily page</span>
+                <span class="tp-template-option__desc" data-i18n="tpl.daily.d">Intention, energy, three tasks, end of day.</span>
+                <span class="tp-template-option__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="tpl.chosen">Chosen</span></span>
+              </button>
+              <button class="tp-template-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-template="weekly">
+                <span class="tp-template-option__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span>
+                <span class="tp-template-option__name" data-i18n="tpl.weekly">Weekly page</span>
+                <span class="tp-template-option__desc" data-i18n="tpl.weekly.d">Week intentions and tasks grouped by day.</span>
+                <span class="tp-template-option__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="tpl.chosen">Chosen</span></span>
+              </button>
+              <button class="tp-template-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-template="project">
+                <span class="tp-template-option__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span>
+                <span class="tp-template-option__name" data-i18n="tpl.project">Project page</span>
+                <span class="tp-template-option__desc" data-i18n="tpl.project.d">Status, goals, linked pages and a task list.</span>
+                <span class="tp-template-option__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="tpl.chosen">Chosen</span></span>
+              </button>
+              <button class="tp-template-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-template="weekend-reset">
+                <span class="tp-template-option__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-box"/></svg></span>
+                <span class="tp-template-option__name" data-i18n="tpl.own">Weekend reset</span>
+                <span class="tp-template-option__desc" data-i18n="tpl.own.d">Yours. Kitchen, packing and a short note.</span>
+                <span class="tp-template-option__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="tpl.chosen">Chosen</span></span>
+              </button>
+              <button class="tp-template-option" type="button" role="radio" aria-checked="false" tabindex="-1" data-template="plain">
+                <span class="tp-template-option__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-text"/></svg></span>
+                <span class="tp-template-option__name" data-i18n="tpl.plain">Plain note</span>
+                <span class="tp-template-option__desc" data-i18n="tpl.plain.d">A blank page. Just write.</span>
+                <span class="tp-template-option__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="tpl.chosen">Chosen</span></span>
+              </button>
+            </div>
+            <div class="np-actions">
+              <!-- @component Button | shadcn: button | props: { variant: 'secondary' } | events: onClick -> templates.apply({ pageId, templateId }) -->
+              <button class="tp-btn tp-btn--secondary" type="button" id="use-picked" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="pick.use">Use this one</span></button>
+              <!-- @component Button | shadcn: button | props: { variant: 'ghost' } | events: onClick -> pages.create({ title, templateId: null }) -->
+              <button class="tp-btn tp-btn--ghost" type="button" id="plain-btn" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-text"/></svg><span data-i18n="pick.plain">Start a plain note</span></button>
+            </div>
+          </section>
+
+          <!-- Make this page a template -->
+          <!-- @component Section | shadcn: — | props: { title: 'Make this page a template' } | events: onSave -> templates.createFromPage({ pageId, name }) -->
+          <section class="tp-section" data-component="Section" aria-labelledby="mk-h" data-state-hide>
+            <div class="tp-section__head"><h2 class="tp-section__title" id="mk-h" data-i18n="mk.title">Make this page a template</h2></div>
+            <p class="tp-muted" data-i18n="mk.body">Saves the sections of this page, not what you wrote in them. It shows up in Templates for next time. Works on any page.</p>
+            <div class="np-actions">
+              <button class="tp-btn tp-btn--secondary" type="button" id="make-tpl"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="mk.btn">Make this page a template</span></button>
+            </div>
+          </section>
+
+          <!-- empty: no own templates yet -->
+          <!-- @component StateEmpty | shadcn: — | props: { title, body } | events: onType -> pages.insertBlock -->
+          <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-text"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="empty.title">A blank page, ready when you are.</h2>
+            <p class="tp-state__body" data-i18n="empty.body">You have no templates of your own yet. Just start writing; a page can be one line.</p>
+            <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="page-editor.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="empty.write">Start writing</span></a></div>
+          </div>
+
+          <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+          <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+            <span class="tp-sr-only" data-i18n="loading">Loading templates</span>
+            <div class="tp-skeleton tp-skeleton--block"></div>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            </div>
+          </div>
+
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load templates." } | events: onRetry -> refetch -->
+          <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="error.title">Couldn't load templates.</h2>
+            <p class="tp-state__body" data-i18n="error.body">Your data is safe. You can still write on this page.</p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach with this page attached -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'pages' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "template.used": "Daily template added to this page.", "template.dismissed": "Okay. This page stays as it is.",
+    "picked.used": "Template added to this page.", "plain.started": "Plain note. Just write.",
+    "mk.saved": "Saved as a template. You'll find it in Templates.",
+    "toast.sub": "You can undo for", "toast.undo": "Undo", "toast.dismiss": "Dismiss", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "דף חדש · Tempo",
+    "skip": "דלגו לדף",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.week": "שבוע 42", "nav.moving": "מעבר דירה",
+    "nav.talk": "הרצאה ביום חמישי", "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.crumb": "דפים", "top.new": "דף חדש", "top.saved": "נשמר", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "page.title": "יום שלישי, 13 באוקטובר", "page.meta": "דף חדש · נוצר עכשיו",
+    "offer.title": "להשתמש בתבנית היומית?", "offer.why": "הכותרת היא יום, אז תוכנית ליום מתאימה. אפשר למחוק כל חלק ממנה.",
+    "offer.a1": "כוונה", "offer.a2": "בדיקת אנרגיה", "offer.a3": "שלוש משימות עיקריות", "offer.a4": "סוף היום",
+    "offer.use": "להשתמש בתבנית היומית", "offer.no": "לא עכשיו",
+    "pick.title": "או לבחור תבנית אחרת", "pick.count": "תבניות", "tpl.chosen": "נבחרה",
+    "tpl.daily": "דף יומי", "tpl.daily.d": "כוונה, אנרגיה, שלוש משימות, סוף היום.",
+    "tpl.weekly": "דף שבועי", "tpl.weekly.d": "כוונות לשבוע ומשימות לפי יום.",
+    "tpl.project": "דף פרויקט", "tpl.project.d": "סטטוס, מטרות, דפים מקושרים ורשימת משימות.",
+    "tpl.own": "איפוס סוף שבוע", "tpl.own.d": "שלך. מטבח, אריזה והערה קצרה.",
+    "tpl.plain": "פתק פשוט", "tpl.plain.d": "דף ריק. פשוט לכתוב.",
+    "pick.use": "להשתמש בזו", "pick.plain": "להתחיל פתק פשוט",
+    "mk.title": "להפוך את הדף הזה לתבנית", "mk.body": "שומר את החלקים של הדף, לא את מה שכתבת בהם. התבנית תופיע בתבניות לפעם הבאה. עובד על כל דף.",
+    "mk.btn": "להפוך את הדף הזה לתבנית",
+    "empty.title": "דף ריק, מוכן מתי שתרצי.", "empty.body": "עוד אין לך תבניות משלך. פשוט להתחיל לכתוב; דף יכול להיות שורה אחת.", "empty.write": "להתחיל לכתוב",
+    "loading": "טוען תבניות", "error.title": "לא הצלחנו לטעון את התבניות.", "error.body": "המידע שלך שמור. אפשר להמשיך לכתוב בדף הזה.",
+    "st.offline": "אין חיבור כרגע. אפשר להמשיך לכתוב; התבניות ייטענו כשתחזרי לרשת.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "template.used": "התבנית היומית נוספה לדף.", "template.dismissed": "בסדר. הדף נשאר כמו שהוא.",
+    "picked.used": "התבנית נוספה לדף.", "plain.started": "פתק פשוט. פשוט לכתוב.",
+    "mk.saved": "נשמר כתבנית. אפשר למצוא אותה בתבניות.",
+    "toast.sub": "אפשר לבטל עוד", "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+TP.onReady = function () {
+  document.getElementById("use-picked").addEventListener("click", function () {
+    // REAL: convex templates.apply({ pageId, templateId }) — templateId from the checked option; optimistic, Undo 5 min -> templates.unapply({ pageId })
+    var picked = document.querySelector('#picker [aria-checked="true"]');
+    if (picked && picked.getAttribute("data-template") === "plain") { document.getElementById("plain-btn").click(); return; }
+    TP.toast({ title: TP.t("picked.used"), onUndo: function () {} });
+  });
+  document.getElementById("plain-btn").addEventListener("click", function () {
+    // REAL: convex pages.create({ title, templateId: null }) — then router.replace(`/notes/${id}`)
+    var offer = document.getElementById("offer"); if (offer) offer.setAttribute("data-status", "dismissed");
+    TP.toast({ title: TP.t("plain.started") });
+    document.getElementById("page-title").focus();
+  });
+  document.getElementById("make-tpl").addEventListener("click", function () {
+    // REAL: convex templates.createFromPage({ pageId, name: pageTitle }) — copies block structure only; Undo 5 min -> templates.remove({ templateId })
+    TP.toast({ title: TP.t("mk.saved"), onUndo: function () {} });
+  });
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import memory · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — memory-import.html */
+  .mi-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .mi-step { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .mi-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
+  .mi-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Import memory
+@route    apps/web/app/(tempo)/memory/import/page.tsx
+@layout   TempoShell
+@data     existing = memory.list({ kind: "all" })                       // Convex query: used only to mark likely duplicates
+@actions  read pasted text or a file -> memory.parseImport({ source: "chatgpt" | "claude", text | fileId })   // action: splits into short items; saves nothing
+@actions  keep / edit / drop an item -> local state only                 // nothing is saved yet
+@actions  save kept items -> memory.importReview({ items: [{ text, choice }] })   // saves keep + edited; drop is discarded; Undo 5 min -> memory.undoImport({ batchId })
+@states   default | empty | loading | error | offline  (?state=)   + review (?view=review) + saved
+@flow     1. Choose where it comes from: ChatGPT or Claude.
+          2. Paste the memory text, or upload a text or Markdown file. A tip says how to get it out of the other app.
+          3. "Find the items" splits it into short items. Nothing is saved yet. If the box is empty, a plain error says what to do.
+          4. Review: every item has Keep, Edit, Drop. Edit lets Maya change the words in place. Drop strikes it through and says "Will be left out".
+          5. A line under the list says how many will be saved. Save is the one primary action.
+          6. After saving: "5 memories saved" with Undo for 5 minutes and a link to What Tempo remembers.
+          7. Empty: nothing found in the text. Error: "Couldn't read that. Nothing was saved." Offline: Save waits until reconnect.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'memory' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">Yours</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="modules.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.modules">Modules</span></a></li>
+        <li><a class="tp-tree-item" href="memory.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.memory">What Tempo remembers</span></a></li>
+        <li><a class="tp-tree-item" href="nags.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-nag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.nags">Nags</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['What Tempo remembers','Import'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="memory.html" data-i18n="nav.memory">What Tempo remembers</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="mi.crumb">Import</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <a class="tp-btn tp-btn--link" href="memory.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="nav.memory">What Tempo remembers</span></a>
+          <h1 class="tp-pagehead__title" data-i18n="mi.title">Bring your memory from ChatGPT or Claude</h1>
+          <p class="tp-pagehead__sub" data-i18n="mi.sub">So you don't have to explain yourself twice. You'll see every item first and choose what to keep. Nothing is saved until you press Save.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">You can review the items now. Saving waits until you reconnect.</span></span>
+      </div>
+
+      <div class="mi-body">
+
+        <!-- ===== Step 1: paste or upload ===== -->
+        <section class="mi-step tp-surface" aria-labelledby="s1-title" data-state-hide data-step1>
+          <h2 class="tp-section__title" id="s1-title"><span class="tp-num">1.</span> <span data-i18n="s1.title">Add the memory text</span></h2>
+
+          <!-- @component Form | shadcn: form | props: — | events: onSubmit -> memory.parseImport({ source, text | fileId }) -->
+          <form class="tp-form" data-component="Form" onsubmit="return false" novalidate>
+            <!-- @component Field | shadcn: form item | props: { label: 'Where is it from?' } | events: — -->
+            <div class="tp-field" data-component="Field">
+              <span class="tp-label" id="src-label" data-i18n="s1.from">Where is it from?</span>
+              <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: [ChatGPT, Claude], value: 'chatgpt' } | events: onChange -> local state -->
+              <div class="tp-segmented" role="radiogroup" aria-labelledby="src-label" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" data-value="chatgpt" aria-checked="true" tabindex="0"><span>ChatGPT</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="claude" aria-checked="false" tabindex="-1"><span>Claude</span></button>
+              </div>
+            </div>
+
+            <div class="tp-field" data-component="Field">
+              <span class="tp-label" id="how-label" data-i18n="s1.how">How do you want to add it?</span>
+              <div class="tp-segmented" role="radiogroup" aria-labelledby="how-label" data-component="Segmented" data-how>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="paste" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-text"/></svg><span data-i18n="s1.paste">Paste text</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" data-value="upload" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-upload"/></svg><span data-i18n="s1.upload">Upload a file</span></button>
+              </div>
+            </div>
+
+            <!-- @component Field + Textarea | shadcn: form item + textarea | props: { id: 'paste', label, help, error } | events: — -->
+            <div class="tp-field" data-component="Field" data-panel="paste">
+              <label class="tp-label" for="paste" data-i18n="s1.pasteLabel">Paste it here</label>
+              <textarea class="tp-textarea" id="paste" rows="6" dir="auto" aria-describedby="paste-help paste-error" data-component="Textarea">Maya works as a product designer, mostly from home.
+She prefers Hebrew for voice and English for writing.
+Her manager is Dana.
+She has a brother named Yoni.
+She is planning a talk for Thursday.
+She lives in Haifa.
+She likes plans with no more than three things a day.</textarea>
+              <p class="tp-help" id="paste-help" data-i18n="s1.tip">Tip: ask ChatGPT or Claude "List everything you remember about me", then copy the whole answer.</p>
+              <p class="tp-error-text" id="paste-error" hidden data-i18n="s1.err">There's nothing to read yet. Paste some text, or switch to Upload a file.</p>
+            </div>
+
+            <!-- @component Field + TextInput (file) | shadcn: input | props: { accept: '.txt,.md' } | events: onChange -> files upload (Convex storage) -->
+            <div class="tp-field" data-component="Field" data-panel="upload" hidden>
+              <label class="tp-label" for="file" data-i18n="s1.fileLabel">Choose a text or Markdown file</label>
+              <input class="tp-input" id="file" type="file" accept=".txt,.md,text/plain,text/markdown" aria-describedby="file-help">
+              <p class="tp-help" id="file-help" data-i18n="s1.fileHelp">Up to 1 MB. The file is read once and isn't kept.</p>
+            </div>
+
+            <div class="tp-form__actions">
+              <button class="tp-btn tp-btn--secondary" type="button" data-mi="find"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="s1.find">Find the items</span></button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ===== Step 2: review ===== -->
+        <section class="mi-step" aria-labelledby="s2-title" data-state-hide data-step2 hidden>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="s2-title" tabindex="-1"><span class="tp-num">2.</span> <span data-i18n="s2.title">Choose what Tempo keeps</span></h2>
+            <span class="tp-section__count"><span class="tp-num">7</span> <span data-i18n="s2.found">items found in your ChatGPT memory</span></span>
+          </div>
+          <p class="tp-muted" data-i18n="s2.help">Keep what's true and useful. Edit anything that's a bit off. Drop the rest. Nothing is saved yet.</p>
+
+          <!-- @component ImportReview ×7 | shadcn: toggle-group per row | props: { items: {id, text, choice: 'keep'|'edit'|'drop', duplicateOf?}[] } | events: onChoose -> local state, onSave -> memory.importReview({ items }) -->
+          <ol class="tp-import-list" role="list" data-component="ImportReview">
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i1" data-i18n="i1">Works as a product designer, mostly from home.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i1" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+            </li>
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i2" data-i18n="i2">Prefers Hebrew for voice and English for writing.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i2" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+            </li>
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i3" data-i18n="i3">Her manager is Dana.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i3" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+              <p class="tp-small tp-muted"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg> <span data-i18n="i3.dup">Tempo already remembers something close to this. Keeping it won't make a second copy.</span></p>
+            </li>
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i4" data-i18n="i4">Has a brother named Yoni.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i4" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+            </li>
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i5" data-i18n="i5">Is planning a talk for Thursday.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i5" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+            </li>
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i6" data-i18n="i6">Lives in Haifa.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i6" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+            </li>
+            <li class="tp-import-row" data-choice="keep">
+              <p class="tp-import-row__text" dir="auto" id="i7" data-i18n="i7">Likes plans with no more than three things a day.</p>
+              <div class="tp-import-row__bar">
+                <div class="tp-segmented" role="radiogroup" aria-labelledby="i7" data-component="Segmented">
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="keep" aria-checked="true" tabindex="0"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="c.keep">Keep</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="edit" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg><span data-i18n="c.edit">Edit</span></button>
+                  <button class="tp-seg__opt" type="button" role="radio" data-value="drop" aria-checked="false" tabindex="-1"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="c.drop">Drop</span></button>
+                </div>
+                <span class="tp-import-row__note" data-i18n="n.keep">Will be saved</span>
+              </div>
+            </li>
+          </ol>
+
+          <div class="mi-actions">
+            <button class="tp-btn tp-btn--primary" type="button" data-mi="save"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="s2.save1">Save</span> <span class="tp-num" data-import-count>7</span> <span data-i18n="s2.save2">items</span></button>
+            <button class="tp-btn tp-btn--ghost" type="button" data-mi="back"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="s2.back">Back to the text</span></button>
+          </div>
+        </section>
+
+        <!-- ===== Saved ===== -->
+        <!-- @component StatusPanel | shadcn: card | props: { tone: 'done', title, body } | events: link -->
+        <div class="tp-status-panel" data-tone="done" role="status" data-component="StatusPanel" data-saved hidden tabindex="-1">
+          <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <h2 class="tp-status-panel__title"><span class="tp-num" data-saved-count>7</span> <span data-i18n="sv.title">memories saved.</span></h2>
+          <p class="tp-status-panel__body" data-i18n="sv.body">The coach can use them from now on. You can forget any of them later, one by one.</p>
+          <div class="tp-status-panel__actions"><a class="tp-btn tp-btn--secondary" href="memory.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg><span data-i18n="nav.memory">What Tempo remembers</span></a></div>
+        </div>
+
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+        <div class="tp-state tp-state--empty mi-state" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">Tempo didn't find anything to remember in that text.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">That's okay. Try copying the full answer from ChatGPT or Claude, including the list of things it knows.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="memory-import.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-text"/></svg><span data-i18n="empty.action">Try other text</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+        <div class="tp-state tp-state--loading mi-state" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Reading your memory text</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't read that." } | events: onRetry -> memory.parseImport again -->
+        <div class="tp-state tp-state--error mi-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't read that.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Nothing was saved, and your memories are as they were. Try again, or paste the text instead of a file.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title: 'Memories saved', countdown: 5:00 } | events: onUndo -> memory.undoImport({ batchId }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "import.keep": "Will be saved", "import.edit": "Editing: type your change", "import.drop": "Will be left out",
+    "sv.toast": "Memories saved", "sv.undone": "Undone. Nothing was saved.",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "ייבוא זיכרון · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.you": "שלך",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.modules": "מודולים", "nav.memory": "מה Tempo זוכר", "nav.nags": "נדנודים",
+    "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "mi.crumb": "ייבוא",
+    "mi.title": "להביא את הזיכרון שלך מ־ChatGPT או מ־Claude",
+    "mi.sub": "כדי שלא תצטרכי להסביר את עצמך פעמיים. תראי כל פריט קודם ותבחרי מה לשמור. שום דבר לא נשמר עד שתלחצי על שמירה.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "אפשר לעבור על הפריטים עכשיו. השמירה תחכה עד שהחיבור יחזור.",
+    "s1.title": "להוסיף את טקסט הזיכרון", "s1.from": "מאיפה זה?", "s1.how": "איך להוסיף?",
+    "s1.paste": "הדבקת טקסט", "s1.upload": "העלאת קובץ", "s1.pasteLabel": "להדביק כאן",
+    "s1.tip": "טיפ: בקשי מ־ChatGPT או מ־Claude ״תכתוב את כל מה שאתה זוכר עליי״, ואז העתיקי את כל התשובה.",
+    "s1.err": "עוד אין מה לקרוא. הדביקי טקסט, או עברי להעלאת קובץ.",
+    "s1.fileLabel": "לבחור קובץ טקסט או Markdown", "s1.fileHelp": "עד 1 MB. הקובץ נקרא פעם אחת ולא נשמר.",
+    "s1.find": "למצוא את הפריטים",
+    "s2.title": "לבחור מה Tempo ישמור", "s2.found": "פריטים נמצאו בזיכרון שלך מ־ChatGPT",
+    "s2.help": "שמרי מה שנכון ושימושי. ערכי מה שקצת לא מדויק. ותרי על השאר. שום דבר עוד לא נשמר.",
+    "i1": "עובדת כמעצבת מוצר, בעיקר מהבית.",
+    "i2": "מעדיפה עברית בקול, ואנגלית בכתיבה.",
+    "i3": "המנהלת שלה היא דנה.",
+    "i3.dup": "Tempo כבר זוכר משהו קרוב לזה. שמירה לא תיצור עותק שני.",
+    "i4": "יש לה אח בשם יוני.",
+    "i5": "מתכננת הרצאה ליום חמישי.",
+    "i6": "גרה בחיפה.",
+    "i7": "אוהבת תוכניות של לא יותר משלושה דברים ביום.",
+    "c.keep": "לשמור", "c.edit": "לערוך", "c.drop": "לוותר",
+    "n.keep": "יישמר", "import.keep": "יישמר", "import.edit": "עריכה: הקלידי את השינוי", "import.drop": "לא יישמר",
+    "s2.save1": "לשמור", "s2.save2": "פריטים", "s2.back": "חזרה לטקסט",
+    "sv.title": "זיכרונות נשמרו.", "sv.body": "המאמן יכול להשתמש בהם מעכשיו. אפשר לשכוח כל אחד מהם אחר כך, אחד אחד.",
+    "sv.toast": "הזיכרונות נשמרו", "sv.undone": "בוטל. שום דבר לא נשמר.",
+    "empty.title": "Tempo לא מצא בטקסט הזה משהו לזכור.", "empty.body": "זה בסדר. נסי להעתיק את כל התשובה מ־ChatGPT או מ־Claude, כולל רשימת הדברים שהוא יודע.",
+    "empty.action": "לנסות טקסט אחר",
+    "loading": "קורא את טקסט הזיכרון שלך",
+    "error.title": "לא הצלחנו לקרוא את זה.", "error.body": "שום דבר לא נשמר, והזיכרונות שלך נשארו כמו שהיו. נסי שוב, או הדביקי את הטקסט במקום קובץ.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  function $(s) { return document.querySelector(s); }
+  function step(n) {
+    $("[data-step1]").hidden = n !== 1;
+    $("[data-step2]").hidden = n !== 2;
+    $("[data-saved]").hidden = n !== 3;
+  }
+
+  function find() {
+    var how = $("[data-how] [aria-checked=true]").getAttribute("data-value");
+    var ta = document.getElementById("paste"), err = document.getElementById("paste-error");
+    if (how === "paste" && !ta.value.trim()) {
+      ta.setAttribute("aria-invalid", "true"); err.hidden = false; ta.focus(); return;
+    }
+    ta.removeAttribute("aria-invalid"); err.hidden = true;
+    // REAL: convex memory.parseImport({ source, text | fileId }) — an action that splits the text into short items; saves nothing
+    step(2); $("#s2-title").focus();
+  }
+
+  function save() {
+    // REAL: convex memory.importReview({ items: [{ text, choice }] }) — keep + edit are saved, drop is discarded
+    var n = $("[data-import-count]").textContent;
+    $("[data-saved-count]").textContent = n;
+    step(3); $("[data-saved]").focus();
+    TP.toast({
+      title: TP.t("sv.toast"),
+      onUndo: function () {
+        // REAL: convex memory.undoImport({ batchId }) — within 5 minutes
+        step(2); $("#s2-title").focus();
+      }
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    var how = e.target.closest("[data-how] [role=radio]");
+    if (how) {
+      var v = how.getAttribute("data-value");
+      document.querySelectorAll("[data-panel]").forEach(function (p) { p.hidden = p.getAttribute("data-panel") !== v; });
+      return;
+    }
+    var b = e.target.closest("[data-mi]"); if (!b) return;
+    var act = b.getAttribute("data-mi");
+    if (act === "find") find();
+    else if (act === "save") save();
+    else if (act === "back") { step(1); document.getElementById("paste").focus(); }
+  });
+
+  TP.onReady2 = function (params) {
+    if (params.get("view") === "review") step(2);
+  };
+})();
+</script>
+</body>
+</html>

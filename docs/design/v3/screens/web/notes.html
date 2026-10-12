@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notes · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — notes.html */
+  .nt-lists { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .nt-lists [data-filtered="true"] { display: none; }
+</style>
+</head>
+<body>
+<!--
+@screen   Notes
+@route    apps/web/app/(tempo)/notes/page.tsx
+@layout   TempoShell
+@data     tree = pages.tree({})                                   // Convex query: folders + pages (title, icon, parentId)
+@data     pages = pages.list({ folderId, q, sort, paginationOpts }) // Convex paginated query: title, folder, tags, updatedAt
+@actions  new page -> router.push("/notes/new")  (new-page.html; template picker, then pages.create({ templateId, parentId }))
+@actions  open a page -> router.push("/notes/[id]")  (page-editor.html)
+@actions  pick a folder -> router.replace("?folder=<id>")
+@actions  search / sort -> router.replace("?q=&sort=")
+@states   default | empty | loading | error | offline  (?state=)   + folder-with-no-pages (inline)
+@flow     1. Show the folder tree on the start side and the page list on the other; under 1024px the tree sits above the list.
+          2. Picking a folder narrows the list and the status line says how many pages show.
+          3. Pinned pages stay at the top; the rest are sorted by "Recently edited" unless the user picks "Title".
+          4. "New page" goes to the template picker (new-page.html). Blank page is always an option there.
+          5. Tapping a row opens the page editor.
+          6. No pages yet: kind copy and the same New page path.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="journal.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.journal">Journal</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="routines.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.routines">Routines</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.newpage">New page</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <strong data-i18n="nav.notes" dir="auto">Notes</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Search" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Notes', subtitle, actions: ['New page'] } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="nt.title">Notes</h1>
+          <p class="tp-pagehead__sub" data-i18n="nt.sub">Your pages, in folders you choose. Messy is fine; search finds things.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <!-- @component Button | shadcn: button | props: { variant: 'primary', href: '/notes/new' } | events: onClick -> router.push -->
+          <a class="tp-btn tp-btn--primary" href="new-page.html" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="nav.newpage">New page</span></a>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component Toolbar | shadcn: — | props: — | events: — -->
+      <div class="tp-toolbar" data-component="Toolbar" data-state-hide>
+        <!-- @component SearchInput | shadcn: input (+ command) | props: { label: 'Search pages' } | events: onInput -> pages.list({ q }) -->
+        <div class="tp-search tp-toolbar__grow" data-component="SearchInput">
+          <label class="tp-label" for="nt-search" data-i18n="nt.search">Search pages</label>
+          <div class="tp-search__box"><span class="tp-search__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><input class="tp-input" id="nt-search" type="search" dir="auto" autocomplete="off"></div>
+        </div>
+        <!-- @component SortMenu | shadcn: dropdown-menu (radio) | props: { options: ['recent','title'], value: 'recent' } | events: onChoose -> pages.list({ sort }) -->
+        <div class="tp-menu tp-toolbar__end" data-component="SortMenu">
+          <button class="tp-btn tp-btn--secondary" type="button" data-action="menu" aria-haspopup="menu" aria-expanded="false" aria-controls="nt-sort"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sort"/></svg><span data-i18n="nt.sort">Sort:</span> <span data-menu-value data-i18n="nt.sort.recent">Recently edited</span></button>
+          <div class="tp-menu__list tp-glass" id="nt-sort" role="menu" aria-label="Sort pages" data-i18n-attr="aria-label:nt.sort.label" hidden>
+            <div class="tp-menu__label" data-i18n="nt.sort.label">Sort pages</div>
+            <button class="tp-menu__item" type="button" role="menuitemradio" aria-checked="true" data-value="recent"><span class="tp-menu__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span><span data-label data-i18n="nt.sort.recent">Recently edited</span></button>
+            <button class="tp-menu__item" type="button" role="menuitemradio" aria-checked="false" data-value="title"><span class="tp-menu__check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span><span data-label data-i18n="nt.sort.title">Title, A to Z</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- @component Split | shadcn: resizable (optional) | props: { variant: 'list' } | events: — -->
+      <div class="tp-split tp-split--list" data-component="Split" data-state-hide>
+        <!-- @component Surface | shadcn: card | props: — | events: — -->
+        <nav class="tp-surface nt-tree" data-component="Surface" aria-labelledby="nt-folders">
+          <h2 class="tp-section__title" id="nt-folders" data-i18n="nt.folders">Folders</h2>
+          <!-- @component PageTree | shadcn: sidebar + collapsible | props: { folders: {id,name,count}[], current } | events: onPick -> ?folder= -->
+          <ul class="tp-tree" role="list" id="nt-tree" data-component="PageTree">
+            <li><a class="tp-tree-item" href="notes.html?folder=all" data-folder="all" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-box"/></svg></span><span class="tp-tree-item__label" data-i18n="nt.f.all">All pages</span><span class="tp-tree-item__count tp-num">10</span></a></li>
+            <li><a class="tp-tree-item" href="notes.html?folder=moving" data-folder="moving"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+            <li><a class="tp-tree-item" href="notes.html?folder=work" data-folder="work"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nt.f.work">Work</span><span class="tp-tree-item__count tp-num">2</span></a></li>
+            <li><a class="tp-tree-item" href="notes.html?folder=personal" data-folder="personal"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nt.f.personal">Personal</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+            <li><a class="tp-tree-item" href="notes.html?folder=daily" data-folder="daily"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nt.f.daily">Daily notes</span><span class="tp-tree-item__count tp-num">2</span></a></li>
+          </ul>
+        </nav>
+
+        <div class="nt-lists">
+          <p class="tp-muted tp-small" role="status"><span data-i18n="tk.showing">Showing</span> <span class="tp-num" id="nt-n">10</span> <span data-i18n="nt.pages">pages</span></p>
+          <!-- @component Section | shadcn: — | props: { title: 'Pinned' } | events: — -->
+          <section class="tp-section" data-component="Section" aria-labelledby="nt-pin-h">
+            <div class="tp-section__head"><h2 class="tp-section__title" id="nt-pin-h" data-i18n="nt.pinned">Pinned</h2></div>
+            <!-- @component ListRow ×2 | shadcn: — | props: { icon, title, meta: {edited, folder, tag}, href } | events: onOpen -> link /notes/[id] -->
+            <ul class="tp-list" role="list" data-component="ListRow">
+            <li data-folder="moving" data-title="Moving checklist"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nav.checklist">Moving checklist</span><span class="tp-list-row__meta"><span><span data-i18n="nt.today">Edited today</span> <span class="tp-num tp-mono">08:40</span></span><span>·</span><span data-i18n="nav.moving">Moving flat</span> <span class="tp-tag" data-i18n="tag.home">home</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pin"/></svg><span class="tp-sr-only" data-i18n="nt.pinned1">Pinned</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="work" data-title="Thursday talk"><a class="tp-list-row" href="page-blocks.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nav.talk">Thursday talk</span><span class="tp-list-row__meta"><span><span data-i18n="nt.yest">Edited yesterday</span></span><span>·</span><span data-i18n="nt.f.work">Work</span> <span class="tp-tag" data-i18n="tag.work">work</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pin"/></svg><span class="tp-sr-only" data-i18n="nt.pinned1">Pinned</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            </ul>
+          </section>
+          <section class="tp-section" data-component="Section" aria-labelledby="nt-rec-h">
+            <div class="tp-section__head"><h2 class="tp-section__title" id="nt-rec-h" data-i18n="nt.recent">All pages</h2></div>
+            <!-- @component ListRow ×8 | shadcn: — | props: { icon, title, meta: {edited, folder, tag}, href } | events: onOpen -> link /notes/[id] -->
+            <ul class="tp-list" role="list" id="nt-list" data-component="ListRow">
+            <li data-folder="moving" data-title="Weekend reset"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nav.weekend">Weekend reset</span><span class="tp-list-row__meta"><span><span data-i18n="nt.today">Edited today</span> <span class="tp-num tp-mono">09:12</span></span><span>·</span><span data-i18n="nav.moving">Moving flat</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="daily" data-title="Monday, 12 October"><a class="tp-list-row" href="daily-note.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nt.p.daily">Monday, 12 October</span><span class="tp-list-row__meta"><span><span data-i18n="nt.today">Edited today</span> <span class="tp-num tp-mono">08:05</span></span><span>·</span><span data-i18n="nt.f.daily">Daily notes</span> <span class="tp-tag" data-i18n="tag.daily">daily</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="daily" data-title="Week 42"><a class="tp-list-row" href="weekly-page.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nav.week">Week 42</span><span class="tp-list-row__meta"><span><span data-i18n="nt.yest">Edited yesterday</span></span><span>·</span><span data-i18n="nt.f.daily">Daily notes</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="work" data-title="Slides outline"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nt.p.slides">Slides outline</span><span class="tp-list-row__meta"><span><span data-i18n="nt.edited">Edited</span> <span class="tp-num">9</span> <span data-i18n="mon.oct">Oct</span></span><span>·</span><span data-i18n="nt.f.work">Work</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="personal" data-title="Reading list"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nt.p.reading">Reading list</span><span class="tp-list-row__meta"><span><span data-i18n="nt.edited">Edited</span> <span class="tp-num">7</span> <span data-i18n="mon.oct">Oct</span></span><span>·</span><span data-i18n="nt.f.personal">Personal</span> <span class="tp-tag" data-i18n="tag.books">books</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="personal" data-title="Gift ideas for Dana"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nt.p.gifts">Gift ideas for Dana</span><span class="tp-list-row__meta"><span><span data-i18n="nt.edited">Edited</span> <span class="tp-num">4</span> <span data-i18n="mon.oct">Oct</span></span><span>·</span><span data-i18n="nt.f.personal">Personal</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="moving" data-title="Boxes and who packs what"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nt.p.boxes">Boxes and who packs what</span><span class="tp-list-row__meta"><span><span data-i18n="nt.edited">Edited</span> <span class="tp-num">3</span> <span data-i18n="mon.oct">Oct</span></span><span>·</span><span data-i18n="nav.moving">Moving flat</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            <li data-folder="personal" data-title="Easy dinners for busy weeks"><a class="tp-list-row" href="page-editor.html">
+              <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span>
+              <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="nt.p.recipes">Easy dinners for busy weeks</span><span class="tp-list-row__meta"><span><span data-i18n="nt.edited">Edited</span> <span class="tp-num">1</span> <span data-i18n="mon.oct">Oct</span></span><span>·</span><span data-i18n="nt.f.personal">Personal</span></span></span>
+              <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+            </a></li>
+            </ul>
+          </section>
+          <!-- @component Empty | shadcn: — | props: { text } | events: — -->
+          <div class="tp-empty" id="nt-none" data-component="Empty" hidden>
+            <svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-folder"/></svg>
+            <p data-i18n="nt.none">Nothing here yet. This folder is ready when you are.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-page"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="nt.empty.t">No pages yet. Your first one can be tiny.</h2>
+        <p class="tp-state__body" data-i18n="nt.empty.b">A page can hold a list, a few thoughts or a plan. Templates help if a blank page feels big.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="new-page.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="nt.empty.a">Pick a template</span></a></div>
+      </div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="nt.loading">Loading your pages</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="nt.error">Couldn't load your pages.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Coach (closed) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open-coach (Ctrl J) -->
+  <button class="tp-coach-fab tp-glass" type="button" data-action="open-coach" aria-expanded="false" aria-controls="coach" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </button>
+  <!-- @component CoachPanel | shadcn: sheet | props: { open: boolean } | events: onClose -> close-coach, Esc -->
+  <aside class="tp-coach-panel tp-glass" id="coach" data-component="CoachPanel" aria-labelledby="coach-title" hidden>
+    <div class="tp-coach-panel__head">
+      <div class="tp-coach-panel__title"><strong id="coach-title" data-i18n="coach.name">Coach</strong><span data-i18n="coach.sub">Reads this page. Asks before changing anything.</span></div>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="close-coach" aria-label="Close coach" data-i18n-attr="aria-label:coach.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-coach-thread" role="log" aria-live="polite">
+      <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: — -->
+      <div class="tp-msg" data-component="CoachMessage"><span class="tp-msg__who" data-i18n="coach.name">Coach</span><p class="tp-msg__text" dir="auto" data-i18n="coach.hello">You can ask me to sort pages into folders or find something you wrote. I'll suggest first, and nothing moves until you say yes.</p></div>
+    </div>
+    <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }) -->
+    <form class="tp-composer" data-component="Composer" onsubmit="return false">
+      <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+      <div class="tp-composer__box">
+        <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+        <div class="tp-composer__bar">
+          <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+          <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </aside>
+
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "state.retried": "Loaded.",
+    "more.showing": "Showing",
+    "more.of": "of",
+    "more.all": "That's everything.",
+    "read.aloud": "Read aloud",
+    "read.stop": "Stop reading",
+    "checklist.of": "of",
+    "checklist.done": "done",
+    "habit.logged": "Logged today",
+    "habit.log": "Log today",
+    "habit.dayDone": "logged",
+    "habit.dayOpen": "not logged",
+    "switch.on": "On",
+    "switch.off": "Off"
+  },
+  he: {
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.library": "ספרייה",
+    "rail.pages": "דפים",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.search": "חיפוש",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את הדף הזה. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "state.retried": "נטען.",
+    "more.showing": "מוצגות",
+    "more.of": "מתוך",
+    "more.all": "זה הכול.",
+    "read.aloud": "הקראה",
+    "read.stop": "עצירת ההקראה",
+    "checklist.of": "מתוך",
+    "checklist.done": "בוצעו",
+    "habit.logged": "נרשם היום",
+    "habit.log": "לרשום להיום",
+    "habit.dayDone": "נרשם",
+    "habit.dayOpen": "לא נרשם",
+    "switch.on": "פועל",
+    "switch.off": "כבוי",
+    "dow.mon": "ב׳",
+    "dow.tue": "ג׳",
+    "dow.wed": "ד׳",
+    "dow.thu": "ה׳",
+    "dow.fri": "ו׳",
+    "dow.sat": "ש׳",
+    "dow.sun": "א׳",
+    "kind.fixed": "קבוע",
+    "kind.flex": "גמיש",
+    "unit.min": "דק׳",
+    "energy.quiet": "שקט",
+    "energy.steady": "יציב",
+    "energy.push": "דחיפה",
+    "doc.title": "פתקים · Tempo",
+    "nt.title": "פתקים",
+    "nt.sub": "הדפים שלך, בתיקיות שבחרת. גם בלגן זה בסדר; החיפוש מוצא.",
+    "nt.search": "חיפוש דפים",
+    "nt.sort": "מיון:",
+    "nt.sort.recent": "נערכו לאחרונה",
+    "nt.sort.label": "מיון דפים",
+    "nt.sort.title": "כותרת, מא׳ עד ת׳",
+    "nt.folders": "תיקיות",
+    "nt.f.all": "כל הדפים",
+    "nt.f.work": "עבודה",
+    "nt.f.personal": "אישי",
+    "nt.f.daily": "דפים יומיים",
+    "tk.showing": "מוצגים",
+    "nt.pages": "דפים",
+    "nt.pinned": "מוצמדים",
+    "nt.pinned1": "מוצמד",
+    "nt.recent": "כל הדפים",
+    "nt.today": "נערך היום",
+    "nt.yest": "נערך אתמול",
+    "nt.edited": "נערך",
+    "mon.oct": "באוק׳",
+    "nt.p.daily": "יום שני, 12 באוקטובר",
+    "nt.p.slides": "מבנה השקפים",
+    "nt.p.reading": "רשימת קריאה",
+    "nt.p.gifts": "רעיונות למתנה לדנה",
+    "nt.p.boxes": "קרטונים ומי אורז מה",
+    "nt.p.recipes": "ארוחות ערב קלות לשבועות עמוסים",
+    "tag.home": "בית",
+    "tag.work": "עבודה",
+    "tag.daily": "יומי",
+    "tag.books": "ספרים",
+    "nt.none": "עוד אין כאן כלום. התיקייה מחכה כשתרצי.",
+    "nt.empty.t": "עוד אין דפים. הראשון יכול להיות קטנטן.",
+    "nt.empty.b": "דף יכול להכיל רשימה, כמה מחשבות או תוכנית. תבניות עוזרות כשדף ריק מרגיש גדול.",
+    "nt.empty.a": "בחירת תבנית",
+    "nt.loading": "טוען את הדפים שלך",
+    "nt.error": "לא הצלחנו לטעון את הדפים.",
+    "coach.hello": "אפשר לבקש ממני לסדר דפים בתיקיות או למצוא משהו שכתבת. אציע קודם, ושום דבר לא יזוז עד שתאשרי."
+  }
+};
+/* Notes: folder filter, search, sort. */
+TP.onReady2 = function () {
+  var folder = "all", q = "";
+  var lists = document.querySelector(".nt-lists");
+  // REAL: convex pages.list({ folderId, q }) — here rows on the page are filtered.
+  function apply() {
+    var n = 0;
+    lists.querySelectorAll("li[data-folder]").forEach(function (li) {
+      var ok = (folder === "all" || li.getAttribute("data-folder") === folder) && (!q || li.textContent.toLowerCase().indexOf(q) !== -1);
+      li.setAttribute("data-filtered", String(!ok)); if (ok) n++;
+    });
+    lists.querySelectorAll(".tp-section").forEach(function (s) { s.hidden = !s.querySelector('li[data-filtered="false"]'); });
+    document.getElementById("nt-n").textContent = n;
+    document.getElementById("nt-none").hidden = n > 0;
+  }
+  document.getElementById("nt-tree").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-folder]"); if (!b) return;
+    e.preventDefault(); // REAL: router.replace("?folder=<id>") — the link works without JS too.
+    folder = b.getAttribute("data-folder");
+    document.querySelectorAll("#nt-tree [data-folder]").forEach(function (x) { if (x === b) x.setAttribute("aria-current", "page"); else x.removeAttribute("aria-current"); });
+    apply();
+  });
+  document.getElementById("nt-search").addEventListener("input", function (e) { q = e.target.value.trim().toLowerCase(); apply(); });
+  // REAL: convex pages.list({ sort }) — "recent" keeps server order; "title" sorts by the visible title.
+  var original = [].slice.call(document.getElementById("nt-list").children);
+  TP.onSort = function (v) {
+    var list = document.getElementById("nt-list"), items = original.slice();
+    if (v === "title") items.sort(function (a, b) { return a.querySelector(".tp-list-row__title").textContent.localeCompare(b.querySelector(".tp-list-row__title").textContent, document.documentElement.lang); });
+    items.forEach(function (li) { list.appendChild(li); });
+  };
+  var f = new URLSearchParams(location.search).get("folder");
+  var start = f && document.querySelector('#nt-tree [data-folder="' + f + '"]'); if (start) start.click(); else apply();
+};
+</script>
+</body>
+</html>

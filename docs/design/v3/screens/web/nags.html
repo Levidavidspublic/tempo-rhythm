@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nags · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — nags.html */
+  .ng-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .ng-nag { gap: var(--tp-space-3); padding-block: var(--tp-space-2); }
+  .ng-row-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-1); }
+  .ng-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Nags
+@route    apps/web/app/(tempo)/nags/page.tsx
+@layout   TempoShell
+@data     nags = nags.list({})        // Convex query: {id, about {kind: task|habit, title}, when (text), on, phrases [{id, text, origin: "you" | "derived", derivedFrom?: {quote, where, at}, status: "accepted" | "suggested"}]}
+@actions  add a phrase -> nags.addPhrase({ nagId, text })                      // the user's own words; accepted at once
+@actions  accept a derived phrase -> nags.acceptPhrase({ phraseId })           // it was made from Maya's own words; shows where from
+@actions  reject a derived phrase -> nags.rejectPhrase({ phraseId })           // gone; Tempo won't suggest it again
+@actions  remove a phrase -> nags.removePhrase({ phraseId })                   // Undo 5 min -> nags.restorePhrase; removing the last one turns the nag off
+@actions  turn a nag on or off -> nags.setEnabled({ nagId, on })               // refused on the server when the nag has no accepted phrase
+@states   default | empty | loading | error | offline  (?state=)   + undo
+@flow     1. Explain the rule: nags use Maya's own words. Tempo never writes stock lines, and there are no emoji.
+          2. "Add a phrase": pick the nag, type the words, Add. Short, in-jokes and acronyms are welcome.
+          3. Each nag shows what it is about, when it fires (mono), an On / Off switch, and its phrases.
+          4. A phrase Tempo derived shows the exact words it came from and where, with Accept and Reject. It is never used until accepted.
+          5. A nag with no accepted phrase shows a disabled switch and says why, right under it. Adding or accepting a phrase enables it.
+          6. Removing a phrase shows Undo for 5 minutes.
+          7. Empty: "No nags yet" plus how to make one from a task. Error: "Couldn't load your nags. Nothing was changed."
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'nags' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">Yours</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="modules.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.modules">Modules</span></a></li>
+        <li><a class="tp-tree-item" href="memory.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.memory">What Tempo remembers</span></a></li>
+        <li><a class="tp-tree-item" href="nags.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-nag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.nags">Nags</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Nags'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="ng.title">Nags</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Nags', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="ng.title">Nags</h1>
+          <p class="tp-pagehead__sub" data-i18n="ng.sub">Nudges in your own words, for the things you asked Tempo to keep after you about. Tempo never writes them for you. A nag needs at least one phrase you've accepted before it can turn on.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">Nags that are already on still show up inside Tempo.</span></span>
+      </div>
+
+      <div class="ng-body">
+
+        <!-- ===== Add a phrase ===== -->
+        <section class="tp-surface" aria-labelledby="add-title" data-state-hide>
+          <h2 class="tp-section__title" id="add-title" data-i18n="add.title">Add a phrase</h2>
+          <!-- @component Form | shadcn: form | props: — | events: onSubmit -> nags.addPhrase({ nagId, text }) -->
+          <form class="tp-form" data-component="Form" onsubmit="return false" novalidate>
+            <!-- @component Field + Select | shadcn: form item + select | props: { options: nags[] } | events: change -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="add-nag" data-i18n="add.for">Which nag is it for?</label>
+              <div class="tp-select" data-component="Select">
+                <select class="tp-select__input tp-input" id="add-nag">
+                  <option value="n3" data-i18n="n3.title">Slides for Thursday</option>
+                  <option value="n1" data-i18n="n1.title">Call the bank</option>
+                  <option value="n2" data-i18n="n2.title">Water</option>
+                </select>
+                <svg class="tp-icon tp-icon--sm tp-select__icon" aria-hidden="true"><use href="#i-down"/></svg>
+              </div>
+            </div>
+            <!-- @component Field + Textarea | shadcn: form item + textarea | props: { id: 'add-text', label, help, error } | events: — -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="add-text" data-i18n="add.label">Your words</label>
+              <textarea class="tp-textarea" id="add-text" rows="2" dir="auto" aria-describedby="add-help add-error" placeholder="The way you'd say it to yourself" data-i18n-attr="placeholder:add.ph" data-component="Textarea"></textarea>
+              <p class="tp-help" id="add-help" data-i18n="add.help">Short works best. In-jokes and shorthand are welcome. Only you will ever see it.</p>
+              <p class="tp-error-text" id="add-error" hidden data-i18n="add.err">Write a few words first. The nag will use them exactly as you type them.</p>
+            </div>
+            <div class="tp-form__actions">
+              <button class="tp-btn tp-btn--primary" type="button" data-ng="add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="add.btn">Add phrase</span></button>
+            </div>
+          </form>
+        </section>
+
+        <!-- ===== Nag list ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Your nags', count: 3 } | events: — -->
+        <section class="tp-section" aria-labelledby="list-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="list-title" data-i18n="list.title">Your nags</h2>
+            <span class="tp-section__count"><span class="tp-num">3</span> <span data-i18n="list.count">nags, 2 on · they show up inside Tempo</span></span>
+          </div>
+
+          <!-- nag 3 · no accepted phrase: switch disabled with the reason -->
+          <!-- @component SettingsSection ×3 | shadcn: card | props: { nag: {id, about, when, on, phrases[]} } | events: — -->
+          <article class="tp-settings-section tp-surface ng-nag" aria-labelledby="n3-title" data-nag="n3" data-component="SettingsSection">
+            <!-- @component SettingRow | shadcn: — + switch | props: { label, help, control: Switch } | events: onCheckedChange -> nags.setEnabled({ nagId, on }) -->
+            <div class="tp-setting-row" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <h3 class="tp-setting-row__label" id="n3-title" data-i18n="n3.title">Slides for Thursday</h3>
+                <span class="tp-help"><span data-i18n="n3.about">Task on your page "Thursday talk" · Wed 14 Oct at</span> <span class="tp-num tp-mono">10:00</span></span>
+              </div>
+              <div class="tp-setting-row__control">
+                <!-- @component Switch | shadcn: switch | props: { checked: false, disabled: true, reason } | events: — -->
+                <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-disabled="true" aria-labelledby="n3-title" aria-describedby="n3-why" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+              </div>
+            </div>
+            <p class="tp-help" id="n3-why" data-why><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg> <span data-i18n="n3.why">Can't turn on yet. This nag has no phrase you've accepted. Add one above, or accept the suggestion below.</span></p>
+            <!-- @component ListRow ×1 | shadcn: — + button | props: { phrase: {text, origin: 'derived', derivedFrom: {quote, where, at}, status: 'suggested'} } | events: onAccept -> nags.acceptPhrase({ phraseId }), onReject -> nags.rejectPhrase({ phraseId }) -->
+            <ul class="tp-list" role="list" data-phrases>
+              <li class="tp-list-row" data-component="ListRow" data-status="suggested">
+                <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span>
+                <span class="tp-list-row__body">
+                  <span class="tp-list-row__title" dir="auto" id="p31" data-i18n="p31">Three slides, not thirty.</span>
+                  <span class="tp-list-row__meta"><span class="tp-badge" data-component="Badge" data-phrase-badge><span data-i18n="b.suggested">Suggested, not used yet</span></span> <span data-i18n="p31.from">Made from your words "three slides, not thirty, Maya" on your page "Thursday talk", Thu 8 Oct</span></span>
+                </span>
+                <span class="tp-list-row__end ng-row-actions">
+                  <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-ng="accept" aria-describedby="p31"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="accept">Accept</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-ng="reject" aria-describedby="p31"><span data-i18n="reject">Reject</span></button>
+                </span>
+              </li>
+            </ul>
+          </article>
+
+          <!-- nag 1 -->
+          <article class="tp-settings-section tp-surface ng-nag" aria-labelledby="n1-title" data-nag="n1" data-component="SettingsSection">
+            <div class="tp-setting-row" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <h3 class="tp-setting-row__label" id="n1-title" data-i18n="n1.title">Call the bank</h3>
+                <span class="tp-help"><span data-i18n="n1.about">Task on Today · once at</span> <span class="tp-num tp-mono">11:00</span><span data-i18n="n1.about2">, before it's due at</span> <span class="tp-num tp-mono">12:00</span></span>
+              </div>
+              <div class="tp-setting-row__control">
+                <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="n1-title" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+              </div>
+            </div>
+            <!-- @component ListRow ×2 | shadcn: — + button | props: { phrase: {text, origin: 'you', at} } | events: onRemove -> nags.removePhrase({ phraseId }) (Undo 5 min) -->
+            <ul class="tp-list" role="list" data-phrases>
+              <li class="tp-list-row" data-component="ListRow" data-status="accepted">
+                <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span>
+                <span class="tp-list-row__body">
+                  <span class="tp-list-row__title" dir="auto" id="p11" data-i18n="p11">Bank. Ten minutes. Then it's gone.</span>
+                  <span class="tp-list-row__meta" data-i18n="p11.meta">Your words · Mon 12 Oct</span>
+                </span>
+                <span class="tp-list-row__end"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-ng="remove" aria-describedby="p11"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="remove">Remove</span></button></span>
+              </li>
+              <li class="tp-list-row" data-component="ListRow" data-status="accepted">
+                <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span>
+                <span class="tp-list-row__body">
+                  <span class="tp-list-row__title" dir="auto" id="p12" data-i18n="p12">BTB. Before the break.</span>
+                  <span class="tp-list-row__meta" data-i18n="p12.meta">Your words · Fri 9 Oct</span>
+                </span>
+                <span class="tp-list-row__end"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-ng="remove" aria-describedby="p12"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="remove">Remove</span></button></span>
+              </li>
+            </ul>
+          </article>
+
+          <!-- nag 2 -->
+          <article class="tp-settings-section tp-surface ng-nag" aria-labelledby="n2-title" data-nag="n2" data-component="SettingsSection">
+            <div class="tp-setting-row" data-component="SettingRow">
+              <div class="tp-setting-row__text">
+                <h3 class="tp-setting-row__label" id="n2-title" data-i18n="n2.title">Water</h3>
+                <span class="tp-help"><span data-i18n="n2.about">Habit · every 2 hours,</span> <span class="tp-num tp-mono tp-ltr">10:00–18:00</span></span>
+              </div>
+              <div class="tp-setting-row__control">
+                <button class="tp-switch" type="button" role="switch" aria-checked="true" aria-labelledby="n2-title" data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.on">On</span></button>
+              </div>
+            </div>
+            <!-- @component ListRow ×2 | shadcn: — + button | props: { phrase: {text, origin, derivedFrom?, status} } | events: onRemove -> nags.removePhrase, onAccept -> nags.acceptPhrase, onReject -> nags.rejectPhrase -->
+            <ul class="tp-list" role="list" data-phrases>
+              <li class="tp-list-row" data-component="ListRow" data-status="accepted">
+                <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span>
+                <span class="tp-list-row__body">
+                  <span class="tp-list-row__title" dir="auto" id="p21" data-i18n="p21">Glass, Maya.</span>
+                  <span class="tp-list-row__meta" data-i18n="p21.meta">Your words · Tue 6 Oct</span>
+                </span>
+                <span class="tp-list-row__end"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-ng="remove" aria-describedby="p21"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="remove">Remove</span></button></span>
+              </li>
+              <li class="tp-list-row" data-component="ListRow" data-status="suggested">
+                <span class="tp-list-row__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg></span>
+                <span class="tp-list-row__body">
+                  <span class="tp-list-row__title" dir="auto" id="p22" data-i18n="p22">Water before the next tab.</span>
+                  <span class="tp-list-row__meta"><span class="tp-badge" data-component="Badge" data-phrase-badge><span data-i18n="b.suggested">Suggested, not used yet</span></span> <span data-i18n="p22.from">Made from your words "drink something before opening another tab" on Today, Fri 9 Oct</span></span>
+                </span>
+                <span class="tp-list-row__end ng-row-actions">
+                  <button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-ng="accept" aria-describedby="p22"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="accept">Accept</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-ng="reject" aria-describedby="p22"><span data-i18n="reject">Reject</span></button>
+                </span>
+              </li>
+            </ul>
+          </article>
+        </section>
+
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: link -->
+        <div class="tp-state tp-state--empty ng-state" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-nag"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">No nags yet.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">On any task or habit, choose "Nag me about this", then write what you'd want to hear. Tempo only ever uses your words.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="today.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="empty.action">Go to Today</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+        <div class="tp-state tp-state--loading ng-state" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading your nags</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your nags." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error ng-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your nags.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Nothing was changed, and your phrases are safe. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title: 'Phrase removed', countdown: 5:00 } | events: onUndo -> nags.restorePhrase({ phraseId }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "switch.on": "On", "switch.off": "Off",
+    "your.now": "Your words · just now", "accepted": "Accepted. You can use it now.",
+    "added": "Phrase added", "removed": "Phrase removed", "rejected": "Gone. Tempo won't suggest it again.",
+    "nowOn": "This nag can turn on now.", "lastOff": "That was its last phrase, so the nag is off until you add another.",
+    "remove": "Remove",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "נדנודים · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.you": "שלך",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.modules": "מודולים", "nav.memory": "מה Tempo זוכר", "nav.nags": "נדנודים",
+    "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "ng.title": "נדנודים",
+    "ng.sub": "דחיפות קטנות במילים שלך, לדברים שביקשת מ־Tempo לא להרפות מהם. Tempo אף פעם לא כותב אותן במקומך. נדנוד צריך לפחות משפט אחד שאישרת לפני שאפשר להפעיל אותו.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "נדנודים שכבר פועלים ממשיכים להופיע בתוך Tempo.",
+    "add.title": "הוספת משפט", "add.for": "לאיזה נדנוד?", "add.label": "המילים שלך", "add.ph": "כמו שהיית אומרת את זה לעצמך",
+    "add.help": "קצר עובד הכי טוב. בדיחות פנימיות וקיצורים מתקבלים בברכה. רק את תראי את זה.",
+    "add.err": "כתבי קודם כמה מילים. הנדנוד ישתמש בהן בדיוק כמו שתקלידי.", "add.btn": "הוספת משפט",
+    "list.title": "הנדנודים שלך", "list.count": "נדנודים, 2 פועלים · הם מופיעים בתוך Tempo",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "n3.title": "שקפים ליום חמישי", "n3.about": "משימה בדף ״הרצאה ביום חמישי״ · יום ד׳ 14.10 ב־",
+    "n3.why": "אי אפשר להפעיל עדיין. לנדנוד הזה אין משפט שאישרת. הוסיפי אחד למעלה, או אשרי את ההצעה למטה.",
+    "p31": "שלושה שקפים, לא שלושים.", "b.suggested": "הצעה, עוד לא בשימוש",
+    "p31.from": "נוצר מהמילים שלך ״שלושה שקפים, לא שלושים, מאיה״ בדף ״הרצאה ביום חמישי״, יום ה׳ 8.10",
+    "accept": "אישור", "reject": "דחייה", "remove": "הסרה",
+    "n1.title": "להתקשר לבנק", "n1.about": "משימה בהיום · פעם אחת ב־", "n1.about2": ", לפני המועד ב־",
+    "p11": "בנק. עשר דקות. ואז זה מאחורייך.", "p11.meta": "המילים שלך · יום ב׳ 12.10",
+    "p12": "לפני ההפסקה. לפני ההפסקה.", "p12.meta": "המילים שלך · יום ו׳ 9.10",
+    "n2.title": "מים", "n2.about": "הרגל · כל שעתיים,",
+    "p21": "כוס, מאיה.", "p21.meta": "המילים שלך · יום ג׳ 6.10",
+    "p22": "מים לפני הטאב הבא.", "p22.from": "נוצר מהמילים שלך ״לשתות משהו לפני שפותחים עוד טאב״ בהיום, יום ו׳ 9.10",
+    "empty.title": "עוד אין נדנודים.", "empty.body": "בכל משימה או הרגל, בחרי ״לנדנד לי על זה״, ואז כתבי מה היית רוצה לשמוע. Tempo משתמש רק במילים שלך.",
+    "empty.action": "מעבר להיום",
+    "loading": "טוען את הנדנודים שלך",
+    "error.title": "לא הצלחנו לטעון את הנדנודים.", "error.body": "שום דבר לא השתנה, והמשפטים שלך שמורים. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "your.now": "המילים שלך · עכשיו", "accepted": "אושר. אפשר להשתמש בו מעכשיו.",
+    "added": "המשפט נוסף", "removed": "המשפט הוסר", "rejected": "נעלם. Tempo לא יציע אותו שוב.",
+    "nowOn": "אפשר להפעיל את הנדנוד הזה עכשיו.", "lastOff": "זה היה המשפט האחרון שלו, אז הנדנוד כבוי עד שתוסיפי עוד אחד.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  function say(text) {
+    var r = document.getElementById("tp-live");
+    if (!r) { r = document.createElement("div"); r.id = "tp-live"; r.className = "tp-sr-only"; r.setAttribute("aria-live", "polite"); document.body.appendChild(r); }
+    r.textContent = ""; setTimeout(function () { r.textContent = text; }, 30);
+  }
+  function accepted(nag) { return nag.querySelectorAll('[data-phrases] > li[data-status="accepted"]:not([hidden])').length; }
+
+  /* Re-check the rule: no accepted phrase -> switch disabled with the reason shown. */
+  function sync(nag) {
+    var sw = nag.querySelector(".tp-switch"), why = nag.querySelector("[data-why]");
+    if (accepted(nag) > 0) {
+      if (sw.getAttribute("aria-disabled") === "true") { sw.removeAttribute("aria-disabled"); sw.removeAttribute("aria-describedby"); if (why) why.hidden = true; say(TP.t("nowOn")); }
+    } else {
+      sw.setAttribute("aria-checked", "false"); sw.setAttribute("aria-disabled", "true");
+      var w = sw.querySelector(".tp-switch__state"); if (w) w.textContent = TP.t("switch.off");
+      if (why) { why.hidden = false; sw.setAttribute("aria-describedby", why.id); }
+    }
+  }
+
+  function makeRow(text) {
+    var li = document.createElement("li");
+    li.className = "tp-list-row"; li.setAttribute("data-component", "ListRow"); li.setAttribute("data-status", "accepted");
+    var id = "p" + Date.now();
+    li.innerHTML =
+      '<span class="tp-list-row__icon">' + TP.icon("user", "tp-icon--sm") + '</span>' +
+      '<span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" id="' + id + '"></span><span class="tp-list-row__meta"></span></span>' +
+      '<span class="tp-list-row__end"><button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-ng="remove" aria-describedby="' + id + '">' + TP.icon("x", "tp-icon--sm") + '<span></span></button></span>';
+    li.querySelector(".tp-list-row__title").textContent = text;
+    li.querySelector(".tp-list-row__meta").textContent = TP.t("your.now");
+    li.querySelector("[data-ng=remove] span").textContent = TP.t("remove");
+    return li;
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ng]"); if (!b) return;
+    var act = b.getAttribute("data-ng");
+
+    if (act === "add") {
+      var ta = document.getElementById("add-text"), err = document.getElementById("add-error");
+      var text = ta.value.trim();
+      if (!text) { ta.setAttribute("aria-invalid", "true"); err.hidden = false; ta.focus(); return; }
+      ta.removeAttribute("aria-invalid"); err.hidden = true;
+      var nag = document.querySelector('[data-nag="' + document.getElementById("add-nag").value + '"]');
+      // REAL: convex nags.addPhrase({ nagId, text }) — stored exactly as typed; never rewritten
+      nag.querySelector("[data-phrases]").appendChild(makeRow(text));
+      ta.value = ""; sync(nag); say(TP.t("added"));
+      return;
+    }
+
+    var li = b.closest("li"), nagEl = b.closest("[data-nag]");
+    if (act === "accept") {
+      // REAL: convex nags.acceptPhrase({ phraseId }) — the derived phrase becomes usable
+      li.setAttribute("data-status", "accepted");
+      var badge = li.querySelector("[data-phrase-badge]"); if (badge) badge.remove();
+      var end = li.querySelector(".tp-list-row__end");
+      end.className = "tp-list-row__end";
+      end.innerHTML = '<button class="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" data-ng="remove">' + TP.icon("x", "tp-icon--sm") + '<span></span></button>';
+      end.querySelector("span").textContent = TP.t("remove");
+      end.querySelector("button").focus();
+      sync(nagEl); say(TP.t("accepted"));
+    }
+    if (act === "reject") {
+      // REAL: convex nags.rejectPhrase({ phraseId }) — removed and never suggested again
+      li.remove(); say(TP.t("rejected"));
+      var sw = nagEl.querySelector(".tp-switch"); if (sw) sw.focus();
+    }
+    if (act === "remove") {
+      // REAL: convex nags.removePhrase({ phraseId }) — Undo 5 min -> nags.restorePhrase({ phraseId })
+      var wasOn = nagEl.querySelector(".tp-switch").getAttribute("aria-checked") === "true";
+      li.hidden = true; sync(nagEl);
+      if (accepted(nagEl) === 0) say(TP.t("lastOff"));
+      TP.toast({
+        title: TP.t("removed"),
+        onUndo: function () {
+          li.hidden = false; sync(nagEl);
+          if (wasOn) { var s = nagEl.querySelector(".tp-switch"); s.setAttribute("aria-checked", "true"); var w = s.querySelector(".tp-switch__state"); if (w) w.textContent = TP.t("switch.on"); }
+          var r = li.querySelector("[data-ng=remove]"); if (r) r.focus();
+        }
+      });
+      var next = nagEl.querySelector(".tp-switch"); if (next) next.focus();
+    }
+  });
+
+  /* Switches: REAL convex nags.setEnabled({ nagId, on }) — the server refuses on a nag with no accepted phrase. */
+  TP.onSwitch = function (sw, on) {
+    // REAL: convex nags.setEnabled({ nagId: sw.closest("[data-nag]").dataset.nag, on })
+  };
+})();
+</script>
+</body>
+</html>

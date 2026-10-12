@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module preview · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — module-preview.html */
+  .mp-col { display: grid; gap: var(--tp-space-4); align-content: start; min-width: 0; }
+  .mp-preview { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .mp-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .mp-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Module preview
+@route    apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx
+@layout   TempoShell
+@data     draft = modules.getDraft({ draftId })            // Convex query: name, madeBy, validation {ok, problems[] in plain words}, summary {shapes[], adds[], changes[], runs}, previewPage
+@data     sample = pages.getDaily({ date: "2026-10-12" })  // Convex query: the page the preview is drawn on (read only)
+@actions  approve module -> modules.approve({ draftId })     // only when validation passed; live at once (F-42); Undo 5 min -> modules.uninstall({ moduleId })
+@actions  discard module -> modules.discardDraft({ draftId })  // asks first; nothing on any page changes
+@actions  ask the coach to fix it -> link to coach (coach.send({ threadId, text }))   // only in the validation-failed state
+@states   default | empty | loading | error | offline  (?state=)   + invalid (?view=invalid) + approved (after Approve)
+@flow     1. Show the module drawn on a real page, read only. The new part is marked "Added by this module", in words, not only colour.
+          2. Beside it, "What this module does": which page types it shapes, which blocks it adds, what it changes, and whether it runs anything.
+          3. Approve is the one primary action. It goes live at once and shows Undo for 5 minutes.
+          4. Discard asks "Discard this module?" first. Discarding changes nothing anywhere.
+          5. If the module failed its check, it can never go live: the problem is explained in plain words, Approve is disabled with the reason, and the coach can be asked to fix it.
+          6. Empty: the draft no longer exists. Error: "Couldn't load this preview. Nothing has changed." Offline: preview stays readable, Approve waits.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'modules' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="you-label" data-i18n="rail.you">Yours</div>
+      <ul class="tp-tree" role="list" aria-labelledby="you-label">
+        <li><a class="tp-tree-item" href="modules.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.modules">Modules</span></a></li>
+        <li><a class="tp-tree-item" href="memory.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-memory"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.memory">What Tempo remembers</span></a></li>
+        <li><a class="tp-tree-item" href="nags.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-nag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.nags">Nags</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Modules','Evening wind-down'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="modules.html" data-i18n="nav.modules">Modules</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="mp.name">Evening wind-down</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'wide' } | events: — -->
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Evening wind-down', subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <p class="tp-eyebrow" data-i18n="mp.eyebrow">New module · waiting for your approval</p>
+          <h1 class="tp-pagehead__title" data-i18n="mp.name">Evening wind-down</h1>
+          <p class="tp-pagehead__sub"><span data-i18n="mp.sub1">The coach wrote this today at</span> <span class="tp-num tp-mono">21:04</span><span data-i18n="mp.sub2">, from what you asked for. Nothing is live yet.</span></p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">You can look at the preview. Approving waits until you reconnect.</span></span>
+      </div>
+
+      <!-- validation failed (?view=invalid): never goes live -->
+      <!-- @component Notice | shadcn: alert | props: { tone: 'caution', title, body, problems[] } | events: link -> coach -->
+      <div class="tp-notice" data-tone="caution" role="alert" data-component="Notice" data-invalid-show hidden data-state-hide>
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg></span>
+        <span class="tp-notice__text">
+          <span class="tp-notice__title" data-i18n="inv.title">This module has a problem, so it can't go live.</span>
+          <span data-i18n="inv.body">It asks for a countdown clock, and Tempo doesn't have one to draw. Nothing on your pages has changed. The coach can fix it, or you can discard it.</span>
+        </span>
+        <a class="tp-btn tp-btn--secondary tp-notice__action" href="coach-thread.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="inv.fix">Ask the coach to fix it</span></a>
+      </div>
+
+      <!-- @component Split | shadcn: resizable (optional) | props: { variant: 'aside' } | events: — -->
+      <div class="tp-split" data-component="Split" data-state-hide>
+
+        <!-- ===== Live preview ===== -->
+        <section class="mp-col" aria-labelledby="pv-title">
+          <!-- @component Card | shadcn: card | props: { title: 'Preview on Mon 12 Oct' } | events: — (read only) -->
+          <div class="tp-card mp-preview" data-component="Card">
+            <div class="tp-card__head">
+              <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg>
+              <h2 class="tp-card__title" id="pv-title"><span data-i18n="pv.title">Preview on your daily page, Mon</span> <span class="tp-num">12</span> <span data-i18n="pv.month">Oct</span></h2>
+              <span class="tp-badge" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="pv.readonly">Read only</span></span>
+            </div>
+
+            <p class="tp-small tp-muted" data-i18n="pv.existing">Already on your page, unchanged</p>
+            <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: 2, readOnly: true } | events: — (preview) -->
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <!-- @component TaskRow ×2 | shadcn: checkbox | props: { task: {id,title,minutes,done} } | events: — (preview, disabled) -->
+              <li class="tp-task-row" data-component="TaskRow" data-done="true">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="true" aria-disabled="true" aria-labelledby="pt1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="pt1" dir="auto" data-i18n="pv.t1">Call the bank</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span></div>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" aria-disabled="true" aria-labelledby="pt2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="pt2" dir="auto" data-i18n="pv.t2">Draft 3 slides for Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span></span></div>
+              </li>
+            </ul>
+
+            <!-- the part this module adds -->
+            <!-- @component CoachArtifact | shadcn: card | props: { kind: 'Added by this module', title: 'Wind down' } | events: — -->
+            <section class="tp-artifact" aria-labelledby="pv-new" data-component="CoachArtifact">
+              <div class="tp-artifact__head">
+                <span class="tp-artifact__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="pv.added">Added by this module</span></span>
+                <h3 class="tp-artifact__title" id="pv-new"><span data-i18n="pv.newTitle">Wind down, from</span> <span class="tp-num tp-mono">21:30</span></h3>
+              </div>
+              <div class="tp-artifact__body">
+                <!-- @component Checklist | shadcn: checkbox | props: { items: 3 } | events: — (preview) -->
+                <ul class="tp-checklist" role="list" data-component="Checklist">
+                  <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" disabled><span class="tp-checklist__text" dir="auto" data-i18n="pv.c1">Phone on the charger in the kitchen</span></label></li>
+                  <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" disabled><span class="tp-checklist__text" dir="auto" data-i18n="pv.c2">Write tomorrow's one thing</span></label></li>
+                  <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" disabled><span class="tp-checklist__text" dir="auto" data-i18n="pv.c3">Lights low, ten pages of a book</span></label></li>
+                </ul>
+              </div>
+              <div class="tp-artifact__foot"><span class="tp-checklist__count"><span class="tp-num">0</span> <span data-i18n="pv.of">of</span> <span class="tp-num">3</span> <span data-i18n="pv.done">done</span></span></div>
+            </section>
+          </div>
+        </section>
+
+        <!-- ===== What this module does + decision ===== -->
+        <aside class="mp-col" aria-labelledby="what-title">
+          <!-- @component ModuleSummary | shadcn: card | props: { shapes: ['Daily pages'], adds: ['Checklist'], changes, runs } | events: — -->
+          <section class="tp-module-what" aria-labelledby="what-title" data-component="ModuleSummary">
+            <h2 class="tp-module-what__title" id="what-title"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg><span data-i18n="what.title">What this module does</span></h2>
+            <dl>
+              <div class="tp-what-row"><dt data-i18n="what.shapes">Page types</dt><dd data-i18n="what.shapesV">Daily pages only</dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.adds">Adds</dt><dd><span data-i18n="what.addsV1">One checklist, "Wind down", with 3 items, from</span> <span class="tp-num tp-mono">21:30</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.changes">Changes</dt><dd data-i18n="what.changesV">Daily pages from Tue 13 Oct get the checklist at the bottom. Your tasks, time blocks and older pages stay as they are.</dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.runs">Runs</dt><dd data-i18n="what.runsV">Nothing. No code, no reminders, no messages.</dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.check">Check</dt><dd data-check-ok><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg> <span data-i18n="what.checkOk">Passed. It only uses things Tempo can draw.</span></dd><dd data-check-bad hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg> <span data-i18n="what.checkBad">Didn't pass. See the note above.</span></dd></div>
+              <div class="tp-what-row"><dt data-i18n="what.stop">Stop it</dt><dd data-i18n="what.stopV">Switch it off in Modules, any time. Plain mode pauses it too.</dd></div>
+            </dl>
+          </section>
+
+          <div class="mp-actions" data-decision>
+            <button class="tp-btn tp-btn--primary" type="button" data-mp="approve" aria-describedby="approve-why"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="mp.approve">Approve</span></button>
+            <button class="tp-btn tp-btn--secondary" type="button" data-action="open-sheet" aria-controls="discard-sheet" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="mp.discard">Discard</span></button>
+          </div>
+          <p class="tp-help" id="approve-why" data-approve-help data-i18n="mp.approveHelp">Approve makes it live at once. You can undo for 5 minutes, and turn it off any time after.</p>
+
+          <!-- after Approve -->
+          <!-- @component Notice | shadcn: alert | props: { tone: 'done', title } | events: link -->
+          <div class="tp-notice" data-tone="done" role="status" data-component="Notice" data-approved hidden>
+            <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="ok.title">Evening wind-down is live.</span><span data-i18n="ok.body">You'll see it on tomorrow's daily page.</span></span>
+            <a class="tp-btn tp-btn--secondary tp-notice__action" href="modules.html"><span data-i18n="ok.back">Back to Modules</span></a>
+          </div>
+          <!-- after Discard -->
+          <div class="tp-notice" role="status" data-component="Notice" data-discarded hidden>
+            <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="dis.title">Discarded. Nothing changed.</span><span data-i18n="dis.body">You can ask the coach for a different version whenever you like.</span></span>
+            <a class="tp-btn tp-btn--secondary tp-notice__action" href="modules.html"><span data-i18n="ok.back">Back to Modules</span></a>
+          </div>
+        </aside>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: link -->
+      <div class="tp-state tp-state--empty mp-state" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-module"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">There's nothing to preview here.</h2>
+        <p class="tp-state__body" data-i18n="empty.body">This module was already approved or discarded. Your modules are all in one place.</p>
+        <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="modules.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-module"/></svg><span data-i18n="ok.back">Back to Modules</span></a></div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+      <div class="tp-state tp-state--loading mp-state" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Loading the preview</span>
+        <div class="tp-skel-list" aria-hidden="true">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load this preview." } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error mp-state" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't load this preview.</h2>
+        <p class="tp-state__body" data-i18n="error.body">Nothing has changed on your pages. The module is still waiting for you.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Discard confirmation ===== -->
+  <!-- @component MobileSheet | shadcn: alert-dialog (sheet on phone) | props: { id: 'discard-sheet', title: 'Discard this module?' } | events: onConfirm -> modules.discardDraft({ draftId }), onCancel -> close-sheet -->
+  <div class="tp-sheet-scrim" data-for="discard-sheet" data-action="close-sheet" hidden></div>
+  <section class="tp-sheet tp-glass" id="discard-sheet" role="alertdialog" aria-modal="true" aria-labelledby="discard-title" aria-describedby="discard-body" data-component="MobileSheet" hidden>
+    <span class="tp-sheet__grabber" aria-hidden="true"></span>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="discard-title" data-i18n="ds.title">Discard this module?</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:sheet.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body">
+      <p id="discard-body" data-i18n="ds.body">"Evening wind-down" will be thrown away. Nothing on your pages changes. You can always ask the coach for it again.</p>
+    </div>
+    <div class="tp-sheet__foot">
+      <button class="tp-btn tp-btn--secondary" type="button" data-action="close-sheet"><span data-i18n="ds.keep">Keep it for now</span></button>
+      <button class="tp-btn tp-btn--danger" type="button" data-mp="discard"><span data-i18n="ds.confirm">Discard</span></button>
+    </div>
+  </section>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title: 'Evening wind-down is on', countdown: 5:00 } | events: onUndo -> modules.uninstall({ moduleId }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.live": "Evening wind-down is on", "toast.undone": "Undone. The module is off and nothing changed.",
+    "inv.blocked": "Can't approve: this module didn't pass its check.",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "תצוגה מקדימה של מודול · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.you": "שלך",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.modules": "מודולים", "nav.memory": "מה Tempo זוכר", "nav.nags": "נדנודים",
+    "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "mp.eyebrow": "מודול חדש · מחכה לאישור שלך", "mp.name": "התכנסות לערב",
+    "mp.sub1": "המאמן כתב אותו היום ב־", "mp.sub2": ", לפי מה שביקשת. שום דבר עוד לא פעיל.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "אפשר להסתכל על התצוגה. האישור יחכה עד שהחיבור יחזור.",
+    "inv.title": "יש במודול הזה בעיה, ולכן הוא לא יכול לעלות.",
+    "inv.body": "הוא מבקש שעון ספירה לאחור, ו־Tempo לא יודע לצייר כזה. שום דבר בדפים שלך לא השתנה. המאמן יכול לתקן אותו, או שאפשר לוותר עליו.",
+    "inv.fix": "לבקש מהמאמן לתקן", "inv.blocked": "אי אפשר לאשר: המודול לא עבר את הבדיקה.",
+    "pv.title": "תצוגה בדף היומי שלך, יום ב׳", "pv.month": "באוקטובר", "pv.readonly": "לקריאה בלבד",
+    "pv.existing": "כבר בדף שלך, בלי שינוי",
+    "pv.t1": "להתקשר לבנק", "pv.t2": "להכין 3 שקפים ליום חמישי", "unit.min": "דק׳",
+    "pv.added": "נוסף על ידי המודול", "pv.newTitle": "התכנסות, החל מ־",
+    "pv.c1": "הטלפון על המטען במטבח", "pv.c2": "לכתוב את הדבר האחד של מחר", "pv.c3": "אור עמום, עשרה עמודים מספר",
+    "pv.of": "מתוך", "pv.done": "בוצעו",
+    "what.title": "מה המודול הזה עושה",
+    "what.shapes": "סוגי דפים", "what.shapesV": "דפים יומיים בלבד",
+    "what.adds": "מוסיף", "what.addsV1": "רשימה אחת, ״התכנסות״, עם 3 פריטים, החל מ־",
+    "what.changes": "משנה", "what.changesV": "דפים יומיים החל מיום ג׳ 13.10 יקבלו את הרשימה בתחתית. המשימות, בלוקי הזמן והדפים הקודמים נשארים כמו שהם.",
+    "what.runs": "מריץ", "what.runsV": "כלום. בלי קוד, בלי תזכורות, בלי הודעות.",
+    "what.check": "בדיקה", "what.checkOk": "עבר. הוא משתמש רק במה ש־Tempo יודע לצייר.", "what.checkBad": "לא עבר. ראי את ההערה למעלה.",
+    "what.stop": "להפסיק", "what.stopV": "לכבות במודולים, בכל רגע. גם מצב פשוט משהה אותו.",
+    "mp.approve": "אישור", "mp.discard": "לוותר",
+    "mp.approveHelp": "אישור מפעיל אותו מיד. אפשר לבטל במשך 5 דקות, ולכבות בכל רגע אחר כך.",
+    "ok.title": "התכנסות לערב פעיל.", "ok.body": "תראי אותו בדף היומי של מחר.", "ok.back": "חזרה למודולים",
+    "dis.title": "ויתרת עליו. שום דבר לא השתנה.", "dis.body": "אפשר לבקש מהמאמן גרסה אחרת מתי שתרצי.",
+    "empty.title": "אין כאן מה להציג.", "empty.body": "המודול הזה כבר אושר או שוויתרת עליו. כל המודולים שלך נמצאים במקום אחד.",
+    "loading": "טוען את התצוגה המקדימה",
+    "error.title": "לא הצלחנו לטעון את התצוגה.", "error.body": "שום דבר בדפים שלך לא השתנה. המודול עדיין מחכה לך.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "ds.title": "לוותר על המודול הזה?", "ds.body": "״התכנסות לערב״ יימחק. שום דבר בדפים שלך לא משתנה. תמיד אפשר לבקש אותו שוב מהמאמן.",
+    "ds.keep": "להשאיר בינתיים", "ds.confirm": "לוותר", "sheet.close": "סגירה",
+    "toast.live": "התכנסות לערב פעיל", "toast.undone": "בוטל. המודול כבוי ושום דבר לא השתנה.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  function $(s) { return document.querySelector(s); }
+  function show(sel, on) { document.querySelectorAll(sel).forEach(function (el) { el.hidden = !on; }); }
+
+  function approve(btn) {
+    if (btn.getAttribute("aria-disabled") === "true") return;
+    // REAL: convex modules.approve({ draftId }) — validated again on the server; live at once (F-42)
+    show("[data-decision]", false); show("[data-approve-help]", false); show("[data-approved]", true);
+    TP.toast({
+      title: TP.t("toast.live"),
+      onUndo: function () {
+        // REAL: convex modules.uninstall({ moduleId }) — within 5 minutes; pages fall back to the built-in layout
+        show("[data-approved]", false); show("[data-decision]", true); show("[data-approve-help]", true);
+        var b = $('[data-mp="approve"]'); if (b) b.focus();
+      }
+    });
+    var n = $("[data-approved]"); if (n) { n.setAttribute("tabindex", "-1"); n.focus(); }
+  }
+  function discard() {
+    // REAL: convex modules.discardDraft({ draftId }) — nothing on any page changes
+    TP.closeSheet();
+    show("[data-decision]", false); show("[data-approve-help]", false); show("[data-discarded]", true);
+    var n = $("[data-discarded]"); if (n) { n.setAttribute("tabindex", "-1"); n.focus(); }
+  }
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-mp]"); if (!b) return;
+    if (b.getAttribute("data-mp") === "approve") approve(b);
+    else if (b.getAttribute("data-mp") === "discard") discard();
+  });
+
+  TP.onReady2 = function (params) {
+    // REAL: draft.validation.ok from modules.getDraft — a draft that failed its check can never go live
+    if (params.get("view") !== "invalid") return;
+    show("[data-invalid-show]", true); show("[data-check-ok]", false); show("[data-check-bad]", true);
+    var b = $('[data-mp="approve"]');
+    if (b) { b.setAttribute("aria-disabled", "true"); b.disabled = true; }
+    var h = $("[data-approve-help]"); if (h) h.textContent = TP.t("inv.blocked");
+  };
+})();
+</script>
+</body>
+</html>

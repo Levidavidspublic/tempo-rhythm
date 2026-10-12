@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thursday talk · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — page-blocks.html */
+  .pb-content { display: grid; gap: var(--tp-space-6); }
+  .pb-section { display: grid; gap: var(--tp-space-3); }
+  .pb-section .tp-h2 { margin: 0; }
+  .pb-artifacts { display: grid; gap: var(--tp-space-4); }
+  .pb-flash { display: grid; gap: 0; }
+  .pb-foot-end { margin-inline-start: auto; display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .pb-state { padding-block: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Page with every block (reference)
+@route    apps/web/app/(tempo)/p/[pageId]/page.tsx
+@layout   TempoShell
+@data     page = pages.get({ pageId })                                   // Convex query: Markdown body + blocks (rendered with json-render; the JSON is never shown)
+@data     backlinks = pages.backlinks({ pageId })                        // Convex query
+@actions  tick task -> tasks.complete({ id })                            // optimistic, Undo 5 min
+@actions  log habit -> habits.log({ habitId, date })                     // no streaks; Undo by tapping again
+@actions  answer nag -> nags.respond({ nagId, choice: "now" | "snooze" | "nottoday" })
+@actions  use template -> templates.apply({ pageId, templateId })        // Undo 5 min; "Not now" -> templates.dismissOffer({ pageId })
+@actions  set energy -> pages.updateBlock({ blockId, patch: { value } })
+@actions  undo broken block -> pages.revertBlock({ pageId, blockId })
+@actions  flip / step card -> local state (later studyCards.review)
+@actions  check quiz -> quizzes.answer({ quizId, optionId })
+@actions  tick checklist -> pages.updateBlock({ blockId, patch: { items } })
+@actions  step tracker -> trackers.log({ blockId, delta })
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. This is one ordinary Markdown page ("Thursday talk"). Text, headings and blocks sit inline, in reading order.
+          2. Every block type appears once so builders can copy it: Template offer, Task, Event (fixed and flexible), Time block, Energy, Habit, Nag, PageMeta (invisible), Broken block, and the coach artifacts Flashcards, Quiz, Checklist and Tracker.
+          3. Blocks act in place. Nothing opens a new screen.
+          4. A block that cannot be shown says "This part has a problem." and offers Undo. The rest of the page keeps working.
+          5. Empty page: a kind hint to type or use a template. Error: "Couldn't load this page. It's safe." + Retry. Offline: the page stays, changes save when back.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'thursday-talk' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li><a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a></li>
+        <li><a class="tp-tree-item" href="page-blocks.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Pages','Thursday talk'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="rail.pages">Pages</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.talk">Thursday talk</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main: the page ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component Page | shadcn: — | props: { page: {id, title, icon, blocks[]} } | events: — -->
+    <article class="tp-paper" data-component="Page" aria-labelledby="page-title">
+      <!-- @component PageCover | shadcn: — | props: { cover: none } | events: — -->
+      <div class="tp-page-cover" data-component="PageCover" aria-hidden="true"></div>
+      <div class="tp-page__body">
+        <!-- @component PageIcon | shadcn: — | props: { icon: 'flag' } | events: — -->
+        <div class="tp-page-icon" data-component="PageIcon" aria-hidden="true"><svg class="tp-icon"><use href="#i-flag"/></svg></div>
+        <h1 class="tp-page-title" id="page-title" data-i18n="nav.talk">Thursday talk</h1>
+        <!-- @component PageMeta | shadcn: — | props: { tags: ['work','talk'], edited: 'today 09:40' } | events: — -->
+        <div class="tp-page-meta" data-component="PageMeta"><a class="tp-tag" href="#" data-i18n="tag.work">work</a><a class="tp-tag" href="#" data-i18n="tag.talk">talk</a><span><span data-i18n="meta.edited">Edited today at</span> <span class="tp-num tp-mono">09:40</span></span></div>
+
+        <!-- @component PageMetaBlock | shadcn: — | props: { meta: { template: 'talk-prep', tags: ['work','talk'], pageType: 'project' } } | events: —
+             Renders NOTHING. It stores page settings for the app: which template made the page, its type and its tags.
+             In Markdown it is the front-matter block. Kept in the DOM for the converter, display:none and aria-hidden, never read aloud.
+             The visible version of this information is the PageMeta line above. -->
+        <div class="tp-block-meta" data-component="PageMetaBlock" aria-hidden="true" data-template="talk-prep" data-page-type="project" data-tags="work,talk"></div>
+
+        <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+        <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+          <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+          <span class="tp-notice__text"><span data-i18n="off.text">You're offline. Changes save when you're back.</span></span>
+        </div>
+
+        <div class="tp-page-content pb-content" data-state-hide>
+
+          <!-- Prose -->
+          <div class="tp-block">
+            <!-- @component BlockHandle | shadcn: dropdown-menu | props: — | events: onAdd, onOptions (same handle on every block below) -->
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <p dir="auto" data-i18n-html="p.intro">Twenty minutes at the Design Guild on Thursday. One idea: small plans beat big plans. Anything urgent goes onto <a class="tp-wikilink" href="today.html">Today</a>.</p>
+          </div>
+
+          <!-- Template offer -->
+          <div class="tp-block tp-block-template">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component TemplateBlock | shadcn: card + button | props: { template: {id:'talk-prep', name:'Talk prep', adds:string[]}, status: 'offered' } | events: onUse -> templates.apply({ pageId, templateId }) (Undo 5 min), onDismiss -> templates.dismissOffer({ pageId }) -->
+            <section class="tp-template-offer" data-status="offered" data-component="TemplateBlock" aria-labelledby="tpl-title">
+              <div class="tp-template-offer__head">
+                <span class="tp-template-offer__icon" aria-hidden="true"><svg class="tp-icon"><use href="#i-template"/></svg></span>
+                <div>
+                  <h3 class="tp-template-offer__title" id="tpl-title" data-i18n="tpl.title">Use the Talk prep template?</h3>
+                  <p class="tp-template-offer__desc" data-i18n="tpl.desc">It adds a few parts to this page. Your text stays where it is.</p>
+                </div>
+              </div>
+              <ul class="tp-template-offer__adds">
+                <li data-i18n="tpl.a1">A countdown to Thursday</li>
+                <li data-i18n="tpl.a2">Three short practice slots</li>
+                <li data-i18n="tpl.a3">A checklist for the day itself</li>
+              </ul>
+              <div class="tp-template-offer__actions">
+                <button class="tp-btn tp-btn--primary" type="button" data-action="template-use"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="tpl.use">Use template</span></button>
+                <button class="tp-btn tp-btn--ghost" type="button" data-action="template-dismiss"><span data-i18n="tpl.not">Not now</span></button>
+              </div>
+              <p class="tp-template-offer__note" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-note></span></p>
+            </section>
+          </div>
+
+          <!-- Tasks -->
+          <section class="pb-section tp-block" aria-labelledby="h-tasks">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" id="h-tasks" data-i18n="h.tasks">Tasks</h2>
+            <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {id,title,minutes,done}[] } | events: onToggle -> tasks.complete({ id }) -->
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <!-- @component TaskRow ×3 | shadcn: checkbox | props: { task: {id,title,minutes,done} } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+              <li class="tp-task-row" data-component="TaskRow" data-done="true">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="true" data-action="check" aria-labelledby="tk1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="tk1" dir="auto" data-i18n="tk1">Write the one-line idea</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span></span></div>
+                <span></span>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="tk2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="tk2" dir="auto" data-i18n="tk2">Draft 3 slides for Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span><a class="tp-tag" href="#" data-i18n="tag.work">work</a></span></div>
+                <span></span>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow">
+                <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="tk3"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" id="tk3" dir="auto" data-i18n="tk3">Ask Yoni to listen to a run-through</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span></div>
+                <span></span>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Events -->
+          <section class="pb-section tp-block" aria-labelledby="h-events">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" id="h-events" data-i18n="h.events">Dates</h2>
+            <!-- @component EventBlock | shadcn: card | props: { events: {id,title,start,end,place?,kind:'fixed'|'flex'}[] } | events: — -->
+            <ul class="tp-block-event" role="list" data-component="EventBlock">
+              <li class="tp-event" data-kind="fixed">
+                <span class="tp-event__time"><span>14:00</span><span>14:45</span></span>
+                <div class="tp-event__body">
+                  <span class="tp-event__title" dir="auto" data-i18n="ev1.title">Talk at the Design Guild</span>
+                  <span class="tp-event__meta">
+                    <span data-i18n="ev1.date">Thu 15 Oct</span>
+                    <span class="tp-event__place"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pin"/></svg><span data-i18n="ev1.place">Studio 3, Florentin</span></span>
+                    <span class="tp-chip tp-chip--fixed" data-i18n="kind.fixed">Fixed</span>
+                  </span>
+                </div>
+              </li>
+              <li class="tp-event" data-kind="flex">
+                <span class="tp-event__time"><span>18:00</span><span>18:30</span></span>
+                <div class="tp-event__body">
+                  <span class="tp-event__title" dir="auto" data-i18n="ev2.title">Rehearse once with Yoni</span>
+                  <span class="tp-event__meta">
+                    <span data-i18n="ev2.date">Wed 14 Oct · can move if the day changes</span>
+                    <span class="tp-chip tp-chip--flex" data-i18n="kind.flex">Flexible</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Time block -->
+          <section class="pb-section tp-block" aria-labelledby="h-time">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <h2 class="tp-h2" id="h-time" data-i18n="h.time">Time for this today</h2>
+            <!-- @component TimeBlock | shadcn: custom | props: { rows: {start,end,title,kind}[] } | events: — -->
+            <ul class="tp-block-time" role="list" data-component="TimeBlock">
+              <!-- @component TimeBlockRow ×2 | shadcn: custom | props: { start, end, title, kind } | events: — -->
+              <li class="tp-time-row" data-kind="fixed" data-component="TimeBlockRow">
+                <span class="tp-time-row__time tp-num">09:00–10:30</span>
+                <span class="tp-time-row__body"><span class="tp-time-row__title" data-i18n="tb1">Focus: slides</span><span class="tp-chip tp-chip--fixed" data-i18n="kind.fixed">Fixed</span></span>
+              </li>
+              <li class="tp-time-row" data-kind="flex" data-component="TimeBlockRow">
+                <span class="tp-time-row__time tp-num">15:00–15:30</span>
+                <span class="tp-time-row__body"><span class="tp-time-row__title" data-i18n="tb2">Read my notes out loud</span><span class="tp-chip tp-chip--flex" data-i18n="kind.flex">Flexible</span></span>
+              </li>
+            </ul>
+          </section>
+
+          <!-- Energy -->
+          <div class="tp-block">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component EnergyBlock | shadcn: toggle-group (single) | props: { value: 'steady' } | events: onChange -> pages.updateBlock({ blockId, patch: { value } }) -->
+            <div class="tp-card tp-block-energy" data-component="EnergyBlock">
+              <p class="tp-muted" id="energy-q" data-i18n="energy.q">How much energy do you have for this today?</p>
+              <!-- @component Dial | shadcn: toggle-group (single) | props: { value: 'quiet'|'steady'|'push' } | events: onChange (role=radio, arrows; RTL swaps) -->
+              <div class="tp-seg" role="radiogroup" aria-labelledby="energy-q" data-component="Dial">
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span data-i18n="energy.quiet">Quiet</span><small data-i18n="energy.quiet.hint">low battery</small></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0"><span data-i18n="energy.steady">Steady</span><small data-i18n="energy.steady.hint">usual pace</small></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1"><span data-i18n="energy.push">Push</span><small data-i18n="energy.push.hint">full tank</small></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Habit (no streaks) -->
+          <div class="tp-block tp-block-habit">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component HabitBlock | shadcn: card + toggle | props: { habit: {id,name,when,last7:{date,label,done,today}[],loggedToday:false} } | events: onLog -> habits.log({ habitId, date }) — NO streak counter -->
+            <section class="tp-card tp-habit" data-logged="false" data-component="HabitBlock" aria-labelledby="hb-name">
+              <div class="tp-habit__head">
+                <span class="tp-habit__name" id="hb-name" dir="auto" data-i18n="hb.name">Practise the opening out loud</span>
+                <span class="tp-habit__when" data-i18n="hb.when">Most evenings</span>
+                <button class="tp-btn tp-btn--secondary tp-btn--sm tp-habit__log" type="button" data-action="habit-log" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-label data-i18n="habit.log">Log today</span></button>
+              </div>
+              <ul class="tp-habit-days" role="list" aria-label="Last 7 days" data-i18n-attr="aria-label:hb.days">
+                <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.tue">Tue</span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.wed">Wed</span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.thu">Thu</span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.fri">Fri</span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.sat">Sat</span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.sun">Sun</span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                <li class="tp-habit-day" data-done="false" data-today="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon"><use href="#i-check"/></svg></span><span class="tp-habit-day__label" data-i18n="d.today">Today</span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+              </ul>
+              <p class="tp-habit__summary" data-i18n="hb.summary">Any evening you practise counts. Missed days just stay empty.</p>
+            </section>
+          </div>
+
+          <!-- Nag, in Maya's own words -->
+          <div class="tp-block tp-block-nag">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component NagBlock | shadcn: card | props: { nag: {id, phrase (Maya's own words), about, at}, status: 'pending' } | events: onRespond -> nags.respond({ nagId, choice }) -->
+            <section class="tp-nag" data-status="pending" data-component="NagBlock" aria-labelledby="nag-label">
+              <span class="tp-nag__label" id="nag-label" data-i18n="nag.label">Your nudge, in your words</span>
+              <p class="tp-nag__phrase" dir="auto" data-i18n="nag.phrase">Maya. Slides before email. Four o'clock you will thank you.</p>
+              <span class="tp-nag__meta"><span><span data-i18n="nag.when">Weekdays at</span> <span class="tp-num tp-mono">10:30</span></span><span data-i18n="nag.about">About: Draft 3 slides for Thursday</span></span>
+              <div class="tp-nag__actions">
+                <button class="tp-btn tp-btn--secondary" type="button" data-action="nag" data-choice="now"><span data-i18n="nag.doNow">Do it now</span></button>
+                <button class="tp-btn tp-btn--secondary" type="button" data-action="nag" data-choice="snooze"><span data-i18n="nag.snoozeBtn">Snooze</span> <span class="tp-num">30</span> <span data-i18n="unit.min">min</span></button>
+                <button class="tp-btn tp-btn--ghost" type="button" data-action="nag" data-choice="nottoday"><span data-i18n="nag.notToday">Not today</span></button>
+              </div>
+              <p class="tp-nag__note" hidden><span data-note></span></p>
+            </section>
+          </div>
+
+          <!-- Broken block -->
+          <div class="tp-block">
+            <div class="tp-block__handle" data-component="BlockHandle">
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+              <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+            </div>
+            <!-- @component BrokenBlock | shadcn: alert | props: { blockId, canUndo: true } | events: onUndo -> pages.revertBlock({ pageId, blockId }) — never shows JSON or codes -->
+            <div class="tp-block-broken" data-component="BrokenBlock">
+              <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-info"/></svg>
+              <span class="tp-block-broken__text" data-i18n="broken.text">This part has a problem. The rest of the page is fine.</span>
+              <button class="tp-btn tp-btn--secondary tp-btn--sm tp-block-broken__action" type="button" data-action="broken-undo"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-undo"/></svg><span data-i18n="broken.undo">Undo last change</span></button>
+            </div>
+          </div>
+
+          <!-- Coach artifacts -->
+          <section class="pb-section" aria-labelledby="h-coach">
+            <h2 class="tp-h2" id="h-coach" data-i18n="h.coach">From the coach</h2>
+            <div class="pb-artifacts">
+
+              <!-- Flashcards -->
+              <div class="tp-block">
+                <div class="tp-block__handle" data-component="BlockHandle">
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+                </div>
+                <!-- @component CoachArtifact | shadcn: card | props: { kind: 'flashcards', title, madeBy: 'coach' } | events: — -->
+                <section class="tp-artifact" data-component="CoachArtifact" aria-labelledby="fc-title">
+                  <div class="tp-artifact__head">
+                    <span class="tp-artifact__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-card"/></svg><span data-i18n="art.flash">Flashcards</span></span>
+                    <span class="tp-artifact__title" id="fc-title" data-i18n="fc.title">Talk key points</span>
+                    <span class="tp-artifact__by" data-i18n="art.by">Made by the coach</span>
+                  </div>
+                  <!-- @component Flashcard | shadcn: card + button | props: { cards: {front,back}[] (3), index: 0 } | events: onFlip -> card-flip, onNext/onPrev -> card-step (later studyCards.review) -->
+                  <div class="tp-flashcard pb-flash" data-side="front" data-component="Flashcard">
+                    <script type="application/json" data-deck>[{"front":"What is the one idea?","back":"Small plans beat big plans."},{"front":"How do you open?","back":"With Monday morning: three tasks, not thirty."},{"front":"What do you ask the room?","back":"What is one thing you could make smaller today?"}]</script>
+                    <div class="tp-artifact__body">
+                      <div class="tp-flashcard__face" data-face="front"><span class="tp-flashcard__side" data-i18n="card.q">Question</span><span class="tp-flashcard__text" dir="auto" data-i18n="fc.f1">What is the one idea?</span></div>
+                      <div class="tp-flashcard__face" data-face="back"><span class="tp-flashcard__side" data-i18n="card.a">Answer</span><span class="tp-flashcard__text" dir="auto" data-i18n="fc.b1">Small plans beat big plans.</span></div>
+                    </div>
+                    <div class="tp-artifact__foot">
+                      <span class="tp-flashcard__count"><span data-i18n="card.card">Card</span> <span class="tp-num" data-card-n>1</span> <span data-i18n="card.of">of</span> <span class="tp-num">3</span></span>
+                      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="card-step" data-dir="prev" aria-label="Previous card" data-i18n-attr="aria-label:card.prev"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+                      <button class="tp-btn tp-btn--secondary" type="button" data-action="card-flip" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-label data-i18n="card.showAnswer">Show answer</span></button>
+                      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="card-step" data-dir="next" aria-label="Next card" data-i18n-attr="aria-label:card.next"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Quiz -->
+              <div class="tp-block">
+                <div class="tp-block__handle" data-component="BlockHandle">
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+                </div>
+                <!-- @component CoachArtifact | shadcn: card | props: { kind: 'quiz', title, madeBy: 'coach' } | events: — -->
+                <section class="tp-artifact" data-component="CoachArtifact" data-quiz aria-labelledby="qz-title">
+                  <div class="tp-artifact__head">
+                    <span class="tp-artifact__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-question"/></svg><span data-i18n="art.quiz">Quiz</span></span>
+                    <span class="tp-artifact__title" id="qz-title" data-i18n="qz.title">Check the opening</span>
+                    <span class="tp-artifact__by" data-i18n="art.by">Made by the coach</span>
+                  </div>
+                  <div class="tp-artifact__body">
+                    <!-- @component Quiz | shadcn: radio-group + button | props: { question, options: {id,text,correct}[] } | events: onCheck -> quizzes.answer({ quizId, optionId }) -->
+                    <fieldset class="tp-quiz" data-component="Quiz">
+                      <legend class="tp-quiz__q" data-i18n="qz.q">What should the room leave with?</legend>
+                      <label class="tp-choice" data-correct="true"><input class="tp-radio" type="radio" name="qz1" value="a"><span class="tp-choice__text"><span class="tp-choice__label" data-i18n="qz.a">Small plans beat big plans</span></span><span class="tp-quiz__mark"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="qz.mark">The answer</span></span></label>
+                      <label class="tp-choice" data-correct="false"><input class="tp-radio" type="radio" name="qz1" value="b"><span class="tp-choice__text"><span class="tp-choice__label" data-i18n="qz.b">More slides make a stronger talk</span></span><span class="tp-quiz__mark"></span></label>
+                      <label class="tp-choice" data-correct="false"><input class="tp-radio" type="radio" name="qz1" value="c"><span class="tp-choice__text"><span class="tp-choice__label" data-i18n="qz.c">Always start with the numbers</span></span><span class="tp-quiz__mark"></span></label>
+                    </fieldset>
+                    <p class="tp-quiz__feedback" hidden><span></span></p>
+                  </div>
+                  <div class="tp-artifact__foot">
+                    <button class="tp-btn tp-btn--secondary" type="button" data-action="quiz-check"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="qz.check">Check</span></button>
+                  </div>
+                </section>
+              </div>
+
+              <!-- Checklist -->
+              <div class="tp-block">
+                <div class="tp-block__handle" data-component="BlockHandle">
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+                </div>
+                <!-- @component CoachArtifact | shadcn: card | props: { kind: 'checklist', title, madeBy: 'coach' } | events: — -->
+                <section class="tp-artifact" data-component="CoachArtifact" aria-labelledby="cl-title">
+                  <div class="tp-artifact__head">
+                    <span class="tp-artifact__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="art.check">Checklist</span></span>
+                    <span class="tp-artifact__title" id="cl-title" data-i18n="cl.title">On the day</span>
+                    <span class="tp-artifact__by" data-i18n="art.by">Made by the coach</span>
+                  </div>
+                  <div class="tp-artifact__body">
+                    <!-- @component Checklist | shadcn: checkbox | props: { items: {id,text,done}[] (5) } | events: onToggle -> pages.updateBlock({ blockId, patch: { items } }) -->
+                    <ul class="tp-checklist" role="list" data-component="Checklist">
+                      <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" checked><span class="tp-checklist__text" dir="auto" data-i18n="cl.1">Slides on a USB stick and in email</span></label></li>
+                      <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox" checked><span class="tp-checklist__text" dir="auto" data-i18n="cl.2">Charger and adapter</span></label></li>
+                      <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-checklist__text" dir="auto" data-i18n="cl.3">Water bottle</span></label></li>
+                      <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-checklist__text" dir="auto" data-i18n="cl.4">Leave at 13:15</span></label></li>
+                      <li class="tp-checklist__item"><label class="tp-choice"><input class="tp-checkbox" type="checkbox"><span class="tp-checklist__text" dir="auto" data-i18n="cl.5">Text Dana when it's done</span></label></li>
+                    </ul>
+                  </div>
+                  <div class="tp-artifact__foot"><span class="tp-checklist__count" role="status">2 of 5 done</span></div>
+                </section>
+              </div>
+
+              <!-- Tracker -->
+              <div class="tp-block">
+                <div class="tp-block__handle" data-component="BlockHandle">
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Add a block below" data-i18n-attr="aria-label:block.add"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" aria-label="Block options: move, copy, delete" data-i18n-attr="aria-label:block.options"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-grip"/></svg></button>
+                </div>
+                <!-- @component CoachArtifact | shadcn: card | props: { kind: 'tracker', title, madeBy: 'coach' } | events: — -->
+                <section class="tp-artifact" data-component="CoachArtifact" aria-labelledby="tr-title">
+                  <div class="tp-artifact__head">
+                    <span class="tp-artifact__kind"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-chart"/></svg><span data-i18n="art.track">Tracker</span></span>
+                    <span class="tp-artifact__title" id="tr-title" data-i18n="tr.title">Practice runs</span>
+                    <span class="tp-artifact__by" data-i18n="art.by">Made by the coach</span>
+                  </div>
+                  <div class="tp-artifact__body">
+                    <!-- @component Tracker | shadcn: button | props: { label: 'Run-throughs', value: 2, goal: 4, unit: 'runs' } | events: onIncrement / onDecrement -> trackers.log({ blockId, delta }) -->
+                    <div class="tp-tracker" data-component="Tracker">
+                      <span class="tp-tracker__label"><span class="tp-tracker__name" data-i18n="tr.name">Run-throughs</span><span class="tp-tracker__goal"><span data-i18n="tr.goal">Aim for</span> <span class="tp-num">4</span> <span data-i18n="tr.goal2">before Thursday. Any number helps.</span></span></span>
+                      <span class="tp-tracker__controls">
+                        <button class="tp-btn tp-btn--secondary tp-btn--icon" type="button" data-action="tracker" data-dir="dec" aria-label="One less" data-i18n-attr="aria-label:tr.dec"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-minus"/></svg></button>
+                        <span class="tp-tracker__value tp-num">2</span>
+                        <button class="tp-btn tp-btn--secondary tp-btn--icon" type="button" data-action="tracker" data-dir="inc" aria-label="One more" data-i18n-attr="aria-label:tr.inc"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></button>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+
+          <!-- @component Backlinks | shadcn: card list | props: { links: {page, context}[] } | events: link -->
+          <section class="tp-backlinks" data-component="Backlinks" aria-labelledby="bl-h">
+            <div class="tp-backlinks__head"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg><h2 class="tp-small" id="bl-h" data-i18n="bl.title">Linked here</h2></div>
+            <a class="tp-backlink" href="today.html"><span class="tp-backlink__page" data-i18n="nav.today">Today</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.today">Draft 3 slides for Thursday</span></a>
+            <a class="tp-backlink" href="weekly-page.html"><span class="tp-backlink__page" data-i18n="nav.week">Week 42</span><span class="tp-backlink__ctx" dir="auto" data-i18n="bl.week">Thursday: the talk, then rest</span></a>
+          </section>
+        </div>
+
+        <!-- empty page -->
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: — -->
+        <div class="tp-state tp-state--empty pb-state" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-page"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">This page is empty.</h2>
+          <p class="tp-state__body"><span data-i18n="empty.body1">Start typing, or press</span> <kbd class="tp-kbd">/</kbd> <span data-i18n="empty.body2">to add a task, an event or anything else.</span></p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="templates.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg><span data-i18n="empty.action">Start from a template</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+        <div class="tp-state--loading pb-state" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading this page</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <span class="tp-skeleton tp-skeleton--block"></span>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load this page." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error pb-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load this page.</h2>
+          <p class="tp-state__body" data-i18n="error.body">It's safe. This is a connection problem on our side.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> link to coach-thread (Ctrl J) -->
+  <a class="tp-coach-fab tp-glass" href="coach-thread.html" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </a>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> templates.unapply / tasks.uncomplete -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'pages' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "habit.log": "Log today", "habit.logged": "Logged today", "habit.dayDone": "logged", "habit.dayOpen": "not logged",
+    "nag.now": "Good. It's on now.", "nag.snooze": "Snoozed for 30 minutes.", "nag.nottoday": "Okay. Not today. It'll ask again tomorrow.",
+    "template.used": "Template added to this page.", "template.dismissed": "Okay. This page stays as it is.",
+    "broken.restored": "Restored the last version of this part.",
+    "card.showAnswer": "Show answer", "card.showQuestion": "Show question",
+    "quiz.right": "Right.", "quiz.wrong": "Not quite. The answer is: ", "quiz.pick": "Pick one answer first.",
+    "checklist.of": "of", "checklist.done": "done",
+    "toast.sub": "You can undo for", "toast.undo": "Undo", "toast.dismiss": "Dismiss", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "הרצאה ביום חמישי · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.history": "היסטוריית שיחות", "nav.week": "שבוע 42", "nav.moving": "מעבר דירה",
+    "nav.talk": "הרצאה ביום חמישי", "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "tag.work": "עבודה", "tag.talk": "הרצאה", "meta.edited": "נערך היום ב־",
+    "off.text": "אין חיבור לרשת. השינויים יישמרו כשהחיבור יחזור.",
+    "block.add": "הוספת בלוק למטה", "block.options": "אפשרויות בלוק: העברה, העתקה, מחיקה",
+    "p.intro": "עשרים דקות בגילדת העיצוב ביום חמישי. רעיון אחד: תוכניות קטנות מנצחות תוכניות גדולות. כל דבר דחוף עובר ל<a class=\"tp-wikilink\" href=\"today.html\">היום</a>.",
+    "tpl.title": "להשתמש בתבנית הכנה להרצאה?", "tpl.desc": "היא מוסיפה כמה חלקים לדף. הטקסט שלך נשאר במקום.",
+    "tpl.a1": "ספירה לאחור עד יום חמישי", "tpl.a2": "שלושה זמני תרגול קצרים", "tpl.a3": "רשימה ליום עצמו",
+    "tpl.use": "שימוש בתבנית", "tpl.not": "לא עכשיו",
+    "template.used": "התבנית נוספה לדף.", "template.dismissed": "בסדר. הדף נשאר כמו שהוא.",
+    "h.tasks": "משימות", "tk1": "לכתוב את הרעיון בשורה אחת", "tk2": "לנסח 3 שקפים ליום חמישי", "tk3": "לבקש מיוני להקשיב להרצה", "unit.min": "דק׳",
+    "h.events": "תאריכים", "ev1.title": "הרצאה בגילדת העיצוב", "ev1.date": "יום ה׳ 15.10", "ev1.place": "סטודיו 3, פלורנטין",
+    "ev2.title": "חזרה אחת עם יוני", "ev2.date": "יום ד׳ 14.10 · יכול לזוז אם היום משתנה",
+    "kind.fixed": "קבוע", "kind.flex": "גמיש",
+    "h.time": "זמן לזה היום", "tb1": "ריכוז: שקפים", "tb2": "לקרוא את הרשימות בקול",
+    "energy.q": "כמה אנרגיה יש לך לזה היום?", "energy.quiet": "שקט", "energy.quiet.hint": "סוללה חלשה", "energy.steady": "יציב", "energy.steady.hint": "קצב רגיל", "energy.push": "דוחף", "energy.push.hint": "מיכל מלא",
+    "hb.name": "לתרגל את הפתיחה בקול", "hb.when": "רוב הערבים", "hb.days": "7 הימים האחרונים",
+    "habit.log": "רישום להיום", "habit.logged": "נרשם להיום", "habit.dayDone": "נרשם", "habit.dayOpen": "לא נרשם",
+    "d.tue": "ג׳", "d.wed": "ד׳", "d.thu": "ה׳", "d.fri": "ו׳", "d.sat": "ש׳", "d.sun": "א׳", "d.today": "היום",
+    "hb.summary": "כל ערב שתרגלת נחשב. ימים שפספסת פשוט נשארים ריקים.",
+    "nag.label": "התזכורת שלך, במילים שלך", "nag.phrase": "מאיה. שקפים לפני מיילים. בארבע תודי לעצמך.",
+    "nag.when": "בימי חול ב־", "nag.about": "בנושא: לנסח 3 שקפים ליום חמישי",
+    "nag.doNow": "עכשיו", "nag.snoozeBtn": "נודניק", "nag.notToday": "לא היום",
+    "nag.now": "יופי. זה קורה עכשיו.", "nag.snooze": "נדחה ב־30 דקות.", "nag.nottoday": "בסדר. לא היום. אשאל שוב מחר.",
+    "broken.text": "יש בעיה בחלק הזה. שאר הדף בסדר.", "broken.undo": "ביטול השינוי האחרון", "broken.restored": "הגרסה האחרונה של החלק הזה שוחזרה.",
+    "h.coach": "מהמאמן", "art.by": "נוצר על ידי המאמן",
+    "art.flash": "כרטיסי לימוד", "fc.title": "נקודות מפתח בהרצאה", "card.q": "שאלה", "card.a": "תשובה",
+    "fc.f1": "מה הרעיון האחד?", "fc.b1": "תוכניות קטנות מנצחות תוכניות גדולות.",
+    "card.card": "כרטיס", "card.of": "מתוך", "card.prev": "הכרטיס הקודם", "card.next": "הכרטיס הבא",
+    "card.showAnswer": "הצגת התשובה", "card.showQuestion": "הצגת השאלה",
+    "art.quiz": "בוחן", "qz.title": "בדיקת הפתיחה", "qz.q": "עם מה הקהל צריך לצאת?",
+    "qz.a": "תוכניות קטנות מנצחות תוכניות גדולות", "qz.b": "יותר שקפים עושים הרצאה חזקה יותר", "qz.c": "תמיד להתחיל במספרים",
+    "qz.mark": "התשובה", "qz.check": "בדיקה",
+    "quiz.right": "נכון.", "quiz.wrong": "לא בדיוק. התשובה היא: ", "quiz.pick": "בחרי תשובה אחת קודם.",
+    "art.check": "רשימת סימון", "cl.title": "ביום עצמו",
+    "cl.1": "השקפים על דיסק און קי וגם במייל", "cl.2": "מטען ומתאם", "cl.3": "בקבוק מים", "cl.4": "לצאת ב־13:15", "cl.5": "לשלוח הודעה לדנה כשזה נגמר",
+    "checklist.of": "מתוך", "checklist.done": "בוצעו",
+    "art.track": "מעקב", "tr.title": "הרצות תרגול", "tr.name": "הרצות מלאות", "tr.goal": "כדאי לכוון ל־", "tr.goal2": "לפני יום חמישי. כל מספר עוזר.",
+    "tr.dec": "אחת פחות", "tr.inc": "אחת יותר",
+    "bl.title": "מקושר לכאן", "bl.today": "לנסח 3 שקפים ליום חמישי", "bl.week": "יום חמישי: ההרצאה, ואז מנוחה",
+    "empty.title": "הדף הזה ריק.", "empty.body1": "אפשר להתחיל להקליד, או ללחוץ", "empty.body2": "כדי להוסיף משימה, אירוע או כל דבר אחר.", "empty.action": "להתחיל מתבנית",
+    "loading": "טוען את הדף", "error.title": "לא הצלחנו לטעון את הדף.", "error.body": "הוא שמור. זו בעיית חיבור אצלנו.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.sub": "אפשר לבטל עוד", "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  /* Flashcard deck in the reading language (demo cards; the app loads them from the artifact block). */
+  var HE_DECK = [
+    { front: "מה הרעיון האחד?", back: "תוכניות קטנות מנצחות תוכניות גדולות." },
+    { front: "איך פותחים?", back: "עם בוקר של יום שני: שלוש משימות, לא שלושים." },
+    { front: "מה שואלים את הקהל?", back: "מה דבר אחד שאפשר להקטין היום?" }
+  ];
+  TP.onReady2 = function () {
+    // REAL: convex pages.get({ pageId }) -> artifact block { kind: "flashcards", cards } in the user's language
+    if (document.documentElement.lang === "he") {
+      document.querySelectorAll(".tp-flashcard").forEach(function (fc) { if (fc._deck) fc._deck = HE_DECK; });
+    }
+  };
+  TP.onReady = function () {
+    // REAL: convex tasks.complete({ id }) — optimistic; the row's done style follows aria-checked
+    document.addEventListener("click", function (e) {
+      var c = e.target.closest('.tp-check[data-action="check"]'); if (!c) return;
+      setTimeout(function () { var row = c.closest(".tp-task-row"); if (row) row.setAttribute("data-done", c.getAttribute("aria-checked")); }, 0);
+    });
+  };
+})();
+</script>
+</body>
+</html>

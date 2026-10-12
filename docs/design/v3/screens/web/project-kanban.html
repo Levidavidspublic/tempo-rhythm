@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moving flat board · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — project-kanban.html */
+  .kb-stack { display: grid; gap: var(--tp-space-6); min-width: 0; }
+  .kb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+</style>
+</head>
+<body>
+<!--
+@screen   Project · kanban (Moving flat)
+@route    apps/web/app/(tempo)/projects/[id]/kanban/page.tsx
+@layout   TempoShell
+@data     project = projects.get({ id })                                     // Convex query: title, status
+@data     board = tasks.listByProjectColumns({ projectId: id })              // Convex query: columns To do / Doing / Done, cards in order
+@actions  move card -> tasks.moveColumn({ id, toColumnId, index })          // optimistic; Move buttons on every card, drag optional; Undo 5 min
+@actions  add a card -> tasks.create({ projectId: id, title, columnId: "todo" })   // optimistic, Undo 5 min
+@actions  open a card -> open TaskSheet (task-sheet.html, ?task=<id>)
+@actions  back to page -> link /projects/[id]
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Show the project's tasks as three columns: To do, Doing, Done. Each column header says how many cards it has.
+          2. Every card has "Move left" and "Move right" buttons. Drag is a bonus, never the only way. Edge buttons are disabled.
+          3. After a move, focus stays on the same button of the moved card, counts update, and the move is announced in words.
+          4. In Hebrew the columns run right to left; the buttons say "move right" / "move left" to match what Maya sees.
+          5. On a phone, columns snap-scroll inside the board only; the page itself never scrolls sideways.
+          6. Empty board: kind copy + "Add a first card". Error: "Your data is safe." + Retry. Offline: moves still work, sync later.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'projects' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Projects','Moving flat','Board'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="projects.html" data-i18n="nav.projects">Projects</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <a class="tp-topbar__hide-sm" href="project-detail.html" data-i18n="pr.moving">Moving flat</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="kb.crumb">Board</strong>
+    </div>
+    <span class="tp-muted tp-small tp-topbar__hide-sm" data-state-hide="offline" data-i18n="top.saved">Saved</span>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'wide' } | events: — -->
+    <div class="tp-page tp-page--wide kb-stack" data-component="PageLayout">
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="project-detail.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="kb.back">Back to the project page</span></a>
+
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Moving flat', subtitle: status + hint, actions: ['Add a card'] } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" dir="auto" data-i18n="pr.moving">Moving flat</h1>
+          <div class="tp-pagehead__sub kb-meta">
+            <!-- @component ProjectStatus | shadcn: badge | props: { status: 'active', label: 'Active' } | events: — -->
+            <span class="tp-status" data-status="active" data-component="ProjectStatus"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span>
+            <span data-i18n="kb.hint">Move cards with the buttons on each card. Dragging works too, if you like it.</span>
+          </div>
+        </div>
+        <div class="tp-pagehead__actions">
+          <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> tasks.create({ projectId, title, columnId: "todo" }) -->
+          <button class="tp-btn tp-btn--primary" type="button" id="kb-add" data-component="Button" data-state-hide><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="kb.add">Add a card</span></button>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component Kanban | shadcn: card | props: { columns: {id,name,cards: KanbanCard[]}[] } | events: onMove(cardId, toColumnId) -> tasks.moveColumn({ id, toColumnId, index }) -->
+      <div class="tp-kanban" id="kb-board" data-component="Kanban" role="group" aria-label="Moving flat board" data-i18n-attr="aria-label:kb.board" data-state-hide>
+
+        <!-- Column: To do -->
+        <section class="tp-kanban__col" aria-labelledby="col-todo">
+          <div class="tp-kanban__head">
+            <h2 class="tp-kanban__name" id="col-todo" data-i18n="kb.todo">To do</h2>
+            <span class="tp-kanban__count tp-num" aria-label="cards" data-i18n-attr="aria-label:kb.cards">3</span>
+          </div>
+          <ul class="tp-kanban__list" role="list">
+            <!-- @component KanbanCard ×6 | shadcn: card + button | props: { card: {id,title,minutes?,meta?} } | events: onMovePrev -> tasks.moveColumn({ id, toColumnId, index }), onMoveNext -> tasks.moveColumn({ id, toColumnId, index }), onOpen -> open TaskSheet -->
+            <li>
+              <article class="tp-kanban-card" data-component="KanbanCard" aria-labelledby="c1">
+                <a class="tp-kanban-card__title" id="c1" href="task-sheet.html" dir="auto" data-i18n="task.books">Pack one box of books</a>
+                <div class="tp-kanban-card__meta"><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span><span><span data-i18n="day.wed">Wed</span> <span class="tp-num">14</span></span></div>
+                <div class="tp-kanban-card__move">
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="prev" aria-describedby="c1" disabled><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kb.prev">Move left</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="next" aria-describedby="c1"><span data-i18n="kb.next">Move right</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="tp-kanban-card" data-component="KanbanCard" aria-labelledby="c2">
+                <a class="tp-kanban-card__title" id="c2" href="task-sheet.html" dir="auto" data-i18n="task.van">Ask Yoni about the van</a>
+                <div class="tp-kanban-card__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span><span><span data-i18n="day.tue">Tue</span> <span class="tp-num">13</span></span></div>
+                <div class="tp-kanban-card__move">
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="prev" aria-describedby="c2" disabled><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kb.prev">Move left</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="next" aria-describedby="c2"><span data-i18n="kb.next">Move right</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="tp-kanban-card" data-component="KanbanCard" aria-labelledby="c3">
+                <a class="tp-kanban-card__title" id="c3" href="task-sheet.html" dir="auto" data-i18n="task.power">Call the electricity company</a>
+                <div class="tp-kanban-card__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span><span data-i18n="kb.noday">No day yet</span></div>
+                <div class="tp-kanban-card__move">
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="prev" aria-describedby="c3" disabled><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kb.prev">Move left</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="next" aria-describedby="c3"><span data-i18n="kb.next">Move right</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                </div>
+              </article>
+            </li>
+          </ul>
+          <p class="tp-kanban__empty" data-i18n="kb.empty.todo">Nothing waiting here.</p>
+        </section>
+
+        <!-- Column: Doing -->
+        <section class="tp-kanban__col" aria-labelledby="col-doing">
+          <div class="tp-kanban__head">
+            <h2 class="tp-kanban__name" id="col-doing" data-i18n="kb.doing">Doing</h2>
+            <span class="tp-kanban__count tp-num" aria-label="cards" data-i18n-attr="aria-label:kb.cards">1</span>
+          </div>
+          <ul class="tp-kanban__list" role="list">
+            <li>
+              <article class="tp-kanban-card" data-component="KanbanCard" aria-labelledby="c4">
+                <a class="tp-kanban-card__title" id="c4" href="task-sheet.html" dir="auto" data-i18n="task.dana">Email Dana about the lease</a>
+                <div class="tp-kanban-card__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span><span data-i18n="day.today">Today</span></div>
+                <div class="tp-kanban-card__move">
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="prev" aria-describedby="c4"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kb.prev">Move left</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="next" aria-describedby="c4"><span data-i18n="kb.next">Move right</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                </div>
+              </article>
+            </li>
+          </ul>
+          <p class="tp-kanban__empty" data-i18n="kb.empty.doing">Nothing in progress. That's allowed.</p>
+        </section>
+
+        <!-- Column: Done -->
+        <section class="tp-kanban__col" aria-labelledby="col-done">
+          <div class="tp-kanban__head">
+            <h2 class="tp-kanban__name" id="col-done" data-i18n="kb.done">Done</h2>
+            <span class="tp-kanban__count tp-num" aria-label="cards" data-i18n-attr="aria-label:kb.cards">2</span>
+          </div>
+          <ul class="tp-kanban__list" role="list">
+            <li>
+              <article class="tp-kanban-card" data-component="KanbanCard" aria-labelledby="c5">
+                <a class="tp-kanban-card__title" id="c5" href="task-sheet.html" dir="auto" data-i18n="task.boxes">Get 20 boxes</a>
+                <div class="tp-kanban-card__meta"><span><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg> <span data-i18n="kb.donesat">Done Sat</span> <span class="tp-num">10</span></span></div>
+                <div class="tp-kanban-card__move">
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="prev" aria-describedby="c5"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kb.prev">Move left</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="next" aria-describedby="c5" disabled><span data-i18n="kb.next">Move right</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="tp-kanban-card" data-component="KanbanCard" aria-labelledby="c6">
+                <a class="tp-kanban-card__title" id="c6" href="task-sheet.html" dir="auto" data-i18n="task.measure">Measure the new kitchen</a>
+                <div class="tp-kanban-card__meta"><span><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg> <span data-i18n="kb.donefri">Done Fri</span> <span class="tp-num">9</span></span></div>
+                <div class="tp-kanban-card__move">
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="prev" aria-describedby="c6"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kb.prev">Move left</span></button>
+                  <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="kanban-move" data-dir="next" aria-describedby="c6" disabled><span data-i18n="kb.next">Move right</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+                </div>
+              </article>
+            </li>
+          </ul>
+          <p class="tp-kanban__empty" data-i18n="kb.empty.done">Finished cards land here.</p>
+        </section>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onAdd -> tasks.create({ projectId, title, columnId: "todo" }) -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-kanban"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">This board is empty for now.</h2>
+        <p class="tp-state__body" data-i18n="empty.body">Add one card to To do. You can move it along whenever you're ready.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="empty.add">Add a first card</span></button></div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Loading this board</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load this board." } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't load this board.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach with this project attached -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> tasks.remove({ id }) -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'pages' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="nav.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="nav.calendar">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "kb.newcard": "New card", "kb.added": "Card added to To do", "kb.justnow": "Just added", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "הלוח של מעבר דירה · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.library": "ספרייה",
+    "nav.today": "היום", "nav.plan": "תכנון", "nav.dump": "פריקת מחשבות", "nav.coach": "מאמן",
+    "nav.tasks": "משימות", "nav.calendar": "לוח שנה", "nav.notes": "פתקים", "nav.habits": "הרגלים", "nav.goals": "מטרות", "nav.projects": "פרויקטים",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.saved": "נשמר", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "pr.moving": "מעבר דירה", "kb.crumb": "לוח", "kb.back": "חזרה לדף הפרויקט",
+    "status.active": "פעיל", "kb.hint": "אפשר להזיז כרטיסים עם הכפתורים שעל כל כרטיס. גם גרירה עובדת, אם נוח לך.",
+    "kb.add": "הוספת כרטיס", "kb.board": "הלוח של מעבר דירה", "kb.cards": "כרטיסים",
+    "kb.todo": "לעשות", "kb.doing": "בעבודה", "kb.done": "בוצע",
+    "kb.prev": "הזזה ימינה", "kb.next": "הזזה שמאלה",
+    "task.books": "לארוז קרטון אחד של ספרים", "task.van": "לשאול את יוני על הטנדר", "task.power": "להתקשר לחברת החשמל",
+    "task.dana": "לכתוב לדנה על החוזה", "task.boxes": "להשיג 20 קרטונים", "task.measure": "למדוד את המטבח החדש",
+    "unit.min": "דק׳", "day.wed": "ד׳", "day.tue": "ג׳", "day.today": "היום", "kb.noday": "עדיין בלי יום",
+    "kb.donesat": "בוצע בשבת", "kb.donefri": "בוצע בשישי",
+    "kb.empty.todo": "שום דבר לא מחכה כאן.", "kb.empty.doing": "שום דבר לא בעבודה. גם זה בסדר.", "kb.empty.done": "כרטיסים שהסתיימו נוחתים כאן.",
+    "empty.title": "הלוח הזה ריק בינתיים.", "empty.body": "אפשר להוסיף כרטיס אחד ל״לעשות״, ולהזיז אותו הלאה מתי שתרצי.", "empty.add": "הוספת כרטיס ראשון",
+    "loading": "טוען את הלוח", "error.title": "לא הצלחנו לטעון את הלוח הזה.",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "kb.newcard": "כרטיס חדש", "kb.added": "הכרטיס נוסף ל״לעשות״", "kb.justnow": "נוסף עכשיו",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.pages": "דפים", "tab.more": "עוד"
+  }
+};
+
+TP.onReady = function () {
+  // Moves are handled by tempo.js (data-action="kanban-move").
+  // REAL: convex tasks.moveColumn({ id, toColumnId, index }) — optimistic; counts and edge buttons sync in tempo.js.
+
+  // REAL: convex tasks.create({ projectId, title, columnId: "todo" }) — optimistic card at the top of To do; Undo -> tasks.remove({ id }).
+  document.getElementById("kb-add").addEventListener("click", function () {
+    var board = document.getElementById("kb-board"), list = board.querySelector(".tp-kanban__list");
+    var src = board.querySelector(".tp-kanban-card"); if (!src) return;
+    var li = src.closest("li").cloneNode(true), id = "c" + Date.now();
+    var card = li.querySelector(".tp-kanban-card"); card.setAttribute("aria-labelledby", id);
+    var t = card.querySelector(".tp-kanban-card__title"); t.id = id; t.textContent = TP.t("kb.newcard"); t.removeAttribute("data-i18n");
+    var m = card.querySelector(".tp-kanban-card__meta"); m.textContent = TP.t("kb.justnow");
+    card.querySelectorAll('[data-action="kanban-move"]').forEach(function (b) { b.setAttribute("aria-describedby", id); });
+    var p = card.querySelector('[data-dir="prev"]'), n = card.querySelector('[data-dir="next"]'); if (p) p.disabled = true; if (n) n.disabled = false;
+    list.insertBefore(li, list.firstChild);
+    function count() { board.querySelectorAll(".tp-kanban__col").forEach(function (col) { col.querySelector(".tp-kanban__count").textContent = col.querySelectorAll(".tp-kanban-card").length; }); }
+    count(); t.focus();
+    TP.toast({ title: TP.t("kb.added"), onUndo: function () { li.remove(); count(); } });
+  });
+};
+</script>
+</body>
+</html>

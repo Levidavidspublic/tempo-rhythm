@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — calendar.html */
+  .cal-main { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .cal-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--tp-space-2) var(--tp-space-4); }
+  .cal-legend li { display: inline-flex; align-items: center; gap: var(--tp-space-2); }
+  .cal-agenda { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .cal-agenda__actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .cal-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--tp-space-3); }
+  .cal-kind { display: grid; gap: var(--tp-space-2); border: 0; margin: 0; padding: 0; min-width: 0; }
+  .cal-form { display: grid; gap: var(--tp-space-4); }
+</style>
+</head>
+<body>
+<!--
+@screen   Calendar
+@route    apps/web/app/(tempo)/calendar/page.tsx
+@layout   TempoShell
+@data     month = events.listMonth({ month: "2026-10", weekStartsOn: "monday" })   // Convex query: per-day items { date, kind, done } for dots + counts
+@data     day = events.listDay({ date })                                           // Convex query: events for the chosen local calendar day, sorted by start
+@actions  choose a day -> TP.onDaySelect(date) -> router.replace("?date=YYYY-MM-DD") + events.listDay({ date })
+@actions  add event -> events.create({ title, date, start, end, kind: "fixed" | "flex", place? })   // optimistic, Undo 5 min -> events.remove({ id })
+@actions  previous / next month -> router.replace("?month=YYYY-MM")
+@actions  open an event -> event-sheet (later), opens with the same fields as Add event
+@states   default | empty | loading | error | offline  (?state=)   + empty day (inline, kind copy) + form error (end before start)
+@flow     1. Show October 2026 as a month grid, weeks starting Monday. Today (Mon 12 Oct) is marked and chosen.
+          2. Each day with items shows small dots, its number, and a text count ("3 items"). Dots are decorative; the words carry the meaning. A legend explains the dots.
+          3. Choosing a day fills the agenda beside the grid (below it on a phone) with that day's events in time order.
+          4. Every event shows its start AND end time and the word "Fixed" (solid edge, happens at this time) or "Flexible" (dashed edge, can move).
+          5. A day with nothing on it says so kindly and offers Add event.
+          6. Add event opens a sheet: title, day, start, end, Fixed or Flexible, optional place. End must be after start, said plainly next to the field.
+          7. Saving adds the event to the grid and the agenda at once and shows an Undo toast for 5 minutes.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<div class="tp-app" data-component="TempoShell">
+  <!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: string } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="journal.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-edit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.journal">Journal</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="routines.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-list"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.routines">Routines</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li>
+          <a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a>
+          <ul class="tp-tree" role="list">
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+            <li><a class="tp-tree-item" href="page-editor.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.checklist">Moving checklist</span></a></li>
+          </ul>
+        </li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="new-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.newpage">New page</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: string[] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <strong data-i18n="nav.calendar" dir="auto">Calendar</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Search" data-i18n-attr="aria-label:top.search"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <div class="tp-page tp-page--wide" data-component="PageLayout">
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Calendar', subtitle, actions: ['Add event'] } | events: onAdd -> open-sheet add-event -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="cal.title">Calendar</h1>
+          <p class="tp-pagehead__sub" data-i18n="cal.sub">Your month at a glance. Fixed things stay put; flexible things can move around them.</p>
+        </div>
+        <div class="tp-pagehead__actions" data-state-hide>
+          <!-- @component Button | shadcn: button | props: { variant: 'secondary' } | events: onClick -> open-sheet add-event -->
+          <button class="tp-btn tp-btn--secondary" type="button" data-action="open-sheet" aria-controls="add-event" aria-expanded="false" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="cal.add">Add event</span></button>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <!-- @component Split | shadcn: resizable (optional) | props: { variant: 'aside' } | events: — -->
+      <div class="tp-split" data-component="Split" data-state-hide>
+        <section class="cal-main tp-surface" aria-labelledby="month-title">
+          <!-- @component MonthGrid | shadcn: calendar (base) | props: { month: '2026-10', weekStartsOn: 'monday', days: {date,n,outside,today,items:{kind}[]}[], selected: '2026-10-12' } | events: onSelectDay -> TP.onDaySelect -> events.listDay -->
+          <div class="tp-month" data-component="MonthGrid">
+            <div class="tp-month__head">
+              <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Previous month" data-i18n-attr="aria-label:cal.prev"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+              <h2 class="tp-month__title" id="month-title" data-i18n="cal.month">October 2026</h2>
+              <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" aria-label="Next month" data-i18n-attr="aria-label:cal.next"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+            </div>
+            <div class="tp-month__grid" role="group" aria-labelledby="month-title" id="month-grid">
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.mon">Mon</abbr></div>
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.tue">Tue</abbr></div>
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.wed">Wed</abbr></div>
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.thu">Thu</abbr></div>
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.fri">Fri</abbr></div>
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.sat">Sat</abbr></div>
+              <div class="tp-month__dow" aria-hidden="true"><abbr data-i18n="dow.sun">Sun</abbr></div>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-09-28" data-outside="true" aria-pressed="false"><span class="tp-month__n tp-num">28</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-09-29" data-outside="true" aria-pressed="false"><span class="tp-month__n tp-num">29</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-09-30" data-outside="true" aria-pressed="false"><span class="tp-month__n tp-num">30</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-01" aria-pressed="false"><span class="tp-month__n tp-num">1</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-02" aria-pressed="false"><span class="tp-month__n tp-num">2</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-03" aria-pressed="false"><span class="tp-month__n tp-num">3</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-04" aria-pressed="false"><span class="tp-month__n tp-num">4</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-05" aria-pressed="false"><span class="tp-month__n tp-num">5</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--done"></span><span class="tp-dot tp-dot--done"></span></span><span class="tp-month__count"><span class="tp-num">2</span> <span data-i18n="cal.itemsN">items</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-06" aria-pressed="false"><span class="tp-month__n tp-num">6</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-07" aria-pressed="false"><span class="tp-month__n tp-num">7</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-08" aria-pressed="false"><span class="tp-month__n tp-num">8</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-09" aria-pressed="false"><span class="tp-month__n tp-num">9</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--done"></span></span><span class="tp-month__count"><span class="tp-num">1</span> <span data-i18n="cal.items1">item</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-10" aria-pressed="false"><span class="tp-month__n tp-num">10</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-11" aria-pressed="false"><span class="tp-month__n tp-num">11</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-12" aria-current="date" aria-pressed="true"><span class="tp-month__n tp-num">12</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--fixed"></span><span class="tp-dot tp-dot--fixed"></span><span class="tp-dot tp-dot--flex"></span></span><span class="tp-month__count"><span class="tp-num">3</span> <span data-i18n="cal.itemsN">items</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-13" aria-pressed="false"><span class="tp-month__n tp-num">13</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--flex"></span></span><span class="tp-month__count"><span class="tp-num">1</span> <span data-i18n="cal.items1">item</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-14" aria-pressed="false"><span class="tp-month__n tp-num">14</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--fixed"></span></span><span class="tp-month__count"><span class="tp-num">1</span> <span data-i18n="cal.items1">item</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-15" aria-pressed="false"><span class="tp-month__n tp-num">15</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--fixed"></span><span class="tp-dot tp-dot--flex"></span></span><span class="tp-month__count"><span class="tp-num">2</span> <span data-i18n="cal.itemsN">items</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-16" aria-pressed="false"><span class="tp-month__n tp-num">16</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-17" aria-pressed="false"><span class="tp-month__n tp-num">17</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--flex"></span><span class="tp-dot tp-dot--fixed"></span></span><span class="tp-month__count"><span class="tp-num">2</span> <span data-i18n="cal.itemsN">items</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-18" aria-pressed="false"><span class="tp-month__n tp-num">18</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-19" aria-pressed="false"><span class="tp-month__n tp-num">19</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-20" aria-pressed="false"><span class="tp-month__n tp-num">20</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-21" aria-pressed="false"><span class="tp-month__n tp-num">21</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-22" aria-pressed="false"><span class="tp-month__n tp-num">22</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--fixed"></span></span><span class="tp-month__count"><span class="tp-num">1</span> <span data-i18n="cal.items1">item</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-23" aria-pressed="false"><span class="tp-month__n tp-num">23</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-24" aria-pressed="false"><span class="tp-month__n tp-num">24</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-25" aria-pressed="false"><span class="tp-month__n tp-num">25</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-26" aria-pressed="false"><span class="tp-month__n tp-num">26</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-27" aria-pressed="false"><span class="tp-month__n tp-num">27</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-28" aria-pressed="false"><span class="tp-month__n tp-num">28</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-29" aria-pressed="false"><span class="tp-month__n tp-num">29</span><span class="tp-month__dots" aria-hidden="true"><span class="tp-dot tp-dot--fixed"></span></span><span class="tp-month__count"><span class="tp-num">1</span> <span data-i18n="cal.items1">item</span></span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-30" aria-pressed="false"><span class="tp-month__n tp-num">30</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-10-31" aria-pressed="false"><span class="tp-month__n tp-num">31</span></button>
+              <button class="tp-month__day" type="button" data-action="select-day" data-date="2026-11-01" data-outside="true" aria-pressed="false"><span class="tp-month__n tp-num">1</span></button>
+            </div>
+            <!-- @component Dot ×3 | shadcn: — | props: { kind: 'fixed' | 'flex' | 'done' } | events: — -->
+            <ul class="cal-legend tp-small tp-muted" aria-label="What the dots mean" data-i18n-attr="aria-label:cal.legend">
+              <li><span class="tp-dot tp-dot--fixed" aria-hidden="true" data-component="Dot"></span><span data-i18n="cal.lg.fixed">Fixed time</span></li>
+              <li><span class="tp-dot tp-dot--flex" aria-hidden="true" data-component="Dot"></span><span data-i18n="cal.lg.flex">Flexible, can move</span></li>
+              <li><span class="tp-dot tp-dot--done" aria-hidden="true" data-component="Dot"></span><span data-i18n="cal.lg.done">Already happened</span></li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- @component Section | shadcn: — | props: { title: selected day, count } | events: — -->
+        <section class="tp-section cal-agenda" data-component="Section" aria-labelledby="day-title">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="day-title" tabindex="-1" data-i18n="cal.day.12">Monday 12 October</h2>
+            <span class="tp-section__count" id="day-count"><span class="tp-num">3</span> <span data-i18n="cal.itemsN">items</span></span>
+          </div>
+          <!-- @component EventBlock ×3 | shadcn: card | props: { event: {id,title,start,end,place?,kind:'fixed'|'flex',done?} } | events: onOpen -> event sheet (later) -->
+          <ul class="tp-block-event" role="list" id="day-list" data-component="EventBlock" aria-labelledby="day-title">
+            <li class="tp-event" data-kind="fixed">
+              <span class="tp-event__time"><span class="tp-num">09:30</span><span class="tp-sr-only" data-i18n="cal.to">to</span><span class="tp-num">10:00</span></span>
+              <div class="tp-event__body">
+                <span class="tp-event__title" dir="auto" data-i18n="ev.checkin">Team check-in with Dana</span>
+                <span class="tp-event__meta"><span class="tp-chip tp-chip--fixed"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="kind.fixed">Fixed</span></span><span class="tp-event__place"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pin"/></svg><span data-i18n="pl.video">Video call</span></span></span>
+              </div>
+            </li>
+            <li class="tp-event" data-kind="fixed">
+              <span class="tp-event__time"><span class="tp-num">13:00</span><span class="tp-sr-only" data-i18n="cal.to">to</span><span class="tp-num">14:00</span></span>
+              <div class="tp-event__body">
+                <span class="tp-event__title" dir="auto" data-i18n="ev.lunch">Lunch with Yoni</span>
+                <span class="tp-event__meta"><span class="tp-chip tp-chip--fixed"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="kind.fixed">Fixed</span></span><span class="tp-event__place"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pin"/></svg><span data-i18n="pl.cafe">Café on Levinsky</span></span></span>
+              </div>
+            </li>
+            <li class="tp-event" data-kind="flex">
+              <span class="tp-event__time"><span class="tp-num">16:00</span><span class="tp-sr-only" data-i18n="cal.to">to</span><span class="tp-num">17:00</span></span>
+              <div class="tp-event__body">
+                <span class="tp-event__title" dir="auto" data-i18n="ev.slides">Draft slides for Thursday</span>
+                <span class="tp-event__meta"><span class="tp-chip tp-chip--flex"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="kind.flex">Flexible</span></span></span>
+              </div>
+            </li>
+          </ul>
+          <!-- @component Empty | shadcn: — | props: { text } | events: onAdd -> open-sheet add-event -->
+          <div class="tp-empty" id="day-empty" data-component="Empty" hidden>
+            <svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-leaf"/></svg>
+            <p data-i18n="cal.dayempty">Nothing on this day. A free day is allowed.</p>
+            <button class="tp-btn tp-btn--secondary" type="button" data-action="open-sheet" aria-controls="add-event" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="cal.add">Add event</span></button>
+          </div>
+          <div class="cal-agenda__actions">
+            <a class="tp-btn tp-btn--ghost" href="today.html" id="day-open"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="cal.openday">Open this day's page</span></a>
+          </div>
+        </section>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onAdd -> open-sheet add-event -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="cal.empty.t">Your calendar is clear. Plenty of room.</h2>
+        <p class="tp-state__body" data-i18n="cal.empty.b">Add the things that happen at a set time first. Flexible things can fit in around them later.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="open-sheet" aria-controls="add-event" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="cal.add">Add event</span></button></div>
+      </div>
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 5 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="cal.loading">Loading your calendar</span>
+        <div class="tp-skel-list">
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w100"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+      <!-- @component StateError | shadcn: alert | props: { what } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="cal.error">Couldn't load your calendar.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== Add event sheet (glass, floating) ===== -->
+  <div class="tp-sheet-scrim" data-for="add-event" data-action="close-sheet" hidden></div>
+  <!-- @component MobileSheet | shadcn: sheet (bottom) / drawer | props: { id: 'add-event', title: 'Add event' } | events: onOpenChange, onSubmit -> events.create({ title, date, start, end, kind, place }) -->
+  <section class="tp-sheet tp-glass" id="add-event" role="dialog" aria-labelledby="ae-title" data-component="MobileSheet" hidden>
+    <div class="tp-sheet__grabber" aria-hidden="true"></div>
+    <div class="tp-sheet__head">
+      <h2 class="tp-sheet__title" id="ae-title" data-i18n="cal.add">Add event</h2>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:sheet.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-sheet__body">
+      <!-- @component Form | shadcn: form | props: { fields: title, date, start, end, kind, place } | events: onSubmit -> events.create -->
+      <form class="cal-form" id="ae-form" data-component="Form" novalidate>
+        <!-- @component Field | shadcn: form item | props: { id: 'ae-name', label: 'What is it?' } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ae-name" data-i18n="ae.name">What is it?</label>
+          <input class="tp-input" id="ae-name" type="text" dir="auto" autocomplete="off" aria-describedby="ae-name-error" placeholder="Coffee with Dana" data-i18n-attr="placeholder:ae.name.ph">
+          <p class="tp-error-text" id="ae-name-error" hidden data-i18n="ae.name.err">Give it a short name, so you'll know it later.</p>
+        </div>
+        <!-- @component Field | shadcn: form item | props: { id: 'ae-date', label: 'Day' } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ae-date" data-i18n="ae.date">Day</label>
+          <input class="tp-input tp-num" id="ae-date" type="date" value="2026-10-12" dir="ltr">
+        </div>
+        <div class="cal-times">
+          <!-- @component Field | shadcn: form item | props: { id: 'ae-start', label: 'Starts' } | events: — -->
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" for="ae-start" data-i18n="ae.start">Starts</label>
+            <input class="tp-input tp-num" id="ae-start" type="time" value="10:00" step="300" dir="ltr">
+          </div>
+          <!-- @component Field | shadcn: form item | props: { id: 'ae-end', label: 'Ends', error } | events: — -->
+          <div class="tp-field" data-component="Field">
+            <label class="tp-label" for="ae-end" data-i18n="ae.end">Ends</label>
+            <input class="tp-input tp-num" id="ae-end" type="time" value="11:00" step="300" dir="ltr" aria-describedby="ae-end-error">
+            <p class="tp-error-text" id="ae-end-error" hidden data-i18n="ae.end.err">The end time needs to be after the start time.</p>
+          </div>
+        </div>
+        <!-- @component Radio ×2 | shadcn: radio-group | props: { name: 'kind', value: 'fixed' | 'flex' } | events: onChange -->
+        <fieldset class="cal-kind">
+          <legend class="tp-label" data-i18n="ae.kind">How firm is it?</legend>
+          <label class="tp-choice"><input class="tp-radio" type="radio" name="ae-kind" value="fixed" checked><span class="tp-choice__text"><span data-i18n="kind.fixed">Fixed</span> <span class="tp-choice__hint" data-i18n="ae.fixed.hint">Happens at this time. Tempo plans around it.</span></span></label>
+          <label class="tp-choice"><input class="tp-radio" type="radio" name="ae-kind" value="flex"><span class="tp-choice__text"><span data-i18n="kind.flex">Flexible</span> <span class="tp-choice__hint" data-i18n="ae.flex.hint">A good time for it. It can move if the day changes.</span></span></label>
+        </fieldset>
+        <!-- @component Field | shadcn: form item | props: { id: 'ae-place', label: 'Where', optional } | events: — -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ae-place"><span data-i18n="ae.place">Where</span> <span class="tp-label__opt" data-i18n="ae.opt">optional</span></label>
+          <input class="tp-input" id="ae-place" type="text" dir="auto" autocomplete="off">
+        </div>
+      </form>
+    </div>
+    <div class="tp-sheet__foot">
+      <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> submit -> events.create -->
+      <button class="tp-btn tp-btn--primary" type="submit" form="ae-form" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="ae.save">Save event</span></button>
+      <button class="tp-btn tp-btn--ghost" type="button" data-action="close-sheet"><span data-i18n="ae.cancel">Cancel</span></button>
+    </div>
+  </section>
+
+  <!-- ===== Coach (closed) ===== -->
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> open-coach (Ctrl J) -->
+  <button class="tp-coach-fab tp-glass" type="button" data-action="open-coach" aria-expanded="false" aria-controls="coach" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="coach.name">Coach</span>
+  </button>
+  <!-- @component CoachPanel | shadcn: sheet | props: { open: boolean } | events: onClose -> close-coach, Esc -->
+  <aside class="tp-coach-panel tp-glass" id="coach" data-component="CoachPanel" aria-labelledby="coach-title" hidden>
+    <div class="tp-coach-panel__head">
+      <div class="tp-coach-panel__title"><strong id="coach-title" data-i18n="coach.name">Coach</strong><span data-i18n="coach.sub">Reads this page. Asks before changing anything.</span></div>
+      <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="close-coach" aria-label="Close coach" data-i18n-attr="aria-label:coach.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="tp-coach-thread" role="log" aria-live="polite">
+      <!-- @component CoachMessage | shadcn: scroll-area | props: { who: 'coach', text } | events: — -->
+      <div class="tp-msg" data-component="CoachMessage"><span class="tp-msg__who" data-i18n="coach.name">Coach</span><p class="tp-msg__text" dir="auto" data-i18n="cal.coach">Thursday has your talk at 09:00. Want me to keep Wednesday afternoon light so you can rehearse? I'll show the change first.</p></div>
+    </div>
+    <!-- @component Composer | shadcn: textarea + button | props: — | events: onSend -> coach.send({ threadId, text }) -->
+    <form class="tp-composer" data-component="Composer" onsubmit="return false">
+      <label class="tp-sr-only" for="composer" data-i18n="composer.label">Message the coach</label>
+      <div class="tp-composer__box">
+        <textarea class="tp-composer__input" id="composer" rows="2" dir="auto" placeholder="Ask, plan, or think out loud" data-i18n-attr="placeholder:composer.ph"></textarea>
+        <div class="tp-composer__bar">
+          <a class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon" href="voice-call.html" aria-label="Talk with voice" data-i18n-attr="aria-label:composer.voice"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg></a>
+          <button class="tp-btn tp-btn--sm tp-btn--icon tp-composer__send" type="submit" aria-label="Send" data-i18n-attr="aria-label:composer.send"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </aside>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> events.remove -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- ===== Mobile tab bar (glass) ===== -->
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'calendar' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.title": "Done",
+    "toast.sub": "You can undo for",
+    "toast.undo": "Undo",
+    "toast.dismiss": "Dismiss",
+    "state.retried": "Loaded.",
+    "cal.items1": "item",
+    "cal.itemsN": "items",
+    "cal.added": "Event added",
+    "kind.fixed": "Fixed",
+    "kind.flex": "Flexible",
+    "kind.done": "Happened",
+    "cal.to": "to"
+  },
+  he: {
+    "skip": "דלגו לתוכן",
+    "rail.label": "דפים",
+    "rail.search": "חיפוש או מעבר אל",
+    "rail.library": "ספרייה",
+    "rail.pages": "דפים",
+    "nav.today": "היום",
+    "nav.plan": "תכנון",
+    "nav.dump": "פריקת מחשבות",
+    "nav.coach": "מאמן",
+    "nav.history": "היסטוריית שיחות",
+    "nav.tasks": "משימות",
+    "nav.calendar": "לוח שנה",
+    "nav.notes": "פתקים",
+    "nav.journal": "יומן",
+    "nav.habits": "הרגלים",
+    "nav.routines": "שגרות",
+    "nav.goals": "מטרות",
+    "nav.projects": "פרויקטים",
+    "nav.week": "שבוע 42",
+    "nav.moving": "מעבר דירה",
+    "nav.weekend": "איפוס סוף שבוע",
+    "nav.checklist": "רשימת המעבר",
+    "nav.talk": "הרצאה ביום חמישי",
+    "nav.newpage": "דף חדש",
+    "nav.dyslexia": "גופן קריאה",
+    "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים",
+    "top.search": "חיפוש",
+    "top.theme": "ערכת צבעים כהה",
+    "top.avatar": "מאיה רונן",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "coach.name": "מאמן",
+    "coach.sub": "קורא את הדף הזה. שואל לפני כל שינוי.",
+    "coach.close": "סגירת המאמן",
+    "composer.label": "הודעה למאמן",
+    "composer.ph": "לשאול, לתכנן, או לחשוב בקול",
+    "composer.voice": "לדבר בקול",
+    "composer.send": "שליחה",
+    "tab.label": "ראשי",
+    "tab.tasks": "משימות",
+    "tab.pages": "דפים",
+    "tab.cal": "לוח שנה",
+    "tab.more": "עוד",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשהחיבור יחזור.",
+    "st.safe": "המידע שלך שמור.",
+    "st.retry": "לנסות שוב",
+    "toast.title": "בוצע",
+    "toast.sub": "אפשר לבטל עוד",
+    "toast.undo": "ביטול",
+    "toast.dismiss": "סגירה",
+    "state.retried": "נטען.",
+    "sheet.close": "סגירה",
+    "dow.mon": "ב׳",
+    "dow.tue": "ג׳",
+    "dow.wed": "ד׳",
+    "dow.thu": "ה׳",
+    "dow.fri": "ו׳",
+    "dow.sat": "ש׳",
+    "dow.sun": "א׳",
+    "kind.fixed": "קבוע",
+    "kind.flex": "גמיש",
+    "kind.done": "התקיים",
+    "doc.title": "לוח שנה · Tempo",
+    "cal.title": "לוח שנה",
+    "cal.sub": "החודש שלך במבט אחד. דברים קבועים נשארים במקום; דברים גמישים יכולים לזוז סביבם.",
+    "cal.add": "הוספת אירוע",
+    "cal.prev": "החודש הקודם",
+    "cal.next": "החודש הבא",
+    "cal.month": "אוקטובר 2026",
+    "cal.items1": "פריט",
+    "cal.itemsN": "פריטים",
+    "cal.legend": "מה הנקודות אומרות",
+    "cal.lg.fixed": "שעה קבועה",
+    "cal.lg.flex": "גמיש, יכול לזוז",
+    "cal.lg.done": "כבר התקיים",
+    "cal.day.12": "יום שני, 12 באוקטובר",
+    "cal.to": "עד",
+    "cal.dayempty": "אין כלום ביום הזה. מותר שיהיה יום פנוי.",
+    "cal.openday": "פתיחת הדף של היום הזה",
+    "cal.empty.t": "לוח השנה שלך פנוי. יש הרבה מקום.",
+    "cal.empty.b": "כדאי להתחיל מהדברים שקורים בשעה קבועה. את הגמישים אפשר לשבץ סביבם אחר כך.",
+    "cal.loading": "טוען את לוח השנה שלך",
+    "cal.error": "לא הצלחנו לטעון את לוח השנה.",
+    "cal.added": "האירוע נוסף",
+    "cal.coach": "ביום חמישי יש לך הרצאה ב־09:00. רוצה שאשאיר את יום רביעי אחר הצהריים קל, כדי שיהיה לך זמן לחזור עליה? אראה לך את השינוי קודם.",
+    "ev.checkin": "פגישת צוות קצרה עם דנה",
+    "ev.lunch": "ארוחת צהריים עם יוני",
+    "ev.slides": "לנסח שקפים ליום חמישי",
+    "ev.flat": "צפייה בדירה החדשה",
+    "ev.mum": "להתקשר לאמא",
+    "ev.dentist": "רופאת שיניים",
+    "ev.pharmacy": "בית מרקחת וקניות",
+    "ev.bank": "להתקשר לבנק על הפיקדון",
+    "ev.talk": "ההרצאה ביום חמישי",
+    "ev.desk": "לסדר את השולחן",
+    "ev.kitchen": "לארוז את המטבח",
+    "ev.dinner": "ארוחת ערב אצל דנה",
+    "ev.keys": "למסור את המפתחות הישנים",
+    "ev.yoni": "משקה ליום ההולדת של יוני",
+    "pl.video": "שיחת וידאו",
+    "pl.cafe": "בית הקפה ברחוב לווינסקי",
+    "pl.room": "חדר 3",
+    "pl.clinic": "המרפאה ברחוב בן יהודה",
+    "ae.name": "מה זה?",
+    "ae.name.ph": "קפה עם דנה",
+    "ae.name.err": "כדאי לתת שם קצר, כדי שתזהי אותו אחר כך.",
+    "ae.date": "יום",
+    "ae.start": "מתחיל",
+    "ae.end": "נגמר",
+    "ae.end.err": "שעת הסיום צריכה להיות אחרי שעת ההתחלה.",
+    "ae.kind": "כמה זה קבוע?",
+    "ae.fixed.hint": "קורה בשעה הזאת. Tempo מתכנן סביב זה.",
+    "ae.flex.hint": "שעה טובה לזה. אפשר להזיז אם היום משתנה.",
+    "ae.place": "איפה",
+    "ae.opt": "לא חובה",
+    "ae.save": "שמירת האירוע",
+    "ae.cancel": "ביטול"
+  }
+};
+TP_STRINGS.en["cal.day.12"] = "Monday 12 October";
+/* Calendar: day agenda, add event. */
+TP.onReady2 = function () {
+  var lang = document.documentElement.lang === "he" ? "he" : "en";
+  // REAL: convex events.listMonth({ month: "2026-10" }) — demo data for the days that have dots.
+  var data = {
+    "2026-10-05": [{ t: "ev.flat", en: "Viewing the new flat", s: "10:00", e: "11:00", k: "fixed", done: true }, { t: "ev.mum", en: "Call Mum", s: "18:00", e: "18:30", k: "flex", done: true }],
+    "2026-10-09": [{ t: "ev.dentist", en: "Dentist", s: "14:00", e: "15:00", k: "fixed", done: true, p: "pl.clinic", pen: "Clinic on Ben Yehuda" }],
+    "2026-10-12": [{ t: "ev.checkin", en: "Team check-in with Dana", s: "09:30", e: "10:00", k: "fixed", p: "pl.video", pen: "Video call" }, { t: "ev.lunch", en: "Lunch with Yoni", s: "13:00", e: "14:00", k: "fixed", p: "pl.cafe", pen: "Café on Levinsky" }, { t: "ev.slides", en: "Draft slides for Thursday", s: "16:00", e: "17:00", k: "flex" }],
+    "2026-10-13": [{ t: "ev.pharmacy", en: "Pharmacy and groceries", s: "10:00", e: "11:00", k: "flex" }],
+    "2026-10-14": [{ t: "ev.bank", en: "Call the bank about the deposit", s: "11:00", e: "11:30", k: "fixed" }],
+    "2026-10-15": [{ t: "ev.talk", en: "Thursday talk", s: "09:00", e: "10:30", k: "fixed", p: "pl.room", pen: "Room 3" }, { t: "ev.desk", en: "Tidy the desk", s: "15:00", e: "16:00", k: "flex" }],
+    "2026-10-17": [{ t: "ev.kitchen", en: "Pack the kitchen", s: "10:00", e: "12:00", k: "flex" }, { t: "ev.dinner", en: "Dinner at Dana's", s: "19:00", e: "21:00", k: "fixed" }],
+    "2026-10-22": [{ t: "ev.keys", en: "Hand over the old keys", s: "08:30", e: "09:00", k: "fixed" }],
+    "2026-10-29": [{ t: "ev.yoni", en: "Yoni's birthday drinks", s: "17:00", e: "18:00", k: "fixed" }]
+  };
+  var selected = "2026-10-12";
+  var list = document.getElementById("day-list"), empty = document.getElementById("day-empty");
+  var title = document.getElementById("day-title"), count = document.getElementById("day-count");
+  function label(ev, key, en) { if (!key) return ""; return lang === "he" ? TP.t(key) : en; }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function icon(name) { var s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", "tp-icon tp-icon--sm"); s.setAttribute("aria-hidden", "true"); var u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + name); s.appendChild(u); return s; }
+  function countText(n) { var f = document.createDocumentFragment(); f.appendChild(el("span", "tp-num", String(n))); f.appendChild(document.createTextNode(" ")); f.appendChild(el("span", null, TP.t(n === 1 ? "cal.items1" : "cal.itemsN"))); return f; }
+  // Day heading in the user's local calendar, week starting Monday.
+  function dayName(date) { return new Date(date + "T12:00:00").toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", { weekday: "long", day: "numeric", month: "long" }); }
+  function sortDay(arr) { arr.sort(function (a, b) { return a.s < b.s ? -1 : 1; }); }
+  // REAL: convex events.listDay({ date }) — here the agenda is drawn from the demo data.
+  function renderDay(date) {
+    var items = (data[date] || []).slice(); sortDay(items);
+    title.textContent = dayName(date);
+    count.textContent = ""; count.appendChild(countText(items.length));
+    list.textContent = "";
+    items.forEach(function (ev) {
+      var li = el("li", "tp-event"); li.setAttribute("data-kind", ev.k);
+      var time = el("span", "tp-event__time"); time.appendChild(el("span", "tp-num", ev.s)); time.appendChild(el("span", "tp-sr-only", TP.t("cal.to"))); time.appendChild(el("span", "tp-num", ev.e));
+      var body = el("div", "tp-event__body");
+      var t = el("span", "tp-event__title", ev.custom ? ev.en : label(ev, ev.t, ev.en)); t.setAttribute("dir", "auto");
+      var meta = el("span", "tp-event__meta");
+      var chip = el("span", "tp-chip tp-chip--" + (ev.k === "fixed" ? "fixed" : "flex")); chip.appendChild(icon(ev.k === "fixed" ? "lock" : "arrow")); chip.appendChild(el("span", null, TP.t(ev.k === "fixed" ? "kind.fixed" : "kind.flex")));
+      meta.appendChild(chip);
+      if (ev.done) { var d = el("span", "tp-chip tp-chip--done"); d.appendChild(icon("check")); d.appendChild(el("span", null, TP.t("kind.done"))); meta.appendChild(d); }
+      var place = ev.custom ? ev.pen : label(ev, ev.p, ev.pen);
+      if (place) { var pl = el("span", "tp-event__place"); pl.appendChild(icon("pin")); var ps = el("span", null, place); ps.setAttribute("dir", "auto"); pl.appendChild(ps); meta.appendChild(pl); }
+      body.appendChild(t); body.appendChild(meta); li.appendChild(time); li.appendChild(body); list.appendChild(li);
+    });
+    list.hidden = !items.length; empty.hidden = !!items.length;
+    document.getElementById("day-open").setAttribute("href", "today.html?date=" + date);
+  }
+  function renderCell(date) {
+    var cell = document.querySelector('.tp-month__day[data-date="' + date + '"]'); if (!cell) return;
+    var items = data[date] || [];
+    [].slice.call(cell.querySelectorAll(".tp-month__dots, .tp-month__count")).forEach(function (n) { n.remove(); });
+    if (!items.length) return;
+    var dots = el("span", "tp-month__dots"); dots.setAttribute("aria-hidden", "true");
+    items.forEach(function (ev) { dots.appendChild(el("span", "tp-dot tp-dot--" + (ev.done ? "done" : ev.k))); });
+    var c = el("span", "tp-month__count"); c.appendChild(countText(items.length));
+    cell.appendChild(dots); cell.appendChild(c);
+  }
+  TP.onDaySelect = function (date) {
+    selected = date; renderDay(date);
+    document.getElementById("ae-date").value = date;
+    // REAL: router.replace(`?date=${date}`)
+    if (window.matchMedia("(max-width: 1023px)").matches) title.focus({ preventScroll: false });
+  };
+  // REAL: convex events.create({ title, date, start, end, kind, place }) — optimistic; Undo -> events.remove({ id }).
+  var form = document.getElementById("ae-form");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = document.getElementById("ae-name"), start = document.getElementById("ae-start"), end = document.getElementById("ae-end");
+    var nameErr = document.getElementById("ae-name-error"), endErr = document.getElementById("ae-end-error");
+    var okName = !!name.value.trim(), okTime = !!start.value && !!end.value && end.value > start.value;
+    nameErr.hidden = okName; endErr.hidden = okTime;
+    if (okName) name.removeAttribute("aria-invalid"); else name.setAttribute("aria-invalid", "true");
+    if (okTime) end.removeAttribute("aria-invalid"); else end.setAttribute("aria-invalid", "true");
+    if (!okName) { name.focus(); return; }
+    if (!okTime) { end.focus(); return; }
+    var date = document.getElementById("ae-date").value || selected;
+    var kind = form.querySelector('input[name="ae-kind"]:checked').value;
+    var ev = { custom: true, en: name.value.trim(), s: start.value, e: end.value, k: kind, pen: document.getElementById("ae-place").value.trim() };
+    (data[date] = data[date] || []).push(ev);
+    renderCell(date);
+    if (date === selected) renderDay(date);
+    form.reset(); document.getElementById("ae-date").value = selected;
+    TP.closeSheet(document.getElementById("add-event"));
+    TP.toast({ title: TP.t("cal.added"), onUndo: function () { var arr = data[date] || []; var i = arr.indexOf(ev); if (i > -1) arr.splice(i, 1); renderCell(date); if (date === selected) renderDay(date); } });
+  });
+  if (lang === "he") renderDay(selected);
+};
+</script>
+</body>
+</html>

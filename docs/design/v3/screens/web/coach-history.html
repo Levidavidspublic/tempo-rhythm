@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat history · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — coach-history.html */
+  .hist-body { display: grid; gap: var(--tp-space-4); min-width: 0; }
+  .hist-tools { display: grid; gap: var(--tp-space-3); }
+  .hist-groups { display: grid; gap: var(--tp-space-2); min-width: 0; }
+  .hist-group { display: grid; gap: var(--tp-space-1); min-width: 0; }
+</style>
+</head>
+<body>
+<!--
+@screen   Chat history
+@route    apps/web/app/(tempo)/history/page.tsx
+@layout   TempoShell
+@data     threads = coach.listThreads({ paginationOpts })                       // Convex paginated query: id, title, lastLine, updatedAt (newest first)
+@data     results = coach.searchThreads({ query, mode: "meaning" | "words" })   // Convex action: vector search (embeddings) + full-text keyword search, merged
+@actions  open a conversation -> router.push("/coach/" + threadId)            // opens coach-thread
+@actions  start a new conversation -> coach.createThread({}) then router.push("/coach/" + id)
+@actions  search -> router.replace("?q=&mode=")                               // debounced 250 ms; keeps the list readable while typing
+@states   default | empty | loading | error | offline  (?state=)   + no results (search finds nothing)
+@flow     1. Show every past conversation with the coach, newest first, grouped as Today, Last week and Earlier.
+          2. Each row shows the title, the date or time, and the last lines of the conversation, clamped to two lines.
+          3. Search has two modes. "By meaning" finds conversations about the same idea even with other words ("tired" finds "A lighter Monday"). "Exact words" only finds the typed words.
+          4. If nothing matches, say so kindly and offer to clear the search.
+          5. Tapping a row opens that conversation. "New conversation" opens an empty thread.
+          6. Empty: no conversations yet, with a way to start one. Error: "Couldn't load your conversations. They're safe." + Retry. Offline: the list stays readable; search uses only words on this device.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'history' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span><span class="tp-tree-item__count tp-num">3</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="pages-label" data-i18n="rail.pages">Pages</div>
+      <ul class="tp-tree" role="list" aria-labelledby="pages-label">
+        <li><a class="tp-tree-item" href="weekly-page.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.week">Week 42</span></a></li>
+        <li><a class="tp-tree-item" href="project-detail.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.moving">Moving flat</span></a></li>
+        <li><a class="tp-tree-item" href="page-blocks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.talk">Thursday talk</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Coach','Chat history'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="nav.coach">Coach</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.history">Chat history</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'narrow' } | events: — -->
+    <div class="tp-page tp-page--narrow" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — + button | props: { title: 'Chat history', subtitle, actions: [New conversation] } | events: onNew -> coach.createThread -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="hist.title">Chat history</h1>
+          <p class="tp-pagehead__sub" data-i18n="hist.sub">Every conversation with your coach. Search by what it was about, or by the exact words.</p>
+        </div>
+        <div class="tp-pagehead__actions">
+          <a class="tp-btn tp-btn--primary" href="coach-thread.html?state=empty"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="hist.new">New conversation</span></a>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline.</span><span data-i18n="off.body">Your conversations are still here. Search uses exact words until you're back.</span></span>
+      </div>
+
+      <div class="hist-body">
+        <!-- @component Toolbar | shadcn: — | props: { children: [ChatSearch, Segmented] } | events: — -->
+        <div class="tp-toolbar hist-tools" data-component="Toolbar" data-state-hide>
+          <!-- @component ChatSearch | shadcn: input + command | props: { query, label: 'Search conversations' } | events: onChange -> coach.searchThreads({ query, mode }) -->
+          <div class="tp-search tp-toolbar__grow" data-component="ChatSearch" role="search">
+            <label class="tp-label" for="hist-q" data-i18n="hist.searchLabel">Search conversations</label>
+            <div class="tp-search__box">
+              <svg class="tp-icon tp-icon--sm tp-search__icon" aria-hidden="true"><use href="#i-search"/></svg>
+              <input class="tp-input" id="hist-q" type="search" dir="auto" autocomplete="off" aria-describedby="hist-status" placeholder="Try “tired” or “lease”" data-i18n-attr="placeholder:hist.searchPh">
+            </div>
+          </div>
+          <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: ['meaning','words'], value: 'meaning' } | events: onChange -> coach.searchThreads({ mode }) -->
+          <div class="tp-segmented" role="radiogroup" aria-label="Search by" data-i18n-attr="aria-label:hist.modeLabel" data-component="Segmented" id="hist-mode">
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" data-value="meaning"><span data-i18n="hist.meaning">By meaning</span></button>
+            <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" data-value="words"><span data-i18n="hist.words">Exact words</span></button>
+          </div>
+        </div>
+
+        <p class="tp-small tp-muted" id="hist-status" role="status" data-state-hide><span class="tp-num" data-n>8</span> <span data-word data-i18n="hist.count">conversations</span></p>
+
+        <!-- @component ChatHistoryList | shadcn: sidebar menu / scroll-area | props: { threads: {id,title,lastLine,time}[], groups: ['Today','Last week','Earlier'] } | events: onOpen(threadId) -> router.push -->
+        <div class="hist-groups" data-component="ChatHistoryList" id="hist-list" data-state-hide>
+          <section class="hist-group" aria-labelledby="g-today" data-group>
+            <h2 class="tp-chat-group" id="g-today" data-i18n="g.today">Today</h2>
+            <!-- @component ChatRow ×2 | shadcn: sidebar menu item | props: { thread: {id,title,lastLine,time} } | events: onOpen -->
+            <ul class="tp-chat-list" role="list">
+              <li data-about="tired wiped exhausted rest energy lighter easy bank move tomorrow">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t1.title">A lighter Monday</span>
+                  <span class="tp-chat-row__time tp-num tp-mono">09:12</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t1.last">Coach: Done. "Call the bank" is on Today, and the slides moved to Tuesday. You can undo for five minutes.</span>
+                </a>
+              </li>
+              <li data-about="presentation work talk deck slides outline thursday">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t2.title">Thursday talk, three slides</span>
+                  <span class="tp-chat-row__time tp-num tp-mono">08:05</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t2.last">You: Can you turn my notes into three slides? Coach: Here is a short outline. Nothing is added until you say yes.</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="hist-group" aria-labelledby="g-week" data-group>
+            <h2 class="tp-chat-group" id="g-week" data-i18n="g.week">Last week</h2>
+            <!-- @component ChatRow ×3 | shadcn: sidebar menu item | props: { thread } | events: onOpen -->
+            <ul class="tp-chat-list" role="list">
+              <li data-about="move moving apartment flat packing boxes checklist home">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t3.title">Moving flat checklist</span>
+                  <span class="tp-chat-row__time" data-i18n="t3.time">Thu 8 Oct</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t3.last">Coach: I made a checklist for the move and saved it on the Moving flat page. Two of five are already done.</span>
+                </a>
+              </li>
+              <li data-about="lease landlord rent contract dana email flat money">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t4.title">Email Dana about the lease</span>
+                  <span class="tp-chat-row__time" data-i18n="t4.time">Wed 7 Oct</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t4.last">You: I keep avoiding this email. Coach: Want a first line you can send as it is? "Hi Dana, a quick question about the lease."</span>
+                </a>
+              </li>
+              <li data-about="overwhelmed stressed anxious too much panic tired hard day calm breathe">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t5.title">A hard afternoon</span>
+                  <span class="tp-chat-row__time" data-i18n="t5.time">Tue 6 Oct</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t5.last">You: Everything feels like too much. Coach: Let's do one small thing. Ten seconds: put both feet flat on the floor.</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="hist-group" aria-labelledby="g-earlier" data-group>
+            <h2 class="tp-chat-group" id="g-earlier" data-i18n="g.earlier">Earlier</h2>
+            <!-- @component ChatRow ×3 | shadcn: sidebar menu item | props: { thread } | events: onOpen -->
+            <ul class="tp-chat-list" role="list">
+              <li data-about="morning routine plan automatic schedule job weekday every day">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t6.title">My plan every weekday at 8</span>
+                  <span class="tp-chat-row__time" data-i18n="t6.time">Sun 27 Sep</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t6.last">Coach: Every weekday at 08:00 I'll write your plan into Today. You can switch it off any time in Modules.</span>
+                </a>
+              </li>
+              <li data-about="spanish language study learn vocabulary words flashcards quiz">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t7.title">Spanish words for the trip</span>
+                  <span class="tp-chat-row__time" data-i18n="t7.time">Mon 21 Sep</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t7.last">Coach: I made ten flashcards and a short quiz. They're saved on your Spanish page, ready when you are.</span>
+                </a>
+              </li>
+              <li data-about="birthday gift present party friend yoni">
+                <a class="tp-chat-row" href="coach-thread.html">
+                  <span class="tp-chat-row__title" dir="auto" data-i18n="t8.title">Yoni's birthday</span>
+                  <span class="tp-chat-row__time" data-i18n="t8.time">Fri 18 Sep</span>
+                  <span class="tp-chat-row__last" dir="auto" data-i18n="t8.last">You: Remind me to buy something for Yoni. Coach: Added "Buy Yoni a gift" to Wednesday, 15 minutes.</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <!-- no results (search) -->
+        <!-- @component StateEmpty | shadcn: — | props: { title: 'Nothing matches that yet.', action: 'Clear search' } | events: onClear -> router.replace('?q=') -->
+        <div class="tp-state tp-state--empty" id="hist-none" data-component="StateEmpty" hidden>
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="none.title">Nothing matches that yet.</h2>
+          <p class="tp-state__body" data-i18n="none.body">Try fewer words, or switch to By meaning to find conversations about the same idea.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" id="hist-clear"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-x"/></svg><span data-i18n="none.clear">Clear search</span></button></div>
+        </div>
+
+        <!-- empty: no conversations yet -->
+        <!-- @component StateEmpty | shadcn: — | props: { title, body, action: 'Talk to the coach' } | events: onStart -> coach.createThread -->
+        <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-coach"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="empty.title">No conversations yet.</h2>
+          <p class="tp-state__body" data-i18n="empty.body">When you talk with the coach, each conversation is kept here so you can find it again.</p>
+          <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="coach-thread.html?state=empty"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="empty.action">Talk to the coach</span></a></div>
+        </div>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+        <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+          <span class="tp-sr-only" data-i18n="loading">Loading your conversations</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w100"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w100"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your conversations." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your conversations.</h2>
+          <p class="tp-state__body" data-i18n="error.body">They're safe. This is a connection problem on our side.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> link to coach-thread (Ctrl J) -->
+  <a class="tp-coach-fab tp-glass" href="coach-thread.html" data-component="CoachButton" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </a>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "hist.count": "conversations", "hist.count1": "conversation", "hist.found": "found", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "היסטוריית שיחות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.history": "היסטוריית שיחות", "nav.week": "שבוע 42", "nav.moving": "מעבר דירה",
+    "nav.talk": "הרצאה ביום חמישי", "nav.templates": "תבניות", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "hist.title": "היסטוריית שיחות", "hist.sub": "כל השיחות שלך עם המאמן. אפשר לחפש לפי מה שדיברתן עליו, או לפי המילים המדויקות.",
+    "hist.new": "שיחה חדשה", "hist.searchLabel": "חיפוש בשיחות", "hist.searchPh": "נסי ״עייפה״ או ״חוזה״",
+    "hist.modeLabel": "חיפוש לפי", "hist.meaning": "לפי משמעות", "hist.words": "מילים מדויקות",
+    "hist.count": "שיחות", "hist.count1": "שיחה", "hist.found": "נמצאו",
+    "off.title": "אין חיבור לרשת.", "off.body": "השיחות שלך עדיין כאן. החיפוש עובד לפי מילים מדויקות עד שהחיבור יחזור.",
+    "g.today": "היום", "g.week": "בשבוע שעבר", "g.earlier": "מוקדם יותר",
+    "t1.title": "יום שני קליל יותר", "t1.last": "מאמן: בוצע. ״להתקשר לבנק״ בהיום, והשקפים עברו ליום שלישי. אפשר לבטל במשך חמש דקות.",
+    "t2.title": "הרצאה ביום חמישי, שלושה שקפים", "t2.last": "את: אפשר להפוך את הרשימות שלי לשלושה שקפים? מאמן: הנה מתווה קצר. שום דבר לא נוסף עד שתאשרי.",
+    "t3.title": "רשימה למעבר הדירה", "t3.time": "יום ה׳ 8.10", "t3.last": "מאמן: הכנתי רשימה למעבר ושמרתי אותה בדף מעבר דירה. שניים מתוך חמישה כבר בוצעו.",
+    "t4.title": "לכתוב לדנה על החוזה", "t4.time": "יום ד׳ 7.10", "t4.last": "את: אני כל הזמן דוחה את המייל הזה. מאמן: רוצה שורה ראשונה שאפשר לשלוח כמו שהיא? ״היי דנה, שאלה קצרה לגבי החוזה.״",
+    "t5.title": "אחר צהריים קשה", "t5.time": "יום ג׳ 6.10", "t5.last": "את: הכול מרגיש יותר מדי. מאמן: בואי נעשה דבר אחד קטן. עשר שניות: להניח את שתי כפות הרגליים על הרצפה.",
+    "t6.title": "התוכנית שלי בכל יום חול ב־8", "t6.time": "יום א׳ 27.9", "t6.last": "מאמן: בכל יום חול ב־08:00 אכתוב את התוכנית שלך בהיום. אפשר לכבות את זה בכל רגע במודולים.",
+    "t7.title": "מילים בספרדית לטיול", "t7.time": "יום ב׳ 21.9", "t7.last": "מאמן: הכנתי עשרה כרטיסי לימוד ובוחן קצר. הם שמורים בדף ספרדית, מחכים לך.",
+    "t8.title": "יום ההולדת של יוני", "t8.time": "יום ו׳ 18.9", "t8.last": "את: תזכירי לי לקנות משהו ליוני. מאמן: הוספתי ״לקנות מתנה ליוני״ ליום רביעי, 15 דקות.",
+    "none.title": "עוד אין התאמה.", "none.body": "נסי פחות מילים, או עברי ל״לפי משמעות״ כדי למצוא שיחות על אותו רעיון.", "none.clear": "ניקוי החיפוש",
+    "empty.title": "עוד אין שיחות.", "empty.body": "כשתדברי עם המאמן, כל שיחה תישמר כאן כדי שתוכלי למצוא אותה שוב.", "empty.action": "לדבר עם המאמן",
+    "loading": "טוען את השיחות שלך",
+    "error.title": "לא הצלחנו לטעון את השיחות.", "error.body": "הן שמורות. זו בעיית חיבור אצלנו.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+/* ChatSearch: filters the list by meaning (demo: related words per thread) or by exact words. */
+(function () {
+  function norm(s) { return (s || "").toLowerCase().trim(); }
+  function mode() { var m = document.querySelector('#hist-mode [aria-checked="true"]'); return m ? m.getAttribute("data-value") : "meaning"; }
+  function run() {
+    // REAL: convex coach.searchThreads({ query, mode }) — "meaning" = vector search over thread embeddings merged with keyword search; "words" = full-text index only
+    var q = norm(document.getElementById("hist-q").value), m = mode(), shown = 0;
+    var words = q.split(/\s+/).filter(Boolean);
+    document.querySelectorAll("#hist-list li").forEach(function (li) {
+      var text = norm(li.textContent), about = norm(li.getAttribute("data-about"));
+      var hit = !words.length || words.every(function (w) { return text.indexOf(w) > -1 || (m === "meaning" && about.indexOf(w) > -1); });
+      li.hidden = !hit; if (hit) shown++;
+    });
+    document.querySelectorAll("#hist-list [data-group]").forEach(function (g) { g.hidden = !g.querySelector("li:not([hidden])"); });
+    document.getElementById("hist-none").hidden = shown > 0;
+    document.getElementById("hist-list").hidden = shown === 0;
+    var st = document.getElementById("hist-status");
+    st.querySelector("[data-n]").textContent = String(shown);
+    st.querySelector("[data-word]").textContent = TP.t(shown === 1 ? "hist.count1" : "hist.count") + (words.length ? " " + TP.t("hist.found") : "");
+  }
+  TP.onReady = function () {
+    var q = document.getElementById("hist-q"), timer;
+    q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(run, 250); });
+    document.getElementById("hist-mode").addEventListener("click", function () { setTimeout(run, 0); });
+    document.getElementById("hist-clear").addEventListener("click", function () {
+      // REAL: router.replace("?q=") then coach.listThreads
+      q.value = ""; run(); q.focus();
+    });
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feel settled at home · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — goal-detail.html */
+  .gd-stack { display: grid; gap: var(--tp-space-8); }
+  .gd-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  .gd-why { display: grid; gap: var(--tp-space-2); }
+</style>
+</head>
+<body>
+<!--
+@screen   Goal detail (Feel settled at home)
+@route    apps/web/app/(tempo)/goals/[id]/page.tsx
+@layout   TempoShell
+@data     goal = goals.get({ id })                                          // Convex query: title, why, status, linked project ids
+@data     projects = projects.listByGoal({ goalId: id })                    // Convex query: name, status, open + done counts
+@data     goalTasks = tasks.listByGoal({ goalId: id })                      // Convex query: tasks from linked projects + tasks linked directly
+@data     nextStep = goals.nextStep({ goalId: id })                         // Convex query: the smallest open task, with a one-line why
+@actions  edit why -> goals.update({ id, why })                             // debounced autosave
+@actions  start next step -> focus.start({ taskId, minutes })               // opens the focus timer
+@actions  not now -> goals.skipNextStep({ goalId: id, taskId })             // picks another small step, no penalty
+@actions  make it smaller -> coach.splitTask({ taskId })                    // proposal card in the coach, nothing changes until accepted
+@actions  tick task -> tasks.complete({ id })                               // optimistic, Undo 5 min
+@actions  link a project -> goals.linkProject({ goalId: id, projectId })    // optimistic, Undo 5 min
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open the goal by id: title, a status word with an icon, and the why in Maya's own words (editable).
+          2. "Next small step" shows one task only, with minutes and a reason. Start is the one primary action.
+          3. "Not now" swaps in another small step without any judgement. "Make it smaller" asks the coach to split it.
+          4. Linked projects list each project with its status word; each row opens the project.
+          5. Linked tasks can be ticked here; the gentle progress line ("4 of 9 done") updates at once, with Undo.
+          6. Empty (no projects or tasks yet): kind copy + "Link a project". Error: "Your data is safe." + Retry. Offline: read and tick, sync later.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'goals' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="plan.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-timeblock"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.plan">Plan</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dump">Brain dump</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="lib-label" data-i18n="rail.library">Library</div>
+      <ul class="tp-tree" role="list" aria-labelledby="lib-label">
+        <li><a class="tp-tree-item" href="tasks.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.tasks">Tasks</span></a></li>
+        <li><a class="tp-tree-item" href="calendar.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.calendar">Calendar</span></a></li>
+        <li><a class="tp-tree-item" href="notes.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notes">Notes</span></a></li>
+        <li><a class="tp-tree-item" href="habits.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-habit"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.habits">Habits</span></a></li>
+        <li><a class="tp-tree-item" href="goals.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-flag"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.goals">Goals</span></a></li>
+        <li><a class="tp-tree-item" href="projects.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.projects">Projects</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="settings.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- ===== Top bar (glass) ===== -->
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Goals','Feel settled at home'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <a class="tp-topbar__hide-sm" href="goals.html" data-i18n="nav.goals">Goals</a>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong dir="auto" data-i18n="gd.title">Feel settled at home</strong>
+    </div>
+    <span class="tp-muted tp-small tp-topbar__hide-sm" data-state-hide="offline" data-i18n="top.saved">Saved</span>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Main ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'default' } | events: — -->
+    <div class="tp-page gd-stack" data-component="PageLayout">
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="goals.html"><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="gd.back">All goals</span></a>
+
+      <!-- @component PageHeader | shadcn: — | props: { title: 'Feel settled at home', subtitle: status + progress, actions: ['Link a project'] } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" dir="auto" data-i18n="gd.title">Feel settled at home</h1>
+          <div class="tp-pagehead__sub gd-meta">
+            <!-- @component ProjectStatus | shadcn: badge | props: { status: 'active', label: 'Active' } | events: onChange -> goals.setStatus({ id, status }) -->
+            <span class="tp-status" data-status="active" data-component="ProjectStatus"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span>
+            <span aria-live="polite"><span data-i18n="gd.along">Moving along.</span> <span class="tp-num" id="gd-done">4</span> <span data-i18n="gd.of">of</span> <span class="tp-num" id="gd-total">9</span> <span data-i18n="gd.tasksdone">linked tasks done.</span></span>
+          </div>
+        </div>
+        <div class="tp-pagehead__actions">
+          <button class="tp-btn tp-btn--secondary" type="button" data-state-hide><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg><span data-i18n="gd.link">Link a project</span></button>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Changes save when you're back.</span></span></div>
+
+      <div class="gd-stack" data-state-hide>
+        <!-- Why -->
+        <!-- @component Section | shadcn: — | props: { title: 'Why this matters' } | events: — -->
+        <section class="tp-section gd-why" data-component="Section" aria-labelledby="why-h">
+          <div class="tp-section__head"><h2 class="tp-section__title" id="why-h" data-i18n="gd.why.h">Why this matters</h2></div>
+          <!-- @component Surface | shadcn: card | props: { why } | events: onEdit -> goals.update({ id, why }) -->
+          <div class="tp-surface" data-component="Surface">
+            <p dir="auto" contenteditable="true" spellcheck="true" aria-labelledby="why-h" data-i18n="gd.why">Coming home should feel easy, not like another list. A smaller flat closer to work, a kitchen that works, and evenings that are mine again.</p>
+          </div>
+        </section>
+
+        <!-- Next small step -->
+        <section class="tp-section" aria-labelledby="nextup-title">
+          <!-- @component NextUpCard | shadcn: card | props: { task: {id,title,minutes,energy}, why } | events: onStart -> focus.start({ taskId, minutes }), onNotNow -> goals.skipNextStep({ goalId, taskId }), onSmaller -> coach.splitTask({ taskId }) -->
+          <div class="tp-nextup" data-component="NextUpCard">
+            <span class="tp-eyebrow" data-i18n="gd.next">Next small step</span>
+            <h2 class="tp-nextup__title" id="nextup-title" dir="auto" data-i18n="task.books">Pack one box of books</h2>
+            <p class="tp-nextup__why" data-i18n="gd.next.why">It's the smallest piece that moves the flat forward. One box is enough for today.</p>
+            <div class="tp-nextup__meta">
+              <!-- @component Chip ×2 | shadcn: badge | props: { label, tone } | events: — -->
+              <span class="tp-chip" data-component="Chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">15</span>&nbsp;<span data-i18n="unit.min">min</span></span>
+              <span class="tp-chip" data-component="Chip"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-energy"/></svg><span data-i18n="energy.quiet">Quiet</span></span>
+            </div>
+            <div class="tp-nextup__actions">
+              <!-- @component Button | shadcn: button | props: { variant: 'primary' } | events: onClick -> focus.start({ taskId, minutes: 15 }) -->
+              <button class="tp-btn tp-btn--primary" type="button" id="gd-start" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="gd.start">Start 15 minutes</span></button>
+              <button class="tp-btn tp-btn--secondary" type="button" id="gd-notnow"><span data-i18n="gd.notnow">Not now</span></button>
+              <a class="tp-btn tp-btn--ghost" href="coach-thread.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-sparkle"/></svg><span data-i18n="gd.smaller">Make it smaller</span></a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Linked projects -->
+        <!-- @component Section | shadcn: — | props: { title: 'Linked projects', count: 2 } | events: — -->
+        <section class="tp-section" data-component="Section" aria-labelledby="proj-h">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="proj-h" data-i18n="gd.proj.h">Linked projects</h2>
+            <span class="tp-section__count"><span class="tp-num">2</span></span>
+          </div>
+          <!-- @component ListRow ×2 | shadcn: — | props: { icon, title, meta, href, status } | events: link -> /projects/[id] -->
+          <ul class="tp-list" role="list">
+            <li><a class="tp-list-row" href="project-detail.html" data-component="ListRow"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" data-i18n="pr.moving">Moving flat</span><span class="tp-list-row__meta"><span class="tp-num">3</span> <span data-i18n="gd.of">of</span> <span class="tp-num">6</span> <span data-i18n="gd.done">done</span> · <span data-i18n="gd.moving.m">Moving day 1 November</span></span></span><span class="tp-list-row__end"><span class="tp-status" data-status="active"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="status.active">Active</span></span></span></a></li>
+            <li><a class="tp-list-row" href="projects.html" data-component="ListRow"><span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-folder"/></svg></span><span class="tp-list-row__body"><span class="tp-list-row__title" data-i18n="pr.home">Home reset</span><span class="tp-list-row__meta"><span class="tp-num">1</span> <span data-i18n="gd.of">of</span> <span class="tp-num">3</span> <span data-i18n="gd.done">done</span> · <span data-i18n="gd.home.m">Waiting until after the move</span></span></span><span class="tp-list-row__end"><span class="tp-status" data-status="paused"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-i18n="status.paused">Paused</span></span></span></a></li>
+          </ul>
+        </section>
+
+        <!-- Linked tasks -->
+        <section class="tp-section" aria-labelledby="tasks-h">
+          <div class="tp-section__head">
+            <h2 class="tp-section__title" id="tasks-h" data-i18n="gd.tasks.h">Open tasks for this goal</h2>
+            <span class="tp-section__count"><span class="tp-num" id="gd-open">4</span> <span data-i18n="gd.open">open</span></span>
+          </div>
+          <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {id,title,minutes,project,done}[] } | events: onToggle -> tasks.complete({ id }) -->
+          <ul class="tp-block-task" role="list" data-component="TaskBlock" id="gd-tasks">
+            <!-- @component TaskRow ×4 | shadcn: checkbox | props: { task: {id,title,minutes,project,done} } | events: onToggle -> tasks.complete({ id }) // optimistic, Undo 5 min -->
+            <li class="tp-task-row" data-component="TaskRow">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t1" dir="auto" data-i18n="task.books">Pack one box of books</span><span class="tp-task-row__meta"><span><span class="tp-num">15</span> <span data-i18n="unit.min">min</span></span><span data-i18n="pr.moving">Moving flat</span></span></div>
+            </li>
+            <li class="tp-task-row" data-component="TaskRow">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t2" dir="auto" data-i18n="task.dana">Email Dana about the lease</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span><span data-i18n="pr.moving">Moving flat</span></span></div>
+            </li>
+            <li class="tp-task-row" data-component="TaskRow">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t3"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t3" dir="auto" data-i18n="task.van">Ask Yoni about the van</span><span class="tp-task-row__meta"><span><span class="tp-num">5</span> <span data-i18n="unit.min">min</span></span><span data-i18n="pr.moving">Moving flat</span></span></div>
+            </li>
+            <li class="tp-task-row" data-component="TaskRow">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t4"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t4" dir="auto" data-i18n="task.shelf">Pick one shelf to clear</span><span class="tp-task-row__meta"><span><span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span><span data-i18n="pr.home">Home reset</span></span></div>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- @component StateEmpty | shadcn: — | props: { title, body, action } | events: onLink -> goals.linkProject({ goalId, projectId }) -->
+      <div class="tp-state tp-state--empty" data-component="StateEmpty" data-state-show="empty">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-flag"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="empty.title">This goal has no steps yet.</h2>
+        <p class="tp-state__body" data-i18n="empty.body">That's fine. Link a project you already have, or add one small task that points this way.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg><span data-i18n="gd.link">Link a project</span></button></div>
+      </div>
+
+      <!-- @component StateLoading | shadcn: skeleton | props: { rows: 3 } | events: — -->
+      <div class="tp-state--loading" role="status" data-component="StateLoading" data-state-show="loading">
+        <span class="tp-sr-only" data-i18n="loading">Loading this goal</span>
+        <div class="tp-skel-list">
+          <div class="tp-skeleton tp-skeleton--w80"></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+          <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+        </div>
+      </div>
+
+      <!-- @component StateError | shadcn: alert | props: { what: "Couldn't open this goal." } | events: onRetry -> refetch -->
+      <div class="tp-state tp-state--error" role="alert" data-component="StateError" data-state-show="error">
+        <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+        <h2 class="tp-state__title" data-i18n="error.title">Couldn't open this goal.</h2>
+        <p class="tp-state__body" data-i18n="st.safe">Your data is safe.</p>
+        <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- @component CoachButton | shadcn: button + sheet trigger | props: — | events: onOpen -> navigates to the coach with this goal attached -->
+  <button class="tp-coach-fab tp-glass" type="button" data-component="CoachButton" onclick="location.href='coach.html'+location.search" aria-label="Open coach (Ctrl J)" data-i18n-attr="aria-label:coach.open">
+    <svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-coach-fab__label" data-i18n="nav.coach">Coach</span>
+  </button>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <!-- @component UndoToast | shadcn: sonner | props: { title, countdown: 5:00 } | events: onUndo -> restore mutation -->
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: 'more' } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="nav.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="tab.pages">Pages</span></a>
+    <a class="tp-tab" href="plan.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="nav.calendar">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "gd.started": "Timer started. Go gently.", "gd.swapped": "Here's another small step.", "task.call": "Call the electricity company", "gd.call.why": "Five minutes on the phone, and the new flat has power on day one.", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "להרגיש בבית · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.library": "ספרייה",
+    "nav.today": "היום", "nav.plan": "תכנון", "nav.dump": "פריקת מחשבות", "nav.coach": "מאמן",
+    "nav.tasks": "משימות", "nav.calendar": "לוח שנה", "nav.notes": "פתקים", "nav.habits": "הרגלים", "nav.goals": "מטרות", "nav.projects": "פרויקטים",
+    "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.saved": "נשמר", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "gd.back": "כל המטרות", "gd.title": "להרגיש בבית", "status.active": "פעילה", "status.paused": "מושהה",
+    "gd.along": "מתקדם בנחת.", "gd.of": "מתוך", "gd.tasksdone": "משימות מקושרות בוצעו.", "gd.done": "בוצעו",
+    "gd.link": "לקשר פרויקט",
+    "gd.why.h": "למה זה חשוב", "gd.why": "לחזור הביתה צריך להרגיש קל, לא עוד רשימה. דירה קטנה יותר קרוב לעבודה, מטבח שעובד, וערבים שהם שוב שלי.",
+    "gd.next": "הצעד הקטן הבא", "task.books": "לארוז קרטון אחד של ספרים", "gd.next.why": "זה החלק הקטן ביותר שמקדם את הדירה. קרטון אחד מספיק להיום.",
+    "unit.min": "דק׳", "energy.quiet": "שקט",
+    "gd.start": "להתחיל 15 דקות", "gd.notnow": "לא עכשיו", "gd.smaller": "להקטין את זה",
+    "gd.proj.h": "פרויקטים מקושרים", "pr.moving": "מעבר דירה", "pr.home": "איפוס הבית",
+    "gd.moving.m": "יום המעבר 1 בנובמבר", "gd.home.m": "מחכה לאחרי המעבר",
+    "gd.tasks.h": "משימות פתוחות למטרה הזו", "gd.open": "פתוחות",
+    "task.dana": "לכתוב לדנה על החוזה", "task.van": "לשאול את יוני על הטנדר", "task.shelf": "לבחור מדף אחד לפנות",
+    "empty.title": "למטרה הזו עדיין אין צעדים.", "empty.body": "זה בסדר. אפשר לקשר פרויקט שכבר קיים, או להוסיף משימה קטנה אחת שמכוונת לשם.",
+    "loading": "טוען את המטרה", "error.title": "לא הצלחנו לפתוח את המטרה הזו.",
+    "st.offline": "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת.", "st.safe": "המידע שלך שמור.", "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "gd.started": "הטיימר התחיל. בנחת.", "gd.swapped": "הנה צעד קטן אחר.", "task.call": "להתקשר לחברת החשמל", "gd.call.why": "חמש דקות בטלפון, ובדירה החדשה יהיה חשמל מהיום הראשון.",
+    "coach.open": "פתיחת המאמן (Ctrl J)",
+    "tab.label": "ראשי", "tab.pages": "דפים", "tab.more": "עוד"
+  }
+};
+
+TP.onReady = function () {
+  var list = document.getElementById("gd-tasks"), baseDone = 4;
+  // REAL: convex tasks.complete({ id }) is optimistic; the progress line comes from tasks.listByGoal.
+  list.addEventListener("click", function () {
+    setTimeout(function () {
+      var open = list.querySelectorAll('.tp-check[aria-checked="false"]').length;
+      document.getElementById("gd-open").textContent = open;
+      document.getElementById("gd-done").textContent = baseDone + (4 - open);
+    }, 0);
+  });
+  // REAL: convex focus.start({ taskId, minutes: 15 }) — opens the focus timer.
+  document.getElementById("gd-start").addEventListener("click", function () {
+    TP.toast({ title: TP.t("gd.started") });
+  });
+  // REAL: convex goals.skipNextStep({ goalId, taskId }) — returns another small step; no penalty, nothing recorded as missed.
+  document.getElementById("gd-notnow").addEventListener("click", function () {
+    var t = document.getElementById("nextup-title"), w = document.querySelector(".tp-nextup__why");
+    t.textContent = TP.t("task.call"); t.removeAttribute("data-i18n");
+    w.textContent = TP.t("gd.call.why"); w.removeAttribute("data-i18n");
+    var n = document.querySelector(".tp-nextup__meta .tp-num"); if (n) n.textContent = "5";
+    var s = document.querySelector("#gd-start span"); if (s) { s.removeAttribute("data-i18n"); s.textContent = s.textContent.replace("15", "5"); }
+    var live = document.getElementById("tp-live"); if (live) live.textContent = TP.t("gd.swapped");
+  });
+};
+</script>
+</body>
+</html>
