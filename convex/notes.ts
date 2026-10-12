@@ -47,6 +47,52 @@ export async function listNotesForUser(
   return rows;
 }
 
+/** Most pages the rail shows (pinned first, then most recently edited). */
+export const RAIL_PAGE_LIMIT_MAX = 20;
+
+export type RailPage = Pick<Doc<"notes">, "_id" | "title" | "pinned" | "updatedAt">;
+
+/**
+ * The v3 rail's page tree: a bounded, metadata-only list (no bodies), so every shell route
+ * subscribes to a few small rows instead of the whole notebook.
+ */
+export const listForRail = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    return listRailPagesForUser(ctx, user._id, args.limit);
+  },
+});
+
+export async function listRailPagesForUser(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  requested: number | undefined,
+): Promise<RailPage[]> {
+  const limit = Math.min(Math.max(Math.floor(requested ?? 8), 1), RAIL_PAGE_LIMIT_MAX);
+  // Read a little past the limit so soft-deleted rows can't crowd live pages out entirely.
+  const window = limit * 3;
+  const pinned = await ctx.db
+    .query("notes")
+    .withIndex("by_userId_pinned", (q) => q.eq("userId", userId).eq("pinned", true))
+    .take(window);
+  const recent = await ctx.db
+    .query("notes")
+    .withIndex("by_userId_updatedAt", (q) => q.eq("userId", userId))
+    .order("desc")
+    .take(window);
+  const seen = new Set<string>();
+  const out: RailPage[] = [];
+  const live = (n: Doc<"notes">) => n.deletedAt === undefined;
+  const byRecent = (a: Doc<"notes">, b: Doc<"notes">) => b.updatedAt - a.updatedAt;
+  for (const note of [...pinned.filter(live).sort(byRecent), ...recent.filter(live)]) {
+    if (seen.has(note._id) || out.length >= limit) continue;
+    seen.add(note._id);
+    out.push({ _id: note._id, title: note.title, pinned: note.pinned, updatedAt: note.updatedAt });
+  }
+  return out;
+}
+
 export const get = query({
   args: { noteId: v.id("notes") },
   handler: async (ctx, args) => {
