@@ -4,10 +4,10 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCard";
 import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
-import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { cn } from "@/lib/utils";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -31,7 +31,12 @@ export function CoachCrisisReply() {
   );
 }
 
-export function CoachChat() {
+/**
+ * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
+ * classes. Used by the /coach page and by the coach panel beside any page.
+ */
+export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
+  const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // conversations.list calls requireUser: wait for the users row (getProfile is null until then).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -47,6 +52,7 @@ export function CoachChat() {
   const [crisisHold, setCrisisHold] = useState(false);
   const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || conversations === undefined || conversationId) return;
@@ -62,6 +68,11 @@ export function CoachChat() {
       creatingRef.current = false;
     });
   }, [isAuthenticated, conversations, conversationId, createConversation]);
+
+  // The panel puts the cursor in the composer as soon as the conversation can take a message.
+  useEffect(() => {
+    if (variant === "panel" && conversationId) inputRef.current?.focus();
+  }, [variant, conversationId]);
 
   const messages = useQuery(api.messages.list, conversationId ? { conversationId } : "skip");
 
@@ -87,7 +98,7 @@ export function CoachChat() {
       setSendError(null);
     } catch {
       setInput(text);
-      setSendError("That didn't send. Your message is still here, so try again.");
+      setSendError(t("coachChat.sendError"));
     } finally {
       setIsSending(false);
     }
@@ -95,46 +106,33 @@ export function CoachChat() {
 
   const isLoading =
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
+  const inputId = variant === "page" ? "coach-message" : "coach-panel-message";
 
   return (
-    <main className="container mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col px-6 py-12">
-      <header>
-        <p className="font-eyebrow text-muted-foreground">Flow</p>
-        <h1 className="font-heading text-4xl font-semibold text-foreground">Coach</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Talk through what&rsquo;s in front of you. One small step at a time.
-        </p>
-      </header>
-
-      <div className="mt-8 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-card">
+    <>
+      <div className="tp-coach-thread" data-component="CoachThread" aria-live="polite">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading your conversation.</p>
+          <p className="tp-muted tp-small">{t("coachChat.loading")}</p>
         ) : messages && messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Say what&rsquo;s on your mind — there&rsquo;s no wrong way to start.
-          </p>
+          <p className="tp-muted">{t("coachChat.empty")}</p>
         ) : (
           messages?.map((message) => (
             <div
               key={message._id}
               data-role={message.role}
-              className={cn(
-                "max-w-[80%] rounded-2xl px-4 py-2 text-sm",
-                message.role === "user"
-                  ? "ml-auto bg-primary text-primary-foreground"
-                  : "bg-muted text-foreground",
-              )}
+              className={message.role === "user" ? "tp-msg tp-msg--user" : "tp-msg"}
+              data-component="CoachMessage"
             >
-              {message.content}
+              <span className="tp-msg__who">{message.role === "user" ? t("coachChat.you") : t("coach.name")}</span>
+              <p className="tp-msg__text" dir="auto">
+                {message.content}
+              </p>
             </div>
           ))
         )}
         {crisisHold ? <CoachCrisisReply /> : null}
         {isSending ? (
-          <output
-            aria-label="Coach is typing"
-            className="w-fit rounded-2xl bg-muted px-4 py-2 text-sm text-muted-foreground"
-          >
+          <output aria-label={t("coachChat.typing")} className="tp-msg tp-muted">
             …
           </output>
         ) : null}
@@ -142,35 +140,76 @@ export function CoachChat() {
       </div>
 
       <form
-        className="mt-4 flex gap-2"
+        className="tp-composer"
+        data-component="Composer"
         onSubmit={(event) => {
           event.preventDefault();
           void handleSend();
         }}
       >
-        <label className="flex-1">
-          <span className="sr-only">Message</span>
-          <input
-            aria-label="Message"
+        <div className="tp-composer__box">
+          <label className="tp-sr-only" htmlFor={inputId}>
+            {t("coachChat.message")}
+          </label>
+          <textarea
+            ref={inputRef}
+            id={inputId}
+            aria-label={t("coachChat.message")}
+            className="tp-composer__input"
+            dir="auto"
+            rows={2}
             value={input}
             onChange={(event) => {
               setInput(event.target.value);
               if (sendError) setSendError(null);
             }}
-            placeholder="Help me pick one thing for this afternoon"
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                void handleSend();
+              }
+            }}
+            placeholder={t("coachChat.placeholder")}
             disabled={!conversationId || isSending}
-            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-        </label>
-        <Button type="submit" disabled={!conversationId || isSending || !input.trim()}>
-          Send
-        </Button>
+          <div className="tp-composer__bar">
+            <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
+            <button
+              className="tp-btn tp-btn--primary tp-btn--sm"
+              type="submit"
+              style={{ marginInlineStart: "auto" }}
+              disabled={!conversationId || isSending || !input.trim()}
+            >
+              <TpIcon name="send" size="sm" />
+              <span>{t("coachChat.send")}</span>
+            </button>
+          </div>
+        </div>
+        {sendError ? (
+          <p role="alert" className="tp-small" style={{ color: "var(--tp-danger)" }}>
+            {sendError}
+          </p>
+        ) : null}
       </form>
-      {sendError ? (
-        <p role="alert" className="mt-2 text-sm text-destructive">
-          {sendError}
-        </p>
-      ) : null}
-    </main>
+    </>
+  );
+}
+
+/** The /coach page: the conversation on paper, with the page title the shell's main holds. */
+export function CoachChat() {
+  const { t } = useLocale();
+  return (
+    <div className="tp-page" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <span className="tp-eyebrow">{t("coachChat.eyebrow")}</span>
+          <h1 className="tp-pagehead__title">{t("coach.name")}</h1>
+          <p className="tp-pagehead__sub">{t("coachChat.sub")}</p>
+        </div>
+      </header>
+      <section className="tp-surface" style={{ padding: 0, gap: 0 }} aria-label={t("coach.name")}>
+        <CoachConversation variant="page" />
+      </section>
+    </div>
   );
 }
