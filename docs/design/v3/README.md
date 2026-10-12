@@ -9,7 +9,7 @@ This folder is the Tempo Flow v3 design, written as plain HTML screens. Each scr
 ## How to open
 
 - **`index.html`** in this folder is the screen board: every screen, grouped (Flow, Coach, Pages & blocks, Library, You, Memory & modules, Settings, Public, Mobile). Toggles switch width (390 / 1280), theme (light / dark) and direction (English LTR / Hebrew RTL). Each card has the screen name, its route, an **Open** link and a lazily loaded preview. Mobile screens preview at 390 only.
-- **The project root `index.html`** is a launcher. It redirects here and also links to the hero board.
+- In this repository the board lives at `docs/design/v3/index.html`. There is no separate launcher: open that file directly.
 - **`hero-board.html`** is the Stage 1 hero board (Today, Page editor, Coach in every combination). It is linked from the screen board.
 - Open any screen file directly in a browser. No build step and no server are needed.
 
@@ -36,25 +36,23 @@ Example: `screens/web/tasks.html?theme=dark&lang=he&state=empty`.
 ## Folder layout
 
 ```
-<project root>/
-  index.html               launcher → tempo-v3/index.html
-  tempo-v3/
-    index.html             screen board (every screen)
-    hero-board.html        Stage 1 hero board
-    README.md              this file
-    screen-map.md          file → route → shadcn → data → states
-    DESIGN.md              tokens, type, contrast, glass, RTL, owner overrides
-    components.md          component catalogue + labelling convention
-    tokens.css             design tokens
-    tempo.css              every component
-    tempo.js               behaviour (window.TP), icons, i18n, state switch
-    fonts/                 OpenDyslexic + licence
-    references/            pattern references (mobbin-refs.md)
-    anti-slop/
-      delivery-gate.md     anti-slop delivery report
-    screens/
-      web/*.html           58 web screens
-      mobile/*.html        13 mobile screens (in a neutral handset frame)
+docs/design/v3/
+  index.html             screen board (every screen)
+  hero-board.html        Stage 1 hero board
+  README.md              this file
+  screen-map.md          file → route → shadcn → data → states
+  DESIGN.md              tokens, type, contrast, glass, RTL, owner overrides
+  components.md          component catalogue + labelling convention
+  tokens.css             design tokens
+  tempo.css              every component
+  tempo.js               behaviour (window.TP), icons, i18n, state switch
+  fonts/                 OpenDyslexic + licence
+  references/            pattern references (mobbin-refs.md)
+  anti-slop/
+    delivery-gate.md     anti-slop delivery report
+  screens/
+    web/*.html           58 web screens
+    mobile/*.html        13 mobile screens (in a neutral handset frame)
 ```
 
 ## Labelling convention

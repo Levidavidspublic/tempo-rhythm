@@ -21,6 +21,7 @@ By morning, preview.tempoflow.dev runs the v3 redesign as a markdown-first app. 
 
 ## How to work (KISS)
 - Every change is a PR straight into `integration`. Branch names `v3/<short-name>` (never `t/...`). If a PR gets the `factory` label, remove it.
+- This is an owner-authorised exception to AGENTS.md rules 1 (one ticket = one `t/<issue>-…` branch and PR) and 12 (draft PRs only), for this run only. Each v3 PR links no ticket and carries the `config` label, so scope-guard and config-guard still judge it (guarded files still need Division6066's `config` label), and its body names this file as its scope. Every other AGENTS.md rule still applies: no secrets, no spend, no live deploys, no test-config or baseline edits.
 - Before each PR, run the AGENTS.md "Testing (cloud agents)" list and paste the results in the PR body.
 - Codex is the reviewer. Merge a PR only when required CI is green AND the Codex review has run on its latest commit with no P0/P1 finding. If Codex flags P0/P1, fix and push, then wait for the new review. If no Codex review arrives within 30 minutes, ask for one once by commenting "@codex review"; if there is still none, leave the PR open (never merge without a review) and move on to work that does not depend on it. Use `gh pr merge --squash --auto` (integration has a merge queue). If you cannot merge from this session, leave the PR ready and keep going; list it in the report.
 - Builder (you) and checker (Codex) stay different models.
