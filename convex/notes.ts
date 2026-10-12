@@ -114,16 +114,20 @@ export const searchTitles = query({
       .withIndex("by_userId_updatedAt", (iq) => iq.eq("userId", user._id))
       .order("desc")
       .take(LINK_SCAN_LIMIT);
+    // Exact titles first, so resolving a clicked [[Title]] never misses its page behind
+    // newer prefix matches; then titles that start with the query; then the rest.
+    const exact: PageTitle[] = [];
     const starts: PageTitle[] = [];
     const contains: PageTitle[] = [];
     for (const n of rows) {
       if (n.deletedAt !== undefined || !n.title.trim()) continue;
-      const title = n.title.toLocaleLowerCase();
+      const title = n.title.trim().toLocaleLowerCase();
       const row = { _id: n._id, title: n.title, pinned: n.pinned, updatedAt: n.updatedAt };
-      if (!q || title.startsWith(q)) starts.push(row);
+      if (q && title === q) exact.push(row);
+      else if (!q || title.startsWith(q)) starts.push(row);
       else if (title.includes(q)) contains.push(row);
     }
-    return [...starts, ...contains].slice(0, limit);
+    return [...exact, ...starts, ...contains].slice(0, limit);
   },
 });
 
