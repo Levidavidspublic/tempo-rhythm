@@ -8,6 +8,7 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import { journalDate, promptFor } from "@/lib/journal";
 import { localIsoDate } from "@/lib/period-pages";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 
 const CHUNK = 10;
 
@@ -20,9 +21,12 @@ export function JournalScreen() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   // notes.* call requireUser: wait until the users row exists (getProfile is null until then).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  // The local date is only known in the browser.
-  const [today, setToday] = useState<string | null>(null);
-  useEffect(() => setToday(localIsoDate(new Date())), []);
+  // The local date is only known in the browser, and it rolls over at midnight (and when the tab
+  // comes back) through the same day bounds Today uses.
+  const bounds = useLocalDayBounds();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const today = mounted ? localIsoDate(new Date(bounds.startMs)) : null;
   const [shift, setShift] = useState(0);
 
   return (
@@ -61,8 +65,9 @@ export function JournalScreen() {
         </div>
         {!isLoading && !isAuthenticated ? (
           <p className="tp-muted">{t("journal.signIn")}</p>
-        ) : profile ? (
-          <JournalChunk before={undefined} />
+        ) : profile && today ? (
+          // Past days only: today's page is the one "Write in today's page" opens.
+          <JournalChunk before={today} first />
         ) : (
           <p className="tp-muted" aria-busy="true">
             {t("journal.loading")}
@@ -74,7 +79,7 @@ export function JournalScreen() {
 }
 
 /** Ten days at a time (bounded reads); "Show more" mounts the next ten after the last date. */
-function JournalChunk({ before }: { before: string | undefined }) {
+function JournalChunk({ before, first = false }: { before: string; first?: boolean }) {
   const { t, lang } = useLocale();
   const rows = useQuery(api.notes.listPeriodPages, { pageType: "daily", before, limit: CHUNK });
   const [more, setMore] = useState(false);
@@ -86,7 +91,7 @@ function JournalChunk({ before }: { before: string | undefined }) {
       </p>
     );
   }
-  if (rows.length === 0 && before === undefined) {
+  if (rows.length === 0 && first) {
     return (
       <div className="tp-empty" data-component="Empty">
         <TpIcon name="today" size="lg" />
