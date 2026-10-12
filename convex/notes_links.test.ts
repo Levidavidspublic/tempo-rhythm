@@ -59,6 +59,15 @@ describe("notes.searchTitles", () => {
     expect(result.map((r) => r._id)).toEqual(["notes:3", "notes:2", "notes:1"]);
     expect(Object.keys(result[0]!).sort()).toEqual(["_id", "pinned", "title", "updatedAt"]);
   });
+  test("an exact title comes first even behind more recent prefix matches than the limit", async () => {
+    const newer = Array.from({ length: 25 }, (_, i) => note(String(100 + i), `Moving part ${i}`, "x"));
+    const result = await search(makeCtx("users:a", [...newer, note("3", " moving ", "x")]), {
+      query: "Moving",
+      limit: 20,
+    });
+    expect(result).toHaveLength(20);
+    expect(result[0]?._id).toBe("notes:3");
+  });
   test("an empty query lists recent titled pages, bounded by the limit", async () => {
     const result = await search(makeCtx("users:a", rows), { query: "", limit: 2 });
     expect(result.map((r) => r._id)).toEqual(["notes:3", "notes:2"]);

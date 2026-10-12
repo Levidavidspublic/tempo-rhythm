@@ -92,6 +92,15 @@ export function PageEditorView(props: Props) {
   const [trigger, setTrigger] = useState<EditorTrigger | null>(null);
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
   const [active, setActive] = useState(0);
+  // The text the editor mounts with: the loaded body first, then the current body each time
+  // Edit comes back after Read (the editor is uncontrolled; a stale seed would revert edits).
+  const [editSeed, setEditSeed] = useState(initialBody);
+
+  // Esc dismisses the menu for this trigger only; once the trigger is gone, a new one opens again.
+  const onTrigger = (next: EditorTrigger | null) => {
+    setTrigger(next);
+    if (!next) setDismissedAt(null);
+  };
 
   const open = trigger && trigger.from !== dismissedAt ? trigger : null;
   const wikiResults = useQuery(
@@ -268,7 +277,8 @@ export function PageEditorView(props: Props) {
                       type="button"
                       role="menuitem"
                       onClick={() => {
-                        setMode((m) => (m === "edit" ? "read" : "edit"));
+                        if (mode === "read") setEditSeed(body);
+                        setMode(mode === "edit" ? "read" : "edit");
                         setMenuOpen(false);
                       }}
                     >
@@ -315,12 +325,12 @@ export function PageEditorView(props: Props) {
           {mode === "edit" ? (
             <LivePreviewEditor
               ref={editor}
-              initialValue={initialBody}
+              initialValue={editSeed}
               ariaLabel={t("page.bodyLabel")}
               placeholder={t("editor.placeholder")}
               labels={labels}
               onChange={props.onBodyChange}
-              onTrigger={setTrigger}
+              onTrigger={onTrigger}
               onMenuKey={onMenuKey}
               onOpenLink={(linkTitle) => void openLink(linkTitle)}
             />

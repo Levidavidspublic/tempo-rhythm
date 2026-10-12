@@ -51,6 +51,8 @@ export async function listNotesForUser(
 
 /** Most pages the rail shows (pinned first, then most recently edited). */
 export const RAIL_PAGE_LIMIT_MAX = 20;
+/** Most rows the rail reads per index; past this many pins or tombstones the rail shows fewer. */
+export const RAIL_SCAN_MAX = 400;
 
 export type RailPage = Pick<Doc<"notes">, "_id" | "title" | "pinned" | "updatedAt">;
 
@@ -72,25 +74,33 @@ export async function listRailPagesForUser(
   requested: number | undefined,
 ): Promise<RailPage[]> {
   const limit = Math.min(Math.max(Math.floor(requested ?? 8), 1), RAIL_PAGE_LIMIT_MAX);
-  // Read a little past the limit so soft-deleted rows can't crowd live pages out entirely.
-  const window = limit * 3;
-  const pinned = await ctx.db
+  const toRow = (note: Doc<"notes">): RailPage => ({
+    _id: note._id,
+    title: note.title,
+    pinned: note.pinned,
+    updatedAt: note.updatedAt,
+  });
+  // by_userId_pinned is in creation order, so read the pins (bounded) and order them by edit.
+  const pins = await ctx.db
     .query("notes")
     .withIndex("by_userId_pinned", (q) => q.eq("userId", userId).eq("pinned", true))
-    .take(window);
-  const recent = await ctx.db
+    .take(RAIL_SCAN_MAX);
+  const out = pins
+    .filter((n) => n.deletedAt === undefined)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, limit)
+    .map(toRow);
+  if (out.length >= limit) return out;
+  // Walk recent edits newest first and skip tombstones until the rail is full, so recently
+  // deleted pages never crowd out older live ones. The scan stops after RAIL_SCAN_MAX rows.
+  let scanned = 0;
+  for await (const note of ctx.db
     .query("notes")
     .withIndex("by_userId_updatedAt", (q) => q.eq("userId", userId))
-    .order("desc")
-    .take(window);
-  const seen = new Set<string>();
-  const out: RailPage[] = [];
-  const live = (n: Doc<"notes">) => n.deletedAt === undefined;
-  const byRecent = (a: Doc<"notes">, b: Doc<"notes">) => b.updatedAt - a.updatedAt;
-  for (const note of [...pinned.filter(live).sort(byRecent), ...recent.filter(live)]) {
-    if (seen.has(note._id) || out.length >= limit) continue;
-    seen.add(note._id);
-    out.push({ _id: note._id, title: note.title, pinned: note.pinned, updatedAt: note.updatedAt });
+    .order("desc")) {
+    scanned += 1;
+    if (note.deletedAt === undefined && !note.pinned) out.push(toRow(note));
+    if (out.length >= limit || scanned >= RAIL_SCAN_MAX) break;
   }
   return out;
 }
@@ -115,16 +125,20 @@ export const searchTitles = query({
       .withIndex("by_userId_updatedAt", (iq) => iq.eq("userId", user._id))
       .order("desc")
       .take(LINK_SCAN_LIMIT);
+    // Exact titles first, so resolving a clicked [[Title]] never misses its page behind
+    // newer prefix matches; then titles that start with the query; then the rest.
+    const exact: PageTitle[] = [];
     const starts: PageTitle[] = [];
     const contains: PageTitle[] = [];
     for (const n of rows) {
       if (n.deletedAt !== undefined || !n.title.trim()) continue;
-      const title = n.title.toLocaleLowerCase();
+      const title = n.title.trim().toLocaleLowerCase();
       const row = { _id: n._id, title: n.title, pinned: n.pinned, updatedAt: n.updatedAt };
-      if (!q || title.startsWith(q)) starts.push(row);
+      if (q && title === q) exact.push(row);
+      else if (!q || title.startsWith(q)) starts.push(row);
       else if (title.includes(q)) contains.push(row);
     }
-    return [...starts, ...contains].slice(0, limit);
+    return [...exact, ...starts, ...contains].slice(0, limit);
   },
 });
 
