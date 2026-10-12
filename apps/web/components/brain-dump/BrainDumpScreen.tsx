@@ -29,7 +29,40 @@ type ResourcesCard = {
 /** A saved page can be undone in one click for 5 minutes (HARD_RULES: AI-made changes stay reversible). */
 const SAVE_UNDO_MS = 5 * 60 * 1000;
 
-type SavedPage = { id: string; undoUntil: number; plan: Plan };
+/** `plan` is the plan the page was made from; null for a page restored after leaving the screen. */
+type SavedPage = { id: string; undoUntil: number; plan: Plan | null };
+
+/**
+ * Pending saves outlive this screen for their Undo window, so opening the page and coming back
+ * keeps Undo. Per tab (sessionStorage), ids and times only; a page past its window is dropped.
+ */
+const SAVED_PAGES_KEY = "tempo:brain-dump:saved-pages:v1";
+
+function readSavedPages(now: number): SavedPage[] {
+  try {
+    const rows: unknown = JSON.parse(window.sessionStorage.getItem(SAVED_PAGES_KEY) ?? "[]");
+    if (!Array.isArray(rows)) return [];
+    return rows.flatMap((row) => {
+      if (typeof row !== "object" || row === null) return [];
+      const { id, undoUntil } = row as Record<string, unknown>;
+      return typeof id === "string" && typeof undoUntil === "number" && undoUntil > now
+        ? [{ id, undoUntil, plan: null }]
+        : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedPages(pages: SavedPage[], now: number) {
+  try {
+    const live = pages.filter((page) => page.undoUntil > now).map(({ id, undoUntil }) => ({ id, undoUntil }));
+    if (live.length === 0) window.sessionStorage.removeItem(SAVED_PAGES_KEY);
+    else window.sessionStorage.setItem(SAVED_PAGES_KEY, JSON.stringify(live));
+  } catch {
+    // Storage blocked: Undo still works while this screen stays open.
+  }
+}
 
 const URGENCY_KEY = { now: "bd.now", soon: "bd.soon", later: "bd.later" } as const;
 const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon: "info", later: undefined };
@@ -59,9 +92,15 @@ export function BrainDumpScreen() {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   // Pages "Save as a page" made here, newest first: each keeps its Open link and its own Undo
-  // until `undoUntil`. `plan` is the plan it was made from, so that plan is not saved twice.
-  const [savedPages, setSavedPages] = useState<SavedPage[]>([]);
+  // until `undoUntil`. Null until the pages still in their window are read back after mount.
+  const [savedState, setSavedPages] = useState<SavedPage[] | null>(null);
+  const savedPages = savedState ?? [];
   const [undoingId, setUndoingId] = useState<string | null>(null);
+
+  useEffect(() => setSavedPages(readSavedPages(Date.now())), []);
+  useEffect(() => {
+    if (savedState) writeSavedPages(savedState, Date.now());
+  }, [savedState]);
 
   const groups = useMemo(() => (plan ? groupByUrgency(plan) : []), [plan]);
   const toAdd = useMemo(() => (plan ? acceptedItems(plan, accepted) : []), [plan, accepted]);
@@ -135,7 +174,7 @@ export function BrainDumpScreen() {
       const id = await createNote({ title: t("bd.pageTitle").replace("{day}", day), body });
       // Stay here with Open and Undo: the page holds AI-sorted text, so it is one click to take back.
       setDoneMessage("");
-      setSavedPages((prev) => [{ id, undoUntil: Date.now() + SAVE_UNDO_MS, plan }, ...prev]);
+      setSavedPages((prev) => [{ id, undoUntil: Date.now() + SAVE_UNDO_MS, plan }, ...(prev ?? [])]);
     } catch {
       setError(t("bd.saveError"));
     } finally {
@@ -149,7 +188,7 @@ export function BrainDumpScreen() {
       setUndoingId(id);
       try {
         await removeNote({ noteId: id as Id<"notes"> });
-        setSavedPages((prev) => prev.filter((page) => page.id !== id));
+        setSavedPages((prev) => (prev ?? []).filter((page) => page.id !== id));
         setDoneMessage(t("bd.pageRemoved"));
       } catch {
         setError(t("bd.undoError"));
@@ -360,7 +399,7 @@ export function BrainDumpScreen() {
                 type="button"
                 className="tp-btn tp-btn--secondary"
                 onClick={() => void handleSavePage()}
-                disabled={busy || savedPages.some((page) => page.plan === plan)}
+                disabled={busy || (plan !== null && savedPages.some((page) => page.plan === plan))}
               >
                 <TpIcon name="page" size="sm" />
                 <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
