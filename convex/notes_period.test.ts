@@ -132,3 +132,29 @@ describe("notes.ensurePeriodPage", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("notes.restore with a dated page", () => {
+  const restore = (notes.restore as unknown as { _handler: Handler })._handler;
+  function withPatch(rows: Row[]) {
+    const ctx = makeCtx("users:a", rows) as unknown as { db: Record<string, unknown> };
+    ctx.db.patch = async (id: string, patch: Row) => {
+      const row = rows.find((r) => r._id === id);
+      if (row) Object.assign(row, patch);
+    };
+    return ctx as never;
+  }
+
+  test("a restored daily page whose date already has a new page comes back as a plain page", async () => {
+    const now = Date.now();
+    const rows = [daily({ _id: "notes:old", deletedAt: now - 1_000 }), daily({ _id: "notes:new" })];
+    await expect(restore(withPatch(rows), { noteId: "notes:old" })).resolves.toEqual({ success: true });
+    expect(rows[0]).toMatchObject({ deletedAt: undefined, pageType: "plain", date: undefined, periodType: "none" });
+    expect(rows[1]).toMatchObject({ pageType: "daily", date: "2026-10-12" });
+  });
+
+  test("without a clash the page comes back as it was", async () => {
+    const rows = [daily({ _id: "notes:old", deletedAt: Date.now() - 1_000 })];
+    await restore(withPatch(rows), { noteId: "notes:old" });
+    expect(rows[0]).toMatchObject({ deletedAt: undefined, pageType: "daily", date: "2026-10-12" });
+  });
+});

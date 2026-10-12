@@ -395,6 +395,20 @@ export const restore = mutation({
     if (!isRestorable(note.deletedAt, now)) {
       return { success: false };
     }
+    // A dated page restored after a new page was made for the same date comes back as a plain
+    // page, so one date never has two live pages (its text is kept either way).
+    const kind = note.pageType === "daily" || note.pageType === "weekly" ? note.pageType : null;
+    const clash = kind && note.date ? await findPeriodPage(ctx, user._id, kind, note.date) : null;
+    if (clash && clash._id !== note._id) {
+      await ctx.db.patch(args.noteId, {
+        deletedAt: undefined,
+        updatedAt: now,
+        pageType: "plain",
+        periodType: "none",
+        date: undefined,
+      });
+      return { success: true };
+    }
     await ctx.db.patch(args.noteId, { deletedAt: undefined, updatedAt: now });
     return { success: true };
   },
