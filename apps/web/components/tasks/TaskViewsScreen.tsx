@@ -419,8 +419,9 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     );
   };
 
-  const currentHref =
-    view === "project" ? `/projects/${projectSlug ?? "home-reset"}` : viewHrefs[view];
+  // Any project is "Project": the switcher's one Project link stands for every project slug.
+  const isCurrent = (href: string) =>
+    view === "project" ? href.startsWith("/projects/") : href === viewHrefs[view];
 
   return (
     <div className="tp-page tp-page--wide tk-screen" data-component="PageLayout">
@@ -441,7 +442,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
               <Link
                 href={link.href}
                 className="tp-seg__opt"
-                aria-current={link.href === currentHref ? "page" : undefined}
+                aria-current={isCurrent(link.href) ? "page" : undefined}
               >
                 {link.label}
               </Link>
