@@ -51,7 +51,7 @@ module.exports = {
         border: '#D9D0C1',
         'border-soft': '#D9D0C1',
         primary: '#A3461F',
-        'primary-foreground': '#FBF9F4',
+        'primary-foreground': '#FFFFFF',
         muted: '#EAE3D6',
         'muted-foreground': '#57514A',
         accent: '#EDE6DA',

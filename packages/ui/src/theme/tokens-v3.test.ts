@@ -49,3 +49,29 @@ describe("tempoV3Colors mirrors docs/design/v3/tokens.css", () => {
     }
   });
 });
+
+describe("the mobile semantic aliases map to the same v3 tokens as the web", () => {
+  const config = readFileSync(join(import.meta.dir, "../../../../apps/mobile/tailwind.config.js"), "utf8");
+  const alias = (name: string) =>
+    new RegExp(`(?:^|[\\s{,])['"]?${name}['"]?:\\s*['"](#[0-9A-Fa-f]{6})['"]`, "m").exec(config)?.[1]?.toUpperCase();
+  // apps/web/app/globals.css: --color-<alias>: var(--tp-<token>).
+  const mapping: Record<string, keyof typeof tempoV3Colors> = {
+    background: "ground",
+    foreground: "ink",
+    card: "paper",
+    "card-foreground": "ink",
+    border: "line",
+    "border-soft": "line",
+    primary: "accent",
+    "primary-foreground": "onAccent",
+    muted: "sunken",
+    "muted-foreground": "inkMuted",
+    accent: "hover",
+    destructive: "danger",
+  };
+  for (const [name, token] of Object.entries(mapping)) {
+    test(`${name} is --tp-${kebab(token)}`, () => {
+      expect(alias(name)).toBe(tempoV3Colors[token].toUpperCase());
+    });
+  }
+});
