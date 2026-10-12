@@ -12,16 +12,28 @@ function makeCtx(userId: string | null, rows: Row[]) {
   function chain(selected: Row[]) {
     return {
       withIndex: (_index: string, build: (q: unknown) => unknown) => {
-        const filters: [string, unknown][] = [];
+        const filters: ((row: Row) => boolean)[] = [];
         const q = {
           eq(field: string, value: unknown) {
-            filters.push([field, value]);
+            filters.push((row) => row[field] === value);
+            return q;
+          },
+          lt(field: string, value: string) {
+            filters.push((row) => typeof row[field] === "string" && (row[field] as string) < value);
             return q;
           },
         };
         build(q);
-        return chain(selected.filter((row) => filters.every(([f, v]) => row[f] === v)));
+        return chain(selected.filter((row) => filters.every((f) => f(row))));
       },
+      order: (direction: "asc" | "desc") =>
+        chain(
+          [...selected].sort((a, b) =>
+            direction === "desc"
+              ? String(b.date).localeCompare(String(a.date))
+              : String(a.date).localeCompare(String(b.date)),
+          ),
+        ),
       first: async () => selected[0] ?? null,
       unique: async () => selected[0] ?? null,
       collect: async () => selected,
@@ -52,6 +64,7 @@ const meta = (pageType: string, date?: string, tags: string[] = []) =>
   `\`\`\`json tempo\n${JSON.stringify({ id: "blk_01JAAAAAAAAAAAAAAAAAAAAAAA", v: 1, type: "page-meta", data: { pageType, ...(date ? { date } : {}), tags } })}\n\`\`\`\n`;
 const getPage = (notes.getPeriodPage as unknown as { _handler: Handler })._handler;
 const ensurePage = (notes.ensurePeriodPage as unknown as { _handler: Handler })._handler;
+const listPages = (notes.listPeriodPages as unknown as { _handler: Handler })._handler;
 
 const daily = (over: Partial<Row> = {}): Row => ({
   _id: "notes:d1",
@@ -148,6 +161,42 @@ describe("notes.ensurePeriodPage", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("notes.listPeriodPages", () => {
+  const meta = (tags: string[]) =>
+    `\`\`\`json tempo\n${JSON.stringify({ id: "blk_01JQ8Z3K4M5N6P7Q8R9S0T1V2W", v: 1, type: "page-meta", data: { pageType: "daily", date: "2026-10-12", tags } })}\n\`\`\`\n`;
+  const rows = [
+    daily({ _id: "notes:10", date: "2026-10-10", body: meta(["calm"]) }),
+    daily({ _id: "notes:12", date: "2026-10-12" }),
+    daily({ _id: "notes:11", date: "2026-10-11", deletedAt: 3 }),
+    daily({ _id: "notes:09", date: "2026-10-09" }),
+    daily({ _id: "notes:w", date: "2026-10-12", pageType: "weekly" }),
+    daily({ _id: "notes:b", date: "2026-10-13", userId: "users:b" }),
+  ];
+
+  test("live daily pages of the owner, newest date first, metadata and tags only", async () => {
+    const result = (await listPages(makeCtx("users:a", rows), { pageType: "daily" })) as Row[];
+    expect(result.map((r) => r._id)).toEqual(["notes:12", "notes:10", "notes:09"]);
+    expect(Object.keys(result[0] ?? {}).sort()).toEqual(["_id", "date", "tags", "title", "updatedAt"]);
+    expect(result[1]?.tags).toEqual(["calm"]);
+  });
+
+  test("before pages back by date, the limit is clamped, a bad cursor gives nothing", async () => {
+    const ctx = makeCtx("users:a", rows);
+    const older = (await listPages(ctx, { pageType: "daily", before: "2026-10-12", limit: 1 })) as Row[];
+    expect(older.map((r) => r._id)).toEqual(["notes:10"]);
+    expect(await listPages(ctx, { pageType: "daily", before: "yesterday" })).toEqual([]);
+    const many = Array.from({ length: 30 }, (_, i) =>
+      daily({ _id: `notes:m${i}`, date: `2026-09-${String(i + 1).padStart(2, "0")}` }),
+    ).filter((r) => isRealDay(r.date as string));
+    const page = (await listPages(makeCtx("users:a", many), { pageType: "daily", limit: 500 })) as Row[];
+    expect(page).toHaveLength(notes.PERIOD_LIST_MAX);
+  });
+});
+
+function isRealDay(iso: string): boolean {
+  return new Date(`${iso}T00:00:00Z`).toISOString().slice(0, 10) === iso;
+}
 
 describe("notes.restore with a dated page", () => {
   const restore = (notes.restore as unknown as { _handler: Handler })._handler;

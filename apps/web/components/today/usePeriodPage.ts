@@ -43,7 +43,10 @@ export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPage
   const [shown, setShown] = useState<string | null>(null);
   const [remake, setRemake] = useState<string | null>(null);
   useEffect(() => {
-    if (page) setShown(key);
+    if (!page) return;
+    setShown(key);
+    // The replacement page is live: a later deletion of it is "gone" again, not loading.
+    setRemake((r) => (r === key ? null : r));
   }, [page, key]);
   const gone = page === null && shown === key && remake !== key;
 
