@@ -9,12 +9,15 @@ import { parseTempoBlocks, type TempoBlock } from "./blocks";
  *
  * What the projection contains:
  * - the prose of the body, reduced to plain text (markdown markers, links and HTML tags removed);
- * - the title of every valid task block and the name of every valid template block.
+ * - the title of every valid task block and the name of every valid template block, with any HTML
+ *   in them removed the same way.
  *
  * What it never contains: Tempo envelopes or fence syntax, block ids, the content of any fenced
- * code block or raw HTML block, JSON-looking lines, or bidi/invisible control characters. Blocks
- * that fail validation are left out whole, so there is no raw-payload fallback. A body the codec
- * refuses as too large is left out whole too (its prose cannot be located without a second parser).
+ * code block or HTML block (also one that ends at a blank line, such as a `<div>` line), inline
+ * HTML (also where a comment or tag runs over several lines), JSON-looking lines, or
+ * bidi/invisible control characters. Blocks that fail validation are left out whole, so there is
+ * no raw-payload fallback. A body the codec refuses as too large is left out whole too (its prose
+ * cannot be located without a second parser).
  *
  * Block recognition is the shared codec (`parseTempoBlocks`); this module has no parser or schema
  * of its own. Its prose filter only decides what plain text to show for the markdown the codec did
@@ -199,8 +202,11 @@ const TABLE_RULE = /^[ :|]*-[ :|-]*$/;
 const LINK_DEFINITION = /^\[[^\]]{1,200}\]: *<?\S+(?: +["'(].{0,200})?$/;
 const BLOCK_MARKER = /^(?:#{1,6} +|> ?|[-*+] +|\d{1,9}[.)] +)/;
 const CHECKBOX = /^\[[ xX]\] +/;
-const HTML_COMMENT = /<!--[^<]{0,500}?-->/g;
+/** Inline HTML that ends at a marker of its own: comment, processing instruction, CDATA, declaration. */
+const INLINE_DELIMITED = /<(?:!--|\?|!\[CDATA\[|![A-Za-z])/g;
 const HTML_TAG = /<\/?[A-Za-z][A-Za-z0-9-]{0,40}(?: [^<>]{0,500})?\/?>/g;
+/** The start of a tag (open or closing) that may run on past the end of its line. */
+const TAG_START = /<\/?[A-Za-z]/;
 const LINK_OR_IMAGE = /!?\[([^[\]]{0,300})\]\([^)]{0,2000}\)/g;
 const EMPHASIS_PAIR = /(^|[^\p{L}\p{N}_])([*_]{1,2})(\S(?:[^*_]{0,200}\S)?)\2(?![\p{L}\p{N}_])/gu;
 
@@ -234,6 +240,8 @@ type ProseState = {
   htmlEnd?: RegExp;
   /** Container depth of an open HTML block that ends at a blank line (condition 6 or 7). */
   htmlBlock?: number;
+  /** End marker of inline HTML (a comment, a tag) left open on an earlier line of the paragraph. */
+  inlineEnd?: string;
   /** The previous line was paragraph text, which condition 7 cannot interrupt. */
   afterText: boolean;
 };
@@ -242,11 +250,15 @@ function createProseState(): ProseState {
   return { containers: [], afterText: false };
 }
 
-/** A new segment starts at the top level: only an open top-level HTML block carries over. */
+/**
+ * A new segment starts at the top level: only an open top-level HTML block carries over. A block's
+ * fence interrupts a paragraph, so inline HTML left open before it ends there too.
+ */
 function startSegment(state: ProseState): void {
   state.containers.length = 0;
   state.fence = undefined;
   state.htmlEnd = undefined;
+  state.inlineEnd = undefined;
   state.afterText = false;
   if (state.htmlBlock !== 0) state.htmlBlock = undefined;
 }
@@ -327,10 +339,50 @@ function stripBlockMarkers(line: string): string {
   return text.replace(CHECKBOX, "").replace(/ #+$/, "");
 }
 
-function stripInline(text: string): string {
+function inlineEndOf(opener: string): string {
+  if (opener === "<!--") return "-->";
+  if (opener === "<?") return "?>";
+  if (opener === "<![CDATA[") return "]]>";
+  return ">";
+}
+
+/**
+ * Removes inline HTML from one line. Inline HTML can run over several lines of a paragraph, so a
+ * comment, processing instruction, CDATA section, declaration or tag still open where the line ends
+ * hides the rest of the line, and `open.inlineEnd` hides the lines after it up to its end marker.
+ * With `exact` false (the line had hidden characters, which can fake a marker) no end marker of a
+ * delimited construct is trusted. Each search starts past the last, so the work is linear.
+ */
+function stripInlineHtml(text: string, open: { inlineEnd?: string }, exact: boolean): string {
+  let kept = "";
+  let from = 0;
+  INLINE_DELIMITED.lastIndex = 0;
+  for (let opener = INLINE_DELIMITED.exec(text); opener; opener = INLINE_DELIMITED.exec(text)) {
+    const end = inlineEndOf(opener[0]);
+    const close = exact ? text.indexOf(end, opener.index + 2) : -1;
+    kept += `${text.slice(from, opener.index)} `;
+    if (close === -1) {
+      open.inlineEnd = end;
+      from = text.length;
+      break;
+    }
+    from = close + end.length;
+    INLINE_DELIMITED.lastIndex = from;
+  }
+  kept = `${kept}${text.slice(from)}`.replace(HTML_TAG, " ");
+  // A tag start with no ">" after it is a tag still open (or literal text): hide it either way.
+  const after = kept.lastIndexOf(">") + 1;
+  const tag = TAG_START.exec(kept.slice(after));
+  if (tag) {
+    kept = kept.slice(0, after + tag.index);
+    // A delimited construct left open after it needs its own, longer end marker.
+    open.inlineEnd ??= ">";
+  }
+  return kept;
+}
+
+function stripMarkdownInline(text: string): string {
   return text
-    .replace(HTML_COMMENT, " ")
-    .replace(HTML_TAG, " ")
     .replace(LINK_OR_IMAGE, "$1")
     .replace(/\*\*|~~|`+/g, "")
     .replace(EMPHASIS_PAIR, "$1$3");
@@ -360,11 +412,11 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
     state.fence = undefined;
     state.htmlEnd = undefined;
   }
+  const blank = exact && /^ *$/.test(continued);
+  // A blank line ends the paragraph, and with it any inline HTML left open in it.
+  if (blank) state.inlineEnd = undefined;
   // A blank line ends an HTML block of condition 6 or 7 even where it falls inside a comment.
-  if (
-    state.htmlBlock !== undefined &&
-    (state.htmlBlock > matched || (exact && /^ *$/.test(continued)))
-  ) {
+  if (state.htmlBlock !== undefined && (state.htmlBlock > matched || blank)) {
     state.htmlBlock = undefined;
   }
 
@@ -406,24 +458,49 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   if (state.htmlBlock === undefined && startsHtmlBlock(rest, state.afterText)) {
     state.htmlBlock = state.containers.length;
   }
+  // Every line of an HTML block that ends at a blank line (condition 6 or 7), its first line
+  // included, is literal HTML, not text. Fences and raw HTML in it were still followed above, so
+  // anything they open keeps hiding past the blank line: reading too much as HTML only hides more.
+  if (state.htmlBlock !== undefined) {
+    state.afterText = false;
+    return "";
+  }
   state.afterText = PLAIN_TEXT.test(rest);
   if (!emit) return "";
 
   // Leading direction marks (common at the start of right-to-left lines) must not hide markers.
-  const line = content.replace(/^[\s\u{200E}\u{200F}\u{61C}]+/u, "").trimEnd();
-  if (line === "" || THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
+  let line = content.replace(/^[\s\u{200E}\u{200F}\u{61C}]+/u, "").trimEnd();
+  if (line === "") return "";
+  let text = stripBlockMarkers(line);
+  if (state.inlineEnd) {
+    // The line starts inside inline HTML: only what follows its end marker can be shown, and only
+    // that part is checked below.
+    const close = exact ? text.indexOf(state.inlineEnd) : -1;
+    if (close === -1) return "";
+    text = text.slice(close + state.inlineEnd.length).trimStart();
+    line = text;
+    state.inlineEnd = undefined;
+  }
+  // Inline HTML is followed on every line that gets here, also on lines dropped below, because
+  // what it leaves open hides the lines after it.
+  const withoutHtml = stripInlineHtml(text, state, exact);
+  if (THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
   if (FENCE_SYNTAX.test(line.replace(ALL_FORMAT, ""))) return "";
-
-  const text = stripBlockMarkers(line);
   if (text === "" || TABLE_RULE.test(text) || looksLikeJson(line) || looksLikeJson(text)) return "";
 
-  const plain = collapse(stripInline(text));
+  const plain = collapse(stripMarkdownInline(withoutHtml));
   return plain === "" || isUnsafe(plain) ? "" : plain;
 }
 
-/** Plain text of a block field such as a task title, or "" when it is not safe to show. */
+/**
+ * Plain text of a block field such as a task title, or "" when it is not safe to show. A field is
+ * schema-checked text, not markup, so the HTML in it is removed the same way as in prose, and HTML
+ * it leaves open hides the rest of the field. Removed hidden characters could fake an end marker,
+ * so then none is trusted (tidy keeps the length when it only turns controls into spaces).
+ */
 function fieldText(value: string): string {
-  const plain = collapse(tidy(value));
+  const tidied = tidy(value);
+  const plain = collapse(stripInlineHtml(tidied, {}, tidied.length === value.length));
   return plain === "" || isUnsafe(plain) ? "" : plain;
 }
 

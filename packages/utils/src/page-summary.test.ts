@@ -145,6 +145,27 @@ describe("valid blocks", () => {
     const title = "Line one\nLine two\t\u{202E}reversed\u{202C}  end\u{0}";
     expect(project(fence(withTitle(title))).searchText).toBe("Line one Line two reversed end");
   });
+
+  test("HTML in a title or template name is removed as it is in prose", () => {
+    const titles: Record<string, string> = {
+      "<script>alert(1)</script>": "alert(1)",
+      "Call <b>mum</b><br/>": "Call mum",
+      "Call <!-- hidden --> mum": "Call mum",
+      "Call <!--\nhidden\n--> mum": "Call mum",
+      "Call <!-- hidden": "Call",
+      'Call <span class="hidden"': "Call",
+      "Call <?php hidden ?> mum": "Call mum",
+      // A removed hidden character could fake the end marker, so the comment is not trusted to end.
+      "Call <!-- hidden -\u{200B}-> mum": "Call",
+    };
+    for (const [title, text] of Object.entries(titles)) {
+      const result = project(fence(withTitle(title)));
+      expect(result.searchText).toBe(text);
+      expect(result.summary).toBe(text);
+    }
+    const named = { ...template, data: { ...template.data, name: "<i>Gentle</i> <!-- x -->day" } };
+    expect(project(fence(named)).searchText).toBe("Gentle day");
+  });
 });
 
 describe("malformed, unknown and oversized blocks", () => {
@@ -465,6 +486,59 @@ describe("raw HTML inside quotes and list items", () => {
   });
 });
 
+describe("inline HTML that runs over several lines", () => {
+  const cases: Record<string, string> = {
+    comment: "visible <!--\nprivate note\n--> public",
+    longComment: "visible <!-- private\nprivate note\nprivate end --> public",
+    tag: 'visible <span\nclass="secret private">x</span> public',
+    closingTag: "visible </span\nprivate> public",
+    processing: "visible <?php\nprivate\n?> public",
+    cdata: "visible <![CDATA[\nprivate\n]]> public",
+    declaration: "visible <!ELEMENT\nprivate x> public",
+    inQuote: "> visible <!--\n> private note\n> --> public",
+    lazyQuoteLine: "> visible <!--\nprivate note\n--> public",
+    inListItem: "- visible <!--\n  private note\n  --> public",
+    ltInsideComment: "visible <!-- private < note\nprivate --> public",
+    // CommonMark keeps the hidden character, so "-\u{200B}->" does not end the comment.
+    fakeEnd: "visible <!--\nnote -\u{200B}->\nprivate\n--> public",
+    // The line is dropped as fence-looking, but the comment it opens still runs on.
+    onDroppedLine: "visible\nsee ``` here <!--\nprivate\n--> public",
+  };
+
+  for (const [name, body] of Object.entries(cases)) {
+    test(`${name}: the HTML is hidden up to its end, the text around it is kept`, () => {
+      const result = project(body);
+      expect(result.searchText).not.toContain("private");
+      expect(result.searchText).not.toContain("secret");
+      expect(result.searchText).not.toContain("<");
+      expect(result.searchText).not.toContain("-->");
+      expect(result.searchText.startsWith("visible")).toBe(true);
+      expect(result.searchText.endsWith("public")).toBe(true);
+    });
+  }
+
+  test("inline HTML on one line is removed whole, also a comment holding a <", () => {
+    expect(project("a <!-- x < y --> b").searchText).toBe("a b");
+    expect(project("a <?php echo 1; ?> b").searchText).toBe("a b");
+    expect(project("a <!-- one --> b <!-- two --> c").searchText).toBe("a b c");
+    expect(project("a <!--> b").searchText).toBe("a b");
+  });
+
+  test("an opener never closed is hidden to the end of its paragraph only", () => {
+    expect(project("visible <!--\nprivate\n\npublic").searchText).toBe("visible public");
+    expect(project('visible <span class="private"\nprivate\n\npublic').searchText).toBe(
+      "visible public"
+    );
+    expect(project("> visible <!--\n> private\n>\n> public").searchText).toBe("visible public");
+  });
+
+  test("a Tempo block ends the paragraph, and the inline HTML left open in it", () => {
+    expect(project(`visible <!--\n${fence(task)}public`).searchText).toBe(
+      "visible Email supervisor public"
+    );
+  });
+});
+
 describe("hidden characters never end a block", () => {
   // CommonMark keeps these characters, so to it these lines are not closers, end markers or blank.
   test("a closing fence with a hidden character does not close the fence", () => {
@@ -490,7 +564,7 @@ describe("hidden characters never end a block", () => {
   });
 
   test("a line of hidden characters does not end an HTML block that ends at a blank line", () => {
-    const body = `<div>\n\u{200B}\n${fence(task)}After`;
+    const body = `<div>\n\u{200B}\n${fence(task)}\nAfter`;
     expect(parseTempoBlocks(body).some((segment) => segment.kind === "valid")).toBe(true);
     expect(project(body).searchText).toBe("After");
     expect(project(`<div>\n\n${fence(task)}After`).searchText).toBe("Email supervisor After");
@@ -525,13 +599,17 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
       expect(parseTempoBlocks(body).some((segment) => segment.kind === "valid")).toBe(true);
       const result = project(body);
       expect(result.searchText).not.toContain("Email supervisor");
-      expect(result.searchText.endsWith("After")).toBe(true);
+      // With no blank line after the fence, "After" is still inside the HTML block.
+      expect(result.searchText).not.toContain("After");
       expect(result.omittedBlocks).toBe(0);
+      const ended = project(body.replace(/After$/, "\nAfter"));
+      expect(ended.searchText).not.toContain("Email supervisor");
+      expect(ended.searchText.endsWith("After")).toBe(true);
     });
   }
 
   test("every block in the same HTML block is left out, and the blank line that ends it is honoured", () => {
-    expect(project(`<div>\n${payload}${second}After`).searchText).toBe("After");
+    expect(project(`<div>\n${payload}${second}After`).searchText).toBe("");
     expect(project(`<div>\n${payload}\n${second}After`).searchText).toBe("Second block After");
     expect(project(`<div>\n${payload}\n\n${second}After`).searchText).toBe("Second block After");
   });
@@ -540,7 +618,7 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
     const broken = `<div>\n${TICKS}json tempo\n{ nope\n${TICKS}\nAfter`;
     expect(parseTempoBlocks(broken).some((segment) => segment.kind === "broken")).toBe(true);
     expect(project(broken).omittedBlocks).toBe(0);
-    expect(project(broken).searchText).toBe("After");
+    expect(project(broken).searchText).toBe("");
     const unclosed = `<div>\n${TICKS}json tempo\n${JSON.stringify(task)}`;
     expect(parseTempoBlocks(unclosed).some((segment) => segment.kind === "broken")).toBe(true);
     expect(project(unclosed).omittedBlocks).toBe(0);
@@ -587,7 +665,32 @@ describe("Tempo-looking fences inside HTML blocks that end at a blank line", () 
 
   test("a tag alone on the line right after a block starts an HTML block of its own", () => {
     const body = `${payload}<span>\n${second}After`;
-    expect(project(body).searchText).toBe("Email supervisor After");
+    expect(project(body).searchText).toBe("Email supervisor");
+  });
+
+  test("no line of an HTML block that ends at a blank line is shown, its first line included", () => {
+    const cases: Record<string, string> = {
+      "<div>\nprivate\n\npublic": "public",
+      '<div class="note">\nprivate\nmore private\n\npublic': "public",
+      "<td>secret cell</td>\nprivate\n\npublic": "public",
+      "</div>\nprivate\n\npublic": "public",
+      "<span>\nprivate\n\npublic": "public",
+      '<my-widget data-x="1">\nprivate\n\npublic': "public",
+      "Intro\n<section>\nprivate\n\npublic": "Intro public",
+      // A tag alone on a line cannot interrupt a paragraph (condition 7), so this stays text.
+      "Intro\n<span>\nstill text\n\npublic": "Intro still text public",
+      "> <div>\n> private\n\npublic": "public",
+      "> <div>\n> private\nAfter": "After",
+      "- <div>\n  private\n\n  item text\nAfter": "item text After",
+      // A line of hidden characters is not blank, so the block goes on.
+      "<div>\nprivate\n\u{200B}\nmore private\n\npublic": "public",
+    };
+    for (const [body, text] of Object.entries(cases)) {
+      const result = project(body);
+      expect(result.searchText).toBe(text);
+      expect(result.searchText).not.toContain("private");
+      expect(result.searchText).not.toContain("secret");
+    }
   });
 
   test("a gated block does not hide prose, only the block", () => {
@@ -735,6 +838,11 @@ describe("limits", () => {
       "x🇮".concat("🇮🇱".repeat(size / 4)),
       "> <!--\n".repeat(size / 7),
       `- <pre>\n${"  x\n".repeat(size / 4)}`,
+      "a <!-- -->".repeat(size / 10),
+      "a <?".repeat(size / 4),
+      "x <b\n".repeat(size / 5),
+      "x <!--\ny\n".repeat(size / 9),
+      "<div>\nx\n".repeat(size / 8),
     ];
     for (const body of bodies) {
       const started = performance.now();
