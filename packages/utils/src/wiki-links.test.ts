@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { backlinksFor, findWikiLinks, sameTitle } from "./wiki-links";
+import { backlinksFor, findWikiLinks, isLinkableTitle, sameTitle, titleKey } from "./wiki-links";
 
 describe("findWikiLinks", () => {
   test("keeps the original offsets of each link", () => {
@@ -52,5 +52,51 @@ describe("backlinksFor", () => {
 
   test("a blank title has no backlinks", () => {
     expect(backlinksFor("  ", "a", [{ id: "b", title: "B", body: "[[ ]]" }])).toEqual([]);
+  });
+});
+
+describe("line endings, title identity and linkable titles", () => {
+  test("a fence in a lone-CR body is code, so its [[links]] are not links", () => {
+    expect(findWikiLinks("prose\r~~~\r[[Hidden]]\r~~~\r[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("prose\r\n```\r\n[[Hidden]]\r\n```\r\n[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+  });
+
+  test("offsets stay those of the original body after masking CR bodies", () => {
+    const body = "a\r```\r[[x]]\r```\r[[Real]]";
+    const [link] = findWikiLinks(body);
+    expect(body.slice(link!.from, link!.to)).toBe("[[Real]]");
+  });
+
+  test("titles compare without a locale", () => {
+    expect(titleKey("  Moving DAY ")).toBe("moving day");
+    expect(sameTitle("I", "i")).toBe(true);
+    expect(sameTitle("רשימה", " רשימה ")).toBe(true);
+  });
+
+  test("only titles a [[link]] can hold are linkable", () => {
+    expect(isLinkableTitle("Moving day")).toBe(true);
+    expect(isLinkableTitle("A|B")).toBe(false);
+    expect(isLinkableTitle("[draft]")).toBe(false);
+    expect(isLinkableTitle("two\nlines")).toBe(false);
+    expect(isLinkableTitle("   ")).toBe(false);
+    expect(isLinkableTitle("x".repeat(201))).toBe(false);
+  });
+});
+
+describe("indented code and lone-CR context", () => {
+  test("an indented code block is code, so its [[links]] are not links", () => {
+    expect(findWikiLinks("Intro.\n\n    [[Target]]\n\n[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("Intro.\n\n\t[[Target]]\n").map((l) => l.title)).toEqual([]);
+  });
+
+  test("indented lines that continue a paragraph or a list stay text", () => {
+    expect(findWikiLinks("A paragraph\n    [[Lazy]] continues it").map((l) => l.title)).toEqual(["Lazy"]);
+    expect(findWikiLinks("- item\n\n    [[InItem]] continues the item").map((l) => l.title)).toEqual(["InItem"]);
+  });
+
+  test("backlink context is the linking line in a lone-CR body", () => {
+    const long = "x".repeat(300);
+    const [hit] = backlinksFor("Target", "self", [{ id: "a", title: "A", body: `${long}\rsee [[Target]] here\r${long}` }]);
+    expect(hit?.context).toBe("see Target here");
   });
 });

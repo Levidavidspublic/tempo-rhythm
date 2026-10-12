@@ -213,6 +213,7 @@ const en = {
   "notes.noMatchHint": "Try another filter whenever you like.",
   "notes.none": "No notes yet.",
   "notes.noneHint": "Start with whatever is on your mind.",
+  "notes.noContent": "No content yet.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -402,6 +403,7 @@ const he: Record<MessageKey, string> = {
   "notes.noMatchHint": "אפשר לנסות סינון אחר מתי שנוח.",
   "notes.none": "עוד אין פתקים.",
   "notes.noneHint": "אפשר להתחיל במה שעל הלב.",
+  "notes.noContent": "עוד אין תוכן.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, he };
