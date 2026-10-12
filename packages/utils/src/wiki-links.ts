@@ -18,25 +18,42 @@ const WIKI = /\[\[([^[\]\n|]{1,200})(?:\|([^[\]\n]{1,200}))?\]\]/g;
 function maskCode(body: string): string {
   const out = body.split("");
   const blank = (from: number, to: number) => {
-    for (let i = from; i < to; i += 1) if (out[i] !== "\n") out[i] = " ";
+    for (let i = from; i < to; i += 1) if (out[i] !== "\n" && out[i] !== "\r") out[i] = " ";
   };
-  const lines = /[^\n]*(?:\n|$)/g;
+  // Lines end at LF, CRLF or a lone CR: bodies keep their bytes, whatever the line ending.
+  const lines = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
   let fence: { marker: string; length: number } | null = null;
   let fenceStart = 0;
+  // Indented code: a line indented 4+ columns that does not continue a paragraph or a list.
+  let prevBlank = true;
+  let inList = false;
+  let inIndented = false;
   for (let m = lines.exec(body); m !== null && m[0].length > 0; m = lines.exec(body)) {
-    const line = m[0].replace(/\n$/, "");
+    const line = m[0].replace(/(?:\r\n|\r|\n)$/, "");
     const open = /^ {0,3}(`{3,}|~{3,})/.exec(line);
     if (fence) {
       if (open && open[1]![0] === fence.marker && open[1]!.length >= fence.length && line.trim() === open[1]) {
         blank(fenceStart, m.index + m[0].length);
         fence = null;
+        prevBlank = true;
       }
+      continue;
+    }
+    const isBlank = line.trim() === "";
+    const indented = /^(?: {4}| {0,3}\t)/.test(line);
+    if (inIndented && !isBlank && !indented) inIndented = false;
+    if (!inIndented && indented && !isBlank && prevBlank && !inList) inIndented = true;
+    if (inIndented) {
+      blank(m.index, m.index + m[0].length);
+      prevBlank = isBlank;
       continue;
     }
     if (open) {
       fence = { marker: open[1]![0]!, length: open[1]!.length };
       fenceStart = m.index;
     }
+    if (!isBlank) inList = /^ {0,3}(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)/.test(line) || (inList && /^[ \t]/.test(line));
+    prevBlank = isBlank;
   }
   if (fence) blank(fenceStart, body.length);
   const masked = out.join("");
@@ -62,8 +79,25 @@ export function findWikiLinks(body: string): WikiLink[] {
   return out;
 }
 
+/**
+ * Title identity for links: trimmed, case-folded without a locale, so a browser, a phone and
+ * the Convex runtime always agree (a Turkish-locale browser folds "I" like everyone else).
+ */
+export function titleKey(title: string): string {
+  return title.trim().toLowerCase();
+}
+
 export function sameTitle(a: string, b: string): boolean {
-  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+  return titleKey(a) === titleKey(b);
+}
+
+/**
+ * Whether `[[title]]` would point back at this title. Brackets, "|" (the alias separator) and
+ * line breaks cannot appear inside a link, and a link target is at most 200 characters.
+ */
+export function isLinkableTitle(title: string): boolean {
+  const t = title.trim();
+  return t.length > 0 && t.length <= 200 && !/[[\]|\r\n]/.test(t);
 }
 
 /** Pages whose body links to `title`, with the line that holds the link as plain context. */
@@ -76,9 +110,10 @@ export function backlinksFor(title: string, selfId: string, pages: readonly Page
     if (!page.body.includes("[[")) continue;
     const link = findWikiLinks(page.body).find((l) => sameTitle(l.title, title));
     if (!link) continue;
-    const lineStart = page.body.lastIndexOf("\n", link.from - 1) + 1;
-    const lineEndRaw = page.body.indexOf("\n", link.to);
-    const lineEnd = lineEndRaw === -1 ? page.body.length : lineEndRaw;
+    // Line boundaries on LF, CRLF and lone CR alike.
+    const lineStart = Math.max(page.body.lastIndexOf("\n", link.from - 1), page.body.lastIndexOf("\r", link.from - 1)) + 1;
+    const ends = [page.body.indexOf("\n", link.to), page.body.indexOf("\r", link.to)].filter((i) => i !== -1);
+    const lineEnd = ends.length > 0 ? Math.min(...ends) : page.body.length;
     const context = page.body
       .slice(lineStart, lineEnd)
       .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_whole, t: string, shown?: string) => shown ?? t)

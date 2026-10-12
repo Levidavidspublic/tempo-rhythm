@@ -21,6 +21,7 @@ import {
   slashQuery,
   tempoBlockRanges,
   tempoFence,
+  wikiLinkAtOffset,
   wikiQuery,
 } from "./markdown-model";
 
@@ -83,6 +84,17 @@ describe("[[links]]", () => {
   test("the picker opens on an unclosed [[ before the cursor", () => {
     expect(wikiQuery("see [[Mov")).toEqual({ query: "Mov", offset: 4 });
     expect(wikiQuery("see [[Moving]] ok")).toBeNull();
+  });
+
+  test("Mod-Enter finds the [[link]] under the cursor, brackets included", () => {
+    const line = "see [[Moving|the move]] and [[רשימה]]";
+    expect(wikiLinkAtOffset(line, 3)).toBeNull();
+    expect(wikiLinkAtOffset(line, 4)).toBe("Moving");
+    expect(wikiLinkAtOffset(line, 12)).toBe("Moving");
+    expect(wikiLinkAtOffset(line, 23)).toBe("Moving");
+    expect(wikiLinkAtOffset(line, 25)).toBeNull();
+    expect(wikiLinkAtOffset(line, line.length)).toBe("רשימה");
+    expect(wikiLinkAtOffset("an [[unclosed link", 6)).toBeNull();
   });
 
   test("Linked here lists other pages that link to this title, with the line as context", () => {

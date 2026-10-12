@@ -74,8 +74,10 @@ function NotesList() {
   const removeNote = useMutation(api.notes.remove);
   const restoreNote = useMutation(api.notes.restore);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  // The last page deleted from this list, with its 5-minute Undo (the same window as a page's own).
-  const [removed, setRemoved] = useState<{ id: Id<"notes">; undoUntilMs: number } | null>(null);
+  // Pages deleted from this list, each with its own 5-minute Undo (the same window as a page's
+  // own). The newest shows first; once it is undone or expires, the one before it shows again.
+  const [removedStack, setRemovedStack] = useState<{ id: Id<"notes">; undoUntilMs: number }[]>([]);
+  const removed = removedStack.at(-1) ?? null;
   const [isCreating, setIsCreating] = useState(false);
   const [pinningId, setPinningId] = useState<string | null>(null);
   const [pinMessage, setPinMessage] = useState<string | null>(null);
@@ -110,13 +112,19 @@ function NotesList() {
   const handleDelete = async (id: Id<"notes">) => {
     const result = await removeNote({ noteId: id });
     setPendingDeleteId(null);
-    setRemoved({ id, undoUntilMs: result.undoUntilMs });
+    setRemovedStack((stack) => [...stack.filter((r) => r.id !== id), { id, undoUntilMs: result.undoUntilMs }]);
   };
 
   const handleUndo = async () => {
     if (!removed) return;
     const result = await restoreNote({ noteId: removed.id });
-    if (result.success) setRemoved(null);
+    if (result.success) setRemovedStack((stack) => stack.filter((r) => r.id !== removed.id));
+  };
+
+  // Drops the shown entry and any other whose window has ended.
+  const handleUndoExpire = () => {
+    const now = Date.now();
+    setRemovedStack((stack) => stack.filter((r) => r.id !== removed?.id && r.undoUntilMs > now));
   };
 
   return (
@@ -215,7 +223,7 @@ function NotesList() {
           key={removed.id}
           undoUntilMs={removed.undoUntilMs}
           onUndo={handleUndo}
-          onExpire={() => setRemoved(null)}
+          onExpire={handleUndoExpire}
         />
       ) : null}
     </main>

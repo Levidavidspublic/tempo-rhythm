@@ -214,7 +214,16 @@ export function slashInsertion(id: SlashCommandId, atLineStart: boolean): { text
 /* [[links]] and "Linked here" (decision 3)                             */
 /* ------------------------------------------------------------------ */
 
-export { type Backlink, backlinksFor, findWikiLinks, type PageRef, sameTitle, type WikiLink } from "@tempo/utils";
+export {
+  type Backlink,
+  backlinksFor,
+  findWikiLinks,
+  isLinkableTitle,
+  type PageRef,
+  sameTitle,
+  titleKey,
+  type WikiLink,
+} from "@tempo/utils";
 
 /** The "[[" picker trigger: an unclosed `[[query` right before the cursor on the same line. */
 export function wikiQuery(lineBefore: string): { query: string; offset: number } | null {
@@ -223,15 +232,28 @@ export function wikiQuery(lineBefore: string): { query: string; offset: number }
   return { query: match[1]!, offset: match.index };
 }
 
+/**
+ * The page title of the `[[link]]` that holds `offset` on one line (its brackets included), or
+ * null. Keyboard users open a link with Mod-Enter, so the editor asks this at the cursor.
+ */
+export function wikiLinkAtOffset(lineText: string, offset: number): string | null {
+  const re = /\[\[([^[\]\n|]{1,200})(?:\|[^[\]\n]{1,200})?\]\]/g;
+  for (let m = re.exec(lineText); m !== null; m = re.exec(lineText)) {
+    if (offset < m.index) return null;
+    if (offset <= m.index + m[0].length) return m[1]!.trim() || null;
+  }
+  return null;
+}
+
 /** Titles for the "[[" picker, best match first. */
 export function pickPages(query: string, pages: readonly PageRef[], selfId: string, limit = 8): PageRef[] {
-  const q = query.trim().toLocaleLowerCase();
+  const q = query.trim().toLowerCase();
   return pages
     .filter((p) => p.id !== selfId && p.title.trim().length > 0)
-    .filter((p) => !q || p.title.toLocaleLowerCase().includes(q))
+    .filter((p) => !q || p.title.toLowerCase().includes(q))
     .sort((a, b) => {
-      const as = a.title.toLocaleLowerCase().startsWith(q) ? 0 : 1;
-      const bs = b.title.toLocaleLowerCase().startsWith(q) ? 0 : 1;
+      const as = a.title.toLowerCase().startsWith(q) ? 0 : 1;
+      const bs = b.title.toLowerCase().startsWith(q) ? 0 : 1;
       return as - bs || a.title.localeCompare(b.title);
     })
     .slice(0, limit);
