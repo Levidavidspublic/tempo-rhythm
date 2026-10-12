@@ -121,6 +121,16 @@ describe("notes.listForRail", () => {
     expect(read).toBeLessThanOrEqual(2 * notes.RAIL_PAGE_LIMIT_MAX);
   });
 
+  test("a live pin behind newer pinned tombstones still shows among the newest live pages", async () => {
+    const rows = [
+      ...Array.from({ length: 7 }, (_, i) => note(String(50 + i), { pinned: true, deletedAt: 900 + i })),
+      note("40", { pinned: true }),
+      note("30"),
+    ];
+    const result = await handler(makeCtx("users:a", rows), { limit: 7 });
+    expect(result.map((r) => r._id)).toEqual(["notes:40", "notes:30"]);
+  });
+
   test("clamps the limit to 1..RAIL_PAGE_LIMIT_MAX", async () => {
     const rows = Array.from({ length: 40 }, (_, i) => note(String(i + 1)));
     expect(await handler(makeCtx("users:a", rows), { limit: 500 })).toHaveLength(notes.RAIL_PAGE_LIMIT_MAX);

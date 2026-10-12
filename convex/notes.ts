@@ -98,9 +98,14 @@ export async function listRailPagesForUser(
     .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
     .order("desc")
     .take(limit);
+  // Dedupe by id, not by the pinned flag: a live pin the pinned window missed (its newest
+  // pins were tombstones) can still show among the newest live pages.
+  const seen = new Set<string>(out.map((row) => row._id));
   for (const note of live) {
     if (out.length >= limit) break;
-    if (!note.pinned) out.push(toRow(note));
+    if (seen.has(note._id)) continue;
+    seen.add(note._id);
+    out.push(toRow(note));
   }
   return out;
 }
