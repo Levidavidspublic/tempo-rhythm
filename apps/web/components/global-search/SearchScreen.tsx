@@ -27,8 +27,19 @@ export function SearchHeader() {
   );
 }
 
-/** Search (docs/design/v3/screens/web/search.html): one box, results grouped by kind. */
+/**
+ * Search (docs/design/v3/screens/web/search.html): one box, results grouped by kind.
+ * This screen hydrates inside a Suspense boundary, after the language may already have switched
+ * from the server's English; its text renders once mounted so the two never differ.
+ */
 export function SearchScreen() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted ? <SearchScreenBody /> : <div className="sr-screen" />;
+}
+
+/** The screen itself, once mounted (exported for its render tests). */
+export function SearchScreenBody() {
   const { t } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -38,10 +49,6 @@ export function SearchScreen() {
   const [query, setQuery] = useState(urlQuery.trim());
   const [kind, setKind] = useState<Kind>("all");
   const listRef = useRef<HTMLDivElement>(null);
-  // This screen hydrates inside a Suspense boundary, after the language may already have
-  // switched from the server's English; its text renders once mounted so the two never differ.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const next = draft.trim();
@@ -77,12 +84,13 @@ export function SearchScreen() {
   };
 
   const show = (k: Exclude<Kind, "all">) => kind === "all" || kind === k;
-  const total = results
-    ? results.notes.length + results.tasks.length + results.habits.length + results.goals.length
-    : 0;
+  const counts = results
+    ? { notes: results.notes.length, tasks: results.tasks.length, habits: results.habits.length, goals: results.goals.length }
+    : { notes: 0, tasks: 0, habits: 0, goals: 0 };
+  const total = counts.notes + counts.tasks + counts.habits + counts.goals;
+  // The count and the empty state follow the Show filter, not just the whole result set.
+  const shown = kind === "all" ? total : counts[kind];
   const noMatches = results !== undefined && total === 0;
-
-  if (!mounted) return <div className="sr-screen" />;
 
   return (
     <div className="sr-screen">
@@ -135,7 +143,13 @@ export function SearchScreen() {
           <p className="tp-muted">{t("search.none").replace("{q}", query)}</p>
         ) : (
           <>
-            <p className="tp-muted tp-small">{total === 1 ? t("search.result") : t("search.results").replace("{n}", String(total))}</p>
+            {shown === 0 ? (
+              <p className="tp-muted">{t("search.noneHere").replace("{q}", query)}</p>
+            ) : (
+              <p className="tp-muted tp-small">
+                {shown === 1 ? t("search.result") : t("search.results").replace("{n}", String(shown))}
+              </p>
+            )}
             {show("notes") ? (
               <ResultGroup
                 kind="notes"
