@@ -3,7 +3,8 @@
  * page for an ISO week are ordinary Markdown pages made from a template with {{tokens}}.
  * Pure date math on YYYY-MM-DD strings (UTC calendar arithmetic, no time zone involved).
  */
-import { applyTemplateTokens, dayTokens } from "@/lib/editor/markdown-model";
+import { parseTempoBlocks } from "@tempo/utils";
+import { applyTemplateTokens, dayTokens, newBlockId, tempoFence } from "@/lib/editor/markdown-model";
 import type { Lang } from "@/lib/i18n";
 
 export type PeriodKind = "daily" | "weekly";
@@ -106,16 +107,35 @@ function withoutTopHeading(body: string): string {
   return m ? body.slice(m[0].length) : body;
 }
 
+/** The template's own page-meta and template blocks describe the template, not the new page. */
+function withoutTemplateBlocks(body: string): string {
+  return parseTempoBlocks(body)
+    .filter((s) => !(s.kind === "valid" && (s.block.type === "page-meta" || s.block.type === "template")))
+    .map((s) => s.source)
+    .join("");
+}
+
 /**
  * The title and body of a new dated page made from `templateBody`. Known {{tokens}} are filled
- * (date, weekday, day, week, range, year, title); unknown ones stay as typed.
+ * (date, weekday, day, week, range, year, title); unknown ones stay as typed. The body opens with
+ * the page-meta block that says what the page is (NT-07: it is the truth, and `notes.pageType`
+ * and `notes.date` mirror it). For a weekly page the date is the week's Monday.
  */
 export function periodPageDraft(
   kind: PeriodKind,
   iso: string,
   templateBody: string,
   lang: Lang = "en",
+  now: number = Date.now(),
+  random: () => number = Math.random,
 ): { title: string; body: string } {
   const tokens = kind === "daily" ? dayTokens(iso, lang) : weekTokens(iso, lang);
-  return { title: tokens.title ?? iso, body: applyTemplateTokens(withoutTopHeading(templateBody), tokens) };
+  const meta = tempoFence({
+    id: newBlockId(now, random),
+    v: 1,
+    type: "page-meta",
+    data: { pageType: kind, date: iso, tags: [] },
+  });
+  const prose = applyTemplateTokens(withoutTopHeading(withoutTemplateBlocks(templateBody)), tokens);
+  return { title: tokens.title ?? iso, body: `${meta}${prose}` };
 }
