@@ -40,7 +40,11 @@ function maskCode(body: string): string {
   }
   if (fence) blank(fenceStart, body.length);
   const masked = out.join("");
-  return masked.replace(/(`+)(?:(?!\1)[^\n])+?\1/g, (span) => " ".repeat(span.length));
+  // A code span may run over line breaks inside its paragraph, but never across a blank line.
+  // CRLF and lone CR count as line breaks too (bodies keep their bytes).
+  return masked.replace(/(`+)(?:(?!\1)(?!(?:\r\n|\r|\n)[ \t]*(?:\r\n|\r|\n))[\s\S])+?\1/g, (span) =>
+    span.replace(/[^\r\n]/g, " "),
+  );
 }
 
 /** `[[Title]]` and `[[Title|shown text]]` outside Tempo fences and outside code. */

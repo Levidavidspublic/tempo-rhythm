@@ -49,8 +49,12 @@ export async function listNotesForUser(
   return rows;
 }
 
-/** Most pages the rail shows (pinned first, then most recently edited). */
-export const RAIL_PAGE_LIMIT_MAX = 20;
+/**
+ * Most pages the rail shows: pinned first, then the newest pages. Every read loads whole
+ * documents (bodies included), and Convex caps one query at 16 MiB read with documents of up
+ * to 1 MiB, so the rail reads at most 2 * RAIL_PAGE_LIMIT_MAX = 14 documents.
+ */
+export const RAIL_PAGE_LIMIT_MAX = 7;
 
 export type RailPage = Pick<Doc<"notes">, "_id" | "title" | "pinned" | "updatedAt">;
 
@@ -71,26 +75,39 @@ export async function listRailPagesForUser(
   userId: Id<"users">,
   requested: number | undefined,
 ): Promise<RailPage[]> {
-  const limit = Math.min(Math.max(Math.floor(requested ?? 8), 1), RAIL_PAGE_LIMIT_MAX);
-  // Read a little past the limit so soft-deleted rows can't crowd live pages out entirely.
-  const window = limit * 3;
-  const pinned = await ctx.db
+  const limit = Math.min(Math.max(Math.floor(requested ?? RAIL_PAGE_LIMIT_MAX), 1), RAIL_PAGE_LIMIT_MAX);
+  const toRow = (note: Doc<"notes">): RailPage => ({
+    _id: note._id,
+    title: note.title,
+    pinned: note.pinned,
+    updatedAt: note.updatedAt,
+  });
+  // At most `limit` reads each. Pins: the newest pinned pages, live ones ordered by last edit.
+  const pins = await ctx.db
     .query("notes")
     .withIndex("by_userId_pinned", (q) => q.eq("userId", userId).eq("pinned", true))
-    .take(window);
-  const recent = await ctx.db
-    .query("notes")
-    .withIndex("by_userId_updatedAt", (q) => q.eq("userId", userId))
     .order("desc")
-    .take(window);
-  const seen = new Set<string>();
-  const out: RailPage[] = [];
-  const live = (n: Doc<"notes">) => n.deletedAt === undefined;
-  const byRecent = (a: Doc<"notes">, b: Doc<"notes">) => b.updatedAt - a.updatedAt;
-  for (const note of [...pinned.filter(live).sort(byRecent), ...recent.filter(live)]) {
-    if (seen.has(note._id) || out.length >= limit) continue;
+    .take(limit);
+  const out = pins
+    .filter((n) => n.deletedAt === undefined)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map(toRow);
+  if (out.length >= limit) return out;
+  // Then the newest live pages: by_userId_deletedAt holds only live rows under
+  // deletedAt = undefined, so soft-deleted pages never use up the bound.
+  const live = await ctx.db
+    .query("notes")
+    .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
+    .order("desc")
+    .take(limit);
+  // Dedupe by id, not by the pinned flag: a live pin the pinned window missed (its newest
+  // pins were tombstones) can still show among the newest live pages.
+  const seen = new Set<string>(out.map((row) => row._id));
+  for (const note of live) {
+    if (out.length >= limit) break;
+    if (seen.has(note._id)) continue;
     seen.add(note._id);
-    out.push({ _id: note._id, title: note.title, pinned: note.pinned, updatedAt: note.updatedAt });
+    out.push(toRow(note));
   }
   return out;
 }
@@ -115,16 +132,20 @@ export const searchTitles = query({
       .withIndex("by_userId_updatedAt", (iq) => iq.eq("userId", user._id))
       .order("desc")
       .take(LINK_SCAN_LIMIT);
+    // Exact titles first, so resolving a clicked [[Title]] never misses its page behind
+    // newer prefix matches; then titles that start with the query; then the rest.
+    const exact: PageTitle[] = [];
     const starts: PageTitle[] = [];
     const contains: PageTitle[] = [];
     for (const n of rows) {
       if (n.deletedAt !== undefined || !n.title.trim()) continue;
-      const title = n.title.toLocaleLowerCase();
+      const title = n.title.trim().toLocaleLowerCase();
       const row = { _id: n._id, title: n.title, pinned: n.pinned, updatedAt: n.updatedAt };
-      if (!q || title.startsWith(q)) starts.push(row);
+      if (q && title === q) exact.push(row);
+      else if (!q || title.startsWith(q)) starts.push(row);
       else if (title.includes(q)) contains.push(row);
     }
-    return [...starts, ...contains].slice(0, limit);
+    return [...exact, ...starts, ...contains].slice(0, limit);
   },
 });
 
@@ -422,6 +443,20 @@ export const restore = mutation({
     const now = Date.now();
     if (!isRestorable(note.deletedAt, now)) {
       return { success: false };
+    }
+    // A dated page restored after a new page was made for the same date comes back as a plain
+    // page, so one date never has two live pages (its text is kept either way).
+    const kind = note.pageType === "daily" || note.pageType === "weekly" ? note.pageType : null;
+    const clash = kind && note.date ? await findPeriodPage(ctx, user._id, kind, note.date) : null;
+    if (clash && clash._id !== note._id) {
+      await ctx.db.patch(args.noteId, {
+        deletedAt: undefined,
+        updatedAt: now,
+        pageType: "plain",
+        periodType: "none",
+        date: undefined,
+      });
+      return { success: true };
     }
     await ctx.db.patch(args.noteId, { deletedAt: undefined, updatedAt: now });
     return { success: true };

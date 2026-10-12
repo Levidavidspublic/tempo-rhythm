@@ -36,6 +36,18 @@ export function DailyPage({ dayStartMs, tasks }: { dayStartMs: number; tasks: re
       </div>
     );
   }
+  if (state.status === "gone") {
+    return (
+      <div className="tp-paper" data-component="Page">
+        <div className="tp-page__body">
+          <output>{t("today.pageGone")}</output>
+          <button className="tp-btn tp-btn--secondary" type="button" onClick={state.makeNew}>
+            {t("today.pageNew")}
+          </button>
+        </div>
+      </div>
+    );
+  }
   if (state.status === "loading") {
     return (
       <div className="tp-paper" data-component="Page" aria-busy="true">
@@ -50,6 +62,7 @@ export function DailyPage({ dayStartMs, tasks }: { dayStartMs: number; tasks: re
       <NotePage
         noteId={state.noteId}
         backHref={null}
+        canDelete={false}
         lead={
           <section className="tp-page-content" aria-labelledby="nextup-eyebrow">
             <NextUpCard tasks={tasks} />

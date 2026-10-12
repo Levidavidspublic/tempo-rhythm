@@ -22,7 +22,9 @@ export function NextUpCard({ tasks }: { tasks: readonly NextUpTask[] }) {
   const [now, setNow] = useState(() => Date.now());
 
   const task = useMemo(() => pickNextUp(tasks, skipped), [tasks, skipped]);
-  const running = timer !== null && timer.pausedLeft === null && timer.taskId === task?._id;
+  // A countdown that reached its deadline is finished: no ticking, Start is offered again.
+  const running =
+    timer !== null && timer.pausedLeft === null && timer.taskId === task?._id && now < timer.endsAt;
 
   useEffect(() => {
     if (!running) return;

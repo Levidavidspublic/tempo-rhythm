@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask to join · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — sign-up.html */
+  .su-check { display: grid; gap: var(--tp-space-2); }
+  .su-foot { display: grid; gap: var(--tp-space-3); justify-items: center; }
+</style>
+</head>
+<body>
+<!--
+@screen   Sign up (ask to join)
+@route    apps/web/app/(auth)/sign-up/page.tsx
+@layout   Auth
+@data     none
+@actions  ask to join -> access.request({ email, turnstileToken })   // creates a pending request; Amit approves; no email is sent to the person until approved
+@actions  human check -> Cloudflare Turnstile widget returns turnstileToken   // checked again on the server
+@actions  already in -> link to /sign-in
+@states   default | empty | loading | error | offline  (?state=)   + sending, invalid (?state=sending | ?state=invalid)
+@flow     1. One field: email. Plus the human check (Turnstile) under it, with a visible label.
+          2. Press "Ask to join". If the email is empty or not an email, show the error summary at the top and the message under the field. Focus moves to the summary.
+          3. If the human check isn't done, say so in words next to it.
+          4. While sending, the button reads "Sending…" and can't be pressed twice.
+          5. On success, go to /approval-pending with the email.
+          6. If the request fails (?state=error), say "Couldn't send your request. Nothing was lost." and keep what was typed.
+          7. Offline: a banner says it will work when you're back; the button is disabled with a reason.
+          8. An email already on the list goes to the same "You're on the list" page. We never say whether an email exists.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<main id="main" class="tp-auth" tabindex="-1">
+  <!-- @component AuthCard | shadcn: card + form | props: { title: 'Ask to join', lede } | events: onSubmit -> access.request -->
+  <div class="tp-auth-card" data-component="AuthCard">
+    <a class="tp-auth-card__brand" href="landing.html" data-i18n="brand">Tempo</a>
+    <div>
+      <h1 class="tp-auth-card__title" data-i18n="title">Ask to join</h1>
+      <p class="tp-auth-card__lede" data-i18n="lede">We let people in a few at a time. Leave your email and we'll write when you're in.</p>
+    </div>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">You can ask to join when you're back online.</span></span>
+    </div>
+
+    <!-- @component StateError | shadcn: alert | props: { what: 'request' } | events: onRetry -> submit again -->
+    <div class="tp-notice" data-tone="danger" role="alert" data-component="StateError" data-state-show="error">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="err.title">Couldn't send your request.</span> <span data-i18n="err.body">Nothing was lost. Try again in a moment.</span></span>
+    </div>
+
+    <!-- @component FormErrorSummary | shadcn: alert | props: { errors: {field, text}[] } | events: link -> focus field -->
+    <div class="tp-error-summary" role="alert" tabindex="-1" data-component="FormErrorSummary" id="su-summary" hidden>
+      <p class="tp-error-summary__title" data-i18n="sum.title">Please check one thing</p>
+      <ul role="list"><li><a href="#su-email" data-sum-text data-i18n="err.email">Enter your email, like name@example.com</a></li></ul>
+    </div>
+
+    <!-- @component Form | shadcn: form | props: — | events: onSubmit -> access.request({ email, turnstileToken }) -->
+    <form class="tp-form" id="su-form" data-component="Form" action="approval-pending.html" method="get" novalidate>
+      <!-- @component EmailField | shadcn: input | props: { id: 'su-email', label: 'Email' } | events: — -->
+      <div class="tp-field" data-component="EmailField">
+        <label class="tp-label" for="su-email" data-i18n="email.label">Email</label>
+        <input class="tp-input" id="su-email" name="email" type="email" autocomplete="email" inputmode="email" dir="ltr" spellcheck="false" required aria-describedby="su-email-help su-email-error" placeholder="name@example.com">
+        <p class="tp-help" id="su-email-help" data-i18n="email.help">We only use it to let you in. No newsletters.</p>
+        <p class="tp-error-text" id="su-email-error" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span data-i18n="err.email">Enter your email, like name@example.com</span></p>
+      </div>
+
+      <!-- @component HumanCheck | shadcn: — (Cloudflare Turnstile placeholder) | props: { siteKey } | events: onSuccess -> turnstileToken -->
+      <div class="tp-field su-check" data-component="HumanCheck">
+        <span class="tp-label" id="su-check-label" data-i18n="check.label">Quick check that you're a person</span>
+        <!-- REAL: <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY} onSuccess={setToken} /> renders here, in the page language -->
+        <label class="tp-choice" aria-describedby="su-check-help su-check-error">
+          <input class="tp-checkbox" type="checkbox" id="su-human" name="human" aria-labelledby="su-check-label su-human-text">
+          <span class="tp-choice__text" id="su-human-text" data-i18n="check.box">I'm a person</span>
+        </label>
+        <p class="tp-help" id="su-check-help" data-i18n="check.help">Protected by Cloudflare. This keeps bots out.</p>
+        <p class="tp-error-text" id="su-check-error" hidden><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span data-i18n="err.check">Please finish the check above.</span></p>
+      </div>
+
+      <div class="tp-form__actions">
+        <button class="tp-btn tp-btn--primary tp-btn--block" type="submit" id="su-submit" aria-describedby="su-submit-note"><span data-submit-label data-i18n="submit">Ask to join</span></button>
+      </div>
+      <p class="tp-small tp-muted" id="su-submit-note" role="status" data-i18n="submit.note">You'll get one email when you're in.</p>
+    </form>
+
+    <div class="tp-auth-card__foot su-foot">
+      <p><span data-i18n="foot.have">Already in?</span> <a class="tp-btn tp-btn--link" href="sign-in.html" data-i18n="foot.signin">Sign in</a></p>
+      <!-- @component LanguageSwitch | shadcn: toggle-group | props: { current } | events: link ?lang= -->
+      <div class="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
+        <a href="?lang=en" hreflang="en" lang="en" data-lang-link="en">English</a>
+        <a href="?lang=he" hreflang="he" lang="he" data-lang-link="he">עברית</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "Ask to join · Tempo", "sending": "Sending…", "offline.note": "You're offline. This will work when you're back." },
+  he: {
+    "doc.title": "בקשה להצטרף · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "lang.label": "שפה",
+    "title": "בקשה להצטרף", "lede": "אנחנו מכניסים אנשים בהדרגה. משאירים מייל ונכתוב כשנכנסת.",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "אפשר לבקש להצטרף כשהחיבור יחזור.",
+    "err.title": "לא הצלחנו לשלוח את הבקשה.", "err.body": "שום דבר לא אבד. נסו שוב בעוד רגע.",
+    "sum.title": "כדאי לבדוק דבר אחד",
+    "email.label": "מייל", "email.help": "נשתמש בו רק כדי להכניס אותך. בלי ניוזלטרים.",
+    "err.email": "כתבו את המייל שלכם, למשל name@example.com",
+    "check.label": "בדיקה קצרה שאת/ה אדם", "check.box": "אני אדם", "check.help": "מוגן על ידי Cloudflare. זה שומר על בוטים בחוץ.",
+    "err.check": "צריך לסיים את הבדיקה למעלה.",
+    "submit": "בקשה להצטרף", "submit.note": "תקבלו מייל אחד כשתיכנסו.", "sending": "שולחים…", "offline.note": "אין חיבור. זה יעבוד כשהחיבור יחזור.",
+    "foot.have": "כבר בפנים?", "foot.signin": "כניסה"
+  }
+};
+
+(function () {
+  var doc = document, root = doc.documentElement;
+  var params = new URLSearchParams(location.search);
+  var form = doc.getElementById("su-form"), email = doc.getElementById("su-email"), human = doc.getElementById("su-human");
+  var submit = doc.getElementById("su-submit"), label = submit.querySelector("[data-submit-label]"), note = doc.getElementById("su-submit-note");
+  var summary = doc.getElementById("su-summary");
+
+  /* LanguageSwitch — REAL: next-intl locale cookie; here localStorage stands in. */
+  var lang = root.lang === "he" ? "he" : "en";
+  doc.querySelectorAll("[data-lang-link]").forEach(function (a) {
+    if (a.getAttribute("data-lang-link") === lang) a.setAttribute("aria-current", "true");
+    a.addEventListener("click", function () { try { localStorage.setItem("tempo-lang", a.getAttribute("data-lang-link")); } catch (e) {} });
+  });
+
+  function setFieldError(input, errId, on) {
+    var err = doc.getElementById(errId);
+    if (input) { if (on) input.setAttribute("aria-invalid", "true"); else input.removeAttribute("aria-invalid"); }
+    if (err) err.hidden = !on;
+  }
+
+  /** Validate on the client. REAL: zod schema shared with convex access.request. STATE: aria-invalid, error text, summary. */
+  function validate() {
+    var okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
+    var okHuman = human.checked;
+    setFieldError(email, "su-email-error", !okEmail);
+    setFieldError(null, "su-check-error", !okHuman);
+    if (!okHuman) human.setAttribute("aria-invalid", "true"); else human.removeAttribute("aria-invalid");
+    var list = summary.querySelector("ul");
+    list.innerHTML = "";
+    if (!okEmail) list.insertAdjacentHTML("beforeend", '<li><a href="#su-email"></a></li>'), list.lastChild.firstChild.textContent = TP.t("err.email");
+    if (!okHuman) list.insertAdjacentHTML("beforeend", '<li><a href="#su-human"></a></li>'), list.lastChild.firstChild.textContent = TP.t("err.check");
+    summary.hidden = okEmail && okHuman;
+    if (!summary.hidden) summary.focus();
+    return okEmail && okHuman;
+  }
+
+  /** Sending state. STATE: button disabled, label "Sending…", aria-busy on the form. */
+  function setSending(on) {
+    submit.disabled = on;
+    form.setAttribute("aria-busy", String(on));
+    label.textContent = on ? TP.t("sending") : TP.t("submit") === "submit" ? "Ask to join" : TP.t("submit");
+  }
+
+  function setOffline(on) {
+    submit.disabled = on;
+    note.textContent = on ? TP.t("offline.note") : (lang === "he" ? TP.t("submit.note") : "You'll get one email when you're in.");
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (root.getAttribute("data-state") === "offline") return;
+    if (!validate()) return;
+    setSending(true);
+    // REAL: convex access.request({ email, turnstileToken }) — creates a pending request; same answer whether or not the email is known
+    setTimeout(function () {
+      location.href = "approval-pending.html?email=" + encodeURIComponent(email.value.trim()) + (params.get("lang") ? "&lang=" + params.get("lang") : "");
+    }, 900);
+  });
+
+  email.addEventListener("input", function () { if (email.getAttribute("aria-invalid")) setFieldError(email, "su-email-error", false); });
+  human.addEventListener("change", function () { if (human.checked) { setFieldError(null, "su-check-error", false); human.removeAttribute("aria-invalid"); } });
+
+  TP.onReady = function (p) {
+    var s = p.get("state");
+    if (s === "sending") { email.value = "maya@example.com"; human.checked = true; setSending(true); }
+    if (s === "invalid") { email.value = "maya@example"; validate(); }
+    if (s === "error") { email.value = "maya@example.com"; human.checked = true; }
+    if (s === "offline") setOffline(true);
+  };
+})();
+</script>
+</body>
+</html>

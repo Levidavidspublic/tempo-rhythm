@@ -212,10 +212,12 @@ type NotePageProps = {
   backHref?: string | null;
   /** Shown on the paper above the body. */
   lead?: ReactNode;
+  /** False hides Delete on this page view. */
+  canDelete?: boolean;
 };
 
 /** Loads one page, saves edits (debounced), and draws it with PageEditorView. Also used by Today. */
-export function NotePage({ noteId, backHref, lead }: NotePageProps) {
+export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
@@ -366,6 +368,7 @@ export function NotePage({ noteId, backHref, lead }: NotePageProps) {
       onCancelDelete={() => setConfirmingDelete(false)}
       backHref={backHref}
       lead={lead}
+      canDelete={canDelete}
     />
   );
 }
