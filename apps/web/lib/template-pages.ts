@@ -25,8 +25,9 @@ const TITLE_MAX = 200;
 
 /**
  * The new page made from a template on `isoDate` (the person's local day): the typed title, or
- * the template's name; the body with date tokens filled. Unknown tokens stay as typed, and tokens
- * inside Tempo blocks are never touched.
+ * the template's name; the body with date tokens filled. {{title}} is the typed title when there
+ * is one, else the day. Unknown tokens stay as typed, and tokens inside Tempo blocks are never
+ * touched.
  */
 export function templatePageDraft(
   template: { name: string; body: string },
@@ -35,5 +36,5 @@ export function templatePageDraft(
   const tokens = dayTokens(options.isoDate, options.lang ?? "en");
   const typed = options.title.replace(/\s+/g, " ").trim();
   const title = (typed || template.name.trim() || tokens.title || options.isoDate).slice(0, TITLE_MAX);
-  return { title, body: applyTemplateTokens(template.body, tokens) };
+  return { title, body: applyTemplateTokens(template.body, typed ? { ...tokens, title } : tokens) };
 }

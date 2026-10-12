@@ -72,6 +72,8 @@ export function TemplatesLibrary() {
   const builtIn = shown.filter((template) => template.source === "starter");
   const mine = shown.filter((template) => template.source === "user");
   const searching = query.trim().length > 0;
+  // While searching, a section with no matches steps aside; one notice says when nothing matches.
+  const noMatch = searching && shown.length === 0;
 
   const cardProps = {
     pendingDeleteId,
@@ -165,7 +167,13 @@ export function TemplatesLibrary() {
         </div>
       ) : (
         <>
-          {scope !== "mine" ? (
+          {noMatch ? (
+            <div className="tp-empty" data-component="EmptyState">
+              <p>{t("tpl.noMatch")}</p>
+              <p className="tp-small">{t("tpl.noMatchHint")}</p>
+            </div>
+          ) : null}
+          {scope !== "mine" && !(searching && builtIn.length === 0) ? (
             <TemplateSection
               id="tpl-builtin"
               title={t("tpl.builtin")}
@@ -175,7 +183,7 @@ export function TemplatesLibrary() {
               {...cardProps}
             />
           ) : null}
-          {scope !== "starter" ? (
+          {scope !== "starter" && !(searching && mine.length === 0) ? (
             <TemplateSection
               id="tpl-mine"
               title={t("tpl.yours")}

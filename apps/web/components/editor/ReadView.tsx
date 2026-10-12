@@ -7,8 +7,11 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 
 type Props = {
   body: string;
-  /** Opens the page a [[Title]] points to (or makes it, like the editor does). */
-  onOpenLink: (title: string) => void;
+  /**
+   * Opens the page a [[Title]] points to (or makes it, like the editor does). Without it (a
+   * preview), links show as link text with no control.
+   */
+  onOpenLink?: (title: string) => void;
   labels: { minutes: string; brokenBlock: string; template: string };
 };
 
@@ -51,6 +54,7 @@ export function ReadView({ body, onOpenLink, labels }: Props) {
                 a({ href, children }) {
                   if (href?.startsWith("wiki:")) {
                     const title = decodeURIComponent(href.slice(5));
+                    if (!onOpenLink) return <span className="tp-wikilink">{children}</span>;
                     return (
                       <button className="tp-wikilink" type="button" onClick={() => onOpenLink(title)}>
                         {children}

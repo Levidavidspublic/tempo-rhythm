@@ -112,7 +112,6 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <p className="tp-small tp-muted">{t("tplRun.previewHint")}</p>
         <ReadView
           body={draft?.body ?? template.body}
-          onOpenLink={() => undefined}
           labels={{ minutes: t("editor.minutes"), brokenBlock: t("editor.broken"), template: t("editor.template") }}
         />
       </section>
