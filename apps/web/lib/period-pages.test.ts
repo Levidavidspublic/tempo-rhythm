@@ -36,6 +36,21 @@ describe("date math", () => {
     expect(mondayOfWeekKey("2025-W01")).toBe("2024-12-30");
     expect(mondayOfWeekKey("2026-W53")).toBe("2026-12-28");
     expect(mondayOfWeekKey("2025-W53")).toBeNull();
+    // Years 1-99 (which Date.UTC would read as 1901-1999) never throw; year 0 is rejected.
+    for (const key of ["0001-W01", "0050-W26", "0099-W10"]) {
+      expect(() => mondayOfWeekKey(key)).not.toThrow();
+    }
+    expect(mondayOfWeekKey("0000-W01")).toBeNull();
+    // Week keys round-trip at both ends of the four-digit years, and never throw past them.
+    for (const key of ["0099-W10", "0001-W02", "9999-W52", "2026-W01", "2020-W53"]) {
+      const monday = mondayOfWeekKey(key);
+      expect(monday).not.toBeNull();
+      expect(weekKey(monday as string)).toBe(key);
+    }
+    expect(() => mondayOfWeekKey("9999-W53")).not.toThrow();
+    expect(mondayOfWeekKey("9999-W53")).toBeNull();
+    expect(isIsoDate("0099-03-02")).toBe(true);
+    expect(addDays("0099-12-31", 1)).toBe("0100-01-01");
     expect(mondayOfWeekKey("2026-W00")).toBeNull();
     expect(mondayOfWeekKey("2026-42")).toBeNull();
   });

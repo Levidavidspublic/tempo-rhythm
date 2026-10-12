@@ -293,6 +293,7 @@ const en = {
   "bd.needText": "Type or paste whatever is on your mind first. A rough list is enough.",
   "bd.error": "That did not work. Your text is still here, so try again in a moment.",
   "bd.back": "Back to my dump",
+  "notes.noContent": "No content yet.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -562,6 +563,7 @@ const he: Record<MessageKey, string> = {
   "bd.needText": "קודם אפשר להקליד או להדביק את מה שבראש. רשימה גסה מספיקה.",
   "bd.error": "זה לא הצליח. הטקסט עדיין כאן, אפשר לנסות שוב בעוד רגע.",
   "bd.back": "חזרה לטקסט שלי",
+  "notes.noContent": "עוד אין תוכן.",
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, he };
