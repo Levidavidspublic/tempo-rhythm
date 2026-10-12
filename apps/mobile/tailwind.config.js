@@ -1,6 +1,6 @@
 /**
  * NativeWind config — Tempo Flow design tokens for mobile.
- * @source docs/design/claude-export/design-system/tokens.css
+ * @source docs/design/v3/tokens.css (v3 palette); the older named colours stay for screens not yet ported.
  */
 module.exports = {
   content: [
@@ -29,19 +29,33 @@ module.exports = {
         amber: '#D4A44C',
         'slate-blue': '#6E88A7',
 
-        // Semantic aliases (match web CSS vars)
-        background: '#F3EBE2',
-        foreground: '#131312',
-        card: '#FAF6F0',
-        'card-foreground': '#131312',
-        border: '#D7CEC2',
-        'border-soft': '#E6DDD1',
-        primary: '#D97757',
-        'primary-foreground': '#FAFAF9',
-        muted: '#EBE0D2',
-        'muted-foreground': '#6B6864',
-        accent: '#E8A87C',
-        destructive: '#C8553D',
+        // v3 palette (docs/design/v3/tokens.css; mirrored in packages/ui/src/theme/tokens.ts).
+        ground: '#F3EEE4',
+        paper: '#FBF9F4',
+        sunken: '#EAE3D6',
+        hover: '#EDE6DA',
+        'ink-muted': '#57514A',
+        'ink-subtle': '#6B645C',
+        'line-strong': '#B9AE9C',
+        'line-control': '#877C6B',
+        done: '#3B6948',
+        info: '#36628C',
+        caution: '#7E5A0C',
+        danger: '#9E3B27',
+
+        // Semantic aliases: the same mapping as the web's globals.css (v3 tokens).
+        background: '#F3EEE4',
+        foreground: '#1B1916',
+        card: '#FBF9F4',
+        'card-foreground': '#1B1916',
+        border: '#D9D0C1',
+        'border-soft': '#EAE3D6',
+        primary: '#A3461F',
+        'primary-foreground': '#FBF9F4',
+        muted: '#EAE3D6',
+        'muted-foreground': '#57514A',
+        accent: '#EDE6DA',
+        destructive: '#9E3B27',
       },
       fontFamily: {
         serif: ['Newsreader', 'Georgia', 'serif'],

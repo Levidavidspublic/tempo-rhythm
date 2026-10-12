@@ -1,10 +1,10 @@
 import { Tabs } from "expo-router";
 import { BookOpen, CheckSquare, Heart, Home } from "lucide-react-native";
-import { tempoColors } from "@tempo/ui/theme";
+import { tempoV3Colors } from "@tempo/ui/theme";
 
 /**
  * Tempo Flow bottom tab bar.
- * @source docs/design/claude-export/design-system/mobile/mobile-shell.jsx
+ * @source docs/design/v3/screens/mobile/today.html (tab bar)
  * @action navigateTab
  */
 export default function TabsLayout() {
@@ -12,11 +12,14 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: tempoColors.tempoOrange,
-        tabBarInactiveTintColor: tempoColors.dustGreySoft,
+        // v3 tab bar (tempo.css .tp-tab): ink when current on a hover wash, muted ink otherwise.
+        tabBarActiveTintColor: tempoV3Colors.ink,
+        tabBarInactiveTintColor: tempoV3Colors.inkMuted,
+        tabBarActiveBackgroundColor: tempoV3Colors.hover,
+        tabBarLabelStyle: { fontWeight: "600" },
         tabBarStyle: {
-          backgroundColor: tempoColors.creamRaised,
-          borderTopColor: tempoColors.lineSoft,
+          backgroundColor: tempoV3Colors.paper,
+          borderTopColor: tempoV3Colors.line,
         },
       }}
     >
