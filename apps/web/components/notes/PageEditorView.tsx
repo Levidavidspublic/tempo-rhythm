@@ -11,6 +11,7 @@ import {
   type LivePreviewEditorHandle,
   type MenuKey,
 } from "@/components/editor/LivePreviewEditor";
+import { focusTaskTitleWhenDrawn } from "@/components/editor/live-preview";
 import { ReadView } from "@/components/editor/ReadView";
 import { type MenuItem, SlashMenu } from "@/components/editor/SlashMenu";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -20,6 +21,7 @@ import {
   exportContents,
   exportFileName,
   filterSlashCommands,
+  insertedBlockId,
   SLASH_COMMANDS,
   type SlashCommandId,
   slashInsertion,
@@ -148,6 +150,9 @@ export function PageEditorView(props: Props) {
     if (!open || !item) return;
     if (open.kind === "slash") {
       const insertion = slashInsertion(item.id as SlashCommandId, open.atLineStart);
+      // A new task card opens with its title selected, ready to be named.
+      const newBlock = item.id === "task" ? insertedBlockId(insertion.text) : null;
+      if (newBlock) focusTaskTitleWhenDrawn(newBlock);
       editor.current?.replace(open.from, open.to, insertion.text, insertion.cursor);
     } else {
       const text = `[[${item.name}]]`;
@@ -169,17 +174,25 @@ export function PageEditorView(props: Props) {
     return true;
   };
 
+  // One lookup-or-create per title at a time: a double click never makes two pages.
+  const opening = useRef(new Set<string>());
   const openLink = async (linkTitle: string) => {
-    if (!linkTitle.trim()) return;
-    const results = await convex.query(api.notes.searchTitles, { query: linkTitle, limit: 20 });
-    const hit = results.find((r) => sameTitle(r.title, linkTitle));
-    if (hit) {
-      router.push(`/notes/${hit._id}`);
-      return;
+    const key = linkTitle.trim().toLocaleLowerCase();
+    if (!key || opening.current.has(key)) return;
+    opening.current.add(key);
+    try {
+      const results = await convex.query(api.notes.searchTitles, { query: linkTitle, limit: 20 });
+      const hit = results.find((r) => sameTitle(r.title, linkTitle));
+      if (hit) {
+        router.push(`/notes/${hit._id}`);
+        return;
+      }
+      // Like a wiki: following a link to a page that doesn't exist yet makes it.
+      const id = await createNote({ title: linkTitle.trim(), body: "" });
+      router.push(`/notes/${id}`);
+    } finally {
+      opening.current.delete(key);
     }
-    // Like a wiki: following a link to a page that doesn't exist yet makes it.
-    const id = await createNote({ title: linkTitle.trim(), body: "" });
-    router.push(`/notes/${id}`);
   };
 
   const copyMarkdown = async () => {
@@ -211,6 +224,7 @@ export function PageEditorView(props: Props) {
     brokenBlock: t("editor.broken"),
     template: t("editor.template"),
     taskDone: t("editor.done"),
+    taskTitle: t("editor.taskTitle"),
   };
 
   return (
