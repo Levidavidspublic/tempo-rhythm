@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/providers/providers";
+import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { themeInitScript } from "@/lib/theme-script";
 
@@ -71,7 +72,9 @@ export default function RootLayout({
         </head>
         <body className="antialiased" suppressHydrationWarning>
           <ThemeProvider>
-            <Providers>{children}</Providers>
+            <LocaleProvider>
+              <Providers>{children}</Providers>
+            </LocaleProvider>
           </ThemeProvider>
         </body>
       </html>

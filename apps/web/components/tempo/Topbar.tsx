@@ -1,82 +1,80 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
-import { LogOut } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { findScreen, TEMPO_SCREENS } from "@/lib/tempo-nav";
-import { Command, Moon, Search, Sun } from "@tempo/ui/icons";
-import { GreetingName } from "@/components/account/GreetingName";
+import { useQuery } from "convex/react";
+import { usePathname } from "next/navigation";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { api } from "@/convex/_generated/api";
+import { crumbKey, initialsFor } from "@/lib/shell";
+import { TEMPO_SCREENS } from "@/lib/tempo-nav";
+import { TpIcon } from "./TpIcon";
 
-type Props = {
+type TopbarProps = {
+  railOpen: boolean;
+  onToggleRail: () => void;
   onOpenPalette: () => void;
 };
 
 /**
- * Topbar — breadcrumb, search shortcut, theme toggle, account.
- * @source docs/design/claude-export/design-system/components.jsx (Topbar)
+ * Topbar: glass, sticky (DESIGN.md §5). Breadcrumb, search, theme, avatar.
+ * shadcn target: breadcrumb.
  */
-export function Topbar({ onOpenPalette }: Props) {
+export function Topbar({ railOpen, onToggleRail, onOpenPalette }: TopbarProps) {
   const pathname = usePathname() ?? "/";
-  const screen =
-    TEMPO_SCREENS.find((s) => s.route === pathname) ??
-    TEMPO_SCREENS.find((s) => pathname.startsWith(`${s.route}/`)) ??
-    findScreen("today");
-
+  const { t } = useLocale();
   const { resolvedTheme, setTheme } = useTheme();
-  const { signOut } = useAuthActions();
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/sign-in");
-  };
+  const profile = useQuery(api.users.getProfile, {});
+  const key = crumbKey(pathname);
+  const fallback =
+    TEMPO_SCREENS.find((s) => s.route === pathname)?.title ??
+    TEMPO_SCREENS.find((s) => pathname.startsWith(`${s.route}/`))?.title ??
+    "Tempo";
+  const initials = initialsFor(profile);
+  const dark = resolvedTheme === "dark";
 
   return (
-    <header className="flex items-center h-14 px-5 border-b border-border-soft bg-background sticky top-0 z-10">
-      <h1 className="text-small font-medium text-foreground">
-        {screen?.title ?? "Tempo Flow"}
-      </h1>
-
-      <div className="ml-auto flex items-center gap-2">
-        <span className="hidden sm:inline text-small text-muted-foreground mr-2">
-          <GreetingName />
-        </span>
-
-        {/* @action openCommandPalette */}
-        <button
-          type="button"
-          onClick={onOpenPalette}
-          aria-label="Open command palette"
-          className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-md border border-border-soft bg-card text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Search size={14} />
-          <span className="text-caption">Jump to…</span>
-          <span className="flex items-center gap-1 text-caption opacity-60">
-            <Command size={12} />K
-          </span>
-        </button>
-
-        {/* @action toggleTheme */}
-        <button
-          type="button"
-          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
-          className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:bg-surface-sunken hover:text-foreground transition-colors"
-        >
-          {resolvedTheme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
-
-        {/* @action signOut */}
-        <button
-          type="button"
-          onClick={handleSignOut}
-          aria-label="Sign out"
-          className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:bg-surface-sunken hover:text-foreground transition-colors"
-        >
-          <LogOut size={16} />
-        </button>
+    <header className="tp-topbar tp-glass" data-component="Topbar">
+      <button
+        className="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu"
+        type="button"
+        aria-expanded={railOpen}
+        aria-label={t("top.menu")}
+        onClick={onToggleRail}
+      >
+        <TpIcon name="sidebar" />
+      </button>
+      <div className="tp-topbar__crumbs">
+        <span className="tp-topbar__hide-sm">{t("top.crumb")}</span>
+        <TpIcon name="chevron" size="sm" flip className="tp-topbar__hide-sm" />
+        <strong>{key ? t(key) : fallback}</strong>
       </div>
+      <button
+        className="tp-btn tp-btn--ghost tp-btn--icon"
+        type="button"
+        aria-label={t("rail.search")}
+        onClick={onOpenPalette}
+      >
+        <TpIcon name="search" />
+      </button>
+      <button
+        className="tp-btn tp-btn--ghost tp-btn--icon"
+        type="button"
+        aria-pressed={dark}
+        aria-label={dark ? t("top.themeLight") : t("top.themeDark")}
+        onClick={() => setTheme(dark ? "light" : "dark")}
+      >
+        <TpIcon name={dark ? "sun" : "moon"} />
+      </button>
+      {initials ? (
+        <span
+          className="tp-avatar"
+          role="img"
+          aria-label={profile?.greetingName ?? profile?.email ?? initials}
+          data-component="Avatar"
+        >
+          {initials}
+        </span>
+      ) : null}
     </header>
   );
 }
