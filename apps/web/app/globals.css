@@ -408,51 +408,54 @@
 }
 
 /* ---- Base reset + body ----------------------------------- */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+/* In the base layer, like preflight: element rules never beat a utility. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  background: var(--tp-ground);
-  color: var(--tp-ink);
-  font-family: var(--tp-font-sans);
-  font-size: var(--tp-text-md);
-  line-height: var(--tp-leading-body);
-  letter-spacing: var(--tp-tracking-body);
-  word-spacing: var(--tp-word-spacing);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "ss01", "cv01";
-}
+  body {
+    background: var(--tp-ground);
+    color: var(--tp-ink);
+    font-family: var(--tp-font-sans);
+    font-size: var(--tp-text-md);
+    line-height: var(--tp-leading-body);
+    letter-spacing: var(--tp-tracking-body);
+    word-spacing: var(--tp-word-spacing);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv01";
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  margin: 0;
-  font-family: var(--tp-font-serif);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: var(--tp-leading-heading);
-}
-h1 {
-  font-size: var(--text-h1);
-}
-h2 {
-  font-size: var(--text-h2);
-}
-h3 {
-  font-size: var(--text-h3);
-}
-p {
-  margin: 0;
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--tp-font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: var(--tp-leading-heading);
+  }
+  h1 {
+    font-size: var(--text-h1);
+  }
+  h2 {
+    font-size: var(--text-h2);
+  }
+  h3 {
+    font-size: var(--text-h3);
+  }
+  p {
+    margin: 0;
+  }
 }
 
 /* ---- Typography utilities (replaces shell.css helpers) --- */
