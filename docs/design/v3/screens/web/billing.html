@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan and billing · Settings · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — billing.html */
+  .bl-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+  .bl-cycle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-4); }
+  .bl-tiers { display: grid; gap: var(--tp-space-4); }
+  .bl-steps { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+  .bl-pad { padding: 0 var(--tp-space-5) var(--tp-space-5); display: grid; gap: var(--tp-space-3); }
+  .bl-state { padding-block: var(--tp-space-6); }
+  [data-cycle="month"] [data-per="year"], [data-cycle="year"] [data-per="month"] { display: none; }
+</style>
+</head>
+<body>
+<!--
+@screen   Plan and billing
+@route    apps/web/app/(tempo)/settings/billing/page.tsx
+@layout   TempoShell
+@data     plan = billing.getMine({})                    // Convex query: {tier: "trial" | "basic" | "pro" | "max", source: "earlyAccess" | "paid", interval, renewsAt?, trialEndsAt?, liveVoiceMinutesPerDay}
+@data     tiers = billing.listTiers({})                 // Convex query: fixed price table (Trial $1 / 3 weeks, Basic $10, Pro $20, Max $40; yearly = 10 × monthly)
+@actions  choose a plan -> billing.checkout({ tier, interval })   // Polar checkout on web (RevenueCat on mobile); opens in the same tab
+@actions  cancel -> billing.cancel({})                  // asks first; access stays until the end of the paid period
+@states   default | empty (n/a: the price table always shows) | loading | error | offline  (?state=)
+@flow     1. Banner first: people approved early get the top tier, Max, included. Maya is one of them, so her card says "Your plan".
+          2. Monthly / Yearly switch. Yearly shows the yearly price and says "two months free" in words.
+          3. Four tier cards are always visible, never collapsed. Each lists what it adds. Live voice minutes are stated per day: Pro 90, Max 180.
+          4. "Before any charge": notices 3 days, 1 day and 1 hour before a trial or plan converts. Cancel in one place, any time.
+          5. Payments go through Polar. Tempo never sees card numbers.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'billing' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" data-component="CommandTrigger">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__group">
+      <div class="tp-rail__label" id="set-label" data-i18n="rail.set">Settings</div>
+      <ul class="tp-tree" role="list" aria-labelledby="set-label">
+        <li><a class="tp-tree-item" href="settings-profile.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-user"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.profile">Profile</span></a></li>
+        <li><a class="tp-tree-item" href="settings-prefs.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.prefs">Preferences</span></a></li>
+        <li><a class="tp-tree-item" href="settings-integrations.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-link"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.integ">Connections</span></a></li>
+        <li><a class="tp-tree-item" href="settings-privacy.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-shield"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.privacy">Privacy</span></a></li>
+        <li><a class="tp-tree-item" href="billing.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-card"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.billing">Plan and billing</span></a></li>
+        <li><a class="tp-tree-item" href="notifications.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.notif">Notifications</span></a></li>
+        <li><a class="tp-tree-item" href="ask-founder.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mail"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.founder">Ask the founder</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Settings', 'Plan and billing'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><span data-i18n="rail.set">Settings</span> / <strong data-i18n="nav.billing">Plan and billing</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component PageLayout | shadcn: — | props: { width: 'wide' } | events: — -->
+    <div class="tp-page" data-component="PageLayout">
+
+      <!-- @component PageHeader | shadcn: — | props: { title, subtitle } | events: — -->
+      <header class="tp-pagehead" data-component="PageHeader">
+        <div class="tp-pagehead__text">
+          <h1 class="tp-pagehead__title" data-i18n="bl.title">Plan and billing</h1>
+          <p class="tp-pagehead__sub" data-i18n="bl.sub">Every price, in full, all the time. No surprises.</p>
+        </div>
+      </header>
+
+      <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+      <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+        <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline. Changes save when you're back.</span><span data-i18n="off.body">You can read the prices. Changing your plan needs a connection.</span></span>
+      </div>
+
+      <!-- @component BillingNotice | shadcn: alert | props: { tone: 'done', text: 'Approved early users get the top tier' } | events: — -->
+      <div class="tp-notice" data-tone="done" data-component="BillingNotice" data-state-hide>
+        <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-star"/></svg></span>
+        <span class="tp-notice__text">
+          <span class="tp-notice__title" data-i18n="early.title">You were approved early, so you have Max.</span>
+          <span data-i18n="early.body">Everyone approved during early access gets the top tier included. You don't need to choose anything below. The prices are here so you always know them.</span>
+        </span>
+      </div>
+
+      <div class="bl-body" id="bl-body" data-cycle="month">
+
+        <!-- ===== Tiers ===== -->
+        <!-- @component Section | shadcn: — | props: { title: 'Plans' } | events: — -->
+        <section class="tp-section bl-tiers" aria-labelledby="tiers-title" data-component="Section" data-state-hide>
+          <div class="tp-section__head bl-cycle">
+            <h2 class="tp-section__title" id="tiers-title" data-i18n="tiers.title">Plans</h2>
+            <!-- @component Segmented | shadcn: toggle-group (single) | props: { options: [month, year], value: 'month' } | events: onChange -> show interval prices -->
+            <div class="tp-segmented" role="radiogroup" aria-label="Billing period" data-i18n-attr="aria-label:cycle.label" data-cycle-group data-component="Segmented">
+              <button class="tp-seg__opt" type="button" role="radio" data-value="month" aria-checked="true" tabindex="0"><span data-i18n="cycle.month">Monthly</span></button>
+              <button class="tp-seg__opt" type="button" role="radio" data-value="year" aria-checked="false" tabindex="-1"><span data-i18n="cycle.year">Yearly, two months free</span></button>
+            </div>
+          </div>
+
+          <!-- @component TierCard ×4 | shadcn: card | props: { tier: {name, price, per, desc, features[], current?} } | events: onChoose -> billing.checkout({ tier, interval }) -->
+          <div class="tp-tiers" data-component="TierCard">
+
+            <article class="tp-tier" aria-labelledby="t-trial">
+              <div class="tp-tier__head"><h3 class="tp-tier__name" id="t-trial" data-i18n="t.trial">Trial</h3></div>
+              <p class="tp-tier__desc" data-i18n="t.trial.desc">Try everything in Basic first.</p>
+              <p class="tp-tier__price od-nowrap"><span class="tp-tier__amount tp-num">$1</span><span class="tp-tier__per" data-i18n="per.3w">for 3 weeks</span></p>
+              <ul class="tp-tier__features">
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.basicall">Everything in Basic</span></li>
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.trialthen">Then Basic at $10 a month, unless you choose otherwise</span></li>
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-bell"/></svg><span data-i18n="f.trialnote">We remind you 3 days, 1 day and 1 hour before it ends</span></li>
+              </ul>
+              <p class="tp-tier__cta tp-help" data-i18n="t.trial.cta">For new accounts only.</p>
+            </article>
+
+            <article class="tp-tier" aria-labelledby="t-basic">
+              <div class="tp-tier__head"><h3 class="tp-tier__name" id="t-basic" data-i18n="t.basic">Basic</h3></div>
+              <p class="tp-tier__desc" data-i18n="t.basic.desc">Pages, plans and the coach in writing.</p>
+              <p class="tp-tier__price od-nowrap" data-per="month"><span class="tp-tier__amount tp-num">$10</span><span class="tp-tier__per" data-i18n="per.month">a month</span></p>
+              <p class="tp-tier__price od-nowrap" data-per="year"><span class="tp-tier__amount tp-num">$100</span><span class="tp-tier__per" data-i18n="per.year">a year, two months free</span></p>
+              <ul class="tp-tier__features">
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.pages">Pages, templates, tasks and habits</span></li>
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.coach">The coach in chat, with memory you control</span></li>
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.ptt">Push-to-talk voice messages</span></li>
+              </ul>
+              <button class="tp-btn tp-btn--secondary tp-btn--block tp-tier__cta" type="button" data-bl-choose="basic"><span data-i18n="choose.basic">Choose Basic</span></button>
+            </article>
+
+            <article class="tp-tier" aria-labelledby="t-pro">
+              <div class="tp-tier__head"><h3 class="tp-tier__name" id="t-pro" data-i18n="t.pro">Pro</h3></div>
+              <p class="tp-tier__desc" data-i18n="t.pro.desc">Talk it through out loud.</p>
+              <p class="tp-tier__price od-nowrap" data-per="month"><span class="tp-tier__amount tp-num">$20</span><span class="tp-tier__per" data-i18n="per.month">a month</span></p>
+              <p class="tp-tier__price od-nowrap" data-per="year"><span class="tp-tier__amount tp-num">$200</span><span class="tp-tier__per" data-i18n="per.year">a year, two months free</span></p>
+              <ul class="tp-tier__features">
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.basicall">Everything in Basic</span></li>
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-phone"/></svg><span><span data-i18n="f.live1">Live voice calls with the coach,</span> <span class="tp-num od-nowrap">90</span> <span data-i18n="f.live2">minutes a day</span></span></li>
+              </ul>
+              <button class="tp-btn tp-btn--secondary tp-btn--block tp-tier__cta" type="button" data-bl-choose="pro"><span data-i18n="choose.pro">Choose Pro</span></button>
+            </article>
+
+            <article class="tp-tier" data-current="true" aria-labelledby="t-max">
+              <div class="tp-tier__head">
+                <h3 class="tp-tier__name" id="t-max" data-i18n="t.max">Max</h3>
+                <!-- @component Badge | shadcn: badge | props: { icon: 'check', label: 'Your plan', tone: 'done' } | events: — -->
+                <span class="tp-badge" data-tone="done" data-component="Badge"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="yours">Your plan</span></span>
+              </div>
+              <p class="tp-tier__desc" data-i18n="t.max.desc">The most time to talk.</p>
+              <p class="tp-tier__price od-nowrap" data-per="month"><span class="tp-tier__amount tp-num">$40</span><span class="tp-tier__per" data-i18n="per.month">a month</span></p>
+              <p class="tp-tier__price od-nowrap" data-per="year"><span class="tp-tier__amount tp-num">$400</span><span class="tp-tier__per" data-i18n="per.year">a year, two months free</span></p>
+              <ul class="tp-tier__features">
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="f.basicall">Everything in Basic</span></li>
+                <li><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-phone"/></svg><span><span data-i18n="f.live1">Live voice calls with the coach,</span> <span class="tp-num od-nowrap">180</span> <span data-i18n="f.live2">minutes a day</span></span></li>
+              </ul>
+              <p class="tp-tier__cta tp-help" data-i18n="max.cta">Included with your early access.</p>
+            </article>
+          </div>
+          <p class="tp-help" role="status" id="choose-note"></p>
+        </section>
+
+        <!-- ===== Before any charge ===== -->
+        <!-- @component SettingsSection | shadcn: card | props: { title: 'Before any charge' } | events: — -->
+        <section class="tp-settings-section" aria-labelledby="notice-title" data-component="SettingsSection" data-state-hide>
+          <div class="tp-settings-section__head">
+            <h2 class="tp-settings-section__title" id="notice-title" data-i18n="bc.title">Before any charge</h2>
+            <p class="tp-settings-section__desc" data-i18n="bc.desc">When a trial or plan is about to turn into a payment, we tell you three times:</p>
+          </div>
+          <div class="bl-pad">
+            <ol class="bl-steps">
+              <li><span class="tp-num">3</span> <span data-i18n="bc.3d">days before</span></li>
+              <li><span class="tp-num">1</span> <span data-i18n="bc.1d">day before</span></li>
+              <li><span class="tp-num">1</span> <span data-i18n="bc.1h">hour before</span></li>
+            </ol>
+            <p class="tp-help" data-i18n="bc.where">By email and here in Tempo. You can cancel from this page any time, in one step.</p>
+          </div>
+          <!-- @component SettingRow | shadcn: — | props: { label: 'How you pay' } | events: — -->
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="pay.label">How you pay</span>
+              <span class="tp-help" data-i18n="pay.help">Payments go through Polar, a payment service. Tempo never sees your card number.</span>
+            </div>
+            <div class="tp-setting-row__control"><svg class="tp-icon" aria-hidden="true"><use href="#i-lock"/></svg></div>
+          </div>
+          <div class="tp-setting-row od-row" data-component="SettingRow">
+            <div class="tp-setting-row__text">
+              <span class="tp-setting-row__label" data-i18n="q.label">A question about money?</span>
+              <span class="tp-help" data-i18n="q.help">Ask Amit directly. A person reads every message.</span>
+            </div>
+            <div class="tp-setting-row__control"><a class="tp-btn tp-btn--ghost" href="ask-founder.html"><span data-i18n="q.btn">Ask the founder</span><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></a></div>
+          </div>
+        </section>
+
+        <!-- @component StateLoading | shadcn: skeleton | props: { rows: 4 } | events: — -->
+        <div class="tp-state tp-state--loading bl-state" role="status" data-component="StateLoading" data-state-show="loading empty">
+          <span class="tp-sr-only" data-i18n="loading">Loading your plan</span>
+          <div class="tp-skel-list" aria-hidden="true">
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w80"></span></span></div>
+            <div class="tp-skel-row"><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+          </div>
+        </div>
+
+        <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your plan." } | events: onRetry -> refetch -->
+        <div class="tp-state tp-state--error bl-state" role="alert" data-component="StateError" data-state-show="error">
+          <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+          <h2 class="tp-state__title" data-i18n="error.title">Couldn't load your plan.</h2>
+          <p class="tp-state__body" data-i18n="error.body">Nothing was charged or changed. Try again in a moment.</p>
+          <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="st.retry">Retry</span></button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="tp-scrim" data-action="scrim" aria-hidden="true"></div>
+  <div class="tp-toast-region" aria-live="polite"></div>
+
+  <!-- @component TabBar | shadcn: tabs (nav) | props: { tabs: Tab[], current: none } | events: link -->
+  <nav class="tp-tabbar tp-glass" data-component="TabBar" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+    <a class="tp-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="nav.today">Today</span></a>
+    <a class="tp-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span data-i18n="tab.tasks">Tasks</span></a>
+    <a class="tp-tab" href="page-editor.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span data-i18n="rail.pages">Pages</span></a>
+    <a class="tp-tab" href="calendar.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-timeblock"/></svg><span data-i18n="tab.cal">Calendar</span></a>
+    <button class="tp-tab" type="button" data-action="toggle-rail" aria-expanded="false"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg><span data-i18n="tab.more">More</span></button>
+  </nav>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "choose.note": "This would open a secure checkout with Polar. You already have Max, so nothing changes today.",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "state.retried": "Loaded."
+  },
+  he: {
+    "doc.title": "מסלול ותשלום · הגדרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל", "rail.pages": "דפים", "rail.set": "הגדרות",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן",
+    "nav.profile": "פרופיל", "nav.prefs": "העדפות", "nav.integ": "חיבורים", "nav.privacy": "פרטיות",
+    "nav.billing": "מסלול ותשלום", "nav.notif": "התראות", "nav.founder": "לשאול את המייסד", "nav.dyslexia": "גופן קריאה",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "bl.title": "מסלול ותשלום", "bl.sub": "כל מחיר, במלואו, כל הזמן. בלי הפתעות.",
+    "off.title": "אין חיבור כרגע. השינויים יישמרו כשתחזרי.", "off.body": "אפשר לקרוא את המחירים. כדי לשנות מסלול צריך חיבור.",
+    "early.title": "אושרת מוקדם, אז יש לך Max.",
+    "early.body": "כל מי שאושרה בתקופת הגישה המוקדמת מקבלת את המסלול הגבוה ביותר. אין צורך לבחור כלום כאן למטה. המחירים מופיעים כדי שתמיד תדעי אותם.",
+    "tiers.title": "מסלולים", "cycle.label": "תקופת חיוב", "cycle.month": "חודשי", "cycle.year": "שנתי, חודשיים במתנה",
+    "t.trial": "ניסיון", "t.trial.desc": "לנסות קודם את כל מה שיש ב־Basic.", "per.3w": "ל־3 שבועות",
+    "f.basicall": "כל מה שיש ב־Basic", "f.trialthen": "אחר כך Basic ב־10$ לחודש, אלא אם תבחרי אחרת",
+    "f.trialnote": "נזכיר לך 3 ימים, יום אחד ושעה אחת לפני הסיום", "t.trial.cta": "לחשבונות חדשים בלבד.",
+    "t.basic": "Basic", "t.basic.desc": "דפים, תוכניות והמאמן בכתב.", "per.month": "לחודש", "per.year": "לשנה, חודשיים במתנה",
+    "f.pages": "דפים, תבניות, משימות והרגלים", "f.coach": "המאמן בצ׳אט, עם זיכרון שאת שולטת בו", "f.ptt": "הודעות קוליות בלחיצה",
+    "choose.basic": "לבחור Basic",
+    "t.pro": "Pro", "t.pro.desc": "לדבר על זה בקול.", "f.live1": "שיחות קוליות חיות עם המאמן,", "f.live2": "דקות ביום",
+    "choose.pro": "לבחור Pro",
+    "t.max": "Max", "t.max.desc": "הכי הרבה זמן לדבר.", "yours": "המסלול שלך", "max.cta": "כלול בגישה המוקדמת שלך.",
+    "choose.note": "כאן ייפתח תשלום מאובטח דרך Polar. כבר יש לך Max, אז היום שום דבר לא משתנה.",
+    "bc.title": "לפני כל חיוב", "bc.desc": "כשניסיון או מסלול עומדים להפוך לתשלום, נגיד לך שלוש פעמים:",
+    "bc.3d": "ימים לפני", "bc.1d": "יום לפני", "bc.1h": "שעה לפני",
+    "bc.where": "במייל וכאן ב־Tempo. אפשר לבטל מהדף הזה בכל רגע, בצעד אחד.",
+    "pay.label": "איך משלמים", "pay.help": "התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך.",
+    "q.label": "שאלה על כסף?", "q.help": "אפשר לשאול את עמית ישירות. אדם קורא כל הודעה.", "q.btn": "לשאול את המייסד",
+    "loading": "טוען את המסלול שלך",
+    "error.title": "לא הצלחנו לטעון את המסלול.", "error.body": "שום דבר לא חויב ושום דבר לא השתנה. נסי שוב בעוד רגע.",
+    "st.retry": "לנסות שוב", "state.retried": "נטען.",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "tab.label": "ראשי", "tab.tasks": "משימות", "tab.cal": "לוח שנה", "tab.more": "עוד"
+  }
+};
+
+(function () {
+  var body = document.getElementById("bl-body");
+  var group = document.querySelector("[data-cycle-group]");
+  function syncCycle() {
+    var c = group.querySelector('[role="radio"][aria-checked="true"]');
+    if (c) body.setAttribute("data-cycle", c.getAttribute("data-value"));
+  }
+  ["click", "keyup"].forEach(function (t) {
+    group.addEventListener(t, function () { setTimeout(syncCycle, 0); });
+  });
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-bl-choose]"); if (!b) return;
+    // REAL: convex billing.checkout({ tier, interval: body.dataset.cycle }) — returns a Polar checkout URL; window.location = url
+    document.getElementById("choose-note").textContent = TP.t("choose.note");
+  });
+})();
+</script>
+</body>
+</html>

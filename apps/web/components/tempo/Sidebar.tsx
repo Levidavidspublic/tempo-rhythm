@@ -41,7 +41,7 @@ const YOU: readonly NavItem[] = [
 ];
 
 /** Pages shown in the rail: pinned first, then the most recently edited. */
-const RAIL_PAGE_LIMIT = 8;
+const RAIL_PAGE_LIMIT = 7;
 
 
 function TreeLink({ item, pathname, onNavigate }: { item: NavItem; pathname: string | null; onNavigate?: () => void }) {

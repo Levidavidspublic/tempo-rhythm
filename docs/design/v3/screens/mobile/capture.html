@@ -1,0 +1,415 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (capture) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Capture · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== capture — layout only ===== */
+    .cap-sheet .tp-sheet__body { display: grid; gap: var(--tp-space-5); }
+    .cap-sheet .tp-sheet__foot { display: grid; gap: var(--tp-space-2); }
+    .cap-voice { display: grid; justify-items: center; gap: var(--tp-space-2); text-align: center; }
+    .cap-voice .tp-ptt { width: 100%; }
+    .cap-or { text-align: center; }
+    .cap-dest { display: grid; gap: var(--tp-space-2); }
+    .cap-sheet .tp-offline { position: static; }
+  </style>
+</head>
+<body>
+<!--
+@screen   Capture composer (modal)
+@route    apps/mobile/app/(tempo)/capture.tsx
+@layout   MobileTabs
+@data     inboxCount = capture.inboxCount({})                            // Convex query (shown under "Inbox")
+@actions  hold to talk -> voice.transcribeClip({ audio, lang })            // speech to text, text lands in the box for checking
+@actions  add to Today -> tasks.create({ title, date: localDate })         // optimistic, Undo 5 min
+@actions  add to Inbox -> capture.create({ text, source: "type"|"voice" }) // optimistic, Undo 5 min
+@actions  close -> router.back()                                            // nothing is lost: a draft stays on the phone
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Capture opens as a bottom sheet over Today, from the + button or "Add a task". The box has focus.
+          2. Maya types one line, or holds "Hold to talk", speaks, and lets go. The words appear in the box so she can check them.
+          3. She picks where it goes: Today (default) or Inbox ("sort it later"). The main button names the choice.
+          4. Pressing it saves at once, clears the box, and shows an Undo toast for 5 minutes. The sheet stays open for the next thought.
+          5. Empty: the box is empty and the main button is disabled; a hint says one line is enough.
+          6. Loading: while speech turns into words, a quiet "Writing down what you said" line shows. The box stays editable.
+          7. Error: saving failed. The words stay in the box, a kind notice says so, and Try again saves them.
+          8. Offline: capture still works. The words save on the phone and sync when Maya is back online.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Capture composer (modal)
+        @route    apps/mobile/app/(tempo)/capture.tsx
+        @layout   MobileTabs
+        @data     inboxCount = capture.inboxCount({})                            // Convex query (shown under "Inbox")
+        @actions  hold to talk -> voice.transcribeClip({ audio, lang })            // speech to text, text lands in the box for checking
+        @actions  add to Today -> tasks.create({ title, date: localDate })         // optimistic, Undo 5 min
+        @actions  add to Inbox -> capture.create({ text, source: "type"|"voice" }) // optimistic, Undo 5 min
+        @actions  close -> router.back()                                            // nothing is lost: a draft stays on the phone
+        @states   default | empty | loading | error | offline  (?state=)
+        @flow     1. Capture opens as a bottom sheet over Today. 2. Type or hold to talk. 3. Pick Today or Inbox.
+                  4. Save, clear, Undo toast 5 min. 5–8. Empty / loading / error / offline as described above.
+        @i18n     en, he
+        -->
+
+        <!-- ===== Today, behind the sheet (inert while Capture is open) ===== -->
+        <div class="cap-behind" inert aria-hidden="true">
+          <div class="m-app">
+            <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Today" } | events: — (inert behind the sheet) -->
+            <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+              <span class="tp-btn tp-btn--ghost tp-btn--icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></span>
+              <span class="tp-mtopbar__title" data-i18n="top.title">Today</span>
+              <span class="tp-btn tp-btn--ghost tp-btn--icon"><span class="tp-avatar" data-component="Avatar">MR</span></span>
+            </header>
+            <!-- @component PageHeader | shadcn: — | props: { title: "Monday, 12 October" } | events: — -->
+            <div class="tp-pagehead" data-component="PageHeader">
+              <div class="tp-pagehead__text">
+                <span class="tp-eyebrow" data-i18n="date.eyebrow">Good morning, Maya</span>
+                <span class="tp-pagehead__title" data-i18n="date.title">Monday, 12 October</span>
+              </div>
+            </div>
+            <!-- @component TaskRow ×2 | shadcn: checkbox · NativeWind: Pressable + Checkbox | props: { task: {id, title, minutes} } | events: — (inert) -->
+            <ul class="tp-block-task" role="list" data-component="TaskBlock">
+              <li class="tp-task-row" data-component="TaskRow">
+                <span class="tp-check"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></span>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span></span></div>
+              </li>
+              <li class="tp-task-row" data-component="TaskRow">
+                <span class="tp-check"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></span>
+                <div class="tp-task-row__body"><span class="tp-task-row__title" dir="auto" data-i18n="task.dana">Email Dana about the lease</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span></div>
+              </li>
+            </ul>
+          </div>
+          <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5">
+            <span class="tp-tab tp-tree-item m-tab" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></span>
+            <span class="tp-tab tp-tree-item m-tab"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></span>
+            <span class="tp-tab tp-tree-item m-tab"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></span>
+            <span class="tp-tab tp-tree-item m-tab"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></span>
+            <span class="tp-tab tp-tree-item m-tab"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></span>
+          </nav>
+        </div>
+
+        <!-- ===== Capture sheet (open on arrival) ===== -->
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet (modal route) | props: { id: "capture-sheet", title: "Capture" } | events: onClose -> router.back() (Close, scrim, Esc) -->
+        <div class="tp-sheet-scrim" data-for="capture-sheet" id="cap-scrim"></div>
+        <section class="tp-sheet tp-glass cap-sheet" id="capture-sheet" role="dialog" aria-modal="true" aria-labelledby="cap-title" data-component="MobileSheet">
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h1 class="tp-sheet__title" id="cap-title" data-i18n="cap.title">Capture</h1>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" href="today.html" aria-label="Close" data-i18n-attr="aria-label:cap.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></a>
+          </div>
+
+          <form class="tp-sheet__body" id="cap-form" onsubmit="return false">
+            <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+            <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+              <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+              <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Capture still works. It saves on your phone and syncs when you're back.</span></span>
+            </div>
+
+            <!-- @component StateError | shadcn: alert · NativeWind: View notice | props: { what: "Couldn't save that." } | events: onRetry -> capture.create again -->
+            <div class="tp-notice" data-tone="caution" role="alert" data-state-show="error" data-component="StateError">
+              <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg></span>
+              <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="err.title">Couldn't save that.</span><span data-i18n="err.body">Your words are still here. This is on our side, not yours.</span></span>
+              <span class="tp-notice__action"><button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></span>
+            </div>
+
+            <!-- @component Textarea | shadcn: textarea · NativeWind: TextInput multiline | props: { label: "What's on your mind?", rows: 3, value } | events: onChange -> local draft (MMKV) -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="cap-text" data-i18n="cap.label">What's on your mind?</label>
+              <textarea class="tp-textarea" id="cap-text" rows="3" dir="auto" aria-describedby="cap-help" data-component="Textarea" placeholder="Call the bank about my card" data-i18n-attr="placeholder:cap.ph">Call the bank about my card</textarea>
+              <p class="tp-help" id="cap-help" data-i18n="cap.help">One line is enough. You can tidy it up later.</p>
+            </div>
+
+            <!-- @component StateLoading | shadcn: skeleton · NativeWind: ActivityIndicator + text | props: { label: "Writing down what you said" } | events: — -->
+            <div class="tp-typing" role="status" data-state-show="loading" data-component="TypingIndicator">
+              <span class="tp-typing__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+              <span data-i18n="load.label">Writing down what you said</span>
+            </div>
+
+            <p class="tp-muted tp-small cap-or" data-i18n="cap.or">or</p>
+
+            <div class="cap-voice">
+              <!-- @component PushToTalk | shadcn: button · NativeWind: Pressable (onPressIn / onPressOut) + expo-av recording | props: { pressed: false } | events: onPressStart -> start recording, onPressEnd -> voice.transcribeClip({ audio, lang }) -->
+              <button class="tp-ptt" type="button" id="cap-ptt" data-pressed="false" aria-pressed="false" aria-describedby="ptt-help" data-component="PushToTalk"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg><span data-label data-i18n="ptt.hold">Hold to talk</span></button>
+              <span class="tp-help" id="ptt-help" data-i18n="ptt.help">Hold, speak, let go. Your words show up in the box above.</span>
+            </div>
+
+            <div class="cap-dest">
+              <span class="tp-label" id="dest-label" data-i18n="dest.label">Where should it go?</span>
+              <!-- @component Segmented | shadcn: toggle-group (single) · NativeWind: SegmentedControl | props: { options: ["today","inbox"], value: "today" } | events: onChange -> local choice (sets the main button label) -->
+              <div class="tp-segmented tp-segmented--block" role="radiogroup" aria-labelledby="dest-label" id="dest" data-component="Segmented">
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="true" tabindex="0" data-value="today"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="dest.today">Today</span></button>
+                <button class="tp-seg__opt" type="button" role="radio" aria-checked="false" tabindex="-1" data-value="inbox"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg><span data-i18n="dest.inbox">Inbox</span></button>
+              </div>
+              <p class="tp-help" id="dest-help" data-i18n="dest.help.today">It joins today's list. The coach won't move it without asking.</p>
+            </div>
+          </form>
+
+          <div class="tp-sheet__foot">
+            <!-- @component Button | shadcn: button (primary) · NativeWind: Pressable | props: { label: "Add to Today" | "Add to Inbox", disabled: empty } | events: onPress -> tasks.create / capture.create (optimistic, Undo 5 min) -->
+            <button class="tp-btn tp-btn--primary tp-btn--block" type="submit" form="cap-form" id="cap-save" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span id="cap-save-label" data-i18n="save.today">Add to Today</span></button>
+            <a class="tp-btn tp-btn--ghost tp-btn--block" href="today.html" data-i18n="cap.cancel">Not now</a>
+          </div>
+        </section>
+
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "toast.title": "Done", "toast.sub": "You can undo for", "toast.undo": "Undo", "toast.dismiss": "Dismiss",
+    "ptt.hold": "Hold to talk", "ptt.release": "Listening… let go to send",
+    "save.today": "Add to Today", "save.inbox": "Add to Inbox",
+    "dest.help.today": "It joins today's list. The coach won't move it without asking.",
+    "dest.help.inbox": "It waits in your Inbox. Sort it whenever you like.",
+    "added.today": "Added to Today", "added.inbox": "Saved to Inbox", "added.sub": "You can undo for",
+    "voice.sample": "Call the bank about my card", "undone": "Back in the box. Nothing was saved."
+  },
+  he: {
+    "doc.title": "לכידה · Tempo",
+    "top.title": "היום", "date.eyebrow": "בוקר טוב, מאיה", "date.title": "יום שני, 12 באוקטובר",
+    "task.slides": "לנסח 3 שקפים ליום חמישי", "task.dana": "לכתוב לדנה על החוזה", "unit.min": "דק׳",
+    "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "cap.title": "לכידה", "cap.close": "סגירה",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "הלכידה עדיין עובדת. זה נשמר בטלפון ויסונכרן כשהחיבור יחזור.",
+    "err.title": "לא הצלחנו לשמור את זה.", "err.body": "המילים שלך עדיין כאן. זה אצלנו, לא אצלך.", "state.retry": "לנסות שוב", "state.retried": "נשמר.",
+    "cap.label": "מה עובר לך בראש?", "cap.ph": "להתקשר לבנק בקשר לכרטיס", "cap.help": "שורה אחת מספיקה. אפשר לסדר אחר כך.",
+    "load.label": "רושמים את מה שאמרת",
+    "cap.or": "או",
+    "ptt.hold": "החזיקי כדי לדבר", "ptt.release": "מקשיב… שחררי כדי לשלוח", "ptt.help": "החזיקי, דברי, שחררי. המילים יופיעו בתיבה למעלה.",
+    "dest.label": "לאן זה הולך?", "dest.today": "היום", "dest.inbox": "תיבת הדואר הנכנס",
+    "dest.help.today": "זה מצטרף לרשימה של היום. המאמן לא יזיז את זה בלי לשאול.",
+    "dest.help.inbox": "זה מחכה בתיבה. אפשר למיין מתי שנוח לך.",
+    "save.today": "הוספה להיום", "save.inbox": "הוספה לתיבה", "cap.cancel": "לא עכשיו",
+    "toast.title": "בוצע", "toast.sub": "אפשר לבטל עוד", "toast.undo": "ביטול", "toast.dismiss": "סגירה",
+    "added.today": "נוסף להיום", "added.inbox": "נשמר בתיבה", "added.sub": "אפשר לבטל עוד",
+    "voice.sample": "להתקשר לבנק בקשר לכרטיס", "undone": "חזר לתיבה. שום דבר לא נשמר."
+  }
+};
+
+/* Capture: destination choice, hold-to-talk fills the box, save + 5-minute Undo.
+   REAL: convex voice.transcribeClip({ audio, lang }) · tasks.create({ title, date }) · capture.create({ text, source }) · tasks.remove / capture.remove on Undo */
+TP.onReady = function (params) {
+  var text = document.getElementById("cap-text"), save = document.getElementById("cap-save"), label = document.getElementById("cap-save-label");
+  var dest = "today", source = "type";
+  if (params.get("state") === "empty") text.value = "";
+  function sync() { save.disabled = !text.value.trim(); }
+  text.addEventListener("input", function () { source = "type"; sync(); });
+  sync();
+
+  document.getElementById("dest").addEventListener("click", function (e) {
+    var opt = e.target.closest('[role="radio"]'); if (!opt) return;
+    setTimeout(function () {
+      dest = opt.getAttribute("data-value");
+      label.textContent = TP.t(dest === "today" ? "save.today" : "save.inbox");
+      document.getElementById("dest-help").textContent = TP.t(dest === "today" ? "dest.help.today" : "dest.help.inbox");
+    }, 0);
+  });
+
+  // Hold to talk: tempo.js flips the button label while held; on release the words land in the box.
+  var ptt = document.getElementById("cap-ptt");
+  function heard() {
+    // REAL: convex voice.transcribeClip({ audio, lang }) — the transcript is placed in the box for Maya to check
+    setTimeout(function () {
+      if (ptt.getAttribute("data-pressed") === "true") return;
+      text.value = TP.t("voice.sample"); source = "voice"; sync(); text.focus();
+    }, 0);
+  }
+  ptt.addEventListener("pointerup", heard);
+  ptt.addEventListener("keyup", function (e) { if (e.key === " " || e.key === "Enter") heard(); });
+
+  document.getElementById("cap-form").addEventListener("submit", function () {
+    var value = text.value.trim(); if (!value) return;
+    // REAL: convex dest === "today" ? tasks.create({ title: value, date: localDate }) : capture.create({ text: value, source })
+    text.value = ""; sync();
+    TP.toast({
+      title: TP.t(dest === "today" ? "added.today" : "added.inbox"), sub: TP.t("added.sub"),
+      onUndo: function () { /* REAL: convex tasks.remove({ id }) / capture.remove({ id }) */ text.value = value; sync(); text.focus(); }
+    });
+    text.focus();
+  });
+
+  // Closing the sheet leaves the modal route. REAL: router.back()
+  document.getElementById("cap-scrim").addEventListener("click", function () { location.href = "today.html"; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") location.href = "today.html"; });
+  text.focus();
+};
+</script>
+</body>
+</html>
