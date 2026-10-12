@@ -13,10 +13,28 @@ function cssValue(block: string, name: string): string | undefined {
 
 const kebab = (key: string) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
+/** The `{ … }` body of the first rule whose selector matches `selector`. */
+function block(selector: RegExp): string {
+  const start = css.search(selector);
+  if (start < 0) return "";
+  const open = css.indexOf("{", start);
+  return css.slice(open + 1, css.indexOf("}", open));
+}
+
+/** Every `--tp-*` token in a block whose value is a plain hex colour. */
+function hexTokens(body: string): string[] {
+  return [...body.matchAll(/--tp-([a-z-]+):\s*#[0-9A-Fa-f]{6}\b/g)].map((m) => m[1] as string).sort();
+}
+
 describe("tempoV3Colors mirrors docs/design/v3/tokens.css", () => {
-  const light = css.slice(css.indexOf(":root"));
+  const light = block(/:root\s*\{/);
   const darkStart = css.search(/\[data-theme="dark"\]\s*\{/);
-  const dark = css.slice(darkStart);
+  const dark = block(/\[data-theme="dark"\]\s*\{/);
+
+  test("every hex colour token is mirrored, and nothing extra", () => {
+    expect(Object.keys(tempoV3Colors).map(kebab).sort()).toEqual(hexTokens(light));
+    expect(Object.keys(tempoV3ColorsDark).map(kebab).sort()).toEqual(hexTokens(dark));
+  });
 
   test("light", () => {
     for (const [key, value] of Object.entries(tempoV3Colors)) {

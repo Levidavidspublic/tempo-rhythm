@@ -17,6 +17,8 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: tempoV3Colors.inkMuted,
         tabBarActiveBackgroundColor: tempoV3Colors.hover,
         tabBarLabelStyle: { fontWeight: "600" },
+        // The current-tab wash is a rounded pill inside the bar, as in tempo.css.
+        tabBarItemStyle: { borderRadius: 12, overflow: "hidden", marginHorizontal: 4, marginVertical: 4 },
         tabBarStyle: {
           backgroundColor: tempoV3Colors.paper,
           borderTopColor: tempoV3Colors.line,

@@ -60,6 +60,8 @@ export const tempoV3Colors = {
   lineStrong: "#B9AE9C",
   lineControl: "#877C6B",
   accent: "#A3461F",
+  onAccent: "#FFFFFF",
+  accentWash: "#F3E2D6",
   done: "#3B6948",
   doneWash: "#E3EBDF",
   info: "#36628C",
@@ -68,6 +70,7 @@ export const tempoV3Colors = {
   cautionWash: "#F1E6CC",
   danger: "#9E3B27",
   dangerWash: "#F3DFD7",
+  glassSolid: "#FBF9F4",
 } as const;
 
 export const tempoV3ColorsDark = {
@@ -82,6 +85,8 @@ export const tempoV3ColorsDark = {
   lineStrong: "#5C554C",
   lineControl: "#7F7669",
   accent: "#EE9468",
+  onAccent: "#1B1916",
+  accentWash: "#3A2A20",
   done: "#8FC09C",
   doneWash: "#1F2D23",
   info: "#94B8DA",
@@ -90,6 +95,7 @@ export const tempoV3ColorsDark = {
   cautionWash: "#30281A",
   danger: "#EE9A86",
   dangerWash: "#35211C",
+  glassSolid: "#24211D",
 } as const satisfies Record<keyof typeof tempoV3Colors, string>;
 
 export const tempoFonts = {

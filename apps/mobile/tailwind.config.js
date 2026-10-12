@@ -49,7 +49,7 @@ module.exports = {
         card: '#FBF9F4',
         'card-foreground': '#1B1916',
         border: '#D9D0C1',
-        'border-soft': '#EAE3D6',
+        'border-soft': '#D9D0C1',
         primary: '#A3461F',
         'primary-foreground': '#FBF9F4',
         muted: '#EAE3D6',
