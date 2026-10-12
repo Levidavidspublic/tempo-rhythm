@@ -22,7 +22,9 @@ export function localIsoDate(d: Date): string {
 function toUtc(iso: string): Date | null {
   const m = ISO_DATE.exec(iso);
   if (!m) return null;
-  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  // Date.UTC reads years 0-99 as 1900-1999, so the year is set on its own.
+  const date = new Date(Date.UTC(2000, Number(m[2]) - 1, Number(m[3])));
+  date.setUTCFullYear(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return date.toISOString().slice(0, 10) === iso ? date : null;
 }
 
@@ -59,10 +61,11 @@ export function mondayOfWeekKey(key: string): string | null {
   if (!m) return null;
   const year = Number(m[1]);
   const week = Number(m[2]);
-  if (week < 1 || week > 53) return null;
+  // Year 0 would need dates before year 1, which ISO strings here do not write.
+  if (year < 1 || week < 1 || week > 53) return null;
   // January 4th is always in week 1.
   const monday = addDays(mondayOf(`${m[1]}-01-04`), (week - 1) * 7);
-  return weekKey(monday) === `${year}-W${m[2]}` ? monday : null;
+  return weekKey(monday) === key ? monday : null;
 }
 
 /** Token values for the week that starts on `monday`. */
