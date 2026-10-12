@@ -66,8 +66,11 @@ function TreeLink({ item, pathname, onNavigate }: { item: NavItem; pathname: str
 function RailPages({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
   const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
+  // On a first sign-in the users row can land after auth; getProfile returns null until then,
+  // so the rail waits for it instead of hitting requireUser early (same gate as NotesScreen).
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   // Bounded and metadata-only: the shell never subscribes to page bodies.
-  const notes = useQuery(api.notes.listForRail, isAuthenticated ? { limit: RAIL_PAGE_LIMIT } : "skip");
+  const notes = useQuery(api.notes.listForRail, profile ? { limit: RAIL_PAGE_LIMIT } : "skip");
   const pages = notes ?? [];
 
   return (
