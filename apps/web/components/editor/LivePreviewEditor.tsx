@@ -2,7 +2,7 @@
 
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { EditorSelection, EditorState, Prec } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, Prec } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExtension } from "@codemirror/view";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { slashQuery, wikiQuery } from "@/lib/editor/markdown-model";
@@ -53,6 +53,14 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
 ) {
   const host = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  // Labels and placeholder follow the UI language; swap them in place, never remount the editor.
+  const localized = useRef(new Compartment());
+  const localizedExtensions = () => [
+    livePreview({ labels, onOpenLink: (title) => callbacks.current.onOpenLink?.(title) }),
+    placeholder ? placeholderExtension(placeholder) : [],
+    EditorView.contentAttributes.of({ "aria-label": ariaLabel, "aria-multiline": "true", spellcheck: "true" }),
+  ];
+  const localizedKey = JSON.stringify([labels, placeholder, ariaLabel]);
   // Callbacks change every render; the editor reads them through refs.
   const callbacks = useRef({ onChange, onTrigger, onMenuKey, onOpenLink });
   callbacks.current = { onChange, onTrigger, onMenuKey, onOpenLink };
@@ -97,9 +105,7 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         markdown({ base: markdownLanguage }),
-        livePreview({ labels, onOpenLink: (title) => callbacks.current.onOpenLink?.(title) }),
-        placeholder ? placeholderExtension(placeholder) : [],
-        EditorView.contentAttributes.of({ "aria-label": ariaLabel, "aria-multiline": "true", spellcheck: "true" }),
+        localized.current.of(localizedExtensions()),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) callbacks.current.onChange(update.state.doc.toString());
           if (!(update.docChanged || update.selectionSet || update.focusChanged)) return;
@@ -139,6 +145,11 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
       viewRef.current = null;
     };
   }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: localizedKey stands for labels, placeholder and ariaLabel
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: localized.current.reconfigure(localizedExtensions()) });
+  }, [localizedKey]);
 
   return <div ref={host} className="tp-editor" data-component="PageEditorSurface" />;
 });
