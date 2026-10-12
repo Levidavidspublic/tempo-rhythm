@@ -24,6 +24,10 @@ function maskCode(body: string): string {
   const lines = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
   let fence: { marker: string; length: number } | null = null;
   let fenceStart = 0;
+  // Indented code: a line indented 4+ columns that does not continue a paragraph or a list.
+  let prevBlank = true;
+  let inList = false;
+  let inIndented = false;
   for (let m = lines.exec(body); m !== null && m[0].length > 0; m = lines.exec(body)) {
     const line = m[0].replace(/(?:\r\n|\r|\n)$/, "");
     const open = /^ {0,3}(`{3,}|~{3,})/.exec(line);
@@ -31,13 +35,25 @@ function maskCode(body: string): string {
       if (open && open[1]![0] === fence.marker && open[1]!.length >= fence.length && line.trim() === open[1]) {
         blank(fenceStart, m.index + m[0].length);
         fence = null;
+        prevBlank = true;
       }
+      continue;
+    }
+    const isBlank = line.trim() === "";
+    const indented = /^(?: {4}| {0,3}\t)/.test(line);
+    if (inIndented && !isBlank && !indented) inIndented = false;
+    if (!inIndented && indented && !isBlank && prevBlank && !inList) inIndented = true;
+    if (inIndented) {
+      blank(m.index, m.index + m[0].length);
+      prevBlank = isBlank;
       continue;
     }
     if (open) {
       fence = { marker: open[1]![0]!, length: open[1]!.length };
       fenceStart = m.index;
     }
+    if (!isBlank) inList = /^ {0,3}(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)/.test(line) || (inList && /^[ \t]/.test(line));
+    prevBlank = isBlank;
   }
   if (fence) blank(fenceStart, body.length);
   const masked = out.join("");
@@ -94,9 +110,10 @@ export function backlinksFor(title: string, selfId: string, pages: readonly Page
     if (!page.body.includes("[[")) continue;
     const link = findWikiLinks(page.body).find((l) => sameTitle(l.title, title));
     if (!link) continue;
-    const lineStart = page.body.lastIndexOf("\n", link.from - 1) + 1;
-    const lineEndRaw = page.body.indexOf("\n", link.to);
-    const lineEnd = lineEndRaw === -1 ? page.body.length : lineEndRaw;
+    // Line boundaries on LF, CRLF and lone CR alike.
+    const lineStart = Math.max(page.body.lastIndexOf("\n", link.from - 1), page.body.lastIndexOf("\r", link.from - 1)) + 1;
+    const ends = [page.body.indexOf("\n", link.to), page.body.indexOf("\r", link.to)].filter((i) => i !== -1);
+    const lineEnd = ends.length > 0 ? Math.min(...ends) : page.body.length;
     const context = page.body
       .slice(lineStart, lineEnd)
       .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_whole, t: string, shown?: string) => shown ?? t)

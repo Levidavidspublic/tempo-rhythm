@@ -82,3 +82,21 @@ describe("line endings, title identity and linkable titles", () => {
     expect(isLinkableTitle("x".repeat(201))).toBe(false);
   });
 });
+
+describe("indented code and lone-CR context", () => {
+  test("an indented code block is code, so its [[links]] are not links", () => {
+    expect(findWikiLinks("Intro.\n\n    [[Target]]\n\n[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("Intro.\n\n\t[[Target]]\n").map((l) => l.title)).toEqual([]);
+  });
+
+  test("indented lines that continue a paragraph or a list stay text", () => {
+    expect(findWikiLinks("A paragraph\n    [[Lazy]] continues it").map((l) => l.title)).toEqual(["Lazy"]);
+    expect(findWikiLinks("- item\n\n    [[InItem]] continues the item").map((l) => l.title)).toEqual(["InItem"]);
+  });
+
+  test("backlink context is the linking line in a lone-CR body", () => {
+    const long = "x".repeat(300);
+    const [hit] = backlinksFor("Target", "self", [{ id: "a", title: "A", body: `${long}\rsee [[Target]] here\r${long}` }]);
+    expect(hit?.context).toBe("see Target here");
+  });
+});
