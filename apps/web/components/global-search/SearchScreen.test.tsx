@@ -78,4 +78,10 @@ describe("SearchScreen", () => {
     result = { notes: [], tasks: [], habits: [], goals: [] };
     expect(render()).toContain("No matches");
   });
+
+  test("isolates the typed query in the empty state", () => {
+    queryParam = "zzz";
+    result = { notes: [], tasks: [], habits: [], goals: [] };
+    expect(render()).toContain('No matches for “<bdi dir="auto">zzz</bdi>”.');
+  });
 });
