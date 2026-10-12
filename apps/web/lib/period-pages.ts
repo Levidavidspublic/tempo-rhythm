@@ -3,7 +3,7 @@
  * page for an ISO week are ordinary Markdown pages made from a template with {{tokens}}.
  * Pure date math on YYYY-MM-DD strings (UTC calendar arithmetic, no time zone involved).
  */
-import { applyTemplateTokens, dayTokens, isoWeek } from "@/lib/editor/markdown-model";
+import { applyTemplateTokens, dayTokens } from "@/lib/editor/markdown-model";
 import type { Lang } from "@/lib/i18n";
 
 export type PeriodKind = "daily" | "weekly";
@@ -47,12 +47,19 @@ export function mondayOf(iso: string): string {
   return addDays(iso, 1 - weekday);
 }
 
+/** The ISO week number of a Thursday, by day-of-year arithmetic that keeps four-digit years. */
+function weekOfThursday(thursday: string): number {
+  const date = toUtc(thursday);
+  const jan1 = toUtc(`${thursday.slice(0, 4)}-01-01`);
+  if (!date || !jan1) throw new Error(`Not a date: ${thursday}`);
+  return Math.floor((date.getTime() - jan1.getTime()) / DAY_MS / 7) + 1;
+}
+
 /** The ISO week key ("2026-W42") of the week holding `iso`. The year is the ISO week-year. */
 export function weekKey(iso: string): string {
   // The week belongs to the year of its Thursday.
   const thursday = addDays(mondayOf(iso), 3);
-  const date = toUtc(thursday) as Date;
-  return `${thursday.slice(0, 4)}-W${String(isoWeek(date)).padStart(2, "0")}`;
+  return `${thursday.slice(0, 4)}-W${String(weekOfThursday(thursday)).padStart(2, "0")}`;
 }
 
 /** The Monday of an ISO week key such as "2026-W42", or null when there is no such week. */
@@ -63,9 +70,14 @@ export function mondayOfWeekKey(key: string): string | null {
   const week = Number(m[2]);
   // Year 0 would need dates before year 1, which ISO strings here do not write.
   if (year < 1 || week < 1 || week > 53) return null;
-  // January 4th is always in week 1.
-  const monday = addDays(mondayOf(`${m[1]}-01-04`), (week - 1) * 7);
-  return weekKey(monday) === key ? monday : null;
+  // January 4th is always in week 1. Dates outside years 1-9999 have no YYYY-MM-DD form here,
+  // so a week that reaches them does not exist.
+  try {
+    const monday = addDays(mondayOf(`${m[1]}-01-04`), (week - 1) * 7);
+    return isIsoDate(monday) && weekKey(monday) === key ? monday : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Token values for the week that starts on `monday`. */
@@ -78,7 +90,7 @@ export function weekTokens(monday: string, lang: Lang = "en"): Record<string, st
     start,
     end,
   );
-  const week = String(isoWeek(start));
+  const week = String(weekOfThursday(addDays(monday, 3)));
   return {
     date: monday,
     week,
