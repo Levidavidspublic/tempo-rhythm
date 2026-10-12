@@ -4,7 +4,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { NoteNotFound } from "./NoteNotFound";
@@ -60,7 +60,7 @@ export function getNoteLoadState(note: NoteRecord | null | undefined): NoteLoadS
 
 export function NotesScreen({ noteId }: NotesScreenProps) {
   if (noteId) {
-    return <NoteEditor noteId={noteId} />;
+    return <NotePage noteId={noteId} />;
   }
   return <NotesList />;
 }
@@ -206,7 +206,16 @@ function NotesList() {
 
 type SaveState = "idle" | "saving" | "saved";
 
-function NoteEditor({ noteId }: { noteId: string }) {
+type NotePageProps = {
+  noteId: string;
+  /** Passed to the page view: where "Back" goes, or null to hide it. */
+  backHref?: string | null;
+  /** Shown on the paper above the body. */
+  lead?: ReactNode;
+};
+
+/** Loads one page, saves edits (debounced), and draws it with PageEditorView. Also used by Today. */
+export function NotePage({ noteId, backHref, lead }: NotePageProps) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
@@ -355,6 +364,8 @@ function NoteEditor({ noteId }: { noteId: string }) {
       onAskDelete={() => setConfirmingDelete(true)}
       onConfirmDelete={() => void handleDelete()}
       onCancelDelete={() => setConfirmingDelete(false)}
+      backHref={backHref}
+      lead={lead}
     />
   );
 }

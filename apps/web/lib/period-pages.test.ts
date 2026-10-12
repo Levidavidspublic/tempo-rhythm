@@ -1,0 +1,70 @@
+import { describe, expect, test } from "bun:test";
+import {
+  addDays,
+  isIsoDate,
+  localIsoDate,
+  mondayOf,
+  mondayOfWeekKey,
+  periodPageDraft,
+  weekKey,
+  weekTokens,
+} from "./period-pages";
+
+describe("date math", () => {
+  test("local date keeps the local calendar day", () => {
+    expect(localIsoDate(new Date(2026, 9, 12, 23, 59))).toBe("2026-10-12");
+  });
+
+  test("real dates only", () => {
+    expect(isIsoDate("2026-10-12")).toBe(true);
+    expect(isIsoDate("2026-02-30")).toBe(false);
+    expect(isIsoDate("2026-10-12T00:00")).toBe(false);
+  });
+
+  test("Monday of a week and the ISO week key, across year ends", () => {
+    expect(mondayOf("2026-10-12")).toBe("2026-10-12");
+    expect(mondayOf("2026-10-18")).toBe("2026-10-12");
+    expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+    expect(weekKey("2026-10-14")).toBe("2026-W42");
+    // 1 January 2027 is a Friday: it belongs to the last week of 2026.
+    expect(weekKey("2027-01-01")).toBe("2026-W53");
+    expect(weekKey("2024-12-30")).toBe("2025-W01");
+  });
+
+  test("week keys round-trip and nonexistent weeks are rejected", () => {
+    expect(mondayOfWeekKey("2026-W42")).toBe("2026-10-12");
+    expect(mondayOfWeekKey("2025-W01")).toBe("2024-12-30");
+    expect(mondayOfWeekKey("2026-W53")).toBe("2026-12-28");
+    expect(mondayOfWeekKey("2025-W53")).toBeNull();
+    expect(mondayOfWeekKey("2026-W00")).toBeNull();
+    expect(mondayOfWeekKey("2026-42")).toBeNull();
+  });
+});
+
+describe("periodPageDraft", () => {
+  const template = "# Today\n\n## Intention\nFor {{weekday}} {{date}}: {{mood}}\n";
+
+  test("daily: the title from the date, the top heading dropped, known tokens filled", () => {
+    expect(periodPageDraft("daily", "2026-10-12", template)).toEqual({
+      title: "Monday, 12 October",
+      body: "## Intention\nFor Monday 2026-10-12: {{mood}}\n",
+    });
+  });
+
+  test("Hebrew titles", () => {
+    expect(periodPageDraft("daily", "2026-10-12", "", "he").title).toBe("יום שני, 12 באוקטובר");
+    expect(periodPageDraft("weekly", "2026-10-12", "", "he").title).toBe("שבוע 42");
+  });
+
+  test("weekly tokens", () => {
+    const tokens = weekTokens("2026-10-12");
+    expect(tokens).toMatchObject({ date: "2026-10-12", week: "42", year: "2026", title: "Week 42" });
+    expect(tokens.range).toContain("12");
+    expect(tokens.range).toContain("18");
+    expect(periodPageDraft("weekly", "2026-10-12", "# This week\n\n{{range}}").body).toBe(tokens.range);
+  });
+
+  test("a template without a top heading is kept whole", () => {
+    expect(periodPageDraft("daily", "2026-10-12", "## Plan\n- [ ] One").body).toBe("## Plan\n- [ ] One");
+  });
+});
