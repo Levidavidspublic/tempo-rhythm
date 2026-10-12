@@ -1,6 +1,6 @@
 "use client";
 
-import { parseTempoBlocks, sameTitle } from "@tempo/utils";
+import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/utils";
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -126,7 +126,9 @@ export function PageEditorView(props: Props) {
         icon: SLASH_ICONS[c.id],
       }));
     }
-    const pages = (wikiResults ?? []).filter((p) => p._id !== noteId);
+    // A title a [[link]] cannot hold (brackets, "|", line breaks, over 200 characters) would
+    // point at another page, so the picker leaves it out.
+    const pages = (wikiResults ?? []).filter((p) => p._id !== noteId && isLinkableTitle(p.title));
     const list: MenuItem[] = pages.map((p) => ({
       id: p._id,
       group: t("rail.pages"),
@@ -155,7 +157,7 @@ export function PageEditorView(props: Props) {
       if (newBlock) focusTaskTitleWhenDrawn(newBlock);
       editor.current?.replace(open.from, open.to, insertion.text, insertion.cursor);
     } else {
-      const text = `[[${item.name}]]`;
+      const text = `[[${item.name.trim()}]]`;
       editor.current?.replace(open.from, open.to, text, text.length);
     }
     setTrigger(null);
@@ -177,7 +179,7 @@ export function PageEditorView(props: Props) {
   // One lookup-or-create per title at a time: a double click never makes two pages.
   const opening = useRef(new Set<string>());
   const openLink = async (linkTitle: string) => {
-    const key = linkTitle.trim().toLocaleLowerCase();
+    const key = titleKey(linkTitle);
     if (!key || opening.current.has(key)) return;
     opening.current.add(key);
     try {

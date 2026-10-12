@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { backlinksFor, findWikiLinks, sameTitle } from "./wiki-links";
+import { backlinksFor, findWikiLinks, isLinkableTitle, sameTitle, titleKey } from "./wiki-links";
 
 describe("findWikiLinks", () => {
   test("keeps the original offsets of each link", () => {
@@ -52,5 +52,33 @@ describe("backlinksFor", () => {
 
   test("a blank title has no backlinks", () => {
     expect(backlinksFor("  ", "a", [{ id: "b", title: "B", body: "[[ ]]" }])).toEqual([]);
+  });
+});
+
+describe("line endings, title identity and linkable titles", () => {
+  test("a fence in a lone-CR body is code, so its [[links]] are not links", () => {
+    expect(findWikiLinks("prose\r~~~\r[[Hidden]]\r~~~\r[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("prose\r\n```\r\n[[Hidden]]\r\n```\r\n[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+  });
+
+  test("offsets stay those of the original body after masking CR bodies", () => {
+    const body = "a\r```\r[[x]]\r```\r[[Real]]";
+    const [link] = findWikiLinks(body);
+    expect(body.slice(link!.from, link!.to)).toBe("[[Real]]");
+  });
+
+  test("titles compare without a locale", () => {
+    expect(titleKey("  Moving DAY ")).toBe("moving day");
+    expect(sameTitle("I", "i")).toBe(true);
+    expect(sameTitle("רשימה", " רשימה ")).toBe(true);
+  });
+
+  test("only titles a [[link]] can hold are linkable", () => {
+    expect(isLinkableTitle("Moving day")).toBe(true);
+    expect(isLinkableTitle("A|B")).toBe(false);
+    expect(isLinkableTitle("[draft]")).toBe(false);
+    expect(isLinkableTitle("two\nlines")).toBe(false);
+    expect(isLinkableTitle("   ")).toBe(false);
+    expect(isLinkableTitle("x".repeat(201))).toBe(false);
   });
 });
