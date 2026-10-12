@@ -6,7 +6,8 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
-import { backlinksFor, titleKey } from "@tempo/utils";
+import { backlinksFor, parseTempoBlocks, titleKey } from "@tempo/utils";
+import { isLocalDate } from "./lib/habitCheckInStreak";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
 
@@ -217,6 +218,97 @@ export const backlinks = query({
   },
 });
 
+/* ------------------------------------------------------------------ */
+/* Dated pages (v3 OVERNIGHT-RUN.md decision 6, contract NT-07)          */
+/* ------------------------------------------------------------------ */
+
+/** A daily page is keyed by its local date; a weekly page by the Monday that starts its week. */
+export const periodPageType = v.union(v.literal("daily"), v.literal("weekly"));
+export type PeriodPageType = "daily" | "weekly";
+
+/** Upper bounds for a page made from a template. */
+export const PERIOD_TITLE_MAX = 200;
+export const PERIOD_BODY_MAX = 100_000;
+
+/** True when `date` is a real YYYY-MM-DD date that can key a page of this type. */
+export function isPeriodDate(pageType: PeriodPageType, date: string): boolean {
+  if (!isLocalDate(date)) return false;
+  // Weekly pages are keyed by the ISO week's Monday, so one week never gets two pages.
+  return pageType === "daily" || new Date(`${date}T00:00:00Z`).getUTCDay() === 1;
+}
+
+async function findPeriodPage(ctx: QueryCtx, userId: Id<"users">, pageType: PeriodPageType, date: string) {
+  return ctx.db
+    .query("notes")
+    .withIndex("by_userId_deletedAt_pageType_date", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined).eq("pageType", pageType).eq("date", date),
+    )
+    .first();
+}
+
+/** The owner's live daily or weekly page for a date: id and title only, or null. */
+export const getPeriodPage = query({
+  args: { pageType: periodPageType, date: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    if (!isPeriodDate(args.pageType, args.date)) return null;
+    const note = await findPeriodPage(ctx, user._id, args.pageType, args.date);
+    return note ? { _id: note._id, title: note.title } : null;
+  },
+});
+
+/** Whether the body's page-meta block says it is the `pageType` page for `date` (NT-07). */
+function hasPeriodPageMeta(body: string, pageType: PeriodPageType, date: string): boolean {
+  return parseTempoBlocks(body).some(
+    (s) =>
+      s.kind === "valid" && s.block.type === "page-meta" && s.block.data.pageType === pageType && s.block.data.date === date,
+  );
+}
+
+/**
+ * The body with its page-meta block rewritten for a plain page (tags kept, no date). Every
+ * other byte is copied as it was.
+ */
+function asPlainPageBody(body: string): string {
+  return parseTempoBlocks(body)
+    .map((s) => {
+      if (s.kind !== "valid" || s.block.type !== "page-meta") return s.source;
+      const block = { ...s.block, data: { pageType: "plain" as const, tags: s.block.data.tags } };
+      const eol = /(?:\r\n|\r|\n)$/.exec(s.source)?.[0] ?? "";
+      return `\`\`\`json tempo\n${JSON.stringify(block)}\n\`\`\`${eol}`;
+    })
+    .join("");
+}
+
+/**
+ * Opens the day's (or week's) page, making it from the given template text on first open.
+ * Idempotent: when a live page for the date exists, its id comes back and nothing is written.
+ */
+export const ensurePeriodPage = mutation({
+  args: { pageType: periodPageType, date: v.string(), title: v.string(), body: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    if (!isPeriodDate(args.pageType, args.date)) throw new Error("Invalid page date");
+    if (args.body.length > PERIOD_BODY_MAX) throw new Error("Page body is too long");
+    // The body's page-meta block is the truth; the pageType and date columns mirror it.
+    if (!hasPeriodPageMeta(args.body, args.pageType, args.date)) throw new Error("Page meta does not match");
+    const existing = await findPeriodPage(ctx, user._id, args.pageType, args.date);
+    if (existing) return existing._id;
+    const now = Date.now();
+    return ctx.db.insert("notes", {
+      userId: user._id,
+      title: args.title.trim().slice(0, PERIOD_TITLE_MAX) || args.date,
+      body: args.body,
+      pinned: false,
+      periodType: args.pageType,
+      pageType: args.pageType,
+      date: args.date,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 export const get = query({
   args: { noteId: v.id("notes") },
   handler: async (ctx, args) => {
@@ -378,6 +470,22 @@ export const restore = mutation({
     const now = Date.now();
     if (!isRestorable(note.deletedAt, now)) {
       return { success: false };
+    }
+    // A dated page restored after a new page was made for the same date comes back as a plain
+    // page, so one date never has two live pages (its text is kept either way). Its page-meta
+    // block says so too, since the columns only mirror it.
+    const kind = note.pageType === "daily" || note.pageType === "weekly" ? note.pageType : null;
+    const clash = kind && note.date ? await findPeriodPage(ctx, user._id, kind, note.date) : null;
+    if (clash && clash._id !== note._id) {
+      await ctx.db.patch(args.noteId, {
+        deletedAt: undefined,
+        updatedAt: now,
+        body: asPlainPageBody(note.body),
+        pageType: "plain",
+        periodType: "none",
+        date: undefined,
+      });
+      return { success: true };
     }
     await ctx.db.patch(args.noteId, { deletedAt: undefined, updatedAt: now });
     return { success: true };

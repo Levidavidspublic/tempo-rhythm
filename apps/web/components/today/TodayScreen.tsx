@@ -13,6 +13,7 @@ import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
 import { TodayAgenda } from "./TodayAgenda";
+import { DailyPage } from "./DailyPage";
 import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayEnergyRecommendations } from "./TodayEnergyRecommendations";
 import { TodayGreeting } from "./TodayGreeting";
@@ -119,6 +120,7 @@ export function TodayScreen() {
     <div className="container mx-auto max-w-5xl px-6 py-12">
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
+        <DailyPage dayStartMs={bounds.startMs} tasks={todayTasks} />
         <TodayWiredStrips />
         <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />
         <TodayAgenda events={mapCalendarEventsToAgenda(calendarEvents)} />

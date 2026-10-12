@@ -82,3 +82,37 @@ describe("line endings, title identity and linkable titles", () => {
     expect(isLinkableTitle("x".repeat(201))).toBe(false);
   });
 });
+
+describe("indented code and lone-CR context", () => {
+  test("an indented code block is code, so its [[links]] are not links", () => {
+    expect(findWikiLinks("Intro.\n\n    [[Target]]\n\n[[Real]]").map((l) => l.title)).toEqual(["Real"]);
+    expect(findWikiLinks("Intro.\n\n\t[[Target]]\n").map((l) => l.title)).toEqual([]);
+  });
+
+  test("indented lines that continue a paragraph or a list stay text", () => {
+    expect(findWikiLinks("A paragraph\n    [[Lazy]] continues it").map((l) => l.title)).toEqual(["Lazy"]);
+    expect(findWikiLinks("- item\n\n    [[InItem]] continues the item").map((l) => l.title)).toEqual(["InItem"]);
+  });
+
+  test("indented code inside a list item is code: 4+ columns past the item's content", () => {
+    const titles = (body: string) => findWikiLinks(body).map((l) => l.title);
+    expect(titles("- item\n\n        [[Hidden]]\n\n[[Real]]")).toEqual(["Real"]);
+    expect(titles("1. item\n\n       [[Hidden]]\n")).toEqual([]);
+    expect(titles("1. item\n\n      [[InItem]] is text (6 columns, content at 3)\n")).toEqual(["InItem"]);
+    expect(titles("- a\n  - nested\n\n          [[Hidden]]\n\n    [[InNested]]\n")).toEqual(["InNested"]);
+    expect(titles("- item\n\n\t\t[[Hidden]]\n")).toEqual([]);
+    // Leaving the list: a less indented line after a blank line is top-level again.
+    expect(titles("- item\n\nParagraph\n\n    [[Hidden]]\n")).toEqual([]);
+    // A heading leaves no paragraph to continue; "10." cannot start a list inside a paragraph.
+    expect(titles("# H\n    [[Hidden]]\n")).toEqual([]);
+    expect(titles("Para\n10. ten\n\n    [[Hidden]]\n")).toEqual([]);
+    // A fence inside an item, indented with the item's content.
+    expect(titles("- item\n\n  ```\n  [[Hidden]]\n  ```\n- [[Next]]\n")).toEqual(["Next"]);
+  });
+
+  test("backlink context is the linking line in a lone-CR body", () => {
+    const long = "x".repeat(300);
+    const [hit] = backlinksFor("Target", "self", [{ id: "a", title: "A", body: `${long}\rsee [[Target]] here\r${long}` }]);
+    expect(hit?.context).toBe("see Target here");
+  });
+});

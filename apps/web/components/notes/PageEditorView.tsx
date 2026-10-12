@@ -4,7 +4,7 @@ import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/u
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   type EditorTrigger,
   LivePreviewEditor,
@@ -59,6 +59,12 @@ type Props = {
   onAskDelete: () => void;
   onConfirmDelete: () => void;
   onCancelDelete: () => void;
+  /** Where "Back" goes; null hides it (Today is not inside the notes list). */
+  backHref?: string | null;
+  /** Shown on the paper between the page header and the body (Today's Next up card). */
+  lead?: ReactNode;
+  /** False hides Delete (Today's own page is deleted from Notes, where Undo lives). */
+  canDelete?: boolean;
 };
 
 /** Tags from the page's page-meta block (the only place tags live, NT-05). */
@@ -297,18 +303,20 @@ export function PageEditorView(props: Props) {
                       <TpIcon name={mode === "edit" ? "page" : "edit"} size="sm" />
                       {mode === "edit" ? t("page.read") : t("page.edit")}
                     </button>
-                    <button
-                      className="tp-menu__item"
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        props.onAskDelete();
-                      }}
-                    >
-                      <TpIcon name="x" size="sm" />
-                      {t("page.delete")}
-                    </button>
+                    {props.canDelete === false ? null : (
+                      <button
+                        className="tp-menu__item"
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          props.onAskDelete();
+                        }}
+                      >
+                        <TpIcon name="x" size="sm" />
+                        {t("page.delete")}
+                      </button>
+                    )}
                   </div>
                 ) : null}
               </div>
@@ -320,14 +328,18 @@ export function PageEditorView(props: Props) {
                 {tag}
               </span>
             ))}
-            <Link className="tp-muted" href="/notes">
-              {t("page.back")}
-            </Link>
+            {props.backHref === null ? null : (
+              <Link className="tp-muted" href={props.backHref ?? "/notes"}>
+                {t("page.back")}
+              </Link>
+            )}
             <output className="tp-muted" data-state={saveState}>
               {copied ? t("page.copied") : saveState === "saving" ? t("page.saving") : saveState === "saved" ? t("page.saved") : ""}
             </output>
           </div>
         </div>
+
+        {props.lead}
 
         <div className="tp-page-content tp-slash-anchor" data-component="BlockList">
           {mode === "edit" ? (
