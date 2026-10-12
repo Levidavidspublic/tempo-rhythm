@@ -7,15 +7,6 @@ import { Providers } from "@/components/providers/providers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { themeInitScript } from "@/lib/theme-script";
 
-const inter = localFont({
-  src: "../fonts/inter/Inter-latin.woff2",
-  weight: "400 700",
-  style: "normal",
-  variable: "--font-inter",
-  display: "swap",
-  adjustFontFallback: "Arial",
-});
-
 const newsreader = localFont({
   src: "../fonts/newsreader/Newsreader-latin.woff2",
   weight: "400 700",
@@ -56,8 +47,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3ebe2" },
-    { media: "(prefers-color-scheme: dark)", color: "#131312" },
+    { media: "(prefers-color-scheme: light)", color: "#F3EEE4" },
+    { media: "(prefers-color-scheme: dark)", color: "#161412" },
   ],
 };
 
@@ -71,7 +62,7 @@ export default function RootLayout({
       <html
         lang="en"
         dir="ltr"
-        className={`${inter.variable} ${newsreader.variable} ${ibmPlexMono.variable}`}
+        className={`${newsreader.variable} ${ibmPlexMono.variable}`}
         suppressHydrationWarning
       >
         <head>
