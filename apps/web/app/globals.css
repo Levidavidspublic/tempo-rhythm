@@ -577,6 +577,12 @@
   color: transparent;
 }
 
+/* Search (search.html, layout only). */
+.sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.sr-results { display: grid; gap: var(--tp-space-6); }
+.sr-list { padding: var(--tp-space-1); }
+/* Under 768 px the shell main has no side padding; the screen keeps the 16 px gutter its page head has. */
+@media (max-width: 767px) { .tp-page > .sr-screen { padding-inline: var(--tp-space-4); } }
 /* Sign-up: the auth card, then the terms line under it at the card's width. */
 .tp-auth-stack { display: grid; gap: var(--tp-space-4); justify-items: center; width: min(100%, calc(var(--tp-space-20) * 5 + var(--tp-space-10))); }
 .tp-auth-stack > .tp-auth-card { width: 100%; }
