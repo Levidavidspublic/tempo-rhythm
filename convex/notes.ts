@@ -6,6 +6,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { backlinksFor } from "@tempo/utils";
 import { requireUser } from "./lib/requireUser";
 import { isRestorable, undoUntil } from "./lib/softDelete";
 
@@ -92,6 +93,64 @@ export async function listRailPagesForUser(
   }
   return out;
 }
+
+/** How many of the owner's most recently edited pages the link queries read. */
+export const LINK_SCAN_LIMIT = 500;
+
+export type PageTitle = Pick<Doc<"notes">, "_id" | "title" | "pinned" | "updatedAt">;
+
+/**
+ * Titles for the "[[" picker and for resolving a clicked [[link]]. Metadata only, bounded:
+ * best match (title starts with the query) first, then most recently edited.
+ */
+export const searchTitles = query({
+  args: { query: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const limit = Math.min(Math.max(Math.floor(args.limit ?? 8), 1), 20);
+    const q = args.query.trim().toLocaleLowerCase();
+    const rows = await ctx.db
+      .query("notes")
+      .withIndex("by_userId_updatedAt", (iq) => iq.eq("userId", user._id))
+      .order("desc")
+      .take(LINK_SCAN_LIMIT);
+    const starts: PageTitle[] = [];
+    const contains: PageTitle[] = [];
+    for (const n of rows) {
+      if (n.deletedAt !== undefined || !n.title.trim()) continue;
+      const title = n.title.toLocaleLowerCase();
+      const row = { _id: n._id, title: n.title, pinned: n.pinned, updatedAt: n.updatedAt };
+      if (!q || title.startsWith(q)) starts.push(row);
+      else if (title.includes(q)) contains.push(row);
+    }
+    return [...starts, ...contains].slice(0, limit);
+  },
+});
+
+/**
+ * "Linked here": the owner's live pages whose body has a [[link]] to this page's title, with
+ * the linking line as plain context. Computed from bodies (bodies are the only truth); no body
+ * leaves the server.
+ */
+export const backlinks = query({
+  args: { noteId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const id = ctx.db.normalizeId("notes", args.noteId);
+    if (!id) return [];
+    const self = await ctx.db.get(id);
+    if (!self || self.userId !== user._id || self.deletedAt !== undefined || !self.title.trim()) return [];
+    const rows = await ctx.db
+      .query("notes")
+      .withIndex("by_userId_updatedAt", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(LINK_SCAN_LIMIT);
+    const pages = rows
+      .filter((n) => n.deletedAt === undefined)
+      .map((n) => ({ id: n._id as string, title: n.title, body: n.body }));
+    return backlinksFor(self.title, self._id, pages).slice(0, 50);
+  },
+});
 
 export const get = query({
   args: { noteId: v.id("notes") },

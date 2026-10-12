@@ -7,7 +7,7 @@
  * tests share one behaviour. Saves are byte-exact: helpers that edit a body touch only the range
  * they are asked to change and copy every other UTF-16 unit as it was.
  */
-import { type BlockSegment, parseTempoBlocks, type TempoBlock } from "@tempo/utils";
+import { type BlockSegment, type PageRef, parseTempoBlocks, type TempoBlock } from "@tempo/utils";
 
 /** The editor must never normalise line breaks: CodeMirror gets this as its line separator. */
 export const LINE_SEPARATOR = "\n";
@@ -192,57 +192,13 @@ export function slashInsertion(id: SlashCommandId, atLineStart: boolean): { text
 /* [[links]] and "Linked here" (decision 3)                             */
 /* ------------------------------------------------------------------ */
 
-export type WikiLink = { title: string; from: number; to: number };
-
-const WIKI = /\[\[([^[\]\n|]{1,200})(?:\|([^[\]\n]{1,200}))?\]\]/g;
-
-/** `[[Title]]` and `[[Title|shown text]]` outside Tempo fences. */
-export function findWikiLinks(body: string): WikiLink[] {
-  const blocks = tempoBlockRanges(body);
-  const out: WikiLink[] = [];
-  WIKI.lastIndex = 0;
-  for (let m = WIKI.exec(body); m !== null; m = WIKI.exec(body)) {
-    const from = m.index;
-    const to = from + m[0].length;
-    if (blocks.some((b) => from < b.to && to > b.from)) continue;
-    out.push({ title: m[1]!.trim(), from, to });
-  }
-  return out;
-}
+export { type Backlink, backlinksFor, findWikiLinks, type PageRef, sameTitle, type WikiLink } from "@tempo/utils";
 
 /** The "[[" picker trigger: an unclosed `[[query` right before the cursor on the same line. */
 export function wikiQuery(lineBefore: string): { query: string; offset: number } | null {
   const match = /\[\[([^[\]\n|]{0,60})$/.exec(lineBefore);
   if (!match) return null;
   return { query: match[1]!, offset: match.index };
-}
-
-export function sameTitle(a: string, b: string): boolean {
-  return a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
-}
-
-export type PageRef = { id: string; title: string; body: string };
-export type Backlink = { id: string; title: string; context: string };
-
-/** Pages whose body links to `title`, with the line that holds the link as context. */
-export function backlinksFor(title: string, selfId: string, pages: readonly PageRef[]): Backlink[] {
-  if (!title.trim()) return [];
-  const out: Backlink[] = [];
-  for (const page of pages) {
-    if (page.id === selfId) continue;
-    const link = findWikiLinks(page.body).find((l) => sameTitle(l.title, title));
-    if (!link) continue;
-    const lineStart = page.body.lastIndexOf("\n", link.from - 1) + 1;
-    const lineEndRaw = page.body.indexOf("\n", link.to);
-    const lineEnd = lineEndRaw === -1 ? page.body.length : lineEndRaw;
-    const context = page.body
-      .slice(lineStart, lineEnd)
-      .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, t: string, shown?: string) => shown ?? t)
-      .replace(/^\s*(?:[-*+]|\d+\.|#{1,6}|>)\s+/, "")
-      .trim();
-    out.push({ id: page.id, title: page.title, context: context.slice(0, 160) });
-  }
-  return out;
 }
 
 /** Titles for the "[[" picker, best match first. */

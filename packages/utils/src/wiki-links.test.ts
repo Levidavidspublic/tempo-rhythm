@@ -1,0 +1,49 @@
+import { describe, expect, test } from "bun:test";
+import { backlinksFor, findWikiLinks, sameTitle } from "./wiki-links";
+
+describe("findWikiLinks", () => {
+  test("keeps the original offsets of each link", () => {
+    const body = "a [[One]] b [[Two|shown]]";
+    expect(findWikiLinks(body)).toEqual([
+      { title: "One", from: 2, to: 9 },
+      { title: "Two", from: 12, to: 25 },
+    ]);
+  });
+
+  test("ignores links inside fenced code, inline code and Tempo blocks", () => {
+    const body = [
+      "Real [[Kept]].",
+      "```",
+      "[[In a fence]]",
+      "```",
+      "Inline `[[In code]]` and ``[[Double]]``.",
+      "~~~ts",
+      "[[Tilde fence]]",
+      "~~~",
+      "```json tempo",
+      '{"id":"blk_01JQ8Z3K4M5N6P7Q8R9S0T1V2W","v":1,"type":"page-meta","data":{"pageType":"daily","date":"2026-10-12","tags":["[[Not]]"]}}',
+      "```",
+      "After [[Also kept]]",
+    ].join("\n");
+    expect(findWikiLinks(body).map((l) => l.title)).toEqual(["Kept", "Also kept"]);
+  });
+
+  test("an unclosed fence hides the rest of the body", () => {
+    expect(findWikiLinks("[[A]]\n```\n[[B]]").map((l) => l.title)).toEqual(["A"]);
+  });
+});
+
+describe("backlinksFor", () => {
+  test("matches titles without case or outer spaces, and never lists the page itself", () => {
+    expect(sameTitle(" Moving ", "moving")).toBe(true);
+    const pages = [
+      { id: "self", title: "Moving", body: "[[Moving]]" },
+      { id: "x", title: "Week", body: "- [ ] pack for [[moving ]]" },
+    ];
+    expect(backlinksFor("Moving", "self", pages)).toEqual([{ id: "x", title: "Week", context: "pack for moving" }]);
+  });
+
+  test("a blank title has no backlinks", () => {
+    expect(backlinksFor("  ", "a", [{ id: "b", title: "B", body: "[[ ]]" }])).toEqual([]);
+  });
+});

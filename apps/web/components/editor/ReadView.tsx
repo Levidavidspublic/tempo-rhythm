@@ -1,15 +1,14 @@
 "use client";
 
 import { parseTempoBlocks } from "@tempo/utils";
-import Link from "next/link";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TpIcon } from "@/components/tempo/TpIcon";
 
 type Props = {
   body: string;
-  /** Resolves a [[Title]] to a page href, or null when no page has that title. */
-  resolveLink: (title: string) => string | null;
+  /** Opens the page a [[Title]] points to (or makes it, like the editor does). */
+  onOpenLink: (title: string) => void;
   labels: { minutes: string; brokenBlock: string; template: string };
 };
 
@@ -28,7 +27,7 @@ function linkWikis(markdown: string): string {
  * (tables, task lists, strikethrough); Tempo blocks render as the same quiet cards as the
  * editor and never show their JSON. Raw HTML stays escaped and remote images never load.
  */
-export function ReadView({ body, resolveLink, labels }: Props) {
+export function ReadView({ body, onOpenLink, labels }: Props) {
   const segments = parseTempoBlocks(body);
   return (
     <div className="tp-page-content tp-prose" data-component="ReadView" dir="auto">
@@ -42,13 +41,11 @@ export function ReadView({ body, resolveLink, labels }: Props) {
               components={{
                 a({ href, children }) {
                   if (href?.startsWith("wiki:")) {
-                    const target = resolveLink(decodeURIComponent(href.slice(5)));
-                    return target ? (
-                      <Link className="tp-wikilink" href={target}>
+                    const title = decodeURIComponent(href.slice(5));
+                    return (
+                      <button className="tp-wikilink" type="button" onClick={() => onOpenLink(title)}>
                         {children}
-                      </Link>
-                    ) : (
-                      <span className="tp-wikilink">{children}</span>
+                      </button>
                     );
                   }
                   return (

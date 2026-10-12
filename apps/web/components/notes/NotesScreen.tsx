@@ -5,12 +5,10 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LivePreviewEditor } from "@/components/editor/LivePreviewEditor";
-import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
 import { NoteNotFound } from "./NoteNotFound";
+import { PageEditorView } from "./PageEditorView";
 import { UndoDeleteToast } from "./UndoDeleteToast";
 
 type NoteRecord = Doc<"notes">;
@@ -210,7 +208,6 @@ type SaveState = "idle" | "saving" | "saved";
 
 function NoteEditor({ noteId }: { noteId: string }) {
   const router = useRouter();
-  const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
   // During sign-in getProfile resolves safely while the user record is being created.
@@ -343,70 +340,21 @@ function NoteEditor({ noteId }: { noteId: string }) {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl px-6 py-12">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link href="/notes" className="text-sm font-medium text-primary">
-            ← Back to notes
-          </Link>
-          <div className="flex items-center gap-3">
-            <output
-              className={cn(
-                "text-sm text-muted-foreground",
-                saveState === "idle" && "invisible",
-              )}
-            >
-              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}
-            </output>
-            <Button type="button" variant="outline" onClick={() => void handleTogglePin()}>
-              {note?.pinned ? "Unpin" : "Pin"}
-            </Button>
-            {confirmingDelete ? (
-              <>
-                <Button type="button" variant="destructive" onClick={() => void handleDelete()}>
-                  Confirm delete
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setConfirmingDelete(false)}>
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button type="button" variant="outline" onClick={() => setConfirmingDelete(true)}>
-                Delete
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <label className="block space-y-2">
-          <span className="sr-only">Note title</span>
-          <input
-            aria-label="Note title"
-            value={title}
-            onChange={(event) => handleTitleChange(event.target.value)}
-            placeholder="Untitled note"
-            className="w-full border-none bg-transparent font-heading text-3xl font-semibold text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </label>
-
-        <div className="min-h-64 rounded-xl border border-border bg-card px-4 py-3">
-          {/* Live preview over the exact Markdown body; an untouched page saves back identical. */}
-          <LivePreviewEditor
-            key={note?._id ?? "draft"}
-            initialValue={note?.body ?? body}
-            ariaLabel="Note body"
-            placeholder={t("editor.placeholder")}
-            labels={{
-              minutes: t("editor.minutes"),
-              removeBlock: t("editor.remove"),
-              brokenBlock: t("editor.broken"),
-              template: t("editor.template"),
-              taskDone: t("editor.done"),
-            }}
-            onChange={handleBodyChange}
-          />
-        </div>
-      </div>
-    </main>
+    <PageEditorView
+      key={note?._id ?? noteId}
+      noteId={noteId}
+      title={title}
+      initialBody={note?.body ?? body}
+      body={body}
+      pinned={note?.pinned ?? false}
+      saveState={saveState}
+      confirmingDelete={confirmingDelete}
+      onTitleChange={handleTitleChange}
+      onBodyChange={handleBodyChange}
+      onTogglePin={() => void handleTogglePin()}
+      onAskDelete={() => setConfirmingDelete(true)}
+      onConfirmDelete={() => void handleDelete()}
+      onCancelDelete={() => setConfirmingDelete(false)}
+    />
   );
 }
