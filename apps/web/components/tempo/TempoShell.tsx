@@ -57,22 +57,33 @@ export function TempoShell({ children }: { children: ReactNode }) {
     if (onCoachRoute) setCoachOpen(false);
   }, [onCoachRoute]);
 
-  // As a sheet the panel is modal: everything else in the shell is inert until it closes.
+  // As a sheet the panel is modal: everything else in the shell is inert until it closes. The
+  // rail's inert is React's own (drawer state, below), so it is left out here and set by prop.
+  const coachModal = panelOpen && coachSheet;
   useEffect(() => {
     const app = appRef.current;
-    if (!(panelOpen && coachSheet) || !app) return;
+    if (!coachModal || !app) return;
     const made = Array.from(app.children).filter(
       (el): el is HTMLElement =>
         el instanceof HTMLElement &&
         !el.classList.contains("tp-coach-panel") &&
         !el.classList.contains("tp-scrim") &&
+        el.getAttribute("data-component") !== "Sidebar" &&
         !el.hasAttribute("inert"),
     );
     for (const el of made) el.inert = true;
     return () => {
       for (const el of made) el.inert = false;
     };
-  }, [panelOpen, coachSheet]);
+  }, [coachModal]);
+
+  // The palette and the coach sheet are both modal: opening one closes the other.
+  useEffect(() => {
+    if (paletteOpen && coachSheet) setCoachOpen(false);
+  }, [paletteOpen, coachSheet]);
+  useEffect(() => {
+    if (panelOpen) setPaletteOpen(false);
+  }, [panelOpen]);
 
   useEffect(() => {
     if (panelOpen || !refocusCoachButton.current) return;
@@ -115,7 +126,12 @@ export function TempoShell({ children }: { children: ReactNode }) {
       } else if (isMeta && e.key.toLowerCase() === "j") {
         e.preventDefault();
         if (onCoachRoute) document.getElementById("coach-message")?.focus();
-        else setCoachOpen((open) => !open);
+        else
+          setCoachOpen((open) => {
+            // Closing with Ctrl J puts focus back on the coach button, like Escape does.
+            if (open) refocusCoachButton.current = true;
+            return !open;
+          });
       } else if (e.key === "Escape") {
         setRailOpen(false);
         setCoachOpen((open) => {
@@ -143,7 +159,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
         {t("skip")}
       </a>
       <Sidebar
-        inert={narrow && !railOpen}
+        inert={(narrow && !railOpen) || coachModal}
         onOpenPalette={() => setPaletteOpen(true)}
         onNavigate={() => setRailOpen(false)}
       />
