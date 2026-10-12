@@ -10,6 +10,19 @@ import { TabBar } from "./TabBar";
 import { Topbar } from "./Topbar";
 import { TpIconSprite } from "./TpIcon";
 
+/** Under 1024 px the rail is a drawer (tempo.css "Responsive"). */
+function useNarrowViewport(): boolean {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const update = () => setNarrow(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+  return narrow;
+}
+
 /**
  * TempoShell: the v3 app shell (docs/design/v3/screens/web/today.html, DESIGN.md §8).
  * Rail (264) + glass top bar + main; the rail becomes a drawer under 1024 px and a glass
@@ -19,6 +32,7 @@ import { TpIconSprite } from "./TpIcon";
 export function TempoShell({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
+  const narrow = useNarrowViewport();
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLocale();
@@ -52,7 +66,11 @@ export function TempoShell({ children }: { children: ReactNode }) {
       <a className="tp-skip" href="#main">
         {t("skip")}
       </a>
-      <Sidebar onOpenPalette={() => setPaletteOpen(true)} onNavigate={() => setRailOpen(false)} />
+      <Sidebar
+        inert={narrow && !railOpen}
+        onOpenPalette={() => setPaletteOpen(true)}
+        onNavigate={() => setRailOpen(false)}
+      />
       <Topbar
         railOpen={railOpen}
         onToggleRail={() => setRailOpen((open) => !open)}

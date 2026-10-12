@@ -66,11 +66,9 @@ function TreeLink({ item, pathname, onNavigate }: { item: NavItem; pathname: str
 function RailPages({ pathname, onNavigate }: { pathname: string | null; onNavigate?: () => void }) {
   const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
-  const notes = useQuery(api.notes.list, isAuthenticated ? {} : "skip");
-  const pages = (notes ?? [])
-    .slice()
-    .sort((a, b) => Number(b.pinned) - Number(a.pinned))
-    .slice(0, RAIL_PAGE_LIMIT);
+  // Bounded and metadata-only: the shell never subscribes to page bodies.
+  const notes = useQuery(api.notes.listForRail, isAuthenticated ? { limit: RAIL_PAGE_LIMIT } : "skip");
+  const pages = notes ?? [];
 
   return (
     <div className="tp-rail__group">
@@ -114,6 +112,8 @@ function RailPages({ pathname, onNavigate }: { pathname: string | null; onNaviga
 }
 
 type SidebarProps = {
+  /** Closed drawer under 1024 px: off-screen, so out of the tab order and the a11y tree. */
+  inert?: boolean;
   onOpenPalette: () => void;
   /** Called after a link is followed, so the drawer can close under 1024 px. */
   onNavigate?: () => void;
@@ -123,7 +123,7 @@ type SidebarProps = {
  * Sidebar / PageTree: the v3 rail (docs/design/v3/screens/web/today.html, DESIGN.md §9).
  * shadcn target: sidebar + collapsible. Classes and data-component names follow tempo.css.
  */
-export function Sidebar({ onOpenPalette, onNavigate }: SidebarProps) {
+export function Sidebar({ inert = false, onOpenPalette, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { t, lang, setLang } = useLocale();
   const { dyslexia, setDyslexia } = useTheme();
@@ -136,7 +136,7 @@ export function Sidebar({ onOpenPalette, onNavigate }: SidebarProps) {
   };
 
   return (
-    <nav className="tp-rail" data-component="Sidebar" aria-label={t("rail.label")}>
+    <nav className="tp-rail" data-component="Sidebar" aria-label={t("rail.label")} inert={inert}>
       <div className="tp-rail__brand">
         <span className="tp-rail__mark" aria-hidden="true">
           T
