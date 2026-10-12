@@ -33,15 +33,15 @@ export function TemplateRun({ templateId }: { templateId: string }) {
 
   if (template === undefined) {
     return (
-      <main className="tp-page tp-run" id="main" data-component="PageLayout">
+      <div className="tp-page tp-run" data-component="PageLayout">
         <output className="tp-muted">{t("tplRun.loading")}</output>
-      </main>
+      </div>
     );
   }
 
   if (template === null) {
     return (
-      <main className="tp-page tp-run" id="main" data-component="PageLayout">
+      <div className="tp-page tp-run" data-component="PageLayout">
         <header className="tp-pagehead">
           <div className="tp-pagehead__text">
             <h1 className="tp-pagehead__title">{t("tplRun.missing")}</h1>
@@ -51,7 +51,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <Link className="tp-btn tp-btn--secondary" href="/templates">
           {t("tplRun.back")}
         </Link>
-      </main>
+      </div>
     );
   }
 
@@ -80,7 +80,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
   };
 
   return (
-    <main className="tp-page tp-run" id="main" data-component="PageLayout">
+    <div className="tp-page tp-run" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
           <span className="tp-eyebrow">{t("tplRun.eyebrow")}</span>
@@ -130,6 +130,6 @@ export function TemplateRun({ templateId }: { templateId: string }) {
           {t("tplRun.reject")}
         </button>
       </div>
-    </main>
+    </div>
   );
 }
