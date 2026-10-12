@@ -10,6 +10,7 @@ export type NextUpTask = {
   status: "todo" | "in_progress" | "done" | "cancelled";
   priority: "low" | "medium" | "high";
   energy?: "low" | "medium" | "high";
+  /** Planned effort in ms (convex/schema.ts). */
   timeEstimate?: number;
   dueAt?: number;
 };
@@ -42,11 +43,11 @@ export function nextUpReason(task: NextUpTask): MessageKey {
   return "next.why.due";
 }
 
-/** Minutes for the focus timer: the task's estimate when it has a sensible one, else 25. */
+/** Minutes for the focus timer: the task's estimate (ms) when it has one, kept to 5..90; else 25. */
 export function focusMinutes(task: NextUpTask): number {
   const estimate = task.timeEstimate;
   if (typeof estimate !== "number" || !Number.isFinite(estimate) || estimate <= 0) return 25;
-  return Math.min(Math.max(Math.round(estimate), 5), 90);
+  return Math.min(Math.max(Math.round(estimate / 60_000), 5), 90);
 }
 
 /** "mm:ss" for a countdown. */

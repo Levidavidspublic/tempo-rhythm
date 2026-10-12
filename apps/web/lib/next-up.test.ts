@@ -37,11 +37,12 @@ describe("card details", () => {
     expect(nextUpReason(task("a"))).toBe("next.why.due");
   });
 
-  test("focus minutes come from the estimate, kept between 5 and 90; 25 otherwise", () => {
+  test("focus minutes come from the estimate (ms), kept between 5 and 90; 25 otherwise", () => {
+    const min = 60_000;
     expect(focusMinutes(task("a"))).toBe(25);
-    expect(focusMinutes(task("a", { timeEstimate: 40 }))).toBe(40);
-    expect(focusMinutes(task("a", { timeEstimate: 2 }))).toBe(5);
-    expect(focusMinutes(task("a", { timeEstimate: 600 }))).toBe(90);
+    expect(focusMinutes(task("a", { timeEstimate: 40 * min }))).toBe(40);
+    expect(focusMinutes(task("a", { timeEstimate: 2 * min }))).toBe(5);
+    expect(focusMinutes(task("a", { timeEstimate: 600 * min }))).toBe(90);
     expect(focusMinutes(task("a", { timeEstimate: 0 }))).toBe(25);
   });
 
