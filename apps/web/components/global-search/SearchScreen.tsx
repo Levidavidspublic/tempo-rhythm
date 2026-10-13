@@ -140,11 +140,15 @@ export function SearchScreenBody() {
         ) : results === undefined ? (
           <p className="tp-muted tp-small">{t("search.searching")}</p>
         ) : noMatches ? (
-          <p className="tp-muted">{t("search.none").replace("{q}", query)}</p>
+          <p className="tp-muted">
+            <WithQuery text={t("search.none")} query={query} />
+          </p>
         ) : (
           <>
             {shown === 0 ? (
-              <p className="tp-muted">{t("search.noneHere").replace("{q}", query)}</p>
+              <p className="tp-muted">
+                <WithQuery text={t("search.noneHere")} query={query} />
+              </p>
             ) : (
               <p className="tp-muted tp-small">
                 {shown === 1 ? t("search.result") : t("search.results").replace("{n}", String(shown))}
@@ -196,5 +200,19 @@ export function SearchScreenBody() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Copy with a {q} slot: the typed query sits in its own bidi isolate, so in Hebrew an English
+ * query cannot pull the quotes and full stop around it out of place. */
+function WithQuery({ text, query }: { text: string; query: string }) {
+  const at = text.indexOf("{q}");
+  if (at < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <bdi dir="auto">{query}</bdi>
+      {text.slice(at + 3)}
+    </>
   );
 }
