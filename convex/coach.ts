@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { projectPageText } from "@tempo/utils";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 import {
   MIN_LOAD,
@@ -42,9 +42,10 @@ const AVAILABLE_MINUTES_BAD_DAY = 60;
  *
  * 1. `sendMessage` (mutation) stores the user's message. Crisis text also stores the fixed
  *    resources card, and no model is ever called for it.
- * 2. `reply` (action) checks AI approval first, reads the open page and the newest messages, and
- *    asks the one model seam (`callLLM`, convex/lib/ai_router.ts) for a reply. A missing key or a
- *    provider error is logged and answered with `unavailable`; the user's message stays saved.
+ * 2. `reply` (action) checks AI approval first, claims the turn (so overlapping replies make one
+ *    model call), reads the open page and the newest messages, and asks the one model seam
+ *    (`callLLM`, convex/lib/ai_router.ts) for a reply. A missing key or a provider error is logged
+ *    and answered with `unavailable`, and the claim is released; the user's message stays saved.
  *
  * The coach only proposes. A proposal (task, note or template) rides on its reply's
  * `toolCalls.coachProposal`; nothing changes until `acceptProposal`, and every accepted change can
@@ -136,23 +137,36 @@ export function storedProposal(toolCalls: unknown): StoredProposal | null {
   };
 }
 
-const replyContextValidator = v.union(
-  v.null(),
-  v.object({
-    replyTo: v.id("messages"),
-    dial: v.number(),
-    history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("assistant")), content: v.string() })),
-    page: v.union(v.null(), v.object({ title: v.string(), text: v.string() })),
-  }),
-);
+const turnContextValidator = v.object({
+  replyTo: v.id("messages"),
+  dial: v.number(),
+  history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("assistant")), content: v.string() })),
+  page: v.union(v.null(), v.object({ title: v.string(), text: v.string() })),
+});
 
 /**
- * What the model sees for the newest user message, or null when nothing is waiting for a reply
- * (the newest message is already answered, or is crisis text, which only ever gets the card).
+ * How long one `coach.reply` holds the pending turn: longer than `callLLM`'s worst case (two
+ * 30 s attempts and a short backoff). A reply that dies keeps the turn only until then.
  */
-export const replyContext = internalQuery({
+export const TURN_CLAIM_MS = 90_000;
+
+/** The claim a `coach.reply` puts on the user message it answers (on that message's `toolCalls`). */
+function claimUntil(toolCalls: unknown): number | null {
+  if (!toolCalls || typeof toolCalls !== "object") return null;
+  const until = (toolCalls as { coachClaimUntil?: unknown }).coachClaimUntil;
+  return typeof until === "number" ? until : null;
+}
+
+/**
+ * Claims the newest user message for one reply and returns what the model sees. Mutations are
+ * transactional, so of two overlapping replies (two tabs, a double Try again) only one claims
+ * the turn and reaches the model; the other gets "busy" (Codex P1 on #923). Null when nothing
+ * waits for a reply: the newest message is already answered, or is crisis text, which only ever
+ * gets the fixed card.
+ */
+export const claimTurn = internalMutation({
   args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")) },
-  returns: replyContextValidator,
+  returns: v.union(v.null(), v.literal("busy"), turnContextValidator),
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
@@ -167,6 +181,13 @@ export const replyContext = internalQuery({
     if (!last || last.role !== "user" || isCrisisText(last.content)) {
       return null;
     }
+    const now = Date.now();
+    const held = claimUntil(last.toolCalls);
+    if (held !== null && held > now) {
+      return "busy" as const;
+    }
+    await ctx.db.patch(last._id, { toolCalls: { coachClaimUntil: now + TURN_CLAIM_MS } });
+
     const history = newest
       .filter((m) => m.role === "user" || m.role === "assistant")
       .reverse()
@@ -185,6 +206,21 @@ export const replyContext = internalQuery({
     }
     const settings = await loadSettings(ctx, user._id);
     return { replyTo: last._id, dial: settings?.dial ?? DEFAULT_DIAL, history, page };
+  },
+});
+
+/** Gives the turn back after a failed reply, so Try again works at once. */
+export const releaseTurn = internalMutation({
+  args: { conversationId: v.id("conversations"), messageId: v.id("messages") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const message = await ctx.db.get(args.messageId);
+    if (message && message.conversationId === args.conversationId && claimUntil(message.toolCalls) !== null) {
+      await ctx.db.patch(message._id, { toolCalls: undefined });
+    }
+    return null;
   },
 });
 
@@ -225,7 +261,8 @@ export const saveReply = internalMutation({
   },
 });
 
-export type CoachReplyStatus = "replied" | "unavailable" | "idle";
+/** "busy": another reply holds this turn; its answer appears in the thread when it lands. */
+export type CoachReplyStatus = "replied" | "unavailable" | "idle" | "busy";
 
 /** The error's class name only: never its message, which can carry provider text. */
 function errorKind(error: unknown): string {
@@ -242,10 +279,15 @@ export async function runCoachReply(
   call: typeof callLLM = callLLM,
 ): Promise<CoachReplyStatus> {
   await requireApprovedForAi(ctx as ActionCtx);
-  const context = await ctx.runQuery(internal.coach.replyContext, args);
-  if (!context) {
+  const context = await ctx.runMutation(internal.coach.claimTurn, args);
+  if (context === null) {
     return "idle";
   }
+  if (context === "busy") {
+    return "busy";
+  }
+  const release = () =>
+    ctx.runMutation(internal.coach.releaseTurn, { conversationId: args.conversationId, messageId: context.replyTo });
   let answer: { reply: string; proposal: CoachProposal | null } | null;
   let model: string;
   try {
@@ -260,10 +302,12 @@ export async function runCoachReply(
     model = result.model;
   } catch (error) {
     console.error(`coach.reply: the model could not be reached (${errorKind(error)})`);
+    await release();
     return "unavailable";
   }
   if (!answer) {
     console.error("coach.reply: the model gave an empty answer");
+    await release();
     return "unavailable";
   }
   await ctx.runMutation(internal.coach.saveReply, {
@@ -278,7 +322,9 @@ export async function runCoachReply(
 
 export const reply = action({
   args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")) },
-  returns: v.object({ status: v.union(v.literal("replied"), v.literal("unavailable"), v.literal("idle")) }),
+  returns: v.object({
+    status: v.union(v.literal("replied"), v.literal("unavailable"), v.literal("idle"), v.literal("busy")),
+  }),
   handler: async (ctx, args) => ({ status: await runCoachReply(ctx, args) }),
 });
 

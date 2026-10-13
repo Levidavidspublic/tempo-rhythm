@@ -11,6 +11,7 @@ mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: false, isLoading: false }),
   useQuery: () => undefined,
   useMutation: () => async () => null,
+  useAction: () => async () => ({ status: "idle" }),
   useConvex: () => ({
     query: async () => ({ isCrisis: false }),
   }),
@@ -21,9 +22,21 @@ mock.module("@/convex/_generated/api", () => ({
     users: { getProfile: "users.getProfile" },
     conversations: { list: "conversations.list", create: "conversations.create" },
     messages: { list: "messages.list" },
-    coach: { sendMessage: "coach.sendMessage" },
+    coach: {
+      sendMessage: "coach.sendMessage",
+      reply: "coach.reply",
+      acceptProposal: "coach.acceptProposal",
+      rejectProposal: "coach.rejectProposal",
+      undoProposal: "coach.undoProposal",
+    },
     crisis: { check: "crisis.check", resourcesCard: "crisis.resourcesCard" },
   },
+}));
+
+// The v3 coach reads its copy through LocaleProvider; render it with the English strings.
+const { translate } = await import("@/lib/i18n");
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang: () => {}, t: (key: Parameters<typeof translate>[1]) => translate("en", key) }),
 }));
 
 const { CoachChat, CoachCrisisReply, deliverCoachMessage } = await import("./CoachChat");

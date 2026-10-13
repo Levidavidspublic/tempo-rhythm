@@ -79,7 +79,8 @@ function makeWorld() {
     ({ auth: { getUserIdentity: async () => ({ subject: `${userId}|session` }) }, db }) as unknown as MutationCtx;
   const handlers: Record<string, unknown> = {
     "approval:assertApprovedForAi": approval.assertApprovedForAi,
-    "coach:replyContext": coach.replyContext,
+    "coach:claimTurn": coach.claimTurn,
+    "coach:releaseTurn": coach.releaseTurn,
     "coach:saveReply": coach.saveReply,
   };
   /** An action ctx whose runQuery / runMutation run the named handler as the same user. */
@@ -267,6 +268,55 @@ describe("a coach turn", () => {
     await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call);
     expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call)).toBe("idle");
     expect(messages(world, conversationId)).toHaveLength(2);
+  });
+
+  test("overlapping replies claim the turn once: one model call, the other is busy", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "plan my morning");
+    let finish: (value: string) => void = () => {};
+    const slow = new Promise<string>((resolve) => {
+      finish = resolve;
+    });
+    let calls = 0;
+    const blocking = (async (opts: AiCallOptions): Promise<AiResult> => {
+      calls += 1;
+      const content = await slow;
+      return { tier: opts.tier, requestedTier: opts.tier, model: "test-model", content, usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 }, escalated: false };
+    }) as typeof callLLM;
+    const first = coach.runCoachReply(world.actionAs(A), { conversationId }, blocking);
+    // Let the first reply claim the turn and reach the model before the second starts.
+    while (calls === 0) await new Promise((r) => setTimeout(r, 1));
+    const second = await coach.runCoachReply(world.actionAs(A), { conversationId }, blocking);
+    expect(second).toBe("busy");
+    finish('{"reply":"Start with breakfast.","proposal":null}');
+    expect(await first).toBe("replied");
+    expect(calls).toBe(1);
+    expect(messages(world, conversationId).map((m) => m.role)).toEqual(["user", "assistant"]);
+  });
+
+  test("a failed reply gives the turn back, so Try again reaches the model at once", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "plan my morning");
+    const failing = fakeModel(() => {
+      throw new AiUpstreamError("DeepInfra returned HTTP 503", 503, "x");
+    });
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, failing.call)).toBe("unavailable");
+    const retry = fakeModel('{"reply":"Here now.","proposal":null}');
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, retry.call)).toBe("replied");
+    expect(retry.calls).toHaveLength(1);
+  });
+
+  test("a claim left by a reply that died expires", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "hi");
+    const userMessage = messages(world, conversationId)[0] as Row;
+    await world.db.patch(userMessage._id, { toolCalls: { coachClaimUntil: Date.now() - 1 } });
+    const model = fakeModel('{"reply":"Hello.","proposal":null}');
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call)).toBe("replied");
+    expect(model.calls).toHaveLength(1);
   });
 
   test("someone else's conversation is refused", async () => {
