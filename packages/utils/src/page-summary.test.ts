@@ -1324,6 +1324,13 @@ describe("projectPageText grapheme clusters", () => {
     expect(project("ｶﾞZ", { summaryChars: 2 }).summary).toBe("\u{2026}");
   });
 
+  test("trimming and a snippet's start keep clusters whole too", () => {
+    // A space after a Prepend sign belongs to its cluster: trimming backs up past the sign instead.
+    expect(project("X \u0600 Z", { searchChars: 4 }).searchText).toBe("X");
+    // Moving to a cluster boundary must not skip a match right after a Prepend sign.
+    expect(pageSnippet({ searchText: "\u{113D1}A ZZZ" }, "A", 4)).toBe("\u{113D1}A\u{2026}");
+  });
+
   test("summaries and search text end only between clusters", () => {
     for (let max = 1; max <= text.length + 2; max += 1) {
       expectClusterCut(text, project(text, { summaryChars: max }).summary);

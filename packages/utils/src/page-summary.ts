@@ -197,10 +197,40 @@ function safeStart(text: string, start: number): number {
   return cut;
 }
 
+/**
+ * `end` (a safe cut) moved back over trailing whitespace. Where dropping a space would split a cluster
+ * (a space after a Prepend character, or after ZWJ, is part of one), it backs up to that cluster's
+ * start instead, and goes on trimming. It never moves before `start`.
+ */
+function trimmedEnd(text: string, start: number, end: number): number {
+  let cut = end;
+  while (cut > start && /\s/.test(text.charAt(cut - 1))) {
+    cut -= 1;
+    if (cut > start && attachesToPrevious(text, cut)) cut = Math.max(start, safeEnd(text, cut));
+  }
+  return cut;
+}
+
+/**
+ * `start` (a safe cut) moved forward over leading whitespace, stopping where a space carries marks
+ * after it (a space and its marks are one cluster).
+ */
+function trimmedStart(text: string, start: number, end: number): number {
+  let cut = start;
+  while (
+    cut < end &&
+    /\s/.test(text.charAt(cut)) &&
+    (cut + 1 === end || !attachesToPrevious(text, cut + 1))
+  ) {
+    cut += 1;
+  }
+  return cut;
+}
+
 function ellipsize(text: string, max: number, force: boolean): string {
   if (text.length <= max && !force) return text;
   const end = safeEnd(text, Math.min(max - 1, text.length));
-  return `${text.slice(0, end).trimEnd()}\u{2026}`;
+  return `${text.slice(0, trimmedEnd(text, 0, end))}\u{2026}`;
 }
 
 function boundedLimit(value: number | undefined, fallback: number): number {
@@ -1414,7 +1444,7 @@ function createCollector(limit: number) {
         return;
       }
       const fits = text.length <= room;
-      const piece = fits ? text : text.slice(0, safeEnd(text, room)).trimEnd();
+      const piece = fits ? text : text.slice(0, trimmedEnd(text, 0, safeEnd(text, room)));
       if (piece !== "") {
         length += piece.length + (parts.length > 0 ? 1 : 0);
         parts.push(piece);
@@ -1555,10 +1585,15 @@ export function pageSnippet(
   // have no room left for the match itself.
   const lead = Math.min(20, Math.max(0, Math.floor((max - 2 - needle.length) / 2)));
   // A window cut at both ends needs room for two ellipses and a character between them.
-  const start = at > lead && max >= 3 ? safeStart(text, at - lead) : 0;
+  let start = at > lead && max >= 3 ? safeStart(text, at - lead) : 0;
+  // Moving forward to a cluster boundary must not pass the match (a Prepend sign right before it):
+  // then the window starts where that cluster starts.
+  if (at >= 0 && start > at) start = safeEnd(text, at - lead);
 
   let budget = max - (start > 0 ? 1 : 0);
   if (start + budget < text.length) budget -= 1;
   const end = safeEnd(text, start + Math.max(0, budget));
-  return `${start > 0 ? "\u{2026}" : ""}${text.slice(start, end).trim()}${end < text.length ? "\u{2026}" : ""}`;
+  const last = trimmedEnd(text, start, end);
+  const first = trimmedStart(text, start, last);
+  return `${start > 0 ? "\u{2026}" : ""}${text.slice(first, last)}${end < text.length ? "\u{2026}" : ""}`;
 }
