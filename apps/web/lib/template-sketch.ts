@@ -25,8 +25,8 @@ export type SketchDraft = {
   counts: Record<SketchPartKind, number>;
 };
 
-/** Longest outline the sketch takes (it also travels in the builder's URL). */
-export const SKETCH_MAX_CHARS = 2000;
+/** Longest outline the sketch takes. It also travels in the builder URL, so it stays short. */
+export const SKETCH_MAX_CHARS = 1000;
 /** Template names are capped like page titles. */
 const NAME_MAX = 200;
 
