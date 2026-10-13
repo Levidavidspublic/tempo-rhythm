@@ -57,6 +57,7 @@ export default function CoachScreen() {
             conversationId={conversationId}
             setConversationId={setConversationId}
             onSent={reply.request}
+            replying={reply.state === "typing"}
           />
         )
       }
@@ -162,6 +163,7 @@ function Thread({
   const list = messages ?? [];
 
   const suggest = (text: string, plan: boolean) => {
+    if (reply.state === "typing") return;
     setSendError(false);
     send(text).catch(() => {
       // Put the words back only into an empty box, never over something typed since.
@@ -393,6 +395,7 @@ function Composer({
   conversationId,
   setConversationId,
   onSent,
+  replying,
 }: {
   draft: string;
   setDraft: Dispatch<SetStateAction<string>>;
@@ -400,6 +403,8 @@ function Composer({
   conversationId: Id<"conversations"> | null;
   setConversationId: (id: Id<"conversations">) => void;
   onSent: (id: Id<"conversations">) => void;
+  /** The coach is still answering the last message: the next send waits, so turns stay in order. */
+  replying: boolean;
 }) {
   const t = useT("coach");
   const p = usePrefs();
@@ -415,7 +420,7 @@ function Composer({
 
   const submit = () => {
     const text = draft.trim();
-    if (!text || busy) return;
+    if (!text || busy || replying) return;
     setBusy(true);
     setFailed(false);
     setDraft("");
@@ -460,7 +465,7 @@ function Composer({
               {t("composer.hint")}
             </T>
           </View>
-          <Button small variant="ink" iconOnly icon={Send} accessibilityLabel={t("composer.send")} onPress={submit} disabled={!draft.trim() || busy} />
+          <Button small variant="ink" iconOnly icon={Send} accessibilityLabel={t("composer.send")} onPress={submit} disabled={!draft.trim() || busy || replying} />
         </Row>
       </View>
     </View>

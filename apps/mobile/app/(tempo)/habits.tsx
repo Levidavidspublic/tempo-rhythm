@@ -12,7 +12,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery } from "convex/react";
 import { Check, Leaf, Plus, RefreshCw, Repeat } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Card, Notice, PageHeader, Row, SectionHead, T, TextField } from "@/components/v3/primitives";
@@ -64,6 +64,8 @@ function HabitsBody({ ready }: { ready: boolean }) {
   const [name, setName] = useState("");
   const [nameError, setNameError] = useState<string | null>(null);
   const [fresh, setFresh] = useState<Record<string, string>>({});
+  const adding = useRef(false);
+  const [addBusy, setAddBusy] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(FRESH_KEY)
@@ -85,12 +87,16 @@ function HabitsBody({ ready }: { ready: boolean }) {
   const loggedCount = live.filter((h) => loggedToday.has(h._id)).length;
 
   const add = async () => {
+    // One create at a time: Done on the keyboard and Add must not make the habit twice.
+    if (adding.current) return;
     const value = name.trim();
     if (!value) {
       setNameError(t("new.err"));
       return;
     }
     setNameError(null);
+    adding.current = true;
+    setAddBusy(true);
     try {
       const habitId = await create({ name: value, cadence: "daily" });
       setName("");
@@ -98,6 +104,9 @@ function HabitsBody({ ready }: { ready: boolean }) {
       toast({ title: t("new.added"), onUndo: () => remove({ habitId }) });
     } catch {
       setNameError(t("new.error"));
+    } finally {
+      adding.current = false;
+      setAddBusy(false);
     }
   };
 
@@ -113,7 +122,7 @@ function HabitsBody({ ready }: { ready: boolean }) {
       title={t("new.title")}
       onClose={() => setSheet(false)}
       closeLabel={t("more.close")}
-      footer={<Button variant="primary" block icon={Plus} label={t("new.add")} onPress={add} />}
+      footer={<Button variant="primary" block icon={Plus} label={t("new.add")} onPress={add} disabled={addBusy} />}
     >
       <TextField
         label={t("new.name")}

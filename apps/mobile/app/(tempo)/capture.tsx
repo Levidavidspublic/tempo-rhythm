@@ -85,7 +85,8 @@ function CaptureSheet() {
     if (!title) return;
     setFailed(null);
     // Optimistic: the box clears at once for the next thought; a failure puts the words back.
-    change("");
+    // A retry from the failure notice leaves newer words in the box alone.
+    if (textRef.current.trim() === title) change("");
     const where = dest;
     const created = createQuick(where === "today" ? { title, dueAt: endOfDayDueAt(today.iso) } : { title });
     created

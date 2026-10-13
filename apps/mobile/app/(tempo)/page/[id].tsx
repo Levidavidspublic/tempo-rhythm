@@ -297,12 +297,14 @@ function PageEditor({
 
   return (
     <View style={{ gap: 16 }}>
-      <TextField label={t("title.label")} value={title} onChangeText={setTitle} user autoFocus={!noteId} />
+      {/* Locked while saving: Save closes the editor, so words typed meanwhile would be lost. */}
+      <TextField label={t("title.label")} value={title} onChangeText={setTitle} user autoFocus={!noteId} editable={!busy} />
       <TextField
         label={t("body.label")}
         help={t("body.help")}
         value={text}
         onChangeText={setText}
+        editable={!busy}
         multiline
         minHeight={240}
         user
