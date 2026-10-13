@@ -9,7 +9,7 @@ import { parseTempoBlocks, type TempoBlock } from "./blocks";
  *
  * What the projection contains:
  * - the prose of the body, reduced to plain text (markdown markers, link destinations and titles,
- *   and HTML tags removed);
+ *   link reference definitions and HTML tags removed);
  * - the title of every valid task block and the name of every valid template block, with any HTML
  *   in them removed the same way.
  *
@@ -29,7 +29,10 @@ import { parseTempoBlocks, type TempoBlock } from "./blocks";
  * code and HTML stay out of the text. Reading more of a body as code or HTML than micromark does
  * is no safer than reading less: it hides the fences and HTML that start inside it. So where a line
  * is read differently by the spec and by micromark (condition 7 on a lazy line, for one),
- * micromark is followed. Content nested deeper than the containers followed here is left out.
+ * micromark is followed. Content nested deeper than the containers followed here is left out, up
+ * to the next blank line. Where reading exactly would be costly (a definition whose label runs
+ * over lines), the projection hides instead. The text of a line is what the block parser left of
+ * it, so no container prefix it read can hide JSON-looking text from the checks below.
  *
  * The codec does not model CommonMark HTML blocks that end at a blank line (types 6 and 7, such as
  * a `<div>` line), nor every way a fence ends, so it can accept a Tempo-looking fence that is
@@ -209,7 +212,8 @@ const THEMATIC_BREAK = /^([-*_=])(?: *\1){2,}$/;
 // The first class excludes "-" so the one required "-" can match in only one place (no backtracking).
 const TABLE_RULE = /^[ :|]*-[ :|-]*$/;
 const LINK_DEFINITION = /^\[[^\]]{1,200}\]: *<?\S+(?: +["'(].{0,200})?$/;
-const BLOCK_MARKER = /^(?:#{1,6} +|> ?|[-*+] +|\d{1,9}[.)] +)/;
+/** One heading, quote or list marker and the whitespace after it, read from `lastIndex`. */
+const BLOCK_MARKER = /(?:#{1,6} +|> ?|[-*+] +|\d{1,9}[.)] +)\s*/y;
 const CHECKBOX = /^\[[ xX]\] +/;
 /** Inline HTML that ends at a marker of its own: comment, processing instruction, CDATA, declaration. */
 const INLINE_DELIMITED = /<(?:!--|\?|!\[CDATA\[|![A-Za-z])/y;
@@ -512,12 +516,20 @@ type ProseState = InlineState & {
    * its own, so unlike other indented code it does not keep a list item from starting next.
    */
   indentedCode?: boolean | "lazy";
+  /** A link reference definition that goes on on the next line. */
+  definition?: DefinitionScan;
   /**
    * Set while lines nest deeper than MAX_CONTAINERS: what is in there (a fence, an HTML block) is
    * not followed, so every line that still continues all the open containers is hidden. True when
    * the last such line was not blank, so the next line may continue its paragraph lazily.
    */
   tooDeep?: boolean;
+  /**
+   * Text nested too deep has ended without a blank line. CommonMark may go on with that paragraph
+   * lazily on any line that starts no block of its own, even one that looks like a quote here, so
+   * every line is hidden up to the next blank line, which alone surely ends it.
+   */
+  hideToBlank?: boolean;
 };
 
 function createProseState(): ProseState {
@@ -573,7 +585,7 @@ function openContainers(line: string, open: Container[], interrupt: boolean): st
   for (;;) {
     const quote = QUOTE_MARKER.exec(rest);
     const item = quote ? null : ITEM_MARKER.exec(rest);
-    if (!quote && (!item || THEMATIC_BREAK.test(rest.trim()))) return rest;
+    if (!quote && (!item || THEMATIC_LINE.test(rest))) return rest;
     if (
       item &&
       interrupt &&
@@ -606,16 +618,21 @@ function endParagraph(state: ProseState): void {
   state.indentedCode = false;
   state.inline = undefined;
   state.skew = undefined;
+  state.definition = undefined;
 }
 
+/**
+ * The line without the heading, quote and list markers it starts with, however many: the block
+ * parser has already removed every container prefix it read, and these are the markers left (an
+ * item that could not interrupt a paragraph, a heading). There is no limit, so no JSON-looking
+ * text can hide behind one more marker than is stripped; each match moves on, so it is linear.
+ */
 function stripBlockMarkers(line: string): string {
-  let text = line;
-  for (let depth = 0; depth < 8; depth += 1) {
-    const next = text.replace(BLOCK_MARKER, "").trimStart();
-    if (next === text) break;
-    text = next;
+  let at = 0;
+  for (BLOCK_MARKER.lastIndex = 0; BLOCK_MARKER.exec(line); BLOCK_MARKER.lastIndex = at) {
+    at = BLOCK_MARKER.lastIndex;
   }
-  return text.replace(CHECKBOX, "").replace(/ #+$/, "");
+  return line.slice(at).replace(CHECKBOX, "").replace(/ #+$/, "");
 }
 
 function inlineEndOf(opener: string): string {
@@ -932,6 +949,174 @@ function stripLinks(text: string, open: InlineState): string {
   return `${kept}${text.slice(from)}`;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Link reference definitions
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Where a scan of a link reference definition `[label]: destination "title"` is, in CommonMark's
+ * grammar as micromark reads it: the label (backslash escapes, no unescaped "[", not blank, and
+ * over lines), the ":" right after it, whitespace (also a line ending), the destination (`<...>` on
+ * one line, or text without spaces whose parentheses are balanced or escaped), and an optional
+ * title after whitespace (in quotes or parentheses, also over lines), then nothing but spaces. No
+ * label length is enforced (CommonMark stops at 999): reading too long a label as one only hides.
+ */
+type DefinitionState =
+  | "label"
+  | "colon"
+  | "beforeDestination"
+  | "angleDestination"
+  | "destination"
+  | "afterDestination"
+  | "title"
+  | "afterTitle";
+
+type DefinitionScan = {
+  state: DefinitionState;
+  /** The label has a character that is not whitespace. */
+  seen: boolean;
+  /** Open parentheses in the destination. */
+  depth: number;
+  /** The character that closes the title. */
+  closer: number;
+  /** Whitespace came after the destination, so a title may start. */
+  spaced: boolean;
+};
+
+function isDefinitionSpace(code: number): boolean {
+  return code === 0x20 || code === 0x09;
+}
+
+/**
+ * Reads one line of a definition into `scan`: "not" when it is not one, "open" when it goes on on
+ * the next line, "done" when it may end here (with `scan.state` "afterDestination", a title may
+ * still follow on the next line). Linear in the line.
+ */
+function scanDefinition(text: string, from: number, scan: DefinitionScan): "done" | "open" | "not" {
+  for (let index = from; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    const escaped = code === 0x5c && isAsciiPunctuation(text.charCodeAt(index + 1));
+    switch (scan.state) {
+      case "label":
+        if (escaped) {
+          index += 1;
+          scan.seen = true;
+        } else if (code === 0x5b) return "not";
+        else if (code === 0x5d) {
+          if (!scan.seen) return "not";
+          scan.state = "colon";
+        } else if (!isDefinitionSpace(code)) scan.seen = true;
+        break;
+      case "colon":
+        if (code !== 0x3a) return "not";
+        scan.state = "beforeDestination";
+        break;
+      case "beforeDestination":
+        if (isDefinitionSpace(code)) break;
+        if (code === LESS_THAN) scan.state = "angleDestination";
+        else if (code === 0x29 || code < 0x20 || code === 0x7f) return "not";
+        else {
+          scan.state = "destination";
+          scan.depth = 0;
+          index -= 1;
+        }
+        break;
+      case "angleDestination":
+        if (escaped) index += 1;
+        else if (code === GREATER_THAN) {
+          scan.state = "afterDestination";
+          scan.spaced = false;
+        } else if (code === LESS_THAN) return "not";
+        break;
+      case "destination":
+        if (escaped) index += 1;
+        else if (isDefinitionSpace(code)) {
+          if (scan.depth > 0) return "not";
+          scan.state = "afterDestination";
+          scan.spaced = true;
+        } else if (code < 0x20 || code === 0x7f) return "not";
+        else if (code === 0x28) scan.depth += 1;
+        else if (code === 0x29) {
+          if (scan.depth === 0) return "not";
+          scan.depth -= 1;
+        }
+        break;
+      case "afterDestination":
+        if (isDefinitionSpace(code)) scan.spaced = true;
+        else if (scan.spaced && (code === QUOTE || code === APOSTROPHE || code === 0x28)) {
+          scan.closer = code === 0x28 ? 0x29 : code;
+          scan.state = "title";
+        } else return "not";
+        break;
+      case "title":
+        if (escaped) index += 1;
+        else if (code === scan.closer) scan.state = "afterTitle";
+        break;
+      case "afterTitle":
+        if (!isDefinitionSpace(code)) return "not";
+        break;
+    }
+  }
+  // The line ending: whitespace in a label, before a destination and before a title.
+  switch (scan.state) {
+    case "colon":
+    case "angleDestination":
+      return "not";
+    case "destination":
+      if (scan.depth > 0) return "not";
+      scan.state = "afterDestination";
+      scan.spaced = true;
+      return "done";
+    case "afterDestination":
+      scan.spaced = true;
+      return "done";
+    case "afterTitle":
+      return "done";
+    default:
+      return "open";
+  }
+}
+
+/**
+ * A paragraph line that may start a definition: "[" after any indentation (a line that continues a
+ * paragraph, after a definition, may hold the next definition however far it is indented).
+ */
+const DEFINITION_START = /^ *\[/;
+
+/**
+ * How a paragraph line reads as a link reference definition, whose destination and title are never
+ * text: "text" (not part of one), "hide" (part of one), or "follow" (part of one unless a later line
+ * says otherwise: it is hidden, but its inline HTML and links are followed, so that should the
+ * definition turn out not to be one, the text after it reads as CommonMark reads that paragraph).
+ * Any paragraph line is checked, not only one that starts a paragraph (where alone CommonMark
+ * reads a definition): that only hides more.
+ */
+function readDefinition(rest: string, state: ProseState): "text" | "hide" | "follow" {
+  let scan = state.definition;
+  state.definition = undefined;
+  if (scan?.state === "afterDestination") {
+    // The definition ended on the line before, unless a title follows on this one.
+    const first = rest.charCodeAt(LEADING_SPACES.exec(rest)![0].length);
+    if (first !== QUOTE && first !== APOSTROPHE && first !== 0x28) scan = undefined;
+  }
+  let from = 0;
+  if (!scan) {
+    const start = DEFINITION_START.exec(rest);
+    if (!start) return "text";
+    scan = { state: "label", seen: false, depth: 0, closer: 0, spaced: false };
+    from = start[0].length;
+  }
+  const result = scanDefinition(rest, from, scan);
+  if (result === "not") return "text";
+  if (result === "open") {
+    state.definition = scan;
+    return "follow";
+  }
+  // A title may still follow on the next line.
+  if (scan.state === "afterDestination") state.definition = scan;
+  return "hide";
+}
+
 function stripMarkdownInline(text: string): string {
   return text.replace(/\*\*|~~|`+/g, "").replace(EMPHASIS_PAIR, "$1$3");
 }
@@ -943,14 +1128,13 @@ function stripMarkdownInline(text: string): string {
  */
 function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   const raw = rawLine.replace(/(?:\r\n|\r|\n)$/, "");
-  const content = tidy(raw);
   // Block structure is read on the line as it is (tabs expanded), as CommonMark reads it: to it
   // hidden and control characters are text, so a line that has any is not blank, does not open or
   // close a fence or an HTML block it would not open or close without them, and holds no end
   // marker they split. Inline HTML is read on the tidied line, where they are gone and could fake
   // a marker: `exact` says whether the line had any.
   const expanded = raw.includes("\t") ? detab(raw) : raw;
-  const exact = (expanded === raw ? content : tidy(expanded)) === expanded;
+  const exact = tidy(expanded) === expanded;
 
   // Quotes and list items decide where a fence or raw HTML block starts and ends: it lives only as
   // long as every container it opened in keeps continuing, and its lines are read without their
@@ -974,15 +1158,17 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
     state.htmlEnd = undefined;
     state.indentedCode = false;
     // Containers nested too deep end with these. After text in them, this line may continue that
-    // paragraph lazily, inline HTML and all, so the rest of the paragraph stays hidden.
-    if (state.tooDeep) state.inline = TO_PARAGRAPH_END;
+    // paragraph lazily, inline HTML and all.
+    if (state.tooDeep) state.hideToBlank = true;
     state.tooDeep = undefined;
   }
   if (blank) {
     // A blank line ends the paragraph, and with it any inline HTML left open in it.
     state.inline = undefined;
     state.skew = undefined;
+    state.definition = undefined;
     state.paragraph = undefined;
+    state.hideToBlank = undefined;
   }
   // A blank line ends an HTML block of condition 6 or 7 even where it falls inside a comment.
   if (state.htmlBlock !== undefined && (state.htmlBlock > matched || blank)) {
@@ -1027,7 +1213,7 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   const rest = openContainers(continued, state.containers, interrupt);
   if (rest === undefined) {
     state.tooDeep = true;
-    state.paragraph = undefined;
+    endParagraph(state);
     return "";
   }
   // A new quote or list item starts a new block: the paragraph before it ends, and with it any
@@ -1061,6 +1247,7 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
       return "";
     }
   }
+  let paragraphLine = false;
   if (TRAILING_SPACE.test(rest)) {
     state.paragraph = undefined;
   } else if (indent >= 4 && (state.indentedCode || state.paragraph === undefined)) {
@@ -1073,12 +1260,19 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
       endParagraph(state);
     } else {
       state.paragraph ??= state.containers.length;
+      paragraphLine = true;
     }
   }
-  if (!emit) return "";
+  if (!emit || state.hideToBlank) return "";
+  // A link reference definition (or a line that may be part of one) shows nothing.
+  const definition = paragraphLine ? readDefinition(rest, state) : "text";
+  if (definition === "hide") return "";
 
+  // The text is what the block parser left of the line, so no container prefix it read is in it.
   // Leading direction marks (common at the start of right-to-left lines) must not hide markers.
-  let line = content.replace(/^[\s\u{200E}\u{200F}\u{61C}]+/u, "").trimEnd();
+  let line = tidy(rest)
+    .replace(/^[\s\u{200E}\u{200F}\u{61C}]+/u, "")
+    .trimEnd();
   if (line === "") return "";
   let text = stripBlockMarkers(line);
   if (state.inline) {
@@ -1092,6 +1286,7 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   // Inline HTML and links are followed on every line that gets here, also on lines dropped below,
   // because what they leave open hides the lines after them.
   const withoutLinks = stripLinks(stripInlineHtml(text, state, exact, exact), state);
+  if (definition === "follow") return "";
   if (THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
   if (FENCE_SYNTAX.test(line.replace(ALL_FORMAT, ""))) return "";
   if (text === "" || TABLE_RULE.test(text) || looksLikeJson(line) || looksLikeJson(text)) return "";

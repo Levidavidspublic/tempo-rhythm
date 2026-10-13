@@ -469,6 +469,8 @@ describe("fenced code inside quotes and list items", () => {
       listFence: `${"- ".repeat(17)}${TICKS}\n${" ".repeat(34)}${secret}\n\n${" ".repeat(34)}more\n\npublic`,
       // A line after deep paragraph text may continue it lazily, comment and all.
       lazyLine: `${quotes}x <!--\n${secret}\n-->\n\npublic`,
+      // Lazily also where the line looks like a quote of its own here, so a tag line is HTML.
+      lazyQuoteLine: `${"> - ".repeat(9)}x\n    y\n>a\n > <span title=x=" > ${secret}">\n\npublic`,
     };
     for (const [name, body] of Object.entries(bodies)) {
       expect([name, project(body).searchText]).toEqual([name, "public"]);
@@ -928,6 +930,9 @@ describe("block structure as CommonMark (micromark) reads it", () => {
     },
     // Condition 7 on a lazy line stays in the list item, so the next unindented line is text.
     tagOnLazyLine: { body: '- a\n<span title="x">\nmore\n\nend', text: "a more end" },
+    // U+3000 is no whitespace to CommonMark: "- - -" and it is no thematic break but two list
+    // items, so the indented lines after it are in them, an HTML block included.
+    notQuiteThematicBreak: { body: "- - -\u{3000}\n    <div>\n    private\n\nend", text: "end" },
   };
 
   for (const [name, { body, text }] of Object.entries(cases)) {
@@ -990,8 +995,9 @@ describe("prose", () => {
       "[public](<https://host/a b) PRIVATE>) after": "public after",
       "![alt](x\\)PRIVATE) after": "alt after",
       "[one](a) and [two](b(c)PRIVATE) after": "one and two after",
-      // The link text started on the line before.
-      "[multi\nline](https://host/PRIVATE) after": "[multi line after",
+      // The link text started on the line before, which may also have started a definition, so
+      // it is hidden (CommonMark shows "multi").
+      "[multi\nline](https://host/PRIVATE) after": "line after",
     };
     for (const [body, text] of Object.entries(links)) {
       expect(project(body).searchText).toBe(text);
@@ -1006,6 +1012,58 @@ describe("prose", () => {
     ]) {
       expect(project(body).searchText).toBe("public end");
     }
+  });
+
+  test("a link reference definition shows nothing, also over several lines", () => {
+    const definitions: Record<string, string> = {
+      escapedBracketInLabel: "[foo\\]]: /PRIVATE",
+      destinationOnNextLine: "[foo]:\n /PRIVATE",
+      titleOnSameLine: '[foo]: /PRIVATE "PRIVATE title"\nvisible',
+      destinationAndTitleOnNextLine: '[foo]:\n/PRIVATE "PRIVATE title"\nvisible',
+      titleOnNextLine: '[foo]: /PRIVATE\n"PRIVATE title"\nvisible',
+      titleOverLines: "[foo]: /PRIVATE\n'PRIVATE\ntitle'\nvisible",
+      labelOverLines: "[multi\nline label]: /PRIVATE\n\nvisible",
+      angleDestination: "[foo]: <PRIVATE url>\nvisible",
+      inQuote: "> [foo]:\n> /PRIVATE\n\nvisible",
+      lazyDestination: "> [foo]:\n/PRIVATE\n\nvisible",
+      inListItem: "- [foo]: /PRIVATE\n\nvisible",
+      oneAfterAnother: "[foo]: /PRIVATE\n[bar]: /PRIVATE\nvisible",
+      indentedAfterAnother: "[foo]: <PRIVATE>\n\t[bar\\]]: /PRIVATE\nvisible",
+      lazyIndented: '> > [foo]: /PRIVATE "PRIVATE"\n\t[bar]:\n> PRIVATE\n\nvisible',
+    };
+    for (const [name, body] of Object.entries(definitions)) {
+      const text = project(body).searchText;
+      expect([name, text.includes("PRIVATE")]).toEqual([name, false]);
+      expect([name, text]).toEqual([name, body.endsWith("visible") ? "visible" : ""]);
+    }
+  });
+
+  test("a bracket that cannot start a definition is text", () => {
+    expect(project("[foo] bar").searchText).toBe("[foo] bar");
+    expect(project("[foo\\\\]]: /url").searchText).toBe("[foo\\\\]]: /url");
+    expect(project("[[Weekly review]] notes").searchText).toBe("[[Weekly review]] notes");
+  });
+
+  test("a definition that turns out not to be one reads as the text it is", () => {
+    // The definition ends at "/PRIVATE": the next line is no title, so it starts a paragraph.
+    expect(project('[foo]: /PRIVATE\n"title" garbage\nmore\n\nend').searchText).toBe(
+      '"title" garbage more end'
+    );
+    expect(project("[foo]: /url\nvisible").searchText).toBe("visible");
+    // Not a definition after all: the paragraph reads on as CommonMark reads it, with the line that
+    // may have started a definition hidden, and with inline HTML on it still followed.
+    expect(project("[label\nthen] text\n\nend").searchText).toBe("then] text end");
+    expect(project("[a <!--\nb] PRIVATE -->public\n\nend").searchText).toBe("public end");
+  });
+
+  test("container prefixes are all removed before the JSON checks, however deep", () => {
+    for (const depth of [9, 12, 16]) {
+      expect(project(`${"> ".repeat(depth)}{"secret":"PRIVATE"}\n\nend`).searchText).toBe("end");
+      expect(project(`${"- ".repeat(depth)}{"secret":"PRIVATE"}\n\nend`).searchText).toBe("end");
+    }
+    expect(project(`${"> - ".repeat(5)}["PRIVATE"]\n\nend`).searchText).toBe("end");
+    // Markers that are not containers (no "2." list interrupts a paragraph) go as well.
+    expect(project(`text\n${"2. ".repeat(10)}{"secret":"PRIVATE"}`).searchText).toBe("text");
   });
 
   test("lines that look like raw JSON are dropped", () => {
@@ -1125,6 +1183,14 @@ describe("pathological bodies stay linear", () => {
     deepQuoteLines: () => `${"> ".repeat(20)}x\n`.repeat(size / 42),
     deepListLines: () => `${"- ".repeat(20)}x\n`.repeat(size / 42),
     blocksInHtmlBlocks: () => `<div>\n${TICKS}json tempo\n{}\n\n${TICKS}\nx\n`.repeat(size / 36),
+    definitionStarts: () => "[a]:\n".repeat(size / 5),
+    openLabel: () => "[".concat("a".repeat(size)),
+    labelOverLines: () => "[a\n".repeat(size / 3),
+    openTitles: () => '[a]: b "'.repeat(size / 8),
+    definitionsWithTitles: () => '[a]: <b> "c"\n'.repeat(size / 13),
+    escapesInLabels: () => "[a\\]".repeat(size / 4),
+    deepQuotedJson: () => `${"> ".repeat(15)}{"a":1}\n`.repeat(size / 38),
+    manyMarkers: () => "text\n".concat("2. ".repeat(size / 3)),
   };
 
   for (const [name, build] of Object.entries(bodies)) {
