@@ -45,9 +45,31 @@ function proseLines(body: string): string[] {
 /** Four spaces or a tab: Markdown indented code, unless the line is a nested list item. */
 const INDENTED_CODE = /^(?: {4}|\t)/;
 
-/** Lines where a tag counts: outside fenced and indented code. */
+/**
+ * Lines where a tag counts: outside fenced and indented code. An indented line counts only as a
+ * nested item directly under a list; on its own, `    - #routine` is still indented code.
+ */
 function tagLines(body: string): string[] {
-  return proseLines(body).filter((line) => !INDENTED_CODE.test(line) || NESTED_ITEM.test(line));
+  const out: string[] = [];
+  let inList = false;
+  for (const line of proseLines(body)) {
+    if (!line.trim()) {
+      inList = false;
+      continue;
+    }
+    if (LIST_ITEM.test(line)) {
+      inList = true;
+      out.push(line);
+      continue;
+    }
+    if (INDENTED_CODE.test(line)) {
+      if (inList && NESTED_ITEM.test(line)) out.push(line);
+      continue;
+    }
+    inList = false;
+    out.push(line);
+  }
+  return out;
 }
 
 /** True when the page carries the `#routine` tag outside code. */

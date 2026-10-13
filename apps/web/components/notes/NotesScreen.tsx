@@ -307,8 +307,14 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     if (!saveTimer.current || wasDeleted.current) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = null;
-    await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
-    setSaveState("saved");
+    try {
+      await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+      setSaveState("saved");
+    } catch (error) {
+      // Keep the edit queued, so it is not lost, and let the coach know it did not save.
+      scheduleSave();
+      throw error;
+    }
   });
 
   const handleTitleChange = (value: string) => {

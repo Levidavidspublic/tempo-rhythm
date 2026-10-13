@@ -62,6 +62,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const [crisisHold, setCrisisHold] = useState(false);
   const [replying, setReplying] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [pageUnsaved, setPageUnsaved] = useState(false);
   const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -96,9 +97,18 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const reply = async (id: Id<"conversations">) => {
     setReplying(true);
     setUnavailable(false);
+    setPageUnsaved(false);
     try {
       // The page saves 500 ms after typing stops; save it now so the coach reads what is on screen.
-      if (pageId) await flushPage().catch(() => {});
+      // If that save fails, the coach waits instead of answering from the older page.
+      if (pageId) {
+        try {
+          await flushPage();
+        } catch {
+          setPageUnsaved(true);
+          return;
+        }
+      }
       const result = await requestReply({
         conversationId: id,
         ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
@@ -180,7 +190,9 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
         ) : null}
         {waiting && conversationId ? (
           <div className="tp-msg tp-muted" data-component="CoachUnavailable">
-            <p className="tp-msg__text">{unavailable ? t("coachChat.unavailable") : t("coachChat.noReply")}</p>
+            <p className="tp-msg__text">
+              {pageUnsaved ? t("coachChat.pageUnsaved") : unavailable ? t("coachChat.unavailable") : t("coachChat.noReply")}
+            </p>
             <div className="tp-msg__actions">
               <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={() => void reply(conversationId)}>
                 <TpIcon name="refresh" size="sm" />
