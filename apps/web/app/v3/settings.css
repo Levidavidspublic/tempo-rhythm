@@ -1,1 +1,51 @@
 /* v3 screens: Settings (profile, preferences, privacy, integrations), billing, trial end and onboarding. Layout only; colour, type, spacing and radius come from tokens. */
+/* Copied from each screen's "layout only" <style> in docs/design/v3/screens/web/*.html. */
+
+/* settings-profile.html */
+.sp-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+.sp-form { padding: var(--tp-space-5); }
+.sp-radios { display: grid; gap: var(--tp-space-1); border: 0; margin: 0; padding: 0; min-width: 0; }
+.sp-state { padding-block: var(--tp-space-6); }
+
+/* settings-prefs.html */
+.pr-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+.pr-dial { padding: var(--tp-space-3) var(--tp-space-5) var(--tp-space-5); display: grid; gap: var(--tp-space-2); }
+.pr-state { padding-block: var(--tp-space-6); }
+
+/* settings-privacy.html */
+.pv-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+.pv-sheet-body { display: grid; gap: var(--tp-space-3); }
+.pv-list { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+.pv-state { padding-block: var(--tp-space-6); }
+
+/* settings-integrations.html */
+.ig-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+.ig-name { display: flex; align-items: center; gap: var(--tp-space-2); }
+.ig-state { padding-block: var(--tp-space-6); }
+/* MCP tokens card (Integrations): the token field and the connection values take the free width. */
+.ig-grow { flex: 1 1 auto; min-width: 0; }
+.ig-pre { margin: 0; padding: var(--tp-space-3); border-radius: var(--tp-radius-md); background: var(--tp-sunken); overflow-x: auto; white-space: pre; font-size: var(--tp-text-xs); }
+
+/* billing.html */
+.bl-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+.bl-cycle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-4); }
+.bl-tiers { display: grid; gap: var(--tp-space-4); }
+.bl-steps { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+.bl-pad { padding: 0 var(--tp-space-5) var(--tp-space-5); display: grid; gap: var(--tp-space-3); }
+.bl-state { padding-block: var(--tp-space-6); }
+
+/* trial-end.html */
+.te-actions { display: grid; gap: var(--tp-space-2); }
+.te-facts { margin: 0; display: grid; gap: var(--tp-space-2); }
+.te-fact { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--tp-space-1) var(--tp-space-4); padding-block: var(--tp-space-2); }
+.te-fact dd { margin: 0; }
+.te-confirm { display: grid; gap: var(--tp-space-3); }
+
+/* onboarding.html */
+.ob-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-3); }
+.ob-step { display: grid; gap: var(--tp-space-5); min-width: 0; }
+.ob-step__head { display: grid; gap: var(--tp-space-2); }
+.ob-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); min-width: 0; }
+.ob-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
+.ob-nav__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; }
+.ob-fieldsets { display: grid; gap: var(--tp-space-6); }

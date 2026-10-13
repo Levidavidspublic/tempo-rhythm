@@ -10,6 +10,7 @@
  */
 
 import { LANG_STORAGE_KEY } from "./i18n";
+import { TEXT_SIZE_STORAGE_KEY } from "./settings/textSize";
 
 export const THEME_STORAGE_KEY = "tempo-theme";
 export const DYSLEXIA_STORAGE_KEY = "tempo-dyslexia";
@@ -29,6 +30,8 @@ export function themeInitScript(): string {
     if(l==='he'){root.lang='he';root.dir='rtl';}else{root.lang='en';root.dir='ltr';}
     var d=localStorage.getItem('${DYSLEXIA_STORAGE_KEY}');
     if(d==='on'){root.setAttribute('data-dyslexia','on');}
+    var s=localStorage.getItem('${TEXT_SIZE_STORAGE_KEY}');
+    if(s==='s'||s==='l'){root.setAttribute('data-text-size',s);}
     if(q.get('glass')==='off'){root.setAttribute('data-glass','off');}
   }catch(e){}})();`;
 }

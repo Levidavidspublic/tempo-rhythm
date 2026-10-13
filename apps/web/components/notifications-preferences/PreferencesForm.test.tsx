@@ -6,6 +6,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { type MessageKey, translate } from "@/lib/i18n";
 
 type Listener = (event: TestEvent) => void;
 
@@ -313,6 +314,9 @@ const updatePreferences = mock(async (_args: Partial<Prefs>) => null);
 const markRead = mock(async (_args: { notificationId: string }) => null);
 const markAllRead = mock(async (_args: Record<string, never>) => ({ updated: 1 }));
 const setTheme = mock((_theme: string) => {});
+const setDial = mock(async (_args: { dial: number }) => ({ success: true }));
+const setLang = mock((_lang: string) => {});
+const setDyslexia = mock((_on: boolean) => {});
 
 const prefs: Prefs | undefined = {
   theme: "system",
@@ -327,6 +331,7 @@ let items: Item[] | undefined = [];
 mock.module("@/convex/_generated/api", () => ({
   api: {
     preferences: { get: "preferences.get", update: "preferences.update" },
+    coach: { getSettings: "coach.getSettings", setDial: "coach.setDial" },
     notifications: {
       list: "notifications.list",
       markRead: "notifications.markRead",
@@ -336,17 +341,26 @@ mock.module("@/convex/_generated/api", () => ({
 }));
 
 mock.module("convex/react", () => ({
-  useQuery: (ref: string) => (ref === "preferences.get" ? prefs : items),
+  useQuery: (ref: string) => {
+    if (ref === "preferences.get") return prefs;
+    if (ref === "coach.getSettings") return { dial: 4, taskLoad: 1, panicUntil: null, acceptedStreak: 0 };
+    return items;
+  },
   useMutation: (ref: string) =>
     ({
       "preferences.update": updatePreferences,
+      "coach.setDial": setDial,
       "notifications.markRead": markRead,
       "notifications.markAllRead": markAllRead,
     })[ref],
 }));
 
 mock.module("@/components/providers/ThemeProvider", () => ({
-  useTheme: () => ({ setTheme }),
+  useTheme: () => ({ theme: "system", resolvedTheme: "light", setTheme, dyslexia: false, setDyslexia }),
+}));
+
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang, t: (key: MessageKey) => translate("en", key) }),
 }));
 
 const { PreferencesForm } = await import("./PreferencesForm");
@@ -416,15 +430,33 @@ describe("preferences and notifications", () => {
     markRead.mockClear();
     markAllRead.mockClear();
     setTheme.mockClear();
+    setDial.mockClear();
+    setLang.mockClear();
+    setDyslexia.mockClear();
   });
 
-  test("each control calls preferences.update with only its key", async () => {
+  test("each stored control calls preferences.update with only its key", async () => {
     const view = await render((<PreferencesForm />) as ReactElement);
-    await change(findById(view, "pref-theme"), { value: "dark" });
-    expect(updatePreferences).toHaveBeenLastCalledWith({ theme: "dark" });
-    expect(setTheme).toHaveBeenCalledWith("dark");
+    const option = (value: string) => {
+      let match: TestNode | null = null;
+      walk(view, (node) => {
+        if (node.tagName === "BUTTON" && node.getAttribute("data-value") === value) match = node;
+      });
+      if (!match) throw new Error(`Missing option ${value}`);
+      return match as TestNode;
+    };
+    const press = async (node: TestNode) => {
+      await act(async () => {
+        node.click();
+      });
+    };
 
-    await change(findById(view, "pref-locale"), { value: "he" });
+    await press(option("dark"));
+    expect(setTheme).toHaveBeenCalledWith("dark");
+    expect(updatePreferences).toHaveBeenLastCalledWith({ theme: "dark" });
+
+    await press(option("he"));
+    expect(setLang).toHaveBeenCalledWith("he");
     expect(updatePreferences).toHaveBeenLastCalledWith({ locale: "he" });
 
     await change(findById(view, "pref-week-start"), { value: "0" });
@@ -433,15 +465,50 @@ describe("preferences and notifications", () => {
     await change(findById(view, "pref-time-zone"), { value: "Asia/Jerusalem" });
     expect(updatePreferences).toHaveBeenLastCalledWith({ timeZone: "Asia/Jerusalem" });
 
-    await change(findById(view, "pref-email-reminders"), { checked: false });
+    expect(findById(view, "pref-email-reminders").getAttribute("aria-checked")).toBe("true");
+    await press(findById(view, "pref-email-reminders"));
     expect(updatePreferences).toHaveBeenLastCalledWith({ emailReminders: false });
 
-    await change(findById(view, "pref-in-app"), { checked: false });
+    await press(findById(view, "pref-in-app"));
     expect(updatePreferences).toHaveBeenLastCalledWith({ inAppNotifications: false });
 
     expect(updatePreferences).toHaveBeenCalledTimes(6);
     expect(setTheme).toHaveBeenCalledTimes(1);
     expect(view.textContent).not.toContain("{");
+  });
+
+  test("device-only controls never touch preferences.update; billing notices stay on", async () => {
+    const view = await render((<PreferencesForm />) as ReactElement);
+    await act(async () => {
+      findByTag(view, "BUTTON", "Off").click();
+    });
+    expect(setDyslexia).toHaveBeenCalledWith(true);
+
+    const locked: TestNode[] = [];
+    walk(view, (node) => {
+      if (node.getAttribute("role") === "switch" && node.getAttribute("aria-disabled") === "true") locked.push(node);
+    });
+    expect(locked).toHaveLength(1);
+    expect(locked[0]?.getAttribute("aria-checked")).toBe("true");
+    await act(async () => {
+      locked[0]?.click();
+    });
+    expect(updatePreferences).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("Follows device");
+  });
+
+  test("the coach dial saves 400 ms after it stops moving", async () => {
+    const view = await render((<PreferencesForm />) as ReactElement);
+    expect(findById(view, "dial").value).toBe("4");
+    await change(findById(view, "dial"), { value: "8" });
+    await change(findById(view, "dial"), { value: "9" });
+    expect(view.textContent).toContain("Push");
+    expect(setDial).not.toHaveBeenCalled();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 450));
+    });
+    expect(setDial).toHaveBeenCalledTimes(1);
+    expect(setDial).toHaveBeenCalledWith({ dial: 9 });
   });
 
   test("Mark all read calls notifications.markAllRead and Mark read targets one item", async () => {
