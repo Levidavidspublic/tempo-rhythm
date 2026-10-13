@@ -1,251 +1,388 @@
 "use client";
 
-import type { Id } from "@/convex/_generated/dataModel";
-import { api } from "@/convex/_generated/api";
-import { SoftCard } from "@/components/soft-editorial/SoftCard";
-import { Button } from "@/components/ui/button";
-import {
-  KANBAN_COLUMNS,
-  groupTasksByKanbanStatus,
-  nextKanbanStatus,
-  projectIdFromSlug,
-  tasksForProject,
-} from "@/lib/taskKanban";
-import { titleFromProjectSlug, type TaskPriority, type TaskStatus } from "@/lib/task-view-filters";
-import { cn } from "@/lib/utils";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { ArrowRight, KanbanSquare } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  InlineAdd,
+  makeToast,
+  OfflineNotice,
+  ScreenBoundary,
+  SignedOutState,
+  StateEmpty,
+  StateError,
+  StateLoading,
+  StatusBadge,
+  type ToastState,
+  UndoToast,
+  useOnline,
+  useSignedIn,
+} from "@/components/goals/shared";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import {
+  BOARD_COLUMNS,
+  type BoardColumn,
+  dayLabel,
+  fill,
+  groupBoard,
+  isNewProjectId,
+  minutesFromEstimate,
+  neighbourColumn,
+  projectNameFor,
+  projectStatusFor,
+} from "@/lib/goals-projects";
+import { projectIdFromSlug, tasksForProject } from "@/lib/taskKanban";
+import { titleFromProjectSlug } from "@/lib/task-view-filters";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 
-type KanbanTask = {
-  _id: Id<"tasks">;
-  title: string;
-  description?: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  dueAt?: number;
-  projectId?: string;
-};
+type BoardTask = Doc<"tasks">;
+type Dir = "prev" | "next";
 
-const priorityLabel: Record<TaskPriority, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-};
+const COLUMN_NAME = { todo: "kb.todo", in_progress: "kb.doing", done: "kb.done" } as const;
+const COLUMN_EMPTY = { todo: "kb.empty.todo", in_progress: "kb.empty.doing", done: "kb.empty.done" } as const;
 
-function formatDueAt(dueAt: number | undefined) {
-  if (dueAt === undefined) {
-    return null;
-  }
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(dueAt));
+/**
+ * Project board (docs/design/v3/screens/web/project-kanban.html): the project's tasks as To do,
+ * Doing and Done. Every card has Move buttons (drag is a bonus, never the only way); a move saves
+ * the task's status with tasks.update, keeps focus on the same button and is announced in words.
+ */
+export function TaskKanbanBoard({ projectSlug }: { projectSlug: string }) {
+  const { t } = useLocale();
+  return (
+    <ScreenBoundary
+      fallback={(retry) => (
+        <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
+          <BackLink projectId={projectIdFromSlug(projectSlug)} />
+          <StateError title={t("kb.error")} onRetry={retry} />
+        </div>
+      )}
+    >
+      <BoardContent projectSlug={projectSlug} />
+    </ScreenBoundary>
+  );
 }
 
-export function TaskKanbanBoard({ projectSlug }: { projectSlug: string }) {
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const hasConvexUser = profile != null;
-  const tasks = useQuery(
-    api.tasks.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
+function BackLink({ projectId }: { projectId: string }) {
+  const { t } = useLocale();
+  return (
+    <Link className="tp-btn tp-btn--ghost tp-btn--sm" href={`/projects/${encodeURIComponent(projectId)}`}>
+      <TpIcon name="chevron" size="sm" className="tp-icon--back" />
+      <span>{t("kb.back")}</span>
+    </Link>
   );
-  const updateTask = useMutation(api.tasks.update);
-  const [draggedTaskId, setDraggedTaskId] = useState<Id<"tasks"> | null>(null);
-  const [localStatuses, setLocalStatuses] = useState<
-    Partial<Record<Id<"tasks">, TaskStatus>>
-  >({});
+}
 
+function BoardContent({ projectSlug }: { projectSlug: string }) {
+  const { t, lang } = useLocale();
+  const signedIn = useSignedIn();
+  const online = useOnline();
+  const bounds = useLocalDayBounds();
   const projectId = projectIdFromSlug(projectSlug);
-  const projectTitle = titleFromProjectSlug(projectId);
+  const tasks = useQuery(api.tasks.list, signedIn === "ready" ? {} : "skip");
+  // Optimistic: the card is in its new column before the server answers, so focus can follow it.
+  const updateTask = useMutation(api.tasks.update).withOptimisticUpdate((store, { taskId, status }) => {
+    if (!status) return;
+    const rows = store.getQuery(api.tasks.list, {});
+    if (!rows) return;
+    store.setQuery(
+      api.tasks.list,
+      {},
+      rows.map((row) => (row._id === taskId ? { ...row, status } : row)),
+    );
+  });
+  const createTask = useMutation(api.tasks.create);
+  const removeTask = useMutation(api.tasks.remove);
+  const [adding, setAdding] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [error, setError] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const [pendingFocus, setPendingFocus] = useState<{ taskId: string; dir: Dir } | null>(null);
+  const [draggedId, setDraggedId] = useState<Id<"tasks"> | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  const closeToast = useCallback(() => setToast(null), []);
 
-  const projectTasks = useMemo(() => {
-    const rows = tasksForProject((tasks ?? []) as KanbanTask[], projectSlug);
-    return rows.map((task) => ({
-      ...task,
-      status: localStatuses[task._id] ?? task.status,
-    }));
-  }, [localStatuses, projectSlug, tasks]);
+  // After a move the card re-renders in its new column: put focus back on the same button,
+  // or on its other Move button when the card reached an edge.
+  useEffect(() => {
+    if (!pendingFocus) return;
+    const card = boardRef.current?.querySelector<HTMLElement>(`[data-card="${pendingFocus.taskId}"]`);
+    if (!card) return;
+    const same = card.querySelector<HTMLButtonElement>(`[data-dir="${pendingFocus.dir}"]`);
+    const target = same && !same.disabled ? same : card.querySelector<HTMLButtonElement>("[data-dir]:not([disabled])");
+    (target ?? card).focus();
+    setPendingFocus(null);
+  });
 
-  const grouped = useMemo(
-    () => groupTasksByKanbanStatus(projectTasks),
-    [projectTasks],
-  );
-
-  const isLoading =
-    isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && tasks === undefined)));
-
-  async function moveTask(taskId: Id<"tasks">, status: TaskStatus) {
-    const previousStatus = projectTasks.find((task) => task._id === taskId)?.status;
-    if (previousStatus === status) {
-      return;
-    }
-    setLocalStatuses((current) => ({ ...current, [taskId]: status }));
-    try {
-      await updateTask({ taskId, status });
-    } catch {
-      setLocalStatuses((current) => {
-        const next = { ...current };
-        if (previousStatus) {
-          next[taskId] = previousStatus;
-        } else {
-          delete next[taskId];
-        }
-        return next;
-      });
-    }
-  }
-
-  if (isLoading) {
+  if (signedIn === "signedOut") {
     return (
-      <main className="mx-auto w-full max-w-6xl p-8">
-        <div className="space-y-4">
-          <div className="h-12 w-56 animate-pulse rounded-xl bg-muted" />
-          <div className="h-40 animate-pulse rounded-3xl bg-muted" />
-        </div>
-      </main>
+      <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
+        <BackLink projectId={projectId} />
+        <SignedOutState />
+      </div>
+    );
+  }
+  if (tasks === undefined) {
+    return (
+      <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
+        <BackLink projectId={projectId} />
+        <StateLoading label={t("kb.loading")} />
+      </div>
     );
   }
 
-  if (!isAuthenticated || !profile || !tasks) {
-    return (
-      <main className="mx-auto w-full max-w-4xl p-8 text-center">
-        <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Project board
-          </h1>
-          <p className="mt-3 text-muted-foreground">
-            Sign in again to move cards on this board.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href={`/sign-in?next=/projects/${projectSlug}/kanban`}>
-              Sign in
-            </Link>
-          </Button>
-        </SoftCard>
-      </main>
+  const projectTasks = tasksForProject(tasks as BoardTask[], projectSlug).sort((a, b) => b.createdAt - a.createdAt);
+  const columns = groupBoard(projectTasks);
+  const onBoard = columns.todo.length + columns.in_progress.length + columns.done.length;
+  const name =
+    projectTasks.length > 0
+      ? projectNameFor(projectTasks, projectId)
+      : isNewProjectId(projectId)
+        ? t("pj.draft")
+        : titleFromProjectSlug(projectId);
+
+  const moveTo = (task: BoardTask, to: BoardColumn, focusDir?: Dir) => {
+    if (task.status === to) return;
+    if (focusDir) setPendingFocus({ taskId: task._id, dir: focusDir });
+    setAnnouncement(`${task.title} → ${t(COLUMN_NAME[to])}`);
+    updateTask({ taskId: task._id, status: to }).then(
+      () => setError(false),
+      () => setError(true),
     );
-  }
+  };
+
+  const move = (task: BoardTask, dir: Dir) => {
+    if (task.status !== "todo" && task.status !== "in_progress" && task.status !== "done") return;
+    const to = neighbourColumn(task.status, dir);
+    if (to) moveTo(task, to, dir);
+  };
+
+  const addCard = async (title: string) => {
+    const taskId = await createTask({ title, projectId, projectName: name, status: "todo" });
+    setToast(makeToast(t("kb.added"), () => removeTask({ taskId })));
+  };
+
+  const startAdding = () => setAdding(true);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-8">
-      <header className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 text-primary">
-          <KanbanSquare className="h-6 w-6" aria-hidden />
-          <span className="text-sm font-semibold uppercase tracking-wide">
-            Project board
-          </span>
-        </div>
-        <div>
-          <h1 className="font-heading text-4xl font-semibold text-foreground">
-            {projectTitle}
+    <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
+      <BackLink projectId={projectId} />
+
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title" dir="auto">
+            {name}
           </h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Move a card when its real-world state changes. The board saves each
-            move, so a refresh keeps the card in its new column.
-          </p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            <Link
-              href={`/projects/${projectSlug}`}
-              className="underline underline-offset-4"
-            >
-              Back to the project list
-            </Link>
-          </p>
+          <div className="tp-pagehead__sub kb-meta">
+            <StatusBadge
+              kind="project"
+              status={projectStatusFor(columns.done.length, projectTasks.filter((x) => x.status !== "cancelled").length)}
+            />
+            <span>{t("kb.hint")}</span>
+          </div>
         </div>
+        {onBoard > 0 || adding ? (
+          <div className="tp-pagehead__actions">
+            <button
+              className="tp-btn tp-btn--primary"
+              type="button"
+              data-component="Button"
+              aria-expanded={adding}
+              onClick={startAdding}
+            >
+              <TpIcon name="plus" size="sm" />
+              <span>{t("kb.add")}</span>
+            </button>
+          </div>
+        ) : null}
       </header>
 
-      <section className="grid gap-4 lg:grid-cols-4" aria-label="Task status columns">
-        {KANBAN_COLUMNS.map((column) => {
-          const columnTasks = grouped[column.status];
-          return (
-            <section
-              key={column.status}
-              aria-labelledby={`kanban-column-${column.status}-heading`}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (draggedTaskId) {
-                  void moveTask(draggedTaskId, column.status);
-                  setDraggedTaskId(null);
-                }
-              }}
-              className="min-h-80 rounded-3xl border border-border bg-card/80 p-4"
-            >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2
-                  id={`kanban-column-${column.status}-heading`}
-                  className="font-heading text-xl font-semibold text-foreground"
-                >
-                  {column.title}
-                </h2>
-                <span className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-                  {columnTasks.length}
-                </span>
-              </div>
+      {online ? null : <OfflineNotice text={t("gx.offline")} />}
+      {error ? (
+        <p className="tp-notice" data-tone="caution" role="alert">
+          <span className="tp-notice__text">{t("gx.saveError")}</span>
+        </p>
+      ) : null}
+      <output className="tp-sr-only">{announcement}</output>
 
-              {columnTasks.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                  {column.empty}
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {columnTasks.map((task) => {
-                    const dueLabel = formatDueAt(task.dueAt);
-                    const next = nextKanbanStatus(task.status);
-                    return (
-                      <li
-                        key={task._id}
-                        draggable
-                        onDragStart={() => setDraggedTaskId(task._id)}
-                        onDragEnd={() => setDraggedTaskId(null)}
-                        className="rounded-2xl border border-border bg-background p-4"
-                      >
-                        <div className="min-w-0">
-                          <h3 className="font-medium text-foreground">{task.title}</h3>
-                          {task.description ? (
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {task.description}
-                            </p>
-                          ) : null}
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-                              {priorityLabel[task.priority]}
-                            </span>
-                            {dueLabel ? (
-                              <span className="text-xs text-muted-foreground">
-                                Due {dueLabel}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                        {next !== task.status ? (
-                          <button
-                            type="button"
-                            className={cn(
-                              "mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                            )}
-                            onClick={() => {
-                              void moveTask(task._id, next);
-                            }}
-                          >
-                            Move to {KANBAN_COLUMNS.find((item) => item.status === next)?.title}
-                            <ArrowRight className="h-4 w-4" aria-hidden />
-                          </button>
-                        ) : null}
-                      </li>
-                    );
-                  })}
+      {onBoard === 0 && !adding ? (
+        <StateEmpty
+          icon="kanban"
+          title={t("kb.empty.title")}
+          body={t("kb.empty.body")}
+          action={
+            <button className="tp-btn tp-btn--secondary" type="button" onClick={startAdding}>
+              <TpIcon name="plus" size="sm" />
+              <span>{t("kb.empty.add")}</span>
+            </button>
+          }
+        />
+      ) : (
+        // biome-ignore lint/a11y/useSemanticElements: the design's board is a labelled group of columns, not a form fieldset
+        <div
+          ref={boardRef}
+          className="tp-kanban"
+          data-component="Kanban"
+          role="group"
+          aria-label={fill(t("kb.board"), { name })}
+        >
+          {BOARD_COLUMNS.map((column) => {
+            const cards = columns[column];
+            const headingId = `col-${column}`;
+            return (
+              <section
+                key={column}
+                className="tp-kanban__col"
+                aria-labelledby={headingId}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const task = projectTasks.find((row) => row._id === draggedId);
+                  if (task) moveTo(task, column);
+                  setDraggedId(null);
+                }}
+              >
+                <div className="tp-kanban__head">
+                  <h2 className="tp-kanban__name" id={headingId}>
+                    {t(COLUMN_NAME[column])}
+                  </h2>
+                  <span className="tp-kanban__count tp-num">
+                    {cards.length}
+                    <span className="tp-sr-only"> {t("kb.cards")}</span>
+                  </span>
+                </div>
+                {column === "todo" && adding ? (
+                  <InlineAdd
+                    id="kb-add"
+                    label={t("kb.newcard")}
+                    onSubmit={addCard}
+                    onCancel={() => setAdding(false)}
+                  />
+                ) : null}
+                <ul className="tp-kanban__list">
+                  {cards.map((task) => (
+                    <li
+                      key={task._id}
+                      draggable
+                      onDragStart={() => setDraggedId(task._id)}
+                      onDragEnd={() => setDraggedId(null)}
+                    >
+                      <KanbanCard
+                        task={task}
+                        column={column}
+                        lang={lang}
+                        todayStartMs={bounds.startMs}
+                        todayEndMs={bounds.endMs}
+                        onMove={(dir) => move(task, dir)}
+                      />
+                    </li>
+                  ))}
                 </ul>
-              )}
-            </section>
-          );
-        })}
-      </section>
-    </main>
+                {cards.length === 0 ? <p className="tp-kanban__empty">{t(COLUMN_EMPTY[column])}</p> : null}
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
+    </div>
+  );
+}
+
+function KanbanCard({
+  task,
+  column,
+  lang,
+  todayStartMs,
+  todayEndMs,
+  onMove,
+}: {
+  task: BoardTask;
+  column: BoardColumn;
+  lang: "en" | "he";
+  todayStartMs: number;
+  todayEndMs: number;
+  onMove: (dir: Dir) => void;
+}) {
+  const { t } = useLocale();
+  const titleId = `card-${task._id}`;
+  const minutes = minutesFromEstimate(task.timeEstimate);
+  const due = task.dueAt === undefined ? null : dayLabel(task.dueAt, todayStartMs, todayEndMs, lang);
+  const finished =
+    column === "done" && task.completedAt !== undefined
+      ? dayLabel(task.completedAt, todayStartMs, todayEndMs, lang)
+      : null;
+  return (
+    <article className="tp-kanban-card" data-component="KanbanCard" data-card={task._id} aria-labelledby={titleId} tabIndex={-1}>
+      <span className="tp-kanban-card__title" id={titleId} dir="auto">
+        {task.title}
+      </span>
+      <div className="tp-kanban-card__meta">
+        {column === "done" ? (
+          <span>
+            <TpIcon name="check" size="sm" />{" "}
+            {finished?.kind === "today" ? (
+              <span>{t("kb.doneToday")}</span>
+            ) : (
+              <>
+                <span>{t("kb.done")}</span>
+                {finished ? (
+                  <>
+                    {" "}
+                    <span>{finished.weekday}</span> <span className="tp-num">{finished.day}</span>
+                  </>
+                ) : null}
+              </>
+            )}
+          </span>
+        ) : (
+          <>
+            {minutes !== null ? (
+              <span>
+                <span className="tp-num">{minutes}</span> <span>{t("gx.min")}</span>
+              </span>
+            ) : null}
+            {due ? (
+              due.kind === "today" ? (
+                <span>{t("gx.today")}</span>
+              ) : (
+                <span>
+                  <span>{due.weekday}</span> <span className="tp-num">{due.day}</span>
+                </span>
+              )
+            ) : (
+              <span>{t("kb.noday")}</span>
+            )}
+          </>
+        )}
+      </div>
+      <div className="tp-kanban-card__move">
+        <button
+          className="tp-btn tp-btn--ghost tp-btn--sm"
+          type="button"
+          data-dir="prev"
+          aria-describedby={titleId}
+          disabled={neighbourColumn(column, "prev") === null}
+          onClick={() => onMove("prev")}
+        >
+          <TpIcon name="arrow" size="sm" className="tp-icon--back" />
+          <span>{t("kb.prev")}</span>
+        </button>
+        <button
+          className="tp-btn tp-btn--ghost tp-btn--sm"
+          type="button"
+          data-dir="next"
+          aria-describedby={titleId}
+          disabled={neighbourColumn(column, "next") === null}
+          onClick={() => onMove("next")}
+        >
+          <span>{t("kb.next")}</span>
+          <TpIcon name="arrow" size="sm" flip />
+        </button>
+      </div>
+    </article>
   );
 }

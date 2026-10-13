@@ -1,13 +1,14 @@
-import { ProfileReady } from "@/components/today/ProfileReady";
-import { NotificationsList } from "@/components/notifications-preferences/NotificationsList";
+/**
+ * @screen: notifications
+ * @category: You
+ * @source: docs/design/v3/screens/web/notifications.html
+ * @summary: Notices worth knowing, newest first; open one to mark it read.
+ * @queries: notifications.list
+ * @mutations: notifications.markRead, notifications.markAllRead
+ * @auth: required (calm sign-in link otherwise)
+ */
+import { NotificationsScreen } from "@/components/notifications/NotificationsScreen";
 
 export default function Page() {
-  return (
-    <div data-testid="notifications-page" className="flex flex-col gap-6 p-6">
-      <h2 className="text-lg font-medium">Notifications</h2>
-      <ProfileReady>
-        <NotificationsList />
-      </ProfileReady>
-    </div>
-  );
+  return <NotificationsScreen />;
 }
