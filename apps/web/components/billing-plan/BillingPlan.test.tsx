@@ -5,22 +5,37 @@
 import { describe, expect, mock, test } from "bun:test";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { type MessageKey, translate } from "@/lib/i18n";
 import type { CurrentPlan } from "./PlanCard";
 
 const betaTester: CurrentPlan = {
-  plan: "none",
+  plan: "max",
   status: "active",
   label: "Beta tester",
   betaAccess: "tester",
-  entitlementTier: "none",
-  userType: "free",
+  entitlementTier: "max",
+  userType: "paid",
   isBeta: true,
+};
+
+const paidPro: CurrentPlan = {
+  plan: "pro",
+  status: "active",
+  label: "Pro",
+  betaAccess: "none",
+  entitlementTier: "pro",
+  userType: "paid",
+  isBeta: false,
 };
 
 let planResult: CurrentPlan | null | undefined = betaTester;
 
 mock.module("convex/react", () => ({
   useQuery: () => planResult,
+}));
+
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: MessageKey) => translate("en", key) }),
 }));
 
 const { BillingPlan } = await import("./BillingPlan");
@@ -34,33 +49,37 @@ function controls(html: string): string[] {
 }
 
 describe("BillingPlan", () => {
-  test("shows the query label, a loading dash, and no checkout control", () => {
+  test("early access: Max is the current plan, every price shows, and nothing can be bought", () => {
     planResult = betaTester;
-    const loaded = renderPlan();
-    expect(loaded).toContain("Beta tester");
-    expect(loaded).toContain("Active");
-    expect(loaded).toContain("Tester");
-    expect(loaded).toContain("Beta access is free while Tempo is in beta.");
-    expect(loaded).toContain("Paid plans arrive after beta.");
-    expect(loaded).toContain("—");
-    expect(loaded).not.toContain("$");
-    expect(loaded).not.toContain("{");
+    const html = renderPlan();
+    expect(html).toContain('aria-label="Current plan"');
+    expect(html).toContain("You were approved early, so you have Max.");
+    expect(html).toMatch(/data-current="true" aria-labelledby="t-max"/);
+    expect(html).toContain("Your plan");
+    expect(html).toContain("Included with your early access.");
+    for (const price of ["$1", "$10", "$20", "$40"]) expect(html).toContain(price);
+    expect(html).toContain("Choosing a plan opens after early access.");
+    expect(html).not.toContain("{");
+
+    const interactive = controls(html);
+    expect(interactive.join("\n")).not.toMatch(/upgrade|checkout|choose|\bpay\b/i);
+    // The only buttons are the Monthly / Yearly radio options; the only link asks the founder.
+    for (const control of interactive) {
+      if (control.startsWith("<button")) expect(control).toContain('role="radio"');
+      else expect(control).toContain('href="/ask-founder"');
+    }
+  });
+
+  test("a live paid plan is named and marked; loading shows no prices", () => {
+    planResult = paidPro;
+    const html = renderPlan();
+    expect(html).toContain("Your plan is Pro.");
+    expect(html).toMatch(/data-current="true" aria-labelledby="t-pro"/);
+    expect(html).not.toContain("You were approved early");
 
     planResult = undefined;
     const loading = renderPlan();
-    expect(loading).toContain("—");
-    expect(loading).not.toContain("Beta tester");
+    expect(loading).toContain("Loading your plan");
     expect(loading).not.toContain("$");
-
-    planResult = null;
-    const signedOut = renderPlan();
-    expect(signedOut).toContain("Sign in to see your plan.");
-    expect(signedOut).not.toContain("Beta tester");
-
-    const interactive = [loaded, loading, signedOut].flatMap(controls).join("\n");
-    expect(interactive).not.toMatch(/upgrade|checkout|pay/i);
-    expect(loaded).not.toMatch(/<(button|a)\b/i);
-    expect(loading).not.toMatch(/<(button|a)\b/i);
-    expect(signedOut).not.toMatch(/<(button|a)\b/i);
   });
 });
