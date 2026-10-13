@@ -105,6 +105,33 @@ function SettingsBody({ ready }: { ready: boolean }) {
     if (session.profile) setName(session.profile.fullName ?? "");
   }, [session.profile]);
 
+  const doSignOut = async () => {
+    setSheet(null);
+    await signOut().catch(() => undefined);
+    router.replace("/(auth)/sign-in");
+  };
+
+  const doDelete = async () => {
+    setDeleteError(false);
+    try {
+      await deleteAccount({});
+      setDeleted(true);
+    } catch {
+      setDeleteError(true);
+    }
+  };
+
+  // A deleted account has no profile any more, so the screen would wait forever: show the
+  // confirmation and Sign out straight away instead.
+  if (deleted) {
+    return (
+      <View style={{ gap: 16 }}>
+        <T accessibilityLiveRegion="polite">{t("del.done")}</T>
+        <Button block icon={LogOut} label={t("out.go")} onPress={doSignOut} />
+      </View>
+    );
+  }
+
   if (!session.profile || coach === undefined || plan === undefined) return <StateLoading label={t("load.label")} rows={5} />;
 
   const dialValue = dial ?? coach.dial;
@@ -123,22 +150,6 @@ function SettingsBody({ ready }: { ready: boolean }) {
     updateProfile({ fullName: value })
       .then(() => toast({ title: t("saved.name", { name: value }) }))
       .catch(() => toast({ title: t("save.error") }));
-  };
-
-  const doSignOut = async () => {
-    setSheet(null);
-    await signOut().catch(() => undefined);
-    router.replace("/(auth)/sign-in");
-  };
-
-  const doDelete = async () => {
-    setDeleteError(false);
-    try {
-      await deleteAccount({});
-      setDeleted(true);
-    } catch {
-      setDeleteError(true);
-    }
   };
 
   const planLabel = plan?.label === "Free" ? t("plan.value") : (plan?.label ?? t("plan.value"));

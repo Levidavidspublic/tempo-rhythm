@@ -8,12 +8,13 @@
  *          due date back (tasks.update). Nothing changes before Accept.
  *          talk instead -> /voice-call
  * @states  default | empty (new conversation) | loading | error | offline (composer hidden) · undo
- * Model replies come from a parallel `coach.reply` action; this screen does not depend on it.
+ *          after each send (not crisis text) -> coach.reply, with a typing state; a missing key or
+ *          provider error shows the kind "can't reach its model" line with Try again.
  */
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check, Mic, Phone, Plus, Send, Sun } from "lucide-react-native";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type Dispatch, type RefObject, type SetStateAction, useEffect, useRef, useState } from "react";
 import { I18nManager, ScrollView, TextInput, View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Eyebrow, RADIUS, Row, T, TOUCH } from "@/components/v3/primitives";
@@ -35,6 +36,7 @@ export default function CoachScreen() {
   const [draft, setDraft] = useState("");
   const inputRef = useRef<TextInput>(null);
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
+  const reply = useCoachReply();
 
   useEffect(() => {
     if (params.ask === "smaller") setDraft(params.task ? `${t("sug.smaller")}: ${params.task}` : t("sug.smaller"));
@@ -54,6 +56,7 @@ export default function CoachScreen() {
             inputRef={inputRef}
             conversationId={conversationId}
             setConversationId={setConversationId}
+            onSent={reply.request}
           />
         )
       }
@@ -74,13 +77,36 @@ export default function CoachScreen() {
           conversationId={conversationId}
           setConversationId={setConversationId}
           setDraft={setDraft}
+          reply={reply}
         />
       </QueryBoundary>
     </Screen>
   );
 }
 
-function useSend(conversationId: Id<"conversations"> | null, setConversationId: (id: Id<"conversations">) => void) {
+type CoachReply = { state: "idle" | "typing" | "unavailable"; request: (id: Id<"conversations">) => void };
+
+/**
+ * The model's answer to the newest message (coach.reply). It never throws: a missing key or a
+ * provider error leaves the message saved and the thread says the coach can't reach its model.
+ */
+function useCoachReply(): CoachReply {
+  const ask = useAction(api.coach.reply);
+  const [state, setState] = useState<CoachReply["state"]>("idle");
+  const request = (id: Id<"conversations">) => {
+    setState("typing");
+    ask({ conversationId: id })
+      .then((result) => setState(result.status === "unavailable" ? "unavailable" : "idle"))
+      .catch(() => setState("unavailable"));
+  };
+  return { state, request };
+}
+
+function useSend(
+  conversationId: Id<"conversations"> | null,
+  setConversationId: (id: Id<"conversations">) => void,
+  onSent: (id: Id<"conversations">) => void,
+) {
   const create = useMutation(api.conversations.create);
   const send = useMutation(api.coach.sendMessage);
   return async (text: string) => {
@@ -91,7 +117,9 @@ function useSend(conversationId: Id<"conversations"> | null, setConversationId: 
       id = await create({ title: content.slice(0, 60) });
       setConversationId(id);
     }
-    await send({ conversationId: id, content });
+    const result = await send({ conversationId: id, content });
+    // Crisis text gets the fixed resources card and never reaches a model.
+    if (!result.crisis) onSent(id);
   };
 }
 
@@ -102,13 +130,15 @@ function Thread({
   conversationId,
   setConversationId,
   setDraft,
+  reply,
 }: {
   ready: boolean;
   name: string;
   offline: boolean;
   conversationId: Id<"conversations"> | null;
   setConversationId: (id: Id<"conversations">) => void;
-  setDraft: (text: string) => void;
+  setDraft: Dispatch<SetStateAction<string>>;
+  reply: CoachReply;
 }) {
   const t = useT("coach");
   const { lang, colors: c } = usePrefs();
@@ -118,7 +148,7 @@ function Thread({
   const threadId = conversationId ?? latest;
   const messages = useQuery(api.messages.list, threadId ? { conversationId: threadId } : "skip");
   const createProposal = useMutation(api.coach.createProposal);
-  const send = useSend(threadId, setConversationId);
+  const send = useSend(threadId, setConversationId, reply.request);
   const scroll = useRef<ScrollView>(null);
   const [sendError, setSendError] = useState(false);
 
@@ -132,7 +162,8 @@ function Thread({
   const suggest = (text: string, plan: boolean) => {
     setSendError(false);
     send(text).catch(() => {
-      setDraft(text);
+      // Put the words back only into an empty box, never over something typed since.
+      setDraft((current) => (current.trim() ? current : text));
       setSendError(true);
     });
     // The plan card is built by code from open tasks; with none open there is simply no card.
@@ -185,6 +216,17 @@ function Thread({
             );
           })
       )}
+      {reply.state === "typing" ? <Typing label={t("typing")} /> : null}
+      {reply.state === "unavailable" && threadId && list.at(-1)?.role === "user" ? (
+        <View style={{ gap: 8 }}>
+          <T size="sm" tone="muted" accessibilityLiveRegion="polite">
+            {t("reply.unavailable")}
+          </T>
+          <Row>
+            <Button small variant="ghost" label={t("reply.retry")} onPress={() => reply.request(threadId)} />
+          </Row>
+        </View>
+      ) : null}
       {sendError ? (
         <T size="sm" tone="danger" accessibilityRole="alert">
           {t("send.error")}
@@ -348,19 +390,21 @@ function Composer({
   inputRef,
   conversationId,
   setConversationId,
+  onSent,
 }: {
   draft: string;
-  setDraft: (text: string) => void;
+  setDraft: Dispatch<SetStateAction<string>>;
   inputRef: RefObject<TextInput | null>;
   conversationId: Id<"conversations"> | null;
   setConversationId: (id: Id<"conversations">) => void;
+  onSent: (id: Id<"conversations">) => void;
 }) {
   const t = useT("coach");
   const p = usePrefs();
   const c = p.colors;
   const router = useRouter();
   const conversations = useQuery(api.conversations.list, {});
-  const send = useSend(conversationId ?? conversations?.[0]?._id ?? null, setConversationId);
+  const send = useSend(conversationId ?? conversations?.[0]?._id ?? null, setConversationId, onSent);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const dir = textDirection(draft, p.rtl ? "rtl" : "ltr");
@@ -373,7 +417,8 @@ function Composer({
     setDraft("");
     send(text)
       .catch(() => {
-        setDraft(text);
+        // Put the words back only into an empty box, never over something typed since.
+        setDraft((current) => (current.trim() ? current : text));
         setFailed(true);
       })
       .finally(() => setBusy(false));

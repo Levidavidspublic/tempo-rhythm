@@ -1,12 +1,15 @@
-import { useConvexAuth } from 'convex/react';
+import { useConvexAuth, useQuery } from 'convex/react';
 import { Redirect, Slot, useLocalSearchParams, useSegments } from 'expo-router';
 
 import { IS_DEV_MODE } from '@/config/appConfig';
+import { api } from '@/convex/_generated/api';
 
 export default function AuthRoutesLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const segments = useSegments();
   const { preview } = useLocalSearchParams<{ preview?: string }>();
+  // Whether onboarding is finished lives on the account, not in the route the person came from.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : 'skip');
 
   // המתנה לטעינת סטטוס האימות
   if (isLoading) {
@@ -34,10 +37,10 @@ export default function AuthRoutesLayout() {
   // אלא אם הוא במסלול paywall או במצב תצוגה מקדימה
   // זה מונע ממשתמשים מחוברים לגשת למסכי התחברות/הרשמה
   // אבל מאפשר להם לגשת דרך הגדרות/דיבאג במצב preview
-  // A new account goes on to onboarding; everyone else lands on Tempo's Today.
+  // An account that hasn't finished onboarding goes back to it; everyone else lands on Today.
   if (isAuthenticated && !isAllowedForAuthenticated) {
-    const justSignedUp = segmentStrings.includes('sign-up');
-    return <Redirect href={justSignedUp ? '/(auth)/onboarding' : '/(tempo)/(tabs)/today'} />;
+    if (profile === undefined) return null;
+    return <Redirect href={profile?.onboardedAt === undefined ? '/(auth)/onboarding' : '/(tempo)/(tabs)/today'} />;
   }
 
   // שימוש ב-Slot כדי לעבד את המסכים הפנימיים (sign-in, sign-up, paywall)

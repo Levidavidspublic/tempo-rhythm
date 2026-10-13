@@ -150,6 +150,9 @@ export const STRINGS = {
     "proposal.accepted": ["Done. Those tasks are on Today now.", "בוצע. המשימות האלה בהיום עכשיו."],
     "proposal.error": ["That didn't go through. Nothing changed.", "זה לא עבר. שום דבר לא השתנה."],
     "send.error": ["That didn't send. Your message is still here, so try again.", "ההודעה לא נשלחה. היא עדיין כאן, אפשר לנסות שוב."],
+    "typing": ["Coach is typing", "המאמן כותב"],
+    "reply.unavailable": ["The coach can't reach its model right now. Your message is saved.", "המאמן לא מצליח להגיע למודל כרגע. ההודעה שלך נשמרה."],
+    "reply.retry": ["Try again", "לנסות שוב"],
   },
   habits: {
     "top.title": ["Habits", "הרגלים"],
@@ -594,6 +597,9 @@ export const STRINGS = {
  * template. The Hebrew of each needs a native speaker's review.
  */
 export const NEEDS_NATIVE_REVIEW: readonly string[] = [
+  "coach.typing",
+  "coach.reply.unavailable",
+  "coach.reply.retry",
   "common.top.avatar", "common.show.more",
   "calendar.add.what", "calendar.add.time", "calendar.add.timeHelp", "calendar.add.err.title", "calendar.add.err.time",
   "calendar.added", "calendar.add.error", "calendar.nothing", "calendar.today",

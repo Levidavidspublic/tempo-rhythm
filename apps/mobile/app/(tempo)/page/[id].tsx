@@ -11,7 +11,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check, FileText, Pencil, X } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Card, Checkbox, RADIUS, Row, T, TextField } from "@/components/v3/primitives";
@@ -59,6 +59,12 @@ function PageView({ ready, id }: { ready: boolean; id: string }) {
   const note = useQuery(api.notes.getSafe, ready && id ? { noteId: id } : "skip");
   const update = useMutation(api.notes.update);
   const [editing, setEditing] = useState(false);
+  // The body as of the last tick sent, until the query catches up: a quick second tick builds on
+  // the first instead of on the older body (so neither edit is lost).
+  const sentBody = useRef<string | null>(null);
+  useEffect(() => {
+    if (note && sentBody.current === note.body) sentBody.current = null;
+  }, [note]);
 
   if (note === undefined) return <StateLoading label={t("load.label")} rows={4} />;
   if (note === null) return <StateEmpty icon={FileText} title={t("missing.title")} body={t("missing.body")} />;
@@ -68,9 +74,14 @@ function PageView({ ready, id }: { ready: boolean; id: string }) {
 
   const blocks = parseMarkdownView(note.body);
   const tick = (line: number) => {
-    const body = toggleCheckbox(note.body, line);
-    if (body === note.body) return;
-    update({ noteId: note._id, body }).catch(() => toast({ title: t("save.error") }));
+    const base = sentBody.current ?? note.body;
+    const body = toggleCheckbox(base, line);
+    if (body === base) return;
+    sentBody.current = body;
+    update({ noteId: note._id, body }).catch(() => {
+      sentBody.current = null;
+      toast({ title: t("save.error") });
+    });
   };
 
   return (
