@@ -183,7 +183,11 @@ export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages"
             <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={busy} onClick={() => void act(() => undo({ messageId }))}>
               <TpIcon name="undo" size="sm" />
               <span>{t("proposal.undo")}</span>
-              <span className="tp-num tp-mono">{left}</span>
+              {/* The thread is a live region: the ticking time is visual only, so screen readers
+                  are not read a new number every second. */}
+              <span className="tp-num tp-mono" aria-hidden="true">
+                {left}
+              </span>
             </button>
           ) : null}
         </p>

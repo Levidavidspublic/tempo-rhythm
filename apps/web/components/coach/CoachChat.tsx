@@ -8,6 +8,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { pickCoachConversation } from "@/lib/coach-conversation";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 
 export type CoachDelivery = "resources" | "sent";
@@ -65,7 +66,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
 
   useEffect(() => {
     if (!isAuthenticated || conversations === undefined || conversationId) return;
-    const latest = conversations[0];
+    const latest = pickCoachConversation(conversations);
     if (latest) {
       setConversationId(latest._id);
       return;
