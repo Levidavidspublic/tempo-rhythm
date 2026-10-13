@@ -89,7 +89,7 @@ const ATTACHES =
   /^(?:[\p{M}\p{Grapheme_Extend}\p{Emoji_Modifier}\u{0E33}\u{0EB3}]|\u{200C}|\u{200D})/u;
 /** Characters that attach to the one after them (GB9b, Grapheme_Cluster_Break=Prepend). */
 const PREPEND =
-  /^[\u{600}-\u{605}\u{6DD}\u{70F}\u{890}\u{891}\u{8E2}\u{D4E}\u{110BD}\u{110CD}\u{111C2}\u{111C3}\u{1193F}\u{11941}\u{11A3A}\u{11A84}-\u{11A89}\u{11D46}\u{11F02}]$/u;
+  /^[\u{600}-\u{605}\u{6DD}\u{70F}\u{890}\u{891}\u{8E2}\u{D4E}\u{110BD}\u{110CD}\u{111C2}\u{111C3}\u{1193F}\u{11941}\u{11A3A}\u{11A84}-\u{11A89}\u{11D46}\u{11F02}\u{113D1}]$/u;
 
 /**
  * Replaces controls with spaces and drops hidden format characters and lone surrogates. Marks that

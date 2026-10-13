@@ -1305,6 +1305,7 @@ describe("projectPageText grapheme clusters", () => {
     "\uAC00\u11A8",
     "กำ",
     "\u0600\u0661",
+    "\u{113D1}A",
     "ｶﾞ",
     "क्ष",
     "🇮🇱",
@@ -1319,6 +1320,7 @@ describe("projectPageText grapheme clusters", () => {
     expect(project("\uAC00\u11A8Z", { summaryChars: 2 }).summary).toBe("\u{2026}");
     expect(project("กำZ", { summaryChars: 2 }).summary).toBe("\u{2026}");
     expect(project("ab \u0600\u0661 cd", { summaryChars: 5 }).summary).toBe("ab\u{2026}");
+    expect(project("\u{113D1}A Z", { summaryChars: 3 }).summary).toBe("\u{2026}");
     expect(project("ｶﾞZ", { summaryChars: 2 }).summary).toBe("\u{2026}");
   });
 
