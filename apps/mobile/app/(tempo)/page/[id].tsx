@@ -317,7 +317,7 @@ function PageEditor({
       ) : null}
       <View style={{ gap: 8 }}>
         <Button variant="primary" block icon={Check} label={t("save")} onPress={save} disabled={busy} />
-        <Button variant="ghost" block icon={X} label={t("cancel")} onPress={cancel} />
+        <Button variant="ghost" block icon={X} label={t("cancel")} onPress={cancel} disabled={busy} />
       </View>
     </View>
   );

@@ -10,7 +10,7 @@
  */
 import { useMutation, useQuery } from "convex/react";
 import { CalendarDays, Clock, Lock, Plus } from "lucide-react-native";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Chevron, Chip, PageHeader, RADIUS, Row, T, TextField, TOUCH } from "@/components/v3/primitives";
@@ -68,6 +68,9 @@ function CalendarBody({ ready }: { ready: boolean }) {
   const [title, setTitle] = useState("");
   const [time, setTime] = useState("");
   const [errors, setErrors] = useState<{ title?: string; time?: string; save?: string }>({});
+  // One create at a time: a double tap on Add must not make the event twice.
+  const saving = useRef(false);
+  const [busy, setBusy] = useState(false);
   const dates = weekDates(monday);
   const range = { startMs: startOfLocalDay(monday), endMs: startOfLocalDay(addDays(monday, 7)) };
   const events = useQuery(api.calendar_events.listInRange, ready ? range : "skip");
@@ -100,12 +103,15 @@ function CalendarBody({ ready }: { ready: boolean }) {
   const itemsWord = (n: number) => (n === 1 ? t("item") : t("items"));
 
   const add = async () => {
+    if (saving.current) return;
     const minutes = parseClock(time);
     const next: typeof errors = {};
     if (!title.trim()) next.title = t("add.err.title");
     if (minutes === null) next.time = t("add.err.time");
     setErrors(next);
     if (next.title || next.time || minutes === null) return;
+    saving.current = true;
+    setBusy(true);
     try {
       const d = new Date(startOfLocalDay(selected));
       d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
@@ -116,6 +122,9 @@ function CalendarBody({ ready }: { ready: boolean }) {
       toast({ title: t("added"), onUndo: () => remove({ eventId }) });
     } catch {
       setErrors({ save: t("add.error") });
+    } finally {
+      saving.current = false;
+      setBusy(false);
     }
   };
 
@@ -269,9 +278,9 @@ function CalendarBody({ ready }: { ready: boolean }) {
         title={`${t("add")} · ${longDay(selected, p.lang)}`}
         onClose={() => setAdding(false)}
         closeLabel={t("more.close")}
-        footer={<Button variant="primary" block icon={Plus} label={t("add")} onPress={add} />}
+        footer={<Button variant="primary" block icon={Plus} label={t("add")} onPress={add} disabled={busy} />}
       >
-        <TextField label={t("add.what")} value={title} onChangeText={setTitle} error={errors.title} user autoFocus />
+        <TextField label={t("add.what")} value={title} onChangeText={setTitle} error={errors.title} user autoFocus editable={!busy} />
         <TextField
           label={t("add.time")}
           help={t("add.timeHelp")}
@@ -281,6 +290,7 @@ function CalendarBody({ ready }: { ready: boolean }) {
           placeholder="14:30"
           keyboardType="numbers-and-punctuation"
           ltr
+          editable={!busy}
         />
         {errors.save ? (
           <T size="sm" tone="danger" accessibilityRole="alert">

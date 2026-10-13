@@ -15,7 +15,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
 import { Accessibility, Clock, CreditCard, LogOut, Moon, Sun, X } from "lucide-react-native";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { Dial } from "@/components/v3/Dial";
 import { type TextSize, type ThemePref, usePrefs, useT } from "@/components/v3/prefs";
@@ -101,8 +101,12 @@ function SettingsBody({ ready }: { ready: boolean }) {
   const [deleteError, setDeleteError] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
+  // The name field takes the saved name once; a later profile update never overwrites typing.
+  const nameLoaded = useRef(false);
   useEffect(() => {
-    if (session.profile) setName(session.profile.fullName ?? "");
+    if (!session.profile || nameLoaded.current) return;
+    nameLoaded.current = true;
+    setName(session.profile.fullName ?? "");
   }, [session.profile]);
 
   const doSignOut = async () => {
@@ -123,10 +127,12 @@ function SettingsBody({ ready }: { ready: boolean }) {
 
   // A deleted account has no profile any more, so the screen would wait forever: show the
   // confirmation and Sign out straight away instead.
-  if (deleted) {
+  // Signed in with no profile (closed earlier, then the app restarted): Sign out must still be here.
+  const noProfile = session.isAuthenticated && !session.isLoading && session.profile === null;
+  if (deleted || noProfile) {
     return (
       <View style={{ gap: 16 }}>
-        <T accessibilityLiveRegion="polite">{t("del.done")}</T>
+        <T accessibilityLiveRegion="polite">{t(deleted ? "del.done" : "gone")}</T>
         <Button block icon={LogOut} label={t("out.go")} onPress={doSignOut} />
       </View>
     );

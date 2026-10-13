@@ -136,6 +136,7 @@ function HabitsBody({ ready }: { ready: boolean }) {
         autoFocus
         onSubmitEditing={add}
         returnKeyType="done"
+        editable={!addBusy}
       />
     </Sheet>
   );
