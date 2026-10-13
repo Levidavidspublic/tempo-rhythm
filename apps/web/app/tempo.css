@@ -1487,3 +1487,75 @@ button.tp-list-row { width: 100%; border-inline: 0; border-top: 0; text-align: s
 /* /STAGE 2 COMPONENTS */
 
 }
+
+/* ================================================================
+   POLISH (v3 run 2): depth, grain, heading weight, empty-state art,
+   small motion. Token- and component-level, so every screen gets it.
+   No new accent uses, no gradients; colour and contrast tokens are
+   unchanged (DESIGN.md §6). Reduced motion, reduced transparency and
+   the glass fallbacks keep working: nothing here touches .tp-glass.
+   ================================================================ */
+@layer components {
+  /* Depth: the ground carries a faint grain; the paper sits above it on a ring and a long soft
+     drop; cards on the paper keep their hairline and add a short drop. */
+  body { background-color: var(--tp-ground); background-image: var(--tp-grain); background-size: 180px 180px; }
+  /* Full-viewport wrappers that paint the ground themselves carry the same grain. */
+  .tp-auth, :where(.tp-call), .tp-site-header { background-image: var(--tp-grain); background-size: 180px 180px; }
+  .tp-paper, .tp-surface { box-shadow: var(--tp-shadow-paper); }
+  .tp-card, .tp-proposal, .tp-module-card, .tp-tier, .tp-kanban-card {
+    border-color: var(--tp-line-card);
+    box-shadow: var(--tp-shadow-raise);
+  }
+  .tp-proposal { border-color: var(--tp-line-strong); }
+  /* An empty state drawn on a surface stays flat inside it. */
+  .tp-surface .tp-surface, .tp-empty.tp-surface { box-shadow: var(--tp-shadow-card); }
+
+  /* Headings: a firmer serif weight and tighter tracking on display sizes (Hebrew keeps its own). */
+  .tp-pagehead__title, .tp-page-title { font-weight: 560; letter-spacing: -0.02em; }
+  .tp-section__title { font-weight: 560; letter-spacing: -0.01em; }
+  [dir="rtl"] .tp-pagehead__title, [dir="rtl"] .tp-page-title, [dir="rtl"] .tp-section__title { letter-spacing: 0; }
+
+  /* Empty states: one quiet illustration style. The state's own icon sits on a parchment disc
+     with a soft halo; a state with no icon gets the shared page drawing in the same style. */
+  .tp-empty > svg.tp-icon:first-child,
+  .tp-empty:not(:has(> svg.tp-icon:first-child))::before {
+    box-sizing: content-box; width: var(--tp-space-8); height: var(--tp-space-8); padding: var(--tp-space-5);
+    border-radius: 50%; background-color: var(--tp-sunken); color: var(--tp-ink-subtle);
+    box-shadow: inset 0 0 0 1px var(--tp-line), 0 0 0 var(--tp-space-2) color-mix(in srgb, var(--tp-sunken) 45%, transparent);
+    margin-block-end: var(--tp-space-2);
+  }
+  .tp-empty > svg.tp-icon:first-child { stroke-width: 1.25; }
+  .tp-empty:not(:has(> svg.tp-icon:first-child))::before {
+    content: ""; display: block;
+    background-image: var(--tp-empty-art); background-repeat: no-repeat; background-position: center; background-size: var(--tp-space-8);
+  }
+
+  /* Motion, 120-240 ms, transform and opacity for anything that moves. */
+  .tp-btn {
+    transition: background-color var(--tp-dur-fast) var(--tp-ease-out), border-color var(--tp-dur-fast) var(--tp-ease-out),
+      box-shadow var(--tp-dur-fast) var(--tp-ease-out), transform var(--tp-dur-fast) var(--tp-ease-out);
+  }
+  .tp-btn:active:not([disabled]):not([aria-disabled="true"]) { transform: translateY(1px) scale(0.98); }
+  @media (hover: hover) {
+    .tp-btn--secondary:hover { box-shadow: var(--tp-shadow-whisper); }
+    a.tp-card, button.tp-card, .tp-kanban-card, a.tp-module-card {
+      transition: transform var(--tp-dur-base) var(--tp-ease-out), box-shadow var(--tp-dur-base) var(--tp-ease-out);
+    }
+    a.tp-card:hover, button.tp-card:hover, .tp-kanban-card:hover, a.tp-module-card:hover {
+      transform: translateY(-1px); box-shadow: var(--tp-shadow-lift);
+    }
+  }
+  .tp-list-row, .tp-task-row { transition: background-color var(--tp-dur-fast) var(--tp-ease-out); }
+  /* A row that arrives drops in once (rows already marked new keep their own entrance). */
+  .tp-list > li:not([data-new]), .tp-list > .tp-list-row:not([data-new]) { animation: tp-enter var(--tp-dur-slow) var(--tp-ease-out); }
+  .tp-check[aria-checked="true"] .tp-check__box svg.tp-icon,
+  .tp-check[aria-pressed="true"] .tp-check__box svg.tp-icon { animation: tp-pop var(--tp-dur-base) var(--tp-ease-out); }
+
+  /* Under 768 px the paper and surfaces go full-bleed and square, so they stay flat. */
+  @media (max-width: 767px) {
+    .tp-paper, .tp-surface, .tp-surface .tp-surface, .tp-empty.tp-surface { box-shadow: none; }
+  }
+  @media (prefers-contrast: more), (forced-colors: active) {
+    body, .tp-auth, :where(.tp-call), .tp-site-header { background-image: none; }
+  }
+}
