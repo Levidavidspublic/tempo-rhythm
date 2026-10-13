@@ -51,8 +51,36 @@ From DESIGN.md §12.
 - Owner direction recorded: yes (sections 1 and 2).
 - Overrides listed, not hidden: yes (section 2).
 - Banned patterns: authored intent only (section 3).
-- Run it and click everything: NOT RUN — a separate session must render and check every screen after export.
+- Run it and click everything: partly run, rendered, on 13 Oct 2026 (section 6). Signed-in screens with real data are still unchecked.
 
 ## 5. Known open items carried to review
 
 See README "Open notes": Hebrew copy needs native review; crisis services (ERAN 1201, SAHAR, MDA 101) must be verified; Convex names are proposals; tier differences beyond voice minutes are unconfirmed; footer legal links point to `#`; kanban moves have no Undo toast; calendar month / week arrows are display-only; some mobile note rows have no target screen.
+
+## 6. Rendered check (v3 run 2, 13 Oct 2026, design polish PR)
+
+This section was rendered and measured, not authored. Local `next dev` with the E2E auth bypass and a placeholder Convex URL, so screens that need data show their loading, empty or browser-storage states. Playwright on Chromium 1194. Routes: `/sign-in`, `/calendar`, `/tasks`, `/notes`, `/templates`, `/coach`, `/today`, `/search`. Each route ran at 390 and 1280 px, light and dark, English and Hebrew: 64 renders before the polish (`integration`) and 64 after.
+
+| Build | Renders | Horizontal scroll | Smallest text | Most primary buttons | Gradients* | Longest motion | Page errors | Ground grain |
+|---|---|---|---|---|---|---|---|---|
+| before | 64 | 0 | 13 px | 1 | 0 | 240 ms | 0 | 0/64 |
+| after | 64 | 0 | 13 px | 1 | 0 | 240 ms | 0 | 64/64 |
+
+\* Visible elements with a CSS gradient, not counting the design's own skeleton shimmer and page-cover ruling.
+
+Fallbacks, after the polish:
+- Reduced motion: the longest animation or transition is 0.01 ms.
+- `?glass=off` and `prefers-reduced-transparency: reduce`: every `.tp-glass` surface has `backdrop-filter: none` and the solid `--tp-glass-solid` ground. `?glass=off` was not wired in the app before; the polish PR adds it to the pre-hydration script.
+- Forced colours and `prefers-contrast: more`: no grain.
+
+Contrast. The colour tokens are unchanged, so every pair in DESIGN.md §6 keeps its number. The grain only moves the ground away from the text, measured on a plain ground strip:
+- Light: every pixel is at or above `--tp-ground`, at most +7 levels.
+- Dark: every pixel is at or below it, at most −4 levels.
+- Variation is about 0.6 levels.
+
+So no pair on the ground drops below its §6 number.
+
+Headings after the polish: page titles render at 42 px / 560 at 1280 and 32 px at 390. Section titles render at 26 px / 560.
+
+Banned patterns (section 3), checked on these renders: no gradient hero, glass only on floating chrome, one primary action at most, no emoji in UI, no text under 13 px, motion at or under 250 ms. Not checked here: copy rules, prices, and every signed-in screen with real data.
+

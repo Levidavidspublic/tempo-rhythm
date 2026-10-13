@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CoachPageProvider } from "@/components/coach/CoachPage";
 import { CoachPanel } from "@/components/coach/CoachPanel";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { CoachButton } from "./CoachButton";
@@ -166,6 +167,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
   }, [onCoachRoute]);
 
   return (
+    <CoachPageProvider>
     <ShellSlotsContext.Provider value={slots}>
     <div
       ref={appRef}
@@ -211,5 +213,6 @@ export function TempoShell({ children }: { children: ReactNode }) {
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} returnFocus={returnFocusFromPalette} />
     </div>
     </ShellSlotsContext.Provider>
+    </CoachPageProvider>
   );
 }
