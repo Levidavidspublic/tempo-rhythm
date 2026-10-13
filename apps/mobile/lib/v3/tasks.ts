@@ -17,6 +17,8 @@ export type TaskLike = {
   dueAt?: number;
   completedAt?: number;
   projectName?: string;
+  /** Set on a repeating task: completing it also creates the next one. */
+  repeatCfgId?: string;
   createdAt: number;
   updatedAt: number;
 };

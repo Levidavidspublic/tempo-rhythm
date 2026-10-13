@@ -46,20 +46,32 @@ function CaptureSheet() {
   const remove = useMutation(api.tasks.remove);
   const inputRef = useRef<TextInput>(null);
   const [text, setText] = useState("");
+  const textRef = useRef("");
   const [dest, setDest] = useState<"today" | "inbox">("today");
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(DRAFT_KEY)
       .then((draft) => {
-        if (draft) setText((cur) => cur || draft);
+        if (draft)
+          setText((cur) => {
+            const next = cur || draft;
+            textRef.current = next;
+            return next;
+          });
       })
       .catch(() => undefined);
   }, []);
 
   const change = (value: string) => {
+    textRef.current = value;
     setText(value);
     AsyncStorage.setItem(DRAFT_KEY, value).catch(() => undefined);
+  };
+
+  /** Puts a thought back in the box only when the box is empty, never over newer words. */
+  const restore = (value: string) => {
+    if (!textRef.current.trim()) change(value);
   };
 
   const close = () => (router.canGoBack() ? router.back() : router.replace("/today"));
@@ -78,13 +90,13 @@ function CaptureSheet() {
           title: t(where === "today" ? "added.today" : "added.inbox"),
           onUndo: async () => {
             await remove({ taskId });
-            change(title);
+            restore(title);
             inputRef.current?.focus();
           },
         });
       })
       .catch(() => {
-        change(title);
+        restore(title);
         setFailed(title);
       });
     inputRef.current?.focus();

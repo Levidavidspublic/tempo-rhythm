@@ -95,6 +95,8 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
 
   const [entry, setEntry] = useState<JournalEntry>({ mood: null, q1: "", q2: "" });
   const [status, setStatus] = useState<{ kind: "draft" | "saved" | "saved.local"; at: number } | null>(null);
+  // Bumped on every edit, so a save that lands after newer typing never drops that newer draft.
+  const version = useRef(0);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const started = useRef<string | null>(null);
@@ -125,6 +127,7 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
   if (!pageReady || past === undefined) return <StateLoading label={t("load.label")} rows={3} block />;
 
   const change = (next: JournalEntry) => {
+    version.current += 1;
     setEntry(next);
     const at = Date.now();
     setStatus({ kind: "draft", at });
@@ -138,6 +141,7 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
     setBusy(true);
     setFailed(false);
     if (offline) setStatus({ kind: "saved.local", at: Date.now() });
+    const savedVersion = version.current;
     const section = buildJournalSection(entry, copyFor(lang));
     try {
       if (note) {
@@ -156,8 +160,13 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
           await update({ noteId: id, body: upsertJournalSection(fresh.body, section, LABELS.heading) });
         }
       }
-      AsyncStorage.removeItem(draftKey(iso)).catch(() => undefined);
-      setStatus({ kind: "saved", at: Date.now() });
+      if (version.current === savedVersion) {
+        AsyncStorage.removeItem(draftKey(iso)).catch(() => undefined);
+        setStatus({ kind: "saved", at: Date.now() });
+      } else {
+        // Edited while saving: the newer words stay in the draft until the next save.
+        setStatus({ kind: "draft", at: Date.now() });
+      }
     } catch {
       setFailed(true);
     } finally {

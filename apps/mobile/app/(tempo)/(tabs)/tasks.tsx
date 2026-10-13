@@ -62,6 +62,7 @@ function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
   const today = useToday();
   const tasks = useQuery(api.tasks.list, ready ? {} : "skip");
   const toggle = useMutation(api.tasks.toggleCompletion);
+  const update = useMutation(api.tasks.update);
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [search, setSearch] = useState("");
 
@@ -91,8 +92,15 @@ function TasksBody({ ready, searchRef }: { ready: boolean; searchRef: RefObject<
   const shown = filterGroups(groups, filter, search);
   const onToggle = async (task: TaskLike) => {
     const taskId = task._id as Id<"tasks">;
+    const before = task.status;
     const result = await toggle({ taskId });
-    if (result.status === "done") toast({ title: t("task.undone"), onUndo: () => toggle({ taskId }) });
+    if (result.status !== "done") return;
+    // Undo puts back the status it had. Completing a repeating task also creates the next one,
+    // which this Undo could not take back, so that case gets no Undo rather than a partial one.
+    toast({
+      title: t("task.undone"),
+      ...(task.repeatCfgId ? {} : { onUndo: () => update({ taskId, status: before }) }),
+    });
   };
 
   const section = (key: string, title: string, count: string, rows: TaskLike[], extra?: ReactNode, dueDay?: boolean) =>

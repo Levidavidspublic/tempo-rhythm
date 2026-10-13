@@ -84,12 +84,14 @@ function TodayBody({ ready, today }: { ready: boolean; today: Today }) {
   const habits = useQuery(api.habits.list, ready ? {} : "skip");
   const checkIns = useQuery(api.habitCheckIns.listForDate, ready ? { localDate: today.iso } : "skip");
   const toggle = useMutation(api.tasks.toggleCompletion);
+  const update = useMutation(api.tasks.update);
 
   if (!tasks || plan === undefined || !blocks || !events || !habits || !checkIns) {
     return <StateLoading label={t("load.label")} rows={3} block />;
   }
 
-  if (!tasks.length && !blocks.length && !events.length) {
+  // A habit-only day still opens the normal layout, so the habit can be logged from here.
+  if (!tasks.length && !blocks.length && !events.length && !habits.some((h) => h.deletedAt === undefined)) {
     return (
       <StateEmpty icon={Sun} title={t("empty.title")} body={t("empty.body")}>
         <Button icon={Plus} label={t("empty.capture")} onPress={() => router.push("/capture")} />
@@ -100,10 +102,15 @@ function TodayBody({ ready, today }: { ready: boolean; today: Today }) {
 
   const onToggle = async (task: TaskLike) => {
     const taskId = task._id as Id<"tasks">;
+    const before = task.status;
     const result = await toggle({ taskId });
-    if (result.status === "done") {
-      toast({ title: t("task.undone"), onUndo: () => toggle({ taskId }) });
-    }
+    if (result.status !== "done") return;
+    // Undo puts back the status it had; a repeating task's completion also creates the next one,
+    // which this Undo could not take back, so that case gets no Undo rather than a partial one.
+    toast({
+      title: t("task.undone"),
+      ...(task.repeatCfgId ? {} : { onUndo: () => update({ taskId, status: before }) }),
+    });
   };
 
   const open = tasks.filter(isOpen);

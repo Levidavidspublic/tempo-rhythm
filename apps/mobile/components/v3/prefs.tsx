@@ -10,7 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { tempoV3Colors, tempoV3ColorsDark } from "@tempo/ui/theme";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { getLocales } from "expo-localization";
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AccessibilityInfo, I18nManager, useColorScheme } from "react-native";
 import { api } from "@/convex/_generated/api";
 import {
@@ -94,14 +94,18 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   const [textSize, setTextSizeState] = useState<TextSize>("m");
   const [readingFont, setReadingFontState] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  // Once the account's settings are applied, a late read of the phone's copy must not undo them.
+  const serverApplied = useRef(false);
 
   useEffect(() => {
     let live = true;
     void Promise.all([readLocal(KEYS.lang), readLocal(KEYS.theme), readLocal(KEYS.textSize), readLocal(KEYS.readingFont)]).then(
       ([l, t, s, f]) => {
         if (!live) return;
-        if (isLang(l)) setLangState(l);
-        if (t === "system" || t === "light" || t === "dark") setThemeState(t);
+        if (!serverApplied.current) {
+          if (isLang(l)) setLangState(l);
+          if (t === "system" || t === "light" || t === "dark") setThemeState(t);
+        }
         if (s === "s" || s === "m" || s === "l") setTextSizeState(s);
         setReadingFontState(f === "on");
       },
@@ -114,6 +118,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
   // Signed in, the account's language and theme win over the phone's copy.
   useEffect(() => {
     if (!server) return;
+    serverApplied.current = true;
     setLangState(server.locale);
     setThemeState(server.theme);
     writeLocal(KEYS.lang, server.locale);
