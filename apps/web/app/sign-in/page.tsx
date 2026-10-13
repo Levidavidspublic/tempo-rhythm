@@ -56,12 +56,8 @@ export default function SignInPage() {
 
   return (
     // English-only page: keep it left to right even when the app language is Hebrew.
-    <div
-      className="grain-bg flex min-h-[calc(100vh-8rem)] flex-col items-center justify-center px-4 py-12"
-      dir="ltr"
-      lang="en"
-    >
+    <main className="tp-auth" id="main" dir="ltr" lang="en">
       <SignInForm variant="page" nextPath={nextPath} />
-    </div>
+    </main>
   );
 }

@@ -17,10 +17,13 @@ const FOCUSABLE =
 export function CoachPanel({ onClose, modal = false }: { onClose: () => void; modal?: boolean }) {
   const { t } = useLocale();
   const panel = useRef<HTMLElement | null>(null);
-  // Focus moves into the panel when it opens (the composer takes it once the thread is ready).
+  // Focus moves into the panel when it opens (the composer takes it once the thread is ready),
+  // and again when a docked panel becomes a sheet on resize, since the page behind turns inert.
+  const opened = useRef(false);
   useEffect(() => {
-    panel.current?.focus();
-  }, []);
+    if (!opened.current || modal) panel.current?.focus();
+    opened.current = true;
+  }, [modal]);
   // As a sheet, Tab and Shift+Tab wrap inside the panel.
   function keepFocusInside(e: KeyboardEvent<HTMLElement>) {
     const root = panel.current;

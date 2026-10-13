@@ -51,28 +51,57 @@ export function TempoShell({ children }: { children: ReactNode }) {
   const appRef = useRef<HTMLDivElement | null>(null);
   // Closing the panel puts focus back on the coach button, once the shell is no longer inert.
   const refocusCoachButton = useRef(false);
+  // The palette replaced the coach sheet: closing the palette returns focus to the coach button
+  // (the control focused before it is gone with the sheet).
+  const paletteReplacedCoach = useRef(false);
+  const paletteOpenRef = useRef(paletteOpen);
+  paletteOpenRef.current = paletteOpen;
 
   // On /coach the coach is the page, so a panel left open does not come back on the next page.
   useEffect(() => {
     if (onCoachRoute) setCoachOpen(false);
   }, [onCoachRoute]);
 
-  // As a sheet the panel is modal: everything else in the shell is inert until it closes.
+  // As a sheet the panel is modal: everything else in the shell is inert until it closes. The
+  // rail's inert is React's own (drawer state, below), so it is left out here and set by prop.
+  const coachModal = panelOpen && coachSheet;
   useEffect(() => {
     const app = appRef.current;
-    if (!(panelOpen && coachSheet) || !app) return;
+    if (!coachModal || !app) return;
     const made = Array.from(app.children).filter(
       (el): el is HTMLElement =>
         el instanceof HTMLElement &&
         !el.classList.contains("tp-coach-panel") &&
         !el.classList.contains("tp-scrim") &&
+        el.getAttribute("data-component") !== "Sidebar" &&
         !el.hasAttribute("inert"),
     );
     for (const el of made) el.inert = true;
     return () => {
       for (const el of made) el.inert = false;
     };
-  }, [panelOpen, coachSheet]);
+  }, [coachModal]);
+
+  // The palette and the coach sheet are both modal: opening one closes the other. Opening the
+  // coach also closes the rail drawer, whose scrim would sit above the sheet.
+  useEffect(() => {
+    if (!(paletteOpen && coachSheet)) return;
+    setCoachOpen((open) => {
+      if (open) paletteReplacedCoach.current = true;
+      return false;
+    });
+  }, [paletteOpen, coachSheet]);
+  useEffect(() => {
+    if (!panelOpen) return;
+    setPaletteOpen(false);
+    setRailOpen(false);
+  }, [panelOpen]);
+  const returnFocusFromPalette = useCallback(() => {
+    if (!paletteReplacedCoach.current) return false;
+    paletteReplacedCoach.current = false;
+    coachButton.current?.focus();
+    return true;
+  }, []);
 
   useEffect(() => {
     if (panelOpen || !refocusCoachButton.current) return;
@@ -115,8 +144,16 @@ export function TempoShell({ children }: { children: ReactNode }) {
       } else if (isMeta && e.key.toLowerCase() === "j") {
         e.preventDefault();
         if (onCoachRoute) document.getElementById("coach-message")?.focus();
-        else setCoachOpen((open) => !open);
+        else
+          setCoachOpen((open) => {
+            // Closing with Ctrl J puts focus back on the coach button, like Escape does.
+            if (open) refocusCoachButton.current = true;
+            return !open;
+          });
       } else if (e.key === "Escape") {
+        // An overlay above (the palette, an editor popup) already took this Escape: only the
+        // topmost one closes.
+        if (e.defaultPrevented || paletteOpenRef.current) return;
         setRailOpen(false);
         setCoachOpen((open) => {
           if (open) refocusCoachButton.current = true;
@@ -143,7 +180,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
         {t("skip")}
       </a>
       <Sidebar
-        inert={narrow && !railOpen}
+        inert={(narrow && !railOpen) || coachModal}
         onOpenPalette={() => setPaletteOpen(true)}
         onNavigate={() => setRailOpen(false)}
       />
@@ -171,7 +208,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
         }}
       />
       <TabBar railOpen={railOpen} onToggleRail={() => setRailOpen((open) => !open)} />
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} returnFocus={returnFocusFromPalette} />
     </div>
     </ShellSlotsContext.Provider>
   );

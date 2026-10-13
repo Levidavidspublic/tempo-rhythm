@@ -49,6 +49,9 @@
 /* /OD-LAYOUT-PRIMITIVES v1 */
 
 /* ---------- Base ------------------------------------------------ */
+/* Element rules sit in the base layer, like Tailwind's preflight, so a utility on a pre-v3
+   screen (text-[...], mt-6) still wins over them. The tp-* class rules below stay unlayered. */
+@layer base {
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { margin: 0; padding: 0; }
@@ -69,6 +72,7 @@ ul[role="list"], ol[role="list"] { list-style: none; padding: 0; }
 button, input, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; }
 a { color: inherit; }
+}
 svg.tp-icon { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 svg.tp-icon--sm { width: 16px; height: 16px; }
 [dir="rtl"] .tp-icon--flip { transform: scaleX(-1); }

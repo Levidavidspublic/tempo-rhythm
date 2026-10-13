@@ -408,51 +408,54 @@
 }
 
 /* ---- Base reset + body ----------------------------------- */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+/* In the base layer, like preflight: element rules never beat a utility. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  background: var(--tp-ground);
-  color: var(--tp-ink);
-  font-family: var(--tp-font-sans);
-  font-size: var(--tp-text-md);
-  line-height: var(--tp-leading-body);
-  letter-spacing: var(--tp-tracking-body);
-  word-spacing: var(--tp-word-spacing);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "ss01", "cv01";
-}
+  body {
+    background: var(--tp-ground);
+    color: var(--tp-ink);
+    font-family: var(--tp-font-sans);
+    font-size: var(--tp-text-md);
+    line-height: var(--tp-leading-body);
+    letter-spacing: var(--tp-tracking-body);
+    word-spacing: var(--tp-word-spacing);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv01";
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  margin: 0;
-  font-family: var(--tp-font-serif);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: var(--tp-leading-heading);
-}
-h1 {
-  font-size: var(--text-h1);
-}
-h2 {
-  font-size: var(--text-h2);
-}
-h3 {
-  font-size: var(--text-h3);
-}
-p {
-  margin: 0;
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--tp-font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: var(--tp-leading-heading);
+  }
+  h1 {
+    font-size: var(--text-h1);
+  }
+  h2 {
+    font-size: var(--text-h2);
+  }
+  h3 {
+    font-size: var(--text-h3);
+  }
+  p {
+    margin: 0;
+  }
 }
 
 /* ---- Typography utilities (replaces shell.css helpers) --- */
@@ -613,3 +616,13 @@ p {
   .tp-run { padding-inline: var(--tp-space-4); }
   .tp-run > .tp-pagehead, .tp-run > .tp-notice { padding-inline: 0; }
 }
+
+/* Search (search.html, layout only). */
+.sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.sr-results { display: grid; gap: var(--tp-space-6); }
+.sr-list { padding: var(--tp-space-1); }
+/* Under 768 px the shell main has no side padding; the screen keeps the 16 px gutter its page head has. */
+@media (max-width: 767px) { .tp-page > .sr-screen { padding-inline: var(--tp-space-4); } }
+/* Sign-up: the auth card, then the terms line under it at the card's width. */
+.tp-auth-stack { display: grid; gap: var(--tp-space-4); justify-items: center; width: min(100%, calc(var(--tp-space-20) * 5 + var(--tp-space-10))); }
+.tp-auth-stack > .tp-auth-card { width: 100%; }
