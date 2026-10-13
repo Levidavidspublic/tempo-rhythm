@@ -237,6 +237,9 @@ export const en = {
   "mm.fs.title": "Forget everything Tempo remembers?",
   "mm.fs.body":
     "All {n} memories will be removed. Your pages, tasks and chats stay as they are. You can undo for 5 minutes. If you want a copy, export first.",
+  "mm.fs.bodyMany":
+    "All your memories will be removed: at least {n}, maybe more. Your pages, tasks and chats stay as they are. You can undo for 5 minutes. If you want a copy, export first.", // new
+  "mm.forgotN": "{n} memories forgotten", // new
   "mm.fs.keep": "Keep my memories",
   "mm.fs.confirm": "Forget everything",
   "mm.forgotAll": "Everything is forgotten",
@@ -550,6 +553,9 @@ export const he: Record<keyof typeof en, string> = {
   "mm.fs.title": "לשכוח את כל מה ש־Tempo זוכר?",
   "mm.fs.body":
     "כל {n} הזיכרונות יימחקו. הדפים, המשימות והשיחות שלך נשארים כמו שהם. אפשר לבטל במשך 5 דקות. אם תרצי עותק, כדאי לייצא קודם.",
+  "mm.fs.bodyMany":
+    "כל הזיכרונות שלך יימחקו: לפחות {n}, אולי יותר. הדפים, המשימות והשיחות שלך נשארים כמו שהם. אפשר לבטל במשך 5 דקות. אם תרצי עותק, כדאי לייצא קודם.",
+  "mm.forgotN": "{n} זיכרונות נשכחו",
   "mm.fs.keep": "להשאיר את הזיכרונות",
   "mm.fs.confirm": "לשכוח הכול",
   "mm.forgotAll": "הכול נשכח",

@@ -255,7 +255,23 @@ function isoDate(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-/** Markdown, one section per sector. The person never sees JSON. */
+const SOURCE_NAME: Record<Exclude<ImportSource, "other">, string> = {
+  chatgpt: "ChatGPT",
+  claude: "Claude",
+  grok: "Grok",
+};
+
+/** One Markdown line; an imported memory says where it came from (the same source `list` shows). */
+function exportLine(m: Doc<"memories">): string {
+  const text = m.content.replace(/\s*\n\s*/g, " ");
+  const source = importSourceOf(m.metadata);
+  if (!source) {
+    return `- ${text}`;
+  }
+  return source === "other" ? `- ${text} (imported)` : `- ${text} (imported from ${SOURCE_NAME[source]})`;
+}
+
+/** Markdown, one section per sector, imported memories marked with their source. The person never sees JSON. */
 export const exportAll = query({
   args: {},
   returns: v.object({
@@ -276,7 +292,7 @@ export const exportAll = query({
       }
       sections.push(`## ${sector[0]?.toUpperCase()}${sector.slice(1)}`, "");
       for (const m of inSector) {
-        sections.push(`- ${m.content.replace(/\s*\n\s*/g, " ")}`);
+        sections.push(exportLine(m));
       }
       sections.push("");
     }

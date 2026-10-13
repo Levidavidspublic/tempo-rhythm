@@ -54,6 +54,8 @@ const JUMP_ICON: Readonly<Record<string, TpIconName>> = {
   notes: "page",
   calendar: "calendar-grid",
   habits: "habit",
+  routines: "refresh",
+  goals: "flag",
   projects: "folder",
   analytics: "chart",
   history: "history",
@@ -98,6 +100,8 @@ function CommandBody({
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [newError, setNewError] = useState(false);
+  // One "New page" at a time: a double click or a held Enter must not make several blank pages.
+  const creating = useRef(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const uid = useId();
   const listId = `${uid}-list`;
@@ -182,6 +186,8 @@ function CommandBody({
       return;
     }
     if (row.action === "new-page") {
+      if (creating.current) return;
+      creating.current = true;
       setNewError(false);
       try {
         const id = await createNote({ title: "", body: "" });
@@ -189,6 +195,8 @@ function CommandBody({
         router.push(`/notes/${id}`);
       } catch {
         setNewError(true);
+      } finally {
+        creating.current = false;
       }
       return;
     }

@@ -38,3 +38,23 @@ export function shownPhrases<T extends PhraseLike>(phrases: readonly T[]): T[] {
 export function nagCounts(nags: readonly { enabled: boolean }[]): { total: number; on: number } {
   return { total: nags.length, on: nags.filter((nag) => nag.enabled).length };
 }
+
+type NagLike = { enabled: boolean; phrases: readonly PhraseLike[] };
+
+const acceptedBesides = (nag: NagLike, phraseId: string) =>
+  nag.phrases.some((phrase) => phrase.status === "accepted" && phrase.id !== phraseId);
+
+/**
+ * Whether Undo of a phrase removal switches the nag back on. Only when the removal is what
+ * switched it off (it was on and that was its last accepted phrase, so the server turned it
+ * off), and only while it still has no other accepted phrase: until then nobody could have
+ * switched it on or off, so nothing the person chose since is overridden.
+ */
+export function undoTurnsBackOn(
+  atRemoval: NagLike,
+  now: NagLike | undefined,
+  phraseId: string
+): boolean {
+  if (!atRemoval.enabled || acceptedBesides(atRemoval, phraseId)) return false;
+  return now !== undefined && !now.enabled && !acceptedBesides(now, phraseId);
+}

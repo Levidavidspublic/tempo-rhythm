@@ -191,6 +191,13 @@ export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages"
             <dt>{t("proposal.startsWith")}</dt>
             <dd dir="auto">{firstLine(proposal.body)}</dd>
           </div>
+          {proposal.kind === "template" ? (
+            // Accept stores this as the template's page type, so it is part of the preview.
+            <div className="tp-what-row">
+              <dt>{t("proposal.field.period")}</dt>
+              <dd>{t(`proposal.period.${proposal.period}`)}</dd>
+            </div>
+          ) : null}
         </dl>
       )}
       {proposal.status === "pending" && proposal.kind !== "task" && !editing ? (

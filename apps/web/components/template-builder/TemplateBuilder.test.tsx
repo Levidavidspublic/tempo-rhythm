@@ -592,6 +592,33 @@ describe("TemplateEditorScreen", () => {
     await press(findButton(view, "Undo"));
     findButton(view, "Move down: Focus");
   });
+
+  test("removing a section after a save keeps the save's Undo", async () => {
+    templateResult = userTemplate;
+    const view = await renderNode((<TemplateEditorScreen templateId="jd7userdaily" />) as ReactElement);
+    await typeInto(findById(view, "ed-name"), "My week");
+    await submit(findForm(view));
+    expect(view.textContent).toContain("Template saved");
+
+    await press(findButton(view, "Remove section: Focus"));
+    expect(view.textContent).toContain("Section removed");
+    expect(view.textContent).toContain("Template saved");
+
+    await press(findButton(view, "Undo: Section removed"));
+    findButton(view, "Move down: Focus");
+    expect(view.textContent).not.toContain("Section removed");
+
+    await press(findButton(view, "Undo: Template saved"));
+    expect(updateTemplate).toHaveBeenLastCalledWith({
+      templateId: "jd7userdaily",
+      name: "My daily",
+      description: "Personal",
+      periodType: "weekly",
+      body: userTemplate.body,
+    });
+    expect(findById(view, "ed-name").value).toBe("My daily");
+    expect(view.textContent).not.toContain("Template saved");
+  });
 });
 
 describe("TemplateSketch", () => {
@@ -616,6 +643,30 @@ describe("TemplateSketch", () => {
 
     await press(findButton(view, "Undo"));
     expect(removeTemplate).toHaveBeenCalledWith({ templateId: "templates_new" });
+    expect(view.textContent).toContain("Removed. Your outline is still here.");
+  });
+
+  test("a new sketch inside the Undo window keeps the earlier template's Undo", async () => {
+    const view = await renderNode((<TemplateSketch />) as ReactElement);
+    await typeInto(findById(view, "sk-outline"), "Talk prep\nSlides (tasks)");
+    await submit(findForm(view));
+    await press(findButton(view, "Accept"));
+
+    createTemplate.mockResolvedValueOnce("templates_two");
+    await typeInto(findById(view, "sk-outline"), "Week review\nWins (question)");
+    await submit(findForm(view));
+    await press(findButton(view, "Accept"));
+    findButton(view, "Undo: Talk prep");
+    findButton(view, "Undo: Week review");
+
+    await press(findButton(view, "Undo: Talk prep"));
+    expect(removeTemplate).toHaveBeenCalledWith({ templateId: "templates_new" });
+    // The proposal on screen is the second one, still saved, with its own Undo.
+    expect(view.textContent).not.toContain("Removed. Your outline is still here.");
+    expect(() => findButton(view, "Undo: Talk prep")).toThrow();
+    await press(findButton(view, "Undo: Week review"));
+    expect(removeTemplate).toHaveBeenLastCalledWith({ templateId: "templates_two" });
+    expect(view.textContent).toContain("Removed. Your outline is still here.");
   });
 
   test("changing the outline after a proposal marks it out of date; Reject keeps the outline", async () => {

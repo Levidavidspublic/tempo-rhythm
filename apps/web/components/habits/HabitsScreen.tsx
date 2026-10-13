@@ -194,10 +194,9 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
 
   const undoAdd = async (habitId: Id<"habits">) => {
     try {
-      // `habits.remove` deletes only the habit row, so a check-in made since adding it goes first.
-      if (loggedByHabit.get(habitId)?.has(todayKey)) {
-        await undo({ habitId, localDate: todayKey, asOfLocalDate: todayKey });
-      }
+      // `habits.remove` deletes only the habit row, so today's check-in goes first. Always: the
+      // query can lag a Log today that was just tapped, and the undo is a no-op when none exists.
+      await undo({ habitId, localDate: todayKey, asOfLocalDate: todayKey });
       await remove({ habitId });
       closeToast(habitId);
     } catch {

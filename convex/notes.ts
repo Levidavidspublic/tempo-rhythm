@@ -198,6 +198,24 @@ export const searchTitles = query({
 });
 
 /**
+ * Pages tagged `#routine`, for the Routines screen. They come from the same bounded window of
+ * recent notes as the link queries, so a large notebook never hits the read limit (Codex P2 on
+ * #926). The trade-off: a routine page not edited within the newest LINK_SCAN_LIMIT notes is
+ * not listed until it is touched; a tag index (a schema change) would remove that limit. The
+ * client still checks the tag sits outside code (`isRoutinePage`).
+ */
+export const listRoutines = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    const rows = await recentNotesForLinks(ctx, user._id);
+    return rows
+      .filter((n) => n.deletedAt === undefined && n.body.toLowerCase().includes("#routine"))
+      .map((n) => ({ _id: n._id, title: n.title, body: n.body, updatedAt: n.updatedAt }));
+  },
+});
+
+/**
  * "Linked here": the owner's live pages whose body has a [[link]] to this page's title, with
  * the linking line as plain context. Computed from bodies (bodies are the only truth); no body
  * leaves the server.

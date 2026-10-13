@@ -143,6 +143,7 @@ export const en = {
   "kb.error": "Couldn't load this board.",
   "kb.newcard": "New card",
   "kb.added": "Card added to To do",
+  "kb.moved": "Card moved to {column}", // new
 } as const;
 
 export const he: Record<keyof typeof en, string> = {
@@ -275,4 +276,5 @@ export const he: Record<keyof typeof en, string> = {
   "kb.error": "לא הצלחנו לטעון את הלוח הזה.",
   "kb.newcard": "כרטיס חדש",
   "kb.added": "הכרטיס נוסף ל״לעשות״",
+  "kb.moved": "הכרטיס הועבר ל״{column}״",
 };

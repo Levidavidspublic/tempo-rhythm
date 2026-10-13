@@ -180,6 +180,19 @@ export function neighbourColumn(column: BoardColumn, dir: "prev" | "next"): Boar
   return index >= 0 && index < BOARD_COLUMNS.length ? BOARD_COLUMNS[index]! : null;
 }
 
+/**
+ * The status a move's Undo puts back, or null when the move gets no Undo: finishing a repeating
+ * task also makes its next one, which moving the card back could not take back.
+ */
+export function moveUndoStatus(
+  task: { status: TaskStatus; repeatCfgId?: unknown },
+  to: BoardColumn,
+): TaskStatus | null {
+  if (task.status === to) return null;
+  if (to === "done" && task.repeatCfgId !== undefined) return null;
+  return task.status;
+}
+
 /** The three board columns. Set-aside (cancelled) tasks are not on the board. */
 export function groupBoard<T extends { status: TaskStatus }>(tasks: readonly T[]): Record<BoardColumn, T[]> {
   const groups: Record<BoardColumn, T[]> = { todo: [], in_progress: [], done: [] };

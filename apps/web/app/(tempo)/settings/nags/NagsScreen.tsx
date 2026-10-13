@@ -25,6 +25,7 @@ import {
   checkPhrase,
   nagCounts,
   shownPhrases,
+  undoTurnsBackOn,
   type WordsProblem,
 } from "@/lib/you/nags";
 import { deriveScreenState, fill, UNDO_WINDOW_MS } from "@/lib/you/screenState";
@@ -131,6 +132,9 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
 
   const list: Nag[] = nags ?? [];
   const chosen = list.find((nag) => nag._id === chosenId) ?? list[0] ?? null;
+  // The latest list, for an Undo that runs minutes after the render that offered it.
+  const latest = useRef(list);
+  latest.current = list;
 
   /** One action at a time; failures land next to the nag they belong to. */
   async function run(key: string, nagId: string | null, work: () => Promise<void>) {
@@ -248,10 +252,12 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
       if (decision === "accept") announceIfNowOn(nag);
     });
 
-  /** Remove = reject an accepted phrase; Undo accepts it again and turns the nag back on. */
+  /**
+   * Remove = reject an accepted phrase; Undo accepts it again, and turns the nag back on only if
+   * the removal is what turned it off (a later Off by hand stands).
+   */
   const removePhrase = (nag: Nag, phraseId: string) =>
     run(phraseId, nag._id, async () => {
-      const wasOn = nag.enabled;
       await decidePhrase({ nagId: nag._id, phraseId, decision: "reject" });
       const left = nag.phrases.filter((p) => p.status === "accepted" && p.id !== phraseId).length;
       if (left === 0) setLive(t("ng.lastOff"));
@@ -259,8 +265,10 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
         title: t("ng.removed"),
         untilMs: Date.now() + UNDO_WINDOW_MS,
         onUndo: async () => {
+          const now = latest.current.find((row) => row._id === nag._id);
+          const turnOn = undoTurnsBackOn(nag, now, phraseId);
           await decidePhrase({ nagId: nag._id, phraseId, decision: "accept" });
-          if (wasOn) await setEnabled({ nagId: nag._id, enabled: true });
+          if (turnOn) await setEnabled({ nagId: nag._id, enabled: true });
         },
       });
     });
