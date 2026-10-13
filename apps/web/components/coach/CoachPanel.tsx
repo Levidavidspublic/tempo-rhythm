@@ -5,6 +5,7 @@ import { type KeyboardEvent, useEffect, useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { CoachConversation } from "./CoachChat";
+import { useCoachPageId } from "./CoachPage";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -16,6 +17,8 @@ const FOCUSABLE =
  */
 export function CoachPanel({ onClose, modal = false }: { onClose: () => void; modal?: boolean }) {
   const { t } = useLocale();
+  // The page beside the coach (a note, Today's page, a weekly page) is the coach's context.
+  const pageId = useCoachPageId();
   const panel = useRef<HTMLElement | null>(null);
   // Focus moves into the panel when it opens (the composer takes it once the thread is ready),
   // and again when a docked panel becomes a sheet on resize, since the page behind turns inert.
@@ -68,7 +71,7 @@ export function CoachPanel({ onClose, modal = false }: { onClose: () => void; mo
           <TpIcon name="x" size="sm" />
         </button>
       </div>
-      <CoachConversation variant="panel" />
+      <CoachConversation variant="panel" pageId={pageId} />
     </aside>
   );
 }

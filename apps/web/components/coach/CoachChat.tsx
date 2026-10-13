@@ -1,13 +1,15 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCard";
 import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { pickCoachConversation } from "@/lib/coach-conversation";
+import { ChatProposal, proposalOf } from "./ChatProposal";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -31,11 +33,16 @@ export function CoachCrisisReply() {
   );
 }
 
+/** Longest message the coach takes (convex/coach.ts MAX_MESSAGE_CHARS). */
+const MAX_MESSAGE_CHARS = 4000;
+
 /**
  * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
- * classes. Used by the /coach page and by the coach panel beside any page.
+ * classes. Used by the /coach page and by the coach panel beside any page, which passes that
+ * page's id so the coach reads it. The message is saved first; the reply comes from the model
+ * through `coach.reply`, with a typing state while it runs (the model seam does not stream).
  */
-export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
+export function CoachConversation({ variant, pageId = null }: { variant: "page" | "panel"; pageId?: string | null }) {
   const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // conversations.list calls requireUser: wait for the users row (getProfile is null until then).
@@ -43,6 +50,7 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
   const conversations = useQuery(api.conversations.list, isAuthenticated && profile ? {} : "skip");
   const createConversation = useMutation(api.conversations.create);
   const sendMessage = useMutation(api.coach.sendMessage);
+  const requestReply = useAction(api.coach.reply);
   const { guard } = useCrisisGuard();
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
@@ -50,13 +58,15 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [crisisHold, setCrisisHold] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
   const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || conversations === undefined || conversationId) return;
-    const latest = conversations[0];
+    const latest = pickCoachConversation(conversations);
     if (latest) {
       setConversationId(latest._id);
       return;
@@ -80,9 +90,26 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
     bottomRef.current?.scrollIntoView({ block: "end" });
   });
 
+  // A failed or missing reply never throws past here: the message is saved, and the thread says so.
+  const reply = async (id: Id<"conversations">) => {
+    setReplying(true);
+    setUnavailable(false);
+    try {
+      const result = await requestReply({
+        conversationId: id,
+        ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
+      });
+      setUnavailable(result.status === "unavailable");
+    } catch {
+      setUnavailable(true);
+    } finally {
+      setReplying(false);
+    }
+  };
+
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || !conversationId || isSending) return;
+    if (!text || !conversationId || isSending || replying) return;
     setInput("");
     setIsSending(true);
     try {
@@ -96,6 +123,8 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
       }
       setCrisisHold(false);
       setSendError(null);
+      setIsSending(false);
+      await reply(conversationId);
     } catch {
       setInput(text);
       setSendError(t("coachChat.sendError"));
@@ -107,6 +136,10 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
   const isLoading =
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
   const inputId = variant === "page" ? "coach-message" : "coach-panel-message";
+  const busy = isSending || replying;
+  // The newest message is the user's and no reply is on its way: a reply failed, or the page
+  // reloaded while one was running. Either way the message is saved and can be answered again.
+  const waiting = !busy && !crisisHold && messages !== undefined && messages.at(-1)?.role === "user";
 
   return (
     <>
@@ -116,25 +149,41 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
         ) : messages && messages.length === 0 ? (
           <p className="tp-muted">{t("coachChat.empty")}</p>
         ) : (
-          messages?.map((message) => (
-            <div
-              key={message._id}
-              data-role={message.role}
-              className={message.role === "user" ? "tp-msg tp-msg--user" : "tp-msg"}
-              data-component="CoachMessage"
-            >
-              <span className="tp-msg__who">{message.role === "user" ? t("coachChat.you") : t("coach.name")}</span>
-              <p className="tp-msg__text" dir="auto">
-                {message.content}
-              </p>
-            </div>
-          ))
+          messages?.map((message) => {
+            const proposal = message.role === "assistant" ? proposalOf(message.toolCalls) : null;
+            return (
+              <Fragment key={message._id}>
+                <div
+                  data-role={message.role}
+                  className={message.role === "user" ? "tp-msg tp-msg--user" : "tp-msg"}
+                  data-component="CoachMessage"
+                >
+                  <span className="tp-msg__who">{message.role === "user" ? t("coachChat.you") : t("coach.name")}</span>
+                  <p className="tp-msg__text" dir="auto">
+                    {message.content}
+                  </p>
+                </div>
+                {proposal ? <ChatProposal messageId={message._id} proposal={proposal} /> : null}
+              </Fragment>
+            );
+          })
         )}
         {crisisHold ? <CoachCrisisReply /> : null}
-        {isSending ? (
-          <output aria-label={t("coachChat.typing")} className="tp-msg tp-muted">
+        {busy ? (
+          <output aria-label={t("coachChat.typing")} className="tp-msg tp-muted" data-component="CoachTyping">
             …
           </output>
+        ) : null}
+        {waiting && conversationId ? (
+          <div className="tp-msg tp-muted" data-component="CoachUnavailable">
+            <p className="tp-msg__text">{unavailable ? t("coachChat.unavailable") : t("coachChat.noReply")}</p>
+            <div className="tp-msg__actions">
+              <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={() => void reply(conversationId)}>
+                <TpIcon name="refresh" size="sm" />
+                <span>{t("coachChat.retry")}</span>
+              </button>
+            </div>
+          </div>
         ) : null}
         <div ref={bottomRef} />
       </div>
@@ -170,7 +219,8 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
               }
             }}
             placeholder={t("coachChat.placeholder")}
-            disabled={!conversationId || isSending}
+            maxLength={MAX_MESSAGE_CHARS}
+            disabled={!conversationId || busy}
           />
           <div className="tp-composer__bar">
             <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
@@ -178,7 +228,7 @@ export function CoachConversation({ variant }: { variant: "page" | "panel" }) {
               className="tp-btn tp-btn--primary tp-btn--sm"
               type="submit"
               style={{ marginInlineStart: "auto" }}
-              disabled={!conversationId || isSending || !input.trim()}
+              disabled={!conversationId || busy || !input.trim()}
             >
               <TpIcon name="send" size="sm" />
               <span>{t("coachChat.send")}</span>

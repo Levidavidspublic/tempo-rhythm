@@ -232,10 +232,10 @@ describe("unmapped legacy conversations keep their existing behavior", () => {
     expect(sent).toEqual({ success: true });
 
     const listed = await run(messages.list, ctx, { conversationId });
-    expect(listed.map((m: Row) => m.role)).toEqual(["user", "user", "assistant"]);
+    // The coach's reply comes from the model through coach.reply, never from sendMessage.
+    expect(listed.map((m: Row) => m.role)).toEqual(["user", "user"]);
     expect(listed[0]._id).toBe(createdId);
     expect(listed[1].content).toBe("what next?");
-    expect(listed[2].content).toBe(coach.coachReplyForTechnique("pomodoro"));
     for (const message of listed) {
       expect(String(message._id).startsWith("messages:")).toBe(true);
       expect(message.conversationId).toBe(conversationId);
@@ -275,7 +275,7 @@ describe("unmapped legacy conversations keep their existing behavior", () => {
     const world = makeWorld();
     const conversationId = await seedConversation(world, { userId: A, agentThreadId: "" });
     await run(coach.sendMessage, world.as(A), { conversationId, content: "hi" });
-    expect(await run(messages.list, world.as(A), { conversationId })).toHaveLength(2);
+    expect(await run(messages.list, world.as(A), { conversationId })).toHaveLength(1);
   });
 
   test("messages.create still accepts only user rows from the client", async () => {

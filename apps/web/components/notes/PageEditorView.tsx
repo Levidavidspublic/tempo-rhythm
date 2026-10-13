@@ -14,6 +14,7 @@ import {
 import { focusTaskTitleWhenDrawn } from "@/components/editor/live-preview";
 import { ReadView } from "@/components/editor/ReadView";
 import { type MenuItem, SlashMenu } from "@/components/editor/SlashMenu";
+import { useRegisterCoachPage } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
@@ -88,6 +89,8 @@ export function PageEditorView(props: Props) {
   const { isAuthenticated } = useConvexAuth();
   const createNote = useMutation(api.notes.create);
   const backlinks = useQuery(api.notes.backlinks, isAuthenticated ? { noteId } : "skip");
+  // The coach panel beside this page reads it as context.
+  useRegisterCoachPage(noteId);
 
   const editor = useRef<LivePreviewEditorHandle | null>(null);
   const [mode, setMode] = useState<"edit" | "read">("edit");
