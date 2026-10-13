@@ -139,22 +139,26 @@ export function storedProposal(toolCalls: unknown): StoredProposal | null {
 
 const turnContextValidator = v.object({
   replyTo: v.id("messages"),
+  claim: v.string(),
   dial: v.number(),
   history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("assistant")), content: v.string() })),
   page: v.union(v.null(), v.object({ title: v.string(), text: v.string() })),
 });
 
 /**
- * How long one `coach.reply` holds the pending turn: longer than `callLLM`'s worst case (two
- * 30 s attempts and a short backoff). A reply that dies keeps the turn only until then.
+ * How long one `coach.reply` holds the pending turn: as long as a Convex action may run (10
+ * minutes). `callLLM`'s abort timer stops at the response headers, so a slow body can outlast any
+ * shorter lease and let a retry make a second paid call (Codex P1 on #923). A failed reply gives
+ * the turn back at once; only a reply killed mid-call keeps it until then.
  */
-export const TURN_CLAIM_MS = 90_000;
+export const TURN_CLAIM_MS = 10 * 60_000;
 
 /** The claim a `coach.reply` puts on the user message it answers (on that message's `toolCalls`). */
-function claimUntil(toolCalls: unknown): number | null {
+function claimOf(toolCalls: unknown): { until: number; token: string | null } | null {
   if (!toolCalls || typeof toolCalls !== "object") return null;
-  const until = (toolCalls as { coachClaimUntil?: unknown }).coachClaimUntil;
-  return typeof until === "number" ? until : null;
+  const { coachClaimUntil, coachClaim } = toolCalls as { coachClaimUntil?: unknown; coachClaim?: unknown };
+  if (typeof coachClaimUntil !== "number") return null;
+  return { until: coachClaimUntil, token: typeof coachClaim === "string" ? coachClaim : null };
 }
 
 /**
@@ -182,11 +186,13 @@ export const claimTurn = internalMutation({
       return null;
     }
     const now = Date.now();
-    const held = claimUntil(last.toolCalls);
-    if (held !== null && held > now) {
+    const held = claimOf(last.toolCalls);
+    if (held !== null && held.until > now) {
       return "busy" as const;
     }
-    await ctx.db.patch(last._id, { toolCalls: { coachClaimUntil: now + TURN_CLAIM_MS } });
+    // Only the reply holding this token may give the turn back or answer it.
+    const claim = crypto.randomUUID();
+    await ctx.db.patch(last._id, { toolCalls: { coachClaimUntil: now + TURN_CLAIM_MS, coachClaim: claim } });
 
     const history = newest
       .filter((m) => m.role === "user" || m.role === "assistant")
@@ -205,30 +211,34 @@ export const claimTurn = internalMutation({
       }
     }
     const settings = await loadSettings(ctx, user._id);
-    return { replyTo: last._id, dial: settings?.dial ?? DEFAULT_DIAL, history, page };
+    return { replyTo: last._id, claim, dial: settings?.dial ?? DEFAULT_DIAL, history, page };
   },
 });
 
-/** Gives the turn back after a failed reply, so Try again works at once. */
+/** Gives the turn back after a failed reply, so Try again works at once. Only its own claim. */
 export const releaseTurn = internalMutation({
-  args: { conversationId: v.id("conversations"), messageId: v.id("messages") },
+  args: { conversationId: v.id("conversations"), messageId: v.id("messages"), claim: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
     const message = await ctx.db.get(args.messageId);
-    if (message && message.conversationId === args.conversationId && claimUntil(message.toolCalls) !== null) {
+    if (message && message.conversationId === args.conversationId && claimOf(message.toolCalls)?.token === args.claim) {
       await ctx.db.patch(message._id, { toolCalls: undefined });
     }
     return null;
   },
 });
 
-/** Stores the reply, unless a newer message arrived or another reply landed first. */
+/**
+ * Stores the reply, unless a newer message arrived, another reply landed first, or this reply
+ * no longer holds the turn.
+ */
 export const saveReply = internalMutation({
   args: {
     conversationId: v.id("conversations"),
     replyTo: v.id("messages"),
+    claim: v.string(),
     content: v.string(),
     proposal: v.optional(chatProposalValidator),
     modelUsed: v.string(),
@@ -244,7 +254,7 @@ export const saveReply = internalMutation({
       )
       .order("desc")
       .first();
-    if (!newest || newest._id !== args.replyTo) {
+    if (!newest || newest._id !== args.replyTo || claimOf(newest.toolCalls)?.token !== args.claim) {
       return false;
     }
     const now = Math.max(Date.now(), newest.createdAt + 1);
@@ -287,7 +297,11 @@ export async function runCoachReply(
     return "busy";
   }
   const release = () =>
-    ctx.runMutation(internal.coach.releaseTurn, { conversationId: args.conversationId, messageId: context.replyTo });
+    ctx.runMutation(internal.coach.releaseTurn, {
+      conversationId: args.conversationId,
+      messageId: context.replyTo,
+      claim: context.claim,
+    });
   let answer: { reply: string; proposal: CoachProposal | null } | null;
   let model: string;
   try {
@@ -313,6 +327,7 @@ export async function runCoachReply(
   await ctx.runMutation(internal.coach.saveReply, {
     conversationId: args.conversationId,
     replyTo: context.replyTo,
+    claim: context.claim,
     content: answer.reply,
     ...(answer.proposal ? { proposal: answer.proposal } : {}),
     modelUsed: model,

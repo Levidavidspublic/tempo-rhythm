@@ -308,12 +308,75 @@ describe("a coach turn", () => {
     expect(retry.calls).toHaveLength(1);
   });
 
+  test("a claim outlasts the model's slowest answer", () => {
+    // callLLM's timeout stops at the response headers; only the action's own limit bounds the body.
+    expect(coach.TURN_CLAIM_MS).toBeGreaterThanOrEqual(10 * 60_000);
+  });
+
+  test("a reply whose claim was taken over neither saves nor frees the newer claim", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "plan my morning");
+    const userMessage = messages(world, conversationId)[0] as Row;
+    let failFirst: (error: Error) => void = () => {};
+    let calls = 0;
+    const slowFirst = (async (opts: AiCallOptions): Promise<AiResult> => {
+      calls += 1;
+      const content = await new Promise<string>((_resolve, reject) => {
+        failFirst = reject;
+      });
+      return { tier: opts.tier, requestedTier: opts.tier, model: "test-model", content, usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 }, escalated: false };
+    }) as typeof callLLM;
+    const first = coach.runCoachReply(world.actionAs(A), { conversationId }, slowFirst);
+    while (calls === 0) await new Promise((r) => setTimeout(r, 1));
+    // The first claim lapses (the reply was killed, say) and a retry claims the turn anew.
+    const firstClaim = (world.row(userMessage._id) as Row).toolCalls as { coachClaim: string };
+    await world.db.patch(userMessage._id, { toolCalls: { ...firstClaim, coachClaimUntil: Date.now() - 1 } });
+    let finishSecond: (value: string) => void = () => {};
+    const slowSecond = (async (opts: AiCallOptions): Promise<AiResult> => {
+      calls += 1;
+      const content = await new Promise<string>((resolve) => {
+        finishSecond = resolve;
+      });
+      return { tier: opts.tier, requestedTier: opts.tier, model: "test-model", content, usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 }, escalated: false };
+    }) as typeof callLLM;
+    const second = coach.runCoachReply(world.actionAs(A), { conversationId }, slowSecond);
+    while (calls === 1) await new Promise((r) => setTimeout(r, 1));
+    const secondClaim = ((world.row(userMessage._id) as Row).toolCalls as { coachClaim: string }).coachClaim;
+    expect(secondClaim).not.toBe(firstClaim.coachClaim);
+
+    // The first reply fails: it must not free the second reply's claim, so a third is still busy.
+    failFirst(new AiUpstreamError("DeepInfra returned HTTP 503", 503, "x"));
+    expect(await first).toBe("unavailable");
+    const third = fakeModel('{"reply":"Third.","proposal":null}');
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, third.call)).toBe("busy");
+    expect(third.calls).toHaveLength(0);
+
+    finishSecond('{"reply":"Start with breakfast.","proposal":null}');
+    expect(await second).toBe("replied");
+    expect(messages(world, conversationId).map((m) => m.content)).toEqual(["plan my morning", "Start with breakfast."]);
+  });
+
+  test("a reply that lost its claim does not save its answer", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "plan my morning");
+    const userMessage = messages(world, conversationId)[0] as Row;
+    const takeover = (async (opts: AiCallOptions): Promise<AiResult> => {
+      // While this reply waits on the model, its claim lapses and another reply takes the turn.
+      await world.db.patch(userMessage._id, { toolCalls: { coachClaimUntil: Date.now() + 60_000, coachClaim: "newer" } });
+      return { tier: opts.tier, requestedTier: opts.tier, model: "test-model", content: '{"reply":"Late.","proposal":null}', usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 }, escalated: false };
+    }) as typeof callLLM;
+    await coach.runCoachReply(world.actionAs(A), { conversationId }, takeover);
+    expect(messages(world, conversationId).map((m) => m.role)).toEqual(["user"]);
+  });
+
   test("a claim left by a reply that died expires", async () => {
     const world = makeWorld();
     const conversationId = await seedConversation(world);
     await say(world, conversationId, "hi");
     const userMessage = messages(world, conversationId)[0] as Row;
-    await world.db.patch(userMessage._id, { toolCalls: { coachClaimUntil: Date.now() - 1 } });
+    await world.db.patch(userMessage._id, { toolCalls: { coachClaimUntil: Date.now() - 1, coachClaim: "old" } });
     const model = fakeModel('{"reply":"Hello.","proposal":null}');
     expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call)).toBe("replied");
     expect(model.calls).toHaveLength(1);

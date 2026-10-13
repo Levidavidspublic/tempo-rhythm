@@ -154,9 +154,22 @@ function jsonObject(content: string): Record<string, unknown> | null {
   return null;
 }
 
+/** The `reply` string in broken JSON, when it can be read whole; otherwise null. */
+function salvageReply(content: string): string | null {
+  const match = /"reply"\s*:\s*("(?:[^"\\]|\\.)*")/.exec(content);
+  if (!match?.[1]) return null;
+  try {
+    const value: unknown = JSON.parse(match[1]);
+    return typeof value === "string" ? value.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * The reply and proposal in a model answer. An answer that is not the asked-for JSON is kept as a
- * plain reply with no proposal; an empty answer gives null.
+ * The reply and proposal in a model answer. Plain words are kept as a reply with no proposal.
+ * Broken JSON is never shown as chat text (Codex P2 on #923): only a whole `reply` string is kept
+ * from it, with no proposal; otherwise it counts as no answer. An empty answer gives null.
  */
 export function parseCoachReply(content: string): { reply: string; proposal: CoachProposal | null } | null {
   const json = jsonObject(content);
@@ -168,5 +181,9 @@ export function parseCoachReply(content: string): { reply: string; proposal: Coa
     return proposal ? { reply: "Here is what I would change. Nothing changes until you accept it.", proposal } : null;
   }
   const plain = content.replace(/^```[a-z]*\n?|```$/gim, "").trim();
+  if (/^[{[]/.test(plain) || /"reply"\s*:/.test(plain)) {
+    const reply = salvageReply(plain);
+    return reply ? { reply: truncate(reply, COACH_LIMITS.replyChars), proposal: null } : null;
+  }
   return plain ? { reply: truncate(plain, COACH_LIMITS.replyChars), proposal: null } : null;
 }

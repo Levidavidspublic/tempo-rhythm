@@ -62,6 +62,17 @@ describe("parseCoachReply", () => {
     expect(parseCoachReply("Take one small step.")).toEqual({ reply: "Take one small step.", proposal: null });
   });
 
+  test("broken JSON is never shown as chat text: a whole reply is kept, anything else is no answer", () => {
+    expect(parseCoachReply('{"reply":"Try this","proposal":}')).toEqual({ reply: "Try this", proposal: null });
+    expect(parseCoachReply('```json\n{"reply":"Say \\"hi\\" first","proposal":{"kind":\n```')).toEqual({
+      reply: 'Say "hi" first',
+      proposal: null,
+    });
+    expect(parseCoachReply('{"reply":"Try th')).toBeNull();
+    expect(parseCoachReply('{"proposal":{"kind":"task"')).toBeNull();
+    expect(parseCoachReply("[1, 2,")).toBeNull();
+  });
+
   test("an empty answer gives null", () => {
     expect(parseCoachReply("")).toBeNull();
     expect(parseCoachReply('{"reply":"","proposal":null}')).toBeNull();
