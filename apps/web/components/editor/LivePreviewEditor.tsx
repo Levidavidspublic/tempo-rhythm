@@ -2,7 +2,7 @@
 
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { Compartment, EditorSelection, EditorState, Prec } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, type Extension, Prec } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExtension } from "@codemirror/view";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { slashQuery, wikiQuery } from "@/lib/editor/markdown-model";
@@ -28,6 +28,28 @@ export type LivePreviewEditorHandle = {
   focus: () => void;
   getText: () => string;
 };
+
+/**
+ * What every page draws with: Markdown with the live preview. Notes, Today and the weekly pages
+ * all mount this editor, so a page never shows its raw Markdown (OVERNIGHT-RUN.md decision 2).
+ */
+export function pageLanguage(): Extension {
+  return markdown({ base: markdownLanguage });
+}
+
+/** The live preview, placeholder and labels; they follow the UI language, so they swap in place. */
+export function pageSurface(options: {
+  labels: EditorLabels;
+  ariaLabel: string;
+  placeholder?: string;
+  onOpenLink?: (title: string) => void;
+}): Extension[] {
+  return [
+    livePreview({ labels: options.labels, onOpenLink: options.onOpenLink }),
+    options.placeholder ? placeholderExtension(options.placeholder) : [],
+    EditorView.contentAttributes.of({ "aria-label": options.ariaLabel, "aria-multiline": "true", spellcheck: "true" }),
+  ];
+}
 
 type Props = {
   /** The body as loaded. The editor is uncontrolled after mount; remount with `key` per page. */
@@ -55,11 +77,8 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
   const viewRef = useRef<EditorView | null>(null);
   // Labels and placeholder follow the UI language; swap them in place, never remount the editor.
   const localized = useRef(new Compartment());
-  const localizedExtensions = () => [
-    livePreview({ labels, onOpenLink: (title) => callbacks.current.onOpenLink?.(title) }),
-    placeholder ? placeholderExtension(placeholder) : [],
-    EditorView.contentAttributes.of({ "aria-label": ariaLabel, "aria-multiline": "true", spellcheck: "true" }),
-  ];
+  const localizedExtensions = () =>
+    pageSurface({ labels, ariaLabel, placeholder, onOpenLink: (title) => callbacks.current.onOpenLink?.(title) });
   const localizedKey = JSON.stringify([labels, placeholder, ariaLabel]);
   // Callbacks change every render; the editor reads them through refs.
   const callbacks = useRef({ onChange, onTrigger, onMenuKey, onOpenLink });
@@ -104,7 +123,7 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
         ),
         history(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
-        markdown({ base: markdownLanguage }),
+        pageLanguage(),
         localized.current.of(localizedExtensions()),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) callbacks.current.onChange(update.state.doc.toString());
