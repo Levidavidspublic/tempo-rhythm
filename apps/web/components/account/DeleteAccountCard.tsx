@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { signOutDeletedAccount, useDeletedAccountState } from "@/components/settings/accountDeleted";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 
@@ -27,7 +28,8 @@ export function DeleteAccountCard() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   // Set once the deletion went through: from then on a failure can only be the sign-out.
-  const [signOutFailed, setSignOutFailed] = useState(false);
+  // SettingsScreen shows the same state if the profile gate unmounts this card first.
+  const signOutFailed = useDeletedAccountState() === "signOutFailed";
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
   const tickRef = useRef<HTMLInputElement | null>(null);
@@ -98,14 +100,8 @@ export function DeleteAccountCard() {
   };
 
   const finishSignOut = async () => {
-    setSignOutFailed(false);
-    try {
-      await signOut();
-      router.push("/sign-in");
-    } catch {
-      setPending(false);
-      setSignOutFailed(true);
-    }
+    await signOutDeletedAccount(signOut, () => router.push("/sign-in"));
+    setPending(false);
   };
 
   return (

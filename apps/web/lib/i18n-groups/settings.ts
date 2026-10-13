@@ -27,6 +27,8 @@ export const en = {
   "set.nav.billing": "Plan and billing",
   "set.nav.notif": "Notifications",
   "set.nav.notifSub": "What Tempo told you lately.", // new
+  "set.nav.memorySub": "What Tempo remembers about you.", // new
+  "set.nav.nagsSub": "Your reminders and the words they use.", // new
   "set.nav.founder": "Ask the founder",
   "set.nav.founderSub": "A person reads every message.",
 
@@ -346,6 +348,8 @@ export const he: Record<keyof typeof en, string> = {
   "set.nav.billing": "מסלול ותשלום",
   "set.nav.notif": "התראות",
   "set.nav.notifSub": "מה ש־Tempo סיפר לך לאחרונה.",
+  "set.nav.memorySub": "מה ש־Tempo זוכר עלייך.",
+  "set.nav.nagsSub": "התזכורות שלך והמילים שהן משתמשות בהן.",
   "set.nav.founder": "לשאול את המייסד",
   "set.nav.founderSub": "אדם קורא כל הודעה.",
 

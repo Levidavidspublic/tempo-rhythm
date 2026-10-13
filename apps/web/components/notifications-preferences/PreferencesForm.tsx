@@ -100,10 +100,11 @@ export function PreferencesForm() {
     announce(t("set.saved"));
   };
 
-  const save = async (patch: PreferencesPatch) => {
+  const save = async (patch: PreferencesPatch, onSaved?: () => void) => {
     setOverrides((current) => ({ ...current, ...patch }));
     try {
       await updatePreferences(patch);
+      onSaved?.();
       saved();
     } catch {
       setFailed(true);
@@ -124,10 +125,12 @@ export function PreferencesForm() {
     void save({ theme: next });
   };
 
+  // The page switches language only once the account has it, so a failed save leaves the old
+  // language selected and picking the new one again retries.
+  const shownLang = overrides.locale ?? lang;
   const onLang = (next: Lang) => {
-    if (next === lang) return;
-    setLang(next);
-    void save({ locale: next });
+    if (next === shownLang) return;
+    void save({ locale: next }, () => setLang(next));
   };
 
   const onTextSize = (next: TextSize) => {
@@ -214,7 +217,7 @@ export function PreferencesForm() {
           <div className="tp-setting-row__control">
             <Segmented<Lang>
               labelledBy="lang-l"
-              value={lang}
+              value={shownLang}
               onChange={onLang}
               options={[
                 { value: "en", label: "English", lang: "en" },

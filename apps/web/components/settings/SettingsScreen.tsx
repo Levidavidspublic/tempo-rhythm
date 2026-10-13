@@ -1,11 +1,14 @@
 "use client";
 
+import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, TpIconSprite, type TpIconName } from "@/components/tempo/TpIcon";
 import { ProfileReady } from "@/components/today/ProfileReady";
 import type { MessageKey } from "@/lib/i18n";
+import { signOutDeletedAccount, useDeletedAccountState } from "./accountDeleted";
 import { SettingsErrorBoundary, StateError, StateLoading, StateOffline } from "./states";
 import { SettingsStatusContext } from "./status";
 
@@ -64,11 +67,16 @@ export function SettingsScreen({
     [],
   );
 
-  const body = gate ? (
-    <ProfileReady fallback={<StateLoading label={loading} className={stateClassName} />}>{children}</ProfileReady>
-  ) : (
-    children
-  );
+  // A deleted account has no profile, so the gate below would hide a failed sign-out behind
+  // the loading state; show the retry in its place instead.
+  const deleted = useDeletedAccountState();
+  const fallback =
+    deleted === "signOutFailed" ? (
+      <DeletedSignOut className={stateClassName} />
+    ) : (
+      <StateLoading label={loading} className={stateClassName} />
+    );
+  const body = gate ? <ProfileReady fallback={fallback}>{children}</ProfileReady> : children;
 
   return (
     <SettingsStatusContext.Provider value={announce}>
@@ -104,6 +112,30 @@ export function SettingsScreen({
         </SettingsErrorBoundary>
       </div>
     </SettingsStatusContext.Provider>
+  );
+}
+
+/** The account is deleted but signing out failed: say so and offer the sign-out again. */
+function DeletedSignOut({ className }: { className: string }) {
+  const { t } = useLocale();
+  const { signOut } = useAuthActions();
+  const router = useRouter();
+  return (
+    <div className={["tp-state tp-state--error", className].join(" ")} role="alert" data-component="StateError">
+      <span className="tp-state__icon">
+        <TpIcon name="alert" size="lg" />
+      </span>
+      <p className="tp-state__body">{t("set.privacy.deletedSignOut")}</p>
+      <div className="tp-state__actions">
+        <button
+          className="tp-btn tp-btn--secondary"
+          type="button"
+          onClick={() => void signOutDeletedAccount(signOut, () => router.push("/sign-in"))}
+        >
+          <span>{t("set.privacy.signOutRetry")}</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
