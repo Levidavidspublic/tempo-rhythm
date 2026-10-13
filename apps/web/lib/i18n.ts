@@ -7,6 +7,12 @@
  * Hebrew copy is machine-drafted and needs native review (OVERNIGHT-RUN.md hard limits).
  */
 
+import * as extrasCopy from "./i18n-groups/extras";
+import * as goalsCopy from "./i18n-groups/goals";
+import * as habitsCopy from "./i18n-groups/habits";
+import * as settingsCopy from "./i18n-groups/settings";
+import * as youCopy from "./i18n-groups/you";
+
 export const LANG_STORAGE_KEY = "tempo-lang";
 
 export type Lang = "en" | "he";
@@ -319,6 +325,12 @@ const en = {
   "bd.error": "That did not work. Your text is still here, so try again in a moment.",
   "bd.back": "Back to my dump",
   "notes.noContent": "No content yet.",
+  // v3 screen groups keep their copy in lib/i18n-groups/, one file per group.
+  ...habitsCopy.en,
+  ...goalsCopy.en,
+  ...youCopy.en,
+  ...settingsCopy.en,
+  ...extrasCopy.en,
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -614,6 +626,11 @@ const he: Record<MessageKey, string> = {
   "bd.error": "זה לא הצליח. הטקסט עדיין כאן, אפשר לנסות שוב בעוד רגע.",
   "bd.back": "חזרה לטקסט שלי",
   "notes.noContent": "עוד אין תוכן.",
+  ...habitsCopy.he,
+  ...goalsCopy.he,
+  ...youCopy.he,
+  ...settingsCopy.he,
+  ...extrasCopy.he,
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, he };
