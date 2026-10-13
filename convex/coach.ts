@@ -1,7 +1,9 @@
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { projectPageText } from "@tempo/utils";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 import {
   MIN_LOAD,
   afterAccept,
@@ -12,9 +14,20 @@ import {
   taskMinutes,
 } from "./lib/coachLoad";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
+import { callLLM } from "./lib/ai_router";
+import { requireApprovedForAi } from "./lib/aiGate";
 import { requireApprovedUser } from "./lib/approval";
+import {
+  COACH_LIMITS,
+  type CoachProposal,
+  buildCoachMessages,
+  parseCoachReply,
+  readProposal,
+} from "./lib/coachPrompt";
 import { requireUser } from "./lib/requireUser";
+import { undoUntil } from "./lib/softDelete";
 import { requireLegacyWritableConversation } from "./messages";
+import { createTaskForUser } from "./tasks";
 
 const DEFAULT_DIAL = 5;
 const PANIC_MS = 30 * 60_000;
@@ -25,50 +38,22 @@ const AVAILABLE_MINUTES = 120;
 const AVAILABLE_MINUTES_BAD_DAY = 60;
 
 /**
- * English-first, anti-shame coach replies per technique (HARD_RULES §1).
- * Copy never implies the user is behind, failing, or lazy — it always offers
- * one small, optional next step.
+ * The coach chat (OVERNIGHT-RUN.md run 2, item 2). A turn is two calls from the client:
  *
- * Keyed by `conversations.technique`; unknown or missing techniques fall back
- * to `general`.
- */
-const COACH_REPLIES: Record<string, string> = {
-  pomodoro:
-    "Try one 25-minute stretch with a single timer. After a 5-minute break, you get to choose: another stretch, or move on. Either answer is a win.",
-  body_double:
-    "Work alongside someone — in person or on a quiet video call — without talking about the task. Just having company nearby makes it easier to stay with it.",
-  eat_the_frog:
-    "Pick the task that feels heaviest today and start there, before anything else. Only the first small step counts right now — nothing more.",
-  time_blocking:
-    "Block a short window on your calendar for one task, and set a single reminder for the end of the window. No mid-plan changes — the window does the deciding for you.",
-  two_minute:
-    "If it truly takes under two minutes, do it now. If not, shrink it into a step so small it starts in one second.",
-  general:
-    "What's the smallest step you could take without any resistance? Start there — that's the whole assignment.",
-};
-
-/**
- * Resolve the coach reply for a conversation technique.
- * Pure helper so the copy is unit-testable (see coach.test.ts).
- */
-export function coachReplyForTechnique(technique: string | undefined): string {
-  if (technique !== undefined && Object.prototype.hasOwnProperty.call(COACH_REPLIES, technique)) {
-    return COACH_REPLIES[technique] as string;
-  }
-  return COACH_REPLIES.general as string;
-}
-
-/**
- * Append a user message and a coach reply (template by conversation technique).
- * Crisis text gets the fixed resources card instead, with no model call.
- * Does not silently change tasks or notes — only chat rows.
+ * 1. `sendMessage` (mutation) stores the user's message. Crisis text also stores the fixed
+ *    resources card, and no model is ever called for it.
+ * 2. `reply` (action) checks AI approval first, reads the open page and the newest messages, and
+ *    asks the one model seam (`callLLM`, convex/lib/ai_router.ts) for a reply. A missing key or a
+ *    provider error is logged and answered with `unavailable`; the user's message stays saved.
  *
- * Legacy write path (#809): only a live, owned conversation without an Agent thread. A deleted or
- * foreign conversation is refused as not found; a conversation that moved to Agent chat is refused
- * with the `legacy_chat_moved` error before anything is written. Crisis text is refused too, because
- * a stored card would fork the history: the web client runs `crisis.check` and shows the resources
- * card before it calls this, and the Agent chat path has its own crisis turn.
+ * The coach only proposes. A proposal (task, note or template) rides on its reply's
+ * `toolCalls.coachProposal`; nothing changes until `acceptProposal`, and every accepted change can
+ * be undone for 5 minutes with `undoProposal` (HARD_RULES §1, §6.2).
  */
+
+/** Longest message the coach takes. */
+export const MAX_MESSAGE_CHARS = 4000;
+
 export const sendMessage = mutation({
   args: {
     conversationId: v.id("conversations"),
@@ -78,10 +63,13 @@ export const sendMessage = mutation({
   handler: async (ctx, args) => {
     // Coach chat is an AI surface: pending/revoked accounts are rejected server-side.
     const user = await requireApprovedUser(ctx);
-    const conv = await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
     const text = args.content.trim();
     if (!text) {
       throw new Error("Message is empty");
+    }
+    if (text.length > MAX_MESSAGE_CHARS) {
+      throw new Error("That message is too long. Try a shorter one.");
     }
 
     const now = Date.now();
@@ -93,21 +81,325 @@ export const sendMessage = mutation({
     });
 
     const crisis = isCrisisText(text);
-    const assistantBody = crisis ? crisisCardText(CRISIS_CARD) : coachReplyForTechnique(conv.technique);
+    if (crisis) {
+      await ctx.db.insert("messages", {
+        conversationId: args.conversationId,
+        role: "assistant",
+        content: crisisCardText(CRISIS_CARD),
+        modelUsed: "crisis-card",
+        createdAt: now + 1,
+      });
+    }
+    await ctx.db.patch(args.conversationId, { updatedAt: crisis ? now + 1 : now });
+    return crisis ? { success: true as const, crisis: true } : { success: true as const };
+  },
+});
 
+const chatProposalValidator = v.union(
+  v.object({
+    kind: v.literal("task"),
+    title: v.string(),
+    minutes: v.number(),
+    when: v.union(v.literal("today"), v.literal("later")),
+  }),
+  v.object({ kind: v.literal("note"), title: v.string(), body: v.string() }),
+  v.object({
+    kind: v.literal("template"),
+    name: v.string(),
+    body: v.string(),
+    period: v.union(v.literal("daily"), v.literal("weekly"), v.literal("none")),
+  }),
+);
+
+export type StoredProposal = CoachProposal & {
+  status: "pending" | "accepted" | "rejected" | "undone";
+  /** The row Accept made: a task, a note or a template. */
+  createdId?: string;
+  undoUntilMs?: number;
+  decidedAt?: number;
+};
+
+/** The proposal on an assistant message, read back through the same checks the model output passed. */
+export function storedProposal(toolCalls: unknown): StoredProposal | null {
+  if (!toolCalls || typeof toolCalls !== "object") return null;
+  const raw = (toolCalls as { coachProposal?: unknown }).coachProposal;
+  const proposal = readProposal(raw);
+  if (!proposal || !raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const status = r.status === "accepted" || r.status === "rejected" || r.status === "undone" ? r.status : "pending";
+  return {
+    ...proposal,
+    status,
+    ...(typeof r.createdId === "string" ? { createdId: r.createdId } : {}),
+    ...(typeof r.undoUntilMs === "number" ? { undoUntilMs: r.undoUntilMs } : {}),
+    ...(typeof r.decidedAt === "number" ? { decidedAt: r.decidedAt } : {}),
+  };
+}
+
+const replyContextValidator = v.union(
+  v.null(),
+  v.object({
+    replyTo: v.id("messages"),
+    dial: v.number(),
+    history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("assistant")), content: v.string() })),
+    page: v.union(v.null(), v.object({ title: v.string(), text: v.string() })),
+  }),
+);
+
+/**
+ * What the model sees for the newest user message, or null when nothing is waiting for a reply
+ * (the newest message is already answered, or is crisis text, which only ever gets the card).
+ */
+export const replyContext = internalQuery({
+  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")) },
+  returns: replyContextValidator,
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const newest = await ctx.db
+      .query("messages")
+      .withIndex("by_conversationId_deletedAt", (q) =>
+        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined),
+      )
+      .order("desc")
+      .take(COACH_LIMITS.historyMessages);
+    const last = newest[0];
+    if (!last || last.role !== "user" || isCrisisText(last.content)) {
+      return null;
+    }
+    const history = newest
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .reverse()
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+    let page: { title: string; text: string } | null = null;
+    if (args.noteId) {
+      const note = await ctx.db.get(args.noteId);
+      // Only the caller's own live page; anything else is left out, never named.
+      if (note && note.userId === user._id && note.deletedAt === undefined) {
+        page = {
+          title: note.title,
+          text: projectPageText(note.body, { searchChars: COACH_LIMITS.pageChars }).searchText,
+        };
+      }
+    }
+    const settings = await loadSettings(ctx, user._id);
+    return { replyTo: last._id, dial: settings?.dial ?? DEFAULT_DIAL, history, page };
+  },
+});
+
+/** Stores the reply, unless a newer message arrived or another reply landed first. */
+export const saveReply = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    replyTo: v.id("messages"),
+    content: v.string(),
+    proposal: v.optional(chatProposalValidator),
+    modelUsed: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const newest = await ctx.db
+      .query("messages")
+      .withIndex("by_conversationId_deletedAt", (q) =>
+        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined),
+      )
+      .order("desc")
+      .first();
+    if (!newest || newest._id !== args.replyTo) {
+      return false;
+    }
+    const now = Math.max(Date.now(), newest.createdAt + 1);
     await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "assistant",
-      content: assistantBody,
-      modelUsed: crisis ? "crisis-card" : "coach-template",
-      createdAt: now + 1,
+      content: args.content,
+      modelUsed: args.modelUsed,
+      ...(args.proposal ? { toolCalls: { coachProposal: { ...args.proposal, status: "pending" } } } : {}),
+      createdAt: now,
     });
+    await ctx.db.patch(args.conversationId, { updatedAt: now });
+    return true;
+  },
+});
 
-    await ctx.db.patch(args.conversationId, {
-      updatedAt: now + 1,
+export type CoachReplyStatus = "replied" | "unavailable" | "idle";
+
+/** The error's class name only: never its message, which can carry provider text. */
+function errorKind(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error;
+}
+
+/**
+ * One coach turn for the newest user message. `call` is the model seam; tests pass a stand-in.
+ * Approval is checked before anything is read or any provider is called.
+ */
+export async function runCoachReply(
+  ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
+  args: { conversationId: Id<"conversations">; noteId?: Id<"notes"> },
+  call: typeof callLLM = callLLM,
+): Promise<CoachReplyStatus> {
+  await requireApprovedForAi(ctx as ActionCtx);
+  const context = await ctx.runQuery(internal.coach.replyContext, args);
+  if (!context) {
+    return "idle";
+  }
+  let answer: { reply: string; proposal: CoachProposal | null } | null;
+  let model: string;
+  try {
+    const result = await call({
+      tier: "balanced",
+      messages: buildCoachMessages(context),
+      maxTokens: 900,
+      temperature: 0.4,
+      responseFormat: "json_object",
     });
+    answer = parseCoachReply(result.content);
+    model = result.model;
+  } catch (error) {
+    console.error(`coach.reply: the model could not be reached (${errorKind(error)})`);
+    return "unavailable";
+  }
+  if (!answer) {
+    console.error("coach.reply: the model gave an empty answer");
+    return "unavailable";
+  }
+  await ctx.runMutation(internal.coach.saveReply, {
+    conversationId: args.conversationId,
+    replyTo: context.replyTo,
+    content: answer.reply,
+    ...(answer.proposal ? { proposal: answer.proposal } : {}),
+    modelUsed: model,
+  });
+  return "replied";
+}
 
-    return crisis ? { success: true as const, crisis: true } : { success: true as const };
+export const reply = action({
+  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")) },
+  returns: v.object({ status: v.union(v.literal("replied"), v.literal("unavailable"), v.literal("idle")) }),
+  handler: async (ctx, args) => ({ status: await runCoachReply(ctx, args) }),
+});
+
+/** The caller's assistant message with a proposal, in a live conversation they own. */
+async function ownedProposal(ctx: MutationCtx, userId: Id<"users">, messageId: Id<"messages">) {
+  const message = await ctx.db.get(messageId);
+  if (!message || message.deletedAt !== undefined || message.role !== "assistant") {
+    throw new Error("Proposal not found");
+  }
+  const conversation = await ctx.db.get(message.conversationId);
+  if (!conversation || conversation.userId !== userId || conversation.deletedAt !== undefined) {
+    throw new Error("Proposal not found");
+  }
+  const proposal = storedProposal(message.toolCalls);
+  if (!proposal) {
+    throw new Error("Proposal not found");
+  }
+  return { message, proposal };
+}
+
+async function setProposal(ctx: MutationCtx, messageId: Id<"messages">, proposal: StoredProposal) {
+  await ctx.db.patch(messageId, { toolCalls: { coachProposal: proposal } });
+}
+
+/** A "today" task is due at the end of the caller's local day, which only the client knows. */
+const LOCAL_DAY_SLACK_MS = 36 * 60 * 60_000;
+
+/** Accept: the one place a coach proposal changes anything. Returns where the new row lives. */
+export const acceptProposal = mutation({
+  args: { messageId: v.id("messages"), dueTodayAt: v.optional(v.number()) },
+  returns: v.object({
+    kind: v.union(v.literal("task"), v.literal("note"), v.literal("template")),
+    createdId: v.string(),
+    undoUntilMs: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    const { message, proposal } = await ownedProposal(ctx, user._id, args.messageId);
+    if (proposal.status !== "pending") {
+      throw new Error("This proposal was already decided.");
+    }
+    const now = Date.now();
+    let createdId: string;
+    if (proposal.kind === "task") {
+      const due =
+        proposal.when === "today" &&
+        args.dueTodayAt !== undefined &&
+        Number.isFinite(args.dueTodayAt) &&
+        Math.abs(args.dueTodayAt - now) <= LOCAL_DAY_SLACK_MS
+          ? args.dueTodayAt
+          : undefined;
+      createdId = await createTaskForUser(ctx, user._id, {
+        title: proposal.title,
+        timeEstimate: proposal.minutes * 60_000,
+        ...(due !== undefined ? { dueAt: due } : {}),
+      });
+    } else if (proposal.kind === "note") {
+      createdId = await ctx.db.insert("notes", {
+        userId: user._id,
+        title: proposal.title,
+        body: proposal.body,
+        pinned: false,
+        periodType: "none",
+        pageType: "plain",
+        aiGenerated: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else {
+      createdId = await ctx.db.insert("templates", {
+        userId: user._id,
+        name: proposal.name,
+        periodType: proposal.period,
+        body: proposal.body,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    const undoUntilMs = undoUntil(now);
+    await setProposal(ctx, message._id, { ...proposal, status: "accepted", createdId, undoUntilMs, decidedAt: now });
+    return { kind: proposal.kind, createdId, undoUntilMs };
+  },
+});
+
+/** Reject: nothing changes; the card says so. */
+export const rejectProposal = mutation({
+  args: { messageId: v.id("messages") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    const { message, proposal } = await ownedProposal(ctx, user._id, args.messageId);
+    if (proposal.status !== "pending") {
+      throw new Error("This proposal was already decided.");
+    }
+    await setProposal(ctx, message._id, { ...proposal, status: "rejected", decidedAt: Date.now() });
+    return null;
+  },
+});
+
+/** Undo, within 5 minutes of Accept: the row Accept made is soft-deleted, as any delete is. */
+export const undoProposal = mutation({
+  args: { messageId: v.id("messages") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    const { message, proposal } = await ownedProposal(ctx, user._id, args.messageId);
+    const now = Date.now();
+    if (proposal.status !== "accepted" || proposal.createdId === undefined || proposal.undoUntilMs === undefined) {
+      throw new Error("There is nothing to undo.");
+    }
+    if (now > proposal.undoUntilMs) {
+      throw new Error("The 5 minutes to undo this have passed.");
+    }
+    const table = proposal.kind === "task" ? "tasks" : proposal.kind === "note" ? "notes" : "templates";
+    const id = ctx.db.normalizeId(table, proposal.createdId);
+    const row = id ? await ctx.db.get(id) : null;
+    if (id && row && row.userId === user._id && row.deletedAt === undefined) {
+      await ctx.db.patch(id, { deletedAt: now, updatedAt: now });
+    }
+    await setProposal(ctx, message._id, { ...proposal, status: "undone", decidedAt: now });
+    return null;
   },
 });
 
