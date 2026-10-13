@@ -1,11 +1,11 @@
 /**
  * @screen: habits
  * @category: Library
- * @source: docs/design/claude-export/design-system/screens-3.jsx
- * @summary: Habit check-off with streak history.
- * @queries: habits.list
- * @mutations: habits.create, habits.completeToday
- * @auth: required (gentle sign-in card otherwise)
+ * @source: docs/design/v3/screens/web/habits.html
+ * @summary: Each habit with Log today and its last 7 local days. No streak counter.
+ * @queries: habits.list, habitCheckIns.listForDate (x7)
+ * @mutations: habitCheckIns.check, habitCheckIns.undo, habits.create, habits.remove (Undo)
+ * @auth: required
  */
 import { HabitsScreen } from "@/components/habits/HabitsScreen";
 
