@@ -282,15 +282,13 @@ function Proposal() {
         return;
       }
       setNote(t("proposal.accepted"));
-      if (tasks) {
-        toast({
-          title: n === 1 ? t("toast.title.one") : t("toast.title", { n }),
-          onUndo: async () => {
-            await Promise.all(ids.map((taskId) => update({ taskId, dueAt: before.get(taskId) ?? null })));
-            setNote(t("undo.done"));
-          },
-        });
-      }
+      toast({
+        title: n === 1 ? t("toast.title.one") : t("toast.title", { n }),
+        onUndo: async () => {
+          await Promise.all(ids.map((taskId) => update({ taskId, dueAt: before.get(taskId) ?? null })));
+          setNote(t("undo.done"));
+        },
+      });
     } catch {
       setNote(t("proposal.error"));
     } finally {
@@ -335,7 +333,8 @@ function Proposal() {
         </Row>
       ))}
       <Row className="gap-2" wrap style={{ padding: 12, paddingHorizontal: 16, backgroundColor: c.ground }}>
-        <Button variant="primary" icon={Check} label={t("proposal.accept")} onPress={() => onDecide("accept")} disabled={busy} />
+        {/* Accept waits for the task list, so its Undo can always put each due date back. */}
+        <Button variant="primary" icon={Check} label={t("proposal.accept")} onPress={() => onDecide("accept")} disabled={busy || !tasks} />
         <Button variant="ghost" label={t("proposal.reject")} onPress={() => onDecide("reject")} disabled={busy} />
       </Row>
     </View>

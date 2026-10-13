@@ -11,7 +11,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { Check, Clock, Leaf, ListChecks, MessageCircle, Pause, Play, SkipForward, Sun, Undo2, Wind } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { BreathworkTimer } from "@/components/breathwork/BreathworkTimer";
 import { usePrefs, useT } from "@/components/v3/prefs";
@@ -49,8 +49,11 @@ export default function RoutinesScreen() {
     };
   }, []);
 
+  // ?view=guide opens the guided view once, when the saved runs have loaded.
+  const opened = useRef(false);
   useEffect(() => {
-    if (params.view !== "guide" || !runs) return;
+    if (params.view !== "guide" || !runs || opened.current) return;
+    opened.current = true;
     const pick =
       guidedMovementRoutines.find((r) => r.id === params.routine) ??
       guidedMovementRoutines.find((r) => isResumable(runs[r.id])) ??
