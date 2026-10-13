@@ -445,8 +445,15 @@ function SavedPageNotice({
     <output className="tp-notice bd-saved" data-tone="done" data-component="SavedPageNotice">
       <span className="tp-notice__text">{t("bd.saved")}</span>
       <span className="tp-notice__action">
-        <Link className="tp-btn tp-btn--secondary tp-btn--sm" href={`/notes/${page.id}`}>
+        {/* A new tab keeps this screen, its plan and its Undo where they are. */}
+        <Link
+          className="tp-btn tp-btn--secondary tp-btn--sm"
+          href={`/notes/${page.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {t("bd.openPage")}
+          <span className="tp-sr-only"> {t("bd.newTab")}</span>
         </Link>
         {canUndo ? (
           <button
