@@ -19,8 +19,17 @@ type Proposal = {
   /** The outline this proposal was made from (Edit in the builder starts from it). */
   outline: string;
   status: "pending" | "accepted" | "rejected";
+  /** The template Accept saved; its Undo lives in `undos`, not here. */
   savedId: Id<"templates"> | null;
+  /** Back to pending because its template was taken back with Undo. */
+  undone?: boolean;
 };
+
+/**
+ * One accepted template's Undo, with its own five minutes. Kept apart from the proposal on
+ * screen, so a new sketch submitted inside the window never drops an earlier template's Undo.
+ */
+type SavedUndo = { templateId: Id<"templates">; name: string; untilMs: number };
 
 function countText(t: (key: MessageKey) => string, n: number, one: MessageKey, many: MessageKey): string {
   return n === 1 ? t(one) : t(many).replace("{n}", String(n));
@@ -30,7 +39,8 @@ function countText(t: (key: MessageKey) => string, n: number, one: MessageKey, m
  * Template sketch (docs/design/v3/screens/web/template-sketch.html). A rough outline becomes a
  * proposal card that shows exactly what the template will hold. The coach's draft here is code
  * (lib/template-sketch), not a model call; nothing is saved until Accept (templates.create),
- * which has a 5-minute Undo (templates.remove). Edit opens the builder; Reject keeps the outline.
+ * which has a 5-minute Undo (templates.remove) in its own toast. Edit opens the builder; Reject
+ * keeps the outline.
  */
 export function TemplateSketch() {
   const { t } = useLocale();
@@ -42,7 +52,7 @@ export function TemplateSketch() {
   const [needName, setNeedName] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<"save" | "undo" | null>(null);
-  const [undone, setUndone] = useState(false);
+  const [undos, setUndos] = useState<SavedUndo[]>([]);
   const acceptButton = useRef<HTMLButtonElement | null>(null);
   const focusAccept = useRef(false);
 
@@ -52,15 +62,19 @@ export function TemplateSketch() {
     acceptButton.current?.focus();
   });
 
-  // Undo is offered for five minutes after Accept.
+  // Each accepted template's Undo leaves when its own five minutes end.
   useEffect(() => {
-    if (proposal?.status !== "accepted" || !proposal.savedId) return;
+    if (undos.length === 0) return;
+    const soonest = Math.min(...undos.map((undo) => undo.untilMs));
     const timer = setTimeout(
-      () => setProposal((current) => (current && current.status === "accepted" ? { ...current, savedId: null } : current)),
-      UNDO_MS,
+      () => {
+        const now = Date.now();
+        setUndos((current) => current.filter((undo) => undo.untilMs > now));
+      },
+      Math.max(0, soonest - Date.now()),
     );
     return () => clearTimeout(timer);
-  }, [proposal?.status, proposal?.savedId]);
+  }, [undos]);
 
   const stale = proposal !== null && proposal.status === "pending" && proposal.outline !== outline;
 
@@ -73,7 +87,6 @@ export function TemplateSketch() {
     }
     setNeedName(false);
     setError(null);
-    setUndone(false);
     setProposal({ draft, outline, status: "pending", savedId: null });
     focusAccept.current = true;
   };
@@ -84,7 +97,8 @@ export function TemplateSketch() {
     setError(null);
     try {
       const savedId = await create({ name: proposal.draft.name, periodType: "none", body: proposal.draft.body });
-      setProposal({ ...proposal, status: "accepted", savedId });
+      setProposal({ ...proposal, status: "accepted", savedId, undone: false });
+      setUndos((current) => [...current, { templateId: savedId, name: proposal.draft.name, untilMs: Date.now() + UNDO_MS }]);
     } catch {
       setError("save");
     } finally {
@@ -92,14 +106,20 @@ export function TemplateSketch() {
     }
   };
 
-  const onUndo = async () => {
-    if (!proposal?.savedId || pending) return;
+  const dropUndo = (templateId: Id<"templates">) =>
+    setUndos((current) => current.filter((undo) => undo.templateId !== templateId));
+
+  const onUndo = async (undo: SavedUndo) => {
+    if (pending) return;
     setPending(true);
     setError(null);
     try {
-      await remove({ templateId: proposal.savedId });
-      setProposal({ ...proposal, status: "pending", savedId: null });
-      setUndone(true);
+      await remove({ templateId: undo.templateId });
+      dropUndo(undo.templateId);
+      // The proposal on screen goes back to pending only when it is the one taken back.
+      setProposal((current) =>
+        current?.savedId === undo.templateId ? { ...current, status: "pending", savedId: null, undone: true } : current,
+      );
     } catch {
       setError("undo");
     } finally {
@@ -281,12 +301,6 @@ export function TemplateSketch() {
                   <p className="tp-proposal__note">
                     <TpIcon name="check" size="sm" />
                     <span>{t("ts.accepted")}</span>
-                    {proposal.savedId ? (
-                      <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={pending} onClick={() => void onUndo()}>
-                        <TpIcon name="undo" size="sm" />
-                        <span>{t("tx.undo")}</span>
-                      </button>
-                    ) : null}
                     <Link className="tp-btn tp-btn--link" href="/templates">
                       {t("ts.openTemplates")}
                     </Link>
@@ -297,7 +311,7 @@ export function TemplateSketch() {
                     <span>{t("ts.rejected")}</span>
                   </p>
                 ) : null}
-                {proposal.status === "pending" && undone ? (
+                {proposal.status === "pending" && proposal.undone ? (
                   <p className="tp-proposal__note">
                     <span>{t("ts.undone")}</span>
                   </p>
@@ -339,6 +353,42 @@ export function TemplateSketch() {
           )}
         </div>
       </div>
+
+      {undos.length > 0 ? (
+        <div className="tp-toast-region">
+          {undos.map((undo) => (
+            <output className="tp-toast tp-glass" key={undo.templateId} data-component="UndoToast">
+              <span className="tp-toast__icon">
+                <TpIcon name="check" size="sm" />
+              </span>
+              <span className="tp-toast__text">
+                <span className="tp-toast__title">{t("ts.accepted")}</span>
+                <span className="tp-toast__sub" dir="auto">
+                  {undo.name}
+                </span>
+              </span>
+              <button
+                className="tp-btn tp-btn--secondary tp-btn--sm"
+                type="button"
+                aria-label={`${t("tx.undo")}: ${undo.name}`}
+                disabled={pending}
+                onClick={() => void onUndo(undo)}
+              >
+                <TpIcon name="undo" size="sm" />
+                <span>{t("tx.undo")}</span>
+              </button>
+              <button
+                className="tp-btn tp-btn--ghost tp-btn--icon tp-btn--sm"
+                type="button"
+                aria-label={`${t("tx.dismiss")}: ${undo.name}`}
+                onClick={() => dropUndo(undo.templateId)}
+              >
+                <TpIcon name="x" size="sm" />
+              </button>
+            </output>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

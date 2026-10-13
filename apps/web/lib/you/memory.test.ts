@@ -7,7 +7,7 @@ import {
   readImport,
   shownMemories,
 } from "./memory";
-import { checkNagLabel, checkPhrase, nagCounts, shownPhrases } from "./nags";
+import { checkNagLabel, checkPhrase, nagCounts, shownPhrases, undoTurnsBackOn } from "./nags";
 
 describe("shownMemories", () => {
   const rows = [
@@ -91,5 +91,40 @@ describe("nag checks", () => {
       total: 3,
       on: 2,
     });
+  });
+});
+
+describe("undoTurnsBackOn (Undo of a phrase removal)", () => {
+  const accepted = (id: string) => ({ id, status: "accepted" as const });
+  const rejected = (id: string) => ({ id, status: "rejected" as const });
+
+  test("switches back on only when removing the last accepted phrase switched it off", () => {
+    const before = { enabled: true, phrases: [accepted("a")] };
+    const after = { enabled: false, phrases: [rejected("a")] };
+    expect(undoTurnsBackOn(before, after, "a")).toBe(true);
+  });
+
+  test("leaves it alone when it was off, or other phrases kept it on", () => {
+    const off = { enabled: false, phrases: [accepted("a")] };
+    expect(undoTurnsBackOn(off, { enabled: false, phrases: [rejected("a")] }, "a")).toBe(false);
+    // Still on after the removal; turned Off by hand later: that Off stands.
+    const before = { enabled: true, phrases: [accepted("a"), accepted("b")] };
+    expect(
+      undoTurnsBackOn(before, { enabled: false, phrases: [rejected("a"), accepted("b")] }, "a")
+    ).toBe(false);
+  });
+
+  test("keeps a choice made after a new phrase was accepted", () => {
+    const before = { enabled: true, phrases: [accepted("a")] };
+    // A new phrase let the person switch it on and off again; their Off stands.
+    expect(
+      undoTurnsBackOn(before, { enabled: false, phrases: [rejected("a"), accepted("c")] }, "a")
+    ).toBe(false);
+    // Already back on: nothing to do.
+    expect(
+      undoTurnsBackOn(before, { enabled: true, phrases: [rejected("a"), accepted("c")] }, "a")
+    ).toBe(false);
+    // The nag is gone.
+    expect(undoTurnsBackOn(before, undefined, "a")).toBe(false);
   });
 });

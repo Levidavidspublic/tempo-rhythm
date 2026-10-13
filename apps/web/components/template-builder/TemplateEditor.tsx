@@ -45,9 +45,10 @@ function isPeriodType(value: string): value is PeriodType {
   return value === "daily" || value === "weekly" || value === "monthly" || value === "none";
 }
 
-type Toast =
-  | { kind: "removed"; section: TemplateSection; index: number }
-  | { kind: "saved"; previous: TemplateDraft };
+/** Undo for the last save: puts the version before it back (templates.update). */
+type SavedUndo = { previous: TemplateDraft };
+/** Undo for a removed section: puts it back in the form (nothing is saved until Save). */
+type RemovedUndo = { section: TemplateSection; index: number };
 
 function EditorForm({ template }: { template: SourceTemplate }) {
   const { t } = useLocale();
@@ -64,7 +65,9 @@ function EditorForm({ template }: { template: SourceTemplate }) {
   const [invalid, setInvalid] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState<Toast | null>(null);
+  // Two Undo toasts with their own windows, so removing a section never drops the save's Undo.
+  const [savedUndo, setSavedUndo] = useState<SavedUndo | null>(null);
+  const [removedUndo, setRemovedUndo] = useState<RemovedUndo | null>(null);
   const [saved, setSaved] = useState(initial);
   const nextKey = useRef(0);
   const focusKey = useRef<string | null>(null);
@@ -86,12 +89,17 @@ function EditorForm({ template }: { template: SourceTemplate }) {
     else document.getElementById(`${target.replace(/-(up|down)$/, "")}-t`)?.focus();
   });
 
-  // The Undo toast leaves after five minutes.
+  // Each Undo toast leaves five minutes after it appeared.
   useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), UNDO_MS);
+    if (!savedUndo) return;
+    const timer = setTimeout(() => setSavedUndo(null), UNDO_MS);
     return () => clearTimeout(timer);
-  }, [toast]);
+  }, [savedUndo]);
+  useEffect(() => {
+    if (!removedUndo) return;
+    const timer = setTimeout(() => setRemovedUndo(null), UNDO_MS);
+    return () => clearTimeout(timer);
+  }, [removedUndo]);
 
   const newSectionTitle = t("te.newSection");
   const currentDraft = (): TemplateDraft => ({ name, description, periodType, body: joinSections(doc, newSectionTitle) });
@@ -122,19 +130,20 @@ function EditorForm({ template }: { template: SourceTemplate }) {
     if (!row) return;
     const next = doc.sections[index + 1] ?? doc.sections[index - 1];
     setDoc((current) => removeSection(current, index));
-    setToast({ kind: "removed", section: row, index });
+    setRemovedUndo({ section: row, index });
     focusKey.current = next ? `${next.key}-t` : "__add__";
   };
 
-  const onUndo = async () => {
-    if (!toast) return;
-    if (toast.kind === "removed") {
-      setDoc((current) => insertSection(current, toast.index, toast.section));
-      focusKey.current = `${toast.section.key}-t`;
-      setToast(null);
-      return;
-    }
-    const previous = toast.previous;
+  const onUndoRemove = () => {
+    if (!removedUndo) return;
+    setDoc((current) => insertSection(current, removedUndo.index, removedUndo.section));
+    focusKey.current = `${removedUndo.section.key}-t`;
+    setRemovedUndo(null);
+  };
+
+  const onUndoSave = async () => {
+    if (!savedUndo || pending) return;
+    const previous = savedUndo.previous;
     setPending(true);
     setError("");
     try {
@@ -148,7 +157,9 @@ function EditorForm({ template }: { template: SourceTemplate }) {
       loadDraft(previous);
       // The version Undo put back is now the saved one, so a later Undo returns to it.
       setSaved(previous);
-      setToast(null);
+      setSavedUndo(null);
+      // A removed section belonged to the form that was just replaced, so its Undo goes too.
+      setRemovedUndo(null);
     } catch {
       setError(t("te.saveError"));
     } finally {
@@ -177,7 +188,7 @@ function EditorForm({ template }: { template: SourceTemplate }) {
         periodType: draft.periodType,
         body: draft.body,
       });
-      setToast({ kind: "saved", previous: saved });
+      setSavedUndo({ previous: saved });
       setSaved(draft);
     } catch {
       setError(t("te.saveError"));
@@ -413,31 +424,65 @@ function EditorForm({ template }: { template: SourceTemplate }) {
         )}
       </form>
 
-      {toast ? (
+      {savedUndo || removedUndo ? (
         <div className="tp-toast-region">
-          <output className="tp-toast tp-glass">
-            <span className="tp-toast__icon">
-              <TpIcon name="check" size="sm" />
-            </span>
-            <span className="tp-toast__text">
-              <span className="tp-toast__title">{toast.kind === "saved" ? t("te.saved") : t("te.removed")}</span>
-            </span>
-            <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" disabled={pending} onClick={() => void onUndo()}>
-              <TpIcon name="undo" size="sm" />
-              <span>{t("tx.undo")}</span>
-            </button>
-            <button
-              className="tp-btn tp-btn--ghost tp-btn--icon tp-btn--sm"
-              type="button"
-              aria-label={t("tx.dismiss")}
-              onClick={() => setToast(null)}
-            >
-              <TpIcon name="x" size="sm" />
-            </button>
-          </output>
+          {savedUndo ? (
+            <UndoToastRow
+              title={t("te.saved")}
+              disabled={pending}
+              onUndo={() => void onUndoSave()}
+              onDismiss={() => setSavedUndo(null)}
+            />
+          ) : null}
+          {removedUndo ? (
+            <UndoToastRow title={t("te.removed")} onUndo={onUndoRemove} onDismiss={() => setRemovedUndo(null)} />
+          ) : null}
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** One toast in the region. Undo and Dismiss name their toast, since two can show at once. */
+function UndoToastRow({
+  title,
+  disabled = false,
+  onUndo,
+  onDismiss,
+}: {
+  title: string;
+  disabled?: boolean;
+  onUndo: () => void;
+  onDismiss: () => void;
+}) {
+  const { t } = useLocale();
+  return (
+    <output className="tp-toast tp-glass">
+      <span className="tp-toast__icon">
+        <TpIcon name="check" size="sm" />
+      </span>
+      <span className="tp-toast__text">
+        <span className="tp-toast__title">{title}</span>
+      </span>
+      <button
+        className="tp-btn tp-btn--secondary tp-btn--sm"
+        type="button"
+        aria-label={`${t("tx.undo")}: ${title}`}
+        disabled={disabled}
+        onClick={onUndo}
+      >
+        <TpIcon name="undo" size="sm" />
+        <span>{t("tx.undo")}</span>
+      </button>
+      <button
+        className="tp-btn tp-btn--ghost tp-btn--icon tp-btn--sm"
+        type="button"
+        aria-label={`${t("tx.dismiss")}: ${title}`}
+        onClick={onDismiss}
+      >
+        <TpIcon name="x" size="sm" />
+      </button>
+    </output>
   );
 }
 

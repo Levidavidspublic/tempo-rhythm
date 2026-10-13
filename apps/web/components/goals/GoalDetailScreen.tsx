@@ -114,6 +114,16 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
     if (!titleFocused.current) setTitle(goal.title);
   }, [goal.title]);
 
+  // The same for "why": the box and the last saved text both follow the stored text, so the
+  // next edit starts from it instead of writing a stale copy back.
+  const remoteWhy = goal.description ?? "";
+  const whyFocused = useRef(false);
+  useEffect(() => {
+    if (whyFocused.current) return;
+    savedWhy.current = remoteWhy;
+    setWhy(remoteWhy);
+  }, [remoteWhy]);
+
   const run = (patch: Parameters<typeof update>[0]) =>
     update(patch).then(
       () => setSaveError(false),
@@ -141,6 +151,18 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
       },
       () => setSaveError(true),
     );
+  };
+
+  const onWhyBlur = () => {
+    whyFocused.current = false;
+    if (why !== savedWhy.current) {
+      saveWhy(why);
+      return;
+    }
+    // Nothing typed: show what changed elsewhere while the box had focus.
+    window.clearTimeout(whyTimer.current);
+    savedWhy.current = remoteWhy;
+    setWhy(remoteWhy);
   };
 
   useEffect(() => () => window.clearTimeout(whyTimer.current), []);
@@ -221,13 +243,16 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
               spellCheck
               placeholder={t("gl.draftwhy")}
               value={why}
+              onFocus={() => {
+                whyFocused.current = true;
+              }}
               onChange={(event) => {
                 const value = event.target.value;
                 setWhy(value);
                 window.clearTimeout(whyTimer.current);
                 whyTimer.current = window.setTimeout(() => saveWhy(value), WHY_SAVE_DELAY_MS);
               }}
-              onBlur={() => saveWhy(why)}
+              onBlur={onWhyBlur}
             />
           </div>
         </section>

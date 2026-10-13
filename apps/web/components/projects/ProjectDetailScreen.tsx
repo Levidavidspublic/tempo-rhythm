@@ -82,6 +82,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const createTask = useMutation(api.tasks.create);
   const removeTask = useMutation(api.tasks.remove);
   const updateTask = useMutation(api.tasks.update);
+  const renameProject = useMutation(api.tasks.renameProject);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion).withOptimisticUpdate((store, { taskId }) => {
     const rows = store.getQuery(api.tasks.list, args);
     if (!rows) return;
@@ -145,8 +146,8 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
       return;
     }
     if (next === name || rows.length === 0) return;
-    // The name lives on each of the project's tasks.
-    Promise.all(rows.map((task) => updateTask({ taskId: task._id, projectName: next }))).then(
+    // The name lives on each of the project's tasks; one mutation renames them all together.
+    renameProject({ projectId, name: next }).then(
       () => setError(false),
       () => setError(true),
     );

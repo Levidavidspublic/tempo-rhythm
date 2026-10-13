@@ -13,6 +13,7 @@ import {
   isProjectFilter,
   linePoints,
   minutesFromEstimate,
+  moveUndoStatus,
   neighbourColumn,
   newProjectId,
   orderProjectTasks,
@@ -128,6 +129,15 @@ describe("board columns", () => {
     expect(neighbourColumn("todo", "next")).toBe("in_progress");
     expect(neighbourColumn("in_progress", "prev")).toBe("todo");
     expect(neighbourColumn("done", "next")).toBeNull();
+  });
+
+  test("a move's Undo puts back the old status, except finishing a repeating task", () => {
+    expect(moveUndoStatus({ status: "todo" }, "in_progress")).toBe("todo");
+    expect(moveUndoStatus({ status: "in_progress" }, "done")).toBe("in_progress");
+    expect(moveUndoStatus({ status: "done", repeatCfgId: "cfg" }, "in_progress")).toBe("done");
+    expect(moveUndoStatus({ status: "in_progress", repeatCfgId: "cfg" }, "todo")).toBe("in_progress");
+    expect(moveUndoStatus({ status: "in_progress", repeatCfgId: "cfg" }, "done")).toBeNull();
+    expect(moveUndoStatus({ status: "done" }, "done")).toBeNull();
   });
 
   test("groups To do / Doing / Done and leaves set-aside cards off the board", () => {

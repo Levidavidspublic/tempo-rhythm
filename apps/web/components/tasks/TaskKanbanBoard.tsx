@@ -30,6 +30,7 @@ import {
   groupBoard,
   isNewProjectId,
   minutesFromEstimate,
+  moveUndoStatus,
   neighbourColumn,
   projectNameFor,
   projectStatusFor,
@@ -47,7 +48,8 @@ const COLUMN_EMPTY = { todo: "kb.empty.todo", in_progress: "kb.empty.doing", don
 /**
  * Project board (docs/design/v3/screens/web/project-kanban.html): the project's tasks as To do,
  * Doing and Done. Every card has Move buttons (drag is a bonus, never the only way); a move saves
- * the task's status with tasks.update, keeps focus on the same button and is announced in words.
+ * the task's status with tasks.update, keeps focus on the same button, is announced in words and
+ * has a 5-minute Undo.
  */
 export function TaskKanbanBoard({ projectSlug }: { projectSlug: string }) {
   const { t } = useLocale();
@@ -147,8 +149,19 @@ function BoardContent({ projectSlug }: { projectSlug: string }) {
     if (task.status === to) return;
     if (focusDir) setPendingFocus({ taskId: task._id, dir: focusDir });
     setAnnouncement(`${task.title} → ${t(COLUMN_NAME[to])}`);
+    // Undo (5 minutes) puts the card back in its old column; finishing a repeating task gets a
+    // toast without Undo, since the next one it made can't be taken back here.
+    const back = moveUndoStatus(task, to);
     updateTask({ taskId: task._id, status: to }).then(
-      () => setError(false),
+      () => {
+        setError(false);
+        setToast(
+          makeToast(
+            fill(t("kb.moved"), { column: t(COLUMN_NAME[to]) }),
+            back ? () => updateTask({ taskId: task._id, status: back }) : undefined,
+          ),
+        );
+      },
       () => setError(true),
     );
   };
