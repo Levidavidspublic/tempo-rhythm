@@ -22,14 +22,22 @@ export default function AuthRoutesLayout() {
   // המרה למערך מחרוזות כללי כדי לאפשר בדיקת includes
   const segmentStrings = segments as string[];
   const isPaywallRoute = segmentStrings.includes('paywall');
-  const isAllowedForAuthenticated = isPaywallRoute || isPreviewMode;
+  // Onboarding (v3) runs signed in: it saves the person's choices to their account.
+  const isOnboardingRoute = segmentStrings.includes('onboarding');
+  const isAllowedForAuthenticated = isPaywallRoute || isPreviewMode || isOnboardingRoute;
+
+  if (!isAuthenticated && isOnboardingRoute) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   // אם המשתמש כבר מחובר, הפנה אותו לאזור המאומת
   // אלא אם הוא במסלול paywall או במצב תצוגה מקדימה
   // זה מונע ממשתמשים מחוברים לגשת למסכי התחברות/הרשמה
   // אבל מאפשר להם לגשת דרך הגדרות/דיבאג במצב preview
+  // A new account goes on to onboarding; everyone else lands on Tempo's Today.
   if (isAuthenticated && !isAllowedForAuthenticated) {
-    return <Redirect href="/(authenticated)" />;
+    const justSignedUp = segmentStrings.includes('sign-up');
+    return <Redirect href={justSignedUp ? '/(auth)/onboarding' : '/(tempo)/(tabs)/today'} />;
   }
 
   // שימוש ב-Slot כדי לעבד את המסכים הפנימיים (sign-in, sign-up, paywall)
