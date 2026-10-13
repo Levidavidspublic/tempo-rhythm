@@ -35,32 +35,37 @@ type SavedPage = { id: string; undoUntil: number; plan: Plan | null };
 /**
  * Pending saves outlive this screen for their Undo window, so opening the page and coming back
  * keeps Undo. Per tab (sessionStorage), ids and times only; a page past its window is dropped.
+ * The same list is kept in module memory, which lasts across in-app navigation, so Undo also
+ * survives Open and back when storage is blocked.
  */
 const SAVED_PAGES_KEY = "tempo:brain-dump:saved-pages:v1";
+let savedPagesInMemory: unknown[] = [];
 
 function readSavedPages(now: number): SavedPage[] {
+  let rows: unknown = null;
   try {
-    const rows: unknown = JSON.parse(window.sessionStorage.getItem(SAVED_PAGES_KEY) ?? "[]");
-    if (!Array.isArray(rows)) return [];
-    return rows.flatMap((row) => {
-      if (typeof row !== "object" || row === null) return [];
-      const { id, undoUntil } = row as Record<string, unknown>;
-      return typeof id === "string" && typeof undoUntil === "number" && undoUntil > now
-        ? [{ id, undoUntil, plan: null }]
-        : [];
-    });
+    rows = JSON.parse(window.sessionStorage.getItem(SAVED_PAGES_KEY) ?? "null");
   } catch {
-    return [];
+    rows = null;
   }
+  const source = Array.isArray(rows) ? rows : savedPagesInMemory;
+  return source.flatMap((row) => {
+    if (typeof row !== "object" || row === null) return [];
+    const { id, undoUntil } = row as Record<string, unknown>;
+    return typeof id === "string" && typeof undoUntil === "number" && undoUntil > now
+      ? [{ id, undoUntil, plan: null }]
+      : [];
+  });
 }
 
 function writeSavedPages(pages: SavedPage[], now: number) {
+  const live = pages.filter((page) => page.undoUntil > now).map(({ id, undoUntil }) => ({ id, undoUntil }));
+  savedPagesInMemory = live;
   try {
-    const live = pages.filter((page) => page.undoUntil > now).map(({ id, undoUntil }) => ({ id, undoUntil }));
     if (live.length === 0) window.sessionStorage.removeItem(SAVED_PAGES_KEY);
     else window.sessionStorage.setItem(SAVED_PAGES_KEY, JSON.stringify(live));
   } catch {
-    // Storage blocked: Undo still works while this screen stays open.
+    // Storage blocked: the module copy above keeps Undo across in-app navigation.
   }
 }
 
