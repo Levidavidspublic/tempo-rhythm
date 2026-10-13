@@ -190,6 +190,9 @@ function EditorForm({ template }: { template: SourceTemplate }) {
       });
       setSavedUndo({ previous: saved });
       setSaved(draft);
+      // The saved template is the new baseline: a section removed before it comes back through
+      // the save's Undo, not by changing the form alone.
+      setRemovedUndo(null);
     } catch {
       setError(t("te.saveError"));
     } finally {

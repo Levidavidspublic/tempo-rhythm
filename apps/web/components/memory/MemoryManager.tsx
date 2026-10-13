@@ -144,6 +144,22 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
     forgottenRef.current = next;
     setForgotten(next);
   };
+  // Each forget leaves the shared toast at its own deadline, so the count (and what Undo restores)
+  // always matches the forgets still inside their window.
+  useEffect(() => {
+    if (forgotten.length === 0) return;
+    const nextDeadline = Math.min(...forgotten.map((item) => item.untilMs));
+    const timer = window.setTimeout(
+      () => {
+        const now = Date.now();
+        const open = forgottenRef.current.filter((item) => item.untilMs > now);
+        forgottenRef.current = open;
+        setForgotten(open);
+      },
+      Math.max(0, nextDeadline - Date.now()),
+    );
+    return () => window.clearTimeout(timer);
+  }, [forgotten]);
   const [live, setLive] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [forgettingAll, setForgettingAll] = useState(false);

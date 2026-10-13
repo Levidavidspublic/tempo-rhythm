@@ -292,23 +292,40 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     };
   }, [noteId, updateNote]);
 
+  // True from an edit until a save of that same text succeeds, so a failed save is never taken for saved.
+  const dirty = useRef(false);
+  const saveNow = async () => {
+    const title = titleRef.current;
+    const body = bodyRef.current;
+    await updateNote({ noteId: noteId as Id<"notes">, title, body });
+    if (titleRef.current === title && bodyRef.current === body) dirty.current = false;
+  };
+
   const scheduleSave = () => {
+    dirty.current = true;
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       saveTimer.current = null;
-      await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
-      setSaveState("saved");
+      try {
+        await saveNow();
+        setSaveState("saved");
+      } catch {
+        // Stays dirty: the next edit or the coach's flush saves it again.
+      }
     }, 500);
   };
 
   // The coach beside this page saves its pending edits before it reads the page (Codex P2 on #923).
   useRegisterCoachPageFlush(async () => {
-    if (!saveTimer.current || wasDeleted.current) return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = null;
+    if (wasDeleted.current) return;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (!dirty.current) return;
     try {
-      await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+      await saveNow();
       setSaveState("saved");
     } catch (error) {
       // Keep the edit queued, so it is not lost, and let the coach know it did not save.

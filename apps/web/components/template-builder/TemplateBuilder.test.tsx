@@ -593,6 +593,16 @@ describe("TemplateEditorScreen", () => {
     findButton(view, "Move down: Focus");
   });
 
+  test("saving after a removal ends that removal's Undo; the save's Undo brings the section back", async () => {
+    templateResult = userTemplate;
+    const view = await renderNode((<TemplateEditorScreen templateId="jd7userdaily" />) as ReactElement);
+    await press(findButton(view, "Remove section: Focus"));
+    expect(view.textContent).toContain("Section removed");
+    await submit(findForm(view));
+    expect(view.textContent).toContain("Template saved");
+    expect(view.textContent).not.toContain("Section removed");
+  });
+
   test("removing a section after a save keeps the save's Undo", async () => {
     templateResult = userTemplate;
     const view = await renderNode((<TemplateEditorScreen templateId="jd7userdaily" />) as ReactElement);
