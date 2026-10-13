@@ -52,6 +52,7 @@ function ToastView({ toast, bottomOffset, onClose }: { toast: ToastState; bottom
   const now = useNow(1000);
   const left = undoCountdown(toast.startedAt, now, toast.windowMs);
   const [busy, setBusy] = useState(false);
+  const [undoFailed, setUndoFailed] = useState(false);
 
   useEffect(() => {
     if (left === null) onClose();
@@ -60,11 +61,16 @@ function ToastView({ toast, bottomOffset, onClose }: { toast: ToastState; bottom
   const undo = async () => {
     if (!toast.onUndo || busy) return;
     setBusy(true);
+    setUndoFailed(false);
     try {
       await toast.onUndo();
-    } finally {
-      onClose();
+    } catch {
+      // The change is still in place: keep the toast, and its Undo, for another try.
+      setBusy(false);
+      setUndoFailed(true);
+      return;
     }
+    onClose();
   };
 
   return (
@@ -97,6 +103,11 @@ function ToastView({ toast, bottomOffset, onClose }: { toast: ToastState; bottom
           <T size="sm" weight="600" snug>
             {toast.title}
           </T>
+          {undoFailed ? (
+            <T size="xs" tone="muted" snug>
+              {t("toast.undoFailed")}
+            </T>
+          ) : null}
           {toast.onUndo && left ? (
             <T size="xs" tone="muted" snug>
               {`${t("toast.sub")} `}

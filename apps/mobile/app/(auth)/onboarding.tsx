@@ -12,7 +12,7 @@ import { useMutation } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, ArrowRight, CircleAlert, RefreshCw } from "lucide-react-native";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Dial } from "@/components/v3/Dial";
@@ -21,6 +21,7 @@ import { Button, Dot, Eyebrow, Notice, Row, T, TextField, TOUCH } from "@/compon
 import { useOffline, useTempoSession } from "@/components/v3/session";
 import { OfflineNotice, StateLoading } from "@/components/v3/states";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 const STEPS = 5;
 
@@ -77,6 +78,9 @@ export default function OnboardingScreen() {
   const updateProfile = useMutation(api.users.updateMyProfile);
   const saveDial = useMutation(api.coach.setDial);
   const createNote = useMutation(api.notes.create);
+  const updateNote = useMutation(api.notes.update);
+  // The page the brain dump made, so Back and Next again update it instead of making another.
+  const dumpPage = useRef<{ id: Id<"notes">; text: string } | null>(null);
   const complete = useMutation(api.users.completeOnboarding);
 
   if (session.isLoading || !session.ready) {
@@ -106,8 +110,17 @@ export default function OnboardingScreen() {
         setNote("");
       } else if (step === 4) {
         const text = dump.trim();
-        if (text) await createNote({ title: t("dump.label"), body: `${text}\n` });
-        setNote(text ? t("note.saved") : t("note.nodump"));
+        const made = dumpPage.current;
+        if (text && made) {
+          if (made.text !== text) {
+            await updateNote({ noteId: made.id, body: `${text}\n` });
+            dumpPage.current = { id: made.id, text };
+          }
+        } else if (text) {
+          const id = await createNote({ title: t("dump.label"), body: `${text}\n` });
+          dumpPage.current = { id, text };
+        }
+        setNote(text || made ? t("note.saved") : t("note.nodump"));
       } else if (step === 5) {
         await complete({});
         router.replace("/(tempo)/(tabs)/today");

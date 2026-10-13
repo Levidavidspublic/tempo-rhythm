@@ -30,8 +30,12 @@ export function TaskRow({
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const done = optimistic ?? task.status === "done";
   const minutes = taskMinutes(task);
+  // Completing a repeating task already spawned its next occurrence; reopening it here would
+  // leave both open, and there is no backend rollback yet.
+  const locked = done && task.repeatCfgId !== undefined;
 
   const toggle = () => {
+    if (locked) return;
     const next = !done;
     setOptimistic(next);
     onToggle(task)
@@ -96,7 +100,7 @@ export function TaskRow({
         borderBottomColor: c.line,
       }}
     >
-      <Checkbox checked={done} onPress={toggle} label={task.title} />
+      <Checkbox checked={done} onPress={toggle} label={task.title} disabled={locked} />
       <View style={{ flex: 1, gap: 2, paddingTop: 2 }}>
         <T user strike={done} tone={done ? "muted" : "ink"}>
           {task.title}

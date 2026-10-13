@@ -144,7 +144,9 @@ function Thread({
   const { lang, colors: c } = usePrefs();
   const today = useToday();
   const conversations = useQuery(api.conversations.list, ready ? {} : "skip");
-  const latest = conversations?.[0]?._id ?? null;
+  // Threads started in the web's Agent chat can't take legacy messages; with only those, a send
+  // starts a new thread.
+  const latest = conversations?.find((conversation) => conversation.chatMode !== "agent")?._id ?? null;
   const threadId = conversationId ?? latest;
   const messages = useQuery(api.messages.list, threadId ? { conversationId: threadId } : "skip");
   const createProposal = useMutation(api.coach.createProposal);

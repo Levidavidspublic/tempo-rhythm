@@ -107,20 +107,26 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
   useEffect(() => {
     if (!pageReady || started.current === iso) return;
     started.current = iso;
+    // Typing that starts before the stored draft arrives wins over that draft.
+    const before = version.current;
+    const hydrate = (next: JournalEntry) => {
+      if (version.current === before) setEntry(next);
+    };
     AsyncStorage.getItem(draftKey(iso))
       .then((raw) => {
+        if (version.current !== before) return;
         if (raw) {
           const d = JSON.parse(raw) as JournalEntry & { at?: number };
-          setEntry({ mood: d.mood ?? null, q1: d.q1 ?? "", q2: d.q2 ?? "" });
+          hydrate({ mood: d.mood ?? null, q1: d.q1 ?? "", q2: d.q2 ?? "" });
           if (d.at) setStatus({ kind: "draft", at: d.at });
           return;
         }
         const saved = note ? readJournal(note.body, LABELS) : null;
-        if (saved) setEntry(saved);
+        if (saved) hydrate(saved);
       })
       .catch(() => {
         const saved = note ? readJournal(note.body, LABELS) : null;
-        if (saved) setEntry(saved);
+        if (saved) hydrate(saved);
       });
   }, [pageReady, iso, note]);
 
