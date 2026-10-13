@@ -51,6 +51,9 @@ type Memory = {
 };
 type Toast = { title: string; untilMs: number; onUndo?: () => Promise<unknown> };
 
+/** Memories forgotten one by one whose Undo window is still open (each keeps its own window). */
+type Forgotten = { id: Id<"memories">; untilMs: number };
+
 const LIST_LIMIT = 200;
 const FILTER_LABEL: Record<MemoryFilter, MessageKey> = {
   all: "mm.f.all",
@@ -133,6 +136,14 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [rowError, setRowError] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  // Forgets inside the Undo window share one toast, so a second Forget never takes away the
+  // first one's Undo (Codex P2 on #928). Kept in a ref too, so Undo reads the current list.
+  const [forgotten, setForgotten] = useState<Forgotten[]>([]);
+  const forgottenRef = useRef<Forgotten[]>([]);
+  const setForgottenList = (next: Forgotten[]) => {
+    forgottenRef.current = next;
+    setForgotten(next);
+  };
   const [live, setLive] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [forgettingAll, setForgettingAll] = useState(false);
@@ -152,6 +163,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const listHeading = useRef<HTMLHeadingElement>(null);
 
   const all: Memory[] = (memories ?? []).filter((m) => !hidden.has(m._id));
+  const capped = (memories?.length ?? 0) >= LIST_LIMIT;
   const shown = shownMemories(all, filter);
 
   // After Undo brings a memory back, focus returns to its Forget button.
@@ -181,19 +193,26 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
     try {
       await forget({ memoryId: memory._id });
       setLive(`${t("mm.forgot")}: ${memory.content}`);
-      setToast({
-        title: t("mm.forgot"),
-        untilMs: Date.now() + UNDO_WINDOW_MS,
-        onUndo: async () => {
-          await restore({ memoryId: memory._id });
-          pendingFocus.current = memory._id;
-          setHiddenId(memory._id, false);
-        },
-      });
+      const now = Date.now();
+      setToast(null);
+      setForgottenList([
+        ...forgottenRef.current.filter((item) => item.untilMs > now),
+        { id: memory._id, untilMs: now + UNDO_WINDOW_MS },
+      ]);
     } catch {
       setHiddenId(memory._id, false);
       setRowError(memory._id);
     }
+  };
+
+  /** Brings back every one-by-one Forget whose window is still open. */
+  const undoForgotten = async () => {
+    const now = Date.now();
+    const open = forgottenRef.current.filter((item) => item.untilMs > now);
+    await Promise.all(open.map((item) => restore({ memoryId: item.id })));
+    for (const item of open) setHiddenId(item.id, false);
+    pendingFocus.current = open.at(-1)?.id ?? null;
+    setForgottenList([]);
   };
 
   const onForgetAll = async () => {
@@ -202,6 +221,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
     try {
       const result = await forgetAll({});
       setSheetOpen(false);
+      setForgottenList([]);
       setToast({
         title: t("mm.forgotAll"),
         untilMs: Date.now() + UNDO_WINDOW_MS,
@@ -334,7 +354,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
                   {t("mm.list.title")}
                 </h2>
                 <span className="tp-section__count">
-                  <span className="tp-num">{all.length}</span> {t("mm.count")}
+                  <span className="tp-num">{capped ? `${all.length}+` : all.length}</span> {t("mm.count")}
                 </span>
               </div>
               <Segmented
@@ -496,7 +516,9 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
           title={t("mm.fs.title")}
           body={
             <>
-              {fill(t("mm.fs.body"), { n: all.length })}
+              {/* The list stops at LIST_LIMIT; past that the exact total is unknown here, so the
+                  confirm says "at least" instead of a number it can't vouch for. */}
+              {capped ? fill(t("mm.fs.bodyMany"), { n: all.length }) : fill(t("mm.fs.body"), { n: all.length })}
               {forgetAllFailed ? (
                 <span className="tp-error-text" role="alert">
                   {" "}
@@ -522,6 +544,14 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
           untilMs={toast.untilMs}
           onUndo={toast.onUndo}
           onClose={() => setToast(null)}
+        />
+      ) : forgotten.length > 0 ? (
+        <UndoToast
+          key={`forgot-${forgotten.length}`}
+          title={forgotten.length === 1 ? t("mm.forgot") : fill(t("mm.forgotN"), { n: forgotten.length })}
+          untilMs={Math.max(...forgotten.map((item) => item.untilMs))}
+          onUndo={undoForgotten}
+          onClose={() => setForgottenList([])}
         />
       ) : null}
     </div>
