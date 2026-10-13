@@ -44,6 +44,9 @@ describe("routine pages", () => {
   test("a time after the tag is when it usually happens", () => {
     expect(routineUsualTime(MORNING)).toBe("07:30");
     expect(routineUsualTime("#routine 7:05 most days")).toBe("07:05");
+    // A time before the tag is prose, not the usual time.
+    expect(routineUsualTime("Meet at 09:00 #routine")).toBeNull();
+    expect(routineUsualTime("Meet at 09:00 #routine 07:30")).toBe("07:30");
     expect(routineUsualTime("#routine")).toBeNull();
     expect(routineUsualTime("#routine 24:00")).toBeNull();
     expect(routineUsualTime("Meet at 09:00\n#routine")).toBeNull();

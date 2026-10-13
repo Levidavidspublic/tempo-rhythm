@@ -47,11 +47,13 @@ export function isRoutinePage(body: string): boolean {
   return proseLines(body).some((line) => TAG.test(line));
 }
 
-/** "07:30" from the first tagged line that has a time, or null. */
+/** "07:30" from the first tagged line with a time after the tag (`#routine 07:30`), or null. */
 export function routineUsualTime(body: string): string | null {
   for (const line of proseLines(body)) {
-    if (!TAG.test(line)) continue;
-    const match = TIME.exec(line.replace(TAG, "$1"));
+    const tag = TAG.exec(line);
+    if (!tag) continue;
+    // Only what follows the tag: "Meet at 09:00 #routine" has no usual time.
+    const match = TIME.exec(line.slice(tag.index + tag[0].length));
     if (match) return `${String(Number(match[1])).padStart(2, "0")}:${match[2]}`;
   }
   return null;

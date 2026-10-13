@@ -128,7 +128,8 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
   const busy = useRef(new Set<string>());
   const [saveError, setSaveError] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [toast, setToast] = useState<{ habitId: Id<"habits">; undoUntilMs: number } | null>(null);
+  // One Undo per habit added in the last 5 minutes: a second add never takes the first one's Undo.
+  const [toasts, setToasts] = useState<{ habitId: Id<"habits">; undoUntilMs: number }[]>([]);
   const [quickName, setQuickName] = useState("");
   const [quickInvalid, setQuickInvalid] = useState(false);
   const [quickBusy, setQuickBusy] = useState(false);
@@ -186,14 +187,19 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
 
   const addHabit = async ({ name, cadence }: HabitDraft) => {
     const habitId = await create({ name, cadence });
-    setToast({ habitId, undoUntilMs: Date.now() + UNDO_WINDOW_MS });
+    setToasts((prev) => [...prev, { habitId, undoUntilMs: Date.now() + UNDO_WINDOW_MS }]);
   };
 
-  const undoAdd = async () => {
-    if (!toast) return;
+  const closeToast = (habitId: Id<"habits">) => setToasts((prev) => prev.filter((item) => item.habitId !== habitId));
+
+  const undoAdd = async (habitId: Id<"habits">) => {
     try {
-      await remove({ habitId: toast.habitId });
-      setToast(null);
+      // `habits.remove` deletes only the habit row, so a check-in made since adding it goes first.
+      if (loggedByHabit.get(habitId)?.has(todayKey)) {
+        await undo({ habitId, localDate: todayKey, asOfLocalDate: todayKey });
+      }
+      await remove({ habitId });
+      closeToast(habitId);
     } catch {
       setSaveError(true);
     }
@@ -352,14 +358,18 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
           onClose={() => setSheetOpen(false)}
         />
       ) : null}
-      {toast ? (
-        <UndoToast
-          key={toast.habitId}
-          title={t("hb.added")}
-          undoUntilMs={toast.undoUntilMs}
-          onUndo={undoAdd}
-          onClose={() => setToast(null)}
-        />
+      {toasts.length > 0 ? (
+        <div className="tp-toast-region">
+          {toasts.map((item) => (
+            <UndoToast
+              key={item.habitId}
+              title={t("hb.added")}
+              undoUntilMs={item.undoUntilMs}
+              onUndo={() => undoAdd(item.habitId)}
+              onClose={() => closeToast(item.habitId)}
+            />
+          ))}
+        </div>
       ) : null}
     </div>
   );

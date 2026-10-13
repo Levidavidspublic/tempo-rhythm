@@ -50,37 +50,36 @@ export function UndoToast({
     });
   };
 
+  // The caller wraps toasts in one `.tp-toast-region`, so several stack instead of overlapping.
   return (
-    <div className="tp-toast-region">
-      <div className="tp-toast tp-glass" data-component="UndoToast">
-        <span className="tp-toast__icon">
-          <TpIcon name="check" />
+    <div className="tp-toast tp-glass" data-component="UndoToast">
+      <span className="tp-toast__icon">
+        <TpIcon name="check" />
+      </span>
+      <span className="tp-toast__text">
+        <output className="tp-toast__title">{title}</output>
+        <span className="tp-toast__sub">
+          {t("hr.toast.sub")} <span className="tp-num tp-mono">{formatCountdown(left)}</span>
         </span>
-        <span className="tp-toast__text">
-          <output className="tp-toast__title">{title}</output>
-          <span className="tp-toast__sub">
-            {t("hr.toast.sub")} <span className="tp-num tp-mono">{formatCountdown(left)}</span>
-          </span>
-        </span>
-        <button
-          className="tp-btn tp-btn--secondary tp-btn--sm"
-          type="button"
-          disabled={busy}
-          aria-busy={busy}
-          onClick={undo}
-        >
-          <TpIcon name="undo" size="sm" />
-          <span>{t("hr.toast.undo")}</span>
-        </button>
-        <button
-          className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon"
-          type="button"
-          aria-label={t("hr.toast.dismiss")}
-          onClick={onClose}
-        >
-          <TpIcon name="x" size="sm" />
-        </button>
-      </div>
+      </span>
+      <button
+        className="tp-btn tp-btn--secondary tp-btn--sm"
+        type="button"
+        disabled={busy}
+        aria-busy={busy}
+        onClick={undo}
+      >
+        <TpIcon name="undo" size="sm" />
+        <span>{t("hr.toast.undo")}</span>
+      </button>
+      <button
+        className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon"
+        type="button"
+        aria-label={t("hr.toast.dismiss")}
+        onClick={onClose}
+      >
+        <TpIcon name="x" size="sm" />
+      </button>
     </div>
   );
 }
