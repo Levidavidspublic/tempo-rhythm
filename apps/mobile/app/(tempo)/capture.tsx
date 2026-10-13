@@ -16,14 +16,15 @@ import { KeyboardAvoidingView, Platform, ScrollView, type TextInput, View } from
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePrefs, useT } from "@/components/v3/prefs";
 import { Button, Notice, Row, Segmented, T, TextField } from "@/components/v3/primitives";
-import { useOffline, useToday } from "@/components/v3/session";
+import { useOffline, useTempoSession, useToday } from "@/components/v3/session";
 import { OfflineNotice } from "@/components/v3/states";
 import { ToastProvider, useToast } from "@/components/v3/Toast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { endOfDayDueAt } from "@/lib/v3/dates";
 
-const DRAFT_KEY = "tempo.v3.capture.draft";
+/** The unsent thought is kept per account, so the next person on a shared phone never sees it. */
+const draftKeyFor = (userId: string) => `tempo.v3.capture.${userId}`;
 
 export default function CaptureScreen() {
   // The modal sits above the app's own toast layer on iOS, so it carries its own.
@@ -49,9 +50,12 @@ function CaptureSheet() {
   const textRef = useRef("");
   const [dest, setDest] = useState<"today" | "inbox">("today");
   const [failed, setFailed] = useState<string | null>(null);
+  const userId = useTempoSession().profile?._id;
+  const draftKey = userId ? draftKeyFor(userId) : null;
 
   useEffect(() => {
-    AsyncStorage.getItem(DRAFT_KEY)
+    if (!draftKey) return;
+    AsyncStorage.getItem(draftKey)
       .then((draft) => {
         if (draft)
           setText((cur) => {
@@ -61,12 +65,12 @@ function CaptureSheet() {
           });
       })
       .catch(() => undefined);
-  }, []);
+  }, [draftKey]);
 
   const change = (value: string) => {
     textRef.current = value;
     setText(value);
-    AsyncStorage.setItem(DRAFT_KEY, value).catch(() => undefined);
+    if (draftKey) AsyncStorage.setItem(draftKey, value).catch(() => undefined);
   };
 
   /** Puts a thought back in the box only when the box is empty, never over newer words. */

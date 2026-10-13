@@ -57,7 +57,8 @@ function copyFor(lang: Lang) {
   };
 }
 
-const draftKey = (iso: string) => `tempo.v3.journal.${iso}`;
+/** Journal drafts are kept per account and day, so they never show up for another person. */
+const draftKeyFor = (userId: string, iso: string) => `tempo.v3.journal.${userId}.${iso}`;
 
 export default function JournalScreen() {
   const t = useT("journal");
@@ -75,13 +76,24 @@ export default function JournalScreen() {
           <StateError title={t("err.title")} safe={t("state.safe")} body={t("err.body")} retryLabel={t("state.retry")} onRetry={retry} />
         )}
       >
-        <JournalBody ready={session.ready} iso={today.iso} offline={offline} />
+        <JournalBody ready={session.ready} userId={session.profile?._id ?? null} iso={today.iso} offline={offline} />
       </QueryBoundary>
     </Screen>
   );
 }
 
-function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; offline: boolean }) {
+function JournalBody({
+  ready,
+  userId,
+  iso,
+  offline,
+}: {
+  ready: boolean;
+  userId: string | null;
+  iso: string;
+  offline: boolean;
+}) {
+  const storeKey = userId ? draftKeyFor(userId, iso) : null;
   const t = useT("journal");
   const { lang } = usePrefs();
   const router = useRouter();
@@ -112,7 +124,7 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
     const hydrate = (next: JournalEntry) => {
       if (version.current === before) setEntry(next);
     };
-    AsyncStorage.getItem(draftKey(iso))
+    (storeKey ? AsyncStorage.getItem(storeKey) : Promise.resolve(null))
       .then((raw) => {
         if (version.current !== before) return;
         if (raw) {
@@ -128,7 +140,7 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
         const saved = note ? readJournal(note.body, LABELS) : null;
         if (saved) hydrate(saved);
       });
-  }, [pageReady, iso, note]);
+  }, [pageReady, iso, note, storeKey]);
 
   if (!pageReady || past === undefined) return <StateLoading label={t("load.label")} rows={3} block />;
 
@@ -137,7 +149,7 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
     setEntry(next);
     const at = Date.now();
     setStatus({ kind: "draft", at });
-    AsyncStorage.setItem(draftKey(iso), JSON.stringify({ ...next, at })).catch(() => undefined);
+    if (storeKey) AsyncStorage.setItem(storeKey, JSON.stringify({ ...next, at })).catch(() => undefined);
   };
 
   const hasText = !!entry.mood || !!entry.q1.trim() || !!entry.q2.trim();
@@ -167,7 +179,7 @@ function JournalBody({ ready, iso, offline }: { ready: boolean; iso: string; off
         }
       }
       if (version.current === savedVersion) {
-        AsyncStorage.removeItem(draftKey(iso)).catch(() => undefined);
+        if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => undefined);
         setStatus({ kind: "saved", at: Date.now() });
       } else {
         // Edited while saving: the newer words stay in the draft until the next save.
