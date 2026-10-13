@@ -133,8 +133,14 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
   const saveWhy = (value: string) => {
     window.clearTimeout(whyTimer.current);
     if (value === savedWhy.current) return;
-    savedWhy.current = value;
-    void run({ goalId: goal._id, description: value.trim() ? value : null });
+    // The saved value moves only once the save lands, so a failed save is tried again on blur.
+    update({ goalId: goal._id, description: value.trim() ? value : null }).then(
+      () => {
+        savedWhy.current = value;
+        setSaveError(false);
+      },
+      () => setSaveError(true),
+    );
   };
 
   useEffect(() => () => window.clearTimeout(whyTimer.current), []);

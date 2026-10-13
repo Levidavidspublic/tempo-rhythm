@@ -159,12 +159,15 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
   const toggle = (task: ProjectTaskDoc) => {
     const wasDone = task.status === "done";
+    // Undo puts back the status the task had (an in-progress task returns to in progress, not
+    // to todo), rather than toggling again.
+    const before = task.status;
     toggleCompletion({ taskId: task._id }).then(
       () => {
         setError(false);
         setToast(
           makeToast(t(wasDone ? "pd.task.reopened" : "pd.task.done"), () =>
-            toggleCompletion({ taskId: task._id }),
+            updateTask({ taskId: task._id, status: before }),
           ),
         );
       },
