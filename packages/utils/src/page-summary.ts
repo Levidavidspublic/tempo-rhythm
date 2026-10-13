@@ -103,6 +103,28 @@ function isRegionalIndicator(text: string, index: number): boolean {
   return low >= 0xdde6 && low <= 0xddff;
 }
 
+/** Consonants that Unicode's conjunct rule (GB9c, InCB=Consonant) joins after a virama. */
+const CONJUNCT_CONSONANT =
+  /[\u0915-\u0939\u0958-\u095F\u0978-\u097F\u0995-\u09B9\u09DC-\u09DF\u09F0\u09F1\u0A95-\u0AB9\u0AF9\u0B15-\u0B39\u0B5C-\u0B5F\u0B71\u0C15-\u0C39\u0C58-\u0C5A\u0D15-\u0D3A]/;
+/** The viramas that link them (InCB=Linker). */
+const CONJUNCT_LINKER = /[\u094D\u09CD\u0ACD\u0B4D\u0C4D\u0D4D]/;
+const CLUSTER_EXTEND = /[\p{Mn}\p{Me}\u{200D}]/u;
+
+/**
+ * A consonant at `index` that follows a consonant, a virama and any other marks (`क्ष`) is part of
+ * the same cluster. Only the marks right before it are walked, so a cut stays linear.
+ */
+function joinsConjunct(text: string, index: number): boolean {
+  if (!CONJUNCT_CONSONANT.test(text.charAt(index))) return false;
+  let linked = false;
+  let at = index - 1;
+  while (at >= 0 && CLUSTER_EXTEND.test(text.charAt(at))) {
+    if (CONJUNCT_LINKER.test(text.charAt(at))) linked = true;
+    at -= 1;
+  }
+  return linked && at >= 0 && CONJUNCT_CONSONANT.test(text.charAt(at));
+}
+
 function attachesToPrevious(text: string, index: number): boolean {
   const unit = text.charCodeAt(index);
   if (unit >= 0xdc00 && unit <= 0xdfff) return true;
@@ -114,7 +136,7 @@ function attachesToPrevious(text: string, index: number): boolean {
     while (isRegionalIndicator(text, index - 2 * (before + 1))) before += 1;
     return before % 2 === 1;
   }
-  return ATTACHES.test(text.slice(index, index + 2));
+  return ATTACHES.test(text.slice(index, index + 2)) || joinsConjunct(text, index);
 }
 
 /** The largest cut position at or below `end` that keeps every character cluster whole. */
@@ -236,7 +258,25 @@ const TAG_LINE = /^ {0,3}<\/?[A-Za-z]/;
 const TRAILING_SPACE = /^[ \t]*$/;
 /** Lines that end a paragraph or never start one (CommonMark ATX headings and thematic breaks). */
 const ATX_HEADING = /^ {0,3}#{1,6}(?:[ \t]|$)/;
-const THEMATIC_LINE = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+
+/**
+ * A thematic break: up to three spaces, then three or more of one of `-`, `*` and `_`, with only
+ * spaces and tabs between and after them. A plain scan: the same test as a regex needs a
+ * backreference, which is slow on a long line.
+ */
+function isThematicLine(line: string): boolean {
+  let at = 0;
+  while (at < 3 && line.charCodeAt(at) === 0x20) at += 1;
+  const marker = line.charAt(at);
+  if (marker !== "-" && marker !== "*" && marker !== "_") return false;
+  let count = 0;
+  for (; at < line.length; at += 1) {
+    const char = line.charAt(at);
+    if (char === marker) count += 1;
+    else if (char !== " " && char !== "\t") return false;
+  }
+  return count >= 3;
+}
 /** Turns the open paragraph into a heading, and so ends it. */
 const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/;
 
@@ -585,7 +625,7 @@ function openContainers(line: string, open: Container[], interrupt: boolean): st
   for (;;) {
     const quote = QUOTE_MARKER.exec(rest);
     const item = quote ? null : ITEM_MARKER.exec(rest);
-    if (!quote && (!item || THEMATIC_LINE.test(rest))) return rest;
+    if (!quote && (!item || isThematicLine(rest))) return rest;
     if (
       item &&
       interrupt &&
@@ -1255,9 +1295,13 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   } else {
     state.indentedCode = false;
     const underline = state.paragraph !== undefined && !lazy && SETEXT_UNDERLINE.test(rest);
-    if (underline || ATX_HEADING.test(rest) || THEMATIC_LINE.test(rest)) {
+    const heading = !underline && ATX_HEADING.test(rest);
+    if (underline || heading || isThematicLine(rest)) {
       close();
       endParagraph(state);
+      // An underline or a thematic break shows no text and can open no inline HTML or link, so the
+      // cleanup below (a scan per marker on a long line) has nothing to do.
+      if (!heading) return "";
     } else {
       state.paragraph ??= state.containers.length;
       paragraphLine = true;

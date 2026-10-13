@@ -1284,7 +1284,25 @@ describe("Hebrew and bidirectional text", () => {
       expectWholeFlags(project(flags, { searchChars: max }).searchText);
     }
   });
+
+  test("a cut never splits an Indic conjunct after its virama", () => {
+    expect(project("क्षZ", { summaryChars: 3 }).summary).toBe("\u{2026}");
+    expect(project("अ क्ष त", { summaryChars: 6 }).summary).toBe("अ क्ष\u{2026}");
+    expect(project("अ क्ष त", { summaryChars: 5 }).summary).toBe("अ\u{2026}");
+    const conjuncts = "क्ष ज्ञ ক্ষ ક્ષ କ୍ଷ క్ష ക്ഷ ".repeat(6);
+    for (let max = 1; max <= conjuncts.length + 2; max += 1) {
+      expectWholeConjuncts(project(conjuncts, { summaryChars: max }).summary);
+      expectWholeConjuncts(project(conjuncts, { searchChars: max }).searchText);
+    }
+  });
 });
+
+/** No virama is left at the end of `text` and no consonant joined to one starts it. */
+function expectWholeConjuncts(text: string) {
+  const core = text.replace(/^\u{2026}|\u{2026}$/gu, "");
+  expect(core).not.toMatch(/[\u094D\u09CD\u0ACD\u0B4D\u0C4D\u0D4D]$/u);
+  expect(core).not.toMatch(/^[\u0937\u091E\u09B7\u0AB7\u0B37\u0C37\u0D37]/u);
+}
 
 /** Every run of regional indicators in `text` is made of whole flags (the fixtures hold only flags). */
 function expectWholeFlags(text: string) {
@@ -1382,6 +1400,19 @@ describe("pageSnippet", () => {
         const snippet = pageSnippet({ searchText }, query, max);
         expect(snippet.length).toBeLessThanOrEqual(max);
         expectWholeFlags(snippet);
+        if (query !== "" && max >= 8) expect(snippet).toContain("Needle");
+      }
+    }
+  });
+
+  test("a snippet never starts or ends inside an Indic conjunct", () => {
+    const conjuncts = "क्ष ज्ञ ক্ষ ક્ષ କ୍ଷ క్ష ക്ഷ ".repeat(6);
+    const searchText = `${conjuncts}Needle${conjuncts}`;
+    for (let max = 0; max <= 60; max += 1) {
+      for (const query of ["needle", ""]) {
+        const snippet = pageSnippet({ searchText }, query, max);
+        expect(snippet.length).toBeLessThanOrEqual(max);
+        expectWholeConjuncts(snippet);
         if (query !== "" && max >= 8) expect(snippet).toContain("Needle");
       }
     }
