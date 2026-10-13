@@ -129,14 +129,14 @@ export const en = {
   "set.privacy.leave": "Leave Tempo",
   "set.privacy.delLabel": "Delete my account",
   "set.privacy.delHelp":
-    "Your pages, tasks, habits, chats and settings are removed, and your plan ends. Sign in again within 30 days to bring your account back; after that it can't be restored.", // what users.deleteMyAccount and the 30-day restore window do
+    "Your pages, tasks, habits, chats and settings are removed, and your plan ends. Signing in again within 30 days reopens the account, but what was removed doesn't come back.", // what users.deleteMyAccount and signInRestorePatch do: only the account row is restored
   "set.privacy.delBtn": "Delete my account",
   "set.privacy.dsTitle": "Delete your account?",
   "set.privacy.dsBody": "This removes, right away:", // adjusted
   "set.privacy.dsL1": "Your pages, tasks, habits and plans",
   "set.privacy.dsL2": "Your chats with the coach and what Tempo remembers",
   "set.privacy.dsL3": "Your plan. Nothing more is charged.",
-  "set.privacy.dsTip": "Changed your mind? Sign in again within 30 days and it all comes back. After 30 days it can't be restored.", // new: ACCOUNT_RESTORE_GRACE_MS
+  "set.privacy.dsTip": "Signing in again within 30 days reopens the account, empty: the pages, tasks and chats removed here don't come back.", // new: ACCOUNT_RESTORE_GRACE_MS restores the account row only
   "set.privacy.dsOk": "I understand. Delete my account now.", // adjusted
   "set.privacy.dsNeed": "Tick this to turn on the delete button.",
   "set.privacy.dsKeep": "Keep my account",
@@ -242,11 +242,11 @@ export const en = {
   "set.billing.maxCta": "Included with your early access.",
   "set.billing.chooseLater": "Choosing a plan opens after early access.", // new: no checkout yet
   "set.billing.bcTitle": "Before any charge",
-  "set.billing.bcDesc": "When a trial or plan is about to turn into a payment, we tell you three times:",
+  "set.billing.bcDesc": "Nothing is charged during early access, and no trial turns into a payment. When paid plans start, the plan is to remind you before any charge:", // adjusted: no reminder workflow exists yet
   "set.billing.bc3d": "days before",
   "set.billing.bc1d": "day before",
   "set.billing.bc1h": "hour before",
-  "set.billing.bcWhere": "By email and here in Tempo. To cancel, write to the founder from this page; there's no cancel button yet.", // adjusted: no cancel backend
+  "set.billing.bcWhere": "By email and here in Tempo. These reminders aren't built yet. To cancel, write to the founder from this page; there's no cancel button yet.", // adjusted: no reminder or cancel backend
   "set.billing.payLabel": "How you pay",
   "set.billing.payHelp": "Payments go through Polar, a payment service. Tempo never sees your card number.",
   "set.billing.qLabel": "A question about money?",
@@ -440,14 +440,14 @@ export const he: Record<keyof typeof en, string> = {
   "set.privacy.leave": "לעזוב את Tempo",
   "set.privacy.delLabel": "למחוק את החשבון שלי",
   "set.privacy.delHelp":
-    "הדפים, המשימות, ההרגלים, השיחות וההגדרות שלך נמחקים, והמסלול שלך מסתיים. כניסה מחדש תוך 30 יום מחזירה את החשבון; אחרי זה אי אפשר לשחזר אותו.",
+    "הדפים, המשימות, ההרגלים, השיחות וההגדרות שלך נמחקים, והמסלול שלך מסתיים. כניסה מחדש תוך 30 יום פותחת שוב את החשבון, אבל מה שנמחק לא חוזר.",
   "set.privacy.delBtn": "למחוק את החשבון שלי",
   "set.privacy.dsTitle": "למחוק את החשבון שלך?",
   "set.privacy.dsBody": "זה מוחק, מיד:",
   "set.privacy.dsL1": "הדפים, המשימות, ההרגלים והתוכניות שלך",
   "set.privacy.dsL2": "השיחות שלך עם המאמן ומה ש־Tempo זוכר",
   "set.privacy.dsL3": "המסלול שלך. לא יהיו עוד חיובים.",
-  "set.privacy.dsTip": "שינית את דעתך? כניסה מחדש תוך 30 יום מחזירה הכול. אחרי 30 יום אי אפשר לשחזר.",
+  "set.privacy.dsTip": "כניסה מחדש תוך 30 יום פותחת שוב את החשבון, ריק: הדפים, המשימות והשיחות שנמחקו כאן לא חוזרים.",
   "set.privacy.dsOk": "הבנתי. למחוק את החשבון שלי עכשיו.",
   "set.privacy.dsNeed": "סמני כאן כדי להפעיל את כפתור המחיקה.",
   "set.privacy.dsKeep": "להשאיר את החשבון",
@@ -549,11 +549,11 @@ export const he: Record<keyof typeof en, string> = {
   "set.billing.maxCta": "כלול בגישה המוקדמת שלך.",
   "set.billing.chooseLater": "בחירת מסלול תיפתח אחרי הגישה המוקדמת.",
   "set.billing.bcTitle": "לפני כל חיוב",
-  "set.billing.bcDesc": "כשניסיון או מסלול עומדים להפוך לתשלום, נגיד לך שלוש פעמים:",
+  "set.billing.bcDesc": "במהלך הגישה המוקדמת לא מחויב כלום, ואף ניסיון לא הופך לתשלום. כשמסלולים בתשלום יתחילו, התוכנית היא להזכיר לך לפני כל חיוב:",
   "set.billing.bc3d": "ימים לפני",
   "set.billing.bc1d": "יום לפני",
   "set.billing.bc1h": "שעה לפני",
-  "set.billing.bcWhere": "במייל וכאן ב־Tempo. כדי לבטל, אפשר לכתוב למייסד מהדף הזה; עוד אין כפתור ביטול.",
+  "set.billing.bcWhere": "במייל וכאן ב־Tempo. התזכורות האלה עוד לא נבנו. כדי לבטל, אפשר לכתוב למייסד מהדף הזה; עוד אין כפתור ביטול.",
   "set.billing.payLabel": "איך משלמים",
   "set.billing.payHelp": "התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך.",
   "set.billing.qLabel": "שאלה על כסף?",

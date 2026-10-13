@@ -457,7 +457,7 @@ describe("account profile", () => {
   test("Delete stays off until the box is ticked, then deletes, signs out and leaves", async () => {
     activeMutation = deleteMyAccount;
     const view = await render((<DeleteAccountCard />) as ReactElement);
-    expect(view.textContent).toContain("Sign in again within 30 days to bring your account back");
+    expect(view.textContent).toContain("Signing in again within 30 days reopens the account, but what was removed doesn't come back.");
 
     await act(async () => {
       findByTag(view, "BUTTON", "Delete my account").click();

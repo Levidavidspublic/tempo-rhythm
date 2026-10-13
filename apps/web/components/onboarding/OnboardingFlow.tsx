@@ -103,7 +103,9 @@ export function OnboardingFlow() {
     headingRef.current?.focus();
   }, [step]);
 
-  if (!profile || alreadyOnboarded) {
+  // The coach settings load too, so the dial never shows a stand-in value that a quick Continue
+  // would take as unchanged (Codex P2 on #929).
+  if (!profile || alreadyOnboarded || coach === undefined) {
     return (
       <Card>
         <StateLoading label="set.onb.loading" rows={3} />
