@@ -146,6 +146,8 @@ function EditorForm({ template }: { template: SourceTemplate }) {
         body: previous.body,
       });
       loadDraft(previous);
+      // The version Undo put back is now the saved one, so a later Undo returns to it.
+      setSaved(previous);
       setToast(null);
     } catch {
       setError(t("te.saveError"));

@@ -7,6 +7,7 @@ describe("REAL_SCREENS", () => {
 
     expect(routes).toContain("/activity");
     expect(routes).toContain("/settings/integrations");
-    expect(routes).not.toContain("/journal");
+    expect(routes).toContain("/journal");
+    expect(routes).not.toContain("/ask-founder");
   });
 });

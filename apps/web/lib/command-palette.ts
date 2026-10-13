@@ -7,12 +7,12 @@ import type { MessageKey } from "@/lib/i18n";
 import { TEMPO_SCREENS, type TempoScreen } from "@/lib/tempo-nav";
 
 // These routes still render ScaffoldScreen (or are internal references). Keep the command
-// bar focused on usable destinations until those routes are implemented.
+// bar focused on usable destinations until those routes are implemented. Journal is built
+// (the run of daily pages), so it stays in.
 export const SCAFFOLD_ROUTES: ReadonlySet<string> = new Set([
   "/ask-founder",
   "/empty-states",
   "/goals",
-  "/journal",
   "/routines",
 ]);
 
