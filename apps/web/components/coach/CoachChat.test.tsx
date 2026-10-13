@@ -11,6 +11,7 @@ mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: false, isLoading: false }),
   useQuery: () => undefined,
   useMutation: () => async () => null,
+  useAction: () => async () => ({ status: "idle" }),
   useConvex: () => ({
     query: async () => ({ isCrisis: false }),
   }),
@@ -21,12 +22,25 @@ mock.module("@/convex/_generated/api", () => ({
     users: { getProfile: "users.getProfile" },
     conversations: { list: "conversations.list", create: "conversations.create" },
     messages: { list: "messages.list" },
-    coach: { sendMessage: "coach.sendMessage" },
+    coach: {
+      sendMessage: "coach.sendMessage",
+      reply: "coach.reply",
+      acceptProposal: "coach.acceptProposal",
+      rejectProposal: "coach.rejectProposal",
+      undoProposal: "coach.undoProposal",
+    },
     crisis: { check: "crisis.check", resourcesCard: "crisis.resourcesCard" },
   },
 }));
 
+// The v3 coach reads its copy through LocaleProvider; render it with the English strings.
+const { translate } = await import("@/lib/i18n");
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang: () => {}, t: (key: Parameters<typeof translate>[1]) => translate("en", key) }),
+}));
+
 const { CoachChat, CoachCrisisReply, deliverCoachMessage } = await import("./CoachChat");
+const { ChatProposal } = await import("./ChatProposal");
 
 function markup(node: ReactElement): string {
   return renderToStaticMarkup(node);
@@ -67,5 +81,32 @@ describe("deliverCoachMessage", () => {
     expect(html).toContain("Coach");
     expect(html).toContain("Message");
     expect(html).not.toContain("coach-crisis-resources");
+  });
+});
+
+describe("ChatProposal", () => {
+  test("a pending proposal offers Accept, Edit and Not now, and shows the whole body before Accept", () => {
+    const body = "# Trip\n\n- [ ] Passport\n- [ ] Charger\n\nThe last line is far below the first.";
+    const html = markup(
+      createElement(ChatProposal, {
+        messageId: "messages:1" as never,
+        proposal: { kind: "note", title: "Trip", body, status: "pending" },
+      }),
+    );
+    expect(html).toContain(">Accept<");
+    expect(html).toContain(">Edit<");
+    expect(html).toContain(">Not now<");
+    expect(html).toContain("Show all of it");
+    expect(html).toContain("The last line is far below the first.");
+  });
+
+  test("an accepted proposal no longer offers Edit", () => {
+    const html = markup(
+      createElement(ChatProposal, {
+        messageId: "messages:2" as never,
+        proposal: { kind: "task", title: "Call", minutes: 5, when: "today", status: "accepted", createdId: "tasks:1" },
+      }),
+    );
+    expect(html).not.toContain(">Edit<");
   });
 });
