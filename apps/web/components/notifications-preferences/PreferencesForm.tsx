@@ -9,7 +9,7 @@ import { useSettingsStatus } from "@/components/settings/status";
 import { StateLoading } from "@/components/settings/states";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
-import type { Lang } from "@/lib/i18n";
+import { LANG_STORAGE_KEY, type Lang } from "@/lib/i18n";
 import { clampDial } from "@/lib/settings/dial";
 import { applyTextSize, readTextSize, TEXT_SIZE_STORAGE_KEY, type TextSize } from "@/lib/settings/textSize";
 
@@ -76,6 +76,20 @@ export function PreferencesForm() {
   useEffect(() => {
     setTextSize(readTextSize(document.documentElement.getAttribute("data-text-size")));
   }, []);
+
+  // A browser with no language of its own (no ?lang, nothing stored) takes the account's.
+  const accountLocale = preferences?.locale;
+  useEffect(() => {
+    if (!accountLocale || accountLocale === lang) return;
+    let deviceLang: string | null = null;
+    try {
+      deviceLang = localStorage.getItem(LANG_STORAGE_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    if (deviceLang || new URLSearchParams(window.location.search).get("lang")) return;
+    setLang(accountLocale);
+  }, [accountLocale, lang, setLang]);
 
   // Leaving the page mid-drag still saves the last dial value.
   const setDialRef = useRef(setDial);
@@ -323,7 +337,7 @@ export function PreferencesForm() {
               >
                 <option value="0">{t("set.prefs.sun")}</option>
                 <option value="1">{t("set.prefs.mon")}</option>
-                {shown.weekStartsOn === 6 ? <option value="6">{t("set.prefs.sat")}</option> : null}
+                <option value="6">{t("set.prefs.sat")}</option>
               </select>
               <TpIcon name="down" size="sm" className="tp-select__icon" />
             </div>

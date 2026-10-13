@@ -477,6 +477,37 @@ describe("preferences and notifications", () => {
     expect(view.textContent).not.toContain("{");
   });
 
+  test("the account's language applies when the browser has none of its own; Saturday is always offered", async () => {
+    const stored = prefs as Prefs;
+    stored.locale = "he";
+    try {
+      const view = await render((<PreferencesForm />) as ReactElement);
+      expect(setLang).toHaveBeenCalledWith("he");
+      expect(updatePreferences).not.toHaveBeenCalled();
+      const values: string[] = [];
+      walk(findById(view, "pref-week-start"), (node) => {
+        if (node.tagName === "OPTION") values.push(node.getAttribute("value") ?? "");
+      });
+      expect(values).toEqual(["0", "1", "6"]);
+    } finally {
+      stored.locale = "en";
+    }
+  });
+
+  test("a language stored on this device wins over the account's", async () => {
+    const stored = prefs as Prefs;
+    const globals = globalThis as Record<string, unknown>;
+    stored.locale = "he";
+    globals.localStorage = { getItem: () => "en", setItem: () => {}, removeItem: () => {} };
+    try {
+      await render((<PreferencesForm />) as ReactElement);
+      expect(setLang).not.toHaveBeenCalled();
+    } finally {
+      stored.locale = "en";
+      delete globals.localStorage;
+    }
+  });
+
   test("device-only controls never touch preferences.update; billing notices stay on", async () => {
     const view = await render((<PreferencesForm />) as ReactElement);
     await act(async () => {
