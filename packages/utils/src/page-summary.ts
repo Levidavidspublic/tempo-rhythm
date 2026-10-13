@@ -81,8 +81,15 @@ const HIDDEN_FORMAT =
 const CONTROLS = /[\p{Cc}\u{2028}\u{2029}]/gu;
 const LONE_SURROGATE = /[\uD800-\uDFFF]/gu;
 const ALL_FORMAT = /\p{Cf}/gu;
-/** A code point that must stay attached to the one before it. */
-const ATTACHES = /^(?:[\p{M}\p{Emoji_Modifier}]|\u{200C}|\u{200D})/u;
+/**
+ * A code point that must stay attached to the one before it: marks and other extenders (GB9),
+ * spacing marks (GB9a, with Thai and Lao SARA AM), emoji modifiers, ZWNJ and ZWJ.
+ */
+const ATTACHES =
+  /^(?:[\p{M}\p{Grapheme_Extend}\p{Emoji_Modifier}\u{0E33}\u{0EB3}]|\u{200C}|\u{200D})/u;
+/** Characters that attach to the one after them (GB9b, Grapheme_Cluster_Break=Prepend). */
+const PREPEND =
+  /^[\u{600}-\u{605}\u{6DD}\u{70F}\u{890}\u{891}\u{8E2}\u{D4E}\u{110BD}\u{110CD}\u{111C2}\u{111C3}\u{1193F}\u{11941}\u{11A3A}\u{11A84}-\u{11A89}\u{11D46}\u{11F02}\u{113D1}]$/u;
 
 /**
  * Replaces controls with spaces and drops hidden format characters and lone surrogates. Marks that
@@ -125,10 +132,44 @@ function joinsConjunct(text: string, index: number): boolean {
   return linked && at >= 0 && CONJUNCT_CONSONANT.test(text.charAt(at));
 }
 
+type Jamo = "L" | "V" | "T" | "LV" | "LVT" | undefined;
+
+/** The Hangul syllable type of a UTF-16 unit (all jamo and syllables are in the BMP). */
+function jamo(unit: number): Jamo {
+  if ((unit >= 0x1100 && unit <= 0x115f) || (unit >= 0xa960 && unit <= 0xa97c)) return "L";
+  if ((unit >= 0x1160 && unit <= 0x11a7) || (unit >= 0xd7b0 && unit <= 0xd7c6)) return "V";
+  if ((unit >= 0x11a8 && unit <= 0x11ff) || (unit >= 0xd7cb && unit <= 0xd7fb)) return "T";
+  if (unit >= 0xac00 && unit <= 0xd7a3) return (unit - 0xac00) % 28 === 0 ? "LV" : "LVT";
+  return undefined;
+}
+
+/** Hangul jamo that make one syllable, as in decomposed text (GB6, GB7, GB8). */
+function joinsHangul(before: Jamo, at: Jamo): boolean {
+  if (before === "L") return at !== undefined && at !== "T";
+  if (before === "LV" || before === "V") return at === "V" || at === "T";
+  if (before === "LVT" || before === "T") return at === "T";
+  return false;
+}
+
+/** The code point that ends right before `index`. */
+function previousCodePoint(text: string, index: number): string {
+  const low = text.charCodeAt(index - 1);
+  const pair = low >= 0xdc00 && low <= 0xdfff && index >= 2;
+  return String.fromCodePoint(text.codePointAt(pair ? index - 2 : index - 1) ?? 0);
+}
+
+/**
+ * Whether a cut at `index` would split a character cluster. Each no-break rule of Unicode's
+ * grapheme clusters (UAX #29) is followed; where one is followed loosely it joins more, never less.
+ */
 function attachesToPrevious(text: string, index: number): boolean {
   const unit = text.charCodeAt(index);
   if (unit >= 0xdc00 && unit <= 0xdfff) return true;
   if (text.charCodeAt(index - 1) === 0x200d) return true;
+  if (joinsHangul(jamo(text.charCodeAt(index - 1)), jamo(unit))) return true;
+  if (PREPEND.test(previousCodePoint(text, index)) && !/[\p{Cc}\u{2028}\u{2029}]/u.test(text.charAt(index))) {
+    return true;
+  }
   if (isRegionalIndicator(text, index)) {
     // Flags pair up from the start of a run, so after an odd number of indicators this one is the
     // second half of a flag. The count only walks back over the run itself.
@@ -156,10 +197,40 @@ function safeStart(text: string, start: number): number {
   return cut;
 }
 
+/**
+ * `end` (a safe cut) moved back over trailing whitespace. Where dropping a space would split a cluster
+ * (a space after a Prepend character, or after ZWJ, is part of one), it backs up to that cluster's
+ * start instead, and goes on trimming. It never moves before `start`.
+ */
+function trimmedEnd(text: string, start: number, end: number): number {
+  let cut = end;
+  while (cut > start && /\s/.test(text.charAt(cut - 1))) {
+    cut -= 1;
+    if (cut > start && attachesToPrevious(text, cut)) cut = Math.max(start, safeEnd(text, cut));
+  }
+  return cut;
+}
+
+/**
+ * `start` (a safe cut) moved forward over leading whitespace, stopping where a space carries marks
+ * after it (a space and its marks are one cluster).
+ */
+function trimmedStart(text: string, start: number, end: number): number {
+  let cut = start;
+  while (
+    cut < end &&
+    /\s/.test(text.charAt(cut)) &&
+    (cut + 1 === end || !attachesToPrevious(text, cut + 1))
+  ) {
+    cut += 1;
+  }
+  return cut;
+}
+
 function ellipsize(text: string, max: number, force: boolean): string {
   if (text.length <= max && !force) return text;
   const end = safeEnd(text, Math.min(max - 1, text.length));
-  return `${text.slice(0, end).trimEnd()}\u{2026}`;
+  return `${text.slice(0, trimmedEnd(text, 0, end))}\u{2026}`;
 }
 
 function boundedLimit(value: number | undefined, fallback: number): number {
@@ -1373,7 +1444,7 @@ function createCollector(limit: number) {
         return;
       }
       const fits = text.length <= room;
-      const piece = fits ? text : text.slice(0, safeEnd(text, room)).trimEnd();
+      const piece = fits ? text : text.slice(0, trimmedEnd(text, 0, safeEnd(text, room)));
       if (piece !== "") {
         length += piece.length + (parts.length > 0 ? 1 : 0);
         parts.push(piece);
@@ -1514,10 +1585,15 @@ export function pageSnippet(
   // have no room left for the match itself.
   const lead = Math.min(20, Math.max(0, Math.floor((max - 2 - needle.length) / 2)));
   // A window cut at both ends needs room for two ellipses and a character between them.
-  const start = at > lead && max >= 3 ? safeStart(text, at - lead) : 0;
+  let start = at > lead && max >= 3 ? safeStart(text, at - lead) : 0;
+  // Moving forward to a cluster boundary must not pass the match (a Prepend sign right before it):
+  // then the window starts where that cluster starts.
+  if (at >= 0 && start > at) start = safeEnd(text, at - lead);
 
   let budget = max - (start > 0 ? 1 : 0);
   if (start + budget < text.length) budget -= 1;
   const end = safeEnd(text, start + Math.max(0, budget));
-  return `${start > 0 ? "\u{2026}" : ""}${text.slice(start, end).trim()}${end < text.length ? "\u{2026}" : ""}`;
+  const last = trimmedEnd(text, start, end);
+  const first = trimmedStart(text, start, last);
+  return `${start > 0 ? "\u{2026}" : ""}${text.slice(first, last)}${end < text.length ? "\u{2026}" : ""}`;
 }
