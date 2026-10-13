@@ -478,11 +478,15 @@ class RuleWidget extends WidgetType {
 const WIKI_IN_LINE = /\[\[([^[\]\n|]{1,200})(?:\|([^[\]\n]{1,200}))?\]\]/g;
 const TAG_IN_LINE = /(^|\s)(#[\p{L}\p{N}_-]{1,40})/gu;
 
-function buildInline(view: EditorView): DecorationSet {
-  const { state } = view;
+/**
+ * The inline live preview over `ranges` (the editor's visible ranges): headings, emphasis,
+ * links, list marks, checkboxes, quotes, code, [[links]] and #tags. Tempo blocks draw elsewhere.
+ */
+export function inlineDecorations(state: EditorState, ranges: readonly { from: number; to: number }[]): DecorationSet {
   const active = activeLineNumbers(state);
   const blocks = state.field(tempoBlocksField).ranges;
   const inBlock = (pos: number) => blocks.some((r) => pos >= r.from && pos < r.to);
+  const withinBlock = (from: number, to: number) => blocks.some((r) => from >= r.from && to <= r.to);
   const decos: Range<Decoration>[] = [];
   const tree = syntaxTree(state);
   const codeAt = (pos: number) => {
@@ -494,12 +498,15 @@ function buildInline(view: EditorView): DecorationSet {
     return false;
   };
 
-  for (const { from, to } of view.visibleRanges) {
+  for (const { from, to } of ranges) {
     tree.iterate({
       from,
       to,
       enter(node) {
-        if (inBlock(node.from)) return false;
+        if (withinBlock(node.from, node.to)) return false;
+        // A node that holds a block starts inside it: the Document itself on a dated page, which
+        // opens with its page-meta block (NT-07). Draw nothing for it, but look inside.
+        if (inBlock(node.from)) return;
         const line = state.doc.lineAt(node.from);
         const isActive = active.has(line.number);
         const name = node.name;
@@ -650,6 +657,10 @@ function buildInline(view: EditorView): DecorationSet {
     }
   }
   return Decoration.set(decos, true);
+}
+
+function buildInline(view: EditorView): DecorationSet {
+  return inlineDecorations(view.state, view.visibleRanges);
 }
 
 const inlinePreview = ViewPlugin.fromClass(
