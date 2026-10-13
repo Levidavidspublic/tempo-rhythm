@@ -1,8 +1,9 @@
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { Redirect, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { usePrefs } from "@/components/v3/prefs";
 import { ToastProvider } from "@/components/v3/Toast";
+import { api } from "@/convex/_generated/api";
 
 /**
  * (tempo) group — wraps the new Tempo Flow mobile surfaces.
@@ -12,9 +13,15 @@ import { ToastProvider } from "@/components/v3/Toast";
 export default function TempoLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { colors, dark, reducedMotion } = usePrefs();
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
 
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/(auth)/sign-in" />;
+  }
+  // An account that hasn't finished onboarding goes back to it, however it got here. A deleted
+  // account has no profile (null) and stays, so Settings can still offer Sign out.
+  if (profile && profile.onboardedAt === undefined) {
+    return <Redirect href="/(auth)/onboarding" />;
   }
 
   return (

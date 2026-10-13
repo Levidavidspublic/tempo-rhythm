@@ -24,6 +24,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
   type Inline,
   isBlankBody,
+  keepPageMeta,
   maskTempoBlocks,
   parseMarkdownView,
   type TempoInfo,
@@ -271,7 +272,7 @@ function PageEditor({
 
   const save = async () => {
     if (busy) return;
-    const body = unmaskTempoBlocks(text, masked.fences);
+    const body = keepPageMeta(unmaskTempoBlocks(text, masked.fences), initialBody);
     if (noteId && title === initialTitle && body === initialBody) {
       onDone?.();
       return;

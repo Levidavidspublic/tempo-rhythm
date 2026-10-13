@@ -406,7 +406,9 @@ function Composer({
   const c = p.colors;
   const router = useRouter();
   const conversations = useQuery(api.conversations.list, {});
-  const send = useSend(conversationId ?? conversations?.[0]?._id ?? null, setConversationId, onSent);
+  // Same pick as Thread: never an Agent-mapped thread, which coach.sendMessage refuses.
+  const latest = conversations?.find((conversation) => conversation.chatMode !== "agent")?._id ?? null;
+  const send = useSend(conversationId ?? latest, setConversationId, onSent);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const dir = textDirection(draft, p.rtl ? "rtl" : "ltr");

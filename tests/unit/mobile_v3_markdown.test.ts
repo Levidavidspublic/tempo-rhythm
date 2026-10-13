@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { parseTempoBlocks } from "@tempo/utils";
 import {
   isBlankBody,
+  keepPageMeta,
   maskTempoBlocks,
   pageTags,
   parseInline,
@@ -111,6 +112,17 @@ describe("mask / unmask for the plain-text editor", () => {
     expect(unmaskTempoBlocks(renamed, fences)).toBe(FIXTURE);
     const removed = text.replace("⟦2 · Task⟧\n", "");
     expect(unmaskTempoBlocks(removed, fences)).toBe(FIXTURE.replace(TASK, ""));
+  });
+
+  test("page details can't be deleted: a removed or replaced page-meta placeholder comes back on top", () => {
+    const { text, fences } = maskTempoBlocks(FIXTURE, label);
+    const removed = unmaskTempoBlocks(text.replace("⟦1 · Page details⟧\n", ""), fences);
+    expect(removed.startsWith(META)).toBe(false);
+    expect(keepPageMeta(removed, FIXTURE)).toBe(FIXTURE);
+    expect(keepPageMeta(unmaskTempoBlocks("all new words\n", fences), FIXTURE)).toBe(`${META}all new words\n`);
+    // Kept where it is when it is still there; a body without page details stays as it is.
+    expect(keepPageMeta(FIXTURE, FIXTURE)).toBe(FIXTURE);
+    expect(keepPageMeta("plain\n", "plain before\n")).toBe("plain\n");
   });
 
   test("CRLF bodies keep their line endings", () => {

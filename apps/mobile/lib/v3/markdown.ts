@@ -139,6 +139,19 @@ export function unmaskTempoBlocks(text: string, fences: readonly string[]): stri
   });
 }
 
+/**
+ * A page's page-meta block (what a dated page is, and its tags) can't be removed in the plain
+ * editor: if its placeholder was deleted, the block goes back at the top, where pages keep it.
+ */
+export function keepPageMeta(next: string, original: string): string {
+  const meta = splitTempoFences(original).find((seg) => seg.kind === "tempo" && seg.info.type === "page-meta");
+  if (!meta) return next;
+  const fence = meta.source.replace(/(?:\r\n|\r|\n)$/, "");
+  if (next.includes(fence)) return next;
+  const eol = /(?:\r\n|\r|\n)$/.exec(meta.source)?.[0] || "\n";
+  return `${fence}${eol}${next}`;
+}
+
 /* ------------------------------------------------------------------ */
 /* Read view                                                            */
 /* ------------------------------------------------------------------ */

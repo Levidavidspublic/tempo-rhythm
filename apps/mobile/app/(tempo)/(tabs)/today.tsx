@@ -143,7 +143,8 @@ function TodayBody({ ready, today }: { ready: boolean; today: Today }) {
   );
 }
 
-type Timer = { taskId: string; leftMs: number; runningSince: number | null; startedAt: number };
+/** A running focus stretch keeps its own task and length, whatever Next up picks meanwhile. */
+type Timer = { task: TaskLike; durationMs: number; leftMs: number; runningSince: number | null; startedAt: number };
 
 /** NextUpCard: one task, why it was picked, how long it takes, and one primary "Start N minutes". */
 function NextUp({ tasks }: { tasks: TaskLike[] }) {
@@ -151,24 +152,26 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
   const router = useRouter();
   const createFocus = useMutation(api.focusBlocks.create);
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(() => new Set());
-  const task = useMemo(() => pickNextUp(tasks, skipped), [tasks, skipped]);
-  const minutes = task ? focusMinutes(task) : 25;
+  const picked = useMemo(() => pickNextUp(tasks, skipped), [tasks, skipped]);
   // The focus timer is local (no Undo needed); a stretch that runs to the end is logged.
   const [timer, setTimer] = useState<Timer | null>(null);
+  // While a stretch runs, the card stays on its task (fresh from the list if still open).
+  const task = timer ? (tasks.find((item) => item._id === timer.task._id) ?? timer.task) : picked;
+  const minutes = timer ? Math.round(timer.durationMs / 60_000) : task ? focusMinutes(task) : 25;
   const now = useNow(1000, timer?.runningSince != null);
   const left = timer ? (timer.runningSince != null ? timer.leftMs - (now - timer.runningSince) : timer.leftMs) : minutes * 60_000;
   const logged = useRef<string | null>(null);
 
   useEffect(() => {
     if (!timer || timer.runningSince == null || left > 0) return;
-    const key = `${timer.taskId}:${timer.startedAt}`;
+    const key = `${timer.task._id}:${timer.startedAt}`;
     if (logged.current === key) return;
     logged.current = key;
-    createFocus({ startedAtMs: timer.startedAt, durationMs: minutes * 60_000, taskId: timer.taskId as Id<"tasks"> }).catch(
+    createFocus({ startedAtMs: timer.startedAt, durationMs: timer.durationMs, taskId: timer.task._id as Id<"tasks"> }).catch(
       () => undefined,
     );
     setTimer(null);
-  }, [left, timer, minutes, createFocus]);
+  }, [left, timer, createFocus]);
 
   if (!task) {
     return (
@@ -181,7 +184,7 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
     );
   }
 
-  const mine = timer?.taskId === task._id;
+  const mine = timer !== null;
   const running = mine && timer?.runningSince != null;
   const paused = mine && timer?.runningSince == null;
   const startLabel = running
@@ -194,7 +197,7 @@ function NextUp({ tasks }: { tasks: TaskLike[] }) {
     const at = Date.now();
     if (running && timer) setTimer({ ...timer, leftMs: left, runningSince: null });
     else if (paused && timer) setTimer({ ...timer, runningSince: at });
-    else setTimer({ taskId: task._id, leftMs: minutes * 60_000, runningSince: at, startedAt: at });
+    else setTimer({ task, durationMs: minutes * 60_000, leftMs: minutes * 60_000, runningSince: at, startedAt: at });
   };
 
   return (
