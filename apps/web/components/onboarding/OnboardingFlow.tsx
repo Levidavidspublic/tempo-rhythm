@@ -73,6 +73,9 @@ export function OnboardingFlow() {
   const [savedDial, setSavedDial] = useState<number | null>(null);
   const [dump, setDump] = useState("");
   const [dumpPage, setDumpPage] = useState<{ id: Id<"notes">; text: string } | null>(null);
+  // The brain-dump page's create, once started. Offline it stays queued, and a second pass
+  // through step 4 must update that page, never create another (Codex P2 on #929).
+  const dumpCreate = useRef<{ text: string; id: Promise<Id<"notes">> } | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const busy = useRef(false);
@@ -178,13 +181,24 @@ export function OnboardingFlow() {
       else
         void run(
           async () => {
-            if (dumpPage) {
-              await updateNote({ noteId: dumpPage.id, body: text });
-              setDumpPage({ id: dumpPage.id, text });
-            } else {
-              const id = await createNote({ title: t("set.onb.dumpLabel"), body: text });
-              setDumpPage({ id, text });
+            let id = dumpPage?.id;
+            if (!id) {
+              if (!dumpCreate.current) {
+                const created = createNote({ title: t("set.onb.dumpLabel"), body: text });
+                dumpCreate.current = { text, id: created };
+                created.catch(() => {
+                  dumpCreate.current = null;
+                });
+              }
+              const queued = dumpCreate.current;
+              id = await queued.id;
+              if (queued.text === text) {
+                setDumpPage({ id, text });
+                return;
+              }
             }
+            await updateNote({ noteId: id, body: text });
+            setDumpPage({ id, text });
           },
           () => go(5),
         );
