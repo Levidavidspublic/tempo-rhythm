@@ -2,7 +2,7 @@
 
 import { useMutation } from "convex/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
@@ -38,6 +38,39 @@ function firstLine(body: string): string {
   return line.replace(/^\s*(#{1,6}\s|[-*+]\s(\[[ xX]\]\s)?|\d+[.)]\s|>\s?)/, "").trim().slice(0, 120);
 }
 
+/** The fields a person can change before Accept. The kind never changes. */
+type ProposalDraft = {
+  title: string;
+  minutes: string;
+  when: "today" | "later";
+  name: string;
+  body: string;
+  period: "daily" | "weekly" | "none";
+};
+
+function draftOf(p: ChatProposalData): ProposalDraft {
+  return {
+    title: p.kind === "template" ? "" : p.title,
+    minutes: p.kind === "task" ? String(p.minutes) : "",
+    when: p.kind === "task" ? p.when : "today",
+    name: p.kind === "template" ? p.name : "",
+    body: p.kind === "task" ? "" : p.body,
+    period: p.kind === "template" ? p.period : "none",
+  };
+}
+
+/** The `edit` argument of `coach.acceptProposal` for this kind, or null when a field is empty. */
+function editOf(kind: ChatProposalData["kind"], d: ProposalDraft) {
+  if (kind === "task") {
+    const minutes = Number(d.minutes);
+    return d.title.trim() && Number.isFinite(minutes) && minutes >= 1
+      ? { title: d.title, minutes, when: d.when }
+      : null;
+  }
+  if (kind === "note") return d.title.trim() && d.body.trim() ? { title: d.title, body: d.body } : null;
+  return d.name.trim() && d.body.trim() ? { name: d.name, body: d.body, period: d.period } : null;
+}
+
 /** m:ss until `untilMs`, counting down each second while it lasts. */
 function useCountdown(untilMs: number | undefined): string | null {
   const [now, setNow] = useState(() => Date.now());
@@ -64,6 +97,11 @@ export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages"
   const undo = useMutation(api.coach.undoProposal);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<ProposalDraft>(() => draftOf(proposal));
+  const [invalid, setInvalid] = useState(false);
+  const formId = useId();
+  const set = (patch: Partial<ProposalDraft>) => setDraft((prev) => ({ ...prev, ...patch }));
   const left = useCountdown(proposal.status === "accepted" ? proposal.undoUntilMs : undefined);
 
   const act = async (fn: () => Promise<unknown>) => {
@@ -76,6 +114,14 @@ export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages"
     } finally {
       setBusy(false);
     }
+  };
+
+  const acceptEdits = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const edit = editOf(proposal.kind, draft);
+    setInvalid(edit === null);
+    if (!edit) return;
+    void act(() => accept({ messageId, dueTodayAt: bounds.endMs - 1, edit }));
   };
 
   const titleId = `proposal-${messageId}`;
@@ -147,20 +193,166 @@ export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages"
           </div>
         </dl>
       )}
+      {proposal.status === "pending" && proposal.kind !== "task" && !editing ? (
+        // The whole page or template, before Accept: the card's two lines are only its start.
+        <details className="tp-proposal__what">
+          <summary>{t("proposal.showAll")}</summary>
+          <textarea className="tp-textarea" readOnly rows={8} value={proposal.body} dir="auto" aria-label={t("proposal.field.body")} />
+        </details>
+      ) : null}
+      {proposal.status === "pending" && editing ? (
+        <form className="tp-proposal__what" id={formId} onSubmit={acceptEdits} noValidate>
+          {proposal.kind === "template" ? (
+            <div className="tp-field" data-component="Field">
+              <label className="tp-label" htmlFor={`${formId}-name`}>
+                {t("proposal.name")}
+              </label>
+              <input
+                id={`${formId}-name`}
+                className="tp-input"
+                dir="auto"
+                value={draft.name}
+                maxLength={200}
+                aria-invalid={invalid && !draft.name.trim()}
+                onChange={(e) => set({ name: e.target.value })}
+              />
+            </div>
+          ) : (
+            <div className="tp-field" data-component="Field">
+              <label className="tp-label" htmlFor={`${formId}-title`}>
+                {t("proposal.field.title")}
+              </label>
+              <input
+                id={`${formId}-title`}
+                className="tp-input"
+                dir="auto"
+                value={draft.title}
+                maxLength={200}
+                aria-invalid={invalid && !draft.title.trim()}
+                onChange={(e) => set({ title: e.target.value })}
+              />
+            </div>
+          )}
+          {proposal.kind === "task" ? (
+            <>
+              <div className="tp-field" data-component="Field">
+                <label className="tp-label" htmlFor={`${formId}-minutes`}>
+                  {t("proposal.field.minutes")}
+                </label>
+                <input
+                  id={`${formId}-minutes`}
+                  className="tp-input tp-num"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={480}
+                  value={draft.minutes}
+                  aria-invalid={invalid && !(Number(draft.minutes) >= 1)}
+                  onChange={(e) => set({ minutes: e.target.value })}
+                />
+              </div>
+              <div className="tp-field" data-component="Field">
+                <label className="tp-label" htmlFor={`${formId}-when`}>
+                  {t("proposal.field.when")}
+                </label>
+                <span className="tp-select" data-component="Select">
+                  <select
+                    id={`${formId}-when`}
+                    className="tp-select__input"
+                    value={draft.when}
+                    onChange={(e) => set({ when: e.target.value === "later" ? "later" : "today" })}
+                  >
+                    <option value="today">{t("proposal.target.today")}</option>
+                    <option value="later">{t("proposal.when.later")}</option>
+                  </select>
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="tp-field" data-component="Field">
+              <label className="tp-label" htmlFor={`${formId}-body`}>
+                {t("proposal.field.body")}
+              </label>
+              <textarea
+                id={`${formId}-body`}
+                className="tp-textarea"
+                dir="auto"
+                rows={8}
+                value={draft.body}
+                aria-invalid={invalid && !draft.body.trim()}
+                onChange={(e) => set({ body: e.target.value })}
+              />
+            </div>
+          )}
+          {proposal.kind === "template" ? (
+            <div className="tp-field" data-component="Field">
+              <label className="tp-label" htmlFor={`${formId}-period`}>
+                {t("proposal.field.period")}
+              </label>
+              <span className="tp-select" data-component="Select">
+                <select
+                  id={`${formId}-period`}
+                  className="tp-select__input"
+                  value={draft.period}
+                  onChange={(e) =>
+                    set({ period: e.target.value === "daily" ? "daily" : e.target.value === "weekly" ? "weekly" : "none" })
+                  }
+                >
+                  <option value="daily">{t("proposal.period.daily")}</option>
+                  <option value="weekly">{t("proposal.period.weekly")}</option>
+                  <option value="none">{t("proposal.period.none")}</option>
+                </select>
+              </span>
+            </div>
+          ) : null}
+          {invalid ? (
+            <p className="tp-error-text" role="alert">
+              {t("proposal.invalid")}
+            </p>
+          ) : null}
+        </form>
+      ) : null}
       {proposal.status === "pending" ? (
         <div className="tp-proposal__actions">
-          <button
-            className="tp-btn tp-btn--secondary"
-            type="button"
-            disabled={busy}
-            onClick={() => void act(() => accept({ messageId, dueTodayAt: bounds.endMs - 1 }))}
-          >
-            <TpIcon name="check" size="sm" />
-            <span>{t("proposal.accept")}</span>
-          </button>
-          <button className="tp-btn tp-btn--ghost" type="button" disabled={busy} onClick={() => void act(() => reject({ messageId }))}>
-            <span>{t("proposal.reject")}</span>
-          </button>
+          {editing ? (
+            <>
+              <button className="tp-btn tp-btn--secondary" type="submit" form={formId} disabled={busy}>
+                <TpIcon name="check" size="sm" />
+                <span>{t("proposal.acceptEdits")}</span>
+              </button>
+              <button
+                className="tp-btn tp-btn--ghost"
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setEditing(false);
+                  setInvalid(false);
+                  setDraft(draftOf(proposal));
+                }}
+              >
+                <span>{t("proposal.cancelEdit")}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="tp-btn tp-btn--secondary"
+                type="button"
+                disabled={busy}
+                onClick={() => void act(() => accept({ messageId, dueTodayAt: bounds.endMs - 1 }))}
+              >
+                <TpIcon name="check" size="sm" />
+                <span>{t("proposal.accept")}</span>
+              </button>
+              <button className="tp-btn tp-btn--ghost" type="button" disabled={busy} onClick={() => setEditing(true)}>
+                <TpIcon name="edit" size="sm" />
+                <span>{t("proposal.edit")}</span>
+              </button>
+              <button className="tp-btn tp-btn--ghost" type="button" disabled={busy} onClick={() => void act(() => reject({ messageId }))}>
+                <span>{t("proposal.reject")}</span>
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <p className="tp-proposal__note">

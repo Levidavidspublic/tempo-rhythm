@@ -324,14 +324,21 @@ export async function runCoachReply(
     await release();
     return "unavailable";
   }
-  await ctx.runMutation(internal.coach.saveReply, {
-    conversationId: args.conversationId,
-    replyTo: context.replyTo,
-    claim: context.claim,
-    content: answer.reply,
-    ...(answer.proposal ? { proposal: answer.proposal } : {}),
-    modelUsed: model,
-  });
+  try {
+    await ctx.runMutation(internal.coach.saveReply, {
+      conversationId: args.conversationId,
+      replyTo: context.replyTo,
+      claim: context.claim,
+      content: answer.reply,
+      ...(answer.proposal ? { proposal: answer.proposal } : {}),
+      modelUsed: model,
+    });
+  } catch (error) {
+    // A failed save must not hold the turn for the whole lease (Codex P2 on #923).
+    console.error(`coach.reply: the reply could not be saved (${errorKind(error)})`);
+    await release();
+    return "unavailable";
+  }
   return "replied";
 }
 
@@ -367,9 +374,23 @@ async function setProposal(ctx: MutationCtx, messageId: Id<"messages">, proposal
 /** A "today" task is due at the end of the caller's local day, which only the client knows. */
 const LOCAL_DAY_SLACK_MS = 36 * 60 * 60_000;
 
-/** Accept: the one place a coach proposal changes anything. Returns where the new row lives. */
+/** The person's changes to a proposal before Accept (HARD_RULES §1: confirm / edit / reject). */
+const proposalEditValidator = v.object({
+  title: v.optional(v.string()),
+  minutes: v.optional(v.number()),
+  when: v.optional(v.union(v.literal("today"), v.literal("later"))),
+  name: v.optional(v.string()),
+  body: v.optional(v.string()),
+  period: v.optional(v.union(v.literal("daily"), v.literal("weekly"), v.literal("none"))),
+});
+
+/**
+ * Accept: the one place a coach proposal changes anything. `edit` carries the person's changes;
+ * they pass the same checks the model's proposal did, and the kind never changes. Returns where
+ * the new row lives.
+ */
 export const acceptProposal = mutation({
-  args: { messageId: v.id("messages"), dueTodayAt: v.optional(v.number()) },
+  args: { messageId: v.id("messages"), dueTodayAt: v.optional(v.number()), edit: v.optional(proposalEditValidator) },
   returns: v.object({
     kind: v.union(v.literal("task"), v.literal("note"), v.literal("template")),
     createdId: v.string(),
@@ -377,9 +398,17 @@ export const acceptProposal = mutation({
   }),
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
-    const { message, proposal } = await ownedProposal(ctx, user._id, args.messageId);
-    if (proposal.status !== "pending") {
+    const { message, proposal: stored } = await ownedProposal(ctx, user._id, args.messageId);
+    if (stored.status !== "pending") {
       throw new Error("This proposal was already decided.");
+    }
+    let proposal: StoredProposal = stored;
+    if (args.edit) {
+      const edited = readProposal({ ...stored, ...args.edit, kind: stored.kind });
+      if (!edited) {
+        throw new Error("Give it a name and some words first.");
+      }
+      proposal = { ...edited, status: "pending" };
     }
     const now = Date.now();
     let createdId: string;

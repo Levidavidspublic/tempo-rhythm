@@ -40,6 +40,7 @@ mock.module("@/components/providers/LocaleProvider", () => ({
 }));
 
 const { CoachChat, CoachCrisisReply, deliverCoachMessage } = await import("./CoachChat");
+const { ChatProposal } = await import("./ChatProposal");
 
 function markup(node: ReactElement): string {
   return renderToStaticMarkup(node);
@@ -80,5 +81,32 @@ describe("deliverCoachMessage", () => {
     expect(html).toContain("Coach");
     expect(html).toContain("Message");
     expect(html).not.toContain("coach-crisis-resources");
+  });
+});
+
+describe("ChatProposal", () => {
+  test("a pending proposal offers Accept, Edit and Not now, and shows the whole body before Accept", () => {
+    const body = "# Trip\n\n- [ ] Passport\n- [ ] Charger\n\nThe last line is far below the first.";
+    const html = markup(
+      createElement(ChatProposal, {
+        messageId: "messages:1" as never,
+        proposal: { kind: "note", title: "Trip", body, status: "pending" },
+      }),
+    );
+    expect(html).toContain(">Accept<");
+    expect(html).toContain(">Edit<");
+    expect(html).toContain(">Not now<");
+    expect(html).toContain("Show all of it");
+    expect(html).toContain("The last line is far below the first.");
+  });
+
+  test("an accepted proposal no longer offers Edit", () => {
+    const html = markup(
+      createElement(ChatProposal, {
+        messageId: "messages:2" as never,
+        proposal: { kind: "task", title: "Call", minutes: 5, when: "today", status: "accepted", createdId: "tasks:1" },
+      }),
+    );
+    expect(html).not.toContain(">Edit<");
   });
 });

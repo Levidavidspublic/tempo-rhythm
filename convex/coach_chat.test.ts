@@ -371,6 +371,25 @@ describe("a coach turn", () => {
     expect(messages(world, conversationId).map((m) => m.role)).toEqual(["user"]);
   });
 
+  test("a reply that cannot be saved gives the turn back", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "plan my morning");
+    const ctx = world.actionAs(A);
+    const failingSave = {
+      runQuery: ctx.runQuery,
+      runMutation: (ref: unknown, args: unknown) =>
+        getFunctionName(ref as never) === "coach:saveReply"
+          ? Promise.reject(new Error("transient"))
+          : ctx.runMutation(ref as never, args as never),
+    } as unknown as ActionCtx;
+    const model = fakeModel('{"reply":"Lost.","proposal":null}');
+    expect(await coach.runCoachReply(failingSave, { conversationId }, model.call)).toBe("unavailable");
+    const retry = fakeModel('{"reply":"Here now.","proposal":null}');
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, retry.call)).toBe("replied");
+    expect(retry.calls).toHaveLength(1);
+  });
+
   test("a claim left by a reply that died expires", async () => {
     const world = makeWorld();
     const conversationId = await seedConversation(world);
@@ -463,6 +482,41 @@ describe("proposals change nothing until Accept, and Accept has a 5-minute Undo"
     const { messageId } = await proposalTurn(world, { kind: "template", name: "Gentle Monday", body: "## {{weekday}}", period: "weekly" });
     const accepted = await run(coach.acceptProposal, world.as(A), { messageId });
     expect(world.row(accepted.createdId)).toMatchObject({ userId: A, name: "Gentle Monday", periodType: "weekly" });
+  });
+
+  test("Accept with the person's edits creates the edited row and stores what was accepted", async () => {
+    const world = makeWorld();
+    const { messageId } = await proposalTurn(world, { kind: "task", title: "Call the bank", minutes: 10, when: "today" });
+    const accepted = await run(coach.acceptProposal, world.as(A), {
+      messageId,
+      edit: { title: "Call the bank about the card", minutes: 25, when: "later" },
+    });
+    expect(world.row(accepted.createdId)).toMatchObject({ title: "Call the bank about the card", timeEstimate: 25 * 60_000 });
+    expect((world.row(accepted.createdId) as Row).dueAt).toBeUndefined();
+    expect(coach.storedProposal(world.row(messageId)?.toolCalls)).toMatchObject({
+      kind: "task",
+      title: "Call the bank about the card",
+      minutes: 25,
+      when: "later",
+      status: "accepted",
+    });
+  });
+
+  test("edits pass the same checks and never change the kind", async () => {
+    const world = makeWorld();
+    const note = await proposalTurn(world, { kind: "note", title: "Packing", body: "- [ ] Passport" });
+    await expect(run(coach.acceptProposal, world.as(A), { messageId: note.messageId, edit: { body: "   " } })).rejects.toThrow(
+      "Give it a name",
+    );
+    expect(world.rows("notes")).toHaveLength(0);
+    expect(coach.storedProposal(world.row(note.messageId)?.toolCalls)?.status).toBe("pending");
+    // A task-only field on a note is ignored; the note stays a note.
+    const accepted = await run(coach.acceptProposal, world.as(A), {
+      messageId: note.messageId,
+      edit: { title: "Trip", body: "- [ ] Passport\n- [ ] Charger", minutes: 5 },
+    });
+    expect(accepted.kind).toBe("note");
+    expect(world.row(accepted.createdId)).toMatchObject({ title: "Trip", body: "- [ ] Passport\n- [ ] Charger" });
   });
 
   test("Reject changes nothing and cannot be accepted after", async () => {
