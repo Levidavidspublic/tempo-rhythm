@@ -35,6 +35,9 @@ export function templatePageDraft(
 ): { title: string; body: string } {
   const tokens = dayTokens(options.isoDate, options.lang ?? "en");
   const typed = options.title.replace(/\s+/g, " ").trim();
-  const title = (typed || template.name.trim() || tokens.title || options.isoDate).slice(0, TITLE_MAX);
+  // Cut by code points, so a character outside the BMP (an emoji) is never split at the limit.
+  const title = Array.from(typed || template.name.trim() || tokens.title || options.isoDate)
+    .slice(0, TITLE_MAX)
+    .join("");
   return { title, body: applyTemplateTokens(template.body, typed ? { ...tokens, title } : tokens) };
 }

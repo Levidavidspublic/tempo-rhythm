@@ -51,6 +51,16 @@ describe("templatePageDraft", () => {
     expect(templatePageDraft({ name: "n", body: "" }, { title: long, isoDate: "2026-10-13" }).title).toHaveLength(200);
   });
 
+  test("the length cap never splits a character outside the BMP", () => {
+    const title = templatePageDraft(
+      { name: "n", body: "" },
+      { title: `${"x".repeat(199)}\u{1F600}tail`, isoDate: "2026-10-13" },
+    ).title;
+    expect(Array.from(title)).toHaveLength(200);
+    expect(title.endsWith("\u{1F600}")).toBe(true);
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(title)).toBe(false);
+  });
+
   test("Hebrew tokens", () => {
     const draft = templatePageDraft({ name: "יומי", body: "{{weekday}}" }, { title: "", isoDate: "2026-10-13", lang: "he" });
     expect(draft.body).toBe("יום שלישי");
