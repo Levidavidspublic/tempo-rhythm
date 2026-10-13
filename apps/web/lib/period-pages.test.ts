@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { parseTempoBlocks } from "@tempo/utils";
 import {
   addDays,
   isIsoDate,
@@ -58,12 +59,43 @@ describe("date math", () => {
 
 describe("periodPageDraft", () => {
   const template = "# Today\n\n## Intention\nFor {{weekday}} {{date}}: {{mood}}\n";
+  /** The draft body after its leading page-meta fence (checked separately below). */
+  const prose = (body: string) => {
+    const [meta, ...rest] = parseTempoBlocks(body);
+    expect(meta?.kind).toBe("valid");
+    return rest.map((s) => s.source).join("");
+  };
 
   test("daily: the title from the date, the top heading dropped, known tokens filled", () => {
-    expect(periodPageDraft("daily", "2026-10-12", template)).toEqual({
-      title: "Monday, 12 October",
-      body: "## Intention\nFor Monday 2026-10-12: {{mood}}\n",
-    });
+    const draft = periodPageDraft("daily", "2026-10-12", template);
+    expect(draft.title).toBe("Monday, 12 October");
+    expect(prose(draft.body)).toBe("## Intention\nFor Monday 2026-10-12: {{mood}}\n");
+  });
+
+  test("the body opens with a valid page-meta block holding the page's type and date (NT-07)", () => {
+    for (const [kind, iso] of [
+      ["daily", "2026-10-12"],
+      ["weekly", "2026-10-12"],
+    ] as const) {
+      const segments = parseTempoBlocks(periodPageDraft(kind, iso, template).body);
+      const first = segments[0];
+      expect(first?.kind).toBe("valid");
+      if (first?.kind !== "valid") continue;
+      expect(first.start).toBe(0);
+      expect(first.block).toMatchObject({ type: "page-meta", v: 1, data: { pageType: kind, date: iso, tags: [] } });
+      expect(segments.filter((s) => s.kind !== "markdown")).toHaveLength(1);
+    }
+  });
+
+  test("the template's own page-meta and template blocks are not copied", () => {
+    const own = [
+      '```json tempo\n{"id":"blk_01JAAAAAAAAAAAAAAAAAAAAAAA","v":1,"type":"page-meta","data":{"pageType":"template","tags":["t"]}}\n```\n',
+      '```json tempo\n{"id":"blk_01JBBBBBBBBBBBBBBBBBBBBBBB","v":1,"type":"template","data":{"name":"Day","forPageType":"daily","isDefault":true,"tokens":[],"origin":"user","status":"live","enabled":true}}\n```\n',
+    ].join("");
+    const draft = periodPageDraft("daily", "2026-10-12", `${own}# Today\n\n## Plan\n`);
+    expect(prose(draft.body)).toBe("## Plan\n");
+    const blocks = parseTempoBlocks(draft.body).filter((s) => s.kind !== "markdown");
+    expect(blocks).toHaveLength(1);
   });
 
   test("Hebrew titles", () => {
@@ -76,10 +108,10 @@ describe("periodPageDraft", () => {
     expect(tokens).toMatchObject({ date: "2026-10-12", week: "42", year: "2026", title: "Week 42" });
     expect(tokens.range).toContain("12");
     expect(tokens.range).toContain("18");
-    expect(periodPageDraft("weekly", "2026-10-12", "# This week\n\n{{range}}").body).toBe(tokens.range);
+    expect(prose(periodPageDraft("weekly", "2026-10-12", "# This week\n\n{{range}}").body)).toBe(tokens.range);
   });
 
   test("a template without a top heading is kept whole", () => {
-    expect(periodPageDraft("daily", "2026-10-12", "## Plan\n- [ ] One").body).toBe("## Plan\n- [ ] One");
+    expect(prose(periodPageDraft("daily", "2026-10-12", "## Plan\n- [ ] One").body)).toBe("## Plan\n- [ ] One");
   });
 });

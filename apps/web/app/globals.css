@@ -408,51 +408,54 @@
 }
 
 /* ---- Base reset + body ----------------------------------- */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+/* In the base layer, like preflight: element rules never beat a utility. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  background: var(--tp-ground);
-  color: var(--tp-ink);
-  font-family: var(--tp-font-sans);
-  font-size: var(--tp-text-md);
-  line-height: var(--tp-leading-body);
-  letter-spacing: var(--tp-tracking-body);
-  word-spacing: var(--tp-word-spacing);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "ss01", "cv01";
-}
+  body {
+    background: var(--tp-ground);
+    color: var(--tp-ink);
+    font-family: var(--tp-font-sans);
+    font-size: var(--tp-text-md);
+    line-height: var(--tp-leading-body);
+    letter-spacing: var(--tp-tracking-body);
+    word-spacing: var(--tp-word-spacing);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv01";
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  margin: 0;
-  font-family: var(--tp-font-serif);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: var(--tp-leading-heading);
-}
-h1 {
-  font-size: var(--text-h1);
-}
-h2 {
-  font-size: var(--text-h2);
-}
-h3 {
-  font-size: var(--text-h3);
-}
-p {
-  margin: 0;
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--tp-font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: var(--tp-leading-heading);
+  }
+  h1 {
+    font-size: var(--text-h1);
+  }
+  h2 {
+    font-size: var(--text-h2);
+  }
+  h3 {
+    font-size: var(--text-h3);
+  }
+  p {
+    margin: 0;
+  }
 }
 
 /* ---- Typography utilities (replaces shell.css helpers) --- */
@@ -621,3 +624,55 @@ p {
 .bd-row__actions { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-inline-start: auto; }
 .bd-saved { flex-wrap: wrap; }
 .bd-saved .tp-notice__action { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
+/* Search (search.html, layout only). */
+.sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.sr-results { display: grid; gap: var(--tp-space-6); }
+.sr-list { padding: var(--tp-space-1); }
+/* Under 768 px the shell main has no side padding; the screen keeps the 16 px gutter its page head has. */
+@media (max-width: 767px) { .tp-page > .sr-screen { padding-inline: var(--tp-space-4); } }
+/* Sign-up: the auth card, then the terms line under it at the card's width. */
+.tp-auth-stack { display: grid; gap: var(--tp-space-4); justify-items: center; width: min(100%, calc(var(--tp-space-20) * 5 + var(--tp-space-10))); }
+.tp-auth-stack > .tp-auth-card { width: 100%; }
+
+/* Calendar (v3 calendar.html look on the Day / Week / Month lists). Layout only. */
+.cal-add { gap: var(--tp-space-3); }
+.cal-add__row { display: grid; gap: var(--tp-space-3); grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; }
+.cal-views { border: 0; margin: 0; padding: 0; min-width: 0; }
+.cal-views .tp-seg__opt[aria-pressed="true"] { background: var(--tp-paper); color: var(--tp-ink); border-color: var(--tp-line-control); box-shadow: var(--tp-shadow-whisper); }
+.cal-toolbar { align-items: center; }
+.cal-list { padding: var(--tp-space-2) var(--tp-space-4); gap: 0; }
+.cal-event[data-editing="true"] { display: block; }
+.cal-event__edit { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3); }
+.cal-event__title-field { flex: 1 1 calc(var(--tp-space-20) * 2); }
+.cal-event__error { grid-column: 1 / -1; }
+@media (max-width: 767px) {
+  .cal-add__row { grid-template-columns: minmax(0, 1fr); }
+  .cal-list { padding-inline: var(--tp-space-3); }
+}
+
+/* Tasks (v3 tasks.html): view switcher, create form, task rows. Layout only. */
+.tk-views .tp-segmented { list-style: none; margin: 0; }
+.tk-views .tp-seg__opt { text-decoration: none; }
+.tk-views .tp-seg__opt[aria-current="page"] { background: var(--tp-paper); color: var(--tp-ink); border-color: var(--tp-line-control); box-shadow: var(--tp-shadow-whisper); }
+.tk-create { gap: var(--tp-space-4); }
+.tk-create__grid { display: grid; gap: var(--tp-space-3); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) * 2), 1fr)); align-items: end; }
+.tk-create__title { grid-column: 1 / -1; }
+.tk-create__more { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3) var(--tp-space-6); }
+.tk-groups { display: grid; gap: var(--tp-space-8); }
+.tk-list { padding: var(--tp-space-2) var(--tp-space-4); gap: 0; }
+.tk-row .tp-checklist { margin-top: var(--tp-space-1); }
+.tk-row__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--tp-space-1); }
+.tk-row[data-done="true"] .tp-check__box { background: var(--tp-done); border-color: var(--tp-done); color: var(--tp-paper); }
+.tk-editor { display: grid; gap: var(--tp-space-3); border: 0; margin: 0; padding: 0; min-width: 0; }
+.tk-editor__grid { display: grid; gap: var(--tp-space-3); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) * 2), 1fr)); }
+.tk-editor__step { display: flex; align-items: center; gap: var(--tp-space-2); }
+.tk-editor__steptext { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.tk-editor__add { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tk-editor__add .tp-input { flex: 1 1 calc(var(--tp-space-20) * 2); min-width: 0; }
+.tk-editor__save { justify-self: start; }
+@media (max-width: 767px) {
+  .tk-list { padding-inline: var(--tp-space-3); }
+  .tk-row { grid-template-columns: auto minmax(0, 1fr); }
+  .tk-row__actions { grid-column: 2; justify-content: flex-start; }
+}

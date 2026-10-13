@@ -80,6 +80,7 @@ export function TemplateRun({ templateId }: { templateId: string }) {
   };
 
   return (
+    // The (bare) layout has no shell, so this page holds its own main landmark.
     <main className="tp-page tp-run" id="main" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
@@ -112,7 +113,6 @@ export function TemplateRun({ templateId }: { templateId: string }) {
         <p className="tp-small tp-muted">{t("tplRun.previewHint")}</p>
         <ReadView
           body={draft?.body ?? template.body}
-          onOpenLink={() => undefined}
           labels={{ minutes: t("editor.minutes"), brokenBlock: t("editor.broken"), template: t("editor.template") }}
         />
       </section>

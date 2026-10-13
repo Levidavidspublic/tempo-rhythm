@@ -37,6 +37,12 @@ describe("templatePageDraft", () => {
     expect(draft.body).toBe("# Tuesday, 13 October\n\nDate: 2026-10-13 (Tuesday)\n\n- [ ] {{unknown}}\n");
   });
 
+  test("a typed title also fills {{title}} in the body", () => {
+    const draft = templatePageDraft({ name: "Daily page", body }, { title: "Big day", isoDate: "2026-10-13" });
+    expect(draft.title).toBe("Big day");
+    expect(draft.body.startsWith("# Big day\n")).toBe(true);
+  });
+
   test("a typed title wins, with spaces tidied and a length cap", () => {
     expect(templatePageDraft({ name: "Daily page", body }, { title: "  Big   day ", isoDate: "2026-10-13" }).title).toBe(
       "Big day",
