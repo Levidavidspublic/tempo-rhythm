@@ -1,1 +1,44 @@
 /* v3 screens: Goals, goal detail, goals progress, projects, project detail and the project board. Layout only; colour, type, spacing and radius come from tokens. */
+
+/* goals.html */
+.gl-stack { display: grid; gap: var(--tp-space-6); }
+.gl-card { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+.gl-card__projects { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.gl-card__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+
+/* goal-detail.html */
+.gd-stack { display: grid; gap: var(--tp-space-8); }
+.gd-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+.gd-why { display: grid; gap: var(--tp-space-2); }
+
+/* goals-progress.html */
+.gp-stack { display: grid; gap: var(--tp-space-8); }
+.gp-charts { display: grid; gap: var(--tp-space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 4)), 1fr)); }
+
+/* projects.html */
+.pj-stack { display: grid; gap: var(--tp-space-6); }
+.pj-card { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+.pj-card__meta { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.pj-card__actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
+/* project-detail.html */
+.pd-stack { display: grid; gap: var(--tp-space-8); }
+
+/* project-kanban.html */
+.kb-stack { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.kb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+
+/* Live-screen extras (same look as the design's static text). */
+/* An editable title that reads as the heading it sits in. */
+.gx-title-input { width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; }
+.gx-title-input::placeholder { color: var(--tp-ink-subtle); }
+/* The goal's "why" in its surface: a plain paragraph you can type in. */
+.gd-why__input { width: 100%; min-width: 0; min-height: calc(var(--tp-space-20) + var(--tp-space-4)); margin: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; line-height: var(--tp-leading-body); resize: vertical; }
+.gd-why__input::placeholder { color: var(--tp-ink-subtle); }
+.gd-status .tp-select { min-width: calc(var(--tp-space-20) * 2); }
+/* Inline "add a task / card" row. */
+.gx-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--tp-space-2); }
+.gx-add .tp-field { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
+.tp-kanban__col .gx-add .tp-field { flex-basis: 100%; }
+/* The loading state is an <output> (implicit role="status"); lay it out as a block. */
+output.tp-state--loading { display: block; }
