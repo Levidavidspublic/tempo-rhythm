@@ -577,6 +577,30 @@
   color: transparent;
 }
 
+/* ---- v3 shell: a page's side column (apps/web/components/tempo/ShellSlots.tsx) ---- */
+/* /coach: the thread scrolls inside a bounded surface, so the composer stays in reach. */
+.tp-coach-page { display: flex; flex-direction: column; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
+.tp-coach-page > * { flex: none; }
+.tp-coach-page > .tp-coach-thread { flex: 1 1 auto; min-height: 0; }
+
+/* /coach puts the push dial and today's proposal beside the chat, outside main. */
+.tp-app__aside { grid-area: aside; min-width: 0; padding: var(--tp-space-8) var(--tp-space-6) var(--tp-space-20) 0; display: grid; gap: var(--tp-space-6); align-content: start; }
+.tp-app__aside[hidden] { display: none; }
+/* biome-ignore lint/correctness/noInvalidGridAreas: every row string has the same cell count */
+.tp-app[data-aside="open"] { grid-template-columns: var(--tp-rail-w) minmax(0, 1fr) var(--tp-coach-w); grid-template-areas: "rail top top" "rail main aside"; }
+@media (max-width: 1279px) {
+  /* biome-ignore lint/correctness/noInvalidGridAreas: every row string has the same cell count */
+  .tp-app[data-aside="open"] { grid-template-columns: var(--tp-rail-w) minmax(0, 1fr); grid-template-rows: auto auto 1fr; grid-template-areas: "rail top" "rail main" "rail aside"; }
+  .tp-app__aside { padding: 0 var(--tp-space-6) var(--tp-space-20); }
+}
+@media (max-width: 1023px) {
+  /* biome-ignore lint/correctness/noInvalidGridAreas: every row string has the same cell count */
+  .tp-app[data-aside="open"] { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "main" "aside"; }
+}
+@media (max-width: 767px) {
+  .tp-app__aside { padding: 0 var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-16)); }
+}
+
 /* Search (search.html, layout only). */
 .sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
 .sr-results { display: grid; gap: var(--tp-space-6); }

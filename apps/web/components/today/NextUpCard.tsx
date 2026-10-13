@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useShellSlots } from "@/components/tempo/ShellSlots";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { focusMinutes, formatClock, type NextUpTask, nextUpReason, pickNextUp } from "@/lib/next-up";
 
@@ -15,6 +16,7 @@ type Timer = { taskId: string; endsAt: number; pausedLeft: number | null };
  */
 export function NextUpCard({ tasks }: { tasks: readonly NextUpTask[] }) {
   const { t } = useLocale();
+  const shell = useShellSlots();
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(() => new Set());
   const [timer, setTimer] = useState<Timer | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -116,9 +118,15 @@ export function NextUpCard({ tasks }: { tasks: readonly NextUpTask[] }) {
         <button className="tp-btn tp-btn--secondary" type="button" onClick={notNow}>
           {t("next.notNow")}
         </button>
-        <Link className="tp-btn tp-btn--ghost" href="/coach">
-          {t("next.smaller")}
-        </Link>
+        {shell?.coachAvailable ? (
+          <button className="tp-btn tp-btn--ghost" type="button" aria-expanded={shell.coachOpen} onClick={shell.openCoach}>
+            {t("next.smaller")}
+          </button>
+        ) : (
+          <Link className="tp-btn tp-btn--ghost" href="/coach">
+            {t("next.smaller")}
+          </Link>
+        )}
       </div>
     </div>
   );

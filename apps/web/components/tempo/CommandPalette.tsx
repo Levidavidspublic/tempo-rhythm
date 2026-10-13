@@ -9,6 +9,8 @@ import { TEMPO_SCREENS } from "@/lib/tempo-nav";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called as the palette closes; returns true when it moved focus itself. */
+  returnFocus?: () => boolean;
 };
 
 /**
@@ -17,7 +19,7 @@ type Props = {
  * @action jumpToScreen
  * @navigate push(screen.route)
  */
-export function CommandPalette({ open, onOpenChange }: Props) {
+export function CommandPalette({ open, onOpenChange, returnFocus }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -74,6 +76,9 @@ export function CommandPalette({ open, onOpenChange }: Props) {
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgba(0,0,0,0.35)] backdrop-blur-sm" />
         <Dialog.Content
           aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            if (returnFocus?.()) event.preventDefault();
+          }}
           className="fixed left-1/2 top-[15vh] z-50 w-[min(640px,90vw)] -translate-x-1/2 rounded-2xl border border-border bg-card shadow-lift overflow-hidden"
         >
           <Dialog.Title className="sr-only">Jump to screen</Dialog.Title>

@@ -27,7 +27,12 @@ export function JournalScreen() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const today = mounted ? localIsoDate(new Date(bounds.startMs)) : null;
-  const [shift, setShift] = useState(0);
+  // "Another prompt" counts per day: a new local day opens on its own first prompt.
+  const [picked, setPicked] = useState<{ day: string | null; shift: number }>({
+    day: null,
+    shift: 0,
+  });
+  const shift = picked.day === today ? picked.shift : 0;
 
   return (
     <div className="tp-page" data-component="PageLayout">
@@ -51,7 +56,11 @@ export function JournalScreen() {
             <TpIcon name="edit" size="sm" />
             <span>{t("journal.write")}</span>
           </Link>
-          <button className="tp-btn tp-btn--secondary" type="button" onClick={() => setShift((n) => n + 1)}>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            onClick={() => setPicked({ day: today, shift: shift + 1 })}
+          >
             {t("journal.another")}
           </button>
         </div>
