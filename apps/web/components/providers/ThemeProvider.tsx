@@ -53,8 +53,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const storedTheme = localStorage.getItem(
-        THEME_STORAGE_KEY,
+      // ?theme= forces this load (the pre-hydration script applied it already); keep state in step.
+      const queryTheme = new URLSearchParams(window.location.search).get("theme");
+      const storedTheme = (
+        queryTheme === "light" || queryTheme === "dark" ? queryTheme : localStorage.getItem(THEME_STORAGE_KEY)
       ) as ThemePreference | null;
       if (storedTheme === "light" || storedTheme === "dark") {
         setThemeState(storedTheme);

@@ -1,0 +1,555 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (routines) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Routines · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== routines — layout only ===== */
+    .rt-view { display: grid; gap: var(--tp-space-6); align-content: start; min-width: 0; }
+    .rt-view[hidden] { display: none; }
+    .rt-resume { display: grid; gap: var(--tp-space-3); }
+    .rt-guide { display: grid; gap: var(--tp-space-5); }
+    .rt-dots { display: flex; gap: var(--tp-space-2); margin: 0; padding: 0; list-style: none; }
+    .rt-step { display: grid; gap: var(--tp-space-2); }
+    .rt-step .tp-page-title { margin: 0; }
+    .rt-actions { display: grid; gap: var(--tp-space-2); }
+    .rt-actions__row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--tp-space-2); }
+  </style>
+</head>
+<body>
+<!--
+@screen   Routines
+@route    apps/mobile/app/(tempo)/routines.tsx
+@layout   MobileTabs
+@data     routines = routines.list({})                                  // Convex query: name, steps count, minutes, run in progress?
+@data     run = routines.getRun({ routineId })                          // Convex query: current step index, steps, done / skipped
+@actions  start or continue -> routines.startRun({ routineId })         // reopens the saved run if one exists
+@actions  done, next step -> routines.completeStep({ runId, step })
+@actions  skip this one -> routines.skipStep({ runId, step })            // skipping is a normal choice, never a failure
+@actions  pause -> routines.pause({ runId }) / routines.resume({ runId })
+@actions  back a step -> routines.reopenStep({ runId, step })
+@states   default | empty | loading | error | offline  (?state=) · plus view: list | guide  (?view=guide)
+@flow     1. Open Routines from More. A card at the top offers to continue the run in progress: "Morning routine · Step 2 of 5".
+          2. Below it, every routine: its name, how many steps and about how long it takes, and a Start button.
+          3. Starting or continuing opens the guided view. It shows ONE step at a time: "Step 2 of 5" in words and numbers, the step in large type, a short note and about how long it takes.
+          4. Four choices: Done, next step (the one main button), Skip this one, Pause, and Back a step. Skipping and pausing are fine.
+          5. Pause keeps the place. The run can be picked up later today or another day.
+          6. After the last step, a calm finish card says what was done and what was skipped, and that every step counts.
+          7. Empty: no routines yet, and the coach can help make one. Loading: skeleton rows. Error: kind words, data is safe, Try again. Offline: the routine keeps working and saves later.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Routines
+        @route    apps/mobile/app/(tempo)/routines.tsx
+        @layout   MobileTabs
+        @data     routines = routines.list({}) · run = routines.getRun({ routineId })    // Convex queries
+        @actions  start -> routines.startRun · done -> routines.completeStep · skip -> routines.skipStep · pause -> routines.pause · back -> routines.reopenStep
+        @states   default | empty | loading | error | offline  (?state=) · view list | guide (?view=guide)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#m-main" data-i18n="skip">Skip to content</a>
+        <div class="m-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Routines", back } | events: onBack -> router.back (guide view: back to the list), onAvatar -> settings -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="today.html" id="top-back" aria-label="Back" data-i18n-attr="aria-label:top.back"><svg class="tp-icon tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <span class="tp-mtopbar__title" id="top-title" data-i18n="top.title">Routines</span>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="settings.html" aria-label="Settings for Maya Ronen" data-i18n-attr="aria-label:top.avatar">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+            </a>
+          </header>
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Changes save when you're back.</span></span>
+          </div>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 3, label: "Loading your routines" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Loading your routines</span>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w60"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your routines." } | events: onRetry -> refetch routines.list -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't load your routines.</h2>
+            <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">This is on our side, not yours.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- ===== Empty ===== -->
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action: "Make one with the coach" } | events: onAction -> router.push("/coach") -->
+          <div class="tp-state tp-state--empty" data-state-show="empty" data-component="StateEmpty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-checklist"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="empty.title">No routines yet.</h2>
+            <p class="tp-state__body" data-i18n="empty.body">A routine is a few small steps you do in the same order, like getting ready in the morning. The coach can help you make one when you want.</p>
+            <div class="tp-state__actions"><a class="tp-btn tp-btn--secondary" href="coach.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="empty.coach">Make one with the coach</span></a></div>
+          </div>
+
+          <!-- ===================== View: list ===================== -->
+          <div class="rt-view" id="view-list" data-state-hide>
+            <!-- @component PageHeader | shadcn: — | props: { title: "Routines", subtitle: "3 routines" } | events: — -->
+            <div class="tp-pagehead" data-component="PageHeader">
+              <div class="tp-pagehead__text">
+                <h1 class="tp-pagehead__title" id="list-title" tabindex="-1" data-i18n="page.title">Routines</h1>
+                <p class="tp-pagehead__sub"><span class="tp-num">3</span> <span data-i18n="page.sub">routines · one at a time, one step at a time</span></p>
+              </div>
+            </div>
+
+            <!-- @component Card (ResumeRun) | shadcn: card · NativeWind: View card | props: { routine: "Morning routine", step: 2, total: 5 } | events: onContinue -> routines.startRun({ routineId }) -->
+            <section class="tp-card rt-resume" aria-labelledby="resume-title" data-component="Card">
+              <div class="tp-card__head">
+                <h2 class="tp-card__title" id="resume-title" data-i18n="resume.title">Pick up where you left off</h2>
+              </div>
+              <p><span data-i18n="r.morning">Morning routine</span> · <span data-i18n="step">Step</span> <span class="tp-num">2</span> <span data-i18n="of">of</span> <span class="tp-num">5</span></p>
+              <p class="tp-muted tp-small" data-i18n="resume.note">Paused at 08:10. Your place is saved.</p>
+              <button class="tp-btn tp-btn--secondary tp-btn--block" type="button" data-start="morning"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="resume.go">Continue</span></button>
+            </section>
+
+            <section class="m-stack" aria-labelledby="all-title">
+              <!-- @component Section | shadcn: — | props: { title: "All routines", count: 3 } | events: — -->
+              <div class="tp-section__head" data-component="Section">
+                <h2 class="tp-section__title" id="all-title" data-i18n="all.title">All routines</h2>
+                <span class="tp-section__count"><span class="tp-num">3</span></span>
+              </div>
+              <!-- @component ListRow ×3 | shadcn: — · NativeWind: Pressable row | props: { routine: {id,name,steps,minutes,when} } | events: onPress -> routines.startRun({ routineId }) -->
+              <ul class="tp-list tp-card" role="list" data-component="ListRow">
+                <li><button class="tp-list-row" type="button" data-start="morning">
+                  <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-sun"/></svg></span>
+                  <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.morning">Morning routine</span><span class="tp-list-row__meta"><span><span class="tp-num">5</span> <span data-i18n="steps">steps</span></span><span><span data-i18n="about">about</span> <span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span><span data-i18n="r.inprogress">In progress</span></span></span>
+                  <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+                </button></li>
+                <li><button class="tp-list-row" type="button" data-start="evening">
+                  <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></span>
+                  <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.evening">Evening wind-down</span><span class="tp-list-row__meta"><span><span class="tp-num">4</span> <span data-i18n="steps">steps</span></span><span><span data-i18n="about">about</span> <span class="tp-num">20</span> <span data-i18n="unit.min">min</span></span></span></span>
+                  <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+                </button></li>
+                <li><button class="tp-list-row" type="button" data-start="moving">
+                  <span class="tp-list-row__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-box"/></svg></span>
+                  <span class="tp-list-row__body"><span class="tp-list-row__title" dir="auto" data-i18n="r.moving">Packing hour</span><span class="tp-list-row__meta"><span><span class="tp-num">6</span> <span data-i18n="steps">steps</span></span><span><span data-i18n="about">about</span> <span class="tp-num">60</span> <span data-i18n="unit.min">min</span></span></span></span>
+                  <span class="tp-list-row__end"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-chevron"/></svg></span>
+                </button></li>
+              </ul>
+              <a class="tp-btn tp-btn--ghost" href="coach.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg><span data-i18n="new.coach">Make a new routine with the coach</span></a>
+            </section>
+          </div>
+
+          <!-- ===================== View: guide ===================== -->
+          <div class="rt-view" id="view-guide" data-state-hide hidden>
+            <!-- @component Surface (GuidedStep) | shadcn: card · NativeWind: View card | props: { step: {index,total,title,note,minutes}, paused } | events: onDone -> routines.completeStep, onSkip -> routines.skipStep, onPause -> routines.pause / resume, onBack -> routines.reopenStep -->
+            <section class="tp-surface rt-guide" id="rt-guide" aria-labelledby="rt-step-title" data-component="Surface">
+              <p class="tp-eyebrow" role="status" aria-live="polite" id="rt-progress"><span id="rt-name" data-i18n="r.morning">Morning routine</span> · <span data-i18n="step">Step</span> <span class="tp-num" id="rt-i">2</span> <span data-i18n="of">of</span> <span class="tp-num" id="rt-total">5</span></p>
+              <ol class="rt-dots" aria-hidden="true" id="rt-dots">
+                <li><span class="tp-dot tp-dot--done"></span></li>
+                <li><span class="tp-dot tp-dot--fixed"></span></li>
+                <li><span class="tp-dot tp-dot--habit"></span></li>
+                <li><span class="tp-dot tp-dot--habit"></span></li>
+                <li><span class="tp-dot tp-dot--habit"></span></li>
+              </ol>
+
+              <div class="rt-step">
+                <h1 class="tp-page-title" id="rt-step-title" tabindex="-1" dir="auto" data-i18n="ms.2.t">Take your meds with breakfast</h1>
+                <p class="tp-muted" id="rt-step-note" dir="auto" data-i18n="ms.2.n">Blue box, top shelf. Breakfast can be small.</p>
+                <p class="tp-small tp-muted"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg> <span data-i18n="about">about</span> <span class="tp-num" id="rt-min">5</span> <span data-i18n="unit.min">min</span></p>
+              </div>
+
+              <!-- @component Notice | shadcn: alert | props: { tone: "info", title: "Paused. Your place is saved." } | events: — -->
+              <div class="tp-notice" data-tone="info" role="status" id="rt-paused" data-component="Notice" hidden>
+                <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg></span>
+                <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="paused.t">Paused. Your place is saved.</span><span data-i18n="paused.b">Pick up whenever you're ready, today or later.</span></span>
+              </div>
+              <p class="tp-muted tp-small" id="rt-note" role="status" aria-live="polite"></p>
+
+              <div class="rt-actions" id="rt-actions">
+                <!-- @component Button | shadcn: button · NativeWind: Pressable (accent) | props: { variant: "primary" } | events: onPress -> routines.completeStep({ runId, step }) -->
+                <button class="tp-btn tp-btn--primary tp-btn--block" type="button" id="rt-done" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="done">Done, next step</span></button>
+                <div class="rt-actions__row">
+                  <button class="tp-btn tp-btn--secondary" type="button" id="rt-skip"><svg class="tp-icon tp-icon--sm tp-icon--flip" aria-hidden="true"><use href="#i-arrow"/></svg><span data-i18n="skip.one">Skip</span></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" id="rt-pause" aria-pressed="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-label data-i18n="pause">Pause</span></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" id="rt-back"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-undo"/></svg><span data-i18n="back.step">Back</span></button>
+                </div>
+              </div>
+            </section>
+
+            <!-- @component StatusPanel | shadcn: card · NativeWind: View card | props: { tone: "done", title, body } | events: — -->
+            <section class="tp-status-panel" data-tone="done" id="rt-finish" aria-labelledby="rt-fin-title" data-component="StatusPanel" hidden>
+              <span class="tp-status-panel__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-leaf"/></svg></span>
+              <h2 class="tp-status-panel__title" id="rt-fin-title" tabindex="-1" data-i18n="fin.t">That's your morning routine.</h2>
+              <p class="tp-status-panel__body"><span data-i18n="fin.done">Done:</span> <span class="tp-num" id="rt-fin-done">0</span> · <span data-i18n="fin.skipped">Skipped:</span> <span class="tp-num" id="rt-fin-skip">0</span>. <span data-i18n="fin.b">Every step you did counts.</span></p>
+              <div class="tp-status-panel__actions">
+                <a class="tp-btn tp-btn--secondary" href="today.html"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg><span data-i18n="fin.today">Go to Today</span></a>
+                <button class="tp-btn tp-btn--ghost" type="button" id="rt-to-list"><span data-i18n="fin.list">All routines</span></button>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div class="tp-toast-region" aria-live="polite"></div>
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "more" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" aria-current="page" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "ms.1.t": "Glass of water", "ms.1.n": "Before coffee. The glass is by the sink.",
+    "ms.2.t": "Take your meds with breakfast", "ms.2.n": "Blue box, top shelf. Breakfast can be small.",
+    "ms.3.t": "Open the curtains and stretch", "ms.3.n": "Just a minute of light and a slow reach up.",
+    "ms.4.t": "Look at today's plan", "ms.4.n": "Only a glance. You don't need to fix anything yet.",
+    "ms.5.t": "Pick one first task", "ms.5.n": "The smallest one is a fine choice.",
+    "es.1.t": "Put your phone on the charger", "es.1.n": "In the kitchen, not by the bed.",
+    "es.2.t": "Set out tomorrow's clothes", "es.2.n": "Whatever is clean is good enough.",
+    "es.3.t": "Write one line in the journal", "es.3.n": "One line is a whole entry.",
+    "es.4.t": "Read for a few pages", "es.4.n": "Stop whenever you feel sleepy.",
+    "ps.1.t": "Get three empty boxes", "ps.1.n": "They're in the hallway.",
+    "ps.2.t": "Pick one shelf", "ps.2.n": "Just one. The rest can wait.",
+    "ps.3.t": "Pack the shelf", "ps.3.n": "Heavy things at the bottom.",
+    "ps.4.t": "Label each box", "ps.4.n": "Room and one word is enough.",
+    "ps.5.t": "Stack the boxes by the door", "ps.5.n": "Leave a path to walk through.",
+    "ps.6.t": "Have a glass of water", "ps.6.n": "You did real work.",
+    "r.morning": "Morning routine", "r.evening": "Evening wind-down", "r.moving": "Packing hour",
+    "fin.morning": "That's your morning routine.", "fin.evening": "That's your evening wind-down.", "fin.moving": "That's your packing hour.",
+    "pause": "Pause", "resume": "Pick up again",
+    "note.skipped": "Skipped. That's fine.", "note.back": "Back one step.", "note.resumed": "Picking up where you left off.",
+    "title.guide": "Routine"
+  },
+  he: {
+    "doc.title": "שגרות · Tempo",
+    "skip": "דלגי לתוכן",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "השינויים יישמרו כשהחיבור יחזור.",
+    "state.safe": "הנתונים שלך בטוחים.", "state.retry": "לנסות שוב",
+    "top.back": "חזרה", "top.title": "שגרות", "top.avatar": "הגדרות של מאיה רונן", "title.guide": "שגרה",
+    "load.label": "טוענים את השגרות שלך",
+    "err.title": "לא הצלחנו לטעון את השגרות שלך.", "err.body": "זה אצלנו, לא אצלך.",
+    "empty.title": "עוד אין שגרות.",
+    "empty.body": "שגרה היא כמה צעדים קטנים שעושים באותו סדר, כמו להתארגן בבוקר. המאמן יכול לעזור לך ליצור אחת מתי שתרצי.",
+    "empty.coach": "ליצור אחת עם המאמן",
+    "page.title": "שגרות", "page.sub": "שגרות · אחת בכל פעם, צעד אחד בכל פעם",
+    "resume.title": "להמשיך מאיפה שעצרת", "resume.note": "הושהה ב־08:10. המקום שלך שמור.", "resume.go": "להמשיך",
+    "step": "צעד", "of": "מתוך", "steps": "צעדים", "about": "בערך", "unit.min": "דק׳",
+    "all.title": "כל השגרות", "r.inprogress": "באמצע",
+    "r.morning": "שגרת בוקר", "r.evening": "התכנסות לערב", "r.moving": "שעת אריזה",
+    "new.coach": "ליצור שגרה חדשה עם המאמן",
+    "ms.1.t": "כוס מים", "ms.1.n": "לפני הקפה. הכוס ליד הכיור.",
+    "ms.2.t": "לקחת את התרופות עם ארוחת הבוקר", "ms.2.n": "הקופסה הכחולה, במדף העליון. ארוחת הבוקר יכולה להיות קטנה.",
+    "ms.3.t": "לפתוח את הווילונות ולהתמתח", "ms.3.n": "רק דקה של אור ומתיחה איטית למעלה.",
+    "ms.4.t": "להציץ בתוכנית של היום", "ms.4.n": "רק מבט. לא צריך לסדר כלום עדיין.",
+    "ms.5.t": "לבחור משימה ראשונה אחת", "ms.5.n": "הקטנה ביותר היא בחירה מצוינת.",
+    "es.1.t": "לשים את הטלפון בטעינה", "es.1.n": "במטבח, לא ליד המיטה.",
+    "es.2.t": "להכין את הבגדים של מחר", "es.2.n": "מה שנקי זה מספיק טוב.",
+    "es.3.t": "לכתוב שורה אחת ביומן", "es.3.n": "שורה אחת היא רשומה שלמה.",
+    "es.4.t": "לקרוא כמה עמודים", "es.4.n": "אפשר לעצור ברגע שמרגישים עייפות.",
+    "ps.1.t": "להביא שלושה ארגזים ריקים", "ps.1.n": "הם במסדרון.",
+    "ps.2.t": "לבחור מדף אחד", "ps.2.n": "רק אחד. השאר יכולים לחכות.",
+    "ps.3.t": "לארוז את המדף", "ps.3.n": "דברים כבדים למטה.",
+    "ps.4.t": "לסמן כל ארגז", "ps.4.n": "חדר ומילה אחת מספיקים.",
+    "ps.5.t": "לערום את הארגזים ליד הדלת", "ps.5.n": "להשאיר מעבר ללכת בו.",
+    "ps.6.t": "לשתות כוס מים", "ps.6.n": "עשית עבודה אמיתית.",
+    "paused.t": "מושהה. המקום שלך שמור.", "paused.b": "אפשר להמשיך מתי שתרצי, היום או אחר כך.",
+    "done": "בוצע, לצעד הבא", "skip.one": "לדלג", "pause": "להשהות", "resume": "להמשיך", "back.step": "אחורה",
+    "note.skipped": "דילגת. זה בסדר.", "note.back": "חזרנו צעד אחד.", "note.resumed": "ממשיכים מאיפה שעצרת.",
+    "fin.t": "זו הייתה שגרת הבוקר שלך.", "fin.morning": "זו הייתה שגרת הבוקר שלך.", "fin.evening": "זו הייתה ההתכנסות לערב שלך.", "fin.moving": "זו הייתה שעת האריזה שלך.",
+    "fin.done": "בוצעו:", "fin.skipped": "דולגו:", "fin.b": "כל צעד שעשית נחשב.",
+    "fin.today": "למסך היום", "fin.list": "כל השגרות"
+  }
+};
+
+/* List <-> guided step view (one step at a time).
+   REAL: convex routines.list · routines.getRun · routines.startRun · routines.completeStep · routines.skipStep · routines.pause / resume · routines.reopenStep */
+TP.onReady = function () {
+  var R = {
+    morning: { prefix: "ms", mins: [2, 5, 3, 5, 10], at: 1 },
+    evening: { prefix: "es", mins: [2, 5, 5, 8], at: 0 },
+    moving:  { prefix: "ps", mins: [5, 5, 25, 10, 10, 5], at: 0 }
+  };
+  var cur = "morning", paused = false, done = 1, skipped = 0;
+  var listV = document.getElementById("view-list"), guideV = document.getElementById("view-guide");
+  var guide = document.getElementById("rt-guide"), finish = document.getElementById("rt-finish");
+  var note = document.getElementById("rt-note"), back = document.getElementById("top-back"), title = document.getElementById("top-title");
+  function $(id) { return document.getElementById(id); }
+  function setText(el, key) { el.setAttribute("data-i18n", key); el.textContent = TP.t(key); }
+
+  function render() {
+    var r = R[cur], i = r.at, n = r.mins.length;
+    setText($("rt-name"), "r." + cur);
+    $("rt-i").textContent = i + 1; $("rt-total").textContent = n;
+    setText($("rt-step-title"), r.prefix + "." + (i + 1) + ".t");
+    setText($("rt-step-note"), r.prefix + "." + (i + 1) + ".n");
+    $("rt-min").textContent = r.mins[i];
+    var dots = "";
+    for (var k = 0; k < n; k++) dots += '<li><span class="tp-dot ' + (k < i ? "tp-dot--done" : k === i ? "tp-dot--fixed" : "tp-dot--habit") + '"></span></li>';
+    $("rt-dots").innerHTML = dots;
+    $("rt-back").disabled = i === 0;
+  }
+  function show(view) {
+    var g = view === "guide";
+    listV.hidden = g; guideV.hidden = !g;
+    setText(title, g ? "title.guide" : "top.title");
+    back.setAttribute("href", g ? "#" : "today.html");
+    if (g) { guide.hidden = false; finish.hidden = true; render(); $("rt-step-title").focus(); }
+    else $("list-title").focus();
+  }
+  back.addEventListener("click", function (e) { if (!guideV.hidden) { e.preventDefault(); show("list"); } });
+
+  document.querySelectorAll("[data-start]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      // REAL: convex routines.startRun({ routineId }) — reopens the saved run if one exists
+      var id = b.getAttribute("data-start");
+      if (id !== cur) { cur = id; done = R[id].at; skipped = 0; }
+      note.textContent = ""; show("guide");
+    });
+  });
+
+  function advance() {
+    var r = R[cur];
+    if (r.at < r.mins.length - 1) { r.at++; render(); $("rt-step-title").focus(); return; }
+    guide.hidden = true; finish.hidden = false;
+    setText($("rt-fin-title"), "fin." + cur);
+    $("rt-fin-done").textContent = done; $("rt-fin-skip").textContent = skipped;
+    $("rt-fin-title").focus();
+    r.at = 0;
+  }
+  $("rt-done").addEventListener("click", function () {
+    // REAL: convex routines.completeStep({ runId, step })
+    if (paused) $("rt-pause").click();
+    done++; note.textContent = ""; advance();
+  });
+  $("rt-skip").addEventListener("click", function () {
+    // REAL: convex routines.skipStep({ runId, step }) — a normal choice
+    if (paused) $("rt-pause").click();
+    skipped++; advance(); note.textContent = TP.t("note.skipped");
+  });
+  $("rt-back").addEventListener("click", function () {
+    // REAL: convex routines.reopenStep({ runId, step: previous })
+    var r = R[cur]; if (r.at === 0) return;
+    r.at--; if (done > 0) done--; render(); note.textContent = TP.t("note.back");
+  });
+  $("rt-pause").addEventListener("click", function () {
+    // REAL: convex routines.pause({ runId }) / routines.resume({ runId })
+    paused = !paused;
+    var btn = $("rt-pause"); btn.setAttribute("aria-pressed", String(paused));
+    btn.querySelector("[data-label]").textContent = TP.t(paused ? "resume" : "pause");
+    $("rt-paused").hidden = !paused;
+    note.textContent = paused ? "" : TP.t("note.resumed");
+  });
+  $("rt-to-list").addEventListener("click", function () { show("list"); });
+
+  if (new URLSearchParams(location.search).get("view") === "guide") show("guide");
+};
+</script>
+</body>
+</html>

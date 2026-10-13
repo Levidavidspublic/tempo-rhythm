@@ -8,6 +8,8 @@
  * Target: <script> injected by apps/web/app/layout.tsx via `dangerouslySetInnerHTML`.
  */
 
+import { LANG_STORAGE_KEY } from "./i18n";
+
 export const THEME_STORAGE_KEY = "tempo-theme";
 export const DYSLEXIA_STORAGE_KEY = "tempo-dyslexia";
 
@@ -16,9 +18,14 @@ export type ThemePreference = "light" | "dark" | "system";
 export function themeInitScript(): string {
   return `(function(){try{
     var root=document.documentElement;
-    var t=localStorage.getItem('${THEME_STORAGE_KEY}');
+    var q=new URLSearchParams(location.search);
+    var qt=q.get('theme');
+    var t=(qt==='light'||qt==='dark')?qt:localStorage.getItem('${THEME_STORAGE_KEY}');
     if(t==='light'||t==='dark'){root.setAttribute('data-theme',t);}
     else{root.removeAttribute('data-theme');}
+    var ql=q.get('lang');
+    var l=(ql==='he'||ql==='en')?ql:localStorage.getItem('${LANG_STORAGE_KEY}');
+    if(l==='he'){root.lang='he';root.dir='rtl';}else{root.lang='en';root.dir='ltr';}
     var d=localStorage.getItem('${DYSLEXIA_STORAGE_KEY}');
     if(d==='on'){root.setAttribute('data-dyslexia','on');}
   }catch(e){}})();`;

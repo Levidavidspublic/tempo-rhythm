@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice call · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — voice-call.html */
+  .vc-today { display: grid; gap: var(--tp-space-3); }
+  .vc-top-end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+  .vc-status { display: grid; justify-items: center; gap: var(--tp-space-2); }
+  .vc-notice { width: min(100%, 60ch); text-align: start; }
+</style>
+</head>
+<body>
+<!--
+@screen   Live voice call (over Today)
+@route    apps/web/components/voice/VoiceCall.tsx  (opened from the coach composer; rendered over apps/web/app/(tempo)/today/page.tsx)
+@layout   TempoShell
+@data     session = voice.startSession({ lang })                          // Convex action: opens a realtime audio session; returns sessionId + minutesLeft
+@data     usage = voice.minutesLeft({ date })                             // Convex query: today's minutes left on this plan
+@data     transcript = voice.transcript({ sessionId })                    // live: both speakers, partial lines marked live
+@actions  mic on / off -> track.enabled = !track.enabled                  // no new session; Esc also pauses
+@actions  interrupt the coach -> session.interrupt()                      // stops coach audio at once (barge-in)
+@actions  push-to-talk -> voice.sendClip({ sessionId, audio })            // hold to record, release to send; works on every plan
+@actions  change language -> voice.setLanguage({ sessionId, lang })       // the coach replies in this language; page language stays
+@actions  undo an in-call action -> tasks.remove({ id })                  // within 5 minutes of the action
+@actions  end call -> voice.endSession({ sessionId })                     // closes the voiceSessions row; minutes are real audio time
+@states   default | empty | loading | error | offline  (?state=)   loading = connecting · empty = no words yet · error = couldn't connect · + ended
+@flow     1. The call opens full screen over Today. It connects, then says "Listening".
+          2. The big word in the middle says what is happening: Connecting, Listening, Speaking or Paused. The bars move with the sound but carry no meaning.
+          3. Everything both people say appears as text underneath, as it is said. Each line can be read aloud again.
+          4. While the coach speaks, Interrupt stops it at once. Maya can also just start talking.
+          5. When the coach does something (adds a task), a line confirms it with Undo.
+          6. The mic button turns the mic on and off; it is the one accent on this screen. Push-to-talk works like a walkie-talkie: hold, talk, let go.
+          7. The language chip switches the call between English and Hebrew.
+          8. A small badge shows the minutes left today. When they run out, push-to-talk still works.
+          9. End call stops the session and offers a way back to Today.
+          10. Couldn't connect: "Couldn't connect. Push-to-talk still works." + Try again.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#call-mic" data-i18n="skip">Skip to the mic</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell" id="app" inert>
+
+  <!-- ===== Rail · page tree ===== -->
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'today' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+    <div class="tp-rail__group">
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="coach-thread.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="coach-history.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-history"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.history">Chat history</span></a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Pages','Today'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs"><strong data-i18n="nav.today">Today</strong></div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- ===== Today, behind the call ===== -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component Page | shadcn: — | props: { page: {id, title, date, blocks[]} } | events: — -->
+    <article class="tp-paper" data-component="Page" aria-labelledby="page-title">
+      <div class="tp-page__body">
+        <h1 class="tp-page-title" id="page-title" data-i18n="page.title">Monday, 12 October</h1>
+        <div class="tp-page-content vc-today">
+          <h2 class="tp-h2" data-i18n="h.tasks">Tasks</h2>
+          <!-- @component TaskBlock | shadcn: checkbox + collapsible | props: { tasks: {id,title,minutes,done}[] } | events: onToggle -> tasks.complete({ id }) -->
+          <ul class="tp-block-task" role="list" data-component="TaskBlock" id="task-list">
+            <!-- @component TaskRow ×3 | shadcn: checkbox | props: { task } | events: onToggle -> tasks.complete({ id }) -->
+            <li class="tp-task-row" data-component="TaskRow" data-new="true" id="row-bank">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t0"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t0" dir="auto" data-i18n="task.bank">Call the bank</span><span class="tp-task-row__meta"><span><span data-i18n="task.before">before</span> <span class="tp-num tp-mono">12:00</span></span></span></div>
+              <span></span>
+            </li>
+            <li class="tp-task-row" data-component="TaskRow">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t1"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t1" dir="auto" data-i18n="task.slides">Draft 3 slides for Thursday</span><span class="tp-task-row__meta"><span><span class="tp-num">25</span> <span data-i18n="unit.min">min</span></span></span></div>
+              <span></span>
+            </li>
+            <li class="tp-task-row" data-component="TaskRow">
+              <button class="tp-check" type="button" role="checkbox" aria-checked="false" data-action="check" aria-labelledby="t2"><span class="tp-check__box"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span></button>
+              <div class="tp-task-row__body"><span class="tp-task-row__title" id="t2" dir="auto" data-i18n="task.dana">Email Dana about the lease</span><span class="tp-task-row__meta"><span><span class="tp-num">10</span> <span data-i18n="unit.min">min</span></span></span></div>
+              <span></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </article>
+  </main>
+</div>
+
+<!-- ===== The call (full-screen glass overlay) ===== -->
+<!-- @component VoiceCall | shadcn: dialog (full screen) | props: { state: 'speaking', lang: 'en', minutesLeft: 12, transcript: CallLine[] } | events: onMicToggle -> call-mic, onInterrupt -> session.interrupt(), onEnd -> voice.endSession, onPushToTalk -> voice.sendClip; Esc pauses -->
+<section class="tp-call tp-glass" id="call" role="dialog" aria-modal="true" aria-labelledby="call-title" data-component="VoiceCall" data-state="speaking">
+  <div class="tp-call__top">
+    <h2 class="tp-call__title" id="call-title" data-i18n="call.title">Call with your coach</h2>
+    <div class="vc-top-end">
+      <!-- @component CallMinutes | shadcn: badge | props: { minutesLeft: 12, low: true } | events: — -->
+      <span class="tp-call__minutes" data-low="true" data-component="CallMinutes"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-clock"/></svg><span class="tp-num">12</span> <span data-i18n="call.minutes">minutes left today · running low</span></span>
+      <!-- @component LanguageChip | shadcn: toggle / select | props: { lang: 'en' } | events: onChange -> voice.setLanguage({ sessionId, lang }) -->
+      <button class="tp-lang-chip" type="button" data-action="call-lang" data-lang="en" aria-label="Call language" data-i18n-attr="aria-label:call.langLabel" data-component="LanguageChip">
+        <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-globe"/></svg>
+        <span data-lang-current lang="en">English</span>
+        <span class="tp-lang-chip__other" lang="he">עברית</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="tp-call__stage">
+    <div class="vc-status">
+      <!-- @component AudioLevel | shadcn: — | props: { levels: number[] } | events: — (decorative) -->
+      <div class="tp-level" aria-hidden="true" data-component="AudioLevel">
+        <span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span><span class="tp-level__bar"></span>
+      </div>
+      <p class="tp-call__state" aria-live="polite" id="call-state">Speaking</p>
+      <p class="tp-call__hint" data-state-show="default empty loading" data-i18n="call.hint">Talk any time. You can cut in while the coach speaks. Esc pauses the mic.</p>
+    </div>
+
+    <!-- error: couldn't connect -->
+    <!-- @component Notice | shadcn: alert | props: { tone: 'caution', title: "Couldn't connect." } | events: onRetry -> voice.startSession -->
+    <div class="tp-notice vc-notice" data-tone="caution" role="alert" data-component="Notice" data-state-show="error">
+      <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-alert"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="err.title">Couldn't connect. Push-to-talk still works.</span><span data-i18n="err.body">Hold the button below to talk. We'll keep trying the live call.</span></span>
+      <span class="tp-notice__action"><button class="tp-btn tp-btn--secondary tp-btn--sm" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="err.retry">Try again</span></button></span>
+    </div>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline vc-notice" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="off.title">You're offline.</span><span data-i18n="off.body">The call will reconnect when you're back. What was said stays here, and your list still works.</span></span>
+    </div>
+
+    <!-- empty: connected, nothing said yet -->
+    <p class="tp-call__hint" data-state-show="empty" data-i18n="empty.hint">Say hello, or tell the coach what's on your mind.</p>
+
+    <!-- @component LiveTranscript | shadcn: scroll-area | props: { lines: {who,text,live?}[] } | events: onReadAloud -> voice.speak({ text, lang }) -->
+    <ol class="tp-call__transcript" aria-live="polite" aria-label="What was said" data-i18n-attr="aria-label:call.transcript" data-component="LiveTranscript" data-state-hide>
+      <li class="tp-call-line" data-who="you">
+        <span class="tp-call-line__who" data-i18n="who.you">You</span>
+        <span class="tp-call-line__text" dir="auto" data-i18n="l1">Hi. I'm already behind and it's only nine.</span>
+      </li>
+      <li class="tp-call-line" data-who="coach">
+        <span class="tp-call-line__who" data-i18n="who.coach">Coach</span>
+        <span class="tp-call-line__text" dir="auto" data-i18n="l2">That's a hard way to start a Monday. Let's pick one thing. What feels heaviest?</span>
+        <!-- @component ReadAloudButton | shadcn: toggle | props: { text } | events: onToggle -> voice.speak -->
+        <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" aria-label="Read aloud" data-i18n-attr="aria-label:read.aloud" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg></button>
+      </li>
+      <li class="tp-call-line" data-who="you">
+        <span class="tp-call-line__who" data-i18n="who.you">You</span>
+        <span class="tp-call-line__text" dir="auto" data-i18n="l3">The bank. I need to call them about my card.</span>
+      </li>
+      <li class="tp-call-line" data-who="coach" data-live="true">
+        <span class="tp-call-line__who" data-i18n="who.coach">Coach</span>
+        <span class="tp-call-line__text" dir="auto" data-i18n="l4">Okay. I added it to Today, before noon. Want me to stay on while you find the number?</span>
+        <button class="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon tp-readaloud" type="button" data-action="read-aloud" aria-pressed="false" aria-label="Read aloud" data-i18n-attr="aria-label:read.aloud" data-component="ReadAloudButton"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-volume"/></svg></button>
+      </li>
+    </ol>
+
+    <!-- @component CallActionConfirm | shadcn: sonner (inline) | props: { text: "Added 'call the bank' to Today", undoUntil: +5 min } | events: onUndo -> tasks.remove({ id }) -->
+    <div class="tp-call-action" role="status" data-component="CallActionConfirm" data-state-hide>
+      <span class="tp-call-action__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+      <span class="tp-call-action__text" data-i18n="act.text">Added 'call the bank' to Today</span>
+      <button class="tp-btn tp-btn--ghost tp-btn--sm" type="button" data-action="call-undo"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-undo"/></svg><span data-i18n="act.undo">Undo</span></button>
+    </div>
+  </div>
+
+  <div class="tp-call__dock">
+    <!-- @component Interrupt | shadcn: button | props: — | events: onPress -> session.interrupt() (enabled only while the coach speaks) -->
+    <button class="tp-btn tp-btn--secondary" type="button" data-action="call-interrupt" data-component="Interrupt" data-state-show="default empty"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-hand"/></svg><span data-i18n="call.interrupt">Interrupt</span></button>
+
+    <!-- @component MicToggle | shadcn: toggle | props: { pressed: true } | events: onToggle -> track.enabled (the one accent) -->
+    <div class="tp-call__micwrap" data-component="MicToggle" data-state-show="default empty loading">
+      <button class="tp-call__mic" id="call-mic" type="button" data-action="call-mic" aria-pressed="true" aria-label="Turn mic off"><svg class="tp-icon" aria-hidden="true"><use href="#i-mic"/></svg></button>
+      <span class="tp-call__mic-label" aria-hidden="true">Mic on</span>
+    </div>
+
+    <!-- @component PushToTalk | shadcn: button | props: { pressed: false } | events: onPressStart / onPressEnd -> voice.sendClip({ sessionId, audio }) -->
+    <button class="tp-ptt" type="button" data-pressed="false" aria-pressed="false" aria-describedby="ptt-help" data-component="PushToTalk"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-mic"/></svg><span data-label data-i18n="ptt.hold">Hold to talk</span></button>
+    <span class="tp-sr-only" id="ptt-help" data-i18n="ptt.help">Hold with the pointer, or hold Space or Enter. Let go to send.</span>
+
+    <!-- @component EndCall | shadcn: button | props: — | events: onPress -> voice.endSession({ sessionId }), then call-close -->
+    <button class="tp-btn tp-btn--danger" type="button" data-action="call-end" data-component="EndCall"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-phone-off"/></svg><span data-i18n="call.end">End call</span></button>
+    <button class="tp-btn tp-btn--secondary" type="button" data-action="call-close" hidden><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="call.back">Back to Today</span></button>
+  </div>
+</section>
+
+<div class="tp-toast-region" aria-live="polite"></div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "call.connecting": "Connecting…", "call.listening": "Listening", "call.speaking": "Speaking", "call.paused": "Paused",
+    "call.micOn": "Mic on", "call.micOff": "Mic off", "call.mute": "Turn mic off", "call.unmute": "Turn mic on",
+    "call.stopped": "(you cut in)", "call.interrupted": "Coach stopped. Listening.", "call.ended": "Call ended",
+    "call.notConnected": "Not connected",
+    "ptt.hold": "Hold to talk", "ptt.release": "Listening… let go to send",
+    "call.undone": "Undone. Nothing was added.", "read.aloud": "Read aloud", "read.stop": "Stop reading", "state.retried": "Connected."
+  },
+  he: {
+    "doc.title": "שיחה קולית · Tempo",
+    "skip": "דלגי למיקרופון",
+    "rail.label": "דפים", "nav.today": "היום", "nav.coach": "מאמן", "nav.history": "היסטוריית שיחות",
+    "top.menu": "פתיחת הדפים", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "page.title": "יום שני, 12 באוקטובר", "h.tasks": "משימות",
+    "task.bank": "להתקשר לבנק", "task.before": "עד", "task.slides": "לנסח 3 שקפים ליום חמישי", "task.dana": "לכתוב לדנה על החוזה", "unit.min": "דק׳",
+    "call.title": "שיחה עם המאמן", "call.minutes": "דקות נשארו היום · עומדות להיגמר", "call.langLabel": "שפת השיחה",
+    "call.hint": "אפשר לדבר בכל רגע. אפשר לקטוע את המאמן כשהוא מדבר. Esc משהה את המיקרופון.",
+    "err.title": "לא הצלחנו להתחבר. לחיצה לדיבור עדיין עובדת.", "err.body": "החזיקי את הכפתור למטה כדי לדבר. נמשיך לנסות את השיחה החיה.", "err.retry": "לנסות שוב",
+    "off.title": "אין חיבור לרשת.", "off.body": "השיחה תתחבר מחדש כשהחיבור יחזור. מה שנאמר נשאר כאן, והרשימה שלך ממשיכה לעבוד.",
+    "empty.hint": "אפשר להגיד שלום, או לספר למאמן מה עובר עלייך.",
+    "call.transcript": "מה נאמר", "who.you": "את", "who.coach": "מאמן",
+    "l1": "היי. אני כבר בפיגור וזה רק תשע.",
+    "l2": "זו התחלה קשה ליום שני. בואי נבחר דבר אחד. מה הכי כבד?",
+    "l3": "הבנק. אני צריכה להתקשר אליהם בקשר לכרטיס.",
+    "l4": "בסדר. הוספתי את זה להיום, לפני הצהריים. רוצה שאשאר על הקו בזמן שאת מחפשת את המספר?",
+    "act.text": "״להתקשר לבנק״ נוסף להיום", "act.undo": "ביטול",
+    "call.interrupt": "לקטוע", "call.end": "סיום שיחה", "call.back": "חזרה להיום",
+    "ptt.hold": "החזיקי כדי לדבר", "ptt.release": "מקשיב… שחררי כדי לשלוח", "ptt.help": "החזיקי עם הסמן, או החזיקי רווח או Enter. שחררי כדי לשלוח.",
+    "call.connecting": "מתחבר…", "call.listening": "מקשיב", "call.speaking": "מדבר", "call.paused": "מושהה",
+    "call.micOn": "המיקרופון פתוח", "call.micOff": "המיקרופון כבוי", "call.mute": "כיבוי המיקרופון", "call.unmute": "הפעלת המיקרופון",
+    "call.stopped": "(קטעת)", "call.interrupted": "המאמן עצר. מקשיב.", "call.ended": "השיחה הסתיימה", "call.notConnected": "לא מחובר",
+    "call.undone": "בוטל. שום דבר לא נוסף.", "read.aloud": "הקראה", "read.stop": "עצירת ההקראה", "state.retried": "מחובר."
+  }
+};
+
+(function () {
+  /* The call is open on arrival; Today behind it is inert until the call is closed. */
+  TP.onReady2 = function (params) {
+    // REAL: convex voice.startSession({ lang }) on open; voice.minutesLeft({ date }) feeds the badge
+    var call = document.getElementById("call"), s = params.get("state");
+    if (s === "loading") TP.callSetState("connecting", call);
+    else if (s === "empty") TP.callSetState("listening", call);
+    else if (s === "error" || s === "offline") {
+      TP.callSetState("paused", call);
+      document.getElementById("call-state").textContent = TP.t("call.notConnected");
+    }
+    var mic = document.getElementById("call-mic"); if (mic && !mic.closest("[hidden]")) mic.focus();
+  };
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest("[data-action]"); if (!a) return;
+    var act = a.getAttribute("data-action");
+    if (act === "call-close") {
+      // REAL: router.back() to Today; the session is already closed by voice.endSession
+      document.getElementById("app").removeAttribute("inert");
+      var m = document.getElementById("main"); if (m) m.focus();
+    }
+    if (act === "call-undo") {
+      // REAL: convex tasks.remove({ id }) — the task the call just added
+      var row = document.getElementById("row-bank"); if (row) row.hidden = true;
+    }
+    if (act === "retry") {
+      // REAL: convex voice.startSession({ lang }) again
+      TP.callSetState("connecting", document.getElementById("call"));
+      setTimeout(function () { TP.callSetState("listening", document.getElementById("call")); }, 700);
+    }
+  });
+})();
+</script>
+</body>
+</html>

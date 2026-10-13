@@ -1,0 +1,542 @@
+<!doctype html>
+<!--
+  Tempo v3 · mobile screen (habits) inside the Open Design platform-neutral handset shell.
+  The handset markup and CSS come from .od-frames/neutral.html; the product mounts in .phone-content.
+-->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Habits · Tempo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../../tokens.css">
+  <link rel="stylesheet" href="../../tempo.css">
+  <script src="../../tempo.js"></script>
+  <style>
+    /* ===== Open Design neutral handset shell (presentation only; product tokens stay on :root via tokens.css) ===== */
+    :root {
+      --phone-screen-width: 390px;
+      --phone-screen-height: 844px;
+      --phone-bezel: 10px;
+      --phone-outer-radius: 52px;
+      --phone-screen-radius: 42px;
+      --phone-safe-top: 50px;
+      --phone-safe-bottom: 29px;
+      --phone-system-fg: var(--tp-ink);
+      --phone-screen-bg: var(--tp-ground);
+      --phone-stage-bg: #eaebee;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.94), transparent 35%),
+        var(--phone-stage-bg);
+    }
+    .phone-frame {
+      position: relative;
+      width: calc(var(--phone-screen-width) + var(--phone-bezel) * 2);
+      height: calc(var(--phone-screen-height) + var(--phone-bezel) * 2);
+      padding: var(--phone-bezel);
+      border-radius: var(--phone-outer-radius);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 17%),
+        linear-gradient(160deg, #3f4146 0%, #202227 48%, #0b0c0f 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,.13),
+        inset 0 0 0 2px rgba(0,0,0,.85),
+        0 32px 68px -20px rgba(10,12,16,.52),
+        0 10px 24px -10px rgba(10,12,16,.32);
+      isolation: isolate;
+    }
+    .phone-frame::before,
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 96px;
+      bottom: 96px;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.13) 16%, transparent 30%, transparent 72%, rgba(255,255,255,.07) 88%, transparent);
+    }
+    .phone-frame::before { left: 0; }
+    .phone-frame::after { right: 0; }
+    .hardware-button {
+      position: absolute;
+      width: 4px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #08090b, #2a2d33 60%, #08090b);
+      box-shadow: inset 0 1px rgba(255,255,255,.08);
+    }
+    .hardware-button.volume { left: -3px; top: 222px; height: 86px; }
+    .hardware-button.power { right: -3px; top: 270px; height: 82px; }
+    .phone-screen {
+      position: relative;
+      width: var(--phone-screen-width);
+      height: var(--phone-screen-height);
+      overflow: hidden;
+      border-radius: var(--phone-screen-radius);
+      background: var(--phone-screen-bg);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      transform: translateZ(0); /* fixed product chrome (tab bar, sheets, call, toasts) pins to the handset, not the browser window */
+    }
+    .phone-content {
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding-top: var(--phone-safe-top);
+      padding-bottom: var(--phone-safe-bottom);
+      background: var(--phone-screen-bg);
+    }
+    .phone-content::-webkit-scrollbar { display: none; }
+    .camera-dot {
+      position: absolute; z-index: 20; top: 13px; left: 50%; width: 10px; height: 10px;
+      transform: translateX(-50%); border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #344154 0 12%, #0a0c10 34%, #000 76%);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none;
+    }
+    .status-bar {
+      position: absolute; z-index: 15; inset: 0 0 auto; height: var(--phone-safe-top);
+      display: grid; grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); align-items: start;
+      padding: 14px 20px 0; color: var(--phone-system-fg); opacity: .8; pointer-events: none;
+    }
+    .status-time { justify-self: start; display: flex; align-items: center; height: 15px; font-size: 14px; font-weight: 560; line-height: 1; letter-spacing: .01em; }
+    .status-cutout-zone { width: 56px; }
+    .status-icons { justify-self: end; display: inline-flex; align-items: center; height: 15px; gap: 6px; }
+    .status-icons svg { display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+    .status-icons .connectivity { width: 15px; height: 12px; }
+    .status-icons .wifi { width: 15px; height: 12px; }
+    .status-icons .battery { width: 19px; height: 11px; }
+    .gesture-indicator {
+      position: absolute; z-index: 90; left: 50%; bottom: 8px; width: 96px; height: 4px;
+      transform: translateX(-50%); border-radius: 99px; background: var(--phone-system-fg); opacity: .86; pointer-events: none;
+    }
+    @media (max-height: 927px) { .phone-frame { zoom: 0.9; } }
+    @media (max-height: 840px) { .phone-frame { zoom: 0.82; } }
+    @media (max-height: 771px) { .phone-frame { zoom: 0.74; } }
+    @media (max-height: 702px) { .phone-frame { zoom: 0.66; } }
+    @media (max-width: 480px) {
+      body { padding: 0; display: block; }
+      .phone-frame { width: 100%; height: 100dvh; padding: 0; border-radius: 0; background: none; box-shadow: none; zoom: 1; }
+      .phone-frame::before, .phone-frame::after, .hardware-button { display: none; }
+      .phone-screen { width: 100%; height: 100%; border-radius: 0; }
+    }
+
+    /* ===== Handset adapters — layout only. tempo.css gates its phone rules on the browser viewport;
+       inside the 390px handset these restate placement against the phone screen. ===== */
+    [data-phone-content] .m-tabbar {
+      position: fixed; z-index: 24; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--tp-space-1);
+      inset-inline: var(--tp-space-2); bottom: calc(var(--phone-safe-bottom) - var(--tp-space-2));
+      min-height: var(--tp-tabbar-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-xl);
+    }
+    [data-phone-content] .m-tab { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 52px; width: auto; padding: 0 var(--tp-space-1); text-align: center; }
+    [data-phone-content] .m-tab .tp-tree-item__label { flex: none; max-width: 100%; }
+    [data-phone-content] .m-fab {
+      position: fixed; z-index: 23; inset-inline-end: var(--tp-space-4);
+      bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-3));
+      width: calc(var(--tp-touch) + var(--tp-space-3)); min-height: calc(var(--tp-touch) + var(--tp-space-3));
+    }
+    [data-phone-content] .tp-mtopbar { top: calc(var(--phone-safe-top) + var(--tp-space-1)); }
+    [data-phone-content] .tp-offline { top: calc(var(--phone-safe-top) + var(--tp-touch) + var(--tp-space-5)); }
+    [data-phone-content] .tp-sheet { inset-inline: 0; bottom: 0; width: auto; margin-inline: 0; max-height: 88%; padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-toast-region { bottom: calc(var(--phone-safe-bottom) + var(--tp-tabbar-h) + var(--tp-space-4)); max-width: calc(100% - var(--tp-space-8)); }
+    [data-phone-content] .tp-call { padding-top: var(--phone-safe-top); padding-bottom: var(--phone-safe-bottom); }
+    [data-phone-content] .tp-call__transcript { max-height: none; }
+
+    /* ===== Shared mobile screen layout (layout only) ===== */
+    .m-app { display: grid; gap: var(--tp-space-6); align-content: start; padding: var(--tp-space-3) var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-20) + var(--tp-space-4)); }
+    .m-app > .tp-mtopbar { margin-inline: calc(-1 * var(--tp-space-2)); margin-top: 0; }
+    .m-stack { display: grid; gap: var(--tp-space-3); align-content: start; min-width: 0; }
+    .m-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+    .m-more { gap: 0; padding-inline: 0; }
+
+    /* ===== habits — layout only ===== */
+    .hb-list { display: grid; gap: var(--tp-space-3); }
+    .hb-card { display: grid; gap: var(--tp-space-3); min-width: 0; }
+    .hb-card .tp-habit__head { flex-wrap: wrap; }
+    .hb-fresh__actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+    .hb-new-form { display: grid; gap: var(--tp-space-4); }
+  </style>
+</head>
+<body>
+<!--
+@screen   Habits
+@route    apps/mobile/app/(tempo)/habits.tsx
+@layout   MobileTabs
+@data     habits = habits.list({ date: localDate })            // Convex query: each habit with its last 7 days and loggedToday
+@actions  log today -> habits.log({ habitId, date })             // optimistic; tap again -> habits.unlog({ habitId, date })
+@actions  start fresh -> habits.startFresh({ habitId })          // clears nothing, just hides the welcome-back card
+@actions  pause a habit -> habits.pause({ habitId })             // Undo 5 min -> habits.resume({ habitId })
+@actions  add a habit -> habits.create({ name, when })
+@states   default | empty | loading | error | offline  (?state=)
+@flow     1. Open Habits from More. The top says how many habits are logged today, in words.
+          2. Each habit shows its name, when it usually happens, a Log today button and the last 7 days.
+          3. Each of the 7 days has a short label (Tue 6 … Mon 12). A logged day is a filled circle with a tick; a day without a log is an empty ring. Screen readers hear "logged" or "not logged".
+          4. There is no streak counter anywhere. A gap is never shown as a failure.
+          5. A habit with no logs for 7 or more days shows "Welcome back — start fresh?" with Start fresh and Pause it. Both are fine choices.
+          6. "New habit" opens a sheet with a name and a time of day.
+          7. Empty: no habits yet, and that is fine. Loading: skeleton rows. Error: kind words, data is safe, Try again. Offline: logging still works and saves later.
+@i18n     en, he
+-->
+  <div class="phone-frame" data-phone-shell data-platform="neutral">
+    <span class="hardware-button volume" aria-hidden="true"></span>
+    <span class="hardware-button power" aria-hidden="true"></span>
+
+    <section class="phone-screen" data-phone-screen>
+      <main class="phone-content" data-phone-content>
+        <!-- APP CONTENT START -->
+        <!--
+        @screen   Habits
+        @route    apps/mobile/app/(tempo)/habits.tsx
+        @layout   MobileTabs
+        @data     habits = habits.list({ date })    // Convex query
+        @actions  log -> habits.log({ habitId, date }) · start fresh -> habits.startFresh · pause -> habits.pause (Undo) · new -> habits.create
+        @states   default | empty | loading | error | offline  (?state=)
+        @flow     See the header comment at the top of <body>.
+        @i18n     en, he
+        -->
+        <a class="tp-skip" href="#m-main" data-i18n="skip">Skip to content</a>
+        <div class="m-app" id="m-main" tabindex="-1">
+
+          <!-- @component MobileTopBar | shadcn: — · NativeWind: Stack.Screen header (glass) | props: { title: "Habits", back: "/today" } | events: onBack -> router.back, onAvatar -> settings -->
+          <header class="tp-mtopbar tp-glass" data-component="MobileTopBar">
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="today.html" aria-label="Back" data-i18n-attr="aria-label:top.back"><svg class="tp-icon tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <span class="tp-mtopbar__title" data-i18n="top.title">Habits</span>
+            <a class="tp-btn tp-btn--ghost tp-btn--icon" href="settings.html" aria-label="Settings for Maya Ronen" data-i18n-attr="aria-label:top.avatar">
+              <!-- @component Avatar | shadcn: avatar | props: { initials: "MR", name: "Maya Ronen" } | events: — -->
+              <span class="tp-avatar" aria-hidden="true" data-component="Avatar">MR</span>
+            </a>
+          </header>
+
+          <!-- @component StateOffline | shadcn: alert · NativeWind: View banner (NetInfo) | props: { text } | events: — -->
+          <div class="tp-notice tp-offline" data-tone="caution" role="status" data-state-show="offline" data-component="StateOffline">
+            <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+            <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span><span data-i18n="offline.body">Changes save when you're back.</span></span>
+          </div>
+
+          <!-- @component PageHeader | shadcn: — | props: { title: "Habits", subtitle: "Monday 12 October · 1 of 4 logged today" } | events: — -->
+          <div class="tp-pagehead" data-component="PageHeader">
+            <div class="tp-pagehead__text">
+              <h1 class="tp-pagehead__title" data-i18n="page.title">Habits</h1>
+              <p class="tp-pagehead__sub" data-state-hide><span data-i18n="page.date">Monday 12 October</span> · <span class="tp-num" id="logged-n">1</span> <span data-i18n="page.of">of</span> <span class="tp-num">4</span> <span data-i18n="page.logged">logged today</span></p>
+            </div>
+          </div>
+
+          <p class="tp-muted tp-small" data-state-hide data-i18n="page.note">Small things, done some days. Any day you log counts, and a day you don't is just a day.</p>
+
+          <!-- ===== Loading ===== -->
+          <!-- @component StateLoading | shadcn: skeleton · NativeWind: Skeleton rows | props: { rows: 4, label: "Loading your habits" } | events: — -->
+          <div class="tp-state--loading" role="status" data-state-show="loading" data-component="StateLoading">
+            <span class="tp-sr-only" data-i18n="load.label">Loading your habits</span>
+            <div class="tp-skel-list">
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w100"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w40"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w100"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w100"></span></span></div>
+              <div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w100"></span></span></div>
+            </div>
+          </div>
+
+          <!-- ===== Error ===== -->
+          <!-- @component StateError | shadcn: alert | props: { what: "Couldn't load your habits." } | events: onRetry -> refetch habits.list -->
+          <div class="tp-state tp-state--error" role="alert" data-state-show="error" data-component="StateError">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-refresh"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="err.title">Couldn't load your habits.</h2>
+            <p class="tp-state__body"><span data-i18n="state.safe">Your data is safe.</span> <span data-i18n="err.body">This is on our side, not yours.</span></p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="retry"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="state.retry">Try again</span></button></div>
+          </div>
+
+          <!-- ===== Empty ===== -->
+          <!-- @component StateEmpty | shadcn: — | props: { title, body, action: "New habit" } | events: onAction -> open MobileSheet "new-habit" -->
+          <div class="tp-state tp-state--empty" data-state-show="empty" data-component="StateEmpty">
+            <span class="tp-state__icon"><svg class="tp-icon tp-icon--lg" aria-hidden="true"><use href="#i-habit"/></svg></span>
+            <h2 class="tp-state__title" data-i18n="empty.title">No habits yet. You don't need any to have a good day.</h2>
+            <p class="tp-state__body" data-i18n="empty.body">If there's one small thing you'd like to do most days, add it here. One is plenty to start.</p>
+            <div class="tp-state__actions"><button class="tp-btn tp-btn--secondary" type="button" data-action="open-sheet" aria-controls="new-habit" aria-haspopup="dialog" aria-expanded="false"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="hb.new">New habit</span></button></div>
+          </div>
+
+          <!-- ===== Default content ===== -->
+          <section class="m-stack" aria-labelledby="hb-today" data-state-hide>
+            <!-- @component Section | shadcn: — | props: { title: "Today", count: 4 } | events: — -->
+            <div class="tp-section__head" data-component="Section">
+              <h2 class="tp-section__title" id="hb-today" data-i18n="hb.title">Your habits</h2>
+              <span class="tp-section__count"><span class="tp-num">4</span> <span data-i18n="hb.count">habits</span></span>
+            </div>
+
+            <div class="hb-list">
+              <!-- @component HabitBlock ×4 | shadcn: card + toggle · NativeWind: View card + Pressable (log) | props: { habit: {id,name,when,last7:{label,done,today}[],loggedToday} } | events: onLog -> habits.log({ habitId, date }) -->
+              <article class="tp-surface tp-block-habit hb-card" data-component="HabitBlock">
+                <div class="tp-habit" data-habit="water" data-logged="true">
+                  <div class="tp-habit__head">
+                    <span class="tp-habit__name" id="h1-name" dir="auto" data-i18n="h.water">Glass of water before coffee</span>
+                    <span class="tp-habit__when" data-i18n="when.morning">Morning</span>
+                    <button class="tp-btn tp-btn--secondary tp-habit__log" type="button" data-action="habit-log" aria-pressed="true" aria-describedby="h1-name"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-label data-i18n="habit.logged">Logged today</span></button>
+                  </div>
+                  <ol class="tp-habit-days" aria-label="Last 7 days" data-i18n-attr="aria-label:hb.last7">
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.tue">Tue</span> <span class="tp-num">6</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.wed">Wed</span> <span class="tp-num">7</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.thu">Thu</span> <span class="tp-num">8</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.fri">Fri</span> <span class="tp-num">9</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sat">Sat</span> <span class="tp-num">10</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sun">Sun</span> <span class="tp-num">11</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="true" data-today="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.mon">Mon</span> <span class="tp-num">12</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                  </ol>
+                </div>
+              </article>
+
+              <article class="tp-surface tp-block-habit hb-card" data-component="HabitBlock">
+                <div class="tp-habit" data-habit="meds" data-logged="false">
+                  <div class="tp-habit__head">
+                    <span class="tp-habit__name" id="h2-name" dir="auto" data-i18n="h.meds">Take my meds</span>
+                    <span class="tp-habit__when" data-i18n="when.breakfast">With breakfast</span>
+                    <button class="tp-btn tp-btn--secondary tp-habit__log" type="button" data-action="habit-log" aria-pressed="false" aria-describedby="h2-name"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-label data-i18n="habit.log">Log today</span></button>
+                  </div>
+                  <ol class="tp-habit-days" aria-label="Last 7 days" data-i18n-attr="aria-label:hb.last7">
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.tue">Tue</span> <span class="tp-num">6</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.wed">Wed</span> <span class="tp-num">7</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.thu">Thu</span> <span class="tp-num">8</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.fri">Fri</span> <span class="tp-num">9</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sat">Sat</span> <span class="tp-num">10</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sun">Sun</span> <span class="tp-num">11</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false" data-today="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.mon">Mon</span> <span class="tp-num">12</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                  </ol>
+                </div>
+              </article>
+
+              <article class="tp-surface tp-block-habit hb-card" data-component="HabitBlock">
+                <div class="tp-habit" data-habit="read" data-logged="false">
+                  <div class="tp-habit__head">
+                    <span class="tp-habit__name" id="h3-name" dir="auto" data-i18n="h.read">Read 10 pages</span>
+                    <span class="tp-habit__when" data-i18n="when.bed">Before bed</span>
+                    <button class="tp-btn tp-btn--secondary tp-habit__log" type="button" data-action="habit-log" aria-pressed="false" aria-describedby="h3-name"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-label data-i18n="habit.log">Log today</span></button>
+                  </div>
+                  <ol class="tp-habit-days" aria-label="Last 7 days" data-i18n-attr="aria-label:hb.last7">
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.tue">Tue</span> <span class="tp-num">6</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.wed">Wed</span> <span class="tp-num">7</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.thu">Thu</span> <span class="tp-num">8</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.fri">Fri</span> <span class="tp-num">9</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sat">Sat</span> <span class="tp-num">10</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sun">Sun</span> <span class="tp-num">11</span></span><span class="tp-sr-only" data-i18n="habit.dayDone">logged</span></li>
+                    <li class="tp-habit-day" data-done="false" data-today="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.mon">Mon</span> <span class="tp-num">12</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                  </ol>
+                </div>
+              </article>
+
+              <article class="tp-surface tp-block-habit hb-card" data-component="HabitBlock" id="stretch-card">
+                <!-- @component Notice | shadcn: alert · NativeWind: View notice | props: { tone: "info", title: "Welcome back — start fresh?" } | events: onStartFresh -> habits.startFresh({ habitId }), onPause -> habits.pause({ habitId }) -->
+                <div class="tp-notice" data-tone="info" role="status" id="fresh" data-component="Notice">
+                  <span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-leaf"/></svg></span>
+                  <span class="tp-notice__text">
+                    <span class="tp-notice__title" data-i18n="fresh.title">Welcome back — start fresh?</span>
+                    <span data-i18n="fresh.body">Stretching hasn't come up for a little while. That happens. Start fresh from today, or pause it until you want it.</span>
+                  </span>
+                </div>
+                <div class="hb-fresh__actions" id="fresh-actions">
+                  <button class="tp-btn tp-btn--secondary" type="button" id="fresh-start"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="fresh.start">Start fresh</span></button>
+                  <button class="tp-btn tp-btn--ghost" type="button" id="fresh-pause"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-pause"/></svg><span data-i18n="fresh.pause">Pause it</span></button>
+                </div>
+                <p class="tp-muted tp-small" id="fresh-note" tabindex="-1" hidden></p>
+                <div class="tp-habit" data-habit="stretch" data-logged="false">
+                  <div class="tp-habit__head">
+                    <span class="tp-habit__name" id="h4-name" dir="auto" data-i18n="h.stretch">Stretch for 5 minutes</span>
+                    <span class="tp-habit__when" data-i18n="when.evening">Evening</span>
+                    <button class="tp-btn tp-btn--secondary tp-habit__log" type="button" data-action="habit-log" aria-pressed="false" aria-describedby="h4-name"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-check"/></svg><span data-label data-i18n="habit.log">Log today</span></button>
+                  </div>
+                  <ol class="tp-habit-days" aria-label="Last 7 days" data-i18n-attr="aria-label:hb.last7">
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.tue">Tue</span> <span class="tp-num">6</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.wed">Wed</span> <span class="tp-num">7</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.thu">Thu</span> <span class="tp-num">8</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.fri">Fri</span> <span class="tp-num">9</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sat">Sat</span> <span class="tp-num">10</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.sun">Sun</span> <span class="tp-num">11</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                    <li class="tp-habit-day" data-done="false" data-today="true"><span class="tp-habit-day__dot" aria-hidden="true"><svg class="tp-icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="tp-habit-day__label"><span data-i18n="dow.mon">Mon</span> <span class="tp-num">12</span></span><span class="tp-sr-only" data-i18n="habit.dayOpen">not logged</span></li>
+                  </ol>
+                </div>
+              </article>
+            </div>
+
+            <!-- @component Button | shadcn: button · NativeWind: Pressable | props: { variant: "secondary" } | events: onPress -> open MobileSheet "new-habit" -->
+            <button class="tp-btn tp-btn--secondary tp-btn--block" type="button" data-action="open-sheet" aria-controls="new-habit" aria-haspopup="dialog" aria-expanded="false" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="hb.new">New habit</span></button>
+          </section>
+        </div>
+
+        <!-- @component UndoToast | shadcn: sonner · NativeWind: burnt / sonner-native | props: { title: "Stretching is paused", countdown: 5:00 } | events: onUndo -> habits.resume({ habitId }) -->
+        <div class="tp-toast-region" aria-live="polite"></div>
+
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "new-habit", title: "New habit" } | events: onSubmit -> habits.create({ name, when }), onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="new-habit" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="new-habit" role="dialog" aria-modal="true" aria-labelledby="new-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="new-title" data-i18n="new.title">New habit</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <form class="tp-sheet__body hb-new-form" id="new-form" novalidate>
+            <!-- @component Field | shadcn: form item · NativeWind: TextInput | props: { id: "hb-name", label: "What's the habit?", help } | events: — -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="hb-name" data-i18n="new.name">What's the habit?</label>
+              <input class="tp-input" id="hb-name" type="text" dir="auto" maxlength="60" aria-describedby="hb-name-help hb-name-err" placeholder="Drink a glass of water" data-i18n-attr="placeholder:new.ph">
+              <p class="tp-help" id="hb-name-help" data-i18n="new.help">Keep it small. Small is easier to come back to.</p>
+              <p class="tp-error-text" id="hb-name-err" hidden data-i18n="new.err">Write a few words for the habit.</p>
+            </div>
+            <!-- @component Select | shadcn: select · NativeWind: Picker | props: { options: ["morning","breakfast","afternoon","evening","bed","any"], value: "any" } | events: onChange -->
+            <div class="tp-field" data-component="Field">
+              <label class="tp-label" for="hb-when" data-i18n="new.when">When does it usually happen?</label>
+              <div class="tp-select" data-component="Select">
+                <select class="tp-select__input" id="hb-when">
+                  <option value="any" data-i18n="when.any">Any time</option>
+                  <option value="morning" data-i18n="when.morning">Morning</option>
+                  <option value="breakfast" data-i18n="when.breakfast">With breakfast</option>
+                  <option value="afternoon" data-i18n="when.afternoon">Afternoon</option>
+                  <option value="evening" data-i18n="when.evening">Evening</option>
+                  <option value="bed" data-i18n="when.bed">Before bed</option>
+                </select>
+                <svg class="tp-icon tp-icon--sm tp-select__icon" aria-hidden="true"><use href="#i-down"/></svg>
+              </div>
+            </div>
+            <div class="tp-form__actions">
+              <!-- @component Button | shadcn: button | props: { variant: "primary" } | events: onSubmit -> habits.create({ name, when }) -->
+              <button class="tp-btn tp-btn--primary tp-btn--block" type="submit" data-component="Button"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="new.add">Add habit</span></button>
+            </div>
+          </form>
+        </section>
+
+        <!-- @component TabBar | shadcn: tabs (nav) · NativeWind: expo-router <Tabs> tabBar | props: { tabs: ["Today","Tasks","Coach","Notes","More"], current: "more" } | events: onNavigate -> router.navigate, onMore -> open MobileSheet "more-sheet" -->
+        <nav class="tp-tabbar tp-glass m-tabbar" data-component="TabBar" data-count="5" aria-label="Main" data-i18n-attr="aria-label:tab.label">
+          <a class="tp-tab tp-tree-item m-tab" href="today.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg><span class="tp-tree-item__label" data-i18n="tab.today">Today</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="tasks.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-tree-item__label" data-i18n="tab.tasks">Tasks</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="coach.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg><span class="tp-tree-item__label" data-i18n="tab.coach">Coach</span></a>
+          <a class="tp-tab tp-tree-item m-tab" href="notes.html"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-tree-item__label" data-i18n="tab.notes">Notes</span></a>
+          <button class="tp-tab tp-tree-item m-tab" type="button" data-action="open-sheet" aria-controls="more-sheet" aria-haspopup="dialog" aria-expanded="false" aria-current="page"><svg class="tp-icon" aria-hidden="true"><use href="#i-more"/></svg><span class="tp-tree-item__label" data-i18n="tab.more">More</span></button>
+        </nav>
+        <!-- @component MobileSheet | shadcn: sheet (side="bottom") · NativeWind: @gorhom/bottom-sheet | props: { id: "more-sheet", title: "More" } | events: onClose (Esc, Close, scrim) -->
+        <div class="tp-sheet-scrim" data-for="more-sheet" data-action="close-sheet" hidden></div>
+        <section class="tp-sheet tp-glass" id="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-title" data-component="MobileSheet" hidden>
+          <div class="tp-sheet__grabber" aria-hidden="true"></div>
+          <div class="tp-sheet__head">
+            <h2 class="tp-sheet__title" id="more-title" data-i18n="more.title">More</h2>
+            <button class="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close" type="button" data-action="close-sheet" aria-label="Close" data-i18n-attr="aria-label:more.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+          </div>
+          <div class="tp-sheet__body m-more">
+            <!-- @component TouchRow ×6 | shadcn: — · NativeWind: Pressable row | props: { icon, label, href } | events: onPress -> router.push -->
+            <a class="tp-touch-row" href="journal.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-page"/></svg><span class="tp-touch-row__label" data-i18n="more.journal">Journal</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="habits.html" aria-current="page" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-habit"/></svg><span class="tp-touch-row__label" data-i18n="more.habits">Habits</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="calendar.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg><span class="tp-touch-row__label" data-i18n="more.calendar">Calendar</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="routines.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-checklist"/></svg><span class="tp-touch-row__label" data-i18n="more.routines">Routines</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="templates.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-template"/></svg><span class="tp-touch-row__label" data-i18n="more.templates">Templates</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+            <a class="tp-touch-row" href="settings.html" data-component="TouchRow"><svg class="tp-icon tp-touch-row__icon" aria-hidden="true"><use href="#i-settings"/></svg><span class="tp-touch-row__label" data-i18n="more.settings">Settings</span><svg class="tp-icon tp-icon--sm tp-icon--flip tp-touch-row__chev" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+        </section>
+        <!-- APP CONTENT END -->
+      </main>
+
+      <div class="status-bar" aria-hidden="true">
+        <span class="status-time tp-num">9:41</span>
+        <span class="status-cutout-zone"></span>
+        <span class="status-icons">
+          <svg class="connectivity" viewBox="0 0 15 12"><path d="M1.5 10.5v-2m4 2v-4.5m4 4.5v-7m4 7v-9"/></svg>
+          <svg class="wifi" viewBox="0 0 16 12"><path d="M1.5 4.7a9.2 9.2 0 0 1 13 0M4.2 7.3a5.4 5.4 0 0 1 7.6 0M6.9 10a1.55 1.55 0 0 1 2.2 0"/></svg>
+          <svg class="battery" viewBox="0 0 20 11"><rect x=".75" y="1.25" width="16.5" height="8.5" rx="2"/><path d="M18.5 4v3M3.2 3.4h10.4v4.2H3.2z" fill="currentColor" stroke="none"/></svg>
+        </span>
+      </div>
+      <div class="camera-dot" aria-hidden="true"></div>
+      <div class="gesture-indicator" aria-hidden="true"></div>
+    </section>
+  </div>
+
+<script>
+window.TP_STRINGS = {
+  en: {
+    "habit.log": "Log today", "habit.logged": "Logged today", "habit.dayDone": "logged", "habit.dayOpen": "not logged",
+    "fresh.started": "Fresh start from today. Nothing to catch up on.",
+    "fresh.paused": "Stretching is paused", "fresh.pausedSub": "You can undo for",
+    "fresh.resumed": "Stretching is back on your list.",
+    "new.added": "Habit added", "new.addedSub": "You can undo for",
+    "toast.undo": "Undo", "toast.dismiss": "Dismiss", "toast.sub": "You can undo for"
+  },
+  he: {
+    "doc.title": "הרגלים · Tempo",
+    "skip": "דלגי לתוכן",
+    "tab.label": "ראשי", "tab.today": "היום", "tab.tasks": "משימות", "tab.coach": "מאמן", "tab.notes": "פתקים", "tab.more": "עוד",
+    "more.title": "עוד", "more.close": "סגירה", "more.journal": "יומן", "more.habits": "הרגלים", "more.calendar": "לוח שנה",
+    "more.routines": "שגרות", "more.templates": "תבניות", "more.settings": "הגדרות",
+    "offline.title": "אין חיבור כרגע.", "offline.body": "השינויים יישמרו כשהחיבור יחזור.",
+    "state.safe": "הנתונים שלך בטוחים.", "state.retry": "לנסות שוב",
+    "toast.undo": "ביטול", "toast.dismiss": "סגירה", "toast.sub": "אפשר לבטל עוד",
+    "top.back": "חזרה", "top.title": "הרגלים", "top.avatar": "הגדרות של מאיה רונן",
+    "page.title": "הרגלים", "page.date": "יום שני, 12 באוקטובר", "page.of": "מתוך", "page.logged": "נרשמו היום",
+    "page.note": "דברים קטנים, בחלק מהימים. כל יום שרשמת נחשב, ויום שלא רשמת הוא פשוט יום.",
+    "load.label": "טוענים את ההרגלים שלך",
+    "err.title": "לא הצלחנו לטעון את ההרגלים שלך.", "err.body": "זה אצלנו, לא אצלך.",
+    "empty.title": "עוד אין הרגלים. לא צריך אותם כדי שיהיה לך יום טוב.",
+    "empty.body": "אם יש דבר קטן אחד שהיית רוצה לעשות ברוב הימים, הוסיפי אותו כאן. אחד זה מספיק בשביל להתחיל.",
+    "hb.new": "הרגל חדש", "hb.title": "ההרגלים שלך", "hb.count": "הרגלים", "hb.last7": "7 הימים האחרונים",
+    "habit.log": "לרשום להיום", "habit.logged": "נרשם להיום", "habit.dayDone": "נרשם", "habit.dayOpen": "לא נרשם",
+    "dow.mon": "ב׳", "dow.tue": "ג׳", "dow.wed": "ד׳", "dow.thu": "ה׳", "dow.fri": "ו׳", "dow.sat": "ש׳", "dow.sun": "א׳",
+    "h.water": "כוס מים לפני הקפה", "h.meds": "לקחת את התרופות", "h.read": "לקרוא 10 עמודים", "h.stretch": "מתיחות של 5 דקות",
+    "when.morning": "בבוקר", "when.breakfast": "עם ארוחת הבוקר", "when.bed": "לפני השינה", "when.evening": "בערב",
+    "when.any": "בכל שעה", "when.afternoon": "אחר הצהריים",
+    "fresh.title": "ברוכה השבה. להתחיל מחדש?",
+    "fresh.body": "המתיחות לא עלו כבר זמן מה. זה קורה. אפשר להתחיל מחדש מהיום, או להשהות עד שתרצי.",
+    "fresh.start": "להתחיל מחדש", "fresh.pause": "להשהות",
+    "fresh.started": "התחלה חדשה מהיום. אין מה להשלים.",
+    "fresh.paused": "המתיחות הושהו", "fresh.pausedSub": "אפשר לבטל עוד",
+    "fresh.resumed": "המתיחות חזרו לרשימה שלך.",
+    "new.title": "הרגל חדש", "new.name": "מה ההרגל?", "new.ph": "לשתות כוס מים",
+    "new.help": "כדאי לשמור על זה קטן. לדבר קטן קל יותר לחזור.", "new.err": "כתבי כמה מילים על ההרגל.",
+    "new.when": "מתי זה קורה בדרך כלל?", "new.add": "הוספת הרגל",
+    "new.added": "ההרגל נוסף", "new.addedSub": "אפשר לבטל עוד"
+  }
+};
+
+/* Habits: log (tempo.js), logged count, welcome back, new habit.
+   REAL: convex habits.list({ date }) · habits.log / habits.unlog · habits.startFresh · habits.pause / habits.resume · habits.create */
+TP.onReady = function () {
+  function recount() {
+    var n = document.querySelectorAll('.tp-habit[data-logged="true"]').length;
+    document.getElementById("logged-n").textContent = n;
+  }
+  document.getElementById("m-main").addEventListener("click", function (e) {
+    // REAL: convex habits.log({ habitId, date: localDate }) / habits.unlog({ habitId, date })
+    if (e.target.closest('[data-action="habit-log"]')) setTimeout(recount, 0);
+  });
+
+  var card = document.getElementById("stretch-card"), note = document.getElementById("fresh-note");
+  function closeFresh(msg) {
+    document.getElementById("fresh").hidden = true;
+    document.getElementById("fresh-actions").hidden = true;
+    note.textContent = msg; note.hidden = false; note.focus();
+  }
+  document.getElementById("fresh-start").addEventListener("click", function () {
+    // REAL: convex habits.startFresh({ habitId: "stretch" })
+    closeFresh(TP.t("fresh.started"));
+  });
+  document.getElementById("fresh-pause").addEventListener("click", function () {
+    // REAL: convex habits.pause({ habitId: "stretch" }) with a 5-minute Undo -> habits.resume({ habitId })
+    card.hidden = true;
+    TP.toast({ title: TP.t("fresh.paused"), sub: TP.t("fresh.pausedSub"), onUndo: function () {
+      card.hidden = false; closeFresh(TP.t("fresh.resumed"));
+    } });
+  });
+
+  document.getElementById("new-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = document.getElementById("hb-name"), err = document.getElementById("hb-name-err");
+    if (!input.value.trim()) { err.hidden = false; input.setAttribute("aria-invalid", "true"); input.focus(); return; }
+    err.hidden = true; input.removeAttribute("aria-invalid");
+    // REAL: convex habits.create({ name, when }) with a 5-minute Undo -> habits.remove({ habitId })
+    input.value = ""; TP.closeSheet();
+    TP.toast({ title: TP.t("new.added"), sub: TP.t("new.addedSub"), onUndo: function () {} });
+  });
+};
+</script>
+</body>
+</html>
