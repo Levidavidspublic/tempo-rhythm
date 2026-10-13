@@ -162,12 +162,16 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     // Undo puts back the status the task had (an in-progress task returns to in progress, not
     // to todo), rather than toggling again.
     const before = task.status;
+    // Completing a repeating task also makes its next one, which this Undo could not take back,
+    // so that case gets no Undo rather than a partial one.
+    const canUndo = wasDone || task.repeatCfgId === undefined;
     toggleCompletion({ taskId: task._id }).then(
       () => {
         setError(false);
         setToast(
-          makeToast(t(wasDone ? "pd.task.reopened" : "pd.task.done"), () =>
-            updateTask({ taskId: task._id, status: before }),
+          makeToast(
+            t(wasDone ? "pd.task.reopened" : "pd.task.done"),
+            canUndo ? () => updateTask({ taskId: task._id, status: before }) : undefined,
           ),
         );
       },
@@ -202,16 +206,19 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
                 }}
               />
             </h1>
-            <div className="tp-page-head__actions">
-              <Link
-                className="tp-btn tp-btn--secondary"
-                href={`/projects/${encodeURIComponent(projectId)}/kanban`}
-                data-component="Button"
-              >
-                <TpIcon name="kanban" size="sm" />
-                <span>{t("pd.board")}</span>
-              </Link>
-            </div>
+            {/* The name lives on the project's tasks, so the board opens once there is one to carry it. */}
+            {rows.length > 0 ? (
+              <div className="tp-page-head__actions">
+                <Link
+                  className="tp-btn tp-btn--secondary"
+                  href={`/projects/${encodeURIComponent(projectId)}/kanban`}
+                  data-component="Button"
+                >
+                  <TpIcon name="kanban" size="sm" />
+                  <span>{t("pd.board")}</span>
+                </Link>
+              </div>
+            ) : null}
           </div>
           <div className="tp-page-meta" data-component="PageMeta">
             <StatusBadge kind="project" status={projectStatusFor(done, ordered.length)} />
