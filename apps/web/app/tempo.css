@@ -1499,6 +1499,8 @@ button.tp-list-row { width: 100%; border-inline: 0; border-top: 0; text-align: s
   /* Depth: the ground carries a faint grain; the paper sits above it on a ring and a long soft
      drop; cards on the paper keep their hairline and add a short drop. */
   body { background-color: var(--tp-ground); background-image: var(--tp-grain); background-size: 180px 180px; }
+  /* Full-viewport wrappers that paint the ground themselves carry the same grain. */
+  .tp-auth, :where(.tp-call), .tp-site-header { background-image: var(--tp-grain); background-size: 180px 180px; }
   .tp-paper, .tp-surface { box-shadow: var(--tp-shadow-paper); }
   .tp-card, .tp-proposal, .tp-module-card, .tp-tier, .tp-kanban-card {
     border-color: var(--tp-line-card);
@@ -1546,12 +1548,14 @@ button.tp-list-row { width: 100%; border-inline: 0; border-top: 0; text-align: s
   .tp-list-row, .tp-task-row { transition: background-color var(--tp-dur-fast) var(--tp-ease-out); }
   /* A row that arrives drops in once (rows already marked new keep their own entrance). */
   .tp-list > li:not([data-new]), .tp-list > .tp-list-row:not([data-new]) { animation: tp-enter var(--tp-dur-slow) var(--tp-ease-out); }
-  .tp-check[aria-checked="true"] .tp-check__box svg.tp-icon { animation: tp-pop var(--tp-dur-base) var(--tp-ease-out); }
+  .tp-check[aria-checked="true"] .tp-check__box svg.tp-icon,
+  .tp-check[aria-pressed="true"] .tp-check__box svg.tp-icon { animation: tp-pop var(--tp-dur-base) var(--tp-ease-out); }
 
+  /* Under 768 px the paper and surfaces go full-bleed and square, so they stay flat. */
   @media (max-width: 767px) {
-    .tp-paper { box-shadow: none; }
+    .tp-paper, .tp-surface, .tp-surface .tp-surface, .tp-empty.tp-surface { box-shadow: none; }
   }
   @media (prefers-contrast: more), (forced-colors: active) {
-    body { background-image: none; }
+    body, .tp-auth, :where(.tp-call), .tp-site-header { background-image: none; }
   }
 }
