@@ -228,10 +228,21 @@
   --tp-scrim:         rgba(27, 25, 22, 0.28);
 
   /* ---- Elevation ------------------------------------------ */
-  --tp-shadow-whisper: 0 1px 1px rgba(27, 25, 22, 0.04);
-  --tp-shadow-card:    0 1px 2px rgba(27, 25, 22, 0.05), 0 0 0 1px rgba(27, 25, 22, 0.05);
+  --tp-shadow-whisper: 0 1px 1px rgba(27, 25, 22, 0.05);
+  --tp-shadow-card:    0 1px 2px rgba(27, 25, 22, 0.06), 0 4px 12px -8px rgba(27, 25, 22, 0.14), 0 0 0 1px rgba(27, 25, 22, 0.06);
   --tp-shadow-float:   0 12px 32px -12px rgba(27, 25, 22, 0.22), 0 2px 6px -2px rgba(27, 25, 22, 0.08);
   --tp-shadow-modal:   0 28px 64px -24px rgba(27, 25, 22, 0.36);
+  /* Depth, run 2 polish: ground < paper (ring + long soft drop) < cards on paper (border + short drop). */
+  --tp-shadow-paper:   0 1px 2px rgba(27, 25, 22, 0.05), 0 18px 40px -26px rgba(27, 25, 22, 0.28), 0 0 0 1px rgba(27, 25, 22, 0.07);
+  --tp-shadow-raise:   0 1px 2px rgba(27, 25, 22, 0.05), 0 4px 10px -8px rgba(27, 25, 22, 0.16);
+  --tp-shadow-lift:    0 2px 4px rgba(27, 25, 22, 0.06), 0 12px 28px -14px rgba(27, 25, 22, 0.24);
+  --tp-line-card:      color-mix(in srgb, var(--tp-line) 55%, var(--tp-line-strong));
+  /* Faint paper grain on the ground only (never on paper, cards or text). Light flecks on the
+     light ground, dark flecks on the dark one: the grain only moves the ground away from the
+     text, so no pair drops below DESIGN.md §6. */
+  --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.28'/%3E%3C/svg%3E");
+  /* Empty-state art: one quiet line drawing in the icon set's 1.5 px stroke. */
+  --tp-empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='rgb(107 100 92)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4h10l6 6v18H9z'/%3E%3Cpath d='M19 4v6h6'/%3E%3Cpath d='M12.5 15h9M12.5 19h9M12.5 23h5.5'/%3E%3C/svg%3E");
 
   /* ---- Type families -------------------------------------- */
   --tp-font-serif: var(--font-newsreader), "Frank Ruhl Libre", "Iowan Old Style", Georgia, serif;
@@ -243,9 +254,9 @@
   --tp-text-sm:   15px;
   --tp-text-md:   17px;   /* base */
   --tp-text-lg:   20px;
-  --tp-text-xl:   24px;
-  --tp-text-2xl:  30px;
-  --tp-text-3xl:  38px;
+  --tp-text-xl:   26px;   /* run 2 polish: a stronger heading scale (was 24 / 30 / 38) */
+  --tp-text-2xl:  32px;
+  --tp-text-3xl:  42px;
   --tp-text-4xl:  48px;
   --tp-leading-body:    1.6;
   --tp-leading-snug:    1.35;
@@ -327,9 +338,14 @@
   --tp-scrim:         rgba(0, 0, 0, 0.48);
 
   --tp-shadow-whisper: 0 1px 1px rgba(0, 0, 0, 0.30);
-  --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(242, 236, 226, 0.05);
+  --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 16px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(242, 236, 226, 0.06);
   --tp-shadow-float:   0 16px 36px -12px rgba(0, 0, 0, 0.60), 0 0 0 1px rgba(242, 236, 226, 0.06);
   --tp-shadow-modal:   0 28px 64px -20px rgba(0, 0, 0, 0.70);
+  --tp-shadow-paper:   0 1px 2px rgba(0, 0, 0, 0.34), 0 22px 44px -24px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(242, 236, 226, 0.07);
+  --tp-shadow-raise:   0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 14px -10px rgba(0, 0, 0, 0.60);
+  --tp-shadow-lift:    0 2px 4px rgba(0, 0, 0, 0.40), 0 14px 30px -14px rgba(0, 0, 0, 0.68);
+  --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.22'/%3E%3C/svg%3E");
+  --tp-empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='rgb(158 149 136)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4h10l6 6v18H9z'/%3E%3Cpath d='M19 4v6h6'/%3E%3Cpath d='M12.5 15h9M12.5 19h9M12.5 23h5.5'/%3E%3C/svg%3E");
 }
 
 /* ---- System fallback: no stored theme, OS asks for dark ---- */
@@ -362,9 +378,14 @@
     --tp-scrim:         rgba(0, 0, 0, 0.48);
 
     --tp-shadow-whisper: 0 1px 1px rgba(0, 0, 0, 0.30);
-    --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.30), 0 0 0 1px rgba(242, 236, 226, 0.05);
+    --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 16px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(242, 236, 226, 0.06);
     --tp-shadow-float:   0 16px 36px -12px rgba(0, 0, 0, 0.60), 0 0 0 1px rgba(242, 236, 226, 0.06);
     --tp-shadow-modal:   0 28px 64px -20px rgba(0, 0, 0, 0.70);
+    --tp-shadow-paper:   0 1px 2px rgba(0, 0, 0, 0.34), 0 22px 44px -24px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(242, 236, 226, 0.07);
+    --tp-shadow-raise:   0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 14px -10px rgba(0, 0, 0, 0.60);
+    --tp-shadow-lift:    0 2px 4px rgba(0, 0, 0, 0.40), 0 14px 30px -14px rgba(0, 0, 0, 0.68);
+    --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.22'/%3E%3C/svg%3E");
+    --tp-empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='rgb(158 149 136)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4h10l6 6v18H9z'/%3E%3Cpath d='M19 4v6h6'/%3E%3Cpath d='M12.5 15h9M12.5 19h9M12.5 23h5.5'/%3E%3C/svg%3E");
   }
 }
 

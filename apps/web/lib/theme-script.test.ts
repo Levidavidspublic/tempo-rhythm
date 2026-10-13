@@ -20,7 +20,7 @@ function run(search: string, stored: Record<string, string>) {
     { search },
     localStorage,
   );
-  return { theme: attrs["data-theme"], lang: root.lang, dir: root.dir };
+  return { theme: attrs["data-theme"], lang: root.lang, dir: root.dir, glass: attrs["data-glass"] };
 }
 
 describe("themeInitScript", () => {
@@ -36,5 +36,11 @@ describe("themeInitScript", () => {
   test("an invalid ?lang= falls back to the stored language", () => {
     expect(run("?lang=fr", { "tempo-lang": "he" })).toMatchObject({ lang: "he", dir: "rtl" });
     expect(run("?lang=en", { "tempo-lang": "he" })).toMatchObject({ lang: "en", dir: "ltr" });
+  });
+
+  test("?glass=off turns every glass surface solid; anything else leaves glass on", () => {
+    expect(run("?glass=off", {}).glass).toBe("off");
+    expect(run("?glass=on", {}).glass).toBeUndefined();
+    expect(run("", {}).glass).toBeUndefined();
   });
 });

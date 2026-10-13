@@ -34,6 +34,7 @@ import type * as lib_blocks from "../lib/blocks.js";
 import type * as lib_brainDumpInput from "../lib/brainDumpInput.js";
 import type * as lib_brainDumpParse from "../lib/brainDumpParse.js";
 import type * as lib_coachLoad from "../lib/coachLoad.js";
+import type * as lib_coachPrompt from "../lib/coachPrompt.js";
 import type * as lib_crisisWords from "../lib/crisisWords.js";
 import type * as lib_entitlements from "../lib/entitlements.js";
 import type * as lib_habitCheckInStreak from "../lib/habitCheckInStreak.js";
@@ -109,6 +110,7 @@ declare const fullApi: ApiFromModules<{
   "lib/brainDumpInput": typeof lib_brainDumpInput;
   "lib/brainDumpParse": typeof lib_brainDumpParse;
   "lib/coachLoad": typeof lib_coachLoad;
+  "lib/coachPrompt": typeof lib_coachPrompt;
   "lib/crisisWords": typeof lib_crisisWords;
   "lib/entitlements": typeof lib_entitlements;
   "lib/habitCheckInStreak": typeof lib_habitCheckInStreak;
