@@ -10,6 +10,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation } from "@/lib/coach-conversation";
 import { ChatProposal, proposalOf } from "./ChatProposal";
+import { useFlushCoachPage } from "./CoachPage";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -51,6 +52,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const createConversation = useMutation(api.conversations.create);
   const sendMessage = useMutation(api.coach.sendMessage);
   const requestReply = useAction(api.coach.reply);
+  const flushPage = useFlushCoachPage();
   const { guard } = useCrisisGuard();
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
@@ -95,6 +97,8 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
     setReplying(true);
     setUnavailable(false);
     try {
+      // The page saves 500 ms after typing stops; save it now so the coach reads what is on screen.
+      if (pageId) await flushPage().catch(() => {});
       const result = await requestReply({
         conversationId: id,
         ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),

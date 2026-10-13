@@ -151,3 +151,31 @@ describe("link scans stay under Convex's read limit", () => {
     expect(result.length).toBeGreaterThan(0);
   });
 });
+
+describe("notes.listRoutines", () => {
+  const listRoutines = (notes.listRoutines as unknown as Handler)._handler;
+
+  test("returns the owner's live pages that mention #routine", async () => {
+    const rows: Row[] = [
+      note("1", "Morning", "#routine 07:30\n- Stretch (5 min)"),
+      note("2", "Groceries", "- Milk"),
+      note("3", "Old evening", "#routine\n- Read", { deletedAt: 5 }),
+      note("4", "Theirs", "#routine", { userId: "users:b" }),
+    ];
+    const got = (await listRoutines(makeCtx("users:a", rows), {})) as Row[];
+    expect(got.map((r) => r.title)).toEqual(["Morning"]);
+    expect(Object.keys(got[0] as Row).sort()).toEqual(["_id", "body", "title", "updatedAt"]);
+  });
+
+  test("reads only the recent window, however large the notebook", async () => {
+    const rows: Row[] = [
+      note("1", "Untouched routine", "#routine"),
+      ...Array.from({ length: 600 }, (_, i) => note(String(100 + i), `Page ${i}`, "plain words")),
+      note("900", "Morning", "#routine 07:30"),
+    ];
+    const got = (await listRoutines(makeCtx("users:a", rows), {})) as Row[];
+    expect(reads.length).toBeLessThanOrEqual(notes.LINK_SCAN_LIMIT);
+    // The known limit: a routine page older than the newest LINK_SCAN_LIMIT notes is not listed.
+    expect(got.map((r) => r.title)).toEqual(["Morning"]);
+  });
+});

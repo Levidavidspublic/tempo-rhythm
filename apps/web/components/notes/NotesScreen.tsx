@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
+import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
 import { UndoDeleteToast } from "./UndoDeleteToast";
 
 type NoteRecord = Doc<"notes">;
@@ -300,6 +301,15 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       setSaveState("saved");
     }, 500);
   };
+
+  // The coach beside this page saves its pending edits before it reads the page (Codex P2 on #923).
+  useRegisterCoachPageFlush(async () => {
+    if (!saveTimer.current || wasDeleted.current) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+    setSaveState("saved");
+  });
 
   const handleTitleChange = (value: string) => {
     setTitle(value);

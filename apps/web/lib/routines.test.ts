@@ -47,6 +47,12 @@ describe("routine pages", () => {
     // A time before the tag is prose, not the usual time.
     expect(routineUsualTime("Meet at 09:00 #routine")).toBeNull();
     expect(routineUsualTime("Meet at 09:00 #routine 07:30")).toBe("07:30");
+  });
+
+  test("a tag inside indented code does not make a routine", () => {
+    expect(isRoutinePage("Notes on tags:\n\n    #routine\n")).toBe(false);
+    expect(isRoutinePage("\t#routine 07:30\n")).toBe(false);
+    expect(isRoutinePage("- Stretch\n    - Breathe #routine\n")).toBe(true);
     expect(routineUsualTime("#routine")).toBeNull();
     expect(routineUsualTime("#routine 24:00")).toBeNull();
     expect(routineUsualTime("Meet at 09:00\n#routine")).toBeNull();

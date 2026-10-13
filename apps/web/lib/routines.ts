@@ -42,14 +42,22 @@ function proseLines(body: string): string[] {
   return out;
 }
 
+/** Four spaces or a tab: Markdown indented code, unless the line is a nested list item. */
+const INDENTED_CODE = /^(?: {4}|\t)/;
+
+/** Lines where a tag counts: outside fenced and indented code. */
+function tagLines(body: string): string[] {
+  return proseLines(body).filter((line) => !INDENTED_CODE.test(line) || NESTED_ITEM.test(line));
+}
+
 /** True when the page carries the `#routine` tag outside code. */
 export function isRoutinePage(body: string): boolean {
-  return proseLines(body).some((line) => TAG.test(line));
+  return tagLines(body).some((line) => TAG.test(line));
 }
 
 /** "07:30" from the first tagged line with a time after the tag (`#routine 07:30`), or null. */
 export function routineUsualTime(body: string): string | null {
-  for (const line of proseLines(body)) {
+  for (const line of tagLines(body)) {
     const tag = TAG.exec(line);
     if (!tag) continue;
     // Only what follows the tag: "Meet at 09:00 #routine" has no usual time.

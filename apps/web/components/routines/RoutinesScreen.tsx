@@ -123,8 +123,9 @@ function RoutinesContent() {
   const online = useOnline();
   const profile = useProfileState();
   const ready = profile === "ready";
-  // notes.list narrows to pages that mention the tag; isRoutinePage checks it is really the tag.
-  const notes = useQuery(api.notes.list, ready ? { search: ROUTINE_TAG } : "skip");
+  // notes.listRoutines returns recent pages that mention the tag (bounded); isRoutinePage checks
+  // it is really the tag.
+  const notes = useQuery(api.notes.listRoutines, ready ? {} : "skip");
   const create = useMutation(api.notes.create);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(false);
