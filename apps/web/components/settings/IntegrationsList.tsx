@@ -104,7 +104,7 @@ export function IntegrationsList() {
             <span className="tp-help">{t("set.integ.memHelp")}</span>
           </div>
           <div className="tp-setting-row__control">
-            <Link className="tp-btn tp-btn--secondary" href="/memory/import">
+            <Link className="tp-btn tp-btn--secondary" href="/settings/memory/import">
               <TpIcon name="upload" size="sm" />
               <span>{t("set.integ.memBtn")}</span>
             </Link>
