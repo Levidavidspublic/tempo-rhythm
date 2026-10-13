@@ -617,6 +617,14 @@
   .tp-run > .tp-pagehead, .tp-run > .tp-notice { padding-inline: 0; }
 }
 
+/* Brain dump (brain-dump.html, layout only). */
+.bd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
+.bd-group { display: grid; gap: var(--tp-space-2); }
+.bd-group__title { margin: 0; font-size: var(--tp-text-sm); }
+.bd-row__actions { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-inline-start: auto; }
+.bd-saved { flex-wrap: wrap; }
+.bd-saved .tp-notice__action { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
 /* Search (search.html, layout only). */
 .sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
 .sr-results { display: grid; gap: var(--tp-space-6); }

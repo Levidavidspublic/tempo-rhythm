@@ -47,7 +47,8 @@ export function TemplateCard({
   onCancelDelete,
 }: TemplateCardProps) {
   const { t } = useLocale();
-  const named = (key: Parameters<typeof t>[0]) => t(key).replace("{name}", template.name);
+  // A callback keeps "$&", "$$" and the like in a name literal.
+  const named = (key: Parameters<typeof t>[0]) => t(key).replace("{name}", () => template.name);
   const preview = template.sections.slice(0, SECTION_PREVIEW_LIMIT);
   const hiddenCount = template.sections.length - preview.length;
   const own = template.source === "user";
