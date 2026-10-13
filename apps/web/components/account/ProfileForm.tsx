@@ -66,8 +66,10 @@ export function ProfileForm() {
       const trimmed = fullName.trim();
       await updateMyProfile({ fullName: trimmed });
       if (chosenLang !== lang) {
-        setLang(chosenLang);
+        // Switch the screen only once the account has the new language, so a failed save is
+        // still a change on the next Save.
         await updatePreferences({ locale: chosenLang });
+        setLang(chosenLang);
       }
       setDraftName(trimmed);
       setDraftLang(null);

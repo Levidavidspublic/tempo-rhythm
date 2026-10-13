@@ -26,6 +26,8 @@ export function DeleteAccountCard() {
   const [understood, setUnderstood] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  // Set once the deletion went through: from then on a failure can only be the sign-out.
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const openerRef = useRef<HTMLButtonElement | null>(null);
   const sheetRef = useRef<HTMLElement | null>(null);
   const tickRef = useRef<HTMLInputElement | null>(null);
@@ -85,12 +87,24 @@ export function DeleteAccountCard() {
     setError(false);
     try {
       await deleteMyAccount({});
-      await signOut();
-      router.push("/sign-in");
     } catch {
       pendingRef.current = false;
       setPending(false);
       setError(true);
+      return;
+    }
+    // The account is deleted now. A failed sign-out must never read as a failed deletion.
+    await finishSignOut();
+  };
+
+  const finishSignOut = async () => {
+    setSignOutFailed(false);
+    try {
+      await signOut();
+      router.push("/sign-in");
+    } catch {
+      setPending(false);
+      setSignOutFailed(true);
     }
   };
 
@@ -184,6 +198,15 @@ export function DeleteAccountCard() {
                 <p className="tp-error-text" role="alert">
                   <TpIcon name="alert" size="sm" />
                   <span>{t("set.privacy.delError")}</span>
+                </p>
+              ) : null}
+              {signOutFailed ? (
+                <p className="tp-error-text" role="alert">
+                  <TpIcon name="alert" size="sm" />
+                  <span>{t("set.privacy.deletedSignOut")}</span>
+                  <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={() => void finishSignOut()}>
+                    <span>{t("set.privacy.signOutRetry")}</span>
+                  </button>
                 </p>
               ) : null}
             </div>

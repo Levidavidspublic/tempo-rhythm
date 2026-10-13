@@ -98,7 +98,7 @@ export const en = {
   "set.prefs.inAppHelp": "Short notices inside Tempo, in Notifications.", // new
   "set.prefs.billing": "Billing notices",
   "set.prefs.billingHelp":
-    "Always on, so a charge never surprises you. You'll hear 3 days, 1 day and 1 hour before any plan change.",
+    "Stays on, so a charge never surprises you. Nothing is charged during early access, and these notices aren't built yet.", // adjusted: no notice workflow exists
   "set.prefs.saveError": "That change didn't save. Try again in a moment.", // new
   "set.prefs.loading": "Loading your preferences",
   "set.prefs.errorTitle": "Couldn't load your preferences.",
@@ -143,6 +143,8 @@ export const en = {
   "set.privacy.dsConfirm": "Delete my account",
   "set.privacy.deleting": "Deleting…", // new
   "set.privacy.delError": "Couldn't delete the account. Nothing was removed, so you can try again.", // new
+  "set.privacy.deletedSignOut": "Your account is deleted. Signing out didn't finish.", // new
+  "set.privacy.signOutRetry": "Sign out", // new
   "set.privacy.loading": "Loading your privacy settings",
   "set.privacy.errorTitle": "Couldn't load your privacy settings.",
   "set.privacy.errorBody": "Nothing was changed or shared. Try again in a moment.",
@@ -222,8 +224,8 @@ export const en = {
   "set.billing.trialDesc": "Try everything in Basic first.",
   "set.billing.per3w": "for 3 weeks",
   "set.billing.fBasicAll": "Everything in Basic",
-  "set.billing.fTrialThen": "Then Basic at $10 a month, unless you choose otherwise",
-  "set.billing.fTrialNote": "We remind you 3 days, 1 day and 1 hour before it ends",
+  "set.billing.fTrialThen": "Then Basic at $10 a month, only if you choose it", // adjusted: no automatic conversion exists
+  "set.billing.fTrialNote": "Nothing turns into a payment on its own", // adjusted: no reminder or conversion workflow exists
   "set.billing.trialCta": "For new accounts only.",
   "set.billing.basic": "Basic",
   "set.billing.basicDesc": "Pages, plans and the coach in writing.",
@@ -260,7 +262,7 @@ export const en = {
   "set.trial.title": "Your trial ends soon", // adjusted: the end date is not known here
   "set.trial.lede": "You've had three weeks of Tempo for $1. Here's exactly what happens next, so you can decide calmly.",
   "set.trial.kThen": "If you do nothing",
-  "set.trial.vThen": "Basic starts",
+  "set.trial.vThen": "Nothing changes on its own. A plan starts only when you choose one with the founder.", // adjusted: no automatic conversion exists
   "set.trial.kPrice": "Basic costs",
   "set.trial.vMonth": "a month",
   "set.trial.nyTitle": "Continuing or cancelling here isn't available yet.", // new
@@ -411,7 +413,7 @@ export const he: Record<keyof typeof en, string> = {
   "set.prefs.inAppHelp": "הודעות קצרות בתוך Tempo, בעמוד ההתראות.",
   "set.prefs.billing": "הודעות על תשלום",
   "set.prefs.billingHelp":
-    "תמיד פועל, כדי שחיוב אף פעם לא יפתיע אותך. תקבלי הודעה 3 ימים, יום אחד ושעה אחת לפני כל שינוי במסלול.",
+    "נשאר פועל, כדי שחיוב אף פעם לא יפתיע אותך. בזמן הגישה המוקדמת לא מחויב כלום, וההודעות האלה עוד לא נבנו.",
   "set.prefs.saveError": "השינוי לא נשמר. נסי שוב בעוד רגע.",
   "set.prefs.loading": "טוען את ההעדפות שלך",
   "set.prefs.errorTitle": "לא הצלחנו לטעון את ההעדפות.",
@@ -454,6 +456,8 @@ export const he: Record<keyof typeof en, string> = {
   "set.privacy.dsConfirm": "למחוק את החשבון שלי",
   "set.privacy.deleting": "מוחקים…",
   "set.privacy.delError": "לא הצלחנו למחוק את החשבון. שום דבר לא נמחק, אפשר לנסות שוב.",
+  "set.privacy.deletedSignOut": "החשבון שלך נמחק. היציאה מהחשבון לא הושלמה.",
+  "set.privacy.signOutRetry": "יציאה",
   "set.privacy.loading": "טוען את הגדרות הפרטיות שלך",
   "set.privacy.errorTitle": "לא הצלחנו לטעון את הגדרות הפרטיות.",
   "set.privacy.errorBody": "שום דבר לא השתנה ושום דבר לא שותף. נסי שוב בעוד רגע.",
@@ -529,8 +533,8 @@ export const he: Record<keyof typeof en, string> = {
   "set.billing.trialDesc": "לנסות קודם את כל מה שיש ב־Basic.",
   "set.billing.per3w": "ל־3 שבועות",
   "set.billing.fBasicAll": "כל מה שיש ב־Basic",
-  "set.billing.fTrialThen": "אחר כך Basic ב־10$ לחודש, אלא אם תבחרי אחרת",
-  "set.billing.fTrialNote": "נזכיר לך 3 ימים, יום אחד ושעה אחת לפני הסיום",
+  "set.billing.fTrialThen": "אחר כך Basic ב־10$ לחודש, רק אם תבחרי בו",
+  "set.billing.fTrialNote": "שום דבר לא הופך לתשלום מעצמו",
   "set.billing.trialCta": "לחשבונות חדשים בלבד.",
   "set.billing.basic": "Basic",
   "set.billing.basicDesc": "דפים, תוכניות והמאמן בכתב.",
@@ -566,7 +570,7 @@ export const he: Record<keyof typeof en, string> = {
   "set.trial.title": "הניסיון שלך מסתיים בקרוב",
   "set.trial.lede": "היו לך שלושה שבועות של Tempo ב־1$. הנה בדיוק מה קורה עכשיו, כדי שתוכלי להחליט בנחת.",
   "set.trial.kThen": "אם לא תעשי כלום",
-  "set.trial.vThen": "מסלול Basic מתחיל",
+  "set.trial.vThen": "שום דבר לא משתנה מעצמו. מסלול מתחיל רק כשבוחרים אותו עם המייסד.",
   "set.trial.kPrice": "Basic עולה",
   "set.trial.vMonth": "לחודש",
   "set.trial.nyTitle": "עוד אי אפשר להמשיך או לבטל מכאן.",
