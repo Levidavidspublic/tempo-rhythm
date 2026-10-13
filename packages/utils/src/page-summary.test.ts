@@ -1297,6 +1297,69 @@ describe("Hebrew and bidirectional text", () => {
   });
 });
 
+describe("projectPageText grapheme clusters", () => {
+  // Decomposed Hangul (L V T jamo), a syllable with a trailing T, Thai SARA AM, an Arabic number sign
+  // before its digit, a halfwidth voiced mark, a conjunct, a flag, a modified emoji, a combining mark.
+  const clusters = [
+    "\u1100\u1161\u11A8",
+    "\uAC00\u11A8",
+    "กำ",
+    "\u0600\u0661",
+    "ｶﾞ",
+    "क्ष",
+    "🇮🇱",
+    "👍🏽",
+    "e\u0301",
+  ];
+  const text = Array.from({ length: 4 }, () => clusters.join(" ")).join(" ");
+
+  test("a cut never splits a Hangul syllable, a prepended sign or a spacing mark", () => {
+    expect(project("\u1100\u1161Z", { summaryChars: 2 }).summary).toBe("\u{2026}");
+    expect(project("\u1100\u1161\u11A8Z", { summaryChars: 3 }).summary).toBe("\u{2026}");
+    expect(project("\uAC00\u11A8Z", { summaryChars: 2 }).summary).toBe("\u{2026}");
+    expect(project("กำZ", { summaryChars: 2 }).summary).toBe("\u{2026}");
+    expect(project("ab \u0600\u0661 cd", { summaryChars: 5 }).summary).toBe("ab\u{2026}");
+    expect(project("ｶﾞZ", { summaryChars: 2 }).summary).toBe("\u{2026}");
+  });
+
+  test("summaries and search text end only between clusters", () => {
+    for (let max = 1; max <= text.length + 2; max += 1) {
+      expectClusterCut(text, project(text, { summaryChars: max }).summary);
+      expectClusterCut(text, project(text, { searchChars: max }).searchText);
+    }
+  });
+
+  test("snippets start and end only between clusters", () => {
+    const searchText = `${text} Needle ${text}`;
+    for (let max = 0; max <= 60; max += 1) {
+      for (const query of ["needle", ""]) {
+        const snippet = pageSnippet({ searchText }, query, max);
+        expect(snippet.length).toBeLessThanOrEqual(max);
+        expectClusterCut(searchText, snippet);
+      }
+    }
+  });
+});
+
+/**
+ * `kept` (without its ellipses) is a run of `text` that starts and ends between two clusters: at a
+ * space, an edge, or between two ASCII characters (inside the query word, each letter is one).
+ */
+function expectClusterCut(text: string, kept: string) {
+  const core = kept.replace(/^\u{2026}|\u{2026}$/gu, "").trim();
+  if (core === "") return;
+  const between = (at: number) =>
+    at === 0 ||
+    at === text.length ||
+    text[at] === " " ||
+    text[at - 1] === " " ||
+    /^[\x21-\x7e]{2}$/.test(text.slice(at - 1, at + 1));
+  const at = text.indexOf(core);
+  expect(at).toBeGreaterThanOrEqual(0);
+  expect(between(at)).toBe(true);
+  expect(between(at + core.length)).toBe(true);
+}
+
 /** No virama is left at the end of `text` and no consonant joined to one starts it. */
 function expectWholeConjuncts(text: string) {
   const core = text.replace(/^\u{2026}|\u{2026}$/gu, "");

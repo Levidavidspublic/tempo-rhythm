@@ -81,8 +81,15 @@ const HIDDEN_FORMAT =
 const CONTROLS = /[\p{Cc}\u{2028}\u{2029}]/gu;
 const LONE_SURROGATE = /[\uD800-\uDFFF]/gu;
 const ALL_FORMAT = /\p{Cf}/gu;
-/** A code point that must stay attached to the one before it. */
-const ATTACHES = /^(?:[\p{M}\p{Emoji_Modifier}]|\u{200C}|\u{200D})/u;
+/**
+ * A code point that must stay attached to the one before it: marks and other extenders (GB9),
+ * spacing marks (GB9a, with Thai and Lao SARA AM), emoji modifiers, ZWNJ and ZWJ.
+ */
+const ATTACHES =
+  /^(?:[\p{M}\p{Grapheme_Extend}\p{Emoji_Modifier}\u{0E33}\u{0EB3}]|\u{200C}|\u{200D})/u;
+/** Characters that attach to the one after them (GB9b, Grapheme_Cluster_Break=Prepend). */
+const PREPEND =
+  /^[\u{600}-\u{605}\u{6DD}\u{70F}\u{890}\u{891}\u{8E2}\u{D4E}\u{110BD}\u{110CD}\u{111C2}\u{111C3}\u{1193F}\u{11941}\u{11A3A}\u{11A84}-\u{11A89}\u{11D46}\u{11F02}]$/u;
 
 /**
  * Replaces controls with spaces and drops hidden format characters and lone surrogates. Marks that
@@ -125,10 +132,44 @@ function joinsConjunct(text: string, index: number): boolean {
   return linked && at >= 0 && CONJUNCT_CONSONANT.test(text.charAt(at));
 }
 
+type Jamo = "L" | "V" | "T" | "LV" | "LVT" | undefined;
+
+/** The Hangul syllable type of a UTF-16 unit (all jamo and syllables are in the BMP). */
+function jamo(unit: number): Jamo {
+  if ((unit >= 0x1100 && unit <= 0x115f) || (unit >= 0xa960 && unit <= 0xa97c)) return "L";
+  if ((unit >= 0x1160 && unit <= 0x11a7) || (unit >= 0xd7b0 && unit <= 0xd7c6)) return "V";
+  if ((unit >= 0x11a8 && unit <= 0x11ff) || (unit >= 0xd7cb && unit <= 0xd7fb)) return "T";
+  if (unit >= 0xac00 && unit <= 0xd7a3) return (unit - 0xac00) % 28 === 0 ? "LV" : "LVT";
+  return undefined;
+}
+
+/** Hangul jamo that make one syllable, as in decomposed text (GB6, GB7, GB8). */
+function joinsHangul(before: Jamo, at: Jamo): boolean {
+  if (before === "L") return at !== undefined && at !== "T";
+  if (before === "LV" || before === "V") return at === "V" || at === "T";
+  if (before === "LVT" || before === "T") return at === "T";
+  return false;
+}
+
+/** The code point that ends right before `index`. */
+function previousCodePoint(text: string, index: number): string {
+  const low = text.charCodeAt(index - 1);
+  const pair = low >= 0xdc00 && low <= 0xdfff && index >= 2;
+  return String.fromCodePoint(text.codePointAt(pair ? index - 2 : index - 1) ?? 0);
+}
+
+/**
+ * Whether a cut at `index` would split a character cluster. Each no-break rule of Unicode's
+ * grapheme clusters (UAX #29) is followed; where one is followed loosely it joins more, never less.
+ */
 function attachesToPrevious(text: string, index: number): boolean {
   const unit = text.charCodeAt(index);
   if (unit >= 0xdc00 && unit <= 0xdfff) return true;
   if (text.charCodeAt(index - 1) === 0x200d) return true;
+  if (joinsHangul(jamo(text.charCodeAt(index - 1)), jamo(unit))) return true;
+  if (PREPEND.test(previousCodePoint(text, index)) && !/[\p{Cc}\u{2028}\u{2029}]/u.test(text.charAt(index))) {
+    return true;
+  }
   if (isRegionalIndicator(text, index)) {
     // Flags pair up from the start of a run, so after an odd number of indicators this one is the
     // second half of a flag. The count only walks back over the run itself.
