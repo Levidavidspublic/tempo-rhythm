@@ -141,10 +141,9 @@ export const overview = query({
         .query("memories")
         .withIndex("by_userId", (q) => q.eq("userId", user._id))
         .collect(),
-      // Removed conversations stay stored as tombstones; only live ones count as sessions.
       ctx.db
         .query("conversations")
-        .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
         .collect(),
     ]);
 
