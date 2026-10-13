@@ -1,1 +1,124 @@
 /* v3 screens: Insights, activity, notifications, nags, memory, memory import, modules and module preview. Layout only; colour, type, spacing and radius come from tokens. */
+
+/* insights.html */
+.ins-charts {
+  display: grid;
+  gap: var(--tp-space-6);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 4.5)), 1fr));
+}
+.ins-card {
+  display: grid;
+  gap: var(--tp-space-2);
+  align-content: start;
+}
+
+/* activity.html */
+.act-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-1) var(--tp-space-2);
+}
+@media (max-width: 479px) {
+  .act-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .act-row .tp-list-row__end {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
+
+/* notifications.html */
+.nt-body {
+  display: grid;
+  gap: var(--tp-space-8);
+  min-width: 0;
+}
+.nt-title {
+  white-space: normal;
+}
+.nt-text {
+  font-size: var(--tp-text-sm);
+  color: var(--tp-ink-muted);
+  overflow-wrap: anywhere;
+}
+.nt-state {
+  padding-block: var(--tp-space-6);
+}
+
+/* nags.html */
+.ng-body {
+  display: grid;
+  gap: var(--tp-space-8);
+  min-width: 0;
+}
+.ng-nag {
+  gap: var(--tp-space-3);
+  padding-block: var(--tp-space-2);
+}
+.ng-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tp-space-1);
+}
+.ng-delete {
+  align-items: center;
+  gap: var(--tp-space-2);
+}
+.ng-state {
+  padding-block: var(--tp-space-6);
+}
+
+/* memory.html */
+.mm-body {
+  display: grid;
+  gap: var(--tp-space-10);
+  min-width: 0;
+}
+.mm-state {
+  padding-block: var(--tp-space-6);
+}
+
+/* memory-import.html */
+.mi-body {
+  display: grid;
+  gap: var(--tp-space-8);
+  min-width: 0;
+}
+.mi-step {
+  display: grid;
+  gap: var(--tp-space-4);
+  min-width: 0;
+}
+.mi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-2) var(--tp-space-3);
+}
+.mi-state {
+  padding-block: var(--tp-space-6);
+}
+
+/* modules.html, module-preview.html */
+.md-body {
+  display: grid;
+  gap: var(--tp-space-10);
+  min-width: 0;
+}
+.mp-state {
+  padding-block: var(--tp-space-6);
+}
+
+/* Under 768 px the shared rule only pads direct children of .tp-page; these screens wrap
+   their sections, so the wrapped sections, steps and skeletons take the same 16 px gutter. */
+@media (max-width: 767px) {
+  :is(.nt-body, .ng-body, .mm-body, .mi-body, .md-body)
+    > :is(.tp-section, .tp-status-panel, .mi-step:not(.tp-surface)) {
+    padding-inline: var(--tp-space-4);
+  }
+  .you-loading {
+    padding-inline: var(--tp-space-4);
+  }
+}

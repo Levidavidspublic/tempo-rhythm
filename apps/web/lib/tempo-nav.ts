@@ -50,6 +50,7 @@ export const TEMPO_SCREENS: readonly TempoScreen[] = [
   { slug: "tracking", title: "Session tracking", route: "/tracking", category: "You", icon: "Chart" },
   { slug: "templates", title: "Templates", route: "/templates", category: "You", icon: "Layers" },
   { slug: "search", title: "Search", route: "/search", category: "You", icon: "Search" },
+  { slug: "modules", title: "Modules", route: "/modules", category: "You", icon: "Layers" },
   { slug: "empty-states", title: "Empty states", route: "/empty-states", category: "You", icon: "Leaf" },
 
   // ---- Settings ------------------------------------------------------------

@@ -21,6 +21,11 @@ function cleanItem(value: string): string | null {
 	return cleaned;
 }
 
+/** One reviewed item, cleaned the same way as a parsed one (null when nothing usable is left). */
+export function cleanImportItem(value: string): string | null {
+	return cleanItem(value);
+}
+
 function objectItem(value: unknown): string | null {
 	if (typeof value === "string") return value;
 	if (!value || typeof value !== "object") return null;
