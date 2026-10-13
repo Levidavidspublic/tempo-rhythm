@@ -37,6 +37,14 @@ export {
 } from "./blocks";
 
 export {
+  PAGE_TEXT_LIMITS,
+  type PageTextOptions,
+  type PageTextProjection,
+  pageSnippet,
+  projectPageText,
+} from "./page-summary";
+
+export {
   type Backlink,
   backlinksFor,
   findWikiLinks,
