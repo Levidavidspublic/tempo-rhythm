@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import type {
   TaskChecklistItem,
   TaskEnergy,
@@ -57,77 +56,81 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
   };
 
   return (
-    <fieldset className="space-y-4" aria-label={`Edit ${task.title}`}>
-      <label className="block space-y-2">
-        <span className="text-sm font-medium text-foreground">Task title</span>
+    <fieldset className="tk-editor" aria-label={`Edit ${task.title}`}>
+      <label className="tp-field">
+        <span className="tp-label">Task title</span>
         <input
           aria-label="Edit task title"
+          dir="auto"
           value={title}
           disabled={disabled}
           onChange={(event) => setTitle(event.target.value)}
-          className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
+          className="tp-input"
         />
       </label>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-foreground">Priority</span>
+      <div className="tk-editor__grid">
+        <label className="tp-field">
+          <span className="tp-label">Priority</span>
           <select
             aria-label="Edit priority"
             value={priority}
             disabled={disabled}
             onChange={(event) => setPriority(event.target.value as TaskPriority)}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="tp-input"
           >
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
         </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-foreground">Energy</span>
+        <label className="tp-field">
+          <span className="tp-label">Energy</span>
           <select
             aria-label="Edit energy"
             value={energy}
             disabled={disabled}
             onChange={(event) => setEnergy(event.target.value as TaskEnergy)}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="tp-input"
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
         </label>
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-foreground">Due date</span>
+        <label className="tp-field">
+          <span className="tp-label">Due date</span>
           <input
             type="date"
             aria-label="Edit due date"
             value={dueDate}
             disabled={disabled}
             onChange={(event) => setDueDate(event.target.value)}
-            className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="tp-input"
           />
         </label>
       </div>
-      <div className="space-y-2">
-        <span className="text-sm font-medium text-foreground">Checklist steps</span>
+      <div className="tp-field">
+        <span className="tp-label">Checklist steps</span>
         {checklist.map((item) => (
-          <div key={item.id} className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-sm text-foreground">{item.text}</span>
-            <Button
+          <div key={item.id} className="tk-editor__step">
+            <span className="tk-editor__steptext" dir="auto">
+              {item.text}
+            </span>
+            <button
               type="button"
-              variant="outline"
+              className="tp-btn tp-btn--secondary tp-btn--sm"
               disabled={disabled}
               aria-label={`Remove step ${item.text}`}
               onClick={() => setChecklist((current) => current.filter((step) => step.id !== item.id))}
             >
               Remove
-            </Button>
+            </button>
           </div>
         ))}
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="tk-editor__add">
           <input
             aria-label="New checklist step"
+            dir="auto"
             value={newStep}
             disabled={disabled}
             onChange={(event) => setNewStep(event.target.value)}
@@ -137,16 +140,22 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
                 addStep();
               }
             }}
-            className="min-h-11 flex-1 rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="tp-input"
             placeholder="Add a small step"
           />
-          <Button type="button" variant="outline" disabled={disabled || !newStep.trim()} onClick={addStep}>
+          <button
+            type="button"
+            className="tp-btn tp-btn--secondary"
+            disabled={disabled || !newStep.trim()}
+            onClick={addStep}
+          >
             Add step
-          </Button>
+          </button>
         </div>
       </div>
-      <Button
+      <button
         type="button"
+        className="tp-btn tp-btn--primary tk-editor__save"
         disabled={disabled || !title.trim()}
         onClick={() =>
           onSave({
@@ -159,7 +168,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
         }
       >
         Save task
-      </Button>
+      </button>
     </fieldset>
   );
 }
