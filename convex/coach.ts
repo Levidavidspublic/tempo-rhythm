@@ -14,6 +14,7 @@ import {
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
 import { requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
+import { requireLegacyWritableConversation } from "./messages";
 
 const DEFAULT_DIAL = 5;
 const PANIC_MS = 30 * 60_000;
@@ -61,6 +62,12 @@ export function coachReplyForTechnique(technique: string | undefined): string {
  * Append a user message and a coach reply (template by conversation technique).
  * Crisis text gets the fixed resources card instead, with no model call.
  * Does not silently change tasks or notes — only chat rows.
+ *
+ * Legacy write path (#809): only a live, owned conversation without an Agent thread. A deleted or
+ * foreign conversation is refused as not found; a conversation that moved to Agent chat is refused
+ * with the `legacy_chat_moved` error before anything is written. Crisis text is refused too, because
+ * a stored card would fork the history: the web client runs `crisis.check` and shows the resources
+ * card before it calls this, and the Agent chat path has its own crisis turn.
  */
 export const sendMessage = mutation({
   args: {
@@ -71,10 +78,7 @@ export const sendMessage = mutation({
   handler: async (ctx, args) => {
     // Coach chat is an AI surface: pending/revoked accounts are rejected server-side.
     const user = await requireApprovedUser(ctx);
-    const conv = await ctx.db.get(args.conversationId);
-    if (!conv || conv.userId !== user._id) {
-      throw new Error("Conversation not found");
-    }
+    const conv = await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
     const text = args.content.trim();
     if (!text) {
       throw new Error("Message is empty");

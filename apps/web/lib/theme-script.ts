@@ -1,5 +1,6 @@
 /**
- * Inline pre-hydration script for Tempo Flow theme + dyslexia toggles.
+ * Inline pre-hydration script for Tempo Flow theme + dyslexia toggles, and the `?glass=off`
+ * fallback (DESIGN.md §5: every glass surface turns solid).
  *
  * Runs before React hydrates so the user's stored preference is applied
  * in the same frame as first paint (no FOUC / theme flash).
@@ -31,5 +32,6 @@ export function themeInitScript(): string {
     if(d==='on'){root.setAttribute('data-dyslexia','on');}
     var s=localStorage.getItem('${TEXT_SIZE_STORAGE_KEY}');
     if(s==='s'||s==='l'){root.setAttribute('data-text-size',s);}
+    if(q.get('glass')==='off'){root.setAttribute('data-glass','off');}
   }catch(e){}})();`;
 }

@@ -61,23 +61,28 @@ All fonts are open. Everything except OpenDyslexic loads from Google Fonts. Open
 | `--tp-text-sm` | 15 | meta, buttons, rail |
 | `--tp-text-md` | 17 | body |
 | `--tp-text-lg` | 20 | coach title, h3 |
-| `--tp-text-xl` | 24 | h2 sections |
-| `--tp-text-2xl` | 30 | Next up title, mobile page title |
-| `--tp-text-3xl` | 38 | page title |
+| `--tp-text-xl` | 26 | h2 sections |
+| `--tp-text-2xl` | 32 | Next up title, mobile page title |
+| `--tp-text-3xl` | 42 | page title |
 | `--tp-text-4xl` | 48 | marketing display |
 
-Body line height is 1.6, snug is 1.35, headings 1.18. Text width is at most `68ch` (`--tp-measure`). The user's S / M / L text-size setting (`data-text-size`) moves the base to 15 / 17 / 20 px.
+Page and section titles use weight 560 with tighter tracking (−0.02em / −0.01em; Hebrew keeps 0). Run 2 polish raised xl / 2xl / 3xl from 24 / 30 / 38 for a firmer heading scale. Body line height is 1.6, snug is 1.35, headings 1.18. Text width is at most `68ch` (`--tp-measure`). The user's S / M / L text-size setting (`data-text-size`) moves the base to 15 / 17 / 20 px.
 
 ## 4. Spacing, radius, elevation
 
 - **Spacing:** a 4 px scale. `--tp-space-1…20` = 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80. Nothing off-scale.
 - **Radius:** 6 (controls, rows), 10 (buttons, inputs), 14 (cards, popovers), 20 (paper page, sheets), pill (tags, coach button).
-- **Elevation:**
-  - `whisper` is used for the selected segment.
-  - `card` is a 1 px ring plus a 2 px soft drop, used for the paper and page icon.
+- **Elevation** (run 2 polish: clearer depth between ground, paper and cards):
+  - `whisper` is used for the selected segment and a secondary button's hover.
+  - `paper` is a 1 px ring plus a long soft drop, used for the paper page and surfaces: the paper sits above the ground.
+  - `card` is a ring plus a short drop, for nested surfaces.
+  - `raise` is a short drop under a card's own hairline (`--tp-line-card`), for cards on the paper (Tempo blocks, proposals, module and tier cards, kanban cards).
+  - `lift` is the hover state of a card that is a link or a button (1 px up, 180 ms).
   - `float` is used for glass chrome.
   - `modal` is used for drawers.
   - Shadows stay warm-tinted and quiet.
+- **Ground grain:** a faint grain (`--tp-grain`, about 0.6 levels of variation) on the page ground only, never on the paper, cards or text. Light mode adds light flecks and dark mode dark flecks, so the grain only moves the ground away from the text, and no pair in §6 drops below its number. It is off under `prefers-contrast: more` and forced colours.
+- **Empty states:** one quiet illustration style. The state's line icon sits on a parchment disc (`--tp-sunken`, a hairline ring and a soft halo); a state with no icon gets the shared page drawing (`--tp-empty-art`) in the same 1.5 px stroke.
 
 ## 5. Liquid glass recipe (floating chrome only)
 
@@ -143,7 +148,8 @@ Computed from the hex values above using WCAG relative luminance. Text needs 4.5
   - the slash menu pops;
   - the coach panel slides from the trailing edge;
   - the toast rises.
-- Only `transform` and `opacity` animate.
+- Run 2 polish adds: a press (1 px down, 98% scale, 120 ms) on every button; a 1 px lift on link and button cards (180 ms); content list rows drop in once when they arrive (240 ms); a check mark pops when ticked (180 ms).
+- Only `transform` and `opacity` animate (hover colour changes fade at 120 ms).
 - `prefers-reduced-motion` collapses all of it to instant. The text caret stops blinking, and skeletons stop shimmering.
 
 ## 8. Layout
