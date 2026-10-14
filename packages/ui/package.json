@@ -13,7 +13,8 @@
     "./native": "./src/native/index.ts",
     "./theme": "./src/theme/tokens.ts",
     "./blocks/catalog": "./src/blocks/catalog.ts",
-    "./blocks/block-spec": "./src/blocks/block-spec.ts"
+    "./blocks/block-spec": "./src/blocks/block-spec.ts",
+    "./blocks/decision-steps": "./src/blocks/decision-steps.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
