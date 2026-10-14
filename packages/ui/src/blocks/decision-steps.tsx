@@ -56,7 +56,8 @@ export function decisionStepSpecs(steps: readonly DecisionStep[]): TempoBlockSpe
 
 /** True when every step passes the task block checks and the count is in range. */
 export function isValidDecision(steps: readonly DecisionStep[]): boolean {
-  if (steps.length < DECISION_LIMITS.minSteps || steps.length > DECISION_LIMITS.maxSteps) return false;
+  if (steps.length < DECISION_LIMITS.minSteps || steps.length > DECISION_LIMITS.maxSteps)
+    return false;
   return decisionStepSpecs(steps).every((spec) => {
     const element = spec.elements[spec.root];
     return element?.type === "TaskBlock";
@@ -76,18 +77,16 @@ function TaskStep({ element }: ComponentRenderProps<TaskBlockProps>) {
   const { title, durationMin, reason } = element.props;
   const labels = useContext(LabelsContext);
   return (
-    <div className="tp-task-row" data-component="TaskRow" data-done="false">
-      <div className="tp-task-row__body">
-        <span className="tp-task-row__title" dir="auto">
-          {title}
+    <div className="tp-task-row__body">
+      <span className="tp-task-row__title" dir="auto">
+        {title}
+      </span>
+      <span className="tp-task-row__meta">
+        <span>
+          <span className="tp-num">{durationMin}</span> {labels.minutes}
         </span>
-        <span className="tp-task-row__meta">
-          <span>
-            <span className="tp-num">{durationMin}</span> {labels.minutes}
-          </span>
-          {reason ? <span dir="auto">{reason}</span> : null}
-        </span>
-      </div>
+        {reason ? <span dir="auto">{reason}</span> : null}
+      </span>
     </div>
   );
 }
@@ -126,14 +125,19 @@ export function DecisionSteps({
   return (
     <LabelsContext.Provider value={labels}>
       <JSONUIProvider registry={DECISION_REGISTRY}>
-      <ol className="tp-block-task" data-component="DecisionSteps" aria-label={labels.list}>
-        {specs.map((spec, index) => (
-          // Steps have no ids of their own; their order is the identity.
-          <li key={index}>
-            <Renderer spec={spec} registry={DECISION_REGISTRY} fallback={Fallback} />
-          </li>
-        ))}
-      </ol>
+        <ol className="tp-block-task" data-component="DecisionSteps" aria-label={labels.list}>
+          {specs.map((spec, index) => (
+            // Steps have no ids of their own; their order is the identity.
+            // Each <li> is the row, so only the last step drops its divider (.tp-task-row:last-child).
+            <li key={index} className="tp-task-row" data-component="TaskRow" data-done="false">
+              <span className="tp-num tp-muted" aria-hidden="true">
+                {index + 1}
+              </span>
+              <Renderer spec={spec} registry={DECISION_REGISTRY} fallback={Fallback} />
+              <span />
+            </li>
+          ))}
+        </ol>
       </JSONUIProvider>
     </LabelsContext.Provider>
   );
