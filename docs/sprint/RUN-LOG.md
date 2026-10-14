@@ -4,7 +4,7 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** waiting for Codex reviews on #935 and #936; then the final report.
+**Now working on:** waiting for Codex on #935 (head `1a35042`) and #938 (head `236fb02`). Next: merge them when clean, then the final report.
 
 ## Loops (EXTRAPOLATED)
 
@@ -20,9 +20,9 @@ If this session restarts: read this file and continue from the first unchecked i
 ## Plan
 
 - [x] Phase 0: this log and the tracking PR (#934).
-- [x] Phase 1: one headless-browser script per loop under `e2e/alpha/` (#935, open, waiting for Codex).
-- [ ] Phase 2: fix what breaks the loops, smallest first. Landing contrast fix in #936 (open, waiting for Codex). No other known issue reproduces on the loop screens (details below).
-- [ ] Phase 3: build what's missing. Not started: see "Phase 3" below.
+- [x] Phase 1: one headless-browser script per loop under `e2e/alpha/` (#935, open: two Codex rounds fixed, third review requested).
+- [x] Phase 2: fix what breaks the loops, smallest first. Landing contrast fix #936 **merged** 18:53 UTC and checked on preview. No other known issue reproduces on the loop screens (details below).
+- [ ] Phase 3: build what's missing. Decision steps through json-render: #938 (open, waiting for Codex). Backend and wiring: designed, not built (see "Phase 3" below).
 - [ ] Phase 4: 5 passes in a row per loop on preview. Blocked on sign-in.
 
 ## Findings at start (WALK)
@@ -46,10 +46,14 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 - RTL `::before` overflow, "Sample data", the input under the tab bar and broken links: **not reproduced** on these routes. The app CSS uses logical offsets (`inset-inline-*`) and mirrors its transforms in RTL. These look like findings of the design-file check (`docs/design/v3/*.html`), not of the app. With mock Convex the signed-in states (Today's page, the coach thread, quick add) don't render, so those states are UNKNOWN.
 - Fixed: the `/` contrast failure (#936). After: 0 contrast findings in all 8 variants.
 
-## Phase 3: not started
+## Phase 3
 
 - **CopilotKit layer: BLOCKED_USER_CHANGES.** `@copilotkit/runtime` 1.79.0 (npm, checked 18:47 UTC) depends on `openai`, `@ai-sdk/openai`, `@ai-sdk/anthropic` and `@ai-sdk/google`. HARD_RULES §2 forbids those SDKs and §6.1 routes every model call through `convex/lib/ai_router.ts`. Its React side needs that runtime (or the paid Copilot Cloud). Only Amit can decide this.
-- **Decision card (L5).** The json-render catalog exists (`packages/ui/src/blocks/catalog.ts`, json-render 0.21.0, TEMPO-B06-02) with `TaskBlock`; `json-render-catalog.md` doesn't exist. The plan: a coach "decision" reply (ordered steps) drawn as `TaskBlock`s through the catalog, with "Save to today" appending them to today's page. It needs a coach backend change (`convex/coach.ts`, the prompt) and can't be checked end to end without a session and the AI key on TEST, so I left it for a run that can verify it. `e2e/alpha/l5-decision-card.mjs` already pins the UI contract.
+- **Decision card, piece 1 (#938, open).** `@tempo/ui/blocks/decision-steps` draws an ordered decision as catalog `TaskBlock`s through json-render (the existing `tempoBlockToSpec` bridge, display only, a narrow read-only registry). Render-tested, not mounted. The shared registry stays with ticket TEMPO-B06-03 (#789, on hold); its files are untouched.
+- **Decision card, pieces 2-3 (designed, not built):**
+  - Backend: a `decision` proposal kind in `convex/lib/coachPrompt.ts` and `convex/coach.ts` (2-7 steps), with today's open tasks added to the coach's context so "these" means something.
+  - Wiring: the card in the coach thread (`ChatProposal`), "Save to today" through Accept with the 5-minute Undo, and the coach composer on Today.
+  - **Why not built tonight:** the page editor loads a page's body once per page and then saves its own copy (`NotePage` in `components/notes/NotesScreen.tsx`). A server-side write to today's page while Today is open would be erased by the next keystroke. A safe save must go through the open editor, or the editor must take outside changes when it isn't dirty. Either way it touches the editor, and only a signed-in run can prove it doesn't lose page text.
 - **Chat as the front door on Today:** not started (same verification gap).
 
 ## Results
@@ -58,6 +62,12 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 |---|---|---|---|---|
 | 18:28 | #935 (scripts) | L1-L5 | BLOCKED_VERIFICATION, 0/1 each: "no guest or test sign-in on /sign-in (magic link only), and ALPHA_STORAGE_STATE is not set" | [sign-in screenshot](evidence/l1-blocked-sign-in.png) |
 | 18:52 | #936 | (Phase 2, no loop) | `/` contrast: 17/4 axe nodes per variant before, 0 after, 8 variants | [before dark](evidence/landing-before-1280-dark.png), [after dark](evidence/landing-after-1280-dark.png), [before light](evidence/landing-before-1280-light.png), [after light](evidence/landing-after-1280-light.png) |
+
+| 18:53 | #936 merged | — | squash into `integration` (`8d5b55d`): green required CI, Codex review of `4a42716` with no findings, CodeRabbit "no actionable comments" | [#936](https://github.com/Levidavidspublic/tempo-rhythm/pull/936) |
+| 18:58 | after #936 on preview `8d5b55d` | `/` check | 0 contrast findings in 8 variants on live preview | — |
+| 18:58 | after #936 on preview `8d5b55d` | L1-L5 | BLOCKED_VERIFICATION, 0/1 each (same reason) | — |
+| 18:50, 18:57 | #935 | — | Codex P1 (Today shows 3 open tasks; repeats would fail) fixed in `6c59ea6`. CodeRabbit (L5 seeded titles; bypass header scope) fixed in `6c59ea6`. Codex P2 / CodeRabbit (`run.mjs` dropped the first loop name) fixed in `1a35042` | [#935](https://github.com/Levidavidspublic/tempo-rhythm/pull/935) |
+| 18:58 | #938 | L5 (piece 1) | opened: decision steps, 2164 tests pass, build 62/62 | [#938](https://github.com/Levidavidspublic/tempo-rhythm/pull/938) |
 
 ## Blocked
 
@@ -72,6 +82,10 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 2. **CopilotKit:** allow its runtime's SDK dependencies, or drop CopilotKit and build the chat layer on the existing coach (`convex/coach.ts` + `callLLM`).
 3. `DEEPINFRA_API_KEY` on the TEST Convex deployment: still UNKNOWN (L4 and L5 need the model).
 4. Optional: install the Claude GitHub App on the repo so PR events wake the session.
+
+## Not mine
+
+- #937 "chore: CodeRabbit advisory config" was opened at 18:47 UTC by the Division6066 account from another session or by hand. Left alone.
 
 ## UNKNOWN
 
