@@ -24,7 +24,7 @@ if (!Number.isInteger(times) || times < 1) {
   console.error("--times takes a whole number of at least 1");
   process.exit(1);
 }
-const picked = args.filter((a, i) => i !== timesAt && i !== timesAt + 1);
+const picked = args.filter((_arg, i) => i !== timesAt && i !== timesAt + 1);
 const loops = picked.length ? picked : Object.keys(SCRIPTS);
 const unknown = loops.filter((l) => !SCRIPTS[l]);
 if (unknown.length) {

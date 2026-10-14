@@ -3,16 +3,19 @@
 // Contract (Phase 3): Today has the coach composer ("Message"); the reply renders
 // [data-component="DecisionCard"] with ordered TaskBlock rows (.tp-task-row__title) and a
 // "Save to today" button; after saving, today's daily page lists the same titles in the same order.
-import { BASE_URL, assertSignedIn, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
+import { BASE_URL, assertSignedIn, completeAlphaTasks, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
 
 await runLoop("l5", "Decision card on Today, saved to today's page", async (page, shot) => {
   await page.goto(`${BASE_URL}/today`, { waitUntil: "domcontentloaded" });
   await assertSignedIn(page);
   const quickAdd = page.getByLabel("Add something small for today");
   await expectVisible(quickAdd, "Today's quick add", 45_000);
+  await completeAlphaTasks(page);
   const list = page.locator('[aria-labelledby="today-task-list-heading"]');
+  const seeded = [];
   for (const name of ["email", "laundry", "bill"]) {
     const title = marker(`Alpha L5 ${name}`);
+    seeded.push(title);
     await quickAdd.fill(title);
     await quickAdd.press("Enter");
     await expectVisible(list.getByText(title, { exact: true }), `seed task ${name}`);
@@ -30,7 +33,8 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
   }
   const card = cards.last();
   const titles = (await card.locator(".tp-task-row__title").allInnerTexts()).map((t) => t.trim()).filter(Boolean);
-  if (titles.length < 2) throw fail(`the decision card lists ${titles.length} step(s)`);
+  const seededOnCard = new Set(titles.filter((title) => seeded.includes(title)));
+  if (seededOnCard.size < 2) throw fail(`the decision card orders ${seededOnCard.size} of the 3 seeded tasks`);
   await shot(page, "decision-card");
   await card.getByRole("button", { name: "Save to today" }).click();
   await expectVisible(card.getByText(/Saved to today/i), "the saved note on the card");
@@ -45,4 +49,5 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
     at = next;
   }
   await shot(page, "today-page");
+  await completeAlphaTasks(page);
 });

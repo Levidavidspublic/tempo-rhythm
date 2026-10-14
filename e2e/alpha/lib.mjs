@@ -34,12 +34,19 @@ async function launch() {
 }
 
 async function newContext(browser, storageState) {
+  const context = await browser.newContext({ storageState, viewport: { width: 1280, height: 900 } });
   const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  return browser.newContext({
-    storageState,
-    viewport: { width: 1280, height: 900 },
-    extraHTTPHeaders: bypass ? { "x-vercel-protection-bypass": bypass } : undefined,
-  });
+  if (bypass) {
+    // The preview-protection header goes to the preview's own origin only, never to Convex,
+    // fonts or any other host the page calls.
+    const origin = new URL(BASE_URL).origin;
+    await context.route("**/*", (route) => {
+      const request = route.request();
+      if (new URL(request.url()).origin !== origin) return route.continue();
+      return route.continue({ headers: { ...request.headers(), "x-vercel-protection-bypass": bypass } });
+    });
+  }
+  return context;
 }
 
 /** Stops with BLOCKED_VERIFICATION when the page is the sign-in form or the approval wait. */
@@ -88,6 +95,22 @@ export async function expectVisible(locator, what, ms = 30_000) {
   } catch {
     throw fail(`not visible after ${Math.round(ms / 1000)} s: ${what}`);
   }
+}
+
+/**
+ * Completes this script family's own open tasks ("Alpha …" markers) on Today. Today's list shows
+ * only 3 open tasks, so leftovers from earlier passes would hide a new one. Other tasks are left alone.
+ */
+export async function completeAlphaTasks(page) {
+  const list = page.locator('[aria-labelledby="today-task-list-heading"]');
+  for (let i = 0; i < 30; i += 1) {
+    const open = list.getByRole("button", { name: /^Mark Alpha L\d .* complete$/ });
+    if ((await open.count()) === 0) return;
+    const name = await open.first().getAttribute("aria-label");
+    await open.first().click();
+    await list.getByRole("button", { name, exact: true }).waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+  }
+  throw fail("more than 30 open Alpha tasks on Today");
 }
 
 /** The "Saved" status of the page editor (PageEditorView). */
