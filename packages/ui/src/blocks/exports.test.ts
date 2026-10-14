@@ -4,10 +4,12 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import * as blockSpecByName from "@tempo/ui/blocks/block-spec";
 import * as catalogByName from "@tempo/ui/blocks/catalog";
+import * as decisionStepsByName from "@tempo/ui/blocks/decision-steps";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as blockSpecByPath from "./block-spec";
 import * as catalogByPath from "./catalog";
+import * as decisionStepsByPath from "./decision-steps";
 
 /**
  * TEMPO-B06-SUPPORT-UI-DEPS (redone as v3/ui-block-exports, was PR #896). Proves the preflight for the block registry (#789):
@@ -49,6 +51,7 @@ const resolveFromHere = createRequire(import.meta.path).resolve;
 const BLOCK_EXPORTS = {
   "./blocks/catalog": "./src/blocks/catalog.ts",
   "./blocks/block-spec": "./src/blocks/block-spec.ts",
+  "./blocks/decision-steps": "./src/blocks/decision-steps.tsx",
 } as const;
 
 describe("@tempo/ui block exports", () => {
@@ -88,6 +91,14 @@ describe("@tempo/ui block exports", () => {
     // Garbage in gives the fixed fallback card, through the package-name import.
     const fallback = blockSpecByName.safeBlockSpec({ root: "nope" });
     expect(fallback).toEqual(blockSpecByPath.brokenBlockSpec("invalid_spec"));
+  });
+
+  test("@tempo/ui/blocks/decision-steps loads the decision card's steps by package name", () => {
+    expect(resolveFromHere("@tempo/ui/blocks/decision-steps")).toBe(
+      join(UI_DIR, "src", "blocks", "decision-steps.tsx")
+    );
+    expect(decisionStepsByName.DecisionSteps).toBe(decisionStepsByPath.DecisionSteps);
+    expect(decisionStepsByName.DECISION_LIMITS).toEqual({ minSteps: 2, maxSteps: 7 });
   });
 });
 
