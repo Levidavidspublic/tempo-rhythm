@@ -4,7 +4,7 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** stopped (19:40 UTC). #938 is in auto-merge. Every loop is blocked on a preview sign-in only Amit can provide (see Needs Amit). The final report is on #934.
+**Now working on:** stopped (20:30 UTC). #935, #936 and #938 are merged. Every loop is blocked on a preview sign-in only Amit can provide (see Needs Amit). The final report is on #934.
 
 ## Loops (EXTRAPOLATED)
 
@@ -22,7 +22,7 @@ If this session restarts: read this file and continue from the first unchecked i
 - [x] Phase 0: this log and the tracking PR (#934).
 - [x] Phase 1: one headless-browser script per loop under `e2e/alpha/` (#935 **merged** 19:12 UTC, after two Codex rounds).
 - [x] Phase 2: fix what breaks the loops, smallest first. Landing contrast fix #936 **merged** 18:53 UTC and checked on preview. No other known issue reproduces on the loop screens (details below).
-- [ ] Phase 3: build what's missing. Decision steps through json-render: #938 (clean, auto-merge on at 19:39 UTC). Backend and wiring: designed, not built (see "Phase 3" below).
+- [ ] Phase 3: build what's missing. Decision steps through json-render: #938 **merged** 19:40 UTC. Backend and wiring: designed, not built (see "Phase 3" below).
 - [ ] Phase 4: 5 passes in a row per loop on preview. Blocked on sign-in.
 
 ## Findings at start (WALK)
@@ -49,7 +49,7 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 ## Phase 3
 
 - **CopilotKit layer: BLOCKED_USER_CHANGES.** `@copilotkit/runtime` 1.79.0 (npm, checked 18:47 UTC) depends on `openai`, `@ai-sdk/openai`, `@ai-sdk/anthropic` and `@ai-sdk/google`. HARD_RULES §2 forbids those SDKs and §6.1 routes every model call through `convex/lib/ai_router.ts`. Its React side needs that runtime (or the paid Copilot Cloud). Only Amit can decide this.
-- **Decision card, piece 1 (#938, auto-merge on).** `@tempo/ui/blocks/decision-steps` draws an ordered decision as catalog `TaskBlock`s through json-render (the existing `tempoBlockToSpec` bridge, display only, a narrow read-only registry). Render-tested, not mounted. The shared registry stays with ticket TEMPO-B06-03 (#789, on hold); its files are untouched.
+- **Decision card, piece 1 (#938, merged).** `@tempo/ui/blocks/decision-steps` draws an ordered decision as catalog `TaskBlock`s through json-render (the existing `tempoBlockToSpec` bridge, display only, a narrow read-only registry). Render-tested, not mounted. The shared registry stays with ticket TEMPO-B06-03 (#789, on hold); its files are untouched.
 - **Decision card, pieces 2-3 (designed, not built):**
   - Backend: a `decision` proposal kind in `convex/lib/coachPrompt.ts` and `convex/coach.ts` (2-7 steps), with today's open tasks added to the coach's context so "these" means something.
   - Wiring: the card in the coach thread (`ChatProposal`), "Save to today" through Accept with the 5-minute Undo, and the coach composer on Today.
@@ -72,6 +72,7 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 19:12 | #935 merged | — | squash into `integration` (`36bf34d`): green required CI, Codex "no major issues" on `1a35042`, CodeRabbit no actionable comments | [#935](https://github.com/Levidavidspublic/tempo-rhythm/pull/935) |
 | 19:09 | #938 | — | Codex P2 (each row was its own `<li>`, so `:last-child` dropped every divider) fixed in `fb8823d`; computed borders `1px, 1px, 0` with `tempo.css` in Chromium | [light](evidence/decision-steps-light.png), [dark](evidence/decision-steps-dark.png) |
 | 19:22 | #938 | — | Codex "no major issues" on `fb8823d`; required CI green; auto-merge on at 19:39 | [#938](https://github.com/Levidavidspublic/tempo-rhythm/pull/938) |
+| 19:40 | #938 merged | — | squash into `integration` by auto-merge: green required CI, Codex "no major issues" on `fb8823d` | [#938](https://github.com/Levidavidspublic/tempo-rhythm/pull/938) |
 | 19:39 | after #935 (`integration` `36bf34d`, preview still `8d5b55d`: #935 has no app change) | L1-L5 | BLOCKED_VERIFICATION, 0/1 each: no guest or test sign-in on preview | — |
 
 ## Blocked
