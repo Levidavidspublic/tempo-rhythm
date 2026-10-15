@@ -4,7 +4,14 @@ import { useAction, useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { newClientKey, recorderMime, speechEvent, VOICE_CLIENT_LIMITS } from "@/lib/voice-runtime";
+import {
+  acceptsSpokenTurn,
+  isTurnReply,
+  newClientKey,
+  recorderMime,
+  speechEvent,
+  VOICE_CLIENT_LIMITS,
+} from "@/lib/voice-runtime";
 import type { CallLine } from "./VoiceCall";
 import type { VoiceSessionState } from "./voiceSession";
 import { createVoiceSessionState } from "./voiceSession";
@@ -30,10 +37,13 @@ export function useVoiceCall({
   conversationId,
   send,
   latestReply,
+  replyInFlight = false,
 }: {
   conversationId: Id<"conversations"> | null;
   send: (text: string) => Promise<VoiceSendResult>;
   latestReply: VoiceReply;
+  /** A reply is running for this conversation, asked for here or on another surface or tab. */
+  replyInFlight?: boolean;
 }) {
   const startLease = useMutation(api.voice.start);
   const renewLease = useMutation(api.voice.renew);
@@ -62,6 +72,10 @@ export function useVoiceCall({
   const timers = useRef<number[]>([]);
   const lastActivity = useRef(0);
   const awaitingReply = useRef(false);
+  // Set once `send` says this turn's reply was written: only then is a new coach message its answer.
+  const replyReady = useRef(false);
+  const inFlight = useRef(replyInFlight);
+  inFlight.current = replyInFlight;
   // The newest coach reply when the pending turn was sent: the answer is the next one after it,
   // matched by id, never by comparing the server's clock with this device's.
   const replyBefore = useRef<Id<"messages"> | null>(null);
@@ -90,6 +104,7 @@ export function useVoiceCall({
     generation.current += 1;
     stopPlayback();
     awaitingReply.current = false;
+    replyReady.current = false;
     if (recorder.current && recorder.current.state !== "inactive") recorder.current.stop();
     recorder.current = null;
     for (const track of stream.current?.getTracks() ?? []) track.stop();
@@ -159,30 +174,46 @@ export function useVoiceCall({
     [setPhaseBoth, speak, stopPlayback],
   );
 
-  // A new coach reply after a spoken turn: show it and read it aloud.
-  useEffect(() => {
-    if (!latestReply || !open || !awaitingReply.current) return;
-    if (latestReply.id === replyBefore.current || spoken.current.has(latestReply.id)) return;
-    spoken.current.add(latestReply.id);
+  // The answer to a spoken turn: the newest coach reply once `send` says this turn's reply was
+  // written, and never the one that was newest when the turn was sent. Waiting for `send` keeps
+  // another client's reply, landing while this turn's model call runs, from being read as its own.
+  const pickReply = useCallback(() => {
+    const reply = latest.current;
+    const turn = { awaiting: awaitingReply.current, ready: replyReady.current, before: replyBefore.current, spoken: spoken.current };
+    if (!reply || !isTurnReply(reply.id, turn)) return;
+    spoken.current.add(reply.id);
     awaitingReply.current = false;
-    setLines((current) => [...current, { id: latestReply.id, who: "coach", text: latestReply.content }]);
-    void readAloud(latestReply.id);
-  }, [latestReply, open, readAloud]);
+    replyReady.current = false;
+    setLines((current) => [...current, { id: reply.id, who: "coach", text: reply.content }]);
+    void readAloud(reply.id);
+  }, [readAloud]);
+
+  // The written reply can reach this client before or after `send` returns: try again when it does.
+  useEffect(() => {
+    if (open && latestReply) pickReply();
+  }, [latestReply, open, pickReply]);
 
   const onFinal = useCallback(
     async (text: string) => {
       const gen = generation.current;
       setInterim("");
-      // One turn at a time: words while the coach is still answering aren't sent (no second
-      // model call racing the first). Talking over the reply once it plays still interrupts it.
-      if (awaitingReply.current) return;
+      // One turn at a time: words while the coach is still answering, here or for another surface,
+      // aren't sent (a newer message would make the running reply's answer be dropped, and start a
+      // second model call). Talking over the reply once it plays still interrupts it.
+      if (!acceptsSpokenTurn({ awaiting: awaitingReply.current, replyInFlight: inFlight.current })) return;
       setLines((current) => [...current, { id: `you-${Date.now()}`, who: "you", text }]);
       setPhaseBoth("awaitingReply");
       replyBefore.current = latest.current?.id ?? null;
       awaitingReply.current = true;
+      replyReady.current = false;
       try {
         const result = await send(text);
         if (gen !== generation.current) return;
+        if (result.kind === "reply") {
+          replyReady.current = true;
+          pickReply();
+          return;
+        }
         if (result.kind === "crisis") {
           // The fixed crisis card shows in the thread; nothing is spoken and the call ends (L-12).
           end();
@@ -200,7 +231,7 @@ export function useVoiceCall({
         }
       }
     },
-    [end, send, setPhaseBoth],
+    [end, pickReply, send, setPhaseBoth],
   );
 
   /** Start: only ever from the person's click (L-1). */

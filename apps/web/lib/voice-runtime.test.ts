@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { newClientKey, recorderMime, speechEvent } from "./voice-runtime";
+import { acceptsSpokenTurn, isTurnReply, newClientKey, recorderMime, speechEvent } from "./voice-runtime";
 
 describe("speechEvent", () => {
   test("Flux turn events become speech started, interim words and the final words", () => {
@@ -45,5 +45,24 @@ describe("newClientKey", () => {
     const key = newClientKey((b) => b.fill(7));
     expect(key).toBe(`vk_${"07".repeat(16)}`);
     expect(/^[A-Za-z0-9_-]{8,64}$/.test(newClientKey())).toBe(true);
+  });
+});
+
+describe("a spoken turn", () => {
+  const turn = { awaiting: true, ready: true, before: "m1", spoken: new Set(["m0"]) };
+
+  test("its answer is a new reply, and only once send says the reply was written", () => {
+    expect(isTurnReply("m2", turn)).toBe(true);
+    // Another client's reply that lands while this turn's model call runs is not its answer.
+    expect(isTurnReply("m2", { ...turn, ready: false })).toBe(false);
+    expect(isTurnReply("m1", turn)).toBe(false);
+    expect(isTurnReply("m0", turn)).toBe(false);
+    expect(isTurnReply("m2", { ...turn, awaiting: false })).toBe(false);
+  });
+
+  test("is held while this call's turn is pending or any reply for the conversation is running", () => {
+    expect(acceptsSpokenTurn({ awaiting: false, replyInFlight: false })).toBe(true);
+    expect(acceptsSpokenTurn({ awaiting: true, replyInFlight: false })).toBe(false);
+    expect(acceptsSpokenTurn({ awaiting: false, replyInFlight: true })).toBe(false);
   });
 });

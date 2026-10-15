@@ -67,3 +67,20 @@ export function newClientKey(random: (bytes: Uint8Array) => Uint8Array = (b) => 
   const bytes = random(new Uint8Array(16));
   return `vk_${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
+
+/**
+ * Whether `replyId` is the answer to the pending spoken turn: a turn is pending, `send` said its
+ * reply was written (`ready`), and the reply is neither the one that was newest when the turn was
+ * sent nor one already read. Matched by id, never by comparing the server's clock with the device's.
+ */
+export function isTurnReply(
+  replyId: string,
+  turn: { awaiting: boolean; ready: boolean; before: string | null; spoken: ReadonlySet<string> },
+): boolean {
+  return turn.awaiting && turn.ready && replyId !== turn.before && !turn.spoken.has(replyId);
+}
+
+/** Whether a final transcript may be sent: no turn of this call is pending and no reply is running. */
+export function acceptsSpokenTurn(turn: { awaiting: boolean; replyInFlight: boolean }): boolean {
+  return !turn.awaiting && !turn.replyInFlight;
+}

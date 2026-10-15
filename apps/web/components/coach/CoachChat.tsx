@@ -191,10 +191,14 @@ export function CoachConversation({
     return (await reply(conversationId)) ? { kind: "reply" } : { kind: "none" };
   };
   const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card");
+  // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
+  // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
+  const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
   const voice = useVoiceCall({
     conversationId,
     send: sendSpoken,
     latestReply: lastAssistant ? { id: lastAssistant._id, content: lastAssistant.content } : null,
+    replyInFlight: inFlightUntil !== null,
   });
 
   const handleSend = async () => {
@@ -227,9 +231,6 @@ export function CoachConversation({
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
   const inputId = variant === "page" ? "coach-message" : variant === "panel" ? "coach-panel-message" : "today-coach-message";
   const shown = variant === "today" ? messages?.slice(-TODAY_MESSAGES) : messages;
-  // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
-  // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
-  const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
   const busy = isSending || replying || inFlightUntil !== null;
   // A reply that runs past the wait (its action died) gets Try again without a new message.
   const [, setWaitedOut] = useState(0);
