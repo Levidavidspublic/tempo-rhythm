@@ -21,14 +21,17 @@ export function marker(prefix) {
 }
 
 class LoopStop extends Error {
-  constructor(code, reason) {
+  constructor(code, reason, { control = false } = {}) {
     super(reason);
     this.code = code;
+    this.control = control;
   }
 }
 
 export const blocked = (reason) => new LoopStop(EXIT.BLOCKED_VERIFICATION, reason);
 export const fail = (reason) => new LoopStop(EXIT.FAIL, reason);
+/** A failed safety or outcome check (crisis, Undo): always FAIL, even when requests were dropped. */
+export const controlFail = (reason) => new LoopStop(EXIT.FAIL, reason, { control: true });
 
 export async function launch() {
   const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
@@ -204,9 +207,9 @@ export async function crisisCheck(page, shot) {
   await page.waitForTimeout(5_000);
   const replyCalls = sentFrames.slice(before).filter((f) => f.includes("coach:reply"));
   page.off("websocket", onSocket);
-  if (replyCalls.length > 0) throw fail(`the crisis message sent ${replyCalls.length} coach:reply call(s)`);
+  if (replyCalls.length > 0) throw controlFail(`the crisis message sent ${replyCalls.length} coach:reply call(s)`);
   if (await page.locator('[data-component="CoachTyping"]').isVisible()) {
-    throw fail("the coach shows a typing state after a crisis message");
+    throw controlFail("the coach shows a typing state after a crisis message");
   }
 }
 
@@ -228,6 +231,7 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
   const browser = await launch();
   let code = EXIT.PASS;
   let reason = "";
+  let control = false;
   let context = null;
   let page = null;
   const network = [];
@@ -241,6 +245,7 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
     if (crisis) await crisisCheck(page, shot);
   } catch (error) {
     code = error instanceof LoopStop ? error.code : EXIT.FAIL;
+    control = error instanceof LoopStop && error.control;
     reason = error instanceof Error ? error.message.split("\n")[0] : String(error);
     // What the screen showed when the run stopped.
     if (page) await shot(page, "stopped").catch(() => {});
@@ -260,7 +265,8 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
     await browser.close();
   }
   // A failure that comes with dropped requests can't be told apart from the drop: NETWORK, not FAIL.
-  if (code === EXIT.FAIL && network.length > 0) {
+  // A failed crisis or Undo check stays FAIL: it is never repeated away.
+  if (code === EXIT.FAIL && !control && network.length > 0) {
     code = EXIT.NETWORK;
     reason = `${reason} [sandbox network: ${network[0]}${network.length > 1 ? ` and ${network.length - 1} more` : ""}]`;
   }

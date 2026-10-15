@@ -1,6 +1,6 @@
 // L4: ask the coach to plan the afternoon -> the proposal card shows the exact change -> Accept ->
 // the change appears -> Undo within 5 minutes restores it.
-import { BASE_URL, assertSignedIn, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
+import { BASE_URL, assertSignedIn, controlFail, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
 
 const LIST_FOR_KIND = { task: "/tasks", note: "/notes", template: "/templates" };
 
@@ -46,6 +46,6 @@ await runLoop("l4", "Coach plans the afternoon: proposal, Accept, Undo", async (
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(3_000);
   const after = await rows().count();
-  if (after !== withIt - 1) throw fail(`the ${kind} is still on ${list} after Undo (${withIt} before, ${after} after)`);
+  if (after !== withIt - 1) throw controlFail(`the ${kind} is still on ${list} after Undo (${withIt} before, ${after} after)`);
   await shot(page, "after-undo");
 });

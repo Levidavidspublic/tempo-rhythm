@@ -22,6 +22,8 @@ async function completeOwnSeeds(page) {
     await open.first().click();
     await page.getByRole("button", { name, exact: true }).first().waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
   }
+  const left = await open.count();
+  if (left > 0) throw fail(`${left} Alpha L5 seed task(s) still open after cleanup`);
 }
 
 await runLoop("l5", "Decision card on Today, saved to today's page", async (page, shot) => {
