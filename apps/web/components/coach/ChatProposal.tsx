@@ -153,6 +153,12 @@ function DecisionProposal({ messageId, proposal }: { messageId: Id<"messages">; 
       await flushPage();
       await accept({ messageId, todayDate: localIsoDate(new Date(bounds.startMs)) });
     });
+  // Undo the same way: a save still waiting would write the removed steps back.
+  const takeBack = () =>
+    act(async () => {
+      await flushPage();
+      await undo({ messageId });
+    });
 
   const titleId = `proposal-${messageId}`;
   return (
@@ -203,7 +209,7 @@ function DecisionProposal({ messageId, proposal }: { messageId: Id<"messages">; 
             </Link>
           ) : null}
           {left ? (
-            <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={busy} onClick={() => void act(() => undo({ messageId }))}>
+            <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={busy} onClick={() => void takeBack()}>
               <TpIcon name="undo" size="sm" />
               <span>{t("proposal.undo")}</span>
               <span className="tp-num tp-mono" aria-hidden="true">
