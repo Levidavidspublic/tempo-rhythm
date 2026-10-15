@@ -539,7 +539,9 @@ async function saveDecision(
 /**
  * Takes a saved decision back off the page, keeping everything the person wrote since. The exact
  * text that was added goes, wherever it now sits. If the person changed it (ticked a step, say),
- * the decision's own task blocks go by id, and so does its generated heading (Codex P2 on #940).
+ * the decision's own task blocks go by id, and so does its generated heading, but only where it
+ * still sits right above the decision's first block: an edited heading is theirs, and another
+ * heading with the same title is never touched (Codex P2s on #940).
  */
 function withoutDecision(
   body: string,
@@ -552,16 +554,20 @@ function withoutDecision(
     if (at >= 0) return body.slice(0, at) + body.slice(at + appended.length);
   }
   const ids = new Set(blockIds);
-  let rest = parseTempoBlocks(body)
-    .filter((segment) => !(segment.kind === "valid" && ids.has(segment.block.id)))
-    .map((segment) => segment.source)
+  const segments = parseTempoBlocks(body);
+  const ours = (segment: (typeof segments)[number]) => segment.kind === "valid" && ids.has(segment.block.id);
+  const first = segments.findIndex(ours);
+  const heading = title ? decisionHeading(title) : "";
+  return segments
+    .map((segment, index) => {
+      if (ours(segment)) return "";
+      if (heading && index === first - 1 && segment.kind === "markdown" && segment.source.endsWith(heading)) {
+        const before = segment.source.slice(0, -heading.length);
+        if (before === "" || before.endsWith("\n")) return before;
+      }
+      return segment.source;
+    })
     .join("");
-  if (title) {
-    const heading = decisionHeading(title);
-    const at = rest.lastIndexOf(heading);
-    if (at >= 0) rest = rest.slice(0, at) + rest.slice(at + heading.length);
-  }
-  return rest;
 }
 
 /**

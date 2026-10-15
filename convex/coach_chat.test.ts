@@ -718,6 +718,52 @@ describe("a decision: the coach orders today's tasks, and saving it writes to to
     expect(body).toContain("A note.\n");
   });
 
+  test("fallback Undo removes only the heading right above the decision's blocks", async () => {
+    const world = makeWorld();
+    const pageId = await seedDailyPage(world, "## Intention\n");
+    const first = await proposalTurn(world, DECISION);
+    await run(coach.acceptProposal, world.as(A), { messageId: first.messageId, todayDate: TODAY });
+    const saved = (world.row(pageId) as Row).body as string;
+    // The first decision's step is ticked, then a second decision with the same title is saved.
+    await world.db.patch(pageId, { body: saved.replace('"status":"now"', '"status":"done"') });
+    const second = await proposalTurn(world, DECISION);
+    await run(coach.acceptProposal, world.as(A), { messageId: second.messageId, todayDate: TODAY });
+    const both = (world.row(pageId) as Row).body as string;
+    expect(both.split("### This afternoon\n\n")).toHaveLength(3);
+
+    await run(coach.undoProposal, world.as(A), { messageId: first.messageId });
+    const body = (world.row(pageId) as Row).body as string;
+    expect(body.split("### This afternoon\n\n")).toHaveLength(2);
+    // The heading left is the second decision's: what its Save added is still there, unchanged.
+    const added = (coach.storedProposal(world.row(second.messageId)?.toolCalls) as { appended?: string }).appended;
+    expect(added?.includes("### This afternoon\n\n")).toBe(true);
+    expect(body.endsWith(added as string)).toBe(true);
+    expect(pageTasks(body)).toEqual([
+      { title: "Reply to Dana", status: "now" },
+      { title: "Draft the report", status: "later" },
+      { title: "Laundry", status: "later" },
+    ]);
+    // The second decision is whole: its own Undo still takes it off exactly.
+    await run(coach.undoProposal, world.as(A), { messageId: second.messageId });
+    expect(pageTasks((world.row(pageId) as Row).body as string)).toEqual([]);
+    expect((world.row(pageId) as Row).body).not.toContain("### This afternoon");
+  });
+
+  test("fallback Undo keeps a heading the person rewrote, and their own heading with the same title", async () => {
+    const world = makeWorld();
+    const pageId = await seedDailyPage(world, "## Intention\n");
+    const { messageId } = await proposalTurn(world, DECISION);
+    await run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY });
+    const saved = (world.row(pageId) as Row).body as string;
+    const edited = saved.replace("### This afternoon\n", "### Afternoon plan\n");
+    await world.db.patch(pageId, { body: `${edited}### This afternoon\n\nMy notes.\n` });
+    await run(coach.undoProposal, world.as(A), { messageId });
+    const body = (world.row(pageId) as Row).body as string;
+    expect(pageTasks(body)).toEqual([]);
+    expect(body).toContain("### Afternoon plan\n");
+    expect(body).toContain("### This afternoon\n\nMy notes.\n");
+  });
+
   test("Save needs today's date and today's own page; nothing changes when either is missing", async () => {
     const world = makeWorld();
     await seedDailyPage(world, "B's day\n", B);
