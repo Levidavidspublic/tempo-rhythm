@@ -114,6 +114,9 @@ export const NOTE_CHILD_TABLES = [
 export const CONVERSATION_CHILD_TABLES = [
   "chatRequests",
   "pageProposals",
+  // Content-free usage rows; convex/voice.ts admits a session only for a live conversation the
+  // caller owns (requireLegacyWritableConversation) and re-checks it on every grant and sentence.
+  "voiceSessions",
 ] as const satisfies readonly TableNames[];
 
 /**
