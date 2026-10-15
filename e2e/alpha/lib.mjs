@@ -28,13 +28,13 @@ class LoopStop extends Error {
 export const blocked = (reason) => new LoopStop(EXIT.BLOCKED_VERIFICATION, reason);
 export const fail = (reason) => new LoopStop(EXIT.FAIL, reason);
 
-async function launch() {
+export async function launch() {
   const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
   return chromium.launch({ executablePath: process.env.ALPHA_CHROMIUM || undefined, proxy });
 }
 
-async function newContext(browser, storageState) {
-  const context = await browser.newContext({ storageState, viewport: { width: 1280, height: 900 } });
+export async function newContext(browser, storageState, options = {}) {
+  const context = await browser.newContext({ storageState, viewport: { width: 1280, height: 900 }, ...options });
   const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
   if (bypass) {
     // The preview-protection header goes to the preview's own origin only, never to Convex,

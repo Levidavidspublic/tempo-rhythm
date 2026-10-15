@@ -12,6 +12,17 @@ One headless-browser script per weekend-alpha loop (`docs/sprint/RUN-LOG.md` on 
 
 Every pass ends with the crisis check: one crisis-style message on `/coach` must show the fixed crisis card (`data-testid="coach-crisis-resources"`), no typing state, and no `coach:reply` call in the WebSocket frames the browser sends (the only client path to the model).
 
+## Signed-in sweep
+
+`sweep.mjs` loads every signed-in app screen at 390 and 1280 px, light and dark, en and he (8 renders per route), with `ALPHA_STORAGE_STATE`. It also opens the first note, week, template, goal, project, habit and routine it finds. A render fails on an uncaught page error, an error screen ("Application error", "Something went wrong", 404), an HTTP 5xx, a horizontal scroll, or landing on sign-in or the approval wait. It only loads pages; it never clicks anything that writes. Console errors are listed but don't fail it.
+
+```bash
+node e2e/alpha/sweep.mjs                              # every route, 8 variants each
+node e2e/alpha/sweep.mjs --only today,coach --widths 390
+```
+
+Output: `out/sweep/<run time>/summary.md`, `results.json` and one screenshot per render.
+
 ## Run
 
 ```bash
