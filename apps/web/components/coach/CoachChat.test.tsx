@@ -109,4 +109,42 @@ describe("ChatProposal", () => {
     );
     expect(html).not.toContain(">Edit<");
   });
+
+  const STEPS = [
+    { title: "Reply to Dana", minutes: 10, reason: "It unblocks her" },
+    { title: "Draft the report", minutes: 45 },
+  ];
+
+  test("a decision draws its steps as a DecisionCard with Save to today and Not now, and no Accept or Edit", () => {
+    const html = markup(
+      createElement(ChatProposal, {
+        messageId: "messages:3" as never,
+        proposal: { kind: "decision", title: "This afternoon", steps: STEPS, status: "pending" } as never,
+      }),
+    );
+    expect(html).toContain('data-component="DecisionCard"');
+    expect(html).toContain("This afternoon");
+    expect(html).toContain("Suggested order");
+    expect(html.indexOf("Reply to Dana")).toBeGreaterThan(-1);
+    expect(html.indexOf("Draft the report")).toBeGreaterThan(html.indexOf("Reply to Dana"));
+    expect(html).toContain("It unblocks her");
+    expect(html).toContain("Save to today");
+    expect(html).toContain(">Not now<");
+    expect(html).not.toContain(">Accept<");
+    expect(html).not.toContain(">Edit<");
+  });
+
+  test("a saved decision says so, links to the page that got the steps and offers Undo while it lasts; untitled ones get a default title", () => {
+    const html = markup(
+      createElement(ChatProposal, {
+        messageId: "messages:4" as never,
+        proposal: { kind: "decision", steps: STEPS, status: "accepted", createdId: "notes:1", undoUntilMs: Date.now() + 4 * 60_000 } as never,
+      }),
+    );
+    expect(html).toContain("An order for today");
+    expect(html).toContain("Saved to today. You can undo this for 5 minutes.");
+    expect(html).toContain('href="/notes/notes:1"');
+    expect(html).toContain(">Undo<");
+    expect(html).not.toContain("Save to today<");
+  });
 });

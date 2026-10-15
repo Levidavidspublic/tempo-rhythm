@@ -8,7 +8,8 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { pickCoachConversation } from "@/lib/coach-conversation";
+import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
 
@@ -37,13 +38,30 @@ export function CoachCrisisReply() {
 /** Longest message the coach takes (convex/coach.ts MAX_MESSAGE_CHARS). */
 const MAX_MESSAGE_CHARS = 4000;
 
+/** Today shows only the newest turns; the whole thread is on /coach. */
+const TODAY_MESSAGES = 6;
+
+/**
+ * A first conversation being created, per person. Today's chat and the coach panel can be on
+ * screen together; both wait on one create instead of each making its own thread.
+ */
+const creating = new Map<string, Promise<Id<"conversations">>>();
+
 /**
  * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
- * classes. Used by the /coach page and by the coach panel beside any page, which passes that
- * page's id so the coach reads it. The message is saved first; the reply comes from the model
- * through `coach.reply`, with a typing state while it runs (the model seam does not stream).
+ * classes. Used by the /coach page, by the coach panel beside any page, and inline on Today; the
+ * panel and Today pass the open page's id so the coach reads it. Every reply also sends the local
+ * day, so the coach sees today's open tasks ("what order should I do these in?"). The message is
+ * saved first; the reply comes from the model through `coach.reply`, with a typing state while it
+ * runs (the model seam does not stream).
  */
-export function CoachConversation({ variant, pageId = null }: { variant: "page" | "panel"; pageId?: string | null }) {
+export function CoachConversation({
+  variant,
+  pageId = null,
+}: {
+  variant: "page" | "panel" | "today";
+  pageId?: string | null;
+}) {
   const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // conversations.list calls requireUser: wait for the users row (getProfile is null until then).
@@ -54,6 +72,9 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const requestReply = useAction(api.coach.reply);
   const flushPage = useFlushCoachPage();
   const { guard } = useCrisisGuard();
+  const bounds = useLocalDayBounds();
+  // Today's chat answers with today's page as context: it waits until that page is on screen.
+  const waitingForPage = variant === "today" && !pageId;
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
@@ -63,8 +84,8 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const [replying, setReplying] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [pageUnsaved, setPageUnsaved] = useState(false);
-  const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -74,13 +95,25 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
       setConversationId(latest._id);
       return;
     }
-    if (creatingRef.current) return;
-    creatingRef.current = true;
-    void createConversation({}).then((id) => {
-      setConversationId(id);
-      creatingRef.current = false;
-    });
-  }, [isAuthenticated, conversations, conversationId, createConversation]);
+    if (!profile) return;
+    let pending = creating.get(profile._id);
+    if (!pending) {
+      pending = createConversation({});
+      creating.set(profile._id, pending);
+      // A failed create can be tried again; a made one stays shared until the list shows it.
+      pending.catch(() => creating.delete(profile._id));
+    }
+    let live = true;
+    void pending.then(
+      (id) => {
+        if (live) setConversationId(id);
+      },
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [isAuthenticated, profile, conversations, conversationId, createConversation]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -90,6 +123,12 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const messages = useQuery(api.messages.list, conversationId ? { conversationId } : "skip");
 
   useEffect(() => {
+    // Inline on Today the thread scrolls inside its own box: the page itself never jumps.
+    if (variant === "today") {
+      const thread = threadRef.current;
+      if (thread) thread.scrollTop = thread.scrollHeight;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ block: "end" });
   });
 
@@ -112,6 +151,8 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
       const result = await requestReply({
         conversationId: id,
         ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
+        dayStartMs: bounds.startMs,
+        dayEndMs: bounds.endMs,
       });
       setUnavailable(result.status === "unavailable");
     } catch {
@@ -123,7 +164,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || !conversationId || isSending || replying) return;
+    if (!text || !conversationId || isSending || replying || waitingForPage) return;
     setInput("");
     setIsSending(true);
     try {
@@ -149,21 +190,32 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
 
   const isLoading =
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
-  const inputId = variant === "page" ? "coach-message" : "coach-panel-message";
-  const busy = isSending || replying;
+  const inputId = variant === "page" ? "coach-message" : variant === "panel" ? "coach-panel-message" : "today-coach-message";
+  const shown = variant === "today" ? messages?.slice(-TODAY_MESSAGES) : messages;
+  // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
+  // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
+  const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
+  const busy = isSending || replying || inFlightUntil !== null;
+  // A reply that runs past the wait (its action died) gets Try again without a new message.
+  const [, setWaitedOut] = useState(0);
+  useEffect(() => {
+    if (inFlightUntil === null) return;
+    const timer = window.setTimeout(() => setWaitedOut((n) => n + 1), Math.max(0, inFlightUntil - Date.now()) + 50);
+    return () => window.clearTimeout(timer);
+  }, [inFlightUntil]);
   // The newest message is the user's and no reply is on its way: a reply failed, or the page
   // reloaded while one was running. Either way the message is saved and can be answered again.
   const waiting = !busy && !crisisHold && messages !== undefined && messages.at(-1)?.role === "user";
 
   return (
     <>
-      <div className="tp-coach-thread" data-component="CoachThread" aria-live="polite">
+      <div ref={threadRef} className="tp-coach-thread" data-component="CoachThread" data-variant={variant} aria-live="polite">
         {isLoading ? (
           <p className="tp-muted tp-small">{t("coachChat.loading")}</p>
-        ) : messages && messages.length === 0 ? (
-          <p className="tp-muted">{t("coachChat.empty")}</p>
+        ) : shown && shown.length === 0 ? (
+          variant === "today" ? null : <p className="tp-muted">{t("coachChat.empty")}</p>
         ) : (
-          messages?.map((message) => {
+          shown?.map((message) => {
             const proposal = message.role === "assistant" ? proposalOf(message.toolCalls) : null;
             return (
               <Fragment key={message._id}>
@@ -201,7 +253,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
             </div>
           </div>
         ) : null}
-        <div ref={bottomRef} />
+        {variant === "today" ? null : <div ref={bottomRef} />}
       </div>
 
       <form
@@ -234,9 +286,9 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
                 void handleSend();
               }
             }}
-            placeholder={t("coachChat.placeholder")}
+            placeholder={variant === "today" ? t("today.chat.placeholder") : t("coachChat.placeholder")}
             maxLength={MAX_MESSAGE_CHARS}
-            disabled={!conversationId || busy}
+            disabled={!conversationId || busy || waitingForPage}
           />
           <div className="tp-composer__bar">
             <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
@@ -244,7 +296,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
               className="tp-btn tp-btn--primary tp-btn--sm"
               type="submit"
               style={{ marginInlineStart: "auto" }}
-              disabled={!conversationId || busy || !input.trim()}
+              disabled={!conversationId || busy || waitingForPage || !input.trim()}
             >
               <TpIcon name="send" size="sm" />
               <span>{t("coachChat.send")}</span>

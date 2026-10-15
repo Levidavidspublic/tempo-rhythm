@@ -14,6 +14,7 @@ import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
 import { TodayAgenda } from "./TodayAgenda";
 import { DailyPage } from "./DailyPage";
+import { TodayChat } from "./TodayChat";
 import { TodayBrainDumpPanel } from "./TodayBrainDumpPanel";
 import { TodayEnergyRecommendations } from "./TodayEnergyRecommendations";
 import { TodayGreeting } from "./TodayGreeting";
@@ -120,6 +121,7 @@ export function TodayScreen() {
     <div className="container mx-auto max-w-5xl px-6 py-12">
       <div className="space-y-8">
         <TodayGreeting greetingName={profile.greetingName} />
+        <TodayChat />
         <DailyPage dayStartMs={bounds.startMs} tasks={todayTasks} />
         <TodayWiredStrips />
         <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />

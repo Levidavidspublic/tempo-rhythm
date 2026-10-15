@@ -1,5 +1,6 @@
 "use client";
 
+import { DecisionSteps, type DecisionStep } from "@tempo/ui/blocks/decision-steps";
 import { useMutation } from "convex/react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useId, useState } from "react";
@@ -7,18 +8,36 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { useFlushCoachPage } from "./CoachPage";
 
-export type ChatProposalData =
+/** A change the coach proposes: one new task, page or template. */
+type ChangeData =
   | { kind: "task"; title: string; minutes: number; when: "today" | "later" }
   | { kind: "note"; title: string; body: string }
   | { kind: "template"; name: string; body: string; period: "daily" | "weekly" | "none" };
 
-export type ChatProposalState = ChatProposalData & {
+/** An order for things the person already has to do; saving it adds the steps to today's page. */
+type DecisionData = { kind: "decision"; title?: string; steps: DecisionStep[] };
+
+export type ChatProposalData = ChangeData | DecisionData;
+
+type ProposalStatus = {
   status: "pending" | "accepted" | "rejected" | "undone";
   createdId?: string;
   undoUntilMs?: number;
 };
+
+export type ChatProposalState = ChatProposalData & ProposalStatus;
+type ChangeState = ChangeData & ProposalStatus;
+type DecisionState = DecisionData & ProposalStatus;
+
+function isStep(value: unknown): value is DecisionStep {
+  if (!value || typeof value !== "object") return false;
+  const step = value as Record<string, unknown>;
+  return typeof step.title === "string" && typeof step.minutes === "number";
+}
 
 /** The proposal stored on a coach reply (`toolCalls.coachProposal`), or null. */
 export function proposalOf(toolCalls: unknown): ChatProposalState | null {
@@ -26,11 +45,15 @@ export function proposalOf(toolCalls: unknown): ChatProposalState | null {
   const raw = (toolCalls as { coachProposal?: unknown }).coachProposal;
   if (!raw || typeof raw !== "object") return null;
   const p = raw as ChatProposalState;
-  const known = p.kind === "task" || p.kind === "note" || p.kind === "template";
+  const known =
+    p.kind === "task" ||
+    p.kind === "note" ||
+    p.kind === "template" ||
+    (p.kind === "decision" && Array.isArray(p.steps) && p.steps.every(isStep));
   return known && typeof p.status === "string" ? p : null;
 }
 
-const KIND_ICON: Record<ChatProposalData["kind"], TpIconName> = { task: "task", note: "page", template: "template" };
+const KIND_ICON: Record<ChangeData["kind"], TpIconName> = { task: "task", note: "page", template: "template" };
 
 /** The first line of a body, as plain words. */
 function firstLine(body: string): string {
@@ -48,7 +71,7 @@ type ProposalDraft = {
   period: "daily" | "weekly" | "none";
 };
 
-function draftOf(p: ChatProposalData): ProposalDraft {
+function draftOf(p: ChangeData): ProposalDraft {
   return {
     title: p.kind === "template" ? "" : p.title,
     minutes: p.kind === "task" ? String(p.minutes) : "",
@@ -60,7 +83,7 @@ function draftOf(p: ChatProposalData): ProposalDraft {
 }
 
 /** The `edit` argument of `coach.acceptProposal` for this kind, or null when a field is empty. */
-function editOf(kind: ChatProposalData["kind"], d: ProposalDraft) {
+function editOf(kind: ChangeData["kind"], d: ProposalDraft) {
   if (kind === "task") {
     const minutes = Number(d.minutes);
     return d.title.trim() && Number.isFinite(minutes) && minutes >= 1
@@ -85,11 +108,131 @@ function useCountdown(untilMs: number | undefined): string | null {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/** The card for a coach proposal: a decision card for an order, a ProposalCard for a change. */
+export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages">; proposal: ChatProposalState }) {
+  return proposal.kind === "decision" ? (
+    <DecisionProposal messageId={messageId} proposal={proposal} />
+  ) : (
+    <ChangeProposal messageId={messageId} proposal={proposal} />
+  );
+}
+
+/**
+ * The decision card (weekend alpha run, L5): the coach's answer to "what order should I do these
+ * in?", each step drawn as the catalog's TaskBlock through json-render. Nothing changes until
+ * Save to today, which saves the page's pending edits first, then adds these exact steps to the
+ * end of today's page; Undo takes them off again for 5 minutes (HARD_RULES §1, §6.2).
+ */
+function DecisionProposal({ messageId, proposal }: { messageId: Id<"messages">; proposal: DecisionState }) {
+  const { t } = useLocale();
+  const bounds = useLocalDayBounds();
+  const flushPage = useFlushCoachPage();
+  const accept = useMutation(api.coach.acceptProposal);
+  const reject = useMutation(api.coach.rejectProposal);
+  const undo = useMutation(api.coach.undoProposal);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const left = useCountdown(proposal.status === "accepted" ? proposal.undoUntilMs : undefined);
+
+  const act = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setFailed(false);
+    try {
+      await fn();
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Today's page saves 500 ms after typing stops. Save it first, so its next save can't write
+  // over the steps this adds.
+  const save = () =>
+    act(async () => {
+      await flushPage();
+      await accept({ messageId, todayDate: localIsoDate(new Date(bounds.startMs)) });
+    });
+  // Undo the same way: a save still waiting would write the removed steps back.
+  const takeBack = () =>
+    act(async () => {
+      await flushPage();
+      await undo({ messageId });
+    });
+
+  const titleId = `proposal-${messageId}`;
+  return (
+    <section
+      className="tp-proposal"
+      data-component="DecisionCard"
+      data-kind="decision"
+      data-status={proposal.status}
+      aria-labelledby={titleId}
+    >
+      <div className="tp-proposal__head">
+        <span className="tp-proposal__kind">
+          <TpIcon name="sort" size="sm" />
+          <span>{t("proposal.kind.decision")}</span>
+        </span>
+        <strong id={titleId} dir="auto">
+          {proposal.title ?? t("proposal.title.decision")}
+        </strong>
+        <span className="tp-proposal__target">{t("proposal.target.today")}</span>
+      </div>
+      <DecisionSteps steps={proposal.steps} labels={{ list: t("proposal.decision.list"), minutes: t("proposal.min") }} />
+      {proposal.status === "pending" ? (
+        <div className="tp-proposal__actions">
+          <button className="tp-btn tp-btn--secondary" type="button" disabled={busy} onClick={() => void save()}>
+            <TpIcon name="check" size="sm" />
+            <span>{t("proposal.decision.save")}</span>
+          </button>
+          <button className="tp-btn tp-btn--ghost" type="button" disabled={busy} onClick={() => void act(() => reject({ messageId }))}>
+            <span>{t("proposal.reject")}</span>
+          </button>
+        </div>
+      ) : (
+        <p className="tp-proposal__note">
+          <TpIcon name={proposal.status === "accepted" ? "check" : "undo"} size="sm" />
+          <span>
+            {proposal.status === "accepted"
+              ? left
+                ? t("proposal.decision.saved")
+                : t("proposal.decision.kept")
+              : proposal.status === "undone"
+                ? t("proposal.undone")
+                : t("proposal.rejected")}
+          </span>
+          {proposal.status === "accepted" ? (
+            // The page that got the steps: on a later day /today is another page.
+            <Link className="tp-btn tp-btn--ghost tp-btn--sm" href={proposal.createdId ? `/notes/${proposal.createdId}` : "/today"}>
+              {t("proposal.open")}
+            </Link>
+          ) : null}
+          {left ? (
+            <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" disabled={busy} onClick={() => void takeBack()}>
+              <TpIcon name="undo" size="sm" />
+              <span>{t("proposal.undo")}</span>
+              <span className="tp-num tp-mono" aria-hidden="true">
+                {left}
+              </span>
+            </button>
+          ) : null}
+        </p>
+      )}
+      {failed ? (
+        <p className="tp-proposal__note" role="alert">
+          {t("proposal.decision.error")}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 /**
  * ProposalCard (coach-thread.html): the exact change the coach proposes. Nothing changes until
  * Accept; after Accept, Undo stays for 5 minutes (HARD_RULES §1, §6.2).
  */
-export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages">; proposal: ChatProposalState }) {
+function ChangeProposal({ messageId, proposal }: { messageId: Id<"messages">; proposal: ChangeState }) {
   const { t } = useLocale();
   const bounds = useLocalDayBounds();
   const accept = useMutation(api.coach.acceptProposal);
