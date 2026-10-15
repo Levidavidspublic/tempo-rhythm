@@ -84,3 +84,24 @@ export function isTurnReply(
 export function acceptsSpokenTurn(turn: { awaiting: boolean; replyInFlight: boolean }): boolean {
   return !turn.awaiting && !turn.replyInFlight;
 }
+
+/** What a spoken turn came to: the lease no longer holds, the words didn't go out, or `send`'s result. */
+export type SpokenTurn<R> = { kind: "leaseEnded" } | { kind: "notSent" } | { kind: "sent"; result: R; minutesLeft: number };
+
+/**
+ * Sends one spoken turn, only while this call's lease still holds. A call that another tab or
+ * surface replaced keeps its socket until its next renewal, so both could hear the same words:
+ * checking the lease first means a replaced call never sends them (Codex P1 on #948).
+ */
+export async function sendSpokenTurn<R>(
+  text: string,
+  deps: { renew: () => Promise<{ status: string; minutesLeft: number }>; send: (text: string) => Promise<R> },
+): Promise<SpokenTurn<R>> {
+  const lease = await deps.renew().catch(() => null);
+  if (!lease || lease.status !== "ok") return { kind: "leaseEnded" };
+  try {
+    return { kind: "sent", result: await deps.send(text), minutesLeft: lease.minutesLeft };
+  } catch {
+    return { kind: "notSent" };
+  }
+}

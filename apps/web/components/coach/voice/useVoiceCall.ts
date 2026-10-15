@@ -9,6 +9,7 @@ import {
   isTurnReply,
   newClientKey,
   recorderMime,
+  sendSpokenTurn,
   speechEvent,
   VOICE_CLIENT_LIMITS,
 } from "@/lib/voice-runtime";
@@ -76,6 +77,13 @@ export function useVoiceCall({
   const replyReady = useRef(false);
   const inFlight = useRef(replyInFlight);
   inFlight.current = replyInFlight;
+  // The newest committed `send`: the socket's handler outlives renders, and a spoken turn must use
+  // the page open now, not the one open when the call started (Codex on #948). Set after commit, so
+  // a render React throws away never points the call at a page that isn't on screen.
+  const sendRef = useRef(send);
+  useEffect(() => {
+    sendRef.current = send;
+  }, [send]);
   // The newest coach reply when the pending turn was sent: the answer is the next one after it,
   // matched by id, never by comparing the server's clock with this device's.
   const replyBefore = useRef<Id<"messages"> | null>(null);
@@ -201,14 +209,35 @@ export function useVoiceCall({
       // aren't sent (a newer message would make the running reply's answer be dropped, and start a
       // second model call). Talking over the reply once it plays still interrupts it.
       if (!acceptsSpokenTurn({ awaiting: awaitingReply.current, replyInFlight: inFlight.current })) return;
-      setLines((current) => [...current, { id: `you-${Date.now()}`, who: "you", text }]);
+      const lease = session.current;
+      if (!lease) return;
+      const lineId = `you-${Date.now()}`;
+      setLines((current) => [...current, { id: lineId, who: "you", text }]);
       setPhaseBoth("awaitingReply");
       replyBefore.current = latest.current?.id ?? null;
       awaitingReply.current = true;
       replyReady.current = false;
       try {
-        const result = await send(text);
+        const turn = await sendSpokenTurn(text, {
+          renew: () => renewLease({ sessionId: lease }),
+          // Ended or replaced while the lease was being checked: the words are not sent.
+          send: (words) => (gen === generation.current ? sendRef.current(words) : Promise.reject(new Error("call_ended"))),
+        });
         if (gen !== generation.current) return;
+        if (turn.kind === "leaseEnded") {
+          // Replaced by a call in another tab or surface, or the lease ran out: this call ends.
+          end();
+          return;
+        }
+        if (turn.kind === "notSent") {
+          // The words didn't go out: the call says so on their line and keeps listening.
+          setLines((current) => current.map((line) => (line.id === lineId ? { ...line, notSent: true } : line)));
+          awaitingReply.current = false;
+          setPhaseBoth("listening");
+          return;
+        }
+        setMinutesLeft(turn.minutesLeft);
+        const result = turn.result;
         if (result.kind === "reply") {
           replyReady.current = true;
           pickReply();
@@ -231,7 +260,7 @@ export function useVoiceCall({
         }
       }
     },
-    [end, pickReply, send, setPhaseBoth],
+    [end, pickReply, renewLease, setPhaseBoth],
   );
 
   /** Start: only ever from the person's click (L-1). */
@@ -275,6 +304,14 @@ export function useVoiceCall({
         recorder.current = rec;
         rec.ondataavailable = (event) => {
           if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
+        };
+        // A recorder that errors or stops on its own (the microphone removed, access withdrawn)
+        // sends no more audio: end the call rather than listen to nothing until the idle bound.
+        rec.onerror = () => {
+          if (gen === generation.current) fail();
+        };
+        rec.onstop = () => {
+          if (gen === generation.current && recorder.current === rec) fail();
         };
         rec.start(VOICE_CLIENT_LIMITS.chunkMs);
         setConnecting(false);

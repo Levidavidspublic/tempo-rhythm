@@ -8,7 +8,7 @@ import type { Lang } from "@/lib/i18n";
 import { callView, minutesLow } from "@/lib/voice-call";
 import type { VoiceSessionState } from "./voiceSession";
 
-export type CallLine = { id: string; who: "you" | "coach"; text: string; live?: boolean };
+export type CallLine = { id: string; who: "you" | "coach"; text: string; live?: boolean; notSent?: boolean };
 
 type Props = {
   open: boolean;
@@ -167,6 +167,11 @@ export function VoiceCall(props: Props) {
                       <span className="tp-call-line__text" dir="auto">
                         {line.text}
                       </span>
+                      {line.notSent ? (
+                        <span className="tp-muted tp-small" data-component="CallLineNotSent">
+                          {t("vc.notSent")}
+                        </span>
+                      ) : null}
                       {line.who === "coach" && props.onReadAloud ? (
                         <button
                           className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon tp-readaloud"
