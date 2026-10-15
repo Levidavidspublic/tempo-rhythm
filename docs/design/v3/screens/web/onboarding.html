@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started · Tempo</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — onboarding.html */
+  .ob-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-3); }
+  .ob-step { display: grid; gap: var(--tp-space-5); min-width: 0; }
+  .ob-step__head { display: grid; gap: var(--tp-space-2); }
+  .ob-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); min-width: 0; }
+  .ob-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
+  .ob-nav__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; }
+  .ob-fieldsets { display: grid; gap: var(--tp-space-6); }
+</style>
+</head>
+<body>
+<!--
+@screen   Onboarding (web)
+@route    apps/web/app/(auth)/onboarding/page.tsx
+@layout   Auth
+@data     profile = profiles.getMine({})        // Convex query: language, readingFont, displayName, coachDial, analyticsOptIn, onboardingStep
+@actions  choose language -> profiles.updatePrefs({ language })              // page re-renders RTL / LTR at once
+@actions  choose reading font -> profiles.updatePrefs({ readingFont })       // "standard" | "dyslexia"; applied at once
+@actions  set name -> profiles.setDisplayName({ name })                     // optional
+@actions  set coach dial -> profiles.setCoachDial({ value })                // 0–10; quiet 0–3, steady 4–7, push 8–10
+@actions  first brain dump -> inbox.capture({ text })                       // optional; becomes the first Inbox page
+@actions  analytics opt-in -> profiles.updatePrefs({ analyticsOptIn })      // default OFF
+@actions  each Continue -> profiles.setOnboardingStep({ step })             // so a refresh resumes on the same step
+@actions  finish -> profiles.completeOnboarding({})                         // then go to /today
+@states   default | empty | loading | error | offline  (?state=)   + saving (?state=saving), ?step=1..5 opens a step
+@flow     1. One step per view. The top says "Step 2 of 5" in words and numbers. Back is always there after step 1.
+          2. Step 1: language (English / עברית) and reading font (standard or dyslexia-friendly). Both apply at once.
+          3. Step 2: what the coach should call you. Optional, "Skip for now" is allowed.
+          4. Step 3: the coach dial, 0 to 10, shown as a number and a word: quiet, steady or push. Starts at 4.
+          5. Step 4: first brain dump. Messy is fine. Optional.
+          6. Step 5: privacy. What Tempo remembers, and a usage analytics switch that starts Off.
+          7. "Continue" is the one primary action; on step 5 it reads "Start using Tempo". Focus moves to each step's heading.
+          8. Saving shows "Saving…" on the button. Error: "Couldn't save this step. What you entered is still here." Offline: banner; choices are kept and saved when back.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<main id="main" class="tp-auth" tabindex="-1">
+  <!-- @component AuthCard | shadcn: card + form | props: { title per step } | events: onSubmit -> profiles.setOnboardingStep -->
+  <div class="tp-auth-card" data-component="AuthCard">
+    <div class="ob-top">
+      <span class="tp-auth-card__brand" data-i18n="brand">Tempo</span>
+      <p class="tp-eyebrow" id="ob-progress" aria-live="polite"><span data-i18n="step">Step</span> <span class="tp-num" data-step-n>1</span> <span data-i18n="of">of</span> <span class="tp-num">5</span></p>
+    </div>
+
+    <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+    <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-wifi-off"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="offline.title">You're offline.</span> <span data-i18n="offline.body">Your choices are kept and save when you're back.</span></span>
+    </div>
+    <!-- @component StateError | shadcn: alert | props: { what: 'step' } | events: onRetry -> Continue again -->
+    <div class="tp-notice" data-tone="danger" role="alert" data-component="StateError" data-state-show="error">
+      <span class="tp-notice__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+      <span class="tp-notice__text"><span class="tp-notice__title" data-i18n="err.title">Couldn't save this step.</span> <span data-i18n="err.body">What you entered is still here. Try Continue again.</span></span>
+    </div>
+
+    <!-- @component Form | shadcn: form | props: { step: 1..5 } | events: onSubmit -> next step -->
+    <form class="tp-form" id="ob-form" data-component="Form" novalidate>
+
+      <!-- Step 1 · language and reading font -->
+      <section class="ob-step" data-step="1" aria-labelledby="s1-title">
+        <div class="ob-step__head">
+          <h1 class="tp-auth-card__title" id="s1-title" tabindex="-1" data-i18n="s1.title">Welcome. Let's set Tempo up for you.</h1>
+          <p class="tp-auth-card__lede" data-i18n="s1.lede">Five short steps. You can change all of this later in Settings.</p>
+        </div>
+        <div class="ob-fieldsets">
+          <fieldset class="ob-fieldset">
+            <legend class="tp-label" data-i18n="lang.legend">Language</legend>
+            <!-- @component Radio ×2 | shadcn: radio-group | props: { name: 'language', value } | events: onChange -> profiles.updatePrefs({ language }) -->
+            <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="language" value="en" data-lang-choice><span class="tp-choice__text"><span lang="en">English</span></span></label>
+            <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="language" value="he" data-lang-choice><span class="tp-choice__text"><span lang="he">עברית</span><span class="tp-choice__hint" data-i18n="lang.he.hint">Right to left</span></span></label>
+          </fieldset>
+          <fieldset class="ob-fieldset">
+            <legend class="tp-label" data-i18n="font.legend">Reading font</legend>
+            <!-- @component Radio ×2 | shadcn: radio-group | props: { name: 'font', value } | events: onChange -> profiles.updatePrefs({ readingFont }) -->
+            <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="font" value="standard" data-font-choice><span class="tp-choice__text"><span data-i18n="font.std">Standard</span><span class="tp-choice__hint" data-i18n="font.std.hint">Calm, roomy text.</span></span></label>
+            <label class="tp-choice" data-component="Radio"><input class="tp-radio" type="radio" name="font" value="dyslexia" data-font-choice><span class="tp-choice__text"><span data-i18n="font.dys">Dyslexia-friendly</span><span class="tp-choice__hint" data-i18n="font.dys.hint">Heavier letter bottoms and more space between letters.</span></span></label>
+          </fieldset>
+        </div>
+      </section>
+
+      <!-- Step 2 · name -->
+      <section class="ob-step" data-step="2" aria-labelledby="s2-title" hidden>
+        <div class="ob-step__head">
+          <h1 class="tp-auth-card__title" id="s2-title" tabindex="-1" data-i18n="s2.title">What should the coach call you?</h1>
+          <p class="tp-auth-card__lede" data-i18n="s2.lede">A first name or a nickname. You can skip this.</p>
+        </div>
+        <!-- @component Field | shadcn: form item | props: { id: 'ob-name', label, help, optional: true } | events: onSubmit -> profiles.setDisplayName -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ob-name"><span data-i18n="name.label">Your name</span> <span class="tp-label__opt" data-i18n="optional">(optional)</span></label>
+          <input class="tp-input" id="ob-name" name="name" type="text" autocomplete="given-name" dir="auto" maxlength="40" aria-describedby="ob-name-help">
+          <p class="tp-help" id="ob-name-help" data-i18n="name.help">Only the coach uses it, to talk to you.</p>
+        </div>
+      </section>
+
+      <!-- Step 3 · coach dial -->
+      <section class="ob-step" data-step="3" aria-labelledby="s3-title" hidden>
+        <div class="ob-step__head">
+          <h1 class="tp-auth-card__title" id="s3-title" tabindex="-1" data-i18n="s3.title">How much should the coach push?</h1>
+          <p class="tp-auth-card__lede" data-i18n="s3.lede">Quiet waits for you to ask. Steady checks in now and then. Push nudges more often.</p>
+        </div>
+        <!-- @component Dial | shadcn: slider | props: { value: 4, label } | events: onValueChange -> profiles.setCoachDial({ value }) -->
+        <div class="tp-dial" data-component="Dial">
+          <div class="tp-dial__head">
+            <label class="tp-label" for="ob-dial" data-i18n="dial.label">Coach dial</label>
+            <span class="tp-dial__value"><span class="tp-dial__num tp-num" data-dial-num>4</span><span class="tp-dial__of" data-i18n="dial.of">of 10</span><span class="tp-dial__word" data-dial-word>Steady</span></span>
+          </div>
+          <input class="tp-slider" id="ob-dial" name="dial" type="range" min="0" max="10" step="1" value="4" aria-describedby="ob-dial-help">
+          <div class="tp-dial__scale" aria-hidden="true"><span><span class="tp-num">0</span> <span data-i18n="dial.quiet">Quiet</span></span><span data-i18n="dial.steady">Steady</span><span><span data-i18n="dial.push">Push</span> <span class="tp-num">10</span></span></div>
+          <p class="tp-help" id="ob-dial-help" data-i18n="dial.help">You can change this any time, even in the middle of a chat.</p>
+        </div>
+      </section>
+
+      <!-- Step 4 · first brain dump -->
+      <section class="ob-step" data-step="4" aria-labelledby="s4-title" hidden>
+        <div class="ob-step__head">
+          <h1 class="tp-auth-card__title" id="s4-title" tabindex="-1" data-i18n="s4.title">What's on your mind right now?</h1>
+          <p class="tp-auth-card__lede" data-i18n="s4.lede">Get it out of your head. Messy is fine. It becomes your first page in Inbox, and the coach can help sort it.</p>
+        </div>
+        <!-- @component Field | shadcn: form item | props: { id: 'ob-dump', label, help, optional: true } | events: onSubmit -> inbox.capture({ text }) -->
+        <div class="tp-field" data-component="Field">
+          <label class="tp-label" for="ob-dump"><span data-i18n="dump.label">Brain dump</span> <span class="tp-label__opt" data-i18n="optional">(optional)</span></label>
+          <!-- @component Textarea | shadcn: textarea | props: { rows: 6 } | events: — -->
+          <textarea class="tp-textarea" id="ob-dump" name="dump" rows="6" dir="auto" data-component="Textarea" aria-describedby="ob-dump-help" data-i18n-attr="placeholder:dump.ph" placeholder="Call the bank. Reply to Noa. Buy milk. That thing for Thursday…"></textarea>
+          <p class="tp-help" id="ob-dump-help" data-i18n="dump.help">One thought per line, or all in one line. Both work.</p>
+        </div>
+      </section>
+
+      <!-- Step 5 · privacy -->
+      <section class="ob-step" data-step="5" aria-labelledby="s5-title" hidden>
+        <div class="ob-step__head">
+          <h1 class="tp-auth-card__title" id="s5-title" tabindex="-1" data-i18n="s5.title">Your privacy</h1>
+          <p class="tp-auth-card__lede" data-i18n="s5.lede">Tempo remembers only what helps the coach help you. You can see every memory, forget any of them, and export them all.</p>
+        </div>
+        <!-- @component SettingRow | shadcn: — + switch | props: { label, help, control: Switch } | events: — -->
+        <div class="tp-setting-row" data-component="SettingRow">
+          <div class="tp-setting-row__text">
+            <span class="tp-setting-row__label" id="ob-an-label" data-i18n="an.label">Share usage analytics</span>
+            <span class="tp-help" id="ob-an-help" data-i18n="an.help">Which screens get used, never what you write or say. Off unless you turn it on.</span>
+          </div>
+          <div class="tp-setting-row__control">
+            <!-- @component Switch | shadcn: switch | props: { checked: false } | events: onCheckedChange -> profiles.updatePrefs({ analyticsOptIn }) -->
+            <button class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="ob-an-label" aria-describedby="ob-an-help" data-analytics data-component="Switch"><span class="tp-switch__track" aria-hidden="true"><span class="tp-switch__thumb"></span></span><span class="tp-switch__state" data-i18n="switch.off">Off</span></button>
+          </div>
+        </div>
+        <p class="tp-small tp-muted" data-i18n="s5.note">The coach is not a therapist. If things get very hard, it stops coaching and shows real places to get help.</p>
+      </section>
+
+      <div class="ob-nav">
+        <button class="tp-btn tp-btn--ghost" type="button" id="ob-back" hidden><svg class="tp-icon tp-icon--sm tp-icon--back" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="back">Back</span></button>
+        <div class="ob-nav__end">
+          <button class="tp-btn tp-btn--ghost" type="button" id="ob-skip" hidden data-i18n="skipstep">Skip for now</button>
+          <button class="tp-btn tp-btn--primary" type="submit" id="ob-next"><span data-next-label data-i18n="next">Continue</span></button>
+        </div>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script>
+window.TP_STRINGS = {
+  en: { "doc.title": "Getting started · Tempo", "finish": "Start using Tempo", "saving": "Saving…", "dial.quiet": "Quiet", "dial.steady": "Steady", "dial.push": "Push", "dial.of": "of 10", "switch.on": "On", "switch.off": "Off" },
+  he: {
+    "doc.title": "מתחילים · Tempo",
+    "skip": "דילוג לתוכן", "brand": "Tempo", "step": "שלב", "of": "מתוך",
+    "offline.title": "אין חיבור לאינטרנט.", "offline.body": "הבחירות שלך נשמרות ויישמרו כשהחיבור יחזור.",
+    "err.title": "לא הצלחנו לשמור את השלב הזה.", "err.body": "מה שכתבת עדיין כאן. נסו ללחוץ שוב על המשך.",
+    "s1.title": "ברוכים הבאים. בואו נתאים את Tempo בשבילך.", "s1.lede": "חמישה שלבים קצרים. אפשר לשנות הכול אחר כך בהגדרות.",
+    "lang.legend": "שפה", "lang.he.hint": "מימין לשמאל",
+    "font.legend": "גופן קריאה", "font.std": "רגיל", "font.std.hint": "טקסט רגוע ומרווח.", "font.dys": "ידידותי לדיסלקציה", "font.dys.hint": "תחתית אותיות כבדה יותר ויותר רווח בין האותיות.",
+    "s2.title": "איך המאמן יקרא לך?", "s2.lede": "שם פרטי או כינוי. אפשר לדלג.",
+    "name.label": "השם שלך", "optional": "(לא חובה)", "name.help": "רק המאמן משתמש בו, כדי לפנות אליך.",
+    "s3.title": "כמה המאמן ידחוף?", "s3.lede": "שקט מחכה שתבקשו. יציב בודק מדי פעם. דוחף מזכיר לעתים קרובות יותר.",
+    "dial.label": "חוגת המאמן", "dial.of": "מתוך 10", "dial.quiet": "שקט", "dial.steady": "יציב", "dial.push": "דוחף", "dial.help": "אפשר לשנות בכל רגע, גם באמצע שיחה.",
+    "s4.title": "מה יש לך בראש עכשיו?", "s4.lede": "להוציא את זה מהראש. מבולגן זה בסדר. זה יהפוך לדף הראשון שלך בתיבת הדואר הנכנס, והמאמן יכול לעזור לסדר.",
+    "dump.label": "שפיכת מחשבות", "dump.ph": "להתקשר לבנק. לענות לנועה. לקנות חלב. הדבר ההוא של יום חמישי…", "dump.help": "מחשבה בכל שורה, או הכול בשורה אחת. שתי הדרכים עובדות.",
+    "s5.title": "הפרטיות שלך", "s5.lede": "Tempo זוכר רק מה שעוזר למאמן לעזור לך. אפשר לראות כל זיכרון, למחוק כל אחד, ולייצא את כולם.",
+    "an.label": "שיתוף נתוני שימוש", "an.help": "באילו מסכים משתמשים, אף פעם לא מה שכותבים או אומרים. כבוי אלא אם מדליקים.",
+    "switch.on": "פועל", "switch.off": "כבוי",
+    "s5.note": "המאמן הוא לא מטפל. אם נהיה ממש קשה, הוא מפסיק לאמן ומראה מקומות אמיתיים לקבל עזרה.",
+    "back": "חזרה", "skipstep": "דילוג לעכשיו", "next": "המשך", "finish": "להתחיל להשתמש ב-Tempo", "saving": "שומרים…"
+  }
+};
+
+(function () {
+  var doc = document, root = doc.documentElement, params = new URLSearchParams(location.search);
+  var form = doc.getElementById("ob-form"), steps = Array.prototype.slice.call(doc.querySelectorAll(".ob-step"));
+  var back = doc.getElementById("ob-back"), skip = doc.getElementById("ob-skip"), next = doc.getElementById("ob-next");
+  var nextLabel = next.querySelector("[data-next-label]"), stepN = doc.querySelector("[data-step-n]");
+  var TOTAL = 5, current = 1, base = {};
+  var OPTIONAL = { 2: true, 4: true };
+
+  /** Show one step. STATE: [hidden] on sections, "Step n of 5", Back / Skip visibility, button label, focus to heading. */
+  function show(n, focus) {
+    current = Math.max(1, Math.min(TOTAL, n));
+    steps.forEach(function (s) { s.hidden = Number(s.getAttribute("data-step")) !== current; });
+    stepN.textContent = String(current);
+    back.hidden = current === 1;
+    skip.hidden = !OPTIONAL[current];
+    nextLabel.textContent = current === TOTAL ? TP.t("finish") : base.next;
+    if (focus) { var h = doc.getElementById("s" + current + "-title"); if (h) h.focus(); }
+  }
+
+  function setSaving(on) {
+    next.disabled = on; form.setAttribute("aria-busy", String(on));
+    nextLabel.textContent = on ? TP.t("saving") : (current === TOTAL ? TP.t("finish") : base.next);
+  }
+
+  /** Save the current step. REAL: one convex mutation per step (see @actions), then profiles.setOnboardingStep({ step }). */
+  function save(n, done) {
+    if (root.getAttribute("data-state") === "offline") { done(); return; }   // REAL: queued by the Convex client and sent when back online
+    setSaving(true);
+    if (n === 2) { /* REAL: convex profiles.setDisplayName({ name }) */ }
+    if (n === 3) { /* REAL: convex profiles.setCoachDial({ value }) */ }
+    if (n === 4) { /* REAL: convex inbox.capture({ text }) — only when the text is not empty */ }
+    if (n === 5) { /* REAL: convex profiles.updatePrefs({ analyticsOptIn }) then profiles.completeOnboarding({}) */ }
+    setTimeout(function () { setSaving(false); done(); }, 500);
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    save(current, function () {
+      if (current === TOTAL) { location.href = "today.html" + (params.get("lang") ? "?lang=" + params.get("lang") : ""); return; }
+      show(current + 1, true);
+    });
+  });
+  back.addEventListener("click", function () { show(current - 1, true); });
+  skip.addEventListener("click", function () {
+    // REAL: convex profiles.setOnboardingStep({ step: current + 1 }) — nothing else is saved for a skipped step
+    show(current + 1, true);
+  });
+
+  /* Language — applies at once. REAL: convex profiles.updatePrefs({ language }); the app re-renders with dir="rtl" for Hebrew. */
+  doc.querySelectorAll("[data-lang-choice]").forEach(function (r) {
+    r.checked = r.value === (root.lang === "he" ? "he" : "en");
+    r.addEventListener("change", function () {
+      try { localStorage.setItem("tempo-lang", r.value); } catch (err) {}
+      var p = new URLSearchParams(location.search); p.set("lang", r.value); p.set("step", "1");
+      location.search = p.toString();
+    });
+  });
+
+  /* Reading font — applies at once. REAL: convex profiles.updatePrefs({ readingFont }). */
+  doc.querySelectorAll("[data-font-choice]").forEach(function (r) {
+    r.checked = (r.value === "dyslexia") === (root.getAttribute("data-dyslexia") === "on");
+    r.addEventListener("change", function () { TP.setDyslexia(r.value === "dyslexia"); });
+  });
+
+  /* Analytics switch — default Off. REAL: convex profiles.updatePrefs({ analyticsOptIn: on }) on Finish. */
+  TP.onSwitch = function (sw, on) { if (sw.hasAttribute("data-analytics")) sw.setAttribute("data-on", String(on)); };
+
+  TP.onReady = function (p) {
+    base.next = nextLabel.textContent;
+    show(parseInt(p.get("step"), 10) || 1, false);
+    if (p.get("state") === "saving") setSaving(true);
+  };
+})();
+</script>
+</body>
+</html>

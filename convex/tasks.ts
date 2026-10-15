@@ -281,6 +281,39 @@ export async function updateTaskForUser(
   return args.taskId;
 }
 
+/**
+ * Rename a project. A project is the tasks that share a projectId and its name lives on each of
+ * them, so every live task of the caller's in that project gets the new name in one transaction
+ * (renaming them one by one could leave some with the old name). Returns how many were renamed.
+ */
+export const renameProject = mutation({
+  args: { projectId: v.string(), name: v.string() },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const projectId = args.projectId.trim();
+    const name = args.name.trim();
+    if (!projectId) {
+      throw new Error("Project not found");
+    }
+    if (!name) {
+      throw new Error("Project name cannot be empty.");
+    }
+    const rows = await ctx.db
+      .query("tasks")
+      .withIndex("by_userId_projectId", (q) => q.eq("userId", user._id).eq("projectId", projectId))
+      .collect();
+    const now = Date.now();
+    let renamed = 0;
+    for (const task of rows) {
+      if (task.deletedAt !== undefined) continue;
+      await ctx.db.patch(task._id, { projectName: name, updatedAt: now });
+      renamed += 1;
+    }
+    return renamed;
+  },
+});
+
 export const remove = mutation({
   args: { taskId: v.id("tasks") },
   returns: v.object({ success: v.boolean(), undoUntilMs: v.number() }),

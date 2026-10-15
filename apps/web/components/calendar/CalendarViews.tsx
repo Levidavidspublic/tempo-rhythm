@@ -2,6 +2,7 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
@@ -36,6 +37,12 @@ const viewOptions: Array<{ mode: CalendarViewMode; label: string }> = [
   { mode: "week", label: "Week" },
   { mode: "month", label: "Month" },
 ];
+
+const modeTitles: Record<CalendarViewMode, string> = {
+  day: "Day events",
+  week: "Week events",
+  month: "Month events",
+};
 
 function formatRange(mode: CalendarViewMode, range: { startMs: number; endMs: number }): string {
   const start = new Date(range.startMs);
@@ -74,19 +81,23 @@ function DueTaskList({
   return (
     <section
       aria-label="Due tasks"
-      className="rounded-3xl border border-border bg-card/80 p-5 shadow-soft"
+      className="tp-section"
+      data-component="Section"
       data-testid="calendar-due-tasks"
     >
-      <h2 className="font-eyebrow">Due tasks</h2>
+      <h2 className="tp-section__title">Due tasks</h2>
       {tasks.length > 0 ? (
-        <ul className="mt-4 space-y-3">
+        <ul className="tp-list tp-surface cal-list">
           {tasks.map((task) => (
-            <li
-              className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3"
-              key={task._id}
-            >
-              <p className="font-medium text-foreground">{task.title}</p>
-              <p className="mt-1 text-caption text-muted-foreground">
+            <li className="tp-list-row" key={task._id}>
+              <span className="tp-list-row__icon">
+                <TpIcon name="checklist" size="sm" />
+              </span>
+              <span className="tp-list-row__body">
+                <span className="tp-list-row__title" dir="auto">
+                  {task.title}
+                </span>
+                <span className="tp-list-row__meta">
                 {task.dueAt !== undefined
                   ? new Date(task.dueAt).toLocaleDateString(undefined, {
                       weekday: "short",
@@ -96,12 +107,13 @@ function DueTaskList({
                     })
                   : "No due date"}
                 {task.status === "done" ? " · Done" : ""}
-              </p>
+                </span>
+              </span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-small text-muted-foreground">
+        <p className="tp-empty tp-surface">
           No tasks are due in this window. Today still holds anything without a date.
         </p>
       )}
@@ -121,20 +133,22 @@ function EventList({
   return (
     <section
       aria-label={`${mode} events`}
-      className="rounded-3xl border border-border bg-card/80 p-5 shadow-soft"
+      className="tp-section"
+      data-component="Section"
       data-testid={`${mode}-events`}
     >
-      <h2 className="font-eyebrow">{mode} events</h2>
+      <h2 className="tp-section__title">{modeTitles[mode]}</h2>
       {events.length > 0 ? (
-        <ul className="mt-4 space-y-3">
+        <ul className="tp-list tp-surface cal-list">
           {events.map((event) => (
             <EventRow actions={actions} event={event} key={event.id} />
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-small text-muted-foreground">
-          No events in this window yet. Add one when you know where it belongs.
-        </p>
+        <div className="tp-empty tp-surface" data-component="Empty">
+          <TpIcon name="calendar-grid" size="lg" />
+          <p>No events in this window yet. Add one when you know where it belongs.</p>
+        </div>
       )}
     </section>
   );
@@ -276,96 +290,99 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6 md:p-8">
-      <header className="space-y-3">
-        <p className="font-eyebrow text-muted-foreground">Calendar</p>
-        <h1 className="text-h1 font-serif">One source for every calendar view</h1>
-        <p className="max-w-2xl text-body leading-relaxed text-muted-foreground">
-          Add an event once, then switch between Day, Week, and Month without losing the thread.
-        </p>
+    <div className="tp-page tp-page--wide cal-screen" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <p className="tp-eyebrow">Calendar</p>
+          <h1 className="tp-pagehead__title">One source for every calendar view</h1>
+          <p className="tp-pagehead__sub">
+            Add an event once, then switch between Day, Week, and Month without losing the thread.
+          </p>
+        </div>
       </header>
 
-      <form
-        className="grid gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft md:grid-cols-[1fr_12rem_auto]"
-        onSubmit={handleSubmit}
-      >
-        <label className="flex flex-col gap-2 text-small font-medium text-foreground">
-          Event title
-          <input
-            className="rounded-2xl border border-border bg-background px-4 py-3 text-body outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            name="title"
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Planning call"
-            value={title}
-          />
-        </label>
+      <form className="tp-surface cal-add" data-component="Form" onSubmit={handleSubmit}>
+        <div className="cal-add__row">
+          <label className="tp-field cal-add__title">
+            <span className="tp-label">Event title</span>
+            <input
+              className="tp-input"
+              dir="auto"
+              name="title"
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Planning call"
+              value={title}
+            />
+          </label>
 
-        <label className="flex flex-col gap-2 text-small font-medium text-foreground">
-          Event date
-          <input
-            className="rounded-2xl border border-border bg-background px-4 py-3 text-body outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            name="date"
-            onChange={(event) => setSelectedDateValue(event.target.value)}
-            type="date"
-            value={selectedDateValue}
-          />
-        </label>
+          <label className="tp-field">
+            <span className="tp-label">Event date</span>
+            <input
+              className="tp-input tp-num"
+              name="date"
+              onChange={(event) => setSelectedDateValue(event.target.value)}
+              type="date"
+              value={selectedDateValue}
+            />
+          </label>
 
-        <div className="flex flex-col justify-end">
           <button
-            className="min-h-11 rounded-2xl bg-primary px-5 py-3 font-medium text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="tp-btn tp-btn--primary"
             disabled={isSubmitting || isAuthWaiting}
             type="submit"
           >
-            {isAuthWaiting
-              ? "Getting your calendar ready…"
-              : isSubmitting
-                ? "Adding..."
-                : "Add event"}
+            <TpIcon name="plus" size="sm" />
+            <span>
+              {isAuthWaiting
+                ? "Getting your calendar ready…"
+                : isSubmitting
+                  ? "Adding..."
+                  : "Add event"}
+            </span>
           </button>
         </div>
 
         {error ? (
-          <p className="text-small text-destructive md:col-span-3" role="alert">
-            {error}
-            {error === SIGNED_OUT_MESSAGE ? (
-              <>
-                {" "}
-                <a className="underline" href="/sign-in?redirect=/calendar">
-                  Sign in
-                </a>
-              </>
-            ) : null}
+          <p className="tp-error-text" role="alert">
+            <span>
+              {error}
+              {error === SIGNED_OUT_MESSAGE ? (
+                <>
+                  {" "}
+                  <a className="tp-btn--link" href="/sign-in?redirect=/calendar">
+                    Sign in
+                  </a>
+                </>
+              ) : null}
+            </span>
           </p>
         ) : null}
       </form>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-border bg-muted/40 p-4">
-        <fieldset className="flex flex-wrap gap-2 border-0 p-0">
-          <legend className="sr-only">Calendar views</legend>
-          {viewOptions.map((option) => (
-            <button
-              aria-pressed={view === option.mode}
-              className={`min-h-11 rounded-2xl px-4 py-2 text-small font-medium transition ${
-                view === option.mode
-                  ? "bg-foreground text-background"
-                  : "bg-background text-muted-foreground hover:text-foreground"
-              }`}
-              key={option.mode}
-              onClick={() => setView(option.mode)}
-              type="button"
-            >
-              {option.label}
-            </button>
-          ))}
+      <div className="tp-toolbar cal-toolbar">
+        <fieldset className="cal-views">
+          <legend className="tp-sr-only">Calendar views</legend>
+          <div className="tp-segmented">
+            {viewOptions.map((option) => (
+              <button
+                aria-pressed={view === option.mode}
+                className="tp-seg__opt"
+                key={option.mode}
+                onClick={() => setView(option.mode)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </fieldset>
-        <p className="text-small text-muted-foreground">{formatRange(view, range)}</p>
-      </section>
+        <p className="tp-muted tp-small tp-toolbar__end">{formatRange(view, range)}</p>
+      </div>
 
       {isLoading ? (
-        <section className="rounded-3xl border border-border bg-card/80 p-5 shadow-soft">
-          <div className="h-4 w-28 animate-pulse rounded-full bg-muted" />
-          <div className="mt-4 h-20 animate-pulse rounded-2xl bg-muted" />
+        <section className="tp-surface" aria-busy="true">
+          <div className="tp-skeleton tp-skeleton--w40" />
+          <div className="tp-skeleton tp-skeleton--block" />
         </section>
       ) : (
         <>
@@ -376,6 +393,6 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
       {undoToast ? (
         <UndoToast onExpire={handleExpireToast} onUndo={handleUndo} toast={undoToast} />
       ) : null}
-    </main>
+    </div>
   );
 }

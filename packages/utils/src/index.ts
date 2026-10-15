@@ -36,6 +36,25 @@ export {
   type ValidBlockSegment,
 } from "./blocks";
 
+export {
+  PAGE_TEXT_LIMITS,
+  type PageTextOptions,
+  type PageTextProjection,
+  pageSnippet,
+  projectPageText,
+} from "./page-summary";
+
+export {
+  type Backlink,
+  backlinksFor,
+  findWikiLinks,
+  isLinkableTitle,
+  type PageRef,
+  sameTitle,
+  titleKey,
+  type WikiLink,
+} from "./wiki-links";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */

@@ -1,25 +1,27 @@
 /**
  * @screen: command
- * @category: You
- * @summary: Filter and open the available Tempo screens.
+ * @source: docs/design/v3/screens/web/command.html
+ * @summary: The command bar as a page: find a screen or an action, then press Enter.
  * @queries: (none)
- * @mutations: (none)
+ * @mutations: notes.create (New page)
  * @auth: required
  */
-import { CommandList } from "@/components/tempo/CommandList";
+"use client";
+
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { CommandPanel } from "@/components/tempo/CommandPalette";
 
 export default function Page() {
+  const { t } = useLocale();
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 p-8">
-      <header className="space-y-3">
-        <p className="font-eyebrow text-accent">Jump to</p>
-        <h1 className="font-heading text-4xl font-semibold text-foreground">Command</h1>
-        <p className="max-w-2xl text-body leading-relaxed text-muted-foreground">
-          Find a screen by name, then press Enter to open it. Use the arrow keys to move through the list.
-        </p>
+    <div className="tp-page" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title">{t("cmd.page.title")}</h1>
+          <p className="tp-pagehead__sub">{t("cmd.page.sub")}</p>
+        </div>
       </header>
-
-      <CommandList />
-    </main>
+      <CommandPanel />
+    </div>
   );
 }

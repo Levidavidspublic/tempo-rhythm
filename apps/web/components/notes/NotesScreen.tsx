@@ -4,11 +4,12 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
 import { NoteNotFound } from "./NoteNotFound";
+import { PageEditorView } from "./PageEditorView";
+import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
 import { UndoDeleteToast } from "./UndoDeleteToast";
 
 type NoteRecord = Doc<"notes">;
@@ -60,7 +61,7 @@ export function getNoteLoadState(note: NoteRecord | null | undefined): NoteLoadS
 
 export function NotesScreen({ noteId }: NotesScreenProps) {
   if (noteId) {
-    return <NoteEditor noteId={noteId} />;
+    return <NotePage noteId={noteId} />;
   }
   return <NotesList />;
 }
@@ -72,7 +73,12 @@ function NotesList() {
   const createNote = useMutation(api.notes.create);
   const togglePin = useMutation(api.notes.togglePin);
   const removeNote = useMutation(api.notes.remove);
+  const restoreNote = useMutation(api.notes.restore);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // Pages deleted from this list, each with its own 5-minute Undo (the same window as a page's
+  // own). The newest shows first; once it is undone or expires, the one before it shows again.
+  const [removedStack, setRemovedStack] = useState<{ id: Id<"notes">; undoUntilMs: number }[]>([]);
+  const removed = removedStack.at(-1) ?? null;
   const [isCreating, setIsCreating] = useState(false);
   const [pinningId, setPinningId] = useState<string | null>(null);
   const [pinMessage, setPinMessage] = useState<string | null>(null);
@@ -105,8 +111,21 @@ function NotesList() {
   };
 
   const handleDelete = async (id: Id<"notes">) => {
-    await removeNote({ noteId: id });
+    const result = await removeNote({ noteId: id });
     setPendingDeleteId(null);
+    setRemovedStack((stack) => [...stack.filter((r) => r.id !== id), { id, undoUntilMs: result.undoUntilMs }]);
+  };
+
+  const handleUndo = async () => {
+    if (!removed) return;
+    const result = await restoreNote({ noteId: removed.id });
+    if (result.success) setRemovedStack((stack) => stack.filter((r) => r.id !== removed.id));
+  };
+
+  // Drops the shown entry and any other whose window has ended.
+  const handleUndoExpire = () => {
+    const now = Date.now();
+    setRemovedStack((stack) => stack.filter((r) => r.id !== removed?.id && r.undoUntilMs > now));
   };
 
   return (
@@ -200,13 +219,32 @@ function NotesList() {
           </ul>
         )}
       </div>
+      {removed ? (
+        <UndoDeleteToast
+          key={removed.id}
+          undoUntilMs={removed.undoUntilMs}
+          onUndo={handleUndo}
+          onExpire={handleUndoExpire}
+        />
+      ) : null}
     </main>
   );
 }
 
 type SaveState = "idle" | "saving" | "saved";
 
-function NoteEditor({ noteId }: { noteId: string }) {
+type NotePageProps = {
+  noteId: string;
+  /** Passed to the page view: where "Back" goes, or null to hide it. */
+  backHref?: string | null;
+  /** Shown on the paper above the body. */
+  lead?: ReactNode;
+  /** False hides Delete on this page view. */
+  canDelete?: boolean;
+};
+
+/** Loads one page, saves edits (debounced), and draws it with PageEditorView. Also used by Today. */
+export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
@@ -254,15 +292,47 @@ function NoteEditor({ noteId }: { noteId: string }) {
     };
   }, [noteId, updateNote]);
 
+  // True from an edit until a save of that same text succeeds, so a failed save is never taken for saved.
+  const dirty = useRef(false);
+  const saveNow = async () => {
+    const title = titleRef.current;
+    const body = bodyRef.current;
+    await updateNote({ noteId: noteId as Id<"notes">, title, body });
+    if (titleRef.current === title && bodyRef.current === body) dirty.current = false;
+  };
+
   const scheduleSave = () => {
+    dirty.current = true;
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       saveTimer.current = null;
-      await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
-      setSaveState("saved");
+      try {
+        await saveNow();
+        setSaveState("saved");
+      } catch {
+        // Stays dirty: the next edit or the coach's flush saves it again.
+      }
     }, 500);
   };
+
+  // The coach beside this page saves its pending edits before it reads the page (Codex P2 on #923).
+  useRegisterCoachPageFlush(async () => {
+    if (wasDeleted.current) return;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (!dirty.current) return;
+    try {
+      await saveNow();
+      setSaveState("saved");
+    } catch (error) {
+      // Keep the edit queued, so it is not lost, and let the coach know it did not save.
+      scheduleSave();
+      throw error;
+    }
+  });
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -340,64 +410,24 @@ function NoteEditor({ noteId }: { noteId: string }) {
   }
 
   return (
-    <main className="container mx-auto max-w-3xl px-6 py-12">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link href="/notes" className="text-sm font-medium text-primary">
-            ← Back to notes
-          </Link>
-          <div className="flex items-center gap-3">
-            <output
-              className={cn(
-                "text-sm text-muted-foreground",
-                saveState === "idle" && "invisible",
-              )}
-            >
-              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}
-            </output>
-            <Button type="button" variant="outline" onClick={() => void handleTogglePin()}>
-              {note?.pinned ? "Unpin" : "Pin"}
-            </Button>
-            {confirmingDelete ? (
-              <>
-                <Button type="button" variant="destructive" onClick={() => void handleDelete()}>
-                  Confirm delete
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setConfirmingDelete(false)}>
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button type="button" variant="outline" onClick={() => setConfirmingDelete(true)}>
-                Delete
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <label className="block space-y-2">
-          <span className="sr-only">Note title</span>
-          <input
-            aria-label="Note title"
-            value={title}
-            onChange={(event) => handleTitleChange(event.target.value)}
-            placeholder="Untitled note"
-            className="w-full border-none bg-transparent font-heading text-3xl font-semibold text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="sr-only">Note body</span>
-          <textarea
-            aria-label="Note body"
-            value={body}
-            onChange={(event) => handleBodyChange(event.target.value)}
-            rows={16}
-            placeholder="Write whatever is on your mind."
-            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          />
-        </label>
-      </div>
-    </main>
+    <PageEditorView
+      key={note?._id ?? noteId}
+      noteId={noteId}
+      title={title}
+      initialBody={note?.body ?? body}
+      body={body}
+      pinned={note?.pinned ?? false}
+      saveState={saveState}
+      confirmingDelete={confirmingDelete}
+      onTitleChange={handleTitleChange}
+      onBodyChange={handleBodyChange}
+      onTogglePin={() => void handleTogglePin()}
+      onAskDelete={() => setConfirmingDelete(true)}
+      onConfirmDelete={() => void handleDelete()}
+      onCancelDelete={() => setConfirmingDelete(false)}
+      backHref={backHref}
+      lead={lead}
+      canDelete={canDelete}
+    />
   );
 }

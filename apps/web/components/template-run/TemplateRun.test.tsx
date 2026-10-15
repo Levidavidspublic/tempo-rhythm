@@ -288,7 +288,7 @@ function installTestDom() {
 const documentNode = installTestDom();
 
 const push = mock((_href: string) => {});
-const applyToNote = mock(async (_args: { templateId: string; title?: string }) => "note_1");
+const createNote = mock(async (_args: { title: string; body: string; periodType?: string }) => "note_1");
 
 type TemplateFixture = {
   templateId: string;
@@ -315,7 +315,13 @@ mock.module("convex/react", () => ({
     if (proposalPending) return undefined;
     return proposalResult;
   },
-  useMutation: () => applyToNote,
+  useMutation: () => createNote,
+}));
+
+// The screens read their copy from the locale context; English, as the app's default.
+const { translate } = await import("@/lib/i18n");
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: Parameters<typeof translate>[1]) => translate("en", key) }),
 }));
 
 const { TemplateRun } = await import("./TemplateRun");
@@ -375,8 +381,8 @@ describe("TemplateRun", () => {
     proposalResult = dailyProposal;
     proposalPending = false;
     push.mockReset();
-    applyToNote.mockReset();
-    applyToNote.mockImplementation(async () => "note_1");
+    createNote.mockReset();
+    createNote.mockImplementation(async () => "note_1");
   });
 
   afterEach(async () => {
@@ -403,7 +409,7 @@ describe("TemplateRun", () => {
     expect(links[0]).toBe("/templates");
   });
 
-  test("previews markdown and the proposal reason, then Accept creates the page", async () => {
+  test("previews markdown and the proposal reason, then Make the page creates it", async () => {
     const view = await renderRun();
     expect(view.textContent).toContain("Daily page");
     expect(view.textContent).toContain(dailyProposal.reason);
@@ -413,20 +419,22 @@ describe("TemplateRun", () => {
     expect(view.textContent).not.toContain('"templateId"');
 
     await act(async () => {
-      findButton(view, "Accept").click();
+      findButton(view, "Make the page").click();
     });
 
-    expect(applyToNote).toHaveBeenCalledTimes(1);
-    expect(applyToNote).toHaveBeenCalledWith({ templateId: "starter:daily-page" });
+    expect(createNote).toHaveBeenCalledTimes(1);
+    const made = createNote.mock.calls[0]?.[0];
+    expect(made?.periodType).toBe("daily");
+    expect(made?.body).toContain("## Intention");
     expect(push).toHaveBeenCalledWith("/notes/note_1");
   });
 
-  test("Reject goes back to templates", async () => {
+  test("Not now goes back to templates", async () => {
     const view = await renderRun();
     await act(async () => {
-      findButton(view, "Reject").click();
+      findButton(view, "Not now").click();
     });
-    expect(applyToNote).not.toHaveBeenCalled();
+    expect(createNote).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith("/templates");
   });
 
@@ -452,9 +460,9 @@ describe("TemplateRun", () => {
     expect(view.textContent).toContain('It fits "Monday".');
   });
 
-  test("disables Reject while Accept is creating the page", async () => {
+  test("disables Not now while the page is being made", async () => {
     let resolveCreate: (id: string) => void = () => {};
-    applyToNote.mockImplementation(
+    createNote.mockImplementation(
       () =>
         new Promise<string>((resolve) => {
           resolveCreate = resolve;
@@ -462,10 +470,10 @@ describe("TemplateRun", () => {
     );
     const view = await renderRun();
     await act(async () => {
-      findButton(view, "Accept").click();
+      findButton(view, "Make the page").click();
     });
-    expect(findButton(view, "Reject").disabled).toBe(true);
-    expect(findButton(view, "Creating the page").disabled).toBe(true);
+    expect(findButton(view, "Not now").disabled).toBe(true);
+    expect(findButton(view, "Making the page").disabled).toBe(true);
     expect(push).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -474,29 +482,29 @@ describe("TemplateRun", () => {
     expect(push).toHaveBeenCalledWith("/notes/note_1");
   });
 
-  test("Reject during an in-flight Accept does not open the new page", async () => {
+  test("Not now during an in-flight create does not open the new page", async () => {
     const view = await renderRun();
-    applyToNote.mockImplementation(async () => {
-      findButton(view, "Reject").click();
+    createNote.mockImplementation(async () => {
+      findButton(view, "Not now").click();
       return "note_1";
     });
     await act(async () => {
-      findButton(view, "Accept").click();
+      findButton(view, "Make the page").click();
     });
     expect(push).toHaveBeenCalledWith("/templates");
     expect(push).not.toHaveBeenCalledWith("/notes/note_1");
   });
 
-  test("shows an inline error and leaves Accept usable when create fails", async () => {
-    applyToNote.mockImplementation(async () => {
+  test("shows an inline error and leaves Make the page usable when create fails", async () => {
+    createNote.mockImplementation(async () => {
       throw new Error("network");
     });
     const view = await renderRun();
     await act(async () => {
-      findButton(view, "Accept").click();
+      findButton(view, "Make the page").click();
     });
-    expect(view.textContent).toContain("Could not create the page. You can try again.");
+    expect(view.textContent).toContain("Could not make the page. You can try again.");
     expect(push).not.toHaveBeenCalled();
-    expect(findButton(view, "Accept").disabled).toBe(false);
+    expect(findButton(view, "Make the page").disabled).toBe(false);
   });
 });

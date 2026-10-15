@@ -1,13 +1,15 @@
 /**
  * Regression tests for the release gate: ApprovalGate must not mount protected
- * children while approval is loading, and the onboarding templates-step Skip keeps
- * the entered name. Same dependency-free TestNode DOM harness as
+ * children while approval is loading, and a later onboarding step's Skip keeps the
+ * entered name (the v3 flow: language, name, coach dial, brain dump, privacy).
+ * Same dependency-free TestNode DOM harness as
  * apps/web/components/onboarding/OnboardingFlow.test.tsx (no Testing Library here).
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from "bun:test";
 // react is only installed under apps/web (not the repo root), so import it from there.
 import { act, createElement, type ReactElement, useEffect } from "../../apps/web/node_modules/react";
 import { createRoot, type Root } from "../../apps/web/node_modules/react-dom/client";
+import { type MessageKey, translate } from "../../apps/web/lib/i18n";
 
 type Listener = (event: TestEvent) => void;
 
@@ -315,7 +317,10 @@ const webDir = `${process.cwd()}/apps/web`;
 const navigation = Bun.resolveSync("next/navigation", webDir);
 const authReact = Bun.resolveSync("@convex-dev/auth/react", webDir);
 const convexReact = Bun.resolveSync("convex/react", webDir);
-const MOCKED = [navigation, authReact, convexReact];
+// The v3 onboarding reads the shell's language and reading-font state.
+const localeProvider = Bun.resolveSync("@/components/providers/LocaleProvider", webDir);
+const themeProvider = Bun.resolveSync("@/components/providers/ThemeProvider", webDir);
+const MOCKED = [navigation, authReact, convexReact, localeProvider, themeProvider];
 let previous: Record<string, Record<string, unknown>> = {};
 
 async function snapshotModuleMocks() {
@@ -343,6 +348,25 @@ function installModuleMocks() {
       return profileResult;
     },
     useMutation: () => completeOnboarding,
+  }));
+
+  mock.module(localeProvider, () => ({
+    useLocale: () => ({
+      lang: "en",
+      dir: "ltr",
+      setLang() {},
+      t: (key: MessageKey) => translate("en", key),
+    }),
+  }));
+
+  mock.module(themeProvider, () => ({
+    useTheme: () => ({
+      theme: "system",
+      resolvedTheme: "light",
+      setTheme() {},
+      dyslexia: false,
+      setDyslexia() {},
+    }),
   }));
 }
 
@@ -474,68 +498,74 @@ describe("ApprovalGate", () => {
 });
 
 describe("OnboardingFlow skip paths", () => {
-  async function goToTemplates(view: TestNode) {
+  async function click(view: TestNode, label: string) {
     await act(async () => {
-      findByTag(view, "BUTTON", "Next").click();
+      findByTag(view, "BUTTON", label).click();
     });
   }
 
-  test("templates-step Skip keeps the trimmed entered name", async () => {
+  /** Step 1 (language) → 2 (name) → 3 (dial) → 4 (brain dump), keeping the name. */
+  async function goToBrainDump(view: TestNode) {
+    await click(view, "Continue");
+    await click(view, "Continue");
+    await click(view, "Continue");
+    expect(view.textContent).toContain("What's on your mind right now?");
+  }
+
+  test("brain-dump Skip keeps the trimmed entered name", async () => {
     const view = await renderUi(createElement(OnboardingFlow));
-    await goToTemplates(view);
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
+    await goToBrainDump(view);
+    await click(view, "Skip");
+    expect(view.textContent).toContain("Your privacy");
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledTimes(1);
     expect(completeOnboarding).toHaveBeenCalledWith({ fullName: "Sam" });
     expect(push).toHaveBeenCalledWith("/today");
   });
 
-  test("templates-step Skip with an empty name sends no name", async () => {
+  test("brain-dump Skip with an empty name sends no name", async () => {
     profileResult = { greetingName: "there" };
     const view = await renderUi(createElement(OnboardingFlow));
-    await goToTemplates(view);
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
+    await goToBrainDump(view);
+    await click(view, "Skip");
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledWith({});
   });
 
-  test("templates-step Skip with a whitespace-only name sends no name", async () => {
+  test("brain-dump Skip with a whitespace-only name sends no name", async () => {
     profileResult = { greetingName: "   " };
     const view = await renderUi(createElement(OnboardingFlow));
-    await goToTemplates(view);
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
+    await goToBrainDump(view);
+    await click(view, "Skip");
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledWith({});
   });
 
   test("name-step Skip still finishes without a name", async () => {
     const view = await renderUi(createElement(OnboardingFlow));
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
+    await click(view, "Continue");
+    expect(view.textContent).toContain("What should the coach call you?");
+    await click(view, "Skip");
+    await click(view, "Continue");
+    await click(view, "Skip");
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledWith({});
     expect(push).toHaveBeenCalledWith("/today");
   });
 
-  test("failed templates Skip stays on the step and retry keeps the name", async () => {
+  test("a failed finish stays on the step and retry keeps the name", async () => {
     completeOnboarding.mockImplementationOnce(async () => {
       throw new Error("network");
     });
     const view = await renderUi(createElement(OnboardingFlow));
-    await goToTemplates(view);
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
-    expect(view.textContent).toContain("Could not save that. You can try again.");
-    expect(view.textContent).toContain("Starter templates");
+    await goToBrainDump(view);
+    await click(view, "Skip");
+    await click(view, "Start using Tempo");
+    expect(view.textContent).toContain("Couldn't save this step.");
+    expect(view.textContent).toContain("Your privacy");
     expect(push).not.toHaveBeenCalled();
 
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledTimes(2);
     expect(completeOnboarding).toHaveBeenLastCalledWith({ fullName: "Sam" });
     expect(push).toHaveBeenCalledTimes(1);
@@ -550,11 +580,12 @@ describe("OnboardingFlow skip paths", () => {
         })
     );
     const view = await renderUi(createElement(OnboardingFlow));
-    await goToTemplates(view);
-    const skip = findByTag(view, "BUTTON", "Skip");
+    await goToBrainDump(view);
+    await click(view, "Skip");
+    const start = findByTag(view, "BUTTON", "Start using Tempo");
     await act(async () => {
-      skip.click();
-      skip.click();
+      start.click();
+      start.click();
     });
     expect(completeOnboarding).toHaveBeenCalledTimes(1);
     await act(async () => {
