@@ -4,10 +4,16 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** (2026-10-15 07:55 UTC)
-- **In the merge queue** (green CI, clean Codex review of the latest commit): #939 (sweep), #940 (decision backend), #942 (convex-test-admin concurrency), #944 (coach thread rows).
-- **After they land:** L1-L4 ×5 and the sweep on the new preview, then the Today chat PR (L5).
-- **In Codex review:** #945 (voice backend, round-1 fixes), #946 (kanban page scroll) and #947 (editor line direction).
+**Now working on:** (2026-10-15 08:10 UTC)
+- **Merged:** #939, #940, #942, #944 and #946. Preview is on `fdbe92e`.
+- **Running on `fdbe92e`:** the full sweep, then L1-L3 ×5, then L4 ×5 with #949's script.
+- **In Codex review:**
+  - #945: voice backend, round-2 fix;
+  - #947: editor line direction;
+  - #948: voice web, stacked on #945;
+  - #949: L4 acts on its own turn;
+  - #950: Today chat and decision card (L5);
+  - #951: the coach proposes instead of asking first.
 
 ## Target 2 (from 2026-10-15, owner message)
 
@@ -28,7 +34,7 @@ Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workf
 ### Plan (target 2)
 
 - [x] Merge #892 (merged 07:00 UTC as `8345b4a`) and dispatch it: the synthetic account is **approved** (run 38695751179, 06:59 UTC, success). #897 merged (`101b060`), #941 merged (`780414c`), #943 merged (`dd96d4e`).
-- [ ] Run L1-L4 5x; fix what fails. On preview `dd96d4e` (07:31-07:37): **L1 5/5, L2 5/5, L3 5/5 PASS**. L4 0/1: the proposal card collapse, fixed by #944, which is waiting on Codex.
+- [ ] Run L1-L4 5x; fix what fails. On preview `dd96d4e` (07:31-07:37): **L1 5/5, L2 5/5, L3 5/5 PASS**. On `481d1e6`: L1 5/5, L2 5/5, L3 2/5 (sandbox timeout), L4 fixed by #944 (card height) and #949 (script picked an old card): first pass 08:03. Rerunning ×5 on `fdbe92e`.
 - [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails. Script: #939, open, in Codex review. Seeded run: 432 renders of 54 routes with 4 failing, all on the project kanban at 390 px (page scrolls sideways, fix `v3/kanban-sr-only`).
 - [ ] Chat on Today + decision card (L5) on the coach; follow the chat-first designs when they land. Backend #940 and editor #941 open; UI on `v3/today-chat`. No chat-first designs in `docs/design/` yet (checked 06:58 UTC).
 - [ ] Voice mode (Deepgram STT, Chatterbox TTS) per `docs/contracts/VOICE.md` (#871).
@@ -133,6 +139,13 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 07:50 | Hebrew renders | sweep | Seen in the 390 px screenshots, not caught by any check. (1) Screen bodies are hard-coded English under a Hebrew shell (e.g. `TodayGreeting.tsx`, Calendar's intro): a translation job, logged under Needs Amit. (2) English page lines on a Hebrew page drew right to left with the full stop on the left: probed on preview, `.cm-line` had no `dir` (the editor's `perLineTextDirection` only reads direction) → #947 | — |
 | 07:50 | #947 | L2, L3, sweep | opened: every editor line gets `dir="auto"` (line decoration), 3 new tests; all 7 checks pass | [#947](https://github.com/Levidavidspublic/tempo-rhythm/pull/947) |
 | 07:51-07:52 | #944, #942, #939, #940 | — | Codex completed on each latest commit with no findings (#942 `f34b285` 07:42, #944 `40e726a` 07:46, #939 `e857c7f` and #940 `9066db6` 07:47); required CI green; marked ready, auto-merge on (merge queue) | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939), [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940), [#942](https://github.com/Levidavidspublic/tempo-rhythm/pull/942), [#944](https://github.com/Levidavidspublic/tempo-rhythm/pull/944) |
+| 07:55-07:57 | #944, #942, #940, #939, #946 merged | — | merge queue: `6211739` (#944), `3994c7c` (#942), `aa57845` (#940), `481d1e6` (#939), `fdbe92e` (#946). Codex on #946 `733052f`: "Didn't find any major issues" | [#946](https://github.com/Levidavidspublic/tempo-rhythm/pull/946) |
+| 07:57-08:01 | after #939 (preview `481d1e6`) | L1-L4 | **L1 5/5, L2 5/5**. L3 2/5, then `net::ERR_TIMED_OUT` loading `/templates` (sandbox network). L4 0/1: Accept went to an **old pending card** from an earlier run, and Undo to yet another card. The script counted cards before the shared coach thread had loaded → **#949** | screenshots in the run's scratch dir |
+| 08:03 | #949 (script) on `481d1e6` | L4 | **first L4 PASS**: proposal "10-minute reset of the nearest surface", Accept (Inbox 18 → 19), Undo (19 → 18, "Undone. Nothing changed."), crisis card with no `coach:reply` | [#949](https://github.com/Levidavidspublic/tempo-rhythm/pull/949) |
+| 08:05 | #945 | voice | Codex round 2: P2 availability ignored the 40-sessions limit → fixed `34b2f4d` (test fails on the old code). P2 midnight split: answered, not changed. VOICE.md A-6 charges a session to its start day; the spill-over is bounded by the 15-minute session | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
+| 08:00 | #948 | voice | opened, stacked on #945: Talk button, call runtime (Deepgram socket, read-aloud, barge-in, renew/idle/hidden bounds, teardown order). Mic off now mutes the track, so Deepgram doesn't close the socket. All 7 checks pass (2204 tests) | [#948](https://github.com/Levidavidspublic/tempo-rhythm/pull/948) |
+| 08:08 | #950 | L5 | opened on `481d1e6`: Today chat, decision card (Save to today, Undo), 2 render tests, L5 acts on its own turn. All 7 checks pass | [#950](https://github.com/Levidavidspublic/tempo-rhythm/pull/950) |
+| 08:09 | #951 | L4 | opened: one prompt line, so asked to plan or suggest, the coach proposes instead of asking first (2 of 4 L4 replies today asked a question with no card) | [#951](https://github.com/Levidavidspublic/tempo-rhythm/pull/951) |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Blocked
