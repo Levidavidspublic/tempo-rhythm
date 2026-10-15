@@ -21,14 +21,17 @@ export function marker(prefix) {
 }
 
 class LoopStop extends Error {
-  constructor(code, reason) {
+  constructor(code, reason, { control = false } = {}) {
     super(reason);
     this.code = code;
+    this.control = control;
   }
 }
 
 export const blocked = (reason) => new LoopStop(EXIT.BLOCKED_VERIFICATION, reason);
 export const fail = (reason) => new LoopStop(EXIT.FAIL, reason);
+/** A failed safety or outcome check (crisis, Undo): always FAIL, even when requests were dropped. */
+export const controlFail = (reason) => new LoopStop(EXIT.FAIL, reason, { control: true });
 
 export async function launch() {
   const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined;
@@ -169,6 +172,27 @@ export async function completeAlphaTasks(page) {
   throw fail("more than 30 open Alpha tasks on Today");
 }
 
+/**
+ * Completes every open task on the task list (/tasks, which shows all of them) whose "Mark …
+ * complete" button matches `name`, then fails setup if any is left: a run that starts on an earlier
+ * run's leftovers doesn't test the same thing.
+ */
+export async function completeOpenTasks(page, name, what) {
+  await page.goto(`${BASE_URL}/tasks`, { waitUntil: "domcontentloaded" });
+  await assertSignedIn(page);
+  await expectVisible(page.getByRole("heading", { name: "Inbox" }), "the task list", 45_000);
+  // The heading comes before the tasks: wait for the first row (the shared account always has some).
+  await page.getByRole("button", { name: /^Mark .* (complete|not done)$/ }).first().waitFor({ timeout: 30_000 }).catch(() => {});
+  const open = page.getByRole("button", { name });
+  for (let i = 0; i < 60 && (await open.count()) > 0; i += 1) {
+    const label = await open.first().getAttribute("aria-label");
+    await open.first().click();
+    await page.getByRole("button", { name: label, exact: true }).first().waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+  }
+  const left = await open.count();
+  if (left > 0) throw fail(`${left} ${what} still open after cleanup`);
+}
+
 /** The "Saved" status of the page editor (PageEditorView). */
 export async function waitForPageSaved(page) {
   await expectVisible(page.getByText("Saved", { exact: true }), "the page's Saved status", 30_000);
@@ -204,9 +228,9 @@ export async function crisisCheck(page, shot) {
   await page.waitForTimeout(5_000);
   const replyCalls = sentFrames.slice(before).filter((f) => f.includes("coach:reply"));
   page.off("websocket", onSocket);
-  if (replyCalls.length > 0) throw fail(`the crisis message sent ${replyCalls.length} coach:reply call(s)`);
+  if (replyCalls.length > 0) throw controlFail(`the crisis message sent ${replyCalls.length} coach:reply call(s)`);
   if (await page.locator('[data-component="CoachTyping"]').isVisible()) {
-    throw fail("the coach shows a typing state after a crisis message");
+    throw controlFail("the coach shows a typing state after a crisis message");
   }
 }
 
@@ -228,6 +252,7 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
   const browser = await launch();
   let code = EXIT.PASS;
   let reason = "";
+  let control = false;
   let context = null;
   let page = null;
   const network = [];
@@ -241,6 +266,7 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
     if (crisis) await crisisCheck(page, shot);
   } catch (error) {
     code = error instanceof LoopStop ? error.code : EXIT.FAIL;
+    control = error instanceof LoopStop && error.control;
     reason = error instanceof Error ? error.message.split("\n")[0] : String(error);
     // What the screen showed when the run stopped.
     if (page) await shot(page, "stopped").catch(() => {});
@@ -260,7 +286,8 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
     await browser.close();
   }
   // A failure that comes with dropped requests can't be told apart from the drop: NETWORK, not FAIL.
-  if (code === EXIT.FAIL && network.length > 0) {
+  // A failed crisis or Undo check stays FAIL: it is never repeated away.
+  if (code === EXIT.FAIL && !control && network.length > 0) {
     code = EXIT.NETWORK;
     reason = `${reason} [sandbox network: ${network[0]}${network.length > 1 ? ` and ${network.length - 1} more` : ""}]`;
   }
