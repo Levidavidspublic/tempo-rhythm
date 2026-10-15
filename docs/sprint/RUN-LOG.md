@@ -4,12 +4,10 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** (2026-10-15 07:45 UTC)
-- **Proven 5/5 on preview `dd96d4e`:** L1, L2 and L3.
-- **L4** waits on #944, now in Codex review.
-- **L5** waits on #940, then the Today chat PR.
-- **Sweep:** 432 renders with 4 failing, all on the kanban at 390 px. The fix is `v3/kanban-sr-only`; its checks are running.
-- **Voice:** backend #945 is in Codex review.
+**Now working on:** (2026-10-15 07:55 UTC)
+- **In the merge queue** (green CI, clean Codex review of the latest commit): #939 (sweep), #940 (decision backend), #942 (convex-test-admin concurrency), #944 (coach thread rows).
+- **After they land:** L1-L4 ×5 and the sweep on the new preview, then the Today chat PR (L5).
+- **In Codex review:** #945 (voice backend, round-1 fixes), #946 (kanban page scroll) and #947 (editor line direction).
 
 ## Target 2 (from 2026-10-15, owner message)
 
@@ -130,6 +128,11 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 07:25-07:31 | after #943 | sweep | seeded data (goal, project, habit, routine, template): **432 renders of 54 routes, 4 failing**. All four are `/projects/<id>/kanban` at 390 px (light/dark, en/he), where the page scrolls sideways ~600 px. No page errors, no "not found" screens, `dir` right in all 216 Hebrew renders | — |
 | 07:40 | kanban | sweep | cause measured on preview: each column count's hidden "cards" label (`.tp-sr-only`, `position: absolute`) has no positioned ancestor, so it sits against the page, outside the board's scroll, at x=994. Reproduced from the app CSS (604 px LTR, 597 px RTL), and `position: relative` on `.tp-kanban` gives 0 in both. Branch `v3/kanban-sr-only` | — |
 | 07:30-07:40 | #940, #942, #944, #939 | — | Codex P2s fixed: #940 Undo removes only the heading right above its blocks (`9066db6`, two new tests that fail on the old code); #942 non-owner runs get their own concurrency group (`f34b285`); #944 canonical stylesheet synced (`40e726a`); #939 P1 (unreached routes passed) + 2 P2s (theme check, unsaved session) fixed (`e857c7f`). Codex review requested on each | [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940), [#942](https://github.com/Levidavidspublic/tempo-rhythm/pull/942), [#944](https://github.com/Levidavidspublic/tempo-rhythm/pull/944), [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
+| 07:45 | #945 | voice | Codex round 1 fixed in `a031224`. P1: the daily cap is now the tier's HARD_RULES §9 number held under the 15-minute preview cap; no or an unknown tier gets none. P1: the flaky exhaustion test no longer sits on the 15-minute boundary (10/10). P2: the global ceiling fails closed past 5,000 rows a day, with 40 sessions per person per day. P2: availability returns `resting` when the global minutes are spent. 2199 tests, all 7 checks pass | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
+| 07:48 | #946 | sweep | opened: `.tp-kanban { position: relative }` (and the same in the canonical v3 stylesheet). All 7 checks pass | [#946](https://github.com/Levidavidspublic/tempo-rhythm/pull/946) |
+| 07:50 | Hebrew renders | sweep | Seen in the 390 px screenshots, not caught by any check. (1) Screen bodies are hard-coded English under a Hebrew shell (e.g. `TodayGreeting.tsx`, Calendar's intro): a translation job, logged under Needs Amit. (2) English page lines on a Hebrew page drew right to left with the full stop on the left: probed on preview, `.cm-line` had no `dir` (the editor's `perLineTextDirection` only reads direction) → #947 | — |
+| 07:50 | #947 | L2, L3, sweep | opened: every editor line gets `dir="auto"` (line decoration), 3 new tests; all 7 checks pass | [#947](https://github.com/Levidavidspublic/tempo-rhythm/pull/947) |
+| 07:51-07:52 | #944, #942, #939, #940 | — | Codex completed on each latest commit with no findings (#942 `f34b285` 07:42, #944 `40e726a` 07:46, #939 `e857c7f` and #940 `9066db6` 07:47); required CI green; marked ready, auto-merge on (merge queue) | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939), [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940), [#942](https://github.com/Levidavidspublic/tempo-rhythm/pull/942), [#944](https://github.com/Levidavidspublic/tempo-rhythm/pull/944) |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Blocked
@@ -141,7 +144,9 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 ## Needs Amit (AT), in order
 
 1. **Voice keys and caps (AT):** set provider-side spend limits on Deepgram and DeepInfra first. Then, if you want voice on preview, set `DEEPGRAM_API_KEY` on the TEST Convex deployment. Until then voice stays off (the Talk button doesn't show).
-2. Optional: install the Claude GitHub App on the repo so PR events wake the session (you said skip for now).
+2. **Voice preview cap:** live minutes are the tier's HARD_RULES §9 number (Basic 30, Pro 90, Max 180) held under a 15-minute preview cap (VOICE.md A-7's recommended default). Every approved account is `max`, so testers get 15 a day. Raise or keep it (one line in `convex/lib/voicePolicy.ts`).
+3. **Hebrew copy:** most screen bodies are hard-coded English, so a Hebrew session shows English text under a Hebrew shell. Translating them is a larger job that needs native review. Say if you want it in this run.
+4. Optional: install the Claude GitHub App on the repo so PR events wake the session (you said skip for now).
 
 ## Not mine
 
