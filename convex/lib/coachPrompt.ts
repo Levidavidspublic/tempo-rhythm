@@ -150,6 +150,47 @@ export function buildCoachMessages(args: {
   return messages;
 }
 
+/**
+ * A title as compared with another: lower case, single spaces, no closing punctuation, and no
+ * closing "…" (titles over the limit reach the model cut short with one).
+ */
+function titleKey(title: string): string {
+  return title.toLowerCase().replace(/\s+/g, " ").replace(/[\s.!?,;:…]+$/, "").trim();
+}
+
+/** True when `title` begins with `key` as whole words: what follows is a space or punctuation. */
+function startsWithWords(title: string, key: string): boolean {
+  return title.length > key.length && title.startsWith(key) && /^[^\p{L}\p{N}]/u.test(title.slice(key.length));
+}
+
+/**
+ * A decision's steps with the person's own task titles. Asked to copy a title exactly, a model
+ * still sometimes shortens or re-cases it ("Reply to Dana" for "Reply to Dana about Friday's
+ * draft"), and the step would then be saved as a second task under another name. A step becomes
+ * the title of one of today's open tasks when it is the same title, or when exactly one task's
+ * title begins with it as whole words ("Laundry" for "Laundry: towels"); anything else is left as
+ * the model wrote it.
+ */
+export function alignDecisionSteps(proposal: CoachProposal, tasks: readonly CoachTaskContext[]): CoachProposal {
+  if (proposal.kind !== "decision" || tasks.length === 0) return proposal;
+  const titles = tasks.map((task) => task.title.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const steps = proposal.steps.map((step) => {
+    const key = titleKey(step.title);
+    if (key.length < 3) return step;
+    // A title cut short with "…" came from a longer one and can end mid-word: it matches only a
+    // task whose title goes on past it, never one that merely equals the cut part.
+    const cut = /…\s*$/.test(step.title);
+    const same = cut ? undefined : titles.find((title) => titleKey(title) === key);
+    if (same) return { ...step, title: same };
+    const longer = titles.filter((title) => {
+      const full = titleKey(title);
+      return cut ? full.length > key.length && full.startsWith(key) : startsWithWords(full, key);
+    });
+    return longer.length === 1 && longer[0] ? { ...step, title: truncate(longer[0], COACH_LIMITS.titleChars) } : step;
+  });
+  return { ...proposal, steps };
+}
+
 /** Markdown only: Tempo blocks in a proposed body would claim to be page meta or tasks. */
 function plainMarkdown(body: string): string {
   return parseTempoBlocks(body)

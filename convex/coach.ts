@@ -22,6 +22,7 @@ import {
   type CoachDecisionStep,
   type CoachProposal,
   type CoachTaskContext,
+  alignDecisionSteps,
   buildCoachMessages,
   parseCoachReply,
   readProposal,
@@ -383,6 +384,8 @@ export async function runCoachReply(
       responseFormat: "json_object",
     });
     answer = parseCoachReply(result.content);
+    // A decision's steps carry the person's own task titles, so Save orders their tasks.
+    if (answer?.proposal) answer.proposal = alignDecisionSteps(answer.proposal, context.tasks);
     model = result.model;
   } catch (error) {
     console.error(`coach.reply: the model could not be reached (${errorKind(error)})`);

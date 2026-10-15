@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { COACH_LIMITS, buildCoachMessages, dayName, parseCoachReply, readProposal, truncate } from "./coachPrompt";
+import { COACH_LIMITS, alignDecisionSteps, buildCoachMessages, dayName, parseCoachReply, readProposal, truncate } from "./coachPrompt";
 
 const META =
   '```json tempo\n{"id":"blk_01JQ8Z3K4M5N6P7Q8R9S0T1V2X","v":1,"type":"page-meta","data":{"pageType":"daily","date":"2026-10-13","tags":[]}}\n```\n';
@@ -75,6 +75,62 @@ describe("buildCoachMessages", () => {
     const messages = buildCoachMessages({ dial: 5, history: [], page: { title: "", text: "y".repeat(50_000) } });
     expect(messages[1]?.content).toContain('title="Untitled"');
     expect(messages[1]?.content.length).toBeLessThan(COACH_LIMITS.pageChars + 200);
+  });
+});
+
+describe("alignDecisionSteps", () => {
+  const tasks = [
+    { title: "Alpha L5 bill 20261015094848-x1y2", minutes: null },
+    { title: "Call the  bank", minutes: 10 },
+    { title: "Laundry: towels", minutes: null },
+    { title: "Laundry: sheets", minutes: null },
+  ];
+  const decision = (titles: string[]) => ({ kind: "decision" as const, steps: titles.map((title) => ({ title, minutes: 10 })) });
+
+  test("a step that is a task's title, or the start of exactly one, takes the task's title", () => {
+    const aligned = alignDecisionSteps(decision(["Alpha L5 bill", "call the bank!", "Laundry", "Go for a walk", "Al"]), tasks);
+    expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual([
+      "Alpha L5 bill 20261015094848-x1y2",
+      "Call the bank",
+      "Laundry",
+      "Go for a walk",
+      "Al",
+    ]);
+  });
+
+  test("punctuation after the step's words counts as a word boundary; a word cut in half does not", () => {
+    const one = [{ title: "Laundry: towels", minutes: null }, { title: "Callback for Sam", minutes: null }];
+    const aligned = alignDecisionSteps(decision(["Laundry", "Call"]), one);
+    expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual(["Laundry: towels", "Call"]);
+  });
+
+  test("a title shown cut short with …, even re-cased, still finds its task, kept within the step's limit", () => {
+    const long = `Write the grant report ${"x".repeat(250)}`;
+    const shown = truncate(long, COACH_LIMITS.titleChars);
+    expect(shown.endsWith("…")).toBe(true);
+    const aligned = alignDecisionSteps(decision([shown.toLowerCase()]), [{ title: long, minutes: null }]);
+    expect(aligned.kind === "decision" ? aligned.steps[0]?.title : null).toBe(shown);
+    const moved = alignDecisionSteps(decision(["Write the grant report"]), [{ title: long, minutes: null }]);
+    expect(moved.kind === "decision" ? moved.steps[0]?.title : null).toBe(shown);
+  });
+
+  test("a cut title matches the longer task it was cut from, not a task equal to the cut part", () => {
+    const long = `Write the grant report ${"x".repeat(250)}`;
+    const shown = truncate(long, COACH_LIMITS.titleChars);
+    const short = shown.slice(0, -1);
+    const aligned = alignDecisionSteps(decision([shown]), [
+      { title: short, minutes: null },
+      { title: long, minutes: null },
+    ]);
+    expect(aligned.kind === "decision" ? aligned.steps[0]?.title : null).toBe(shown);
+    expect(aligned.kind === "decision" ? aligned.steps[0]?.title : null).not.toBe(short);
+  });
+
+  test("only decisions change, and a step keeps its minutes and reason", () => {
+    const task = { kind: "task" as const, title: "Alpha L5 bill", minutes: 5, when: "today" as const };
+    expect(alignDecisionSteps(task, tasks)).toBe(task);
+    const aligned = alignDecisionSteps({ kind: "decision", steps: [{ title: "Alpha L5 bill", minutes: 15, reason: "Quick" }] }, tasks);
+    expect(aligned).toEqual({ kind: "decision", steps: [{ title: "Alpha L5 bill 20261015094848-x1y2", minutes: 15, reason: "Quick" }] });
   });
 });
 
