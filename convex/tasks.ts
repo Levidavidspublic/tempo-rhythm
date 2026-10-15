@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type MutationCtx, mutation, query } from "./_generated/server";
+import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
+import { isRestorable, undoUntil } from "./lib/softDelete";
 import { filterTasksDueInRange } from "./lib/task_filters";
 import { normalizeChecklist } from "./lib/taskChecklists";
 import { assertRepeatEvery, planNextRepeatInstance } from "./lib/taskRepeat";
@@ -23,6 +24,8 @@ const taskStatusValidator = v.union(
 const taskPriorityValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
 const taskEnergyValidator = v.union(v.literal("low"), v.literal("medium"), v.literal("high"));
 
+const taskFlexibilityValidator = v.union(v.literal("fixed"), v.literal("elastic"));
+
 const taskReturnValidator = v.object({
   _id: v.id("tasks"),
   _creationTime: v.number(),
@@ -33,6 +36,7 @@ const taskReturnValidator = v.object({
   priority: taskPriorityValidator,
   energy: v.optional(taskEnergyValidator),
   timeEstimate: v.optional(v.number()),
+  flexibility: v.optional(taskFlexibilityValidator),
   timeSpentOnDay: v.optional(v.any()),
   repeatCfgId: v.optional(v.id("taskRepeatCfgs")),
   parentTaskId: v.optional(v.id("tasks")),
@@ -60,39 +64,58 @@ export const list = query({
   returns: v.array(taskReturnValidator),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    let rows = await ctx.db
-      .query("tasks")
-      .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
-      .collect();
-
-    if (args.status) {
-      rows = rows.filter((t) => t.status === args.status);
-    }
-    if (args.projectId?.trim()) {
-      rows = rows.filter((t) => t.projectId === args.projectId?.trim());
-    }
-    if (args.priority) {
-      rows = rows.filter((t) => t.priority === args.priority);
-    }
-    if (args.energy) {
-      rows = rows.filter((t) => (t.energy ?? "medium") === args.energy);
-    }
-    if (args.search?.trim()) {
-      const q = args.search.trim().toLowerCase();
-      rows = rows.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) || (t.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
-    if (args.dueFrom !== undefined && args.dueTo !== undefined) {
-      rows = filterTasksDueInRange(rows, args.dueFrom, args.dueTo, {
-        excludeCancelled: false,
-      });
-    }
-    rows.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt));
-    return rows;
+    return listTasksForUser(ctx, user._id, args);
   },
 });
+
+type TaskListArgs = {
+  status?: Doc<"tasks">["status"];
+  search?: string;
+  dueFrom?: number;
+  dueTo?: number;
+  projectId?: string;
+  priority?: Doc<"tasks">["priority"];
+  energy?: "low" | "medium" | "high";
+};
+
+/** Shared by `list` and the MCP tools (`convex/mcpTools.ts`). */
+export async function listTasksForUser(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  args: TaskListArgs
+): Promise<Doc<"tasks">[]> {
+  let rows = await ctx.db
+    .query("tasks")
+    .withIndex("by_userId_deletedAt", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
+    .collect();
+
+  if (args.status) {
+    rows = rows.filter((t) => t.status === args.status);
+  }
+  if (args.projectId?.trim()) {
+    rows = rows.filter((t) => t.projectId === args.projectId?.trim());
+  }
+  if (args.priority) {
+    rows = rows.filter((t) => t.priority === args.priority);
+  }
+  if (args.energy) {
+    rows = rows.filter((t) => (t.energy ?? "medium") === args.energy);
+  }
+  if (args.search?.trim()) {
+    const q = args.search.trim().toLowerCase();
+    rows = rows.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) || (t.description?.toLowerCase().includes(q) ?? false)
+    );
+  }
+  if (args.dueFrom !== undefined && args.dueTo !== undefined) {
+    rows = filterTasksDueInRange(rows, args.dueFrom, args.dueTo, {
+      excludeCancelled: false,
+    });
+  }
+  rows.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt));
+  return rows;
+}
 
 /** Tasks due on a given calendar day (local interpretation: day boundaries passed as ms). */
 export const listDueInRange = query({
@@ -118,6 +141,8 @@ export const create = mutation({
     status: v.optional(taskStatusValidator),
     priority: v.optional(taskPriorityValidator),
     energy: v.optional(taskEnergyValidator),
+    flexibility: v.optional(taskFlexibilityValidator),
+    timeEstimate: v.optional(v.number()),
     projectId: v.optional(v.string()),
     projectName: v.optional(v.string()),
     dueAt: v.optional(v.number()),
@@ -126,23 +151,48 @@ export const create = mutation({
   returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const now = Date.now();
-    return ctx.db.insert("tasks", {
-      userId: user._id,
-      title: args.title.trim(),
-      description: args.description?.trim(),
-      status: args.status ?? "todo",
-      priority: args.priority ?? "medium",
-      energy: args.energy ?? "medium",
-      projectId: args.projectId?.trim(),
-      projectName: args.projectName?.trim(),
-      dueAt: args.dueAt,
-      checklist: normalizeChecklist(args.checklist),
-      createdAt: now,
-      updatedAt: now,
-    });
+    return createTaskForUser(ctx, user._id, args);
   },
 });
+
+type TaskCreateArgs = {
+  title: string;
+  description?: string;
+  status?: Doc<"tasks">["status"];
+  priority?: Doc<"tasks">["priority"];
+  energy?: "low" | "medium" | "high";
+  flexibility?: "fixed" | "elastic";
+  timeEstimate?: number;
+  projectId?: string;
+  projectName?: string;
+  dueAt?: number;
+  checklist?: { id: string; text: string; completed: boolean }[];
+};
+
+/** Shared by `create` and the MCP tools. */
+export async function createTaskForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: TaskCreateArgs
+): Promise<Id<"tasks">> {
+  const now = Date.now();
+  return ctx.db.insert("tasks", {
+    userId,
+    title: args.title.trim(),
+    description: args.description?.trim(),
+    status: args.status ?? "todo",
+    priority: args.priority ?? "medium",
+    energy: args.energy ?? "medium",
+    ...(args.flexibility !== undefined ? { flexibility: args.flexibility } : {}),
+    ...(args.timeEstimate !== undefined ? { timeEstimate: args.timeEstimate } : {}),
+    projectId: args.projectId?.trim(),
+    projectName: args.projectName?.trim(),
+    dueAt: args.dueAt,
+    checklist: normalizeChecklist(args.checklist),
+    createdAt: now,
+    updatedAt: now,
+  });
+}
 
 export const update = mutation({
   args: {
@@ -152,6 +202,8 @@ export const update = mutation({
     status: v.optional(taskStatusValidator),
     priority: v.optional(taskPriorityValidator),
     energy: v.optional(taskEnergyValidator),
+    flexibility: v.optional(taskFlexibilityValidator),
+    timeEstimate: v.optional(v.union(v.number(), v.null())),
     projectId: v.optional(v.union(v.string(), v.null())),
     projectName: v.optional(v.union(v.string(), v.null())),
     dueAt: v.optional(v.union(v.number(), v.null())),
@@ -160,47 +212,124 @@ export const update = mutation({
   returns: v.id("tasks"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
-      throw new Error("Task not found");
-    }
-    const now = Date.now();
-    const patch: Record<string, unknown> = { updatedAt: now };
-    if (args.title !== undefined) patch.title = args.title.trim();
-    if (args.description !== undefined) {
-      patch.description = args.description === null ? undefined : args.description;
-    }
-    if (args.status !== undefined) {
-      patch.status = args.status;
-      if (args.status === "done" && task.status !== "done") {
-        patch.completedAt = now;
-      } else if (args.status !== "done" && task.status === "done") {
-        patch.completedAt = undefined;
-      }
-    }
-    if (args.priority !== undefined) patch.priority = args.priority;
-    if (args.energy !== undefined) patch.energy = args.energy;
-    if (args.projectId !== undefined) {
-      patch.projectId = args.projectId === null ? undefined : args.projectId.trim();
-    }
-    if (args.projectName !== undefined) {
-      patch.projectName = args.projectName === null ? undefined : args.projectName.trim();
-    }
-    if (args.dueAt !== undefined) {
-      patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
-    }
-    if (args.checklist !== undefined) {
-      patch.checklist = args.checklist === null ? undefined : normalizeChecklist(args.checklist);
-    }
-    await ctx.db.patch(args.taskId, patch as typeof task);
+    return updateTaskForUser(ctx, user._id, args);
+  },
+});
+
+type TaskUpdateArgs = {
+  taskId: Id<"tasks">;
+  title?: string;
+  description?: string | null;
+  status?: Doc<"tasks">["status"];
+  priority?: Doc<"tasks">["priority"];
+  energy?: "low" | "medium" | "high";
+  flexibility?: "fixed" | "elastic";
+  timeEstimate?: number | null;
+  projectId?: string | null;
+  projectName?: string | null;
+  dueAt?: number | null;
+  checklist?: { id: string; text: string; completed: boolean }[] | null;
+};
+
+/** Shared by `update` and the MCP tools. Scoped to `userId`. */
+export async function updateTaskForUser(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: TaskUpdateArgs
+): Promise<Id<"tasks">> {
+  const user = { _id: userId };
+  const task = await ctx.db.get(args.taskId);
+  if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
+    throw new Error("Task not found");
+  }
+  const now = Date.now();
+  const patch: Record<string, unknown> = { updatedAt: now };
+  if (args.title !== undefined) patch.title = args.title.trim();
+  if (args.description !== undefined) {
+    patch.description = args.description === null ? undefined : args.description;
+  }
+  if (args.status !== undefined) {
+    patch.status = args.status;
     if (args.status === "done" && task.status !== "done") {
-      await spawnRepeatAfterCompletion(ctx, user._id, task, now);
+      patch.completedAt = now;
+    } else if (args.status !== "done" && task.status === "done") {
+      patch.completedAt = undefined;
     }
-    return args.taskId;
+  }
+  if (args.priority !== undefined) patch.priority = args.priority;
+  if (args.energy !== undefined) patch.energy = args.energy;
+  if (args.flexibility !== undefined) patch.flexibility = args.flexibility;
+  if (args.timeEstimate !== undefined) {
+    patch.timeEstimate = args.timeEstimate === null ? undefined : args.timeEstimate;
+  }
+  if (args.projectId !== undefined) {
+    patch.projectId = args.projectId === null ? undefined : args.projectId.trim();
+  }
+  if (args.projectName !== undefined) {
+    patch.projectName = args.projectName === null ? undefined : args.projectName.trim();
+  }
+  if (args.dueAt !== undefined) {
+    patch.dueAt = args.dueAt === null ? undefined : args.dueAt;
+  }
+  if (args.checklist !== undefined) {
+    patch.checklist = args.checklist === null ? undefined : normalizeChecklist(args.checklist);
+  }
+  await ctx.db.patch(args.taskId, patch as typeof task);
+  if (args.status === "done" && task.status !== "done") {
+    await spawnRepeatAfterCompletion(ctx, user._id, task, now);
+  }
+  return args.taskId;
+}
+
+/**
+ * Rename a project. A project is the tasks that share a projectId and its name lives on each of
+ * them, so every live task of the caller's in that project gets the new name in one transaction
+ * (renaming them one by one could leave some with the old name). Returns how many were renamed.
+ */
+export const renameProject = mutation({
+  args: { projectId: v.string(), name: v.string() },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const projectId = args.projectId.trim();
+    const name = args.name.trim();
+    if (!projectId) {
+      throw new Error("Project not found");
+    }
+    if (!name) {
+      throw new Error("Project name cannot be empty.");
+    }
+    const rows = await ctx.db
+      .query("tasks")
+      .withIndex("by_userId_projectId", (q) => q.eq("userId", user._id).eq("projectId", projectId))
+      .collect();
+    const now = Date.now();
+    let renamed = 0;
+    for (const task of rows) {
+      if (task.deletedAt !== undefined) continue;
+      await ctx.db.patch(task._id, { projectName: name, updatedAt: now });
+      renamed += 1;
+    }
+    return renamed;
   },
 });
 
 export const remove = mutation({
+  args: { taskId: v.id("tasks") },
+  returns: v.object({ success: v.boolean(), undoUntilMs: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
+      throw new Error("Task not found");
+    }
+    const now = Date.now();
+    await ctx.db.patch(args.taskId, { deletedAt: now, updatedAt: now });
+    return { success: true, undoUntilMs: undoUntil(now) };
+  },
+});
+
+export const restore = mutation({
   args: { taskId: v.id("tasks") },
   returns: v.object({ success: v.boolean() }),
   handler: async (ctx, args) => {
@@ -209,7 +338,11 @@ export const remove = mutation({
     if (!task || task.userId !== user._id) {
       throw new Error("Task not found");
     }
-    await ctx.db.delete(args.taskId);
+    const now = Date.now();
+    if (!isRestorable(task.deletedAt, now)) {
+      return { success: false };
+    }
+    await ctx.db.patch(args.taskId, { deletedAt: undefined, updatedAt: now });
     return { success: true };
   },
 });
@@ -285,7 +418,7 @@ export const toggleCompletion = mutation({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (!task || task.userId !== user._id) {
+    if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
       throw new Error("Task not found");
     }
     const now = Date.now();
@@ -331,6 +464,7 @@ async function spawnRepeatAfterCompletion(
     status: "todo",
     priority: task.priority,
     ...(task.energy !== undefined ? { energy: task.energy } : {}),
+    ...(task.flexibility !== undefined ? { flexibility: task.flexibility } : {}),
     ...(task.timeEstimate !== undefined ? { timeEstimate: task.timeEstimate } : {}),
     repeatCfgId: cfg._id,
     ...(task.projectId !== undefined ? { projectId: task.projectId } : {}),
@@ -338,7 +472,10 @@ async function spawnRepeatAfterCompletion(
     dueAt: spawned.dueAt,
     ...(task.checklist
       ? {
-          checklist: task.checklist.map((item) => ({ ...item, completed: false })),
+          checklist: task.checklist.map((item) => ({
+            ...item,
+            completed: false,
+          })),
         }
       : {}),
     createdAt: now,

@@ -1,23 +1,25 @@
-/**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: template-builder
- * @category: You
- * @source: docs/design/claude-export/design-system/screens-template-builder.jsx + -ui.jsx + -slash.jsx
- * @summary: Full-screen template builder with slash command DSL.
- * @queries: templates.get
- * @mutations: templates.save
- * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
- */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { TemplateBuilderScreen } from "@/components/template-builder/TemplateBuilder";
+import { ProfileReady } from "@/components/today/ProfileReady";
 
-export default function Page() {
+type SearchParams = { from?: string | string[]; id?: string | string[]; outline?: string | string[] };
+
+function first(value: string | string[] | undefined): string | undefined {
+  const one = Array.isArray(value) ? value[0] : value;
+  return one || undefined;
+}
+
+/** Template builder (docs/design/v3/screens/web/template-builder.html). */
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
   return (
-    <ScaffoldScreen
-      title="Template builder"
-      category="You"
-      source="screens-template-builder.jsx + -ui.jsx + -slash.jsx"
-      summary="Full-screen template builder with slash command DSL."
-    />
+    <div data-testid="template-builder-route">
+      <ProfileReady>
+        <TemplateBuilderScreen fromId={first(params.from)} editId={first(params.id)} outline={first(params.outline)} />
+      </ProfileReady>
+    </div>
   );
 }

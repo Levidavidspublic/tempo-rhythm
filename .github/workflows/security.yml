@@ -8,12 +8,25 @@ on:
   pull_request:
     branches: [master, integration]
     types: [opened, synchronize, reopened, ready_for_review]
+  # Required check name is the job `secret-scan`. The queue must be able to run it.
+  merge_group:
+    branches: [master, integration]
   push:
     branches: [master, integration]
   workflow_dispatch:
+  # release.yml (Phase H) re-runs the scans on the exact integration SHA; base_sha = master tip (scan range).
+  workflow_call:
+    inputs:
+      base_sha:
+        description: Scan commits after this SHA (release.yml passes the master tip)
+        type: string
+        required: false
+        default: ""
 
 concurrency:
-  group: security-${{ github.ref }}
+  # event_name keeps release.yml's call (event workflow_dispatch, ref integration) from cancelling, or being
+  # cancelled by, the push run on integration.
+  group: security-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -46,8 +59,8 @@ jobs:
           gitleaks version
       - name: Run gitleaks on the new commits
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || inputs.base_sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then

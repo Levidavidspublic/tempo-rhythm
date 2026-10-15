@@ -3,6 +3,7 @@ import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
 import type { DataModel, Id } from "./_generated/dataModel";
 import { isInactiveAccount, pickSignInUser, signInRestorePatch } from "./lib/accountDeletion";
+import { initialApprovalStatus } from "./lib/approval";
 import {
   buildReturningUserPatch,
   GRANTED_SUBSCRIPTION,
@@ -119,9 +120,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         return existingUserId;
       }
 
-      // Signup is open. No allowlist, no seat cap -- every account is granted
-      // the max entitlement tier by newUserFields().
-      const userId = await db.insert("users", newUserFields(profile, now));
+      // Every new account is granted the max entitlement tier by newUserFields(),
+      // but starts "pending" until an admin approves it (sign-up approval gate,
+      // convex/lib/approval.ts). Emails in TEMPO_ADMIN_EMAILS start approved.
+      const userId = await db.insert(
+        "users",
+        newUserFields(profile, now, initialApprovalStatus(profile.email)),
+      );
       await ensureGrantedSubscription(db, userId, now);
 
       return userId;

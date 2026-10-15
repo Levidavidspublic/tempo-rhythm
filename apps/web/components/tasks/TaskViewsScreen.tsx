@@ -3,7 +3,8 @@
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { TaskRowEditor, type TaskEditorUpdate } from "@/components/tasks/TaskRowEditor";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
@@ -50,6 +51,7 @@ type Draft = {
   priority: TaskPriority;
   energy: TaskEnergy;
   dueToday: boolean;
+  dueDate: string;
   repeat: RepeatDraft;
   checklistText: string;
 };
@@ -65,12 +67,21 @@ const viewLinks = [
   { href: "/tasks/checklists", label: "Checklists" },
 ] as const;
 
+const viewHrefs: Record<Exclude<TaskView, "project">, string> = {
+  today: "/today",
+  inbox: "/tasks",
+  priority: "/tasks/priority",
+  energy: "/tasks/energy",
+  checklists: "/tasks/checklists",
+};
+
 const defaultDraft: Draft = {
   title: "",
   projectName: "Home reset",
   priority: "medium",
   energy: "medium",
   dueToday: false,
+  dueDate: "",
   repeat: "none",
   checklistText: "",
 };
@@ -156,6 +167,12 @@ function saveLocalTasks(tasks: LocalTaskRecord[]) {
   window.localStorage.setItem(localStorageKey, JSON.stringify(tasks));
 }
 
+function localEndOfDay(value: string): number | undefined {
+  if (!value) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day + 1).getTime() - 1;
+}
+
 function getViewTitle(view: TaskView, projectSlug?: string): string {
   if (view === "today") return "Today";
   if (view === "inbox") return "Inbox";
@@ -189,6 +206,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const createRepeatCfg = useMutation(api.tasks.createRepeatCfg);
   const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
+  const removeTask = useMutation(api.tasks.remove);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const [localTasks, setLocalTasks] = useState<LocalTaskRecord[]>([]);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -197,7 +215,6 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     projectName: view === "project" ? getViewTitle(view, projectSlug) : defaultDraft.projectName,
   }));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState("");
 
   useEffect(() => {
     if (allowLocalTaskViews) {
@@ -268,7 +285,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     // display title alone, or URL slug and stored id can diverge.
     const normalizedProjectId =
       view === "project" && projectId ? projectId : slugifyProjectName(normalizedProjectName);
-    const dueAt = draft.dueToday ? bounds.endMs - 1 : undefined;
+    const dueAt = draft.dueToday ? bounds.endMs - 1 : localEndOfDay(draft.dueDate);
     const checklist = parseChecklistText(draft.checklistText);
 
     if (usesConvex) {
@@ -285,6 +302,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         const cfgId = await createRepeatCfg({
           repeatCycle: draft.repeat === "daily" ? "DAILY" : "WEEKLY",
           repeatEvery: 1,
+          // The repeat engine compares weekdays in UTC, so keep the stored
+          // value in that same time basis until repeat configs carry a zone.
           weekdays: draft.repeat === "weekly" ? [new Date().getUTCDay()] : [],
           skipOverdue: true,
         });
@@ -340,19 +359,25 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 
   const startEditing = (task: TaskViewRecord) => {
     setEditingId(task.id);
-    setEditingTitle(task.title);
   };
 
-  const saveEdit = async (task: TaskViewRecord) => {
-    const title = editingTitle.trim();
-    if (!title || !taskStoreReady) return;
+  const saveEdit = async (task: TaskViewRecord, update: TaskEditorUpdate) => {
+    if (!update.title || !taskStoreReady) return;
 
     if (usesConvex) {
-      await updateTask({ taskId: task.id as Id<"tasks">, title });
+      await updateTask({ taskId: task.id as Id<"tasks">, ...update });
     } else if (usesLocalStore) {
       persistLocal((tasks) =>
         tasks.map((item) =>
-          item.id === task.id ? { ...item, title, updatedAt: Date.now() } : item
+          item.id === task.id
+            ? {
+                ...item,
+                ...update,
+                dueAt: update.dueAt ?? undefined,
+                checklist: update.checklist ?? undefined,
+                updatedAt: Date.now(),
+              }
+            : item
         )
       );
     } else {
@@ -360,7 +385,16 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     }
 
     setEditingId(null);
-    setEditingTitle("");
+  };
+
+  const handleDelete = async (task: TaskViewRecord) => {
+    if (!taskStoreReady) return;
+    if (usesConvex) {
+      await removeTask({ taskId: task.id as Id<"tasks"> });
+    } else if (usesLocalStore) {
+      persistLocal((tasks) => tasks.filter((item) => item.id !== task.id));
+    }
+    setEditingId((current) => (current === task.id ? null : current));
   };
 
   const handleChecklistToggle = async (task: TaskViewRecord, itemId: string) => {
@@ -385,70 +419,81 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     );
   };
 
+  // Any project is "Project": the switcher's one Project link stands for every project slug.
+  const isCurrent = (href: string) =>
+    view === "project" ? href.startsWith("/projects/") : href === viewHrefs[view];
+
   return (
-    <div className="container mx-auto max-w-6xl px-6 py-12">
-      <div className="space-y-8">
-        <header className="space-y-4">
-          <div>
-            <p className="font-eyebrow text-muted-foreground">Core task views</p>
-            <h1 className="font-heading text-4xl font-semibold text-foreground">{heading}</h1>
-            <p className="mt-2 max-w-2xl text-muted-foreground">{summary}</p>
-          </div>
-          <nav aria-label="Task views" className="flex flex-wrap gap-2">
-            {viewLinks.map((link) => (
+    <div className="tp-page tp-page--wide tk-screen" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <p className="tp-eyebrow">Tasks</p>
+          <h1 className="tp-pagehead__title" dir="auto">
+            {heading}
+          </h1>
+          <p className="tp-pagehead__sub">{summary}</p>
+        </div>
+      </header>
+
+      <nav aria-label="Task views" className="tk-views">
+        <ul className="tp-segmented">
+          {viewLinks.map((link) => (
+            <li key={link.href}>
               <Link
-                key={link.href}
                 href={link.href}
-                className="rounded-pill border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-surface-sunken"
+                className="tp-seg__opt"
+                aria-current={isCurrent(link.href) ? "page" : undefined}
               >
                 {link.label}
               </Link>
-            ))}
-            {view === "project" && projectSlug ? (
-              <Link
-                href={`/projects/${projectSlug}/kanban`}
-                className="rounded-pill border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-surface-sunken"
-              >
+            </li>
+          ))}
+          {view === "project" && projectSlug ? (
+            <li>
+              <Link href={`/projects/${projectSlug}/kanban`} className="tp-seg__opt">
                 Board
               </Link>
-            ) : null}
-          </nav>
-        </header>
+            </li>
+          ) : null}
+        </ul>
+      </nav>
 
-        <section
-          className="rounded-3xl border border-border bg-card p-5 shadow-card"
-          aria-label="Create task"
-        >
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_150px_150px_150px_auto] lg:items-end">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Task title</span>
-              <input
-                aria-label="Task title"
-                value={draft.title}
-                disabled={!taskStoreReady}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, title: event.target.value }))
-                }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-                placeholder="One small next step"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Project</span>
-              <input
-                aria-label="Project"
-                value={view === "project" ? (projectName ?? draft.projectName) : draft.projectName}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, projectName: event.target.value }))
-                }
-                disabled={view === "project" || !taskStoreReady}
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Priority</span>
+      <section className="tp-surface tk-create" aria-label="Create task" data-component="Form">
+        <div className="tk-create__grid">
+          <label className="tp-field tk-create__title">
+            <span className="tp-label">Task title</span>
+            <input
+              aria-label="Task title"
+              className="tp-input"
+              dir="auto"
+              autoComplete="off"
+              value={draft.title}
+              disabled={!taskStoreReady}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, title: event.target.value }))
+              }
+              placeholder="One small next step"
+            />
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">Project</span>
+            <input
+              aria-label="Project"
+              className="tp-input"
+              dir="auto"
+              value={view === "project" ? (projectName ?? draft.projectName) : draft.projectName}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, projectName: event.target.value }))
+              }
+              disabled={view === "project" || !taskStoreReady}
+            />
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">Priority</span>
+            <span className="tp-select" data-component="Select">
               <select
                 aria-label="Priority"
+                className="tp-select__input"
                 value={draft.priority}
                 disabled={!taskStoreReady}
                 onChange={(event) =>
@@ -457,17 +502,22 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                     priority: event.target.value as TaskPriority,
                   }))
                 }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Energy</span>
+              <span className="tp-select__icon">
+                <TpIcon name="down" size="sm" />
+              </span>
+            </span>
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">Energy</span>
+            <span className="tp-select" data-component="Select">
               <select
                 aria-label="Energy"
+                className="tp-select__input"
                 value={draft.energy}
                 disabled={!taskStoreReady}
                 onChange={(event) =>
@@ -476,17 +526,22 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                     energy: event.target.value as TaskEnergy,
                   }))
                 }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Repeat</span>
+              <span className="tp-select__icon">
+                <TpIcon name="down" size="sm" />
+              </span>
+            </span>
+          </label>
+          <label className="tp-field">
+            <span className="tp-label">Repeat</span>
+            <span className="tp-select" data-component="Select">
               <select
                 aria-label="Repeat"
+                className="tp-select__input"
                 value={draft.repeat}
                 disabled={!taskStoreReady}
                 onChange={(event) =>
@@ -495,92 +550,114 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                     repeat: event.target.value as RepeatDraft,
                   }))
                 }
-                className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <option value="none">Does not repeat</option>
                 <option value="daily">Every day</option>
                 <option value="weekly">Every week</option>
               </select>
-            </label>
-            <Button
-              type="button"
-              disabled={!taskStoreReady || !draft.title.trim()}
-              onClick={() => void handleCreate()}
-              className="min-h-11"
-            >
-              Add task
-            </Button>
-          </div>
-          <label className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="tp-select__icon">
+                <TpIcon name="down" size="sm" />
+              </span>
+            </span>
+          </label>
+          <button
+            type="button"
+            className="tp-btn tp-btn--primary tk-create__add"
+            disabled={!taskStoreReady || !draft.title.trim()}
+            onClick={() => void handleCreate()}
+          >
+            <TpIcon name="plus" size="sm" />
+            <span>Add task</span>
+          </button>
+        </div>
+        <div className="tk-create__more">
+          <label className="tp-choice">
             <input
               type="checkbox"
+              className="tp-checkbox"
               checked={draft.dueToday}
               disabled={!taskStoreReady}
               onChange={(event) =>
-                setDraft((current) => ({ ...current, dueToday: event.target.checked }))
+                setDraft((current) => ({
+                  ...current,
+                  dueToday: event.target.checked,
+                  dueDate: event.target.checked ? "" : current.dueDate,
+                }))
               }
-              className="h-4 w-4 rounded border-border text-primary"
             />
-            Show on Today
+            <span className="tp-choice__text">Show on Today</span>
           </label>
-          <label className="mt-4 block space-y-2">
-            <span className="text-sm font-medium text-foreground">
-              Checklist (one step per line)
-            </span>
-            <textarea
-              aria-label="Checklist steps"
-              value={draft.checklistText}
+          <label className="tp-field">
+            <span className="tp-label">Due date</span>
+            <input
+              type="date"
+              aria-label="Due date"
+              className="tp-input tp-num"
+              value={draft.dueDate}
               disabled={!taskStoreReady}
               onChange={(event) =>
-                setDraft((current) => ({ ...current, checklistText: event.target.value }))
+                setDraft((current) => ({
+                  ...current,
+                  dueDate: event.target.value,
+                  dueToday: false,
+                }))
               }
-              rows={3}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              placeholder="Unpack the bag&#10;Put the kettle on"
             />
           </label>
-        </section>
+        </div>
+        <label className="tp-field">
+          <span className="tp-label">Checklist (one step per line)</span>
+          <textarea
+            aria-label="Checklist steps"
+            className="tp-textarea"
+            dir="auto"
+            value={draft.checklistText}
+            disabled={!taskStoreReady}
+            onChange={(event) =>
+              setDraft((current) => ({ ...current, checklistText: event.target.value }))
+            }
+            rows={3}
+            placeholder="Unpack the bag&#10;Put the kettle on"
+          />
+        </label>
+      </section>
 
-        {view === "priority" ? (
-          <GroupedTaskList
-            groups={groupTasksByPriority(visibleTasks)}
-            labels={priorityLabels}
-            editingId={editingId}
-            editingTitle={editingTitle}
-            actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
-            onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
-            onToggle={(task) => void handleToggle(task)}
-            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
-          />
-        ) : view === "energy" ? (
-          <GroupedTaskList
-            groups={groupTasksByEnergy(visibleTasks)}
-            labels={energyLabels}
-            editingId={editingId}
-            editingTitle={editingTitle}
-            actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
-            onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
-            onToggle={(task) => void handleToggle(task)}
-            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
-          />
-        ) : (
-          <TaskList
-            tasks={visibleTasks}
-            editingId={editingId}
-            editingTitle={editingTitle}
-            actionsDisabled={!taskStoreReady}
-            onEditingTitleChange={setEditingTitle}
-            onEdit={startEditing}
-            onSave={(task) => void saveEdit(task)}
-            onToggle={(task) => void handleToggle(task)}
-            onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
-          />
-        )}
-      </div>
+      {view === "priority" ? (
+        <GroupedTaskList
+          groups={groupTasksByPriority(visibleTasks)}
+          labels={priorityLabels}
+          editingId={editingId}
+          actionsDisabled={!taskStoreReady}
+          onEdit={startEditing}
+          onSave={(task, update) => void saveEdit(task, update)}
+          onDelete={(task) => void handleDelete(task)}
+          onToggle={(task) => void handleToggle(task)}
+          onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
+        />
+      ) : view === "energy" ? (
+        <GroupedTaskList
+          groups={groupTasksByEnergy(visibleTasks)}
+          labels={energyLabels}
+          editingId={editingId}
+          actionsDisabled={!taskStoreReady}
+          onEdit={startEditing}
+          onSave={(task, update) => void saveEdit(task, update)}
+          onDelete={(task) => void handleDelete(task)}
+          onToggle={(task) => void handleToggle(task)}
+          onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
+        />
+      ) : (
+        <TaskList
+          tasks={visibleTasks}
+          editingId={editingId}
+          actionsDisabled={!taskStoreReady}
+          onEdit={startEditing}
+          onSave={(task, update) => void saveEdit(task, update)}
+          onDelete={(task) => void handleDelete(task)}
+          onToggle={(task) => void handleToggle(task)}
+          onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
+        />
+      )}
     </div>
   );
 }
@@ -588,11 +665,10 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
 type TaskListProps = {
   tasks: TaskViewRecord[];
   editingId: string | null;
-  editingTitle: string;
   actionsDisabled: boolean;
-  onEditingTitleChange: (title: string) => void;
   onEdit: (task: TaskViewRecord) => void;
-  onSave: (task: TaskViewRecord) => void;
+  onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
@@ -600,35 +676,34 @@ type TaskListProps = {
 function TaskList({
   tasks,
   editingId,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: TaskListProps) {
   if (tasks.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
-        <p className="text-lg font-medium text-foreground">This view is clear.</p>
-        <p className="mt-2 text-sm text-muted-foreground">Add one tiny task when you are ready.</p>
+      <div className="tp-empty tp-surface" data-component="Empty">
+        <TpIcon name="leaf" size="lg" />
+        <p className="tp-strong">This view is clear.</p>
+        <p>Add one tiny task when you are ready.</p>
       </div>
     );
   }
 
   return (
-    <ul className="space-y-3">
+    <ul className="tp-block-task tp-surface tk-list" data-component="TaskBlock">
       {tasks.map((task) => (
         <TaskRow
           key={task.id}
           task={task}
           editing={editingId === task.id}
-          editingTitle={editingTitle}
           actionsDisabled={actionsDisabled}
-          onEditingTitleChange={onEditingTitleChange}
           onEdit={onEdit}
           onSave={onSave}
+          onDelete={onDelete}
           onToggle={onToggle}
           onChecklistToggle={onChecklistToggle}
         />
@@ -646,32 +721,32 @@ function GroupedTaskList<TGroup extends string>({
   groups,
   labels,
   editingId,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: GroupedTaskListProps<TGroup>) {
   return (
-    <div className="space-y-6">
+    <div className="tk-groups">
       {(Object.keys(labels) as TGroup[]).map((group) => (
-        <section key={group} className="space-y-3" aria-labelledby={`${group}-group-heading`}>
-          <h2
-            id={`${group}-group-heading`}
-            className="font-heading text-2xl font-semibold text-foreground"
-          >
+        <section
+          key={group}
+          className="tp-section"
+          data-component="Section"
+          aria-labelledby={`${group}-group-heading`}
+        >
+          <h2 id={`${group}-group-heading`} className="tp-section__title">
             {labels[group]}
           </h2>
           <TaskList
             tasks={groups[group]}
             editingId={editingId}
-            editingTitle={editingTitle}
             actionsDisabled={actionsDisabled}
-            onEditingTitleChange={onEditingTitleChange}
             onEdit={onEdit}
             onSave={onSave}
+            onDelete={onDelete}
             onToggle={onToggle}
             onChecklistToggle={onChecklistToggle}
           />
@@ -684,11 +759,10 @@ function GroupedTaskList<TGroup extends string>({
 type TaskRowProps = {
   task: TaskViewRecord;
   editing: boolean;
-  editingTitle: string;
   actionsDisabled: boolean;
-  onEditingTitleChange: (title: string) => void;
   onEdit: (task: TaskViewRecord) => void;
-  onSave: (task: TaskViewRecord) => void;
+  onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
 };
@@ -696,116 +770,116 @@ type TaskRowProps = {
 function TaskRow({
   task,
   editing,
-  editingTitle,
   actionsDisabled,
-  onEditingTitleChange,
   onEdit,
   onSave,
+  onDelete,
   onToggle,
   onChecklistToggle,
 }: TaskRowProps) {
   const isDone = task.status === "done";
   const checklistProgress = getChecklistProgress(task.checklist);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
-    <li
-      className={cn(
-        "rounded-2xl border border-border bg-card p-4 shadow-card",
-        isDone ? "opacity-80" : "opacity-100"
-      )}
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <button
-          type="button"
-          disabled={actionsDisabled}
-          onClick={() => onToggle(task)}
-          className={cn(
-            "flex min-h-11 min-w-11 items-center justify-center rounded-full border text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-            isDone
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background"
-          )}
-          aria-label={isDone ? `Mark ${task.title} not done` : `Mark ${task.title} complete`}
-        >
-          {isDone ? "✓" : ""}
-        </button>
-        <div className="min-w-0 flex-1 space-y-2">
-          {editing ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                aria-label="Edit task title"
-                value={editingTitle}
-                disabled={actionsDisabled}
-                onChange={(event) => onEditingTitleChange(event.target.value)}
-                className="min-h-11 flex-1 rounded-xl border border-border bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-70"
-              />
-              <Button
-                type="button"
-                disabled={actionsDisabled || !editingTitle.trim()}
-                onClick={() => onSave(task)}
-                className="min-h-11"
-              >
-                Save task
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <p className={cn("text-lg font-medium text-foreground", isDone && "line-through")}>
-                {task.title}
-              </p>
-              {isDone ? (
-                <span className="rounded-pill bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  Done
-                </span>
-              ) : null}
-            </div>
-          )}
-          <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">
-              {task.projectName ?? "Inbox"}
+    <li className="tp-task-row tk-row" data-component="TaskRow" data-done={isDone}>
+      <button
+        type="button"
+        className="tp-check"
+        aria-pressed={isDone}
+        disabled={actionsDisabled}
+        onClick={() => onToggle(task)}
+        aria-label={isDone ? `Mark ${task.title} not done` : `Mark ${task.title} complete`}
+      >
+        <span className="tp-check__box">
+          <TpIcon name="check" />
+        </span>
+      </button>
+      <div className="tp-task-row__body">
+        {editing ? (
+          <TaskRowEditor
+            key={task.id}
+            task={task}
+            disabled={actionsDisabled}
+            onSave={(update) => onSave(task, update)}
+          />
+        ) : (
+          <span className="tp-task-row__title" dir="auto">
+            {task.title}
+          </span>
+        )}
+        <span className="tp-task-row__meta">
+          <span className="tp-chip">
+            <TpIcon name="folder" size="sm" />
+            <span dir="auto">{task.projectName ?? "Inbox"}</span>
+          </span>
+          <span className="tp-chip">
+            <TpIcon name="flag" size="sm" />
+            <span>{task.priority} priority</span>
+          </span>
+          <span className="tp-chip">
+            <TpIcon name="energy" size="sm" />
+            <span>{task.energy} energy</span>
+          </span>
+          {checklistProgress.total > 0 ? (
+            <span className="tp-checklist__count tp-num">
+              {checklistProgress.completed}/{checklistProgress.total} steps
             </span>
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">
-              {task.priority} priority
-            </span>
-            <span className="rounded-pill bg-surface-sunken px-3 py-1">{task.energy} energy</span>
-            {checklistProgress.total > 0 ? (
-              <span className="rounded-pill bg-surface-sunken px-3 py-1">
-                {checklistProgress.completed}/{checklistProgress.total} steps
-              </span>
-            ) : null}
-          </div>
-          {task.checklist && task.checklist.length > 0 ? (
-            <ul className="space-y-2 pt-1" aria-label={`${task.title} checklist`}>
-              {task.checklist.map((item) => (
-                <li key={item.id}>
-                  <label className="flex min-h-11 items-center gap-2 text-sm text-foreground">
-                    <input
-                      type="checkbox"
-                      checked={item.completed}
-                      disabled={actionsDisabled}
-                      onChange={() => onChecklistToggle(task, item.id)}
-                      className="h-4 w-4 rounded border-border text-primary"
-                    />
-                    <span className={cn(item.completed && "text-muted-foreground line-through")}>
-                      {item.text}
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
           ) : null}
-        </div>
+          {isDone ? <span className="tp-chip tp-chip--done">Done</span> : null}
+        </span>
+        {!editing && task.checklist && task.checklist.length > 0 ? (
+          <ul className="tp-checklist" aria-label={`${task.title} checklist`}>
+            {task.checklist.map((item) => (
+              <li key={item.id} className="tp-checklist__item">
+                <label className="tp-choice">
+                  <input
+                    type="checkbox"
+                    className="tp-checkbox"
+                    checked={item.completed}
+                    disabled={actionsDisabled}
+                    onChange={() => onChecklistToggle(task, item.id)}
+                  />
+                  <span className="tp-choice__text tp-checklist__text" dir="auto">
+                    {item.text}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      <div className="tk-row__actions">
         {!editing ? (
-          <Button
+          <button
             type="button"
-            variant="outline"
+            className="tp-btn tp-btn--ghost tp-btn--sm"
             disabled={actionsDisabled}
             aria-label={`Edit ${task.title}`}
             onClick={() => onEdit(task)}
           >
-            Edit
-          </Button>
+            <TpIcon name="edit" size="sm" />
+            <span>Edit</span>
+          </button>
         ) : null}
+        <button
+          type="button"
+          className={cn(
+            "tp-btn tp-btn--sm",
+            confirmingDelete ? "tp-btn--danger" : "tp-btn--danger-ghost",
+          )}
+          disabled={actionsDisabled}
+          aria-label={confirmingDelete ? `Confirm delete ${task.title}` : `Delete ${task.title}`}
+          onClick={() => {
+            if (confirmingDelete) {
+              onDelete(task);
+            } else {
+              setConfirmingDelete(true);
+            }
+          }}
+        >
+          {confirmingDelete ? "Confirm delete" : "Delete"}
+        </button>
       </div>
     </li>
   );

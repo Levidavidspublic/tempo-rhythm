@@ -1,0 +1,119 @@
+name: deploy-live
+
+# Phase J2. Live deploy of Vercel project tempo-web and Convex prod
+# precious-wildcat-890, then smoke https://tempoflow.dev.
+#
+# Convex live rollback is manual. This workflow never runs it.
+# Amit-only Convex rollback:
+# 1. Convex dashboard → production deployment precious-wildcat-890
+#    → Deployments → Promote the previous deployment.
+# 2. Or check out the last known-good commit and run `npx convex deploy`
+#    with a deploy key whose target prefix is prod:precious-wildcat-890.
+# 3. Never paste the deploy key into logs, chat, issues, or this file.
+#
+# GitHub Environment name is "Production" (this repo has Production,
+# Production – tempo-web, and Production – tempo-marketing; there is no
+# lowercase "production"). Live keys are read only on the deploy job, which
+# is the only job with environment: Production. They must be set on that
+# environment, not as plain repo or org secrets.
+#
+# workflow_dispatch dry_run defaults to true. That path prints the plan and
+# exits 0 before the deploy job. The deploy job does not run, so it never
+# requests the Production environment and never reads live keys.
+# Real deploy runs only on a push to master (dry_run absent/false, factory
+# not paused) or workflow_dispatch from master with dry_run=false.
+# FACTORY_PAUSED_ALL=true refuses a real deploy unless workflow_dispatch
+# force=true from a person (login must not end with [bot]).
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the deploy plan and exit before any deploy
+        type: boolean
+        default: true
+      force:
+        description: Person-only override while FACTORY_PAUSED_ALL is true (ignored when dry_run is true)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: deploy-live
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: plan
+    # A master push made by release.yml (Phase H, commit trailer "Release-Workflow: release.yml") is already
+    # deployed by that workflow's own path (Vercel Git production deploy + Convex prod job after the gate).
+    # Skip here so the same release is not deployed twice.
+    if: >-
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, 'Release-Workflow: release.yml')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deploy: ${{ steps.plan.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/factory
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Print the plan (no deploy)
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' }}
+          PAUSED_ALL: ${{ vars.FACTORY_PAUSED_ALL }}
+          ACTOR: ${{ github.triggering_actor }}
+        run: node scripts/factory/deploy-live-plan.mjs
+
+  deploy:
+    name: deploy
+    needs: plan
+    if: needs.plan.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: Production
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: master
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+        with:
+          bun-version: "1.3.9"
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Deploy tempo-web and Convex live, then smoke
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' }}
+          PAUSED_ALL: ${{ vars.FACTORY_PAUSED_ALL }}
+          ACTOR: ${{ github.triggering_actor }}
+          DEPLOY_LIVE_CONFIRM: "yes"
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_ORG_ID_VAR: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_PROJECT_ID_VAR: ${{ vars.VERCEL_PROJECT_ID }}
+          CONVEX_DEPLOY_KEY_LIVE: ${{ secrets.CONVEX_DEPLOY_KEY_LIVE }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          AMIT: Division6066
+        run: node scripts/factory/deploy-live-plan.mjs deploy

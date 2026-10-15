@@ -59,7 +59,7 @@ test.describe("demo: notes stay per user", () => {
     await expect(pageA.getByRole("status")).toHaveText("Saved");
 
     await pageA.reload();
-    await expect(pageA.getByLabel("Note body")).toHaveValue("edited");
+    await expect(pageA.getByLabel("Note body")).toHaveText("edited");
 
     expect(consoleErrorsA).toEqual([]);
     await contextA.close();
@@ -124,10 +124,10 @@ test.describe("demo: chat stays per user", () => {
     // instead of polling for it afterwards.
     await pageA.evaluate(() => {
       (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending = false;
-      const input = document.querySelector('input[aria-label="Message"]');
+      const input = document.querySelector('textarea[aria-label="Message"]');
       if (input) {
         new MutationObserver(() => {
-          if ((input as HTMLInputElement).disabled) {
+          if ((input as HTMLTextAreaElement).disabled) {
             (window as unknown as { __tempoSawSending: boolean }).__tempoSawSending = true;
           }
         }).observe(input, { attributes: true, attributeFilter: ["disabled"] });

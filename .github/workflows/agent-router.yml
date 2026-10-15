@@ -48,13 +48,27 @@ permissions:
   actions: read
 
 jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
+    # Only agent:* labels / manual runs (other label events never pick an agent anyway).
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'agent:')
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "agent-router (lane start)"
   route:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && (github.event_name == 'workflow_dispatch' || startsWith(github.event.label.name, 'agent:'))
     runs-on: ubuntu-latest
     outputs:
       agent: ${{ steps.pick.outputs.agent }}
       issue: ${{ steps.pick.outputs.issue }}
       base: ${{ steps.pick.outputs.base }}
     steps:
+      - name: Checkout lane-limits script (default branch, no credentials)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: scripts/factory
+          persist-credentials: false
       - id: pick
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,6 +80,11 @@ jobs:
           INPUT_BASE: ${{ inputs.base }}
           LABEL_NAME: ${{ github.event.label.name }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          # Usage limits + preference (scripts/factory/lane-limits.mjs, docs/factory/AGENT-LIMITS.md).
+          FACTORY_CLAUDE_AT_LIMIT: ${{ vars.FACTORY_CLAUDE_AT_LIMIT }}
+          FACTORY_CODEX_AT_LIMIT: ${{ vars.FACTORY_CODEX_AT_LIMIT }}
+          FACTORY_CURSOR_AT_LIMIT: ${{ vars.FACTORY_CURSOR_AT_LIMIT }}
+          FACTORY_AGENT_PREFERENCE: ${{ vars.FACTORY_AGENT_PREFERENCE }}
         run: |
           set -euo pipefail
           # Label and workflow_dispatch both spend a write token. Triage and
@@ -97,6 +116,27 @@ jobs:
           case "$ISSUE" in
             ''|*[!0-9]*) echo "::error::issue must be digits"; exit 1 ;;
           esac
+          # Usage limits: an agent at its limit (FACTORY_*_AT_LIMIT) gets nothing new; fall back in FACTORY_AGENT_PREFERENCE
+          # order; claude, codex and cursor all at their limit -> Freebuff, then OpenCode (manual run, labels only), then
+          # blocked:amit. Never a pay-per-use agent.
+          res=$(node scripts/factory/lane-limits.mjs --want "$AGENT")
+          new_lane=$(printf '%s\n' "$res" | sed -n 's/^lane=//p')
+          manual=$(printf '%s\n' "$res" | sed -n 's/^manual=//p')
+          add_labels=$(printf '%s\n' "$res" | sed -n 's/^labels=//p')
+          reason=$(printf '%s\n' "$res" | sed -n 's/^reason=//p')
+          if [ "$manual" = true ] || [ -z "$new_lane" ]; then
+            IFS=, read -ra fl <<< "$add_labels"
+            for l in "${fl[@]}"; do gh label create "$l" -R "$REPO" --color FBCA04 --force >/dev/null; gh issue edit "$ISSUE" -R "$REPO" --add-label "$l"; done
+            gh issue comment "$ISSUE" -R "$REPO" --body "Agent router: $reason. Nothing started; see docs/factory/AGENT-LIMITS.md."
+            echo "::notice title=Usage limits::#$ISSUE -> $add_labels"
+            echo "agent=" >> "$GITHUB_OUTPUT"
+            echo "issue=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$new_lane" != "$AGENT" ]; then
+            gh issue comment "$ISSUE" -R "$REPO" --body "Agent router: $reason (usage limits; docs/factory/AGENT-LIMITS.md)."
+            AGENT="$new_lane"
+          fi
           BASE="${INPUT_BASE:-integration}"
           case "$BASE" in
             master|main|*/master|*/main)
@@ -199,8 +239,13 @@ jobs:
           gh issue view "$ISSUE" --repo "$REPO" --comments | /usr/local/bin/tempo-write-scratch "${RUNNER_TEMP}/tempo-issue.md"
           # Checkout's includeIf file is still runner-readable. Lock it, then
           # drop includeIf from .git/config before the model starts.
+          # checkout@v6 writes a host includeIf for the gitdir AND one for
+          # gitdir/worktrees/*, both pointing at the same credentials file.
+          # Lock each file once: after chattr +i, a second chown gets EPERM.
+          locked=' '
           while read -r _key path; do
             [ -n "${path:-}" ] || continue
+            case "$locked" in *" ${path} "*) continue ;; esac
             # checkout@v6 also records /github/runner_temp/... for container
             # jobs. That path is absent on the host runner. Skip it. An
             # existing file outside the temp dirs still fails the step.
@@ -215,6 +260,7 @@ jobs:
               sudo -n chown root:root "$path"
               sudo -n chmod 0400 "$path"
               sudo -n chattr +i "$path" || true
+              locked="${locked}${path} "
             fi
           done < <(git config --local --get-regexp '^includeIf\.' || true)
           /usr/local/bin/tempo-safe-git status >/dev/null

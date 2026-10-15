@@ -3,6 +3,24 @@
     "allow": [
       "Bash(git check-ignore *)",
       "Bash(bun x *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Bash(git push origin master*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin integration*)",
+      "Bash(git push -u origin master*)",
+      "Bash(git push -u origin main*)",
+      "Bash(git push -u origin integration*)",
+      "Bash(git push --force origin master*)",
+      "Bash(git push --force origin main*)",
+      "Bash(git push --force origin integration*)",
+      "Bash(git push --force-with-lease origin master*)",
+      "Bash(git push --force-with-lease origin main*)",
+      "Bash(git push --force-with-lease origin integration*)"
     ]
   },
   "enabledPlugins": {

@@ -9,7 +9,12 @@ on:
   pull_request:
     branches: [master, integration]
     types: [opened, synchronize, reopened, ready_for_review]
+  # Merge queue on integration re-runs this required check against the queue commit.
+  merge_group:
+    branches: [master, integration]
   workflow_dispatch:
+  # release.yml (Phase H) runs this whole CI again on the exact integration SHA before a production release.
+  workflow_call:
 
 permissions:
   contents: read

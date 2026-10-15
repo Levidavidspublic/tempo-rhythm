@@ -1,5 +1,5 @@
-import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
+import { ChecklistBoard } from "@/components/tasks-checklists/ChecklistBoard";
 
 export default function ChecklistTasksPage() {
-  return <TaskViewsScreen view="checklists" />;
+  return <ChecklistBoard />;
 }

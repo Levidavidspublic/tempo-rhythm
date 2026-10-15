@@ -1,24 +1,21 @@
 /**
- * @generated-by: T-F004 scaffold — replace with T-F005* port.
- * @screen: onboarding
- * @category: Onboarding
- * @source: docs/design/claude-export/design-system/screens-7.jsx
- * @summary: 5-step onboarding (welcome → personalization → template → first brain dump → first plan).
- * @queries: (none)
- * @mutations: users.completeOnboarding
- * @routes-to: /today
+ * @screen: onboarding (docs/design/v3/screens/web/onboarding.html), bare layout; `?step=1..5`
+ * @data: users.getProfile, coach.getSettings; saves users.completeOnboarding, coach.setDial,
+ *        notes.create / notes.update (first brain dump), preferences.update({ locale })
  * @auth: required
- * @notes: Copy placeholder from Claude export; copy pass in a later ticket.
  */
-import { ScaffoldScreen } from "@/components/tempo/ScaffoldScreen";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
+import { BareScreen } from "@/components/settings/SettingsScreen";
 
 export default function Page() {
   return (
-    <ScaffoldScreen
-      title="Onboarding"
-      category="Onboarding"
-      source="screens-7.jsx"
-      summary="5-step onboarding (welcome → personalization → template → first brain dump → first plan)."
-    />
+    <BareScreen
+      testId="onboarding-route"
+      loading="set.onb.loading"
+      errorTitle="set.profile.errorTitle"
+      errorBody="set.profile.errorBody"
+    >
+      <OnboardingFlow />
+    </BareScreen>
   );
 }

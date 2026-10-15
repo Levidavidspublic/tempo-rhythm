@@ -1,225 +1,450 @@
 "use client";
 
-import type { Id } from "@/convex/_generated/dataModel";
 import { isHabitCompletedOnUtcDay } from "@/convex/lib/habitStreak";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { CheckCircle2, Circle, Flame, Plus } from "lucide-react";
+import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useState } from "react";
-import { SoftCard } from "@/components/soft-editorial/SoftCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { HABIT_NAME_MAX, habitHref } from "@/components/habits-library/habitForm";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { fillTemplate, type LocalDay, lastLocalDays, settlePending } from "@/lib/habits-view";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { HabitEnergySuggestions } from "./HabitEnergySuggestions";
+import { type HabitDraft, HabitSheet } from "./HabitSheet";
+import {
+  ScreenErrorBoundary,
+  type SkeletonRow,
+  StateEmpty,
+  StateError,
+  StateLoading,
+  StateOffline,
+  StateSignedOut,
+  useOnline,
+  useProfileState,
+} from "./ScreenStates";
+import { UNDO_WINDOW_MS, UndoToast } from "./UndoToast";
 
-type HabitRowData = {
-  _id: Id<"habits">;
-  name: string;
-  cadence: "daily" | "weekly";
-  currentStreak: number;
-  longestStreak: number;
-  lastCompletedAt?: number;
-};
+const LOADING_ROWS: readonly SkeletonRow[] = [
+  ["w60", "w100"],
+  ["w40", "w100"],
+  ["w80", "w100"],
+  ["w60", "w100"],
+];
 
-function HabitRow({ habit, now }: { habit: HabitRowData; now: number }) {
-  const completeToday = useMutation(api.habits.completeToday);
-  const completedToday = isHabitCompletedOnUtcDay(habit.lastCompletedAt, now);
+const DOW = [
+  "hr.dow.0",
+  "hr.dow.1",
+  "hr.dow.2",
+  "hr.dow.3",
+  "hr.dow.4",
+  "hr.dow.5",
+  "hr.dow.6",
+] as const;
+
+type HabitRow = Doc<"habits">;
+type CheckInRow = { habitId: string; localDate: string };
+
+/**
+ * Habits (docs/design/v3/screens/web/habits.html): each habit with Log today and its last 7
+ * local days, filled circle = logged, empty ring = not logged. No streak counter anywhere.
+ *
+ * Left out until habits can store them (convex/schema.ts has name + daily/weekly cadence only):
+ * "when it usually happens" (the rhythm shows in its place), the Weekdays rhythm, and the
+ * "Welcome back — start fresh?" notice with Start fresh / Pause it (no habits.startFresh or
+ * habits.pause). See the v3 build report.
+ */
+export function HabitsScreen() {
+  // A new local day starts the screen afresh (today's circle, the date line, suggestions).
+  const bounds = useLocalDayBounds();
+  return (
+    <ScreenErrorBoundary fallback={(retry) => <HabitsFailed onRetry={retry} />}>
+      <HabitsContent key={bounds.startMs} todayMs={bounds.startMs} />
+    </ScreenErrorBoundary>
+  );
+}
+
+function HabitsHeader({ children }: { children?: ReactNode }) {
+  const { t } = useLocale();
+  return (
+    <header className="tp-pagehead" data-component="PageHeader">
+      <div className="tp-pagehead__text">
+        <h1 className="tp-pagehead__title">{t("hb.title")}</h1>
+        <p className="tp-pagehead__sub">{t("hb.sub")}</p>
+      </div>
+      {children ? <div className="tp-pagehead__actions">{children}</div> : null}
+    </header>
+  );
+}
+
+function HabitsFailed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLocale();
+  return (
+    <div className="tp-page" data-component="PageLayout">
+      <HabitsHeader />
+      <StateError title={t("hb.error")} onRetry={onRetry} />
+    </div>
+  );
+}
+
+/** Check-ins for the last 7 local days: one subscription per day, shared with Today's strip. */
+function useWeekCheckIns(days: readonly LocalDay[], ready: boolean): CheckInRow[] | undefined {
+  const args = (index: number) => {
+    const day = days[index];
+    return ready && day ? { localDate: day.localDate } : ("skip" as const);
+  };
+  const d0 = useQuery(api.habitCheckIns.listForDate, args(0));
+  const d1 = useQuery(api.habitCheckIns.listForDate, args(1));
+  const d2 = useQuery(api.habitCheckIns.listForDate, args(2));
+  const d3 = useQuery(api.habitCheckIns.listForDate, args(3));
+  const d4 = useQuery(api.habitCheckIns.listForDate, args(4));
+  const d5 = useQuery(api.habitCheckIns.listForDate, args(5));
+  const d6 = useQuery(api.habitCheckIns.listForDate, args(6));
+  return useMemo(() => {
+    const week = [d0, d1, d2, d3, d4, d5, d6];
+    if (week.some((day) => day === undefined)) return undefined;
+    return week.flatMap((day) => day ?? []);
+  }, [d0, d1, d2, d3, d4, d5, d6]);
+}
+
+function HabitsContent({ todayMs }: { todayMs: number }) {
+  const { t, lang } = useLocale();
+  const online = useOnline();
+  const profile = useProfileState();
+  const ready = profile === "ready";
+  const today = useMemo(() => new Date(todayMs), [todayMs]);
+  const days = useMemo(() => lastLocalDays(today, 7), [today]);
+  const todayKey = days[days.length - 1]?.localDate ?? "";
+  const habits = useQuery(api.habits.list, ready ? {} : "skip");
+  const checkIns = useWeekCheckIns(days, ready);
+  const create = useMutation(api.habits.create);
+  const remove = useMutation(api.habits.remove);
+  const check = useMutation(api.habitCheckIns.check);
+  const undo = useMutation(api.habitCheckIns.undo);
+
+  // Optimistic Log today: habitId -> wanted state, until the server agrees.
+  const [pending, setPending] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  const busy = useRef(new Set<string>());
+  const [saveError, setSaveError] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // One Undo per habit added in the last 5 minutes: a second add never takes the first one's Undo.
+  const [toasts, setToasts] = useState<{ habitId: Id<"habits">; undoUntilMs: number }[]>([]);
+  const [quickName, setQuickName] = useState("");
+  const [quickInvalid, setQuickInvalid] = useState(false);
+  const [quickBusy, setQuickBusy] = useState(false);
+
+  const live = useMemo<HabitRow[]>(
+    () =>
+      (habits ?? [])
+        .filter((habit) => habit.deletedAt === undefined)
+        // Newest first and steady: logging a habit must not move its card.
+        .sort((a, b) => b.createdAt - a.createdAt),
+    [habits]
+  );
+  const loggedByHabit = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const row of checkIns ?? []) {
+      const dates = map.get(row.habitId) ?? new Set<string>();
+      dates.add(row.localDate);
+      map.set(row.habitId, dates);
+    }
+    return map;
+  }, [checkIns]);
+
+  useEffect(() => {
+    setPending((prev) =>
+      settlePending(prev, (habitId) => loggedByHabit.get(habitId)?.has(todayKey) ?? false)
+    );
+  }, [loggedByHabit, todayKey]);
+
+  const loggedToday = (habitId: string) =>
+    pending.get(habitId) ?? loggedByHabit.get(habitId)?.has(todayKey) ?? false;
+
+  const toggle = (habitId: Id<"habits">) => {
+    if (busy.current.has(habitId)) return;
+    const next = !loggedToday(habitId);
+    busy.current.add(habitId);
+    setSaveError(false);
+    setPending((prev) => new Map(prev).set(habitId, next));
+    const action = next
+      ? check({ habitId, localDate: todayKey, source: "habits", asOfLocalDate: todayKey })
+      : undo({ habitId, localDate: todayKey, asOfLocalDate: todayKey });
+    // Convex resolves a mutation once the queries show its writes, so the optimistic entry can go
+    // either way: on success the server now agrees, on failure the circle goes back.
+    action
+      .catch(() => setSaveError(true))
+      .finally(() => {
+        busy.current.delete(habitId);
+        setPending((prev) => {
+          if (!prev.has(habitId)) return prev;
+          const map = new Map(prev);
+          map.delete(habitId);
+          return map;
+        });
+      });
+  };
+
+  const addHabit = async ({ name, cadence }: HabitDraft) => {
+    const habitId = await create({ name, cadence });
+    setToasts((prev) => [...prev, { habitId, undoUntilMs: Date.now() + UNDO_WINDOW_MS }]);
+  };
+
+  const closeToast = (habitId: Id<"habits">) => setToasts((prev) => prev.filter((item) => item.habitId !== habitId));
+
+  const undoAdd = async (habitId: Id<"habits">) => {
+    try {
+      // `habits.remove` deletes only the habit row, so today's check-in goes first. Always: the
+      // query can lag a Log today that was just tapped, and the undo is a no-op when none exists.
+      await undo({ habitId, localDate: todayKey, asOfLocalDate: todayKey });
+      await remove({ habitId });
+      closeToast(habitId);
+    } catch {
+      setSaveError(true);
+    }
+  };
+
+  const quickAdd = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (quickBusy) return;
+    const name = quickName.trim();
+    if (!name) {
+      setQuickInvalid(true);
+      return;
+    }
+    setQuickInvalid(false);
+    setSaveError(false);
+    setQuickBusy(true);
+    addHabit({ name, cadence: "daily" })
+      .then(() => setQuickName(""))
+      .catch(() => setSaveError(true))
+      .finally(() => setQuickBusy(false));
+  };
+
+  const state =
+    profile === "loading" || (ready && (habits === undefined || checkIns === undefined))
+      ? "loading"
+      : profile === "signed-out"
+        ? "signed-out"
+        : live.length === 0
+          ? "empty"
+          : "default";
+
+  const locale = lang === "he" ? "he-IL" : "en-GB";
+  const newHabitButton = (
+    <button
+      className="tp-btn tp-btn--secondary"
+      type="button"
+      aria-controls="new-habit"
+      aria-expanded={sheetOpen}
+      data-component="Button"
+      onClick={() => setSheetOpen(true)}
+    >
+      <TpIcon name="plus" size="sm" />
+      <span>{t("hb.new")}</span>
+    </button>
+  );
+  const loggedCount = live.filter((habit) => loggedToday(habit._id)).length;
+  const now = Date.now();
 
   return (
-    <li className="rounded-3xl border border-border/80 bg-card/90 p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-heading text-xl font-semibold text-foreground">
-              {habit.name}
+    <div className="tp-page" data-component="PageLayout">
+      <HabitsHeader>{state === "default" ? newHabitButton : null}</HabitsHeader>
+
+      {online ? null : <StateOffline />}
+      {saveError ? (
+        <p className="tp-notice" data-tone="caution" role="alert">
+          <span className="tp-notice__text">{t("hr.saveError")}</span>
+        </p>
+      ) : null}
+
+      {state === "loading" ? <StateLoading label={t("hb.loading")} rows={LOADING_ROWS} /> : null}
+      {state === "signed-out" ? <StateSignedOut /> : null}
+      {state === "empty" ? (
+        <StateEmpty icon="habit" title={t("hb.empty.t")} body={t("hb.empty.b")}>
+          {newHabitButton}
+        </StateEmpty>
+      ) : null}
+
+      {state === "default" ? (
+        <section className="tp-section" data-component="Section" aria-labelledby="hb-today">
+          <div className="tp-section__head">
+            <h2 className="tp-section__title" id="hb-today">
+              <span>{t("hb.today")}</span> ·{" "}
+              <span>
+                {today.toLocaleDateString(locale, {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}
+              </span>
             </h2>
-            <span className="rounded-full border border-border bg-background px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {habit.cadence}
+            <span className="tp-section__count">
+              <span className="tp-num">{loggedCount}</span> <span>{t("hb.of")}</span>{" "}
+              <span className="tp-num">{live.length}</span> <span>{t("hb.loggedtoday")}</span>
             </span>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Current streak: {habit.currentStreak}{" "}
-            {habit.currentStreak === 1 ? "day" : "days"} · Longest:{" "}
-            {habit.longestStreak}
+          <p className="tp-muted tp-small">
+            {fillTemplate(t("hb.localday"), {
+              day: today.toLocaleDateString(locale, { weekday: "long" }),
+            })}
           </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (!completedToday) {
-              void completeToday({ habitId: habit._id });
-            }
-          }}
-          disabled={completedToday}
-          className={cn(
-            "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-default",
-            completedToday
-              ? "border-primary/30 bg-primary/10 text-primary"
-              : "border-border bg-background text-foreground hover:border-primary hover:text-primary",
-          )}
-          aria-label={
-            completedToday
-              ? `${habit.name} is checked today`
-              : `Check ${habit.name} today`
-          }
-        >
-          {completedToday ? (
-            <CheckCircle2 className="h-4 w-4" aria-hidden />
-          ) : (
-            <Circle className="h-4 w-4" aria-hidden />
-          )}
-          {completedToday ? "Checked today" : "Check today"}
-        </button>
-      </div>
-    </li>
-  );
-}
-
-function NewHabitForm() {
-  const createHabit = useMutation(api.habits.create);
-  const [name, setName] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  return (
-    <form
-      className="rounded-3xl border border-dashed border-border bg-muted/30 p-5"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const trimmed = name.trim();
-        if (!trimmed) {
-          return;
-        }
-        setIsSubmitting(true);
-        void createHabit({ name: trimmed, cadence: "daily" })
-          .then(() => setName(""))
-          .finally(() => setIsSubmitting(false));
-      }}
-    >
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div className="space-y-2">
-          <Label htmlFor="habit-name">Add a tiny habit</Label>
-          <Input
-            id="habit-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Drink water, take meds, step outside..."
-            autoComplete="off"
-          />
-        </div>
-        <Button type="submit" disabled={isSubmitting || name.trim().length === 0}>
-          <Plus className="h-4 w-4" aria-hidden />
-          Add habit
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-export function HabitsScreen() {
-  const now = Date.now();
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const hasConvexUser = profile != null;
-  const habits = useQuery(
-    api.habits.list,
-    isAuthenticated && hasConvexUser ? {} : "skip",
-  );
-  const isLoading =
-    isAuthLoading ||
-    (isAuthenticated &&
-      (profile === undefined || (hasConvexUser && habits === undefined)));
-
-  if (isLoading) {
-    return (
-      <main className="mx-auto w-full max-w-4xl p-8">
-        <div className="space-y-4">
-          <div className="h-12 w-48 animate-pulse rounded-xl bg-muted" />
-          <div className="h-28 animate-pulse rounded-3xl bg-muted" />
-          <div className="h-24 animate-pulse rounded-3xl bg-muted" />
-        </div>
-      </main>
-    );
-  }
-
-  if (!isAuthenticated || !profile || !habits) {
-    return (
-      <main className="mx-auto w-full max-w-4xl p-8 text-center">
-        <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Habits
-          </h1>
-          <p className="mt-3 text-muted-foreground">
-            Sign in again to check off habits and keep today in sync.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/sign-in">Sign in</Link>
-          </Button>
-        </SoftCard>
-      </main>
-    );
-  }
-
-  const checkedCount = habits.filter((habit) =>
-    isHabitCompletedOnUtcDay(habit.lastCompletedAt, now),
-  ).length;
-
-  return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
-      <header className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <Flame className="h-5 w-5" aria-hidden />
+          <div className="hb-list">
+            {live.map((habit) => (
+              <HabitCard
+                key={habit._id}
+                habit={habit}
+                days={days}
+                logged={loggedByHabit.get(habit._id)}
+                loggedToday={loggedToday(habit._id)}
+                onLog={() => toggle(habit._id)}
+              />
+            ))}
           </div>
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Library
-            </p>
-            <h1 className="font-heading text-4xl font-semibold text-foreground">
-              Habits
-            </h1>
+        </section>
+      ) : null}
+
+      {state === "default" || state === "empty" ? (
+        <form className="tp-toolbar" data-component="Toolbar" noValidate onSubmit={quickAdd}>
+          <div className="tp-field tp-toolbar__grow">
+            <label className="tp-sr-only" htmlFor="habits-library-name">
+              {t("hb.quick.label")}
+            </label>
+            <input
+              className="tp-input"
+              id="habits-library-name"
+              type="text"
+              dir="auto"
+              autoComplete="off"
+              maxLength={HABIT_NAME_MAX}
+              placeholder={t("hb.nh.ph")}
+              value={quickName}
+              aria-invalid={quickInvalid || undefined}
+              aria-describedby={quickInvalid ? "hb-quick-error" : undefined}
+              onChange={(event) => setQuickName(event.target.value)}
+            />
+            {quickInvalid ? (
+              <p className="tp-error-text" id="hb-quick-error">
+                {t("hb.nh.err")}
+              </p>
+            ) : null}
           </div>
-        </div>
-        <p className="max-w-2xl text-muted-foreground">
-          Check off the tiny repeats that help today feel workable. Streaks
-          count consecutive calendar days, and coming back still counts as
-          progress.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {habits.length === 0
-            ? "No habits yet."
-            : `${checkedCount} of ${habits.length} checked today.`}
-        </p>
-      </header>
+          <button className="tp-btn tp-btn--secondary" type="submit" disabled={quickBusy}>
+            <TpIcon name="plus" size="sm" />
+            <span>{t("hb.quick.add")}</span>
+          </button>
+        </form>
+      ) : null}
 
-      <NewHabitForm />
+      {state === "default" ? (
+        <HabitEnergySuggestions
+          localDate={todayKey}
+          habits={live.map((habit) => ({
+            _id: habit._id,
+            name: habit.name,
+            completedToday:
+              loggedToday(habit._id) || isHabitCompletedOnUtcDay(habit.lastCompletedAt, now),
+          }))}
+        />
+      ) : null}
 
-      <HabitEnergySuggestions
-        habits={habits.map((habit) => ({
-          _id: habit._id,
-          name: habit.name,
-          completedToday: isHabitCompletedOnUtcDay(habit.lastCompletedAt, now),
-        }))}
-      />
-
-      {habits.length === 0 ? (
-        <div className="rounded-3xl border border-border/80 bg-card/90 px-6 py-10 text-center">
-          <p className="text-base font-medium text-foreground">
-            Start with one small repeat.
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            A tiny habit is enough; you can rename or reshape it later.
-          </p>
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {habits.map((habit) => (
-            <HabitRow key={habit._id} habit={habit} now={now} />
+      {sheetOpen ? (
+        <HabitSheet
+          id="new-habit"
+          title={t("hb.new")}
+          initial={{ name: "", cadence: "daily" }}
+          onSubmit={addHabit}
+          onClose={() => setSheetOpen(false)}
+        />
+      ) : null}
+      {toasts.length > 0 ? (
+        <div className="tp-toast-region">
+          {toasts.map((item) => (
+            <UndoToast
+              key={item.habitId}
+              title={t("hb.added")}
+              undoUntilMs={item.undoUntilMs}
+              onUndo={() => undoAdd(item.habitId)}
+              onClose={() => closeToast(item.habitId)}
+            />
           ))}
-        </ul>
-      )}
-    </main>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function HabitCard({
+  habit,
+  days,
+  logged,
+  loggedToday,
+  onLog,
+}: {
+  habit: HabitRow;
+  days: readonly LocalDay[];
+  logged: ReadonlySet<string> | undefined;
+  loggedToday: boolean;
+  onLog: () => void;
+}) {
+  const { t } = useLocale();
+  const nameId = `hb-${habit._id}-name`;
+  const isDone = (day: LocalDay) =>
+    day.isToday ? loggedToday : (logged?.has(day.localDate) ?? false);
+  const count = days.filter(isDone).length;
+  const label = loggedToday ? t("hb.logged") : t("hb.log");
+  return (
+    <article className="tp-surface tp-block-habit hb-card" data-component="HabitBlock">
+      <div className="tp-habit" data-habit={habit._id} data-logged={String(loggedToday)}>
+        <div className="tp-habit__head">
+          <Link className="tp-habit__name" id={nameId} href={habitHref(habit._id)} dir="auto">
+            {habit.name}
+          </Link>
+          <span className="tp-habit__when">
+            {habit.cadence === "weekly" ? t("hb.rh.few") : t("hb.rh.most")}
+          </span>
+          <button
+            className="tp-btn tp-btn--secondary tp-habit__log"
+            type="button"
+            aria-pressed={loggedToday}
+            aria-describedby={nameId}
+            // Starts with the visible label and keeps the older "Check … for today" / "Undo today's
+            // check for …" wording the e2e sweep looks for. An aria-label, not hidden text, so the
+            // habit name appears only once as text on the card.
+            aria-label={`${label}${fillTemplate(t(loggedToday ? "hb.unlog.sr" : "hb.log.sr"), { name: habit.name })}`}
+            onClick={onLog}
+          >
+            <TpIcon name="check" size="sm" />
+            <span>{label}</span>
+          </button>
+        </div>
+        <ol className="tp-habit-days" aria-label={t("hb.last7")}>
+          {days.map((day) => {
+            const done = isDone(day);
+            return (
+              <li
+                key={day.localDate}
+                className="tp-habit-day"
+                data-done={String(done)}
+                data-today={day.isToday ? "true" : undefined}
+              >
+                <span className="tp-habit-day__dot" aria-hidden="true">
+                  <TpIcon name="check" />
+                </span>
+                <span className="tp-habit-day__label">
+                  <span>{t(DOW[day.weekday] ?? "hr.dow.0")}</span>{" "}
+                  <span className="tp-num">{day.day}</span>
+                </span>
+                <span className="tp-sr-only">{done ? t("hb.dayDone") : t("hb.dayOpen")}</span>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="tp-habit__summary">
+          <span>{t("hb.sum1")}</span> <span className="tp-num">{count}</span>{" "}
+          <span>{t("hb.sum2")}</span>
+        </p>
+      </div>
+    </article>
   );
 }

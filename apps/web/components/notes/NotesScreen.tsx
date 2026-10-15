@@ -4,10 +4,13 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
-import { cn } from "@/lib/utils";
+import { NoteNotFound } from "./NoteNotFound";
+import { PageEditorView } from "./PageEditorView";
+import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
+import { UndoDeleteToast } from "./UndoDeleteToast";
 
 type NoteRecord = Doc<"notes">;
 
@@ -17,6 +20,26 @@ function sortPinnedFirst(notes: NoteRecord[]): NoteRecord[] {
     return a.pinned ? -1 : 1;
   });
 }
+
+export const PIN_SIGNED_OUT_COPY = "Sign in to pin notes.";
+export const PIN_ERROR_COPY = "We couldn't update that pin. Try again in a moment.";
+
+export type PinToggleOutcome = "toggled" | "signed-out" | "error";
+
+export async function runPinToggle(
+  isAuthenticated: boolean,
+  toggle: () => Promise<unknown>,
+): Promise<PinToggleOutcome> {
+  if (!isAuthenticated) return "signed-out";
+  try {
+    await toggle();
+    return "toggled";
+  } catch {
+    return "error";
+  }
+}
+
+export { sortPinnedFirst };
 
 function snippet(body: string): string {
   const trimmed = body.trim();
@@ -28,9 +51,17 @@ type NotesScreenProps = {
   noteId?: string;
 };
 
+export type NoteLoadState = "loading" | "not-found" | "ready";
+
+export function getNoteLoadState(note: NoteRecord | null | undefined): NoteLoadState {
+  if (note === undefined) return "loading";
+  if (note === null) return "not-found";
+  return "ready";
+}
+
 export function NotesScreen({ noteId }: NotesScreenProps) {
   if (noteId) {
-    return <NoteEditor noteId={noteId} />;
+    return <NotePage noteId={noteId} />;
   }
   return <NotesList />;
 }
@@ -42,8 +73,15 @@ function NotesList() {
   const createNote = useMutation(api.notes.create);
   const togglePin = useMutation(api.notes.togglePin);
   const removeNote = useMutation(api.notes.remove);
+  const restoreNote = useMutation(api.notes.restore);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // Pages deleted from this list, each with its own 5-minute Undo (the same window as a page's
+  // own). The newest shows first; once it is undone or expires, the one before it shows again.
+  const [removedStack, setRemovedStack] = useState<{ id: Id<"notes">; undoUntilMs: number }[]>([]);
+  const removed = removedStack.at(-1) ?? null;
   const [isCreating, setIsCreating] = useState(false);
+  const [pinningId, setPinningId] = useState<string | null>(null);
+  const [pinMessage, setPinMessage] = useState<string | null>(null);
 
   const isLoading = isAuthenticated && notes === undefined;
   const visibleNotes = sortPinnedFirst(notes ?? []);
@@ -60,12 +98,34 @@ function NotesList() {
   };
 
   const handleTogglePin = async (id: Id<"notes">) => {
-    await togglePin({ noteId: id });
+    if (pinningId) return;
+    setPinMessage(null);
+    setPinningId(id);
+    try {
+      const outcome = await runPinToggle(isAuthenticated, () => togglePin({ noteId: id }));
+      if (outcome === "signed-out") setPinMessage(PIN_SIGNED_OUT_COPY);
+      else if (outcome === "error") setPinMessage(PIN_ERROR_COPY);
+    } finally {
+      setPinningId(null);
+    }
   };
 
   const handleDelete = async (id: Id<"notes">) => {
-    await removeNote({ noteId: id });
+    const result = await removeNote({ noteId: id });
     setPendingDeleteId(null);
+    setRemovedStack((stack) => [...stack.filter((r) => r.id !== id), { id, undoUntilMs: result.undoUntilMs }]);
+  };
+
+  const handleUndo = async () => {
+    if (!removed) return;
+    const result = await restoreNote({ noteId: removed.id });
+    if (result.success) setRemovedStack((stack) => stack.filter((r) => r.id !== removed.id));
+  };
+
+  // Drops the shown entry and any other whose window has ended.
+  const handleUndoExpire = () => {
+    const now = Date.now();
+    setRemovedStack((stack) => stack.filter((r) => r.id !== removed?.id && r.undoUntilMs > now));
   };
 
   return (
@@ -87,6 +147,12 @@ function NotesList() {
             New note
           </Button>
         </header>
+
+        {pinMessage ? (
+          <p role="alert" className="text-sm text-muted-foreground">
+            {pinMessage}
+          </p>
+        ) : null}
 
         {visibleNotes.length === 0 && !isLoading ? (
           <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
@@ -116,6 +182,7 @@ function NotesList() {
                     <Button
                       type="button"
                       variant="outline"
+                      disabled={pinningId !== null}
                       aria-label={note.pinned ? `Unpin ${note.title || "Untitled note"}` : `Pin ${note.title || "Untitled note"}`}
                       onClick={() => void handleTogglePin(note._id)}
                     >
@@ -152,27 +219,52 @@ function NotesList() {
           </ul>
         )}
       </div>
+      {removed ? (
+        <UndoDeleteToast
+          key={removed.id}
+          undoUntilMs={removed.undoUntilMs}
+          onUndo={handleUndo}
+          onExpire={handleUndoExpire}
+        />
+      ) : null}
     </main>
   );
 }
 
 type SaveState = "idle" | "saving" | "saved";
 
-function NoteEditor({ noteId }: { noteId: string }) {
+type NotePageProps = {
+  noteId: string;
+  /** Passed to the page view: where "Back" goes, or null to hide it. */
+  backHref?: string | null;
+  /** Shown on the paper above the body. */
+  lead?: ReactNode;
+  /** False hides Delete on this page view. */
+  canDelete?: boolean;
+};
+
+/** Loads one page, saves edits (debounced), and draws it with PageEditorView. Also used by Today. */
+export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
+  // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
+  // During sign-in getProfile resolves safely while the user record is being created.
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const note = useQuery(
-    api.notes.get,
-    isAuthenticated ? { noteId: noteId as Id<"notes"> } : "skip",
+    api.notes.getSafe,
+    isAuthenticated && profile != null ? { noteId } : "skip",
   );
   const updateNote = useMutation(api.notes.update);
   const togglePin = useMutation(api.notes.togglePin);
   const removeNote = useMutation(api.notes.remove);
+  const restoreNote = useMutation(api.notes.restore);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [undoUntilMs, setUndoUntilMs] = useState<number | null>(null);
+  const wasDeleted = useRef(false);
   const loadedNoteId = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef("");
@@ -194,19 +286,66 @@ function NoteEditor({ noteId }: { noteId: string }) {
       if (!saveTimer.current) return;
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
-      void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+      if (!wasDeleted.current) {
+        void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+      }
     };
   }, [noteId, updateNote]);
 
+  // True from an edit until a save of that same text succeeds, so a failed save is never taken for saved.
+  const dirty = useRef(false);
+
+  // Another writer changed this page while it is open: the coach saving a decision to today's
+  // page. With no unsaved edits here the editor takes the new text, so the next autosave can't
+  // write over it. With unsaved edits (or a save on its way) those edits win, as before.
+  const [remoteBody, setRemoteBody] = useState<{ before: string; after: string; seq: number } | null>(null);
+  useEffect(() => {
+    if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
+    if (note.body === bodyRef.current || dirty.current || saveTimer.current) return;
+    const before = bodyRef.current;
+    bodyRef.current = note.body;
+    setBody(note.body);
+    setRemoteBody((current) => ({ before, after: note.body, seq: (current?.seq ?? 0) + 1 }));
+  }, [note]);
+  const saveNow = async () => {
+    const title = titleRef.current;
+    const body = bodyRef.current;
+    await updateNote({ noteId: noteId as Id<"notes">, title, body });
+    if (titleRef.current === title && bodyRef.current === body) dirty.current = false;
+  };
+
   const scheduleSave = () => {
+    dirty.current = true;
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
       saveTimer.current = null;
-      await updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
-      setSaveState("saved");
+      try {
+        await saveNow();
+        setSaveState("saved");
+      } catch {
+        // Stays dirty: the next edit or the coach's flush saves it again.
+      }
     }, 500);
   };
+
+  // The coach beside this page saves its pending edits before it reads the page (Codex P2 on #923).
+  useRegisterCoachPageFlush(async () => {
+    if (wasDeleted.current) return;
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (!dirty.current) return;
+    try {
+      await saveNow();
+      setSaveState("saved");
+    } catch (error) {
+      // Keep the edit queued, so it is not lost, and let the coach know it did not save.
+      scheduleSave();
+      throw error;
+    }
+  });
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -225,11 +364,53 @@ function NoteEditor({ noteId }: { noteId: string }) {
   };
 
   const handleDelete = async () => {
-    await removeNote({ noteId: noteId as Id<"notes"> });
-    router.push("/notes");
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      await updateNote({
+        noteId: noteId as Id<"notes">,
+        title: titleRef.current,
+        body: bodyRef.current,
+      });
+    }
+    const result = await removeNote({ noteId: noteId as Id<"notes"> });
+    wasDeleted.current = true;
+    setUndoUntilMs(result.undoUntilMs);
+    window.history.replaceState(window.history.state, "", "/notes");
   };
 
-  if (note === undefined && isAuthenticated) {
+  const handleUndo = async () => {
+    const result = await restoreNote({ noteId: noteId as Id<"notes"> });
+    if (!result.success) return;
+    wasDeleted.current = false;
+    setConfirmingDelete(false);
+    window.history.replaceState(window.history.state, "", `/notes/${noteId}`);
+    setUndoUntilMs(null);
+    router.refresh();
+  };
+
+  const handleUndoExpire = () => {
+    // replaceState above changed the visible URL without changing Next's mounted route.
+    // A document navigation guarantees the deleted editor is unmounted on expiry.
+    window.location.replace("/notes");
+  };
+
+  if (undoUntilMs !== null) {
+    return (
+      <>
+        <NotesList />
+        <UndoDeleteToast
+          undoUntilMs={undoUntilMs}
+          onUndo={handleUndo}
+          onExpire={handleUndoExpire}
+        />
+      </>
+    );
+  }
+
+  const loadState = getNoteLoadState(note);
+
+  if (loadState === "loading" && isAuthenticated) {
     return (
       <main className="container mx-auto max-w-3xl px-6 py-12">
         <p className="text-muted-foreground">Loading note.</p>
@@ -237,78 +418,30 @@ function NoteEditor({ noteId }: { noteId: string }) {
     );
   }
 
-  if (note === null) {
-    return (
-      <main className="container mx-auto max-w-3xl px-6 py-12">
-        <div className="space-y-4">
-          <Link href="/notes" className="text-sm font-medium text-primary">
-            ← Back to notes
-          </Link>
-          <p className="text-lg font-medium text-foreground">This note could not be found.</p>
-        </div>
-      </main>
-    );
+  if (loadState === "not-found") {
+    return <NoteNotFound />;
   }
 
   return (
-    <main className="container mx-auto max-w-3xl px-6 py-12">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link href="/notes" className="text-sm font-medium text-primary">
-            ← Back to notes
-          </Link>
-          <div className="flex items-center gap-3">
-            <output
-              className={cn(
-                "text-sm text-muted-foreground",
-                saveState === "idle" && "invisible",
-              )}
-            >
-              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}
-            </output>
-            <Button type="button" variant="outline" onClick={() => void handleTogglePin()}>
-              {note?.pinned ? "Unpin" : "Pin"}
-            </Button>
-            {confirmingDelete ? (
-              <>
-                <Button type="button" variant="destructive" onClick={() => void handleDelete()}>
-                  Confirm delete
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setConfirmingDelete(false)}>
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button type="button" variant="outline" onClick={() => setConfirmingDelete(true)}>
-                Delete
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <label className="block space-y-2">
-          <span className="sr-only">Note title</span>
-          <input
-            aria-label="Note title"
-            value={title}
-            onChange={(event) => handleTitleChange(event.target.value)}
-            placeholder="Untitled note"
-            className="w-full border-none bg-transparent font-heading text-3xl font-semibold text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </label>
-
-        <label className="block space-y-2">
-          <span className="sr-only">Note body</span>
-          <textarea
-            aria-label="Note body"
-            value={body}
-            onChange={(event) => handleBodyChange(event.target.value)}
-            rows={16}
-            placeholder="Write whatever is on your mind."
-            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          />
-        </label>
-      </div>
-    </main>
+    <PageEditorView
+      key={note?._id ?? noteId}
+      noteId={noteId}
+      title={title}
+      initialBody={note?.body ?? body}
+      body={body}
+      remoteBody={remoteBody}
+      pinned={note?.pinned ?? false}
+      saveState={saveState}
+      confirmingDelete={confirmingDelete}
+      onTitleChange={handleTitleChange}
+      onBodyChange={handleBodyChange}
+      onTogglePin={() => void handleTogglePin()}
+      onAskDelete={() => setConfirmingDelete(true)}
+      onConfirmDelete={() => void handleDelete()}
+      onCancelDelete={() => setConfirmingDelete(false)}
+      backHref={backHref}
+      lead={lead}
+      canDelete={canDelete}
+    />
   );
 }

@@ -109,7 +109,7 @@ describe("TaskViews checklist leftover wiring", () => {
     );
     const tasks = readFileSync(join(import.meta.dir, "../../convex/tasks.ts"), "utf8");
 
-    expect(page).toContain('view="checklists"');
+    expect(page).toContain("ChecklistBoard");
     expect(screen).toContain("/tasks/checklists");
     expect(screen).toContain("parseChecklistText");
     expect(screen).toContain("Checklist steps");

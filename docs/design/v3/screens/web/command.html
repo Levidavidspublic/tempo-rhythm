@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command bar · Tempo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../tempo.css">
+<script src="../../tempo.js"></script>
+<style>
+  /* layout only — command.html */
+  .cmd.tp-slash-menu {
+    position: fixed; z-index: 71; inset-block-start: var(--tp-space-16); inset-block-end: auto;
+    inset-inline: var(--tp-space-3); margin-inline: auto; width: auto; max-width: calc(var(--tp-space-20) * 8);
+    max-height: min(72vh, calc(var(--tp-space-20) * 7)); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: var(--tp-space-2);
+  }
+  .cmd__head { display: flex; align-items: center; gap: var(--tp-space-2); }
+  .cmd__head .tp-search { flex: 1 1 auto; min-width: 0; }
+  .cmd__list { overflow-y: auto; min-height: 0; }
+  .cmd__foot { display: flex; flex-wrap: wrap; gap: var(--tp-space-1) var(--tp-space-4); }
+  .cmd__foot span { display: inline-flex; align-items: center; gap: var(--tp-space-1); }
+  .cmd-bg { display: grid; gap: var(--tp-space-3); }
+  @media (max-width: 767px) {
+    .cmd.tp-slash-menu { inset-block-start: var(--tp-space-3); inset-inline: var(--tp-space-2); max-height: calc(100dvh - var(--tp-space-6)); }
+    .cmd__foot { display: none; }
+  }
+</style>
+</head>
+<body>
+<!--
+@screen   Command bar
+@route    apps/web/app/(tempo)/command/page.tsx   (rendered as a dialog from any TempoShell screen; this route opens it over the last page)
+@layout   TempoShell
+@data     recent = pages.listRecent({ limit: 4 })                            // Convex query: pages and chats opened lately
+@data     jumpTargets = static (Today, Tasks, Calendar, Coach, Notes, Templates, Search, Settings)
+@data     matches = search.quick({ text, limit: 6 })                         // Convex query: page titles while typing (words only, fast)
+@actions  open a result -> router.push(href)                                 // closes the bar
+@actions  new page -> pages.create({})  then router.push("/notes/[id]")
+@actions  add a task -> open the task sheet (tasks.create on save)
+@actions  switch theme / reading font -> profiles.updatePrefs({ theme | dyslexiaFont })   // optimistic
+@actions  search everything -> router.push("/search?q=[text]")
+@states   default | empty | loading | error | offline  (?state=)   empty = no recent pages yet
+@flow     1. Ctrl K (Cmd K on Mac) or the rail's "Search or jump to" opens a glass dialog over the current page. Focus goes to the box.
+          2. Groups: Recent, Jump to, Actions. Typing filters all three; the last row always offers "Search everything for …".
+          3. Keys: Up / Down move (wrapping), Home / End jump, Enter opens, Esc closes and returns focus to where she was. Tab stays inside.
+          4. The box is a combobox; the list is a listbox with aria-activedescendant, so screen readers hear each row and its group.
+          5. Nothing in the bar deletes anything. Theme and reading font change at once and can be switched back the same way.
+          6. Empty: no recent pages, a short hint instead. Loading: recent rows shimmer; jump and actions work at once.
+             Error: recent pages couldn't load, the rest still works. Offline: a note that search covers this device only.
+@i18n     en, he
+-->
+<a class="tp-skip" href="#cmd-q" data-i18n="skip">Skip to the command box</a>
+
+<!-- @component TempoShell | shadcn: sidebar (SidebarProvider) | props: { coach: closed, rail: closed } | events: toggle-rail, scrim -->
+<div class="tp-app" data-component="TempoShell" id="cmd-behind">
+
+  <!-- @component Sidebar | shadcn: sidebar (SidebarProvider) | props: { pages: PageNode[], current: 'weekend-reset' } | events: onNavigate -> link -->
+  <nav class="tp-rail" data-component="Sidebar" aria-label="Pages" data-i18n-attr="aria-label:rail.label">
+    <div class="tp-rail__brand"><span class="tp-rail__mark" aria-hidden="true">T</span><span>Tempo</span></div>
+    <!-- @component CommandTrigger | shadcn: command in dialog | props: — | events: onOpen -> Ctrl K -->
+    <button class="tp-btn tp-btn--secondary tp-rail__search" type="button" id="cmd-open" data-component="CommandTrigger" aria-haspopup="dialog" aria-controls="cmd" aria-expanded="true">
+      <svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg>
+      <span data-i18n="rail.search">Search or jump to</span>
+      <kbd class="tp-kbd tp-num">Ctrl K</kbd>
+    </button>
+    <div class="tp-rail__group">
+      <!-- @component PageTree | shadcn: sidebar + collapsible | props: { pages: {href,label,icon}[], current } | events: link -->
+      <ul class="tp-tree" role="list" data-component="PageTree">
+        <li><a class="tp-tree-item" href="today.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.today">Today</span></a></li>
+        <li><a class="tp-tree-item" href="brain-dump.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.inbox">Inbox</span></a></li>
+        <li><a class="tp-tree-item" href="coach.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.coach">Coach</span></a></li>
+        <li><a class="tp-tree-item" href="page-editor.html" aria-current="page"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.weekend">Weekend reset</span></a></li>
+        <li><a class="tp-tree-item" href="templates.html"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
+    </div>
+    <div class="tp-rail__foot">
+      <button class="tp-tree-item" type="button" data-action="toggle-dyslexia" aria-pressed="false"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.dyslexia">Reading font</span></button>
+      <a class="tp-tree-item" href="#"><span class="tp-tree-item__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-settings"/></svg></span><span class="tp-tree-item__label" data-i18n="nav.settings">Settings</span></a>
+    </div>
+  </nav>
+
+  <!-- @component Topbar | shadcn: breadcrumb | props: { crumbs: ['Moving flat','Weekend reset'] } | events: onToggleTheme, onToggleRail -->
+  <header class="tp-topbar tp-glass" data-component="Topbar">
+    <button class="tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu" type="button" data-action="toggle-rail" aria-expanded="false" aria-label="Open pages" data-i18n-attr="aria-label:top.menu"><svg class="tp-icon" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <div class="tp-topbar__crumbs">
+      <span class="tp-topbar__hide-sm" data-i18n="nav.moving">Moving flat</span>
+      <svg class="tp-icon tp-icon--sm tp-icon--flip tp-topbar__hide-sm" aria-hidden="true"><use href="#i-chevron"/></svg>
+      <strong data-i18n="nav.weekend">Weekend reset</strong>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" id="cmd-open-top" aria-haspopup="dialog" aria-controls="cmd" aria-label="Search or jump to (Ctrl K)" data-i18n-attr="aria-label:top.cmd"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></button>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="Dark theme" data-i18n-attr="aria-label:top.theme"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></button>
+    <!-- @component Avatar | shadcn: avatar | props: { initials: 'MR', name: 'Maya Ronen' } | events: — -->
+    <span class="tp-avatar" role="img" aria-label="Maya Ronen" data-i18n-attr="aria-label:top.avatar" data-component="Avatar">MR</span>
+  </header>
+
+  <!-- The page behind the bar (the last page Maya had open) -->
+  <main class="tp-app__main" id="main" tabindex="-1">
+    <!-- @component Page | shadcn: — | props: { page: {title, blocks[]} } | events: — (behind the dialog, inert while it is open) -->
+    <article class="tp-paper" data-component="Page" aria-labelledby="bg-title">
+      <div class="tp-page-cover" aria-hidden="true"></div>
+      <div class="tp-page__body cmd-bg">
+        <div class="tp-page-icon" aria-hidden="true"><svg class="tp-icon"><use href="#i-box"/></svg></div>
+        <h1 class="tp-page-title" id="bg-title" data-i18n="nav.weekend">Weekend reset</h1>
+        <p dir="auto" data-i18n="bg.p1">Saturday is for small, visible wins. Nothing heroic.</p>
+        <h2 class="tp-h2" data-i18n="bg.h">Kitchen</h2>
+        <p dir="auto" data-i18n="bg.p2">Clear the counter, run the dishwasher, wipe the fridge shelves.</p>
+      </div>
+    </article>
+  </main>
+  <div class="tp-toast-region" aria-live="polite"></div>
+</div>
+
+<!-- ===== Command palette (glass, floating) ===== -->
+<div class="tp-sheet-scrim" id="cmd-scrim" aria-hidden="true"></div>
+
+<!-- @component CommandPalette | shadcn: command in dialog | props: { recent: Page[], jump: Target[], actions: Action[], query } | events: onSelect -> router.push / action, onClose -> focus return -->
+<div class="tp-slash-menu tp-glass cmd" id="cmd" role="dialog" aria-modal="true" aria-labelledby="cmd-title" data-component="CommandPalette">
+  <h2 class="tp-sr-only" id="cmd-title" data-i18n="cmd.title">Search or jump to</h2>
+  <div class="cmd__head">
+    <!-- @component SearchInput | shadcn: input (+ command) | props: { label, placeholder } | events: onInput -> search.quick -->
+    <div class="tp-search" data-component="SearchInput">
+      <label class="tp-label tp-sr-only" for="cmd-q" data-i18n="cmd.label">Type a page, a place or an action</label>
+      <div class="tp-search__box"><span class="tp-search__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-search"/></svg></span><input class="tp-input" id="cmd-q" type="text" dir="auto" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="cmd-list" aria-autocomplete="list" aria-activedescendant="c-r1" placeholder="Type a page, a place or an action" data-i18n-attr="placeholder:cmd.label"></div>
+    </div>
+    <button class="tp-btn tp-btn--ghost tp-btn--icon" type="button" id="cmd-close" aria-label="Close" data-i18n-attr="aria-label:cmd.close"><svg class="tp-icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
+
+  <!-- @component StateOffline | shadcn: alert | props: { text } | events: — -->
+  <div class="tp-notice tp-offline" data-tone="caution" role="status" data-component="StateOffline" data-state-show="offline"><span class="tp-notice__icon"><svg class="tp-icon tp-icon--sm" aria-hidden="true"><use href="#i-wifi-off"/></svg></span><span class="tp-notice__text"><span data-i18n="st.offline">You're offline. Jumping works; search covers this device only.</span></span></div>
+
+  <!-- @component SlashMenu | shadcn: command (CommandList) | props: { groups: {name, items: {id,name,hint,icon,href|action}[]}[] } | events: arrows, Home/End, Enter -> select, Esc -> close -->
+  <div class="cmd__list" role="listbox" id="cmd-list" aria-label="Results" data-i18n-attr="aria-label:cmd.list" data-component="SlashMenu">
+
+    <div role="group" aria-labelledby="cg-recent" data-group="recent">
+      <div class="tp-slash-menu__group" id="cg-recent" data-i18n="g.recent">Recent</div>
+      <div data-state-hide>
+        <div class="tp-slash-item" role="option" id="c-r1" aria-selected="true" data-href="page-editor.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" dir="auto" data-i18n="nav.weekend">Weekend reset</span><span class="tp-slash-item__hint" data-i18n="r1.h">Page · open now</span></span><span></span></div>
+        <div class="tp-slash-item" role="option" id="c-r2" aria-selected="false" data-href="weekly-page.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-page"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" dir="auto" data-i18n="r2">Week 42</span><span class="tp-slash-item__hint" data-i18n="r2.h">Weekly page · this morning</span></span><span></span></div>
+        <div class="tp-slash-item" role="option" id="c-r3" aria-selected="false" data-href="coach-thread.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" dir="auto" data-i18n="r3">Planning the moving week</span><span class="tp-slash-item__hint" data-i18n="r3.h">Coach chat · yesterday</span></span><span></span></div>
+      </div>
+      <!-- empty: no recent pages yet -->
+      <p class="tp-slash-item__hint" data-state-show="empty" data-i18n="recent.empty">Pages you open will show up here.</p>
+      <!-- loading -->
+      <div class="tp-skel-list" role="status" data-state-show="loading"><span class="tp-sr-only" data-i18n="recent.loading">Loading recent pages</span><div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w60"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div><div class="tp-skel-row"><span class="tp-skeleton tp-skel-row__box"></span><span class="tp-skel-row__lines"><span class="tp-skeleton tp-skeleton--w80"></span><span class="tp-skeleton tp-skeleton--sm tp-skeleton--w40"></span></span></div></div>
+      <!-- error -->
+      <p class="tp-slash-item__hint" role="alert" data-state-show="error" data-i18n="recent.error">Couldn't load recent pages. Your data is safe, and everything below still works.</p>
+    </div>
+
+    <div role="group" aria-labelledby="cg-jump" data-group="jump">
+      <div class="tp-slash-menu__group" id="cg-jump" data-i18n="g.jump">Jump to</div>
+      <div class="tp-slash-item" role="option" id="c-j1" aria-selected="false" data-href="today.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-today"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="nav.today">Today</span><span class="tp-slash-item__hint" data-i18n="j1.h">Your plan for Monday 12 October</span></span><kbd class="tp-kbd">G T</kbd></div>
+      <div class="tp-slash-item" role="option" id="c-j2" aria-selected="false" data-href="tasks.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-checklist"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="j2">Tasks</span><span class="tp-slash-item__hint" data-i18n="j2.h">Everything you might do</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-j3" aria-selected="false" data-href="calendar.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-calendar-grid"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="j3">Calendar</span><span class="tp-slash-item__hint" data-i18n="j3.h">Month, week and day</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-j4" aria-selected="false" data-href="coach.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-coach"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="nav.coach">Coach</span><span class="tp-slash-item__hint" data-i18n="j4.h">Talk something through</span></span><kbd class="tp-kbd tp-num">Ctrl J</kbd></div>
+      <div class="tp-slash-item" role="option" id="c-j5" aria-selected="false" data-href="templates.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-template"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="nav.templates">Templates</span><span class="tp-slash-item__hint" data-i18n="j5.h">Pages you start from</span></span><span></span></div>
+    </div>
+
+    <div role="group" aria-labelledby="cg-act" data-group="act">
+      <div class="tp-slash-menu__group" id="cg-act" data-i18n="g.act">Actions</div>
+      <div class="tp-slash-item" role="option" id="c-a1" aria-selected="false" data-href="new-page.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-plus"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="a1">New page</span><span class="tp-slash-item__hint" data-i18n="a1.h">Blank, or from a template</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-a2" aria-selected="false" data-href="task-sheet.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-task"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="a2">Add a task</span><span class="tp-slash-item__hint" data-i18n="a2.h">Goes to your inbox unless you pick a day</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-a3" aria-selected="false" data-href="brain-dump.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-inbox"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="a3">Brain dump</span><span class="tp-slash-item__hint" data-i18n="a3.h">Get it all out, sort later</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-a4" aria-selected="false" data-href="voice-call.html"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-phone"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="a4">Call the coach</span><span class="tp-slash-item__hint" data-i18n="a4.h">Talk out loud instead of typing</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-a5" aria-selected="false" data-do="theme"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-moon"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="a5">Switch light or dark</span><span class="tp-slash-item__hint" data-i18n="a5.h">Changes at once</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-a6" aria-selected="false" data-do="font"><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-type"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name" data-i18n="a6">Reading font on or off</span><span class="tp-slash-item__hint" data-i18n="a6.h">A font made for easier reading</span></span><span></span></div>
+      <div class="tp-slash-item" role="option" id="c-all" aria-selected="false" data-href="search.html" data-always><span class="tp-slash-item__icon"><svg class="tp-icon" aria-hidden="true"><use href="#i-search"/></svg></span><span class="tp-slash-item__text"><span class="tp-slash-item__name"><span data-i18n="all">Search everything</span> <q dir="auto" id="cmd-all-q" hidden></q></span><span class="tp-slash-item__hint" data-i18n="all.h">Pages, tasks and chats, by meaning and words</span></span><span></span></div>
+    </div>
+  </div>
+
+  <p class="tp-sr-only" role="status" id="cmd-status"></p>
+
+  <div class="tp-slash-menu__search cmd__foot" aria-hidden="true">
+    <span><kbd class="tp-kbd">↑</kbd><kbd class="tp-kbd">↓</kbd> <span data-i18n="f.move">move</span></span>
+    <span><kbd class="tp-kbd">Enter</kbd> <span data-i18n="f.open">open</span></span>
+    <span><kbd class="tp-kbd">Esc</kbd> <span data-i18n="f.close">close</span></span>
+  </div>
+</div>
+
+<script>
+window.TP_STRINGS = {
+  en: { "st.count": "{n} results", "st.closed": "Command bar closed", "state.retried": "Loaded." },
+  he: {
+    "doc.title": "שורת פקודות · Tempo",
+    "skip": "דלגו לתיבת הפקודות", "rail.label": "דפים", "rail.search": "חיפוש או מעבר אל",
+    "nav.today": "היום", "nav.inbox": "תיבת קליטה", "nav.coach": "מאמן", "nav.weekend": "איפוס סוף שבוע", "nav.templates": "תבניות",
+    "nav.moving": "מעבר דירה", "nav.dyslexia": "גופן קריאה", "nav.settings": "הגדרות",
+    "top.menu": "פתיחת הדפים", "top.cmd": "חיפוש או מעבר אל (Ctrl K)", "top.theme": "ערכת צבעים כהה", "top.avatar": "מאיה רונן",
+    "bg.p1": "שבת היא לניצחונות קטנים ונראים. בלי גבורה.", "bg.h": "מטבח", "bg.p2": "לפנות את השיש, להפעיל את המדיח, לנגב את מדפי המקרר.",
+    "cmd.title": "חיפוש או מעבר אל", "cmd.label": "הקלידי דף, מקום או פעולה", "cmd.close": "סגירה", "cmd.list": "תוצאות",
+    "st.offline": "אין חיבור כרגע. המעבר בין מסכים עובד; החיפוש מכסה רק את מה שבמכשיר.",
+    "g.recent": "אחרונים", "r1.h": "דף · פתוח עכשיו", "r2": "שבוע 42", "r2.h": "דף שבועי · הבוקר", "r3": "תכנון שבוע המעבר", "r3.h": "שיחה עם המאמן · אתמול",
+    "recent.empty": "דפים שתפתחי יופיעו כאן.", "recent.loading": "טוען דפים אחרונים",
+    "recent.error": "לא הצלחנו לטעון את הדפים האחרונים. המידע שלך שמור, וכל מה שלמטה עדיין עובד.",
+    "g.jump": "מעבר אל", "j1.h": "התוכנית שלך ליום שני, 12 באוקטובר", "j2": "משימות", "j2.h": "כל מה שאולי תעשי", "j3": "לוח שנה", "j3.h": "חודש, שבוע ויום",
+    "j4.h": "לדבר על משהו", "j5.h": "דפים להתחיל מהם",
+    "g.act": "פעולות", "a1": "דף חדש", "a1.h": "ריק, או מתבנית", "a2": "הוספת משימה", "a2.h": "נכנסת לתיבת הקליטה אלא אם בוחרים יום",
+    "a3": "פריקת מחשבות", "a3.h": "להוציא הכל, למיין אחר כך", "a4": "שיחה קולית עם המאמן", "a4.h": "לדבר בקול במקום להקליד",
+    "a5": "מעבר בין בהיר לכהה", "a5.h": "משתנה מיד", "a6": "גופן קריאה, הפעלה או כיבוי", "a6.h": "גופן שנועד לקריאה קלה יותר",
+    "all": "חיפוש בכל מקום", "all.h": "דפים, משימות ושיחות, לפי משמעות ומילים",
+    "f.move": "מעבר", "f.open": "פתיחה", "f.close": "סגירה",
+    "st.count": "{n} תוצאות", "st.closed": "שורת הפקודות נסגרה", "state.retried": "נטען."
+  }
+};
+
+/* Screen behaviour: a full keyboard combobox + listbox in a modal dialog. tempo.js slash handling is bypassed on purpose. */
+TP.onReady2 = function () {
+  var dlg = document.getElementById("cmd"), scrim = document.getElementById("cmd-scrim"), behind = document.getElementById("cmd-behind");
+  var input = document.getElementById("cmd-q"), list = document.getElementById("cmd-list"), status = document.getElementById("cmd-status");
+  var allQ = document.getElementById("cmd-all-q"), opener = document.getElementById("cmd-open");
+
+  function visible() { return Array.prototype.filter.call(list.querySelectorAll('[role="option"]'), function (o) { return !o.hidden && o.offsetParent !== null; }); }
+  function select(opt) {
+    list.querySelectorAll('[role="option"]').forEach(function (o) { o.setAttribute("aria-selected", String(o === opt)); });
+    if (opt) { input.setAttribute("aria-activedescendant", opt.id); opt.scrollIntoView({ block: "nearest" }); }
+    else input.removeAttribute("aria-activedescendant");
+  }
+  function current() { return list.querySelector('[role="option"][aria-selected="true"]'); }
+
+  /** Filter — REAL: convex search.quick({ text, limit: 6 }) for page titles; jump + actions filter locally. STATE: rows, groups, count. */
+  function filter() {
+    var text = input.value.trim().toLowerCase();
+    list.querySelectorAll('[role="option"]').forEach(function (o) {
+      o.hidden = !o.hasAttribute("data-always") && !!text && o.textContent.toLowerCase().indexOf(text) < 0;
+    });
+    list.querySelectorAll("[data-group]").forEach(function (g) { g.hidden = !g.querySelector('[role="option"]:not([hidden])') && !!text; });
+    allQ.hidden = !text; allQ.textContent = input.value.trim();
+    var v = visible(); select(v[0] || null);
+    status.textContent = TP.t("st.count").replace("{n}", v.length);
+  }
+
+  /** Choose — REAL: router.push(href), or profiles.updatePrefs({ theme | dyslexiaFont }). STATE: dialog closes. */
+  function choose(opt) {
+    if (!opt) return;
+    var act = opt.getAttribute("data-do");
+    if (act === "theme") { TP.setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"); close(); return; }
+    if (act === "font") { TP.setDyslexia(document.documentElement.getAttribute("data-dyslexia") !== "on"); close(); return; }
+    var href = opt.getAttribute("data-href");
+    if (opt.id === "c-all" && input.value.trim()) href += "?q=" + encodeURIComponent(input.value.trim());
+    location.href = href + (href.indexOf("?") > -1 ? "&" : "?") + location.search.replace(/^\?/, "");
+  }
+
+  function open(from) {
+    opener = from || opener; dlg.hidden = false; scrim.hidden = false; behind.inert = true;
+    document.querySelectorAll("[aria-controls='cmd']").forEach(function (b) { b.setAttribute("aria-expanded", "true"); });
+    input.value = ""; filter(); input.focus();
+  }
+  function close() {
+    dlg.hidden = true; scrim.hidden = true; behind.inert = false;
+    document.querySelectorAll("[aria-controls='cmd']").forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
+    status.textContent = TP.t("st.closed");
+    if (opener) opener.focus();
+  }
+
+  input.addEventListener("input", filter);
+  input.addEventListener("keydown", function (e) {
+    var v = visible(), i = v.indexOf(current());
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (v.length) select(v[(i + (e.key === "ArrowDown" ? 1 : -1) + v.length) % v.length]); }
+    else if ((e.key === "Home" || e.key === "End") && e.ctrlKey === false && input.value === "") { e.preventDefault(); select(e.key === "Home" ? v[0] : v[v.length - 1]); }
+    else if (e.key === "Enter") { e.preventDefault(); choose(current()); }
+    else if (e.key === "Escape") { e.preventDefault(); close(); }
+    else return;
+    e.stopPropagation(); /* keep tempo.js slash-menu keys out of this listbox */
+  });
+  /* Tab stays inside the dialog: the box and the Close button. */
+  dlg.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
+    if (e.key !== "Tab") return;
+    var closeBtn = document.getElementById("cmd-close");
+    e.preventDefault(); (document.activeElement === input ? closeBtn : input).focus();
+  });
+  list.addEventListener("mousemove", function (e) { var o = e.target.closest('[role="option"]'); if (o && o !== current()) select(o); });
+  list.addEventListener("click", function (e) {
+    e.stopPropagation(); /* tempo.js would treat this as a slash-menu insert */
+    var o = e.target.closest('[role="option"]'); if (o) { select(o); choose(o); }
+  });
+  document.getElementById("cmd-close").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+  document.getElementById("cmd-open").addEventListener("click", function (e) { open(e.currentTarget); });
+  document.getElementById("cmd-open-top").addEventListener("click", function (e) { open(e.currentTarget); });
+  /** Ctrl K / Cmd K anywhere. */
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); dlg.hidden ? open(document.activeElement) : close(); }
+  });
+
+  open(opener);
+};
+</script>
+</body>
+</html>

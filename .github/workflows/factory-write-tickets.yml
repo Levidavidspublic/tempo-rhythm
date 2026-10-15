@@ -18,10 +18,10 @@ on:
         required: true
         type: string
       size:
-        description: Tickets in the batch (3 = 3 components, no data; 9 = 1 data + 8; 15 = 1 data + 14)
+        description: Tickets in the batch (3 = 3 components, no data; 9..15 = one loop = ticket 0 (data) + 8..14 components, factory/LOOP.md)
         required: true
         type: choice
-        options: ["3", "9", "15"]
+        options: ["3", "9", "10", "11", "12", "13", "14", "15"]
         default: "9"
       hold:
         description: Set hold true on every component ticket (stress-test batch)
@@ -49,8 +49,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  write:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
     if: (vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true)
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-write-tickets (new ticket batch)"
+  write:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && inputs.force == true))
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -129,9 +136,10 @@ jobs:
           BATCH: ${{ inputs.batch_id }}
           SIZE: ${{ inputs.size }}
           HOLD: ${{ inputs.hold }}
+          LANES: ${{ vars.FACTORY_LOOP_LANES || 'claude,codex,cursor' }}
         run: |
           git fetch origin "tickets/$BATCH" integration || { echo "::error::branch tickets/$BATCH was not pushed"; exit 1; }
           git checkout -q "origin/tickets/$BATCH"
           git diff --name-only origin/integration...HEAD > changed.txt
-          node scripts/factory/validate-tickets.mjs --batch "$BATCH" --size "$SIZE" $([ "$HOLD" = true ] && echo --hold) --changed changed.txt
+          node scripts/factory/validate-tickets.mjs --batch "$BATCH" --size "$SIZE" $([ "$HOLD" = true ] && echo --hold) --changed changed.txt --lanes "$LANES"
           gh pr list --head "tickets/$BATCH" --base integration --state open --json number,title,url,labels,author >> "$GITHUB_STEP_SUMMARY"

@@ -29,7 +29,7 @@ test.describe("notes save race", () => {
 
     await page.reload();
     await expect(page.getByLabel("Note title")).toHaveValue(noteTitle);
-    await expect(page.getByLabel("Note body")).toHaveValue(noteBody);
+    await expect(page.getByLabel("Note body")).toHaveText(noteBody);
 
     await page.getByRole("link", { name: "← Back to notes" }).click();
     await expect(page.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();

@@ -29,6 +29,13 @@ describe("newUserFields", () => {
   it("never emits an undefined value", () => {
     expect(undefinedKeys(newUserFields({ email: "a@b.com" }, NOW))).toEqual([]);
   });
+
+  it("does not store the placeholder name User", () => {
+    const fields = newUserFields({ email: "a@b.com" }, NOW);
+    expect("fullName" in fields).toBe(false);
+    const placeholder = newUserFields({ email: "a@b.com", fullName: "User" }, NOW);
+    expect("fullName" in placeholder).toBe(false);
+  });
 });
 
 describe("buildReturningUserPatch", () => {
@@ -74,6 +81,13 @@ describe("buildReturningUserPatch", () => {
     // Sign-in #3, because signing in once proves nothing.
     account = { ...account, ...buildReturningUserPatch(account, PROFILE, NOW + 2000) };
     expect(account.entitlementTier).toBe(GRANTED_ENTITLEMENT_TIER);
+  });
+
+  it("keeps a real name and omits a missing one", () => {
+    expect(buildReturningUserPatch({}, PROFILE, NOW).fullName).toBe("Someone");
+    const patch = buildReturningUserPatch({}, { email: "a@b.com", fullName: "User" }, NOW);
+    expect("fullName" in patch).toBe(false);
+    expect(undefinedKeys(patch)).toEqual([]);
   });
 
   it("does not stomp a real billing downgrade back to paid", () => {

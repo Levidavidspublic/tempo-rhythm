@@ -1,8 +1,9 @@
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { isInactiveAccount, softDeleteUserAccount } from "./lib/accountDeletion";
+import { initialApprovalStatus } from "./lib/approval";
 import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
 import { requireUser, resolveUserFromIdentity } from "./lib/requireUser";
 import { assertClientMaySetUserType } from "./lib/subscriptionGuards";
@@ -26,17 +27,50 @@ export const getCurrentUser = query({
   handler: async (ctx) => fetchCurrentUser(ctx),
 });
 
+const PLACEHOLDER_NAME = "User";
+
+/** Profile name, else the email prefix, else a calm fallback. Never the placeholder "User". */
+function greetingNameFor(user: { fullName?: string; email?: string }): string {
+  const name = user.fullName?.trim();
+  if (name && name !== PLACEHOLDER_NAME) {
+    return name;
+  }
+  const prefix = user.email?.split("@")[0]?.trim();
+  if (prefix) {
+    return prefix;
+  }
+  return "there";
+}
+
+function identityDisplayName(identity: {
+  name?: string | null;
+  nickname?: string | null;
+}): string | undefined {
+  const raw = (identity.name || identity.nickname || "").trim();
+  if (!raw || raw === PLACEHOLDER_NAME) {
+    return undefined;
+  }
+  return raw;
+}
+
+async function dropPlaceholderFullName(ctx: MutationCtx, userId: Id<"users">): Promise<void> {
+  const row = await ctx.db.get(userId);
+  const current = row?.fullName?.trim();
+  if (!row || (current && current !== PLACEHOLDER_NAME)) {
+    return;
+  }
+  await ctx.db.patch(userId, { fullName: undefined });
+}
+
 /** Profile for dashboard greeting and header; extends user with `greetingName`. */
 export const getProfile = query({
   args: {},
   handler: async (ctx) => {
     const user = await fetchCurrentUser(ctx);
     if (!user) return null;
-    const greetingName =
-      user.fullName?.trim() || user.email?.split("@")[0] || "there";
     return {
       ...user,
-      greetingName,
+      greetingName: greetingNameFor(user),
     };
   },
 });
@@ -86,11 +120,12 @@ export const createOrUpdateUser = mutation({
 
     const email = identity.email ?? "";
     const now = Date.now();
+    const fullName = identityDisplayName(identity);
 
     const profile = {
       email,
       emailVerified: identity.emailVerified ?? false,
-      fullName: identity.name || identity.nickname || "User",
+      ...(fullName ? { fullName } : {}),
     };
 
     const existing = await ctx.db
@@ -110,10 +145,20 @@ export const createOrUpdateUser = mutation({
       // `role`, and must never write `userType` unconditionally - that was
       // the downgrade.
       await ctx.db.patch(existing._id, buildReturningUserPatch(existing, profile, now));
+      if (!fullName) {
+        await dropPlaceholderFullName(ctx, existing._id);
+      }
       return existing._id;
     }
 
-    return ctx.db.insert("users", newUserFields(profile, now));
+    const userId = await ctx.db.insert(
+      "users",
+      newUserFields(profile, now, initialApprovalStatus(profile.email)),
+    );
+    if (!fullName) {
+      await dropPlaceholderFullName(ctx, userId);
+    }
+    return userId;
   },
 });
 
@@ -198,5 +243,121 @@ export const deleteMyAccount = mutation({
     const user = await requireUser(ctx);
     const { deletedCount } = await softDeleteUserAccount(ctx, user._id);
     return { success: true, deletedCount };
+  },
+});
+
+export const updateMyProfile = mutation({
+  args: { fullName: v.string() },
+  returns: v.id("users"),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const fullName = args.fullName.trim();
+    if (!fullName) {
+      throw new Error("Name is required");
+    }
+    await ctx.db.patch(user._id, { fullName, updatedAt: Date.now() });
+    return user._id;
+  },
+});
+
+export const completeOnboarding = mutation({
+  args: { fullName: v.optional(v.string()) },
+  returns: v.object({ onboardedAt: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const fullName = args.fullName?.trim();
+    const now = Date.now();
+    if (user.onboardedAt !== undefined) {
+      if (fullName) {
+        await ctx.db.patch(user._id, { fullName, updatedAt: now });
+      }
+      return { onboardedAt: user.onboardedAt };
+    }
+    await ctx.db.patch(user._id, {
+      onboardedAt: now,
+      updatedAt: now,
+      ...(fullName ? { fullName } : {}),
+    });
+    return { onboardedAt: now };
+  },
+});
+
+const subscriptionPlanValidator = v.union(
+  v.literal("none"),
+  v.literal("trial"),
+  v.literal("basic"),
+  v.literal("pro"),
+  v.literal("max"),
+);
+
+const subscriptionStatusValidator = v.union(
+  v.literal("inactive"),
+  v.literal("active"),
+  v.literal("grace"),
+  v.literal("cancelled"),
+);
+
+const myPlanValidator = v.object({
+  plan: subscriptionPlanValidator,
+  status: subscriptionStatusValidator,
+  label: v.string(),
+  betaAccess: v.union(v.literal("none"), v.literal("tester"), v.literal("founder")),
+  entitlementTier: v.union(
+    v.literal("none"),
+    v.literal("basic"),
+    v.literal("pro"),
+    v.literal("max"),
+    v.literal("god"),
+  ),
+  userType: v.union(v.literal("free"), v.literal("paid")),
+  isBeta: v.boolean(),
+});
+
+function planLabel(
+  betaAccess: "none" | "tester" | "founder",
+  plan: "none" | "trial" | "basic" | "pro" | "max",
+  status: "inactive" | "active" | "grace" | "cancelled",
+): string {
+  if (betaAccess === "founder") {
+    return "Founder";
+  }
+  if (betaAccess === "tester") {
+    return "Beta tester";
+  }
+  if (status === "active" || status === "grace") {
+    if (plan === "trial") return "Trial";
+    if (plan === "basic") return "Basic";
+    if (plan === "pro") return "Pro";
+    if (plan === "max") return "Max";
+  }
+  return "Free";
+}
+
+export const getMyPlan = query({
+  args: {},
+  returns: v.union(myPlanValidator, v.null()),
+  handler: async (ctx) => {
+    const user = await fetchCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+    const subscription = await ctx.db
+      .query("subscriptionStates")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    const plan = subscription?.plan ?? "none";
+    const status = subscription?.status ?? "inactive";
+    const betaAccess = user.betaAccess ?? "none";
+    const entitlementTier = user.entitlementTier ?? "none";
+    const userType = user.userType ?? "free";
+    return {
+      plan,
+      status,
+      label: planLabel(betaAccess, plan, status),
+      betaAccess,
+      entitlementTier,
+      userType,
+      isBeta: betaAccess === "tester" || betaAccess === "founder",
+    };
   },
 });
