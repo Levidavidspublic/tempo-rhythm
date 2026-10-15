@@ -66,7 +66,11 @@ jobs:
   set-approval:
     name: Set approval of a synthetic test account (test ceaseless-dog-617)
     # Must be dispatched on integration: the workflow file that runs (and holds the key) is the reviewed copy.
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration'
+    # Only Amit (Division6066) may run it, on reruns too: write access alone can dispatch a workflow,
+    # and this one approves accounts on the test deployment (Codex P1 on #892).
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration' &&
+      github.actor == 'Division6066' && github.triggering_actor == 'Division6066'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -75,6 +79,15 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Amit only (fail closed, env only)
+        env:
+          ACTOR: ${{ github.actor }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+        run: |
+          if [ "$ACTOR" != "Division6066" ] || [ "$TRIGGERING_ACTOR" != "Division6066" ]; then
+            echo "::error::Only Amit (Division6066) may run this workflow (actor=$ACTOR, triggering_actor=$TRIGGERING_ACTOR)."
+            exit 1
+          fi
       - name: Refuse to run unless dispatched on integration (fail closed, env only)
         env:
           RUN_REF: ${{ github.ref }}
