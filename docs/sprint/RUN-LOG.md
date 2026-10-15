@@ -18,11 +18,12 @@ If this session restarts: read this file and continue from the first unchecked i
 
 **Usable BETA on preview by Sunday 18 October:** every loop below proven 5 times in a row, plus every signed-in screen clicked through with no page errors at 390 and 1280 px, light and dark, en and he. Run `node e2e/alpha/run.mjs --times 5` after each merge. Same merge gate, stop codes and final report.
 
-**Status, 2026-10-15 10:20 UTC: met on preview `f1bfacd`.**
-- L1 to L5: each 5/5 in a row, with the crisis card on every pass.
-- Sweep: 432 renders of 54 signed-in routes, 0 failing, at 390 and 1280 px, light and dark, en and he.
-- Repeated after sandbox network drops: 3 loop attempts and 1 render. Each is listed in Results.
-- Still open: the PRs that make L4/L5 sturdier as the shared account grows, and voice web (#948). The loops rerun after each of those merges.
+**Status, 2026-10-15 14:40 UTC: met again on preview `d8bb4fc`, after every PR of the owner's 13:06 list and the follow-ups merged.**
+- L1 to L5: each 5/5 in a row, with the crisis card on every pass, all on `d8bb4fc` (14:30-14:36).
+- Sweep: 432 renders of 54 signed-in routes, 0 failing, at 390 and 1280 px, light and dark, en and he (14:36-14:40).
+- Repeated after sandbox network drops: 2 L5 attempts. Each is listed in Results.
+- First met on `f1bfacd` at 10:20. Since then: #948 (voice web), #953-#962 (loop reliability, coach card outcomes, decision titles), #960-#961 (harness and coach follow-ups).
+- Still open: #963 (voice-call robustness, waiting for CodeRabbit's re-review) and the chat-first redesign (not landed yet).
 
 Owner answers (2026-10-15):
 1. Sign-in: the synthetic approved account through #892 (approval) and #897 (preview acceptance). No guest sign-in on preview.
@@ -198,6 +199,8 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 14:05 | #963 | voice | opened (ready): now that voice is live, the #948 points that can be hit: a replaced call (another tab's Talk) checks its lease before each spoken turn and ends instead of sending twice (Codex P1); a failed send says "Not sent. Say it again." in the call (CodeRabbit Minor); a recorder error or unasked stop ends the call (Codex P2); spoken turns use the page open now (Codex P2). All 7 checks pass (2261 tests). Left open: bind playback to the saved reply's id (needs `coach.reply` to return it) | [#963](https://github.com/Levidavidspublic/tempo-rhythm/pull/963) |
 | 14:23 | CodeRabbit gate | — | **#960**: no actionable comments, minimal risk, CI green → auto-merge. **#961** on `6da918d`: no actionable comments, minimal risk (an earlier Minor on "your plan" answered: stays), CI green → auto-merge. **#963**: 1 Major (a ref written during render could point a live call at a page that never went on screen) + 1 Minor (a turn could still go out after the call ended mid-check), both fixed in `137758f`; Codex P1 (lease check not atomic with the message write) answered: the window is now one round trip, and closing it needs a backend change, logged below | [#960](https://github.com/Levidavidspublic/tempo-rhythm/pull/960), [#961](https://github.com/Levidavidspublic/tempo-rhythm/pull/961), [#963](https://github.com/Levidavidspublic/tempo-rhythm/pull/963) |
 | 14:28 | #960, #961 | L4, L5 | **merged**: #960 `73c065d`, #961 `d8bb4fc`; preview serves `d8bb4fc`. #963 pushed `137758f` (all 7 checks pass; a first typecheck run failed only on a truncated `.next/dev/types/validator.ts` left by the previous e2e dev server, and passed once that generated folder was removed). No `docs/design/chat-first/` PR yet | [#960](https://github.com/Levidavidspublic/tempo-rhythm/pull/960), [#961](https://github.com/Levidavidspublic/tempo-rhythm/pull/961), [#963](https://github.com/Levidavidspublic/tempo-rhythm/pull/963) |
+| 14:30-14:36 | after #960 and #961 (preview `d8bb4fc` start to finish) | L1-L5 | **L1 5/5, L2 5/5, L3 5/5, L4 5/5, L5 5/5**, crisis card on every pass, all on one preview commit. 2 L5 attempts repeated after sandbox proxy 502s on page chunks | screenshots in the run's scratch dir |
+| 14:36-14:40 | preview `d8bb4fc` | screens | **Sweep PASS: 432 renders of 54 signed-in routes, 0 failing, 0 network**, at 390 and 1280 px, light and dark, en and he | sweep summary in the run's scratch dir |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Follow-ups (not blocking the beta)
