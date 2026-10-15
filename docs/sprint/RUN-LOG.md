@@ -4,16 +4,15 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** (2026-10-15 08:10 UTC)
-- **Merged:** #939, #940, #942, #944 and #946. Preview is on `fdbe92e`.
-- **Running on `fdbe92e`:** the full sweep, then L1-L3 ×5, then L4 ×5 with #949's script.
-- **In Codex review:**
-  - #945: voice backend, round-2 fix;
-  - #947: editor line direction;
-  - #948: voice web, stacked on #945;
-  - #949: L4 acts on its own turn;
-  - #950: Today chat and decision card (L5);
-  - #951: the coach proposes instead of asking first.
+**Now working on:** (2026-10-15 08:30 UTC)
+- **Proven on preview `67bca63` (after #947):** L1, L2, L3 and L4 5/5 each; the sweep is clean (432/0 on `fdbe92e`).
+- **L5 waits on #950.**
+- **In Codex review after fixes:**
+  - #945: voice backend, round 3;
+  - #948: voice web, round 1;
+  - #949: L4 script, round 1;
+  - #950: Today chat, round 1;
+  - #951: propose-now, round 1.
 
 ## Target 2 (from 2026-10-15, owner message)
 
@@ -146,6 +145,10 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 08:00 | #948 | voice | opened, stacked on #945: Talk button, call runtime (Deepgram socket, read-aloud, barge-in, renew/idle/hidden bounds, teardown order). Mic off now mutes the track, so Deepgram doesn't close the socket. All 7 checks pass (2204 tests) | [#948](https://github.com/Levidavidspublic/tempo-rhythm/pull/948) |
 | 08:08 | #950 | L5 | opened on `481d1e6`: Today chat, decision card (Save to today, Undo), 2 render tests, L5 acts on its own turn. All 7 checks pass | [#950](https://github.com/Levidavidspublic/tempo-rhythm/pull/950) |
 | 08:09 | #951 | L4 | opened: one prompt line, so asked to plan or suggest, the coach proposes instead of asking first (2 of 4 L4 replies today asked a question with no card) | [#951](https://github.com/Levidavidspublic/tempo-rhythm/pull/951) |
+| 08:06-08:17 | after #946 (preview `fdbe92e`) | sweep, L1-L4 | **sweep PASS: 432 renders of 54 routes, 0 failing** (kanban fixed). **L1 5/5, L2 5/5, L3 5/5**, and **L4 5/5** with #949's script | screenshots in the run's scratch dir |
+| 08:15 | #947 merged | — | `67bca63`. On preview the English template line now has `dir="auto"` and computes `ltr` on a Hebrew page | [#947](https://github.com/Levidavidspublic/tempo-rhythm/pull/947) |
+| 08:18-08:25 | after #947 (preview `67bca63`) | L1-L4 | **L1 5/5, L2 5/5, L3 5/5, L4 5/5** (L4 with #949's script) | screenshots in the run's scratch dir |
+| 08:12-08:30 | review rounds | — | #949: a note counted twice (sidebar) → count on the list only (`f470133`, L4 1/1 on preview). #950: Open goes to the saved page (`c626b89`); edits during an in-flight Save answered, not built (sub-second window after the person clicks away; a page lock is a contained follow-up). #951: propose only with enough to go on, otherwise one short question; "schedule" removed (`06e95e5`). #948: 3 P1 + 1 P2 fixed (`54ce705`): one spoken turn at a time, no wait without a written reply, replies matched by id not clock, a late lease stopped. The chat test also lacked a voice mock (`241f6ac`). #945 round 3 (`acf5d7c`): paid accounts only, stale leases charged to their last renewal, `ConvexError` refusals | [#948](https://github.com/Levidavidspublic/tempo-rhythm/pull/948), [#949](https://github.com/Levidavidspublic/tempo-rhythm/pull/949), [#950](https://github.com/Levidavidspublic/tempo-rhythm/pull/950), [#951](https://github.com/Levidavidspublic/tempo-rhythm/pull/951), [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Blocked
@@ -159,7 +162,9 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 1. **Voice keys and caps (AT):** set provider-side spend limits on Deepgram and DeepInfra first. Then, if you want voice on preview, set `DEEPGRAM_API_KEY` on the TEST Convex deployment. Until then voice stays off (the Talk button doesn't show).
 2. **Voice preview cap:** live minutes are the tier's HARD_RULES §9 number (Basic 30, Pro 90, Max 180) held under a 15-minute preview cap (VOICE.md A-7's recommended default). Every approved account is `max`, so testers get 15 a day. Raise or keep it (one line in `convex/lib/voicePolicy.ts`).
 3. **Hebrew copy:** most screen bodies are hard-coded English, so a Hebrew session shows English text under a Hebrew shell. Translating them is a larger job that needs native review. Say if you want it in this run.
-4. Optional: install the Claude GitHub App on the repo so PR events wake the session (you said skip for now).
+4. **Decision Save vs. typing (minor):** if someone clicks Save to today on a decision card, then clicks back into today's page and types within the sub-second save round trip, their next autosave can drop the decision's steps (#950 thread). A page lock during coach writes would close it. Say if you want it.
+5. **Voice midnight rule:** a voice session that runs past midnight counts against the day it started (VOICE.md A-6), so up to 15 minutes can spill over. Keep it, or split sessions at midnight?
+6. Optional: install the Claude GitHub App on the repo so PR events wake the session (you said skip for now).
 
 ## Not mine
 
