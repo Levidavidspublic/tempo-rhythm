@@ -87,14 +87,46 @@ or with "proposal" set to one of:
 "when" is "today" or "later". "period" is "daily", "weekly" or "none".`;
 }
 
-/** System prompt, the open page (when the coach sits beside one), today's open tasks, then the newest messages. */
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+/** "Friday, 16 October 2026" for a real `YYYY-MM-DD` date, else null. The weekday is the date's own. */
+export function dayName(date: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return null;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const at = new Date(Date.UTC(year, month - 1, day));
+  if (at.getUTCFullYear() !== year || at.getUTCMonth() !== month - 1 || at.getUTCDate() !== day) return null;
+  return `${WEEKDAYS[at.getUTCDay()]}, ${day} ${MONTHS[month - 1]} ${year}`;
+}
+
+/** System prompt, the person's date, the open page (when the coach sits beside one), today's open tasks, then the newest messages. */
 export function buildCoachMessages(args: {
   dial: number;
   history: readonly CoachHistoryItem[];
   page: CoachPageContext | null;
   tasks?: readonly CoachTaskContext[];
+  /** The person's local date (`YYYY-MM-DD`), so "Friday" or "tomorrow" can be told apart from today. */
+  today?: string;
 }): AiMessage[] {
   const messages: AiMessage[] = [{ role: "system", content: systemPrompt(args.dial) }];
+  const today = args.today ? dayName(args.today) : null;
+  if (today) {
+    messages.push({ role: "system", content: `For them it is ${today}.` });
+  }
   if (args.page) {
     const title = truncate(args.page.title.trim() || "Untitled", COACH_LIMITS.titleChars);
     const text = truncate(args.page.text.trim(), COACH_LIMITS.pageChars);
