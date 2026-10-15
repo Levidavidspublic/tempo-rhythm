@@ -27,6 +27,7 @@ import {
   cardOutcome,
   parseCoachReply,
   readProposal,
+  withCardOutcome,
 } from "./lib/coachPrompt";
 import { requireUser } from "./lib/requireUser";
 import { isValidLocalDate } from "./lib/pageLedger";
@@ -260,7 +261,7 @@ export const claimTurn = internalMutation({
         const card = m.role === "assistant" ? storedProposal(m.toolCalls) : null;
         return {
           role: m.role as "user" | "assistant",
-          content: card ? `${m.content}\n${cardOutcome(card, card.status)}` : m.content,
+          content: card ? withCardOutcome(m.content, cardOutcome(card, card.status)) : m.content,
         };
       });
 

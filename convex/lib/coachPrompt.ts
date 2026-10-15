@@ -307,15 +307,35 @@ function salvageReply(content: string): string | null {
  * from it, with no proposal; otherwise it counts as no answer. An empty answer gives null.
  */
 /** A promise that a card waits for the person's yes. */
-const ACCEPT_PROMISE = /[^.!?\n]*\bnothing (?:will )?changes? (?:until|unless) you (?:accept|say yes|approve)[^.!?\n]*[.!?]?/gi;
+// "Nothing changes until you accept it" (or "will change", "unless", "approve", "say yes"), to the end
+// of its sentence. "Nothing changes until you accept that rest counts" is advice, not a promise.
+const PROMISE = String.raw`nothing (?:will )?changes? (?:until|unless) you (?:accept|approve|say yes)(?: (?:it|this|them|the \w+))?(?= *(?:[.!?\n,;:—–-]|$))[^.!?\n]*`;
+/** The promise as a sentence of its own: "A 10-minute tidy. Nothing changes until you accept it." */
+const PROMISE_SENTENCE = new RegExp(String.raw`(^|[.!?\n])\s*(?:(?:but|and|so|again),?\s+)?${PROMISE}[.!?]?`, "gi");
+/** The promise ending a sentence: "Call the bank, but nothing changes until you accept it." */
+const PROMISE_CLAUSE = new RegExp(String.raw`\s*[,;:—–-]?\s*(?:(?:but|and|so)\s+)?\b${PROMISE}`, "gi");
 
 /**
  * A reply with no card can't promise one: "Nothing changes until you accept it" goes, since there
- * is nothing to accept (alpha run, L4). Left as is when that sentence is the whole reply.
+ * is nothing to accept (alpha run, L4). Only the promise goes: the rest of its sentence stays. Left
+ * as is when the promise is the whole reply.
  */
 export function withoutAcceptPromise(reply: string): string {
-  const kept = reply.replace(ACCEPT_PROMISE, "").replace(/[ \t]{2,}/g, " ").replace(/\s+([.!?])/g, "$1").trim();
+  const kept = reply
+    .replace(PROMISE_SENTENCE, "$1")
+    .replace(PROMISE_CLAUSE, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([.!?])/g, "$1")
+    .trim();
   return kept || reply;
+}
+
+/**
+ * An earlier reply followed by its card's note, within `COACH_LIMITS.historyChars`: a long reply is
+ * cut first, so the note always reaches the model.
+ */
+export function withCardOutcome(reply: string, outcome: string): string {
+  return `${truncate(reply, Math.max(0, COACH_LIMITS.historyChars - outcome.length - 1))}\n${outcome}`;
 }
 
 /** The note after one of the coach's earlier replies: what its card was, and what happened to it. */
