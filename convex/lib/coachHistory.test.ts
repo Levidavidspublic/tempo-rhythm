@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { buildCoachMessages, cardOutcome, parseCoachReply, withoutAcceptPromise } from "./coachPrompt";
+import {
+  COACH_LIMITS,
+  buildCoachMessages,
+  cardOutcome,
+  parseCoachReply,
+  withCardOutcome,
+  withoutAcceptPromise,
+} from "./coachPrompt";
 
 /**
  * Alpha run, L4: after a card was added and undone, the coach said "It's already on your list" and
@@ -42,6 +49,31 @@ describe("a reply with no card", () => {
     expect(withoutAcceptPromise("Start with the email.")).toBe("Start with the email.");
   });
 
+  test("loses only the promise when it shares a sentence with advice", () => {
+    expect(withoutAcceptPromise("I can propose a short plan, but nothing changes until you accept it.")).toBe(
+      "I can propose a short plan.",
+    );
+    expect(withoutAcceptPromise("Call the bank first — nothing changes until you approve. Then lunch.")).toBe(
+      "Call the bank first. Then lunch.",
+    );
+    expect(withoutAcceptPromise("A short walk. But nothing will change unless you say yes, so no rush.")).toBe(
+      "A short walk. So no rush.",
+    );
+    expect(withoutAcceptPromise("Call the bank, but nothing changes until you accept it, so take your time.")).toBe(
+      "Call the bank, so take your time.",
+    );
+    expect(withoutAcceptPromise("Nothing changes until you say yes to it, 10 minutes is plenty.")).toBe("10 minutes is plenty.");
+    expect(withoutAcceptPromise("Start with the email. Nothing changes until you accept this proposal.")).toBe("Start with the email.");
+    expect(withoutAcceptPromise("Start with the email; nothing changes unless you approve the new plan first.")).toBe(
+      "Start with the email.",
+    );
+  });
+
+  test("keeps advice that only sounds like the promise", () => {
+    const advice = "Nothing changes until you accept that rest counts as progress.";
+    expect(withoutAcceptPromise(advice)).toBe(advice);
+  });
+
   test("parseCoachReply keeps the promise only when a card is there", () => {
     const words = "One task for the afternoon. Nothing changes until you accept it.";
     expect(parseCoachReply(JSON.stringify({ reply: words, proposal: null }))?.reply).toBe("One task for the afternoon.");
@@ -50,5 +82,21 @@ describe("a reply with no card", () => {
     );
     expect(withCard?.reply).toBe(words);
     expect(parseCoachReply(words)?.reply).toBe("One task for the afternoon.");
+  });
+});
+
+describe("an earlier reply with its card's note", () => {
+  test("a long reply is cut so the note still reaches the model", () => {
+    const outcome = cardOutcome({ kind: "task", title: "Tidy", minutes: 10, when: "today" }, "undone");
+    const content = withCardOutcome("word ".repeat(800), outcome);
+    expect(content.length).toBeLessThanOrEqual(COACH_LIMITS.historyChars);
+    expect(content.endsWith(`…\n${outcome}`)).toBe(true);
+    const sent = buildCoachMessages({ dial: 5, history: [{ role: "assistant", content }], page: null });
+    expect(sent.some((m) => m.role === "assistant" && m.content.endsWith(outcome))).toBe(true);
+  });
+
+  test("a short reply is kept whole", () => {
+    const outcome = cardOutcome({ kind: "task", title: "Tidy", minutes: 10, when: "today" }, "accepted");
+    expect(withCardOutcome("One task.", outcome)).toBe(`One task.\n${outcome}`);
   });
 });

@@ -306,21 +306,44 @@ function salvageReply(content: string): string | null {
   }
 }
 
+// A promise that a card waits for the person's yes: "Nothing changes until you accept it" (or
+// "will change", "unless", "approve", "say yes"), up to its object ("it", "this proposal", "the new
+// plan"). "Nothing changes until you accept that rest counts" is advice, not a promise.
+const PROMISE = String.raw`nothing (?:will )?changes? (?:until|unless) you (?:accept|approve|say yes(?: to)?)(?: (?:(?:it|this|that|them)(?: \p{L}+)?|the \p{L}+(?: \p{L}+)?))?(?: (?:first|here|below))?(?= *(?:[.!?\n,;:—–-]|$))`;
 /**
- * The reply and proposal in a model answer. Plain words are kept as a reply with no proposal.
- * Broken JSON is never shown as chat text (Codex P2 on #923): only a whole `reply` string is kept
- * from it, with no proposal; otherwise it counts as no answer. An empty answer gives null.
+ * The promise opening a sentence: "A tidy. Nothing changes until you accept it." goes whole, and
+ * "But nothing changes until you say yes, so no rush." keeps what follows it ("So no rush.").
  */
-/** A promise that a card waits for the person's yes. */
-const ACCEPT_PROMISE = /[^.!?\n]*\bnothing (?:will )?changes? (?:until|unless) you (?:accept|say yes|approve)[^.!?\n]*[.!?]?/gi;
+const PROMISE_SENTENCE = new RegExp(
+  String.raw`(^|[.!?\n])\s*(?:(?:but|and|so|again),?\s+)?${PROMISE}(?:[.!?]+|[ \t]*([,;:—–-])[ \t]*(\p{L})?)?`,
+  "giu",
+);
+/** The promise ending a sentence: "Call the bank, but nothing changes until you accept it." */
+const PROMISE_CLAUSE = new RegExp(String.raw`[ \t]*[,;:—–-]?[ \t]*(?:(?:but|and|so)\s+)?\b${PROMISE}`, "giu");
 
 /**
  * A reply with no card can't promise one: "Nothing changes until you accept it" goes, since there
- * is nothing to accept (alpha run, L4). Left as is when that sentence is the whole reply.
+ * is nothing to accept (alpha run, L4). Only the promise goes: the advice around it stays. Left as
+ * is when the promise is the whole reply.
  */
 export function withoutAcceptPromise(reply: string): string {
-  const kept = reply.replace(ACCEPT_PROMISE, "").replace(/[ \t]{2,}/g, " ").replace(/\s+([.!?])/g, "$1").trim();
+  const kept = reply
+    .replace(PROMISE_SENTENCE, (_match, before: string, separator?: string, next?: string) =>
+      separator ? `${before} ${next ? next.toUpperCase() : ""}` : before,
+    )
+    .replace(PROMISE_CLAUSE, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\s+([.!?])/g, "$1")
+    .trim();
   return kept || reply;
+}
+
+/**
+ * An earlier reply followed by its card's note, within `COACH_LIMITS.historyChars`: a long reply is
+ * cut first, so the note always reaches the model.
+ */
+export function withCardOutcome(reply: string, outcome: string): string {
+  return `${truncate(reply, Math.max(0, COACH_LIMITS.historyChars - outcome.length - 1))}\n${outcome}`;
 }
 
 /** The note after one of the coach's earlier replies: what its card was, and what happened to it. */
@@ -346,6 +369,11 @@ export function cardOutcome(proposal: CoachProposal, status: "pending" | "accept
   return `[Card: ${truncate(what, COACH_LIMITS.titleChars + 40)}. ${outcome}]`;
 }
 
+/**
+ * The reply and proposal in a model answer. Plain words are kept as a reply with no proposal.
+ * Broken JSON is never shown as chat text (Codex P2 on #923): only a whole `reply` string is kept
+ * from it, with no proposal; otherwise it counts as no answer. An empty answer gives null.
+ */
 export function parseCoachReply(content: string): { reply: string; proposal: CoachProposal | null } | null {
   const json = jsonObject(content);
   if (json) {
