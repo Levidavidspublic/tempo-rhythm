@@ -30,6 +30,14 @@ mock.module("@/convex/_generated/api", () => ({
       undoProposal: "coach.undoProposal",
     },
     crisis: { check: "crisis.check", resourcesCard: "crisis.resourcesCard" },
+    voice: {
+      availability: "voice.availability",
+      start: "voice.start",
+      renew: "voice.renew",
+      stop: "voice.stop",
+      grant: "voice.grant",
+      speak: "voice.speak",
+    },
   },
 }));
 
