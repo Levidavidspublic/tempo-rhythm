@@ -11,6 +11,16 @@ describe("buildCoachMessages", () => {
     expect(system?.content).toContain("Current accountability dial: 7 / 10. Match tone accordingly.");
     expect(system?.content).toContain('{"reply": "what you say", "proposal": null}');
     expect(system?.content).toContain("Reply in the language the person writes in.");
+    // Asked to plan or suggest with enough to go on, the coach proposes now instead of asking
+    // first (alpha run, L4); a request it can't act on still gets one short question (HARD_RULES §6.3).
+    expect(system?.content).toContain("make a concrete proposal in this reply instead of asking first");
+    expect(system?.content).toContain("Only when you can't tell what they want, ask one short question.");
+    // Proposals can't carry a date or time yet, so the coach isn't told to propose schedules, and
+    // an add for another day or a time is asked about instead of losing its date.
+    expect(system?.content).not.toContain("schedule something");
+    expect(system?.content).toContain("A task can only be added for today or with no date.");
+    // "Plan my afternoon" (L4) is today, not a schedule: the guard covers other days and clock times only.
+    expect(system?.content).toContain('A part of today ("this afternoon", "tonight") is just today: propose.');
   });
 
   test("the open page comes before the thread, marked as the person's material", () => {
