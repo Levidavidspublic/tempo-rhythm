@@ -36,6 +36,11 @@ Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workf
 - #892 had an open Codex P1: anyone with write access could dispatch it. I added an owner-only guard (actor and triggering actor = Division6066) to #892 and #897, merged `integration` into both and re-added the `config` label. #897 is marked ready. Codex review requested on both.
 - A disposable `tempo-accept-…` mail.tm account is signed in on preview from this session. The session is in a private scratch file, never committed or printed. It waits for approval through #892.
 
+Owner update, 15 Oct afternoon:
+- **CodeRabbit is now the only reviewer.** Merge gate: required CI green, and no unresolved CodeRabbit critical or major finding on the latest commit. Codex review is no longer requested.
+- Merge everything open: #953 and #956 (merged 13:00), then #957 (after `integration` is merged in), #948, #954, #955 and #958.
+- **Chat-first redesign** (71 screens + `depth-tokens.css`) arrives in `docs/design/chat-first/` through its own PR. Once it is on `integration`, apply only the chat screens (Today with chat, decision card, coach proposal + Undo) and the depth tokens before the beta. Every other screen gets one line under "Re-skin tickets for next week", not a re-skin now.
+
 ### Plan (target 2)
 
 - [x] Merge #892 (merged 07:00 UTC as `8345b4a`) and dispatch it: the synthetic account is **approved** (run 38695751179, 06:59 UTC, success). #897 merged (`101b060`), #941 merged (`780414c`), #943 merged (`dd96d4e`).
@@ -176,7 +181,13 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 10:06-10:16 | sweep on `f1bfacd` | screens | First run: 431/432. The one failure was `/goals/<id>` 1280-light-he, whose document came back HTTP 502 from the proxy. #954 now gives the sweep the same drop rule (`96825fb`). Rerun: **sweep PASS, 432 renders of 54 routes, 0 failing**; one render was repeated after a proxy 502 on `/api/auth` | screenshots in the run's scratch dir |
 | 10:00-10:14 | #954, #956, #957 | — | Codex round 2, all fixed. #954: responses cut off after headers count as drops (`f3ce802`). #956: back to reply-first, so a cut-off proposal still leaves a whole reply (`341799f`). #957: punctuation counts as a word boundary, and the "…" of a cut title is ignored (`be672bc`, both tests fail on the old code) | [#954](https://github.com/Levidavidspublic/tempo-rhythm/pull/954), [#956](https://github.com/Levidavidspublic/tempo-rhythm/pull/956), [#957](https://github.com/Levidavidspublic/tempo-rhythm/pull/957) |
 | 10:20 | #958 | — | opened: `today-live-preview.test.ts` was flaky (CodeMirror's first parse stops after 20 ms, so under load the test read a partial tree). Under CPU load: 9 of 40 failed on `integration`, 0 of 40 with the fix. Test-only | [#958](https://github.com/Levidavidspublic/tempo-rhythm/pull/958) |
+| 13:00 | #953, #956 merged | L4, L5 | `741363e` (the coach knows the local date), `1c003a4` (a reply that offers a change carries its card). Preview serves `1c003a4` | [#953](https://github.com/Levidavidspublic/tempo-rhythm/pull/953), [#956](https://github.com/Levidavidspublic/tempo-rhythm/pull/956) |
+| 13:08 | #957 | L5 | `integration` merged in (`fa6b3c4`); the one conflict was both PRs adding tests to `coachPrompt.test.ts`, and both are kept. #948, #954, #955, #958 marked ready for CodeRabbit (owner: CodeRabbit is now the only reviewer) | [#957](https://github.com/Levidavidspublic/tempo-rhythm/pull/957) |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
+
+## Re-skin tickets for next week
+
+Waiting for `docs/design/chat-first/` to land on `integration` (not there at 13:06 UTC). Once it does, this section gets one line per screen of the 71 that isn't a chat screen.
 
 ## Blocked
 
