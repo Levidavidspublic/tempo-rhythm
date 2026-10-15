@@ -18,12 +18,12 @@ If this session restarts: read this file and continue from the first unchecked i
 
 **Usable BETA on preview by Sunday 18 October:** every loop below proven 5 times in a row, plus every signed-in screen clicked through with no page errors at 390 and 1280 px, light and dark, en and he. Run `node e2e/alpha/run.mjs --times 5` after each merge. Same merge gate, stop codes and final report.
 
-**Status, 2026-10-15 14:40 UTC: met again on preview `d8bb4fc`, after every PR of the owner's 13:06 list and the follow-ups merged.**
-- L1 to L5: each 5/5 in a row, with the crisis card on every pass, all on `d8bb4fc` (14:30-14:36).
-- Sweep: 432 renders of 54 signed-in routes, 0 failing, at 390 and 1280 px, light and dark, en and he (14:36-14:40).
-- Repeated after sandbox network drops: 2 L5 attempts. Each is listed in Results.
-- First met on `f1bfacd` at 10:20. Since then: #948 (voice web), #953-#962 (loop reliability, coach card outcomes, decision titles), #960-#961 (harness and coach follow-ups).
-- Still open: #963 (voice-call robustness, waiting for CodeRabbit's re-review) and the chat-first redesign (not landed yet).
+**Status, 2026-10-15 14:57 UTC: met on preview `eb0b12c`, with every PR of the owner's 13:06 list and all follow-ups merged.**
+- L1 to L5: each 5/5 in a row, with the crisis card on every pass, all on `eb0b12c` (14:44-14:53).
+- Sweep: 432 renders of 54 signed-in routes, 0 failing, at 390 and 1280 px, light and dark, en and he (14:53-14:57).
+- Repeated after sandbox network drops: 2 L1 attempts. Each is listed in Results.
+- Also met earlier on `f1bfacd` (10:20) and `d8bb4fc` (14:40).
+- Still open: the chat-first redesign. Its PR to `docs/design/chat-first/` hasn't opened yet.
 
 Owner answers (2026-10-15):
 1. Sign-in: the synthetic approved account through #892 (approval) and #897 (preview acceptance). No guest sign-in on preview.
@@ -202,6 +202,9 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 14:30-14:36 | after #960 and #961 (preview `d8bb4fc` start to finish) | L1-L5 | **L1 5/5, L2 5/5, L3 5/5, L4 5/5, L5 5/5**, crisis card on every pass, all on one preview commit. 2 L5 attempts repeated after sandbox proxy 502s on page chunks | screenshots in the run's scratch dir |
 | 14:36-14:40 | preview `d8bb4fc` | screens | **Sweep PASS: 432 renders of 54 signed-in routes, 0 failing, 0 network**, at 390 and 1280 px, light and dark, en and he | sweep summary in the run's scratch dir |
 | 14:42 | #963 | voice | CodeRabbit on `137758f`: its Major and Minor confirmed addressed and resolved; 1 new Minor (`useLayoutEffect` instead of `useEffect` for the send ref) answered: stays, a one-frame gap. No critical or major finding; CI green → auto-merge | [#963](https://github.com/Levidavidspublic/tempo-rhythm/pull/963) |
+| 14:41 | #963 | voice | **merged** `eb0b12c`; preview serves it at 14:44 | [#963](https://github.com/Levidavidspublic/tempo-rhythm/pull/963) |
+| 14:44-14:53 | after #963 (preview `eb0b12c` start to finish) | L1-L5 | **L1 5/5, L2 5/5, L3 5/5, L4 5/5, L5 5/5**, crisis card on every pass. 2 L1 attempts repeated after sandbox proxy 502s on page chunks | screenshots in the run's scratch dir |
+| 14:53-14:57 | preview `eb0b12c` | screens | **Sweep PASS: 432 renders of 54 signed-in routes, 0 failing, 0 network**, at 390 and 1280 px, light and dark, en and he | sweep summary in the run's scratch dir |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Follow-ups (not blocking the beta)
