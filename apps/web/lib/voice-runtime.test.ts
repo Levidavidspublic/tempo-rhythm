@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { acceptsSpokenTurn, isTurnReply, newClientKey, recorderMime, speechEvent } from "./voice-runtime";
+import { acceptsSpokenTurn, isTurnReply, newClientKey, recorderMime, sendSpokenTurn, speechEvent } from "./voice-runtime";
 
 describe("speechEvent", () => {
   test("Flux turn events become speech started, interim words and the final words", () => {
@@ -64,5 +64,35 @@ describe("a spoken turn", () => {
     expect(acceptsSpokenTurn({ awaiting: false, replyInFlight: false })).toBe(true);
     expect(acceptsSpokenTurn({ awaiting: true, replyInFlight: false })).toBe(false);
     expect(acceptsSpokenTurn({ awaiting: false, replyInFlight: true })).toBe(false);
+  });
+});
+
+describe("sendSpokenTurn", () => {
+  test("a call whose lease another tab replaced, or that can't be renewed, sends nothing", async () => {
+    const sent: string[] = [];
+    const send = async (text: string) => {
+      sent.push(text);
+      return "reply";
+    };
+    expect(await sendSpokenTurn("hello", { renew: async () => ({ status: "expired", minutesLeft: 0 }), send })).toEqual({ kind: "leaseEnded" });
+    expect(await sendSpokenTurn("hello", { renew: async () => ({ status: "revoked", minutesLeft: 0 }), send })).toEqual({ kind: "leaseEnded" });
+    const offline = async (): Promise<{ status: string; minutesLeft: number }> => {
+      throw new Error("offline");
+    };
+    expect(await sendSpokenTurn("hello", { renew: offline, send })).toEqual({ kind: "leaseEnded" });
+    expect(sent).toEqual([]);
+  });
+
+  test("with the lease held, the words go through send, and a failed send says not sent", async () => {
+    const renew = async () => ({ status: "ok", minutesLeft: 12 });
+    expect(await sendSpokenTurn("hello", { renew, send: async (text) => `sent ${text}` })).toEqual({
+      kind: "sent",
+      result: "sent hello",
+      minutesLeft: 12,
+    });
+    const broken = async (): Promise<string> => {
+      throw new Error("network");
+    };
+    expect(await sendSpokenTurn("hello", { renew, send: broken })).toEqual({ kind: "notSent" });
   });
 });
