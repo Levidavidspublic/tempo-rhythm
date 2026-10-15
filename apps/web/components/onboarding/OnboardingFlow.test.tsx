@@ -5,6 +5,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { getFunctionName } from "convex/server";
+import { type MessageKey, translate } from "@/lib/i18n";
 
 type Listener = (event: TestEvent) => void;
 
@@ -293,22 +295,44 @@ const replace = mock((_href: string) => {});
 const completeOnboarding = mock(
   async (_args: { fullName?: string }) => ({ onboardedAt: 1 }) as { onboardedAt: number }
 );
+const setDial = mock(async (_args: { dial: number }) => ({ success: true }));
+const createNote = mock(async (_args: { title: string; body: string }) => "note-1");
+const updateNote = mock(async (_args: { noteId: string; body: string }) => "note-1");
+const updatePreferences = mock(async (_args: { locale?: string }) => null);
+const setLang = mock((_lang: string) => {});
+const setDyslexia = mock((_on: boolean) => {});
 
 type Profile = { fullName?: string; greetingName: string; onboardedAt?: number } | null;
 
 let profileResult: Profile | undefined;
-let startersResult: { templateId: string; name: string }[] | undefined;
+let coachResult: { dial: number } | undefined;
 
 mock.module("next/navigation", () => ({
   useRouter: () => ({ push, replace }),
 }));
 
+const MUTATIONS: Record<string, unknown> = {
+  "users:completeOnboarding": completeOnboarding,
+  "coach:setDial": setDial,
+  "notes:create": createNote,
+  "notes:update": updateNote,
+  "preferences:update": updatePreferences,
+};
+
 mock.module("convex/react", () => ({
-  useQuery: (_ref: unknown, args: unknown) => {
-    if (args && typeof args === "object" && "scope" in args) return startersResult;
-    return profileResult;
+  useQuery: (ref: Parameters<typeof getFunctionName>[0], args: unknown) => {
+    if (args === "skip") return undefined;
+    return getFunctionName(ref) === "coach:getSettings" ? coachResult : profileResult;
   },
-  useMutation: () => completeOnboarding,
+  useMutation: (ref: Parameters<typeof getFunctionName>[0]) => MUTATIONS[getFunctionName(ref)],
+}));
+
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang, t: (key: MessageKey) => translate("en", key) }),
+}));
+
+mock.module("@/components/providers/ThemeProvider", () => ({
+  useTheme: () => ({ theme: "system", resolvedTheme: "light", setTheme() {}, dyslexia: false, setDyslexia }),
 }));
 
 const { OnboardingFlow } = await import("./OnboardingFlow");
@@ -330,6 +354,12 @@ function findByTag(root: TestNode, tag: string, label?: string): TestNode {
   return match;
 }
 
+function reactProps(node: TestNode): Record<string, unknown> {
+  const key = Object.keys(node).find((name) => name.startsWith("__reactProps$"));
+  if (!key) throw new Error(`No react props on ${node.tagName}`);
+  return (node as unknown as Record<string, Record<string, unknown>>)[key] ?? {};
+}
+
 let root: Root | null = null;
 let host: TestNode | null = null;
 
@@ -343,16 +373,26 @@ async function renderFlow() {
   return host;
 }
 
+async function click(view: TestNode, label: string) {
+  await act(async () => {
+    findByTag(view, "BUTTON", label).click();
+  });
+}
+
+async function change(node: TestNode, value: string) {
+  await act(async () => {
+    const onChange = reactProps(node).onChange as (event: { target: { value: string } }) => void;
+    onChange({ target: { value } });
+  });
+}
+
 describe("OnboardingFlow", () => {
   beforeEach(() => {
     profileResult = { greetingName: "  Sam  " };
-    startersResult = [
-      { templateId: "starter:daily-page", name: "Daily page" },
-      { templateId: "starter:weekly-review", name: "Weekly review" },
-    ];
-    push.mockReset();
-    replace.mockReset();
-    completeOnboarding.mockReset();
+    coachResult = { dial: 4 };
+    for (const fn of [push, replace, completeOnboarding, setDial, createNote, updateNote, updatePreferences, setLang, setDyslexia]) {
+      fn.mockClear();
+    }
     completeOnboarding.mockImplementation(async () => ({ onboardedAt: 1 }));
   });
 
@@ -365,9 +405,40 @@ describe("OnboardingFlow", () => {
     host = null;
   });
 
+  test("opens on step 1 of 5 with language and reading font, then the name step", async () => {
+    const view = await renderFlow();
+    expect(view.textContent).toContain("Welcome. Let's set Tempo up for you.");
+    expect(view.textContent).toContain("Step 1 of 5");
+    expect(view.textContent).not.toContain("Back");
+    await click(view, "Continue");
+    expect(view.textContent).toContain("Step 2 of 5");
+    expect(view.textContent).toContain("What should the coach call you?");
+    expect(view.textContent).toContain("Back");
+    expect(view.textContent).not.toContain("{");
+  });
+
+  test("language and reading font drive the shell's own switches", async () => {
+    const view = await renderFlow();
+    const radios: TestNode[] = [];
+    walk(view, (node) => {
+      if (node.tagName === "INPUT") radios.push(node);
+    });
+    const hebrew = radios.find((node) => node.attributes.value === "he" || node.value === "he");
+    const dyslexia = radios.find((node) => node.attributes.value === "dyslexia" || node.value === "dyslexia");
+    if (!hebrew || !dyslexia) throw new Error("Missing radios");
+    await act(async () => {
+      (reactProps(hebrew).onChange as () => void)();
+      (reactProps(dyslexia).onChange as () => void)();
+    });
+    expect(setLang).toHaveBeenCalledWith("he");
+    expect(updatePreferences).toHaveBeenCalledWith({ locale: "he" });
+    expect(setDyslexia).toHaveBeenCalledWith(true);
+  });
+
   test("prefills the name from the profile", async () => {
     const view = await renderFlow();
-    expect(view.textContent).toContain("What should we call you?");
+    await click(view, "Continue");
+    expect(findByTag(view, "INPUT").id).toBe("onboarding-name");
     expect(findByTag(view, "INPUT").value).toBe("  Sam  ");
     expect(replace).not.toHaveBeenCalled();
   });
@@ -375,32 +446,62 @@ describe("OnboardingFlow", () => {
   test('does not prefill the placeholder "there"', async () => {
     profileResult = { greetingName: "there" };
     const view = await renderFlow();
+    await click(view, "Continue");
     expect(findByTag(view, "INPUT").value).toBe("");
   });
 
-  test("Finish saves the trimmed name and routes to /today", async () => {
+  test("Start using Tempo saves the trimmed name, a changed dial and the brain dump, then routes to /today", async () => {
     const view = await renderFlow();
-    await act(async () => {
-      findByTag(view, "BUTTON", "Next").click();
-    });
-    expect(view.textContent).toContain("Daily page");
-    expect(view.textContent).toContain("Weekly review");
-    expect(view.textContent).toContain("Tempo proposes one when a page is created");
-    expect(view.textContent).not.toContain("{");
-
-    await act(async () => {
-      findByTag(view, "BUTTON", "Finish").click();
-    });
+    await click(view, "Continue");
+    await change(findByTag(view, "INPUT"), "  Ada  ");
+    await click(view, "Continue");
+    await change(findByTag(view, "INPUT"), "7");
+    expect(view.textContent).toContain("Steady");
+    await click(view, "Continue");
+    expect(setDial).toHaveBeenCalledWith({ dial: 7 });
+    await change(findByTag(view, "TEXTAREA"), "Call the bank\nBuy milk");
+    await click(view, "Continue");
+    expect(createNote).toHaveBeenCalledWith({ title: "Brain dump", body: "Call the bank\nBuy milk" });
+    expect(view.textContent).toContain("Your privacy");
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledTimes(1);
-    expect(completeOnboarding).toHaveBeenCalledWith({ fullName: "Sam" });
+    expect(completeOnboarding).toHaveBeenCalledWith({ fullName: "Ada" });
     expect(push).toHaveBeenCalledWith("/today");
   });
 
-  test("Skip finishes without a name", async () => {
+  test("an unchanged dial and an empty brain dump save nothing on the way", async () => {
     const view = await renderFlow();
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
+    await click(view, "Continue");
+    await click(view, "Continue");
+    await click(view, "Continue");
+    await click(view, "Continue");
+    expect(setDial).not.toHaveBeenCalled();
+    expect(createNote).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("Your privacy");
+  });
+
+  test("going back and changing the brain dump updates the same page", async () => {
+    const view = await renderFlow();
+    await click(view, "Continue");
+    await click(view, "Continue");
+    await click(view, "Continue");
+    await change(findByTag(view, "TEXTAREA"), "First");
+    await click(view, "Continue");
+    await click(view, "Back");
+    await change(findByTag(view, "TEXTAREA"), "Second");
+    await click(view, "Continue");
+    expect(createNote).toHaveBeenCalledTimes(1);
+    expect(updateNote).toHaveBeenCalledWith({ noteId: "note-1", body: "Second" });
+  });
+
+  test("name-step Skip finishes without a name", async () => {
+    const view = await renderFlow();
+    await click(view, "Continue");
+    await change(findByTag(view, "INPUT"), "Ada");
+    await click(view, "Skip");
+    await click(view, "Continue");
+    await click(view, "Skip");
+    await click(view, "Start using Tempo");
     expect(completeOnboarding).toHaveBeenCalledWith({});
     expect(push).toHaveBeenCalledWith("/today");
   });
@@ -412,31 +513,29 @@ describe("OnboardingFlow", () => {
     expect(completeOnboarding).not.toHaveBeenCalled();
   });
 
-  test("shows an inline error and stays when saving fails", async () => {
-    completeOnboarding.mockImplementation(async () => {
+  test("shows an inline error and stays when saving a step fails", async () => {
+    setDial.mockImplementationOnce(async () => {
       throw new Error("network");
     });
     const view = await renderFlow();
-    await act(async () => {
-      findByTag(view, "BUTTON", "Next").click();
-    });
-    await act(async () => {
-      findByTag(view, "BUTTON", "Finish").click();
-    });
-    expect(view.textContent).toContain("Could not save that. You can try again.");
-    expect(push).not.toHaveBeenCalled();
+    await click(view, "Continue");
+    await click(view, "Continue");
+    await change(findByTag(view, "INPUT"), "9");
+    await click(view, "Continue");
+    expect(view.textContent).toContain("Couldn't save this step.");
+    expect(view.textContent).toContain("How much should the coach push?");
+    expect(findByTag(view, "INPUT").value).toBe("9");
   });
 
-  test("shows the save error when Skip fails on the name step", async () => {
+  test("shows the save error when finishing fails", async () => {
     completeOnboarding.mockImplementation(async () => {
       throw new Error("network");
     });
     const view = await renderFlow();
-    await act(async () => {
-      findByTag(view, "BUTTON", "Skip").click();
-    });
-    expect(view.textContent).toContain("What should we call you?");
-    expect(view.textContent).toContain("Could not save that. You can try again.");
+    for (const label of ["Continue", "Continue", "Continue", "Continue", "Start using Tempo"]) {
+      await click(view, label);
+    }
+    expect(view.textContent).toContain("Couldn't save this step.");
     expect(push).not.toHaveBeenCalled();
   });
 });

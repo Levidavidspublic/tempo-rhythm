@@ -2,32 +2,34 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
+import type { MessageKey } from "@/lib/i18n";
 
-export const MCP_PENDING_COPY =
-  "Your account is waiting for approval. You can create MCP tokens once it is approved.";
-export const MCP_ONCE_COPY = "You won't see this again. Copy it now.";
-
-function formatDate(ms: number | undefined): string {
-  if (ms === undefined) return "never";
-  return new Date(ms).toLocaleString();
-}
-
+/**
+ * Personal MCP tokens on Settings · Integrations, as a v3 SettingsSection. Data: mcp.listTokens;
+ * mcp.createToken shows the new token once; mcp.revokeToken. The token name field, "Create
+ * token", the one-time token field (data-testid="mcp-new-token") and each token's "Revoke"
+ * button keep their names for tests/e2e/mcp.spec.ts.
+ */
 export function McpTokensCard() {
+  const { t, lang } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   const tokens = useQuery(api.mcp.listTokens, isAuthenticated ? {} : "skip");
   const createToken = useMutation(api.mcp.createToken);
   const revokeToken = useMutation(api.mcp.revokeToken);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<MessageKey | null>(null);
   const [pending, setPending] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const endpoint = typeof window === "undefined" ? "/api/mcp" : `${window.location.origin}/api/mcp`;
-  const active = (tokens ?? []).filter((t) => t.revokedAt === undefined);
+  const active = (tokens ?? []).filter((token) => token.revokedAt === undefined);
+  const formatDate = (ms: number | undefined) =>
+    ms === undefined ? t("set.mcp.never") : new Date(ms).toLocaleString(lang === "he" ? "he-IL" : "en-US");
 
   const handleCreate = async () => {
     if (busy) return;
@@ -43,11 +45,11 @@ export function McpTokensCard() {
       if (text.includes("ACCOUNT_PENDING_APPROVAL")) {
         setPending(true);
       } else if (text.includes("active tokens")) {
-        setMessage("You already have 10 active tokens. Revoke one first.");
+        setMessage("set.mcp.errMax");
       } else if (text.includes("name")) {
-        setMessage("Give the token a name first.");
+        setMessage("set.mcp.errName");
       } else {
-        setMessage("We couldn't create that token. Try again in a moment.");
+        setMessage("set.mcp.errCreate");
       }
     } finally {
       setBusy(false);
@@ -60,7 +62,7 @@ export function McpTokensCard() {
       await navigator.clipboard.writeText(fresh);
       setCopied(true);
     } catch {
-      setMessage("Copy didn't work. Select the token and copy it by hand.");
+      setMessage("set.mcp.errCopy");
     }
   };
 
@@ -69,119 +71,139 @@ export function McpTokensCard() {
     try {
       await revokeToken({ tokenId });
     } catch {
-      setMessage("We couldn't revoke that token. Try again in a moment.");
+      setMessage("set.mcp.errRevoke");
     }
   };
 
   return (
     <section
+      className="tp-settings-section"
       aria-labelledby="mcp-heading"
       data-testid="mcp-tokens-card"
-      className="rounded-2xl border border-border bg-card p-6 shadow-card"
+      data-component="SettingsSection"
     >
-      <h2 id="mcp-heading" className="font-heading text-xl font-semibold text-foreground">
-        Connect an AI assistant (MCP)
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Let an assistant such as Executor read and add your tasks, notes and calendar. Each token is
-        personal and can be revoked at any time.
-      </p>
-
-      {pending ? (
-        <output className="mt-4 block text-sm text-muted-foreground">{MCP_PENDING_COPY}</output>
-      ) : (
-        <>
-          <form
-            className="mt-4 flex flex-wrap items-end gap-3"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void handleCreate();
-            }}
-          >
-            <label className="flex flex-col gap-1 text-sm text-foreground">
-              Token name
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                maxLength={80}
-                placeholder="Executor"
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </label>
-            <Button type="submit" disabled={busy || !isAuthenticated}>
-              Create token
-            </Button>
-          </form>
-
-          {fresh ? (
-            <output className="mt-4 block space-y-2 rounded-xl border border-border p-4">
-              <p className="text-sm font-medium text-foreground">{MCP_ONCE_COPY}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  readOnly
-                  aria-label="New MCP token"
-                  data-testid="mcp-new-token"
-                  value={fresh}
-                  onFocus={(event) => event.currentTarget.select()}
-                  className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-xs"
-                />
-                <Button type="button" variant="outline" onClick={() => void handleCopy()}>
-                  {copied ? "Copied" : "Copy"}
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setFresh(null)}>
-                  Done
-                </Button>
-              </div>
-            </output>
-          ) : null}
-        </>
-      )}
-
-      {message ? (
-        <p role="alert" className="mt-3 text-sm text-muted-foreground">
-          {message}
-        </p>
-      ) : null}
-
-      <div className="mt-6">
-        <h3 className="text-sm font-medium text-foreground">Your tokens</h3>
-        {active.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {tokens === undefined && isAuthenticated ? "Loading your tokens." : "No tokens yet."}
-          </p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {active.map((token) => (
-              <li
-                key={token._id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-4 py-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{token.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-mono">{token.prefix}…</span> · created{" "}
-                    {formatDate(token.createdAt)} · last used {formatDate(token.lastUsedAt)}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void handleRevoke(token._id)}
-                >
-                  Revoke
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="tp-settings-section__head">
+        <h2 className="tp-settings-section__title" id="mcp-heading">
+          {t("set.mcp.title")}
+        </h2>
+        <p className="tp-settings-section__desc">{t("set.mcp.desc")}</p>
       </div>
 
-      <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-        <h3 className="font-medium text-foreground">Connect Executor</h3>
-        <p>Add an MCP source of type Streamable HTTP with these values:</p>
-        <pre className="overflow-x-auto rounded-xl bg-muted p-3 font-mono text-xs text-foreground">
-          {`URL: ${endpoint}\nHeader: Authorization: Bearer <your token>`}
-        </pre>
+      {pending ? (
+        <div className="tp-setting-row" data-component="SettingRow">
+          <output className="tp-help">{t("set.mcp.pending")}</output>
+        </div>
+      ) : (
+        <form
+          className="tp-setting-row tp-setting-row--stack od-row"
+          data-component="SettingRow"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleCreate();
+          }}
+        >
+          <div className="tp-setting-row__text">
+            <label className="tp-setting-row__label" htmlFor="mcp-token-name">
+              {t("set.mcp.tokenName")}
+            </label>
+          </div>
+          <div className="tp-setting-row__control">
+            <input
+              className="tp-input ig-grow"
+              id="mcp-token-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={80}
+              placeholder="Executor"
+              dir="auto"
+              autoComplete="off"
+            />
+            <button className="tp-btn tp-btn--secondary" type="submit" disabled={busy || !isAuthenticated}>
+              <TpIcon name="plus" size="sm" />
+              <span>{t("set.mcp.create")}</span>
+            </button>
+          </div>
+        </form>
+      )}
+
+      {fresh ? (
+        <div className="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
+          <div className="tp-setting-row__text">
+            <output className="tp-setting-row__label">{t("set.mcp.once")}</output>
+          </div>
+          <div className="tp-setting-row__control">
+            <input
+              readOnly
+              className="tp-input tp-mono ig-grow"
+              dir="ltr"
+              aria-label={t("set.mcp.newToken")}
+              data-testid="mcp-new-token"
+              value={fresh}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <button className="tp-btn tp-btn--secondary" type="button" onClick={() => void handleCopy()}>
+              <span>{copied ? t("set.mcp.copied") : t("set.mcp.copy")}</span>
+            </button>
+            <button className="tp-btn tp-btn--ghost" type="button" onClick={() => setFresh(null)}>
+              <span>{t("set.mcp.done")}</span>
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {message ? (
+        <div className="tp-setting-row" data-component="SettingRow">
+          <p className="tp-error-text" role="alert">
+            <TpIcon name="alert" size="sm" />
+            <span>{t(message)}</span>
+          </p>
+        </div>
+      ) : null}
+
+      <div className="tp-setting-row od-row" data-component="SettingRow">
+        <div className="tp-setting-row__text">
+          <h3 className="tp-setting-row__label">{t("set.mcp.yours")}</h3>
+          {active.length === 0 ? (
+            <span className="tp-help">
+              {tokens === undefined && isAuthenticated ? t("set.mcp.loadingTokens") : t("set.mcp.none")}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      {active.length > 0 ? (
+        <ul className="tp-list">
+          {active.map((token) => (
+            <li key={token._id}>
+              <div className="tp-setting-row od-row" data-component="SettingRow">
+                <div className="tp-setting-row__text">
+                  <span className="tp-setting-row__label" dir="auto">
+                    {token.name}
+                  </span>
+                  <span className="tp-help">
+                    <span className="tp-mono">{token.prefix}…</span> · {t("set.mcp.created")}{" "}
+                    <span className="tp-num">{formatDate(token.createdAt)}</span> · {t("set.mcp.lastUsed")}{" "}
+                    <span className="tp-num">{formatDate(token.lastUsedAt)}</span>
+                  </span>
+                </div>
+                <div className="tp-setting-row__control">
+                  <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={() => void handleRevoke(token._id)}>
+                    <span>{t("set.mcp.revoke")}</span>
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div className="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
+        <div className="tp-setting-row__text">
+          <h3 className="tp-setting-row__label">{t("set.mcp.connect")}</h3>
+          <span className="tp-help">{t("set.mcp.connectHelp")}</span>
+        </div>
+        <div className="tp-setting-row__control">
+          <pre className="tp-mono ig-grow ig-pre" dir="ltr">{`URL: ${endpoint}\nHeader: Authorization: Bearer <your token>`}</pre>
+        </div>
       </div>
     </section>
   );

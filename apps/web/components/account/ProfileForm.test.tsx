@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { type MessageKey, translate } from "@/lib/i18n";
 
 type Listener = (event: TestEvent) => void;
 
@@ -88,6 +89,14 @@ class TestNode {
   }
 
   tagName: string;
+
+  /** For <select>: React walks the options to mark the selected one. */
+  get options(): TestNode[] {
+    return this.childNodes.filter((child) => child.tagName === "OPTION");
+  }
+
+  selected = false;
+  defaultSelected = false;
 
   get textContent(): string {
     if (this.nodeType === 3) return this.nodeValue ?? "";
@@ -297,6 +306,7 @@ const updateMyProfile = mock(async (_args: { fullName: string }) => "user-1");
 const deleteMyAccount = mock(async () => ({ success: true, deletedCount: 1 }));
 const signOut = mock(async () => {});
 const push = mock((_href: string) => {});
+const replace = mock((_href: string) => {});
 
 let profileResult: Profile = {
   fullName: "Sam",
@@ -306,7 +316,7 @@ let profileResult: Profile = {
 let activeMutation: (...args: never[]) => Promise<unknown> = updateMyProfile;
 
 mock.module("next/navigation", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push, replace }),
 }));
 
 mock.module("@convex-dev/auth/react", () => ({
@@ -318,6 +328,10 @@ mock.module("convex/react", () => ({
   useMutation: () => activeMutation,
 }));
 
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: MessageKey) => translate("en", key) }),
+}));
+
 const { ProfileForm } = await import("./ProfileForm");
 const { DeleteAccountCard } = await import("./DeleteAccountCard");
 const { GreetingName } = await import("./GreetingName");
@@ -327,14 +341,18 @@ function walk(node: TestNode, visit: (node: TestNode) => void) {
   for (const child of node.childNodes) walk(child, visit);
 }
 
-function findByTag(root: TestNode, tag: string, label?: string): TestNode {
+function findAllByTag(root: TestNode, tag: string, label?: string): TestNode[] {
   const found: TestNode[] = [];
   walk(root, (node) => {
     if (node.tagName === tag && (label === undefined || node.textContent.includes(label))) {
       found.push(node);
     }
   });
-  const match = found[0];
+  return found;
+}
+
+function findByTag(root: TestNode, tag: string, label?: string): TestNode {
+  const match = findAllByTag(root, tag, label)[0];
   if (!match) throw new Error(`Missing ${tag}: ${label ?? ""}`);
   return match;
 }
@@ -374,6 +392,15 @@ async function setInput(node: TestNode, value: string) {
   });
 }
 
+async function submit(view: TestNode) {
+  await act(async () => {
+    const onSubmit = reactProps(findByTag(view, "FORM")).onSubmit as (event: {
+      preventDefault: () => void;
+    }) => Promise<void>;
+    await onSubmit({ preventDefault() {} });
+  });
+}
+
 describe("account profile", () => {
   afterEach(async () => {
     await act(async () => {
@@ -382,35 +409,24 @@ describe("account profile", () => {
     if (host?.parentNode) host.parentNode.removeChild(host);
     root = null;
     host = null;
-    updateMyProfile.mockReset();
-    deleteMyAccount.mockReset();
-    signOut.mockReset();
-    push.mockReset();
+    for (const fn of [updateMyProfile, deleteMyAccount, signOut, push, replace]) fn.mockReset();
     updateMyProfile.mockImplementation(async () => "user-1");
     deleteMyAccount.mockImplementation(async () => ({ success: true, deletedCount: 1 }));
     signOut.mockImplementation(async () => {});
   });
 
-  test("Save calls updateMyProfile with the trimmed name", async () => {
-    profileResult = {
-      fullName: "Sam",
-      email: "sam@example.com",
-      greetingName: "Sam",
-    };
+  test("Save changes calls updateMyProfile with the trimmed name", async () => {
+    profileResult = { fullName: "Sam", email: "sam@example.com", greetingName: "Sam" };
     activeMutation = updateMyProfile;
     const view = await render((<ProfileForm />) as ReactElement);
     const email = findById(view, "profile-email");
     expect(email.value).toBe("sam@example.com");
     expect(email.readOnly).toBe(true);
+    expect(view.textContent).toContain("Changing your email here isn't available yet.");
     expect(findById(view, "profile-name").value).toBe("Sam");
 
     await setInput(findById(view, "profile-name"), "  Ada Lovelace  ");
-    await act(async () => {
-      const onSubmit = reactProps(findByTag(view, "FORM")).onSubmit as (event: {
-        preventDefault: () => void;
-      }) => Promise<void>;
-      await onSubmit({ preventDefault() {} });
-    });
+    await submit(view);
 
     expect(updateMyProfile).toHaveBeenCalledTimes(1);
     expect(updateMyProfile).toHaveBeenCalledWith({ fullName: "Ada Lovelace" });
@@ -418,35 +434,75 @@ describe("account profile", () => {
     expect(view.textContent).not.toContain("{");
   });
 
-  test("Delete stays disabled until DELETE is typed", async () => {
+  test("a blank name shows the error summary and the field error, and saves nothing", async () => {
+    activeMutation = updateMyProfile;
+    const view = await render((<ProfileForm />) as ReactElement);
+    await setInput(findById(view, "profile-name"), "   ");
+    await submit(view);
+    expect(updateMyProfile).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("One thing needs a look before saving");
+    expect(findById(view, "profile-name-error").textContent).toContain("Add a name. Your first name is enough.");
+    expect(findById(view, "profile-name").getAttribute("aria-invalid")).toBe("true");
+  });
+
+  test("Sign out signs out and goes to /sign-in", async () => {
+    const view = await render((<ProfileForm />) as ReactElement);
+    await act(async () => {
+      findByTag(view, "BUTTON", "Sign out").click();
+    });
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith("/sign-in");
+  });
+
+  test("Delete stays off until the box is ticked, then deletes, signs out and leaves", async () => {
     activeMutation = deleteMyAccount;
     const view = await render((<DeleteAccountCard />) as ReactElement);
-    expect(view.textContent).toContain(
-      "Deleting your account removes your tasks, notes, habits, templates and settings, and ends your subscription. Signing in again later does not bring them back.",
-    );
-    const button = findByTag(view, "BUTTON", "Delete account");
-    expect(button.disabled).toBe(true);
+    expect(view.textContent).toContain("Signing in again within 30 days reopens the account, but what was removed doesn't come back.");
 
     await act(async () => {
-      button.click();
+      findByTag(view, "BUTTON", "Delete my account").click();
+    });
+    expect(view.textContent).toContain("Delete your account?");
+    const confirm = () => {
+      const buttons = findAllByTag(view, "BUTTON", "Delete my account");
+      const last = buttons[buttons.length - 1];
+      if (!last) throw new Error("Missing confirm button");
+      return last;
+    };
+    expect(confirm().getAttribute("aria-disabled")).toBe("true");
+
+    await act(async () => {
+      confirm().click();
     });
     expect(deleteMyAccount).not.toHaveBeenCalled();
 
-    await setInput(findById(view, "delete-account-confirm"), "DELET");
-    expect(findByTag(view, "BUTTON", "Delete account").disabled).toBe(true);
-
-    await setInput(findById(view, "delete-account-confirm"), "DELETE");
-    const ready = findByTag(view, "BUTTON", "Delete account");
-    expect(ready.disabled).toBe(false);
+    await act(async () => {
+      const onChange = reactProps(findById(view, "ds-ok")).onChange as (event: { target: { checked: boolean } }) => void;
+      onChange({ target: { checked: true } });
+    });
+    expect(confirm().getAttribute("aria-disabled")).toBe("false");
 
     await act(async () => {
-      ready.click();
+      confirm().click();
     });
     expect(deleteMyAccount).toHaveBeenCalledTimes(1);
     expect(deleteMyAccount).toHaveBeenCalledWith({});
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith("/sign-in");
     expect(view.textContent).not.toContain("{");
+  });
+
+  test("Keep my account closes the confirmation without deleting", async () => {
+    activeMutation = deleteMyAccount;
+    const view = await render((<DeleteAccountCard />) as ReactElement);
+    await act(async () => {
+      findByTag(view, "BUTTON", "Delete my account").click();
+    });
+    await act(async () => {
+      findByTag(view, "BUTTON", "Keep my account").click();
+    });
+    expect(view.textContent).not.toContain("Delete your account?");
+    expect(deleteMyAccount).not.toHaveBeenCalled();
   });
 
   test('GreetingName never shows "User"', async () => {

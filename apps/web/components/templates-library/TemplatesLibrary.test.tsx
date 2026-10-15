@@ -407,6 +407,12 @@ mock.module("next/link", () => ({
   }) => createElement("a", { href, ...props }, children),
 }));
 
+// The screen reads its copy from the locale context; English, as the app's default.
+const { translate } = await import("@/lib/i18n");
+mock.module("@/components/providers/LocaleProvider", () => ({
+  useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: Parameters<typeof translate>[1]) => translate("en", key) }),
+}));
+
 const { TemplatesLibrary } = await import("./TemplatesLibrary");
 
 function within(root: TestNode): TestNode[] {
@@ -488,9 +494,9 @@ describe("TemplatesLibrary", () => {
     expect(hrefOf(labeled(ownCard, "Edit Shipping day"))).toBe(
       "/templates/editor/jd72usertemplate01"
     );
-    expect(hrefOf(within(host).find((node) => node.textContent === "New template"))).toBe(
-      "/templates/builder"
-    );
+    expect(
+      hrefOf(within(host).find((node) => node.nodeName === "A" && node.textContent.includes("New template")))
+    ).toBe("/templates/builder");
 
     await click(labeled(ownCard, "Delete Shipping day"));
     expect(remove).not.toHaveBeenCalled();
@@ -503,7 +509,7 @@ describe("TemplatesLibrary", () => {
     });
   });
 
-  test("shows a loading skeleton, an empty state, and filters starter versus mine", async () => {
+  test("shows a loading state, empty sections, and filters built-in versus yours", async () => {
     listed = undefined;
     const loading = await renderLibrary();
     expect(loading.host.textContent).toContain("Loading templates.");
@@ -514,7 +520,8 @@ describe("TemplatesLibrary", () => {
 
     listed = [];
     const empty = await renderLibrary();
-    expect(empty.host.textContent).toContain("No templates yet.");
+    expect(empty.host.textContent).toContain("No built-in templates to show.");
+    expect(empty.host.textContent).toContain("No templates of your own yet.");
     await act(async () => {
       empty.root.unmount();
     });
@@ -523,7 +530,7 @@ describe("TemplatesLibrary", () => {
     const { host, root } = await renderLibrary();
     await click(
       within(host).find(
-        (node) => node.getAttribute("role") === "tab" && node.textContent === "Mine"
+        (node) => node.getAttribute("role") === "radio" && node.textContent === "Yours"
       )
     );
     expect(
@@ -533,7 +540,7 @@ describe("TemplatesLibrary", () => {
 
     await click(
       within(host).find(
-        (node) => node.getAttribute("role") === "tab" && node.textContent === "Starter"
+        (node) => node.getAttribute("role") === "radio" && node.textContent === "Built-in"
       )
     );
     expect(article(host, "starter:daily-page").textContent).toContain("Daily page");

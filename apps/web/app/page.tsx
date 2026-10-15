@@ -22,15 +22,18 @@ export const metadata: Metadata = {
 const wrap = "mx-auto w-full max-w-[1240px] px-6 md:px-8";
 
 const ctaPrimary =
-  "inline-flex items-center justify-center rounded-full bg-primary px-6 py-3.5 text-small font-medium text-cream hover:brightness-105";
+  "inline-flex items-center justify-center rounded-full bg-primary px-6 py-3.5 text-small font-medium text-primary-foreground hover:brightness-105";
 const ctaGradient =
-  "inline-flex items-center justify-center rounded-full tempo-gradient px-6 py-3.5 text-small font-medium text-cream hover:brightness-105";
+  "inline-flex items-center justify-center rounded-full bg-primary px-6 py-3.5 text-small font-medium text-primary-foreground hover:brightness-105";
 const ctaGhost =
   "inline-flex items-center justify-center rounded-full px-4 py-2 text-small font-medium text-foreground hover:bg-surface-sunken";
 const ctaOnDark =
-  "inline-flex items-center justify-center rounded-full bg-cream px-6 py-3.5 text-small font-semibold text-tempo-orange hover:brightness-105";
+  "inline-flex items-center justify-center rounded-full bg-background px-6 py-3.5 text-small font-semibold text-primary hover:brightness-105";
 
 const eyebrow =
+  "font-mono text-caption font-semibold uppercase tracking-[0.16em] text-primary";
+/** The eyebrow on the fixed dark sections: the light-theme accent is too dark there. */
+const eyebrowOnDark =
   "font-mono text-caption font-semibold uppercase tracking-[0.16em] text-tempo-orange";
 const sectionTitle =
   "mt-3 max-w-[18ch] font-serif text-[clamp(2rem,4.4vw,3.625rem)] font-normal leading-[1.08] tracking-tight";
@@ -59,7 +62,8 @@ const PRO_INCLUDES = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    // English-only page: keep it left to right even when the app language is Hebrew.
+    <div className="min-h-screen bg-background text-foreground" dir="ltr" lang="en">
       <nav className={`${wrap} flex flex-wrap items-center gap-4 py-6 md:gap-8`}>
         <Link href="/" className="flex items-center gap-3" aria-label="Tempo Flow home">
           <BrandMark size={32} />
@@ -97,11 +101,11 @@ export default function LandingPage() {
         <header className="relative overflow-hidden pb-16 pt-8 md:pb-24 md:pt-12">
           <div className={`${wrap} relative z-[2]`}>
             <p className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-small text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-tempo-orange" aria-hidden />
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
               Closed beta open now
             </p>
             <h1 className="max-w-[12ch] font-serif text-[clamp(2.75rem,6.8vw,5.75rem)] font-normal leading-[1.02] tracking-tight">
-              A planner that won&apos;t <em className="italic text-tempo-orange">shame</em>
+              A planner that won&apos;t <em className="italic text-primary">shame</em>
               <br />
               your nervous system.
             </h1>
@@ -133,7 +137,7 @@ export default function LandingPage() {
             aria-hidden
           >
             <article className="absolute left-5 top-10 w-[280px] -rotate-3 rounded-xl border border-border bg-card p-4 shadow-lift">
-              <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-tempo-orange">
+              <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
                 Brain Dump · 09:41
               </p>
               <p className="font-serif text-[15px] leading-relaxed">
@@ -141,20 +145,20 @@ export default function LandingPage() {
                 shipping fast enough?
               </p>
             </article>
-            <article className="absolute left-[180px] top-[180px] w-[300px] rotate-2 rounded-xl tempo-gradient p-4 text-cream shadow-lift">
-              <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-cream/85">
+            <article className="absolute left-[180px] top-[180px] w-[300px] rotate-2 rounded-xl bg-primary p-4 text-primary-foreground shadow-lift">
+              <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-foreground/85">
                 Coach
               </p>
-              <p className="mb-1.5 font-serif text-h3 font-medium text-cream">
+              <p className="mb-1.5 font-serif text-h3 font-medium text-primary-foreground">
                 Three things look doable this afternoon.
               </p>
-              <p className="text-small leading-relaxed text-cream/85">
+              <p className="text-small leading-relaxed text-primary-foreground/85">
                 I pulled them from your dump. The worry I left on the side — we&apos;ll look at it
                 tomorrow.
               </p>
             </article>
             <article className="absolute left-[60px] top-[380px] w-[260px] -rotate-2 rounded-xl border border-border bg-card p-4 shadow-lift">
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-tempo-orange">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
                 Today · 5-day streak
               </p>
               <div className="my-2 flex gap-1.5">
@@ -184,7 +188,7 @@ export default function LandingPage() {
 
             <div className="mt-8 grid items-center gap-8 rounded-xl bg-mkt-dark-bg p-8 text-mkt-dark-fg md:grid-cols-2">
               <div>
-                <p className={eyebrow}>★ Daily Note</p>
+                <p className={eyebrowOnDark}>★ Daily Note</p>
                 <h3 className="my-3 font-serif text-[clamp(1.75rem,3vw,2.25rem)] font-medium leading-tight tracking-tight text-mkt-dark-fg">
                   Markdown-native. Bi-directionally linked. Gently animated.
                 </h3>
@@ -202,13 +206,13 @@ export default function LandingPage() {
               </div>
               <pre className="overflow-x-auto rounded-lg bg-card p-5 font-mono text-caption leading-[1.9] text-foreground shadow-lift">
                 <span className="block text-muted-foreground"># ☀️ Thursday</span>
-                <span className="block text-tempo-orange">## Intentions</span>
+                <span className="block text-primary">## Intentions</span>
                 <span className="block">Ship launch post by noon. Protect the afternoon.</span>
-                <span className="mt-2 block text-tempo-orange">## Tasks</span>
+                <span className="mt-2 block text-primary">## Tasks</span>
                 <span className="block">* [x] Morning pages — [[Journal]]</span>
                 <span className="block">* [ ] Draft launch post @09:30 #writing</span>
                 <span className="block">* [ ] Ten-minute walk @12:30</span>
-                <span className="mt-2 block text-tempo-orange">## Notes</span>
+                <span className="mt-2 block text-primary">## Notes</span>
                 <span className="block text-muted-foreground">
                   Sam replied on [[Convex migration]]...
                 </span>
@@ -235,15 +239,15 @@ export default function LandingPage() {
                   <ul className="flex flex-col gap-1.5 text-small">
                     <li className="flex justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
                       <span>✓ Finish landing copy</span>
-                      <span className="font-mono text-[10px] text-tempo-orange">TASK</span>
+                      <span className="font-mono text-[10px] text-primary">TASK</span>
                     </li>
                     <li className="flex justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
                       <span>✓ Book dentist</span>
-                      <span className="font-mono text-[10px] text-tempo-orange">TASK</span>
+                      <span className="font-mono text-[10px] text-primary">TASK</span>
                     </li>
                     <li className="flex justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
                       <span>◉ Am I shipping fast enough?</span>
-                      <span className="font-mono text-[10px] text-amber">WORRY</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">WORRY</span>
                     </li>
                   </ul>
                 </div>
@@ -264,7 +268,7 @@ export default function LandingPage() {
               </article>
 
               <article className="col-span-12 min-h-[260px] rounded-xl bg-mkt-dark-bg p-6 text-mkt-dark-fg">
-                <p className={eyebrow}>03 — First Plan</p>
+                <p className={eyebrowOnDark}>03 — First Plan</p>
                 <h3 className="my-2 max-w-[24ch] font-serif text-[26px] font-medium tracking-tight text-mkt-dark-fg">
                   A three-block day, already scheduled. You can still say no.
                 </h3>
@@ -311,7 +315,7 @@ export default function LandingPage() {
 
         <section id="coach" className="bg-mkt-dark-bg py-16 text-mkt-dark-fg md:py-20">
           <div className={wrap}>
-            <p className={eyebrow}>The coach</p>
+            <p className={eyebrowOnDark}>The coach</p>
             <h2 className={`${sectionTitle} text-mkt-dark-fg`}>
               It sounds like a person who&apos;s met you before.
             </h2>
@@ -370,7 +374,7 @@ export default function LandingPage() {
                 <ul className="mb-6 space-y-2 text-small leading-8">
                   {WEEK_INCLUDES.map((item) => (
                     <li key={item} className="flex gap-2">
-                      <span className="text-tempo-orange" aria-hidden>
+                      <span className="text-primary" aria-hidden>
                         →
                       </span>
                       {item}
@@ -382,7 +386,7 @@ export default function LandingPage() {
                 </Link>
               </article>
               <article className="relative rounded-xl bg-gradient-to-br from-mkt-dark-bg to-mkt-dark-bg-2 p-8 text-mkt-dark-fg">
-                <p className="absolute right-5 top-5 rounded-full bg-tempo-orange px-2.5 py-1 text-[11px] font-semibold text-cream">
+                <p className="absolute right-5 top-5 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
                   Included now
                 </p>
                 <p className="mb-4 font-mono text-caption uppercase tracking-[0.12em] text-mkt-dark-fg-subtle">
@@ -402,7 +406,7 @@ export default function LandingPage() {
                 <ul className="mb-6 space-y-2 text-small leading-8">
                   {PRO_INCLUDES.map((item) => (
                     <li key={item} className="flex gap-2">
-                      <span className="text-tempo-orange" aria-hidden>
+                      <span className="text-primary" aria-hidden>
                         →
                       </span>
                       {item}
@@ -431,7 +435,7 @@ export default function LandingPage() {
                   record.&quot;
                 </blockquote>
                 <figcaption className="mt-4 flex items-center gap-2.5 text-small">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-serif text-primary-foreground">
                     M
                   </span>
                   <span className="font-medium">
@@ -449,7 +453,7 @@ export default function LandingPage() {
                   out.&quot;
                 </blockquote>
                 <figcaption className="mt-4 flex items-center gap-2.5 text-small">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-serif text-primary-foreground">
                     J
                   </span>
                   <span className="font-medium">
@@ -466,7 +470,7 @@ export default function LandingPage() {
                   it in two weeks and none of them are wasted.&quot;
                 </blockquote>
                 <figcaption className="mt-4 flex items-center gap-2.5 text-small">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full tempo-gradient font-serif text-cream">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-serif text-primary-foreground">
                     S
                   </span>
                   <span className="font-medium">
@@ -510,12 +514,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="tempo-gradient py-16 text-center text-cream md:py-20">
+        <section className="bg-primary py-16 text-center text-primary-foreground md:py-20">
           <div className={wrap}>
-            <h2 className="mx-auto max-w-[20ch] font-serif text-[clamp(2rem,4.4vw,3.625rem)] font-normal leading-[1.08] tracking-tight text-cream">
+            <h2 className="mx-auto max-w-[20ch] font-serif text-[clamp(2rem,4.4vw,3.625rem)] font-normal leading-[1.08] tracking-tight text-primary-foreground">
               Free during beta. One gentle week at a time.
             </h2>
-            <p className="mx-auto mt-4 max-w-[62ch] font-serif text-h3 leading-relaxed text-cream/90">
+            <p className="mx-auto mt-4 max-w-[62ch] font-serif text-h3 leading-relaxed text-primary-foreground/90">
               No credit card. No newsletter enrollment. No growth loops. Just the app.
             </p>
             <Link href="/sign-up" className={`${ctaOnDark} mt-8`}>

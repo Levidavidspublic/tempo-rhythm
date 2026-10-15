@@ -30,8 +30,9 @@ test.describe("integrations screen", () => {
 
     await expect(integrationsPage.getByRole("heading", { name: "Integrations", exact: true })).toBeVisible();
     await expect(integrationsPage.getByText("Google Calendar")).toBeVisible();
-    await expect(integrationsPage.getByText("Apple Calendar")).toBeVisible();
-    await expect(integrationsPage.getByText("Coming soon")).toHaveCount(2);
+    await expect(integrationsPage.getByText("Gmail", { exact: true })).toBeVisible();
+    // v3 (settings-integrations.html): six planned connectors, each badged "Coming later".
+    await expect(integrationsPage.locator('[data-component="Badge"]', { hasText: "Coming later" })).toHaveCount(6);
     await expect(integrationsPage.getByRole("button", { name: /^Connect/i })).toHaveCount(0);
     expect(consoleErrors).toEqual([]);
   });
