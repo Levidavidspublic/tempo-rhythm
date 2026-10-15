@@ -28,8 +28,9 @@ function makeWorld() {
     }
     return t;
   };
-  table("users").set(A, { _id: A, _creationTime: 0, email: "a@example.com", approvalStatus: "approved" });
-  table("users").set(B, { _id: B, _creationTime: 0, email: "b@example.com", approvalStatus: "approved" });
+  // Every account is granted "max" today (convex/lib/entitlements.ts).
+  table("users").set(A, { _id: A, _creationTime: 0, email: "a@example.com", approvalStatus: "approved", entitlementTier: "max" });
+  table("users").set(B, { _id: B, _creationTime: 0, email: "b@example.com", approvalStatus: "approved", entitlementTier: "max" });
   function builder(rows: Row[]) {
     return {
       withIndex: (_name: string, fn: (q: unknown) => unknown) => {
@@ -189,6 +190,65 @@ describe("starting a voice session", () => {
     });
     await expect(startSession(world, other, "client_key_b", B)).rejects.toThrow("resting for today");
   });
+
+  test("the cap comes from the person's tier, held under the preview cap; no tier gets no live voice", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    await world.db.patch(A, { entitlementTier: "none" });
+    expect(await run(voice.availability, world.as(A), {})).toMatchObject({ available: false, reason: "budget", minutesLeft: 0 });
+    await expect(startSession(world, conversationId)).rejects.toThrow("today's voice time");
+    await world.db.patch(A, { entitlementTier: undefined });
+    await expect(startSession(world, conversationId)).rejects.toThrow("today's voice time");
+    await world.db.patch(A, { entitlementTier: "basic" });
+    expect((await startSession(world, conversationId)).minutesLeft).toBe(Math.min(30, VOICE_LIMITS.dailyMinutesPerUser));
+    expect(world.rows("voiceSessions")).toHaveLength(1);
+  });
+
+  test("availability says voice is resting once everyone's minutes are spent, while the person still has theirs", async () => {
+    const world = makeWorld();
+    const now = Date.now();
+    const today = new Date(now).toISOString().slice(0, 10);
+    await world.db.insert("voiceSessions", {
+      userId: B, conversationId: await conversation(world, B), clientKey: "many_key_1", status: "ended", language: "en",
+      startedAt: now - 200 * 60_000, lastRenewalAt: now, endedAt: now - 79.5 * 60_000,
+      dateKey: "2000-01-01", utcDateKey: today, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
+    });
+    expect(await run(voice.availability, world.as(A), {})).toEqual({
+      available: false,
+      reason: "resting",
+      minutesLeft: VOICE_LIMITS.dailyMinutesPerUser,
+    });
+  });
+
+  test("a day with more session rows than can be read counts as spent: the global ceiling fails closed", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const today = new Date().toISOString().slice(0, 10);
+    for (let i = 0; i <= VOICE_LIMITS.globalRowsPerDay; i += 1) {
+      await world.db.insert("voiceSessions", {
+        userId: `users:many${i}`, conversationId, clientKey: `many_key_${i}`, status: "ended", language: "en",
+        startedAt: 1_000, lastRenewalAt: 1_000, endedAt: 1_001, durationMs: 1,
+        dateKey: "2000-01-01", utcDateKey: today, grants: 0, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
+      });
+    }
+    expect((await run(voice.availability, world.as(A), {})).reason).toBe("resting");
+    await expect(startSession(world, conversationId)).rejects.toThrow("resting for today");
+  });
+
+  test("one person can start only so many sessions a day, however short", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const now = Date.now();
+    const today = new Date(now).toISOString().slice(0, 10);
+    for (let i = 0; i < VOICE_LIMITS.sessionsPerUserPerDay; i += 1) {
+      await world.db.insert("voiceSessions", {
+        userId: A, conversationId, clientKey: `short_key_${i}`, status: "ended", language: "en",
+        startedAt: now - 1_000, lastRenewalAt: now - 1_000, endedAt: now - 999, durationMs: 1,
+        dateKey: today, utcDateKey: today, grants: 0, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
+      });
+    }
+    await expect(startSession(world, conversationId)).rejects.toThrow("today's voice time");
+  });
 });
 
 describe("renew and stop", () => {
@@ -220,10 +280,21 @@ describe("renew and stop", () => {
 
   test("running out of today's minutes mid-session ends it as exhausted", async () => {
     const world = makeWorld();
-    const { sessionId } = await startSession(world, await conversation(world));
+    const conversationId = await conversation(world);
+    const { sessionId } = await startSession(world, conversationId);
+    const lease = world.row(sessionId) as Row;
     const now = Date.now();
-    await world.db.patch(sessionId, { startedAt: now - VOICE_LIMITS.dailyMinutesPerUser * 60_000, lastRenewalAt: now - 1_000 });
+    // An earlier lease today used all but 30 s; this one has run 2 minutes, far from the session
+    // limit, so only the budget can end it (no clock race with the 15-minute maximum).
+    await world.db.insert("voiceSessions", {
+      userId: A, conversationId, clientKey: "earlier_key", status: "ended", language: "en",
+      startedAt: now - 60 * 60_000, lastRenewalAt: now - 46 * 60_000,
+      endedAt: now - 60 * 60_000 + VOICE_LIMITS.dailyMinutesPerUser * 60_000 - 30_000,
+      dateKey: lease.dateKey, utcDateKey: lease.utcDateKey, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
+    });
+    await world.db.patch(sessionId, { startedAt: now - 120_000, lastRenewalAt: now - 1_000 });
     expect((await run(voice.renew, world.as(A), { sessionId })).status).toBe("exhausted");
+    expect(world.row(sessionId)).toMatchObject({ status: "ended", endReason: "exhausted" });
   });
 
   test("stop is idempotent and someone else can't touch the lease", async () => {

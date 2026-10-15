@@ -8,6 +8,7 @@ import { isApproved, requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
 import {
   VOICE_LIMITS,
+  dailyMinutesFor,
   laneFor,
   leaseExpired,
   leaseMs,
@@ -60,20 +61,31 @@ async function preferencesOf(ctx: Db, userId: Id<"users">) {
     .first();
 }
 
-/** Live minutes used (ms) on one local day, `except` one lease. */
-async function usedTodayMs(ctx: Db, userId: Id<"users">, dateKey: string, now: number, except?: Id<"voiceSessions">) {
+/** The person's leases on one local day (at most `sessionsPerUserPerDay`, enforced at start). */
+async function leasesToday(ctx: Db, userId: Id<"users">, dateKey: string) {
   const rows = await ctx.db
     .query("voiceSessions")
     .withIndex("by_userId_dateKey", (q) => q.eq("userId", userId).eq("dateKey", dateKey))
     .collect();
-  return rows.filter((r) => r._id !== except && r.deletedAt === undefined).reduce((ms, r) => ms + leaseMs(r, now), 0);
+  return rows.filter((r) => r.deletedAt === undefined);
 }
 
+/** Live minutes used (ms) on one local day, `except` one lease. */
+async function usedTodayMs(ctx: Db, userId: Id<"users">, dateKey: string, now: number, except?: Id<"voiceSessions">) {
+  const rows = await leasesToday(ctx, userId, dateKey);
+  return rows.filter((r) => r._id !== except).reduce((ms, r) => ms + leaseMs(r, now), 0);
+}
+
+/**
+ * Everyone's live minutes (ms) on one UTC day, `except` one lease. A day with more rows than can
+ * be read counts as spent: the ceiling fails closed instead of counting part of the day.
+ */
 async function usedGlobalMs(ctx: Db, utcKey: string, now: number, except?: Id<"voiceSessions">) {
   const rows = await ctx.db
     .query("voiceSessions")
     .withIndex("by_utcDateKey", (q) => q.eq("utcDateKey", utcKey))
-    .take(5000);
+    .take(VOICE_LIMITS.globalRowsPerDay + 1);
+  if (rows.length > VOICE_LIMITS.globalRowsPerDay) return Number.POSITIVE_INFINITY;
   return rows.filter((r) => r._id !== except).reduce((ms, r) => ms + leaseMs(r, now), 0);
 }
 
@@ -85,7 +97,10 @@ async function ttsCharsToday(ctx: Db, userId: Id<"users">, dateKey: string) {
   return rows.reduce((n, r) => n + r.ttsChars, 0);
 }
 
-const DAILY_CAP_MS = VOICE_LIMITS.dailyMinutesPerUser * 60_000;
+/** The person's live-minute cap today (ms): their tier's number under the preview cap. */
+function dailyCapMs(user: Doc<"users">): number {
+  return dailyMinutesFor(user.entitlementTier) * 60_000;
+}
 const GLOBAL_CAP_MS = VOICE_LIMITS.dailyMinutesGlobal * 60_000;
 
 type EndReason = NonNullable<Lease["endReason"]>;
@@ -127,11 +142,21 @@ async function liveLease(ctx: MutationCtx, userId: Id<"users">, sessionId: Id<"v
 
 const availabilityValidator = v.object({
   available: v.boolean(),
-  reason: v.union(v.null(), v.literal("off"), v.literal("language"), v.literal("budget"), v.literal("pending")),
+  reason: v.union(
+    v.null(),
+    v.literal("off"),
+    v.literal("language"),
+    v.literal("budget"),
+    v.literal("resting"),
+    v.literal("pending"),
+  ),
   minutesLeft: v.number(),
 });
 
-/** Whether the mic button can start a session, and how many minutes are left today. */
+/**
+ * Whether the mic button can start a session, and how many minutes are left today. "budget": the
+ * person's own minutes are spent; "resting": everyone's (the global ceiling) are.
+ */
 export const availability = query({
   args: {},
   returns: availabilityValidator,
@@ -142,11 +167,13 @@ export const availability = query({
     const prefs = await preferencesOf(ctx, user._id);
     if (!laneFor(prefs?.locale)) return { available: false, reason: "language" as const, minutesLeft: 0 };
     const now = Date.now();
-    const left = DAILY_CAP_MS - (await usedTodayMs(ctx, user._id, localDateKey(now, prefs?.timeZone), now));
+    const left = dailyCapMs(user) - (await usedTodayMs(ctx, user._id, localDateKey(now, prefs?.timeZone), now));
     const minutesLeft = Math.max(0, Math.floor(left / 60_000));
-    return left < VOICE_LIMITS.minStartMs
-      ? { available: false, reason: "budget" as const, minutesLeft }
-      : { available: true, reason: null, minutesLeft };
+    if (left < VOICE_LIMITS.minStartMs) return { available: false, reason: "budget" as const, minutesLeft };
+    if (GLOBAL_CAP_MS - (await usedGlobalMs(ctx, utcDateKey(now), now)) < VOICE_LIMITS.minStartMs) {
+      return { available: false, reason: "resting" as const, minutesLeft };
+    }
+    return { available: true, reason: null, minutesLeft };
   },
 });
 
@@ -180,7 +207,7 @@ export const start = mutation({
       .collect();
     for (const lease of active) {
       if (lease.clientKey === args.clientKey && lease.conversationId === args.conversationId && !leaseExpired(lease, now)) {
-        const left = DAILY_CAP_MS - (await usedTodayMs(ctx, user._id, lease.dateKey, now));
+        const left = dailyCapMs(user) - (await usedTodayMs(ctx, user._id, lease.dateKey, now));
         return { sessionId: lease._id, language: lease.language, renewEveryMs: VOICE_LIMITS.renewEveryMs, minutesLeft: Math.max(0, Math.floor(left / 60_000)) };
       }
       await endLease(ctx, lease, leaseExpired(lease, now) ? "expired" : "replaced", now);
@@ -188,8 +215,11 @@ export const start = mutation({
 
     const dateKey = localDateKey(now, prefs?.timeZone);
     const utcKey = utcDateKey(now);
-    const left = DAILY_CAP_MS - (await usedTodayMs(ctx, user._id, dateKey, now));
-    if (left < VOICE_LIMITS.minStartMs) throw new Error(DAILY_LIMIT_MESSAGE);
+    const today = await leasesToday(ctx, user._id, dateKey);
+    const left = dailyCapMs(user) - today.reduce((ms, r) => ms + leaseMs(r, now), 0);
+    if (left < VOICE_LIMITS.minStartMs || today.length >= VOICE_LIMITS.sessionsPerUserPerDay) {
+      throw new Error(DAILY_LIMIT_MESSAGE);
+    }
     if (GLOBAL_CAP_MS - (await usedGlobalMs(ctx, utcKey, now)) < VOICE_LIMITS.minStartMs) throw new Error(GLOBAL_LIMIT_MESSAGE);
 
     const sessionId = await ctx.db.insert("voiceSessions", {
@@ -243,12 +273,13 @@ export const renew = mutation({
     }
     const spent = (await usedTodayMs(ctx, user._id, lease.dateKey, now, lease._id)) + (now - lease.startedAt);
     const globalSpent = (await usedGlobalMs(ctx, lease.utcDateKey, now, lease._id)) + (now - lease.startedAt);
-    if (spent >= DAILY_CAP_MS || globalSpent >= GLOBAL_CAP_MS) {
+    const cap = dailyCapMs(user);
+    if (spent >= cap || globalSpent >= GLOBAL_CAP_MS) {
       await endLease(ctx, lease, "exhausted", now);
       return { status: "exhausted" as const, minutesLeft: 0 };
     }
     await ctx.db.patch(lease._id, { lastRenewalAt: now, updatedAt: now });
-    return { status: "ok" as const, minutesLeft: Math.floor((DAILY_CAP_MS - spent) / 60_000) };
+    return { status: "ok" as const, minutesLeft: Math.floor((cap - spent) / 60_000) };
   },
 });
 

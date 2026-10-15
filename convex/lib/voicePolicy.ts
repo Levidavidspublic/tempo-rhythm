@@ -10,8 +10,18 @@
  */
 
 export const VOICE_LIMITS = {
-  /** Live minutes per person per local day during preview (A-7: 15, never above HARD_RULES §9). */
+  /**
+   * Preview cap on live minutes per person per local day (A-7: 15). It only ever lowers the
+   * tier's HARD_RULES §9 number (`dailyMinutesFor`); it never raises it.
+   */
   dailyMinutesPerUser: 15,
+  /** Voice sessions one person can start per local day, so no client floods the day's rows. */
+  sessionsPerUserPerDay: 40,
+  /**
+   * Session rows read for the global ceiling. A day with more fails closed (no new voice, every
+   * renewal exhausted) rather than counting only part of the day.
+   */
+  globalRowsPerDay: 5000,
   /** Live minutes for everyone together per UTC day: the app-side global ceiling (A-7). */
   dailyMinutesGlobal: 120,
   /** Characters of coach replies read aloud per person per local day (A-7 TTS cap). */
@@ -35,6 +45,19 @@ export const VOICE_LIMITS = {
   /** Largest audio clip accepted back from TTS. */
   maxAudioBytes: 4 * 1024 * 1024,
 } as const;
+
+/** Live (streaming) voice minutes per local day by entitlement tier (HARD_RULES §9). */
+export const TIER_LIVE_MINUTES = { none: 0, basic: 30, pro: 90, max: 180, god: 180 } as const;
+
+/**
+ * Today's live-minute cap for a tier: its HARD_RULES §9 number, held under the preview cap (A-7).
+ * No tier, or an unknown one, gets none: it fails closed.
+ */
+export function dailyMinutesFor(tier: string | undefined): number {
+  const known = tier !== undefined && Object.keys(TIER_LIVE_MINUTES).includes(tier);
+  const byTier = known ? TIER_LIVE_MINUTES[tier as keyof typeof TIER_LIVE_MINUTES] : 0;
+  return Math.min(byTier, VOICE_LIMITS.dailyMinutesPerUser);
+}
 
 /** Where the browser streams microphone audio, per language (P-1, P-2, P-9). */
 export type VoiceLane = {

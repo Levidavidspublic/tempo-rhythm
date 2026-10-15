@@ -1,5 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { VOICE_LIMITS, laneFor, leaseExpired, leaseMs, localDateKey, speechSentences, utcDateKey } from "./voicePolicy";
+import {
+  TIER_LIVE_MINUTES,
+  VOICE_LIMITS,
+  dailyMinutesFor,
+  laneFor,
+  leaseExpired,
+  leaseMs,
+  localDateKey,
+  speechSentences,
+  utcDateKey,
+} from "./voicePolicy";
 
 describe("laneFor", () => {
   test("English (and no preference) streams to Flux on /v2/listen", () => {
@@ -87,5 +97,22 @@ describe("day keys", () => {
     expect(localDateKey(t, "Not/AZone")).toBe("2026-10-15");
     expect(localDateKey(t, undefined)).toBe("2026-10-15");
     expect(utcDateKey(t)).toBe("2026-10-15");
+  });
+});
+
+describe("daily live minutes by tier (HARD_RULES §9)", () => {
+  test("the tier numbers are HARD_RULES §9's: Basic 30, Pro 90, Max 180", () => {
+    expect(TIER_LIVE_MINUTES).toMatchObject({ none: 0, basic: 30, pro: 90, max: 180 });
+  });
+
+  test("the preview cap only ever lowers a tier's number; no tier or an unknown one gets none", () => {
+    for (const tier of ["basic", "pro", "max", "god"] as const) {
+      expect(dailyMinutesFor(tier)).toBe(Math.min(TIER_LIVE_MINUTES[tier], VOICE_LIMITS.dailyMinutesPerUser));
+      expect(dailyMinutesFor(tier)).toBeLessThanOrEqual(TIER_LIVE_MINUTES[tier]);
+    }
+    expect(dailyMinutesFor("none")).toBe(0);
+    expect(dailyMinutesFor(undefined)).toBe(0);
+    expect(dailyMinutesFor("platinum")).toBe(0);
+    expect(dailyMinutesFor("toString")).toBe(0);
   });
 });
