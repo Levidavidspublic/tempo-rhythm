@@ -43,12 +43,14 @@ Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workf
 
 `docs/sprint/SPRINT-BRIEF.md` does not exist on `integration` (checked 2026-10-14 18:20 UTC), so these are the run prompt's five fallback loops. A loop counts as done after 5 passes in a row on preview.tempoflow.dev, each with screenshots.
 
-- [ ] L1 Sign in on preview with the preview-only guest/test sign-in → Today loads as the daily page. **BLOCKED_VERIFICATION**
-- [ ] L2 On Today, add a task by typing → reload → the task is still there. **BLOCKED_VERIFICATION**
-- [ ] L3 Create a page from a template → edit it with the slash menu → reload → the edit persisted. **BLOCKED_VERIFICATION**
-- [ ] L4 Ask the coach to plan the afternoon → proposal card shows the exact change → Accept → the change appears → Undo within 5 minutes restores it. **BLOCKED_VERIFICATION**
-- [ ] L5 Chat-first decision ("what order should I do these in?") → a decision card renders from the json-render catalog → saving it writes to today's page. **BLOCKED_VERIFICATION**, and the feature is not built (Phase 3).
-- [ ] Every loop run also sends one crisis-style message and sees the fixed crisis card, with no model call. **BLOCKED_VERIFICATION** (needs a session on /coach).
+- [x] L1 Sign in on preview → Today loads as the daily page. **5/5 on `f1bfacd`** (10:00 UTC, synthetic approved account, #892/#897; no guest sign-in).
+- [x] L2 On Today, add a task by typing → reload → the task is still there. **5/5 on `f1bfacd`**.
+- [x] L3 Create a page from a template → edit it with the slash menu → reload → the edit persisted. **5/5 on `f1bfacd`**.
+- [x] L4 Ask the coach to plan the afternoon → proposal card shows the exact change → Accept → the change appears → Undo within 5 minutes restores it. **5/5 on `f1bfacd`** (#949's script).
+- [x] L5 Chat-first decision ("what order should I do these in?") → a decision card renders from the json-render catalog → saving it writes to today's page. **5/5 on `f1bfacd`** (built in #940 + #950; #955's script).
+- [x] Every loop run also sends one crisis-style message and sees the fixed crisis card, with no `coach:reply` call. Part of every pass above (25 of 25).
+
+Runs use #954's harness: an attempt that failed with requests the sandbox network dropped (502 from the proxy, not Vercel) is repeated and never counted as a pass. On `f1bfacd` that happened 3 times (L1 ×2, L2 ×1), each on a static file or the page itself. Earlier passes are in Results.
 
 ## Plan
 
@@ -162,6 +164,9 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 09:46-09:49 | L5 on `f034a99` | L5 | **First L5 pass on preview**: decision card from 3 seeded tasks, Save to today, steps on today's page in order, crisis card. Then: (1) the page's newest rows weren't drawn by the editor (the page grows each run) → #955 reads from the end; (2) the model shortened the seeded titles ("Alpha L5 bill" for "Alpha L5 bill 2026…-x1y2"), so saving would add new tasks instead of ordering the person's own → **#957** matches steps to today's task titles on the server | [#955](https://github.com/Levidavidspublic/tempo-rhythm/pull/955), [#957](https://github.com/Levidavidspublic/tempo-rhythm/pull/957) |
 | 09:49 | #945 | voice | Codex on `d683f00`: **no new findings**. CI green → ready, auto-merge on | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 | 09:50-09:56 | #953, #954, #956, #957 | — | #953: Codex P2, the mobile coach also sends the local date (`430a953`, mobile typecheck pass). #954: Codex P2s fixed (`1e34331`). #956 opened: the answer format puts `"proposal"` first, a rule that a reply offering a change carries it, and the parser accepts the same card as a JSON string, a one-item list or `"Task"`. All 7 checks pass (2195). #957 opened: decision steps take the person's task titles. All 7 checks pass (2197) | [#953](https://github.com/Levidavidspublic/tempo-rhythm/pull/953), [#954](https://github.com/Levidavidspublic/tempo-rhythm/pull/954), [#956](https://github.com/Levidavidspublic/tempo-rhythm/pull/956), [#957](https://github.com/Levidavidspublic/tempo-rhythm/pull/957) |
+| 09:54 | #945 merged | voice | `f1bfacd`. Voice stays off on preview until `DEEPGRAM_API_KEY` is set. Preview serves `f1bfacd` | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
+| 09:57-10:12 | after #945 (preview `f1bfacd`) | **L1-L5** | **L1 5/5, L2 5/5, L3 5/5, L4 5/5, L5 5/5**, crisis card on every pass. Three attempts were repeated after sandbox network drops (L1 ×2, L2 ×1: proxy 502 on `/today` or a static chunk). Harness #954 (`1e34331`), L5 script #955 (`f905664`) | screenshots in the run's scratch dir |
+| 09:58 | #948 | voice | voice web replayed onto `integration` `f1bfacd` (one CoachChat conflict with the Today chat resolved; Talk waits for today's page and any reply in flight). All 7 checks pass (2242 tests). Retargeted to `integration`, Codex requested | [#948](https://github.com/Levidavidspublic/tempo-rhythm/pull/948) |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Blocked
