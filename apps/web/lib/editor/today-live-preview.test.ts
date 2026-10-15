@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { pageLanguage, pageSurface } from "@/components/editor/LivePreviewEditor";
 import { inlineDecorations, lineDirections, tempoBlocksField } from "@/components/editor/live-preview";
@@ -32,7 +33,12 @@ type Drawn = { lineClasses: Map<string, string>; hidden: string[]; widgets: stri
 
 /** What the page editor draws for `body`: each line's classes, hidden text and widget text. */
 function draw(body: string): Drawn {
-  const state = EditorState.create({ doc: body, extensions: [pageLanguage(), pageSurface({ labels: LABELS, ariaLabel: "Page" })] });
+  let state = EditorState.create({ doc: body, extensions: [pageLanguage(), pageSurface({ labels: LABELS, ariaLabel: "Page" })] });
+  // A new state's first parse stops after CodeMirror's 20 ms budget, so on a busy machine its tree
+  // can end before the last headings (the editor itself redraws as parsing goes on). Finish the
+  // parse, then take a state that carries the whole tree.
+  ensureSyntaxTree(state, state.doc.length, 10_000);
+  state = state.update({}).state;
   const drawn: Drawn = { lineClasses: new Map(), hidden: [], widgets: [] };
   inlineDecorations(state, [{ from: 0, to: state.doc.length }]).between(0, state.doc.length, (from, to, deco) => {
     const spec = deco.spec as { class?: string; widget?: unknown };
