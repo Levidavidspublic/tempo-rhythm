@@ -56,7 +56,13 @@ describe("a reply with no card", () => {
     expect(withoutAcceptPromise("Call the bank first — nothing changes until you approve. Then lunch.")).toBe(
       "Call the bank first. Then lunch.",
     );
-    expect(withoutAcceptPromise("A short walk. But nothing will change unless you say yes, so no rush.")).toBe("A short walk.");
+    expect(withoutAcceptPromise("A short walk. But nothing will change unless you say yes, so no rush.")).toBe(
+      "A short walk. So no rush.",
+    );
+    expect(withoutAcceptPromise("Call the bank, but nothing changes until you accept it, so take your time.")).toBe(
+      "Call the bank, so take your time.",
+    );
+    expect(withoutAcceptPromise("Nothing changes until you say yes to it, 10 minutes is plenty.")).toBe("10 minutes is plenty.");
   });
 
   test("keeps advice that only sounds like the promise", () => {
