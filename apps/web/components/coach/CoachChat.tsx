@@ -8,7 +8,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { pickCoachConversation } from "@/lib/coach-conversation";
+import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
@@ -192,7 +192,17 @@ export function CoachConversation({
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
   const inputId = variant === "page" ? "coach-message" : variant === "panel" ? "coach-panel-message" : "today-coach-message";
   const shown = variant === "today" ? messages?.slice(-TODAY_MESSAGES) : messages;
-  const busy = isSending || replying;
+  // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
+  // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
+  const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
+  const busy = isSending || replying || inFlightUntil !== null;
+  // A reply that runs past the wait (its action died) gets Try again without a new message.
+  const [, setWaitedOut] = useState(0);
+  useEffect(() => {
+    if (inFlightUntil === null) return;
+    const timer = window.setTimeout(() => setWaitedOut((n) => n + 1), Math.max(0, inFlightUntil - Date.now()) + 50);
+    return () => window.clearTimeout(timer);
+  }, [inFlightUntil]);
   // The newest message is the user's and no reply is on its way: a reply failed, or the page
   // reloaded while one was running. Either way the message is saved and can be answered again.
   const waiting = !busy && !crisisHold && messages !== undefined && messages.at(-1)?.role === "user";
