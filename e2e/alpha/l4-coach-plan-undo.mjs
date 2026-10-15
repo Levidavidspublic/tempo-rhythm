@@ -30,10 +30,12 @@ await runLoop("l4", "Coach plans the afternoon: proposal, Accept, Undo", async (
   await expectVisible(card.getByText("Done. You can undo this for 5 minutes."), "the accepted note with Undo");
   const list = LIST_FOR_KIND[kind] ?? "/tasks";
   await page.goto(`${BASE_URL}${list}`, { waitUntil: "domcontentloaded" });
-  await expectVisible(page.getByText(title, { exact: true }).first(), `the accepted ${kind} on ${list}`, 45_000);
+  // Rows on the list itself: the sidebar also lists pages, so a note shows there too.
+  const rows = () => page.locator(".tp-app__main").getByText(title, { exact: true });
+  await expectVisible(rows().first(), `the accepted ${kind} on ${list}`, 45_000);
   // An earlier run may have left a row with the same title: Undo must take exactly one away.
   await page.waitForLoadState("networkidle").catch(() => {});
-  const withIt = await page.getByText(title, { exact: true }).count();
+  const withIt = await rows().count();
   await shot(page, "applied");
   await page.goto(`${BASE_URL}/coach`, { waitUntil: "domcontentloaded" });
   await expectVisible(mine(), "this run's message after coming back", 45_000);
@@ -43,7 +45,7 @@ await runLoop("l4", "Coach plans the afternoon: proposal, Accept, Undo", async (
   await page.goto(`${BASE_URL}${list}`, { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.waitForTimeout(3_000);
-  const after = await page.getByText(title, { exact: true }).count();
+  const after = await rows().count();
   if (after !== withIt - 1) throw fail(`the ${kind} is still on ${list} after Undo (${withIt} before, ${after} after)`);
   await shot(page, "after-undo");
 });
