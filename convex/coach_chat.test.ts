@@ -697,9 +697,25 @@ describe("a decision: the coach orders today's tasks, and saving it writes to to
     await world.db.patch(pageId, { body: `${saved}Then a walk.\n` });
     await run(coach.undoProposal, world.as(A), { messageId });
     const body = (world.row(pageId) as Row).body as string;
+    expect(body).toBe("## Intention\nThen a walk.\n");
+  });
+
+  test("Undo after a step was ticked removes the decision's blocks and its heading, by id", async () => {
+    const world = makeWorld();
+    const pageId = await seedDailyPage(world, "## Intention\n");
+    const { messageId } = await proposalTurn(world, DECISION);
+    await run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY });
+    const saved = (world.row(pageId) as Row).body as string;
+    // The person ticks the first step in the editor: that fence's JSON changes.
+    const ticked = saved.replace('"status":"now"', '"status":"done"');
+    expect(ticked).not.toBe(saved);
+    await world.db.patch(pageId, { body: `${ticked}A note.\n` });
+    await run(coach.undoProposal, world.as(A), { messageId });
+    const body = (world.row(pageId) as Row).body as string;
     expect(pageTasks(body)).toEqual([]);
+    expect(body).not.toContain("### This afternoon");
     expect(body).toContain("## Intention\n");
-    expect(body).toContain("Then a walk.\n");
+    expect(body).toContain("A note.\n");
   });
 
   test("Save needs today's date and today's own page; nothing changes when either is missing", async () => {

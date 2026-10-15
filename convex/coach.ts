@@ -473,10 +473,15 @@ function decisionBlock(step: CoachDecisionStep, index: number, now: number): Tem
   };
 }
 
+/** The heading a decision's title becomes on the page. */
+function decisionHeading(title: string): string {
+  return `### ${title}\n\n`;
+}
+
 /** The decision as page text: its title as a heading (when it has one), then one task fence per step. */
 function decisionText(proposal: Extract<CoachProposal, { kind: "decision" }>, now: number) {
   const blocks = proposal.steps.map((step, index) => decisionBlock(step, index, now));
-  const heading = proposal.title ? `### ${proposal.title}\n\n` : "";
+  const heading = proposal.title ? decisionHeading(proposal.title) : "";
   const fences = blocks.map((block) => `\`\`\`json tempo\n${JSON.stringify(block)}\n\`\`\`\n`).join("");
   return { text: heading + fences, blockIds: blocks.map((block) => block.id) };
 }
@@ -532,19 +537,31 @@ async function saveDecision(
 }
 
 /**
- * Takes a saved decision back off the page. When the page still ends with exactly what was added,
- * that text goes; otherwise only the decision's own task blocks are removed, and everything the
- * person wrote since stays.
+ * Takes a saved decision back off the page, keeping everything the person wrote since. The exact
+ * text that was added goes, wherever it now sits. If the person changed it (ticked a step, say),
+ * the decision's own task blocks go by id, and so does its generated heading (Codex P2 on #940).
  */
-function withoutDecision(body: string, appended: string | undefined, blockIds: readonly string[]): string {
-  if (appended && body.endsWith(appended)) {
-    return body.slice(0, body.length - appended.length);
+function withoutDecision(
+  body: string,
+  appended: string | undefined,
+  blockIds: readonly string[],
+  title: string | undefined,
+): string {
+  if (appended) {
+    const at = body.lastIndexOf(appended);
+    if (at >= 0) return body.slice(0, at) + body.slice(at + appended.length);
   }
   const ids = new Set(blockIds);
-  return parseTempoBlocks(body)
+  let rest = parseTempoBlocks(body)
     .filter((segment) => !(segment.kind === "valid" && ids.has(segment.block.id)))
     .map((segment) => segment.source)
     .join("");
+  if (title) {
+    const heading = decisionHeading(title);
+    const at = rest.lastIndexOf(heading);
+    if (at >= 0) rest = rest.slice(0, at) + rest.slice(at + heading.length);
+  }
+  return rest;
 }
 
 /**
@@ -670,7 +687,7 @@ export const undoProposal = mutation({
       const pageId = ctx.db.normalizeId("notes", proposal.createdId);
       const page = pageId ? await ctx.db.get(pageId) : null;
       if (pageId && page && page.userId === user._id && page.deletedAt === undefined) {
-        const body = withoutDecision(page.body, proposal.appended, proposal.blockIds ?? []);
+        const body = withoutDecision(page.body, proposal.appended, proposal.blockIds ?? [], proposal.title);
         if (body !== page.body) {
           await updateNoteForUser(ctx, user._id, { noteId: pageId, body });
         }
