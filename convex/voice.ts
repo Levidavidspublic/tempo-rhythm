@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
@@ -36,12 +36,23 @@ import { requireLegacyWritableConversation } from "./messages";
  * DEEPINFRA_API_KEY). No audio, transcript, token or provider body is ever stored or logged.
  */
 
-const VOICE_OFF_MESSAGE = "Voice isn't switched on yet. Typing works as always.";
-const LANGUAGE_MESSAGE = "Voice in this language isn't ready yet. Typing works as always.";
-const DAILY_LIMIT_MESSAGE = "That's today's voice time. Typing works as always.";
-const GLOBAL_LIMIT_MESSAGE = "Voice is resting for today. Typing works as always.";
-const SESSION_MESSAGE = "This voice session has ended. Start it again when you like.";
-const CONNECT_MESSAGE = "Voice couldn't connect just now. Try again in a moment.";
+/** Calm refusals the client shows, by machine code. */
+const VOICE_ERRORS = {
+  voice_off: "Voice isn't switched on yet. Typing works as always.",
+  voice_language: "Voice in this language isn't ready yet. Typing works as always.",
+  voice_daily_limit: "That's today's voice time. Typing works as always.",
+  voice_resting: "Voice is resting for today. Typing works as always.",
+  voice_session_ended: "This voice session has ended. Start it again when you like.",
+  voice_connect: "Voice couldn't connect just now. Try again in a moment.",
+} as const;
+
+/**
+ * A `ConvexError`, so the calm copy reaches the client on production deployments too (a plain
+ * `Error` message is replaced there; see convex/messages.ts). Same `{ code, message }` shape.
+ */
+function voiceError(code: keyof typeof VOICE_ERRORS) {
+  return new ConvexError({ code, message: VOICE_ERRORS[code] });
+}
 
 const DEEPGRAM_GRANT_URL = "https://api.deepgram.com/v1/auth/grant";
 export const CHATTERBOX_URL = "https://api.deepinfra.com/v1/inference/ResembleAI/chatterbox-multilingual";
@@ -97,19 +108,32 @@ async function ttsCharsToday(ctx: Db, userId: Id<"users">, dateKey: string) {
   return rows.reduce((n, r) => n + r.ttsChars, 0);
 }
 
-/** The person's live-minute cap today (ms): their tier's number under the preview cap. */
+/**
+ * The person's live-minute cap today (ms): their tier's number under the preview cap, and none
+ * unless the account is paid. The tier alone unlocks nothing (convex/lib/entitlements.ts):
+ * `userType` is what a cancelled subscription changes.
+ */
 function dailyCapMs(user: Doc<"users">): number {
+  if (user.userType !== "paid") return 0;
   return dailyMinutesFor(user.entitlementTier) * 60_000;
 }
 const GLOBAL_CAP_MS = VOICE_LIMITS.dailyMinutesGlobal * 60_000;
 
 type EndReason = NonNullable<Lease["endReason"]>;
 
-/** Closes a lease; an expired one is counted to its last renewal plus one interval (A-5). */
+/**
+ * Closes a lease. Whatever ends it (stop, revocation, a newer start), a lease that already went
+ * stale is counted only to its last renewal plus one interval (A-5), and no lease past the
+ * longest session.
+ */
 async function endLease(ctx: MutationCtx, lease: Lease, reason: EndReason, now: number) {
   if (lease.status === "ended") return;
-  const endedAt =
-    reason === "expired" ? Math.min(now, lease.lastRenewalAt + VOICE_LIMITS.renewEveryMs, lease.startedAt + VOICE_LIMITS.maxSessionMs) : now;
+  const stale = reason === "expired" || leaseExpired(lease, now);
+  const endedAt = Math.min(
+    stale ? lease.lastRenewalAt + VOICE_LIMITS.renewEveryMs : now,
+    now,
+    lease.startedAt + VOICE_LIMITS.maxSessionMs,
+  );
   await ctx.db.patch(lease._id, {
     status: "ended",
     endedAt,
@@ -123,7 +147,7 @@ async function endLease(ctx: MutationCtx, lease: Lease, reason: EndReason, now: 
 async function ownedLease(ctx: Db, userId: Id<"users">, sessionId: Id<"voiceSessions">) {
   const lease = await ctx.db.get(sessionId);
   if (!lease || lease.userId !== userId || lease.deletedAt !== undefined) {
-    throw new Error(SESSION_MESSAGE);
+    throw voiceError("voice_session_ended");
   }
   return lease;
 }
@@ -131,10 +155,10 @@ async function ownedLease(ctx: Db, userId: Id<"users">, sessionId: Id<"voiceSess
 /** An active, unexpired lease whose conversation is still the caller's and live. */
 async function liveLease(ctx: MutationCtx, userId: Id<"users">, sessionId: Id<"voiceSessions">, now: number) {
   const lease = await ownedLease(ctx, userId, sessionId);
-  if (lease.status !== "active") throw new Error(SESSION_MESSAGE);
+  if (lease.status !== "active") throw voiceError("voice_session_ended");
   if (leaseExpired(lease, now)) {
     await endLease(ctx, lease, "expired", now);
-    throw new Error(SESSION_MESSAGE);
+    throw voiceError("voice_session_ended");
   }
   await requireLegacyWritableConversation(ctx, userId, lease.conversationId);
   return lease;
@@ -198,11 +222,11 @@ export const start = mutation({
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
-    if (!/^[A-Za-z0-9_-]{8,64}$/.test(args.clientKey)) throw new Error(SESSION_MESSAGE);
-    if (!voiceConfigured()) throw new Error(VOICE_OFF_MESSAGE);
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(args.clientKey)) throw voiceError("voice_session_ended");
+    if (!voiceConfigured()) throw voiceError("voice_off");
     const prefs = await preferencesOf(ctx, user._id);
     const lane = laneFor(prefs?.locale);
-    if (!lane) throw new Error(LANGUAGE_MESSAGE);
+    if (!lane) throw voiceError("voice_language");
 
     const now = Date.now();
     const active = await ctx.db
@@ -222,9 +246,9 @@ export const start = mutation({
     const today = await leasesToday(ctx, user._id, dateKey);
     const left = dailyCapMs(user) - today.reduce((ms, r) => ms + leaseMs(r, now), 0);
     if (left < VOICE_LIMITS.minStartMs || today.length >= VOICE_LIMITS.sessionsPerUserPerDay) {
-      throw new Error(DAILY_LIMIT_MESSAGE);
+      throw voiceError("voice_daily_limit");
     }
-    if (GLOBAL_CAP_MS - (await usedGlobalMs(ctx, utcKey, now)) < VOICE_LIMITS.minStartMs) throw new Error(GLOBAL_LIMIT_MESSAGE);
+    if (GLOBAL_CAP_MS - (await usedGlobalMs(ctx, utcKey, now)) < VOICE_LIMITS.minStartMs) throw voiceError("voice_resting");
 
     const sessionId = await ctx.db.insert("voiceSessions", {
       userId: user._id,
@@ -307,9 +331,9 @@ export const admitGrant = internalMutation({
     const user = await requireApprovedUser(ctx);
     const now = Date.now();
     const lease = await liveLease(ctx, user._id, args.sessionId, now);
-    if (lease.grants >= VOICE_LIMITS.grantsPerLease) throw new Error(SESSION_MESSAGE);
+    if (lease.grants >= VOICE_LIMITS.grantsPerLease) throw voiceError("voice_session_ended");
     const lane = laneFor(lease.language);
-    if (!lane) throw new Error(LANGUAGE_MESSAGE);
+    if (!lane) throw voiceError("voice_language");
     await ctx.db.patch(lease._id, { grants: lease.grants + 1, lastRenewalAt: now, updatedAt: now });
     return { url: lane.url };
   },
@@ -327,7 +351,7 @@ export const grant = action({
     await requireApprovedForAi(ctx);
     const { url }: { url: string } = await ctx.runMutation(internal.voice.admitGrant, args);
     const key = process.env.DEEPGRAM_API_KEY;
-    if (!key) throw new Error(VOICE_OFF_MESSAGE);
+    if (!key) throw voiceError("voice_off");
     let response: Response;
     try {
       response = await fetch(DEEPGRAM_GRANT_URL, {
@@ -338,17 +362,17 @@ export const grant = action({
       });
     } catch (error) {
       console.error(`voice.grant: Deepgram could not be reached (${error instanceof Error ? error.name : typeof error})`);
-      throw new Error(CONNECT_MESSAGE);
+      throw voiceError("voice_connect");
     }
     if (!response.ok) {
       console.error(`voice.grant: Deepgram returned HTTP ${response.status}`);
-      throw new Error(CONNECT_MESSAGE);
+      throw voiceError("voice_connect");
     }
     const body: unknown = await response.json().catch(() => null);
     const token = body && typeof body === "object" ? (body as { access_token?: unknown }).access_token : undefined;
     if (typeof token !== "string" || token.length < 16 || token.length > 8192) {
       console.error("voice.grant: Deepgram returned no usable token");
-      throw new Error(CONNECT_MESSAGE);
+      throw voiceError("voice_connect");
     }
     return { token, url };
   },
@@ -386,11 +410,11 @@ export const admitSentence = internalMutation({
       message.role !== "assistant" ||
       message.conversationId !== lease.conversationId
     ) {
-      throw new Error(SESSION_MESSAGE);
+      throw voiceError("voice_session_ended");
     }
     // The crisis card is shown, never spoken, and nothing about a crisis turn reaches TTS (L-12).
     if (message.modelUsed === "crisis-card") return { status: "done" as const };
-    if (!Number.isInteger(args.index) || args.index < 0) throw new Error(SESSION_MESSAGE);
+    if (!Number.isInteger(args.index) || args.index < 0) throw voiceError("voice_session_ended");
     const sentences = speechSentences(message.content);
     const text = sentences[args.index];
     if (text === undefined) return { status: "done" as const };
@@ -442,7 +466,7 @@ export const speak = action({
     const admitted: SentenceResult = await ctx.runMutation(internal.voice.admitSentence, args);
     if (admitted.status !== "sentence") return admitted;
     const key = process.env.DEEPINFRA_API_KEY;
-    if (!key) throw new Error(VOICE_OFF_MESSAGE);
+    if (!key) throw voiceError("voice_off");
     let response: Response;
     try {
       response = await fetch(CHATTERBOX_URL, {
@@ -453,16 +477,16 @@ export const speak = action({
       });
     } catch (error) {
       console.error(`voice.speak: DeepInfra could not be reached (${error instanceof Error ? error.name : typeof error})`);
-      throw new Error(CONNECT_MESSAGE);
+      throw voiceError("voice_connect");
     }
     if (!response.ok) {
       console.error(`voice.speak: DeepInfra returned HTTP ${response.status}`);
-      throw new Error(CONNECT_MESSAGE);
+      throw voiceError("voice_connect");
     }
     const audio = await audioFrom(response);
     if (!audio || audio.bytes.byteLength === 0 || audio.bytes.byteLength > VOICE_LIMITS.maxAudioBytes) {
       console.error("voice.speak: DeepInfra returned no usable audio");
-      throw new Error(CONNECT_MESSAGE);
+      throw voiceError("voice_connect");
     }
     return { status: "audio" as const, audio: audio.bytes, mime: audio.mime, count: admitted.count };
   },

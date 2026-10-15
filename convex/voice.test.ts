@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { getFunctionName } from "convex/server";
+import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { ActionCtx, MutationCtx } from "./_generated/server";
 import * as approval from "./approval";
@@ -28,9 +29,10 @@ function makeWorld() {
     }
     return t;
   };
-  // Every account is granted "max" today (convex/lib/entitlements.ts).
-  table("users").set(A, { _id: A, _creationTime: 0, email: "a@example.com", approvalStatus: "approved", entitlementTier: "max" });
-  table("users").set(B, { _id: B, _creationTime: 0, email: "b@example.com", approvalStatus: "approved", entitlementTier: "max" });
+  // Every account is granted "max" and "paid" today (convex/lib/entitlements.ts).
+  const granted = { approvalStatus: "approved", entitlementTier: "max", userType: "paid" };
+  table("users").set(A, { _id: A, _creationTime: 0, email: "a@example.com", ...granted });
+  table("users").set(B, { _id: B, _creationTime: 0, email: "b@example.com", ...granted });
   function builder(rows: Row[]) {
     return {
       withIndex: (_name: string, fn: (q: unknown) => unknown) => {
@@ -204,6 +206,27 @@ describe("starting a voice session", () => {
     expect(world.rows("voiceSessions")).toHaveLength(1);
   });
 
+  test("a free account gets no live voice, whatever its stored tier (the tier alone unlocks nothing)", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    await world.db.patch(A, { userType: "free" });
+    expect(await run(voice.availability, world.as(A), {})).toMatchObject({ available: false, reason: "budget", minutesLeft: 0 });
+    await expect(startSession(world, conversationId)).rejects.toThrow("today's voice time");
+    expect(world.rows("voiceSessions")).toHaveLength(0);
+  });
+
+  test("refusals are ConvexErrors with a code and the calm message, so production clients see the copy", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    delete process.env.DEEPGRAM_API_KEY;
+    const error = await startSession(world, conversationId).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ConvexError);
+    expect((error as ConvexError<{ code: string; message: string }>).data).toEqual({
+      code: "voice_off",
+      message: "Voice isn't switched on yet. Typing works as always.",
+    });
+  });
+
   test("availability says voice is resting once everyone's minutes are spent, while the person still has theirs", async () => {
     const world = makeWorld();
     const now = Date.now();
@@ -296,6 +319,18 @@ describe("renew and stop", () => {
     await world.db.patch(sessionId, { startedAt: now - 120_000, lastRenewalAt: now - 1_000 });
     expect((await run(voice.renew, world.as(A), { sessionId })).status).toBe("exhausted");
     expect(world.row(sessionId)).toMatchObject({ status: "ended", endReason: "exhausted" });
+  });
+
+  test("a stale lease stopped late is charged to its last renewal plus one interval, never the gap", async () => {
+    const world = makeWorld();
+    const { sessionId } = await startSession(world, await conversation(world));
+    const now = Date.now();
+    // The client lost its connection 10 minutes ago and only now sends Stop.
+    await world.db.patch(sessionId, { startedAt: now - 11 * 60_000, lastRenewalAt: now - 10 * 60_000 });
+    await run(voice.stop, world.as(A), { sessionId });
+    const ended = world.row(sessionId) as Row;
+    expect(ended).toMatchObject({ status: "ended", endReason: "stopped" });
+    expect(ended.durationMs).toBe(60_000 + VOICE_LIMITS.renewEveryMs);
   });
 
   test("stop is idempotent and someone else can't touch the lease", async () => {
