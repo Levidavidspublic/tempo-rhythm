@@ -7,7 +7,7 @@
 import { accessSync, constants, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BASE_URL, EXIT, launch, newContext } from "./lib.mjs";
+import { BASE_URL, EXIT, launch, newContext, saveState } from "./lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(process.env.ALPHA_OUT || path.join(HERE, "out"), "sweep", new Date().toISOString().replace(/[:.]/g, "-"));
@@ -21,6 +21,8 @@ const STATIC_ROUTES = [
   "/settings", "/settings/profile", "/settings/preferences", "/settings/privacy", "/settings/integrations",
   "/settings/memory", "/settings/memory/import", "/settings/nags", "/settings/passkeys",
   "/billing", "/billing/trial-end", "/ask-founder", "/admin/approvals", "/onboarding",
+  // No drafts exist yet, so nothing links here; the screen draws its empty state for any id.
+  "/modules/preview/alpha-sweep",
 ];
 
 /**
@@ -45,18 +47,26 @@ const flag = (name) => {
 };
 const only = flag("--only")?.split(",").map((r) => (r.startsWith("/") ? r : `/${r}`));
 const widths = (flag("--widths") ?? "390,1280").split(",").map(Number);
+const WORKERS = Number(process.env.ALPHA_SWEEP_WORKERS ?? 4);
+if (!Number.isInteger(WORKERS) || WORKERS < 1 || WORKERS > 16) {
+  console.log("sweep FAIL: ALPHA_SWEEP_WORKERS must be a whole number from 1 to 16");
+  process.exit(1);
+}
 const VARIANTS = [];
 for (const width of widths) for (const theme of ["light", "dark"]) for (const lang of ["en", "he"]) VARIANTS.push({ width, theme, lang });
 
 /** Text that means the screen failed, even when nothing threw. */
 const ERROR_TEXT = /Application error: a client-side exception|Something went wrong|Unhandled Runtime Error|This page could not be found|Internal Server Error/i;
 
-async function render(browser, statePath, route, v) {
-  const context = await newContext(browser, statePath, {
-    viewport: { width: v.width, height: v.width < 600 ? 844 : 900 },
-    colorScheme: v.theme,
-  });
+/**
+ * One render in its own page. All pages share one context, so they share one session: Convex Auth
+ * rotates the refresh token on load and serialises that across pages of a context with a browser
+ * lock, while separate contexts would each replay the same token and sign the session out.
+ */
+async function render(context, route, v) {
   const page = await context.newPage();
+  await page.setViewportSize({ width: v.width, height: v.width < 600 ? 844 : 900 });
+  await page.emulateMedia({ colorScheme: v.theme });
   const rec = { route, ...v, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "" };
   page.on("pageerror", (e) => rec.errors.push(String(e.message || e).split("\n")[0].slice(0, 200)));
   page.on("console", (m) => {
@@ -91,12 +101,22 @@ async function render(browser, statePath, route, v) {
   if (v.width === 1280 && v.theme === "light" && v.lang === "en") {
     links = await page.$$eval("a[href]", (as) => as.map((a) => new URL(a.href).pathname)).catch(() => []);
   }
-  await context.close();
+  await page.close();
   return { rec, links };
 }
 
+/** The document direction each language must render in. */
+const DIR = { en: "ltr", he: "rtl" };
+
 const failed = (r) =>
-  r.errors.length > 0 || r.errorText || r.status >= 500 || r.overflow > 1 || r.finalPath.startsWith("/sign-in") || r.waiting;
+  r.errors.length > 0 ||
+  r.errorText ||
+  r.status >= 400 ||
+  r.status === 0 ||
+  r.overflow > 1 ||
+  r.finalPath.startsWith("/sign-in") ||
+  r.waiting ||
+  r.dir !== DIR[r.lang];
 
 async function main() {
   const statePath = process.env.ALPHA_STORAGE_STATE;
@@ -112,6 +132,7 @@ async function main() {
   }
   mkdirSync(OUT, { recursive: true });
   const browser = await launch();
+  const context = await newContext(browser, statePath);
   const results = [];
   const found = new Map();
   const routes = only ?? STATIC_ROUTES;
@@ -119,9 +140,9 @@ async function main() {
   const queue = [];
   for (const route of routes) for (const v of VARIANTS) queue.push({ route, v });
   const runQueue = async (items) => {
-    const workers = Array.from({ length: Number(process.env.ALPHA_SWEEP_WORKERS ?? 4) }, async () => {
+    const workers = Array.from({ length: WORKERS }, async () => {
       for (let item = items.shift(); item; item = items.shift()) {
-        const { rec, links } = await render(browser, statePath, item.route, item.v);
+        const { rec, links } = await render(context, item.route, item.v);
         results.push(rec);
         for (const dyn of DYNAMIC_ROUTES) {
           if (dyn.from !== item.route || found.has(dyn.pattern.source)) continue;
@@ -139,13 +160,17 @@ async function main() {
     for (const route of [...found.values()].flat()) for (const v of VARIANTS) dynQueue.push({ route, v });
     await runQueue(dynQueue);
   }
+  await saveState(context).catch(() => {});
   await browser.close();
 
   // Approval is per account: one "Waiting for approval" screen means the session is not approved,
   // even though a few screens sit outside the approval gate (/settings/passkeys).
+  // A protected preview (401/403 on every load) never reached the app either.
   const blocked =
     results.length > 0 &&
-    (results.some((r) => r.waiting) || results.every((r) => r.finalPath.startsWith("/sign-in")));
+    (results.some((r) => r.waiting) ||
+      results.every((r) => r.finalPath.startsWith("/sign-in")) ||
+      results.every((r) => r.status === 401 || r.status === 403));
   const bad = results.filter(failed);
   const lines = [
     `# Signed-in sweep, ${new Date().toISOString()}`,
@@ -161,7 +186,8 @@ async function main() {
         `| ${r.route} | ${r.width}-${r.theme}-${r.lang} | ${[
           r.errors.length ? `page error: ${r.errors.join(" ; ")}` : "",
           r.errorText ? `error text: ${r.errorText}` : "",
-          r.status >= 500 ? `HTTP ${r.status}` : "",
+          r.status >= 400 || r.status === 0 ? `HTTP ${r.status || "none"}` : "",
+          r.dir !== DIR[r.lang] ? `dir "${r.dir}", not ${DIR[r.lang]}` : "",
           r.overflow > 1 ? `horizontal scroll ${r.overflow}px` : "",
           r.finalPath.startsWith("/sign-in") ? "redirected to sign-in" : "",
           r.waiting ? "waiting for approval" : "",

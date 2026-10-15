@@ -3,7 +3,7 @@
 //   0 PASS, 1 FAIL, 2 BLOCKED_VERIFICATION (no usable signed-in, approved session).
 // Session: ALPHA_STORAGE_STATE (a Playwright storage-state file for a synthetic test account),
 // otherwise a "Continue as guest" control on /sign-in. Real accounts are never used.
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -47,6 +47,21 @@ export async function newContext(browser, storageState, options = {}) {
     });
   }
   return context;
+}
+
+/**
+ * Writes the context's session back to ALPHA_STORAGE_STATE (mode 0600). Convex Auth rotates the
+ * refresh token whenever a page loads, so the next run must start from the newest one: replaying
+ * an older token signs the session out. Written to a temp file and renamed, never half-written.
+ */
+export async function saveState(context) {
+  const statePath = process.env.ALPHA_STORAGE_STATE;
+  if (!statePath) return;
+  const state = await context.storageState();
+  const temp = `${statePath}.tmp-${process.pid}`;
+  writeFileSync(temp, JSON.stringify(state), { mode: 0o600 });
+  chmodSync(temp, 0o600);
+  renameSync(temp, statePath);
 }
 
 /** Stops with BLOCKED_VERIFICATION when the page is the sign-in form or the approval wait. */
@@ -172,16 +187,23 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
   const browser = await launch();
   let code = EXIT.PASS;
   let reason = "";
+  let context = null;
+  let page = null;
   try {
-    const context = await signedInContext(browser, async (page, name) => shot(page, name));
-    const page = await context.newPage();
+    context = await signedInContext(browser, async (p, name) => shot(p, name));
+    page = await context.newPage();
     page.setDefaultTimeout(30_000);
+    // A cold preview function or a slow network can take longer than an element wait to load a page.
+    page.setDefaultNavigationTimeout(60_000);
     await steps(page, shot);
     if (crisis) await crisisCheck(page, shot);
   } catch (error) {
     code = error instanceof LoopStop ? error.code : EXIT.FAIL;
     reason = error instanceof Error ? error.message.split("\n")[0] : String(error);
+    // What the screen showed when the run stopped.
+    if (page) await shot(page, "stopped").catch(() => {});
   } finally {
+    if (context && process.env.ALPHA_STORAGE_STATE) await saveState(context).catch(() => {});
     await browser.close();
   }
   const result = Object.entries(EXIT).find(([, v]) => v === code)?.[0] ?? "FAIL";
