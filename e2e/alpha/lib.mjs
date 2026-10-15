@@ -8,7 +8,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
-export const EXIT = { PASS: 0, FAIL: 1, BLOCKED_VERIFICATION: 2 };
+// NETWORK: the run failed and a request never got an answer from the server (the sandbox's
+// connection dropped), so the run says nothing about the app. run.mjs repeats such an attempt.
+export const EXIT = { PASS: 0, FAIL: 1, BLOCKED_VERIFICATION: 2, NETWORK: 3 };
 export const BASE_URL = (process.env.ALPHA_BASE_URL || "https://preview.tempoflow.dev").replace(/\/$/, "");
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT_ROOT = process.env.ALPHA_OUT || path.join(HERE, "out");
@@ -103,6 +105,27 @@ async function signedInContext(browser, shot) {
   return context;
 }
 
+// Connection-level errors: the request never reached the server or its answer never came back.
+const DROPPED = /^net::ERR_(TIMED_OUT|CONNECTION_\w+|TUNNEL_CONNECTION_FAILED|PROXY_\w+|SSL_\w+|EMPTY_RESPONSE|SOCKET_\w+|NETWORK_\w+|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE)$/;
+
+/**
+ * Records requests the network dropped, as "<what> <path>": a connection-level failure on any
+ * host, or a 5xx for the app that no Vercel server sent (no `x-vercel-id`: the sandbox proxy's
+ * own "upstream request failed"). A 5xx from Vercel itself is the app's and is not recorded.
+ */
+function watchNetwork(context, into) {
+  const where = (url) => url.replace(/\?.*$/, "").replace(BASE_URL, "");
+  context.on("requestfailed", (request) => {
+    const error = request.failure()?.errorText ?? "";
+    if (DROPPED.test(error)) into.push(`${error} ${where(request.url())}`);
+  });
+  context.on("response", (response) => {
+    if (response.status() >= 500 && response.url().startsWith(BASE_URL) && !response.headers()["x-vercel-id"]) {
+      into.push(`HTTP ${response.status()} from the proxy, not Vercel: ${where(response.url())}`);
+    }
+  });
+}
+
 /** Fails unless `locator` becomes visible within `ms`. */
 export async function expectVisible(locator, what, ms = 30_000) {
   try {
@@ -189,8 +212,10 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
   let reason = "";
   let context = null;
   let page = null;
+  const network = [];
   try {
     context = await signedInContext(browser, async (p, name) => shot(p, name));
+    watchNetwork(context, network);
     page = await context.newPage();
     page.setDefaultTimeout(30_000);
     // A cold preview function or a slow network can take longer than an element wait to load a page.
@@ -217,8 +242,22 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
     }
     await browser.close();
   }
+  // A failure that comes with dropped requests can't be told apart from the drop: NETWORK, not FAIL.
+  if (code === EXIT.FAIL && network.length > 0) {
+    code = EXIT.NETWORK;
+    reason = `${reason} [sandbox network: ${network[0]}${network.length > 1 ? ` and ${network.length - 1} more` : ""}]`;
+  }
   const result = Object.entries(EXIT).find(([, v]) => v === code)?.[0] ?? "FAIL";
-  const record = { loop: id, title, result, reason, base: BASE_URL, at: new Date().toISOString(), screenshots: shots };
+  const record = {
+    loop: id,
+    title,
+    result,
+    reason,
+    base: BASE_URL,
+    at: new Date().toISOString(),
+    screenshots: shots,
+    network: network.slice(0, 20),
+  };
   writeFileSync(path.join(runDir, "result.json"), `${JSON.stringify(record, null, 2)}\n`);
   console.log(`${id} ${result}${reason ? `: ${reason}` : ""} (screenshots: ${path.relative(process.cwd(), runDir)})`);
   process.exit(code);
