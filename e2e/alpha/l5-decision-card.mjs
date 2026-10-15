@@ -5,20 +5,51 @@
 // "Save to today" button; after saving, today's daily page lists the same titles in the same order.
 import { BASE_URL, assertSignedIn, completeAlphaTasks, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
 
+/**
+ * Completes open tasks earlier L5 runs seeded ("Alpha L5 …"), wherever they are. Today's list shows
+ * only 3 open tasks, so with other open tasks ahead of them, seeds there can't be reached; the
+ * task list (/tasks) shows every task. Other tasks are left alone.
+ */
+async function completeOwnSeeds(page) {
+  await page.goto(`${BASE_URL}/tasks`, { waitUntil: "domcontentloaded" });
+  await assertSignedIn(page);
+  await expectVisible(page.getByRole("heading", { name: "Inbox" }), "the task list", 45_000);
+  // The heading comes before the tasks: wait for the first row (the shared account always has some).
+  await page.getByRole("button", { name: /^Mark .* (complete|not done)$/ }).first().waitFor({ timeout: 30_000 }).catch(() => {});
+  const open = page.getByRole("button", { name: /^Mark Alpha L5 .* complete$/ });
+  for (let i = 0; i < 60 && (await open.count()) > 0; i += 1) {
+    const name = await open.first().getAttribute("aria-label");
+    await open.first().click();
+    await page.getByRole("button", { name, exact: true }).first().waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+  }
+}
+
 await runLoop("l5", "Decision card on Today, saved to today's page", async (page, shot) => {
+  await completeOwnSeeds(page);
   await page.goto(`${BASE_URL}/today`, { waitUntil: "domcontentloaded" });
   await assertSignedIn(page);
   const quickAdd = page.getByLabel("Add something small for today");
   await expectVisible(quickAdd, "Today's quick add", 45_000);
   await completeAlphaTasks(page);
   const list = page.locator('[aria-labelledby="today-task-list-heading"]');
+  // Today's list shows 3 open tasks ("Showing 3 of 4 open today."), so a task that isn't this
+  // script's can push a seeded one out of sight: each add is confirmed by the open count instead.
+  const openToday = async () => {
+    const m = /of (\d+) open today|(\d+) still open today/.exec(await list.innerText());
+    return m ? Number(m[1] ?? m[2]) : 0;
+  };
   const seeded = [];
   for (const name of ["email", "laundry", "bill"]) {
     const title = marker(`Alpha L5 ${name}`);
     seeded.push(title);
+    const before = await openToday();
     await quickAdd.fill(title);
     await quickAdd.press("Enter");
-    await expectVisible(list.getByText(title, { exact: true }), `seed task ${name}`);
+    const deadline = Date.now() + 30_000;
+    while ((await openToday()) <= before) {
+      if (Date.now() > deadline) throw fail(`seed task ${name} was not added (still ${before} open today)`);
+      await page.waitForTimeout(250);
+    }
   }
   if ((await page.getByRole("textbox", { name: "Message" }).count()) === 0) throw fail("Today has no chat box");
   // Every run shares the account's one coach thread. This run's card is the first decision card
@@ -43,15 +74,29 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
   const day = page.getByTestId("today-daily-page");
   await expectVisible(day, "today's daily page", 45_000);
   // On the page a task title is an <input> (editable in place), so read its value, not its text.
-  const onPage = await day
-    .locator(".tp-task-row__title")
-    .evaluateAll((els) => els.map((el) => (el instanceof HTMLInputElement ? el.value : (el.textContent ?? "")).trim()));
-  let at = -1;
-  for (const title of titles) {
-    const next = onPage.indexOf(title, at + 1);
-    if (next < 0) throw fail(`today's page is missing the decision step "${title}"`);
-    at = next;
-  }
+  const readRows = () =>
+    day
+      .locator(".tp-task-row__title")
+      .evaluateAll((els) => els.map((el) => (el instanceof HTMLInputElement ? el.value : (el.textContent ?? "")).trim()));
+  // Save adds the steps at the end of today's page, as its newest rows. The page grows run by run,
+  // and its editor only draws the lines near the screen, so read it from its end, and match the
+  // steps from the last row back (an earlier run can have left rows with the same titles).
+  const missingStep = (rows) => {
+    let at = rows.length;
+    for (const title of [...titles].reverse()) {
+      at = at > 0 ? rows.lastIndexOf(title, at - 1) : -1;
+      if (at < 0) return title;
+    }
+    return null;
+  };
+  let missing = null;
+  const deadline = Date.now() + 20_000;
+  do {
+    await day.locator(".cm-content").evaluate((el) => el.scrollIntoView({ block: "end" }));
+    await page.waitForTimeout(500);
+    missing = missingStep(await readRows());
+  } while (missing !== null && Date.now() < deadline);
+  if (missing !== null) throw fail(`today's page is missing the decision step "${missing}"`);
   await shot(page, "today-page");
   await completeAlphaTasks(page);
 });
