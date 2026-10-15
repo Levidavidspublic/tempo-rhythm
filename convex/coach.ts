@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { projectPageText } from "@tempo/utils";
+import { BLOCK_CODEC_LIMITS, parseTempoBlocks, projectPageText, type TempoBlock } from "@tempo/utils";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
@@ -19,14 +19,18 @@ import { requireApprovedForAi } from "./lib/aiGate";
 import { requireApprovedUser } from "./lib/approval";
 import {
   COACH_LIMITS,
+  type CoachDecisionStep,
   type CoachProposal,
+  type CoachTaskContext,
   buildCoachMessages,
   parseCoachReply,
   readProposal,
 } from "./lib/coachPrompt";
 import { requireUser } from "./lib/requireUser";
+import { isValidLocalDate } from "./lib/pageLedger";
 import { undoUntil } from "./lib/softDelete";
 import { requireLegacyWritableConversation } from "./messages";
+import { updateNoteForUser } from "./notes";
 import { createTaskForUser } from "./tasks";
 
 const DEFAULT_DIAL = 5;
@@ -47,9 +51,10 @@ const AVAILABLE_MINUTES_BAD_DAY = 60;
  *    (`callLLM`, convex/lib/ai_router.ts) for a reply. A missing key or a provider error is logged
  *    and answered with `unavailable`, and the claim is released; the user's message stays saved.
  *
- * The coach only proposes. A proposal (task, note or template) rides on its reply's
+ * The coach only proposes. A proposal (task, note, template or decision) rides on its reply's
  * `toolCalls.coachProposal`; nothing changes until `acceptProposal`, and every accepted change can
- * be undone for 5 minutes with `undoProposal` (HARD_RULES §1, §6.2).
+ * be undone for 5 minutes with `undoProposal` (HARD_RULES §1, §6.2). A decision ("what order should
+ * I do these in?") is saved as task blocks at the end of today's daily page.
  */
 
 /** Longest message the coach takes. */
@@ -110,14 +115,22 @@ const chatProposalValidator = v.union(
     body: v.string(),
     period: v.union(v.literal("daily"), v.literal("weekly"), v.literal("none")),
   }),
+  v.object({
+    kind: v.literal("decision"),
+    title: v.optional(v.string()),
+    steps: v.array(v.object({ title: v.string(), minutes: v.number(), reason: v.optional(v.string()) })),
+  }),
 );
 
 export type StoredProposal = CoachProposal & {
   status: "pending" | "accepted" | "rejected" | "undone";
-  /** The row Accept made: a task, a note or a template. */
+  /** The row Accept made: a task, a note or a template; for a decision, the daily page it wrote to. */
   createdId?: string;
   undoUntilMs?: number;
   decidedAt?: number;
+  /** A saved decision: the exact text added to the page, and its task blocks' ids (for Undo). */
+  appended?: string;
+  blockIds?: string[];
 };
 
 /** The proposal on an assistant message, read back through the same checks the model output passed. */
@@ -134,6 +147,10 @@ export function storedProposal(toolCalls: unknown): StoredProposal | null {
     ...(typeof r.createdId === "string" ? { createdId: r.createdId } : {}),
     ...(typeof r.undoUntilMs === "number" ? { undoUntilMs: r.undoUntilMs } : {}),
     ...(typeof r.decidedAt === "number" ? { decidedAt: r.decidedAt } : {}),
+    ...(typeof r.appended === "string" ? { appended: r.appended } : {}),
+    ...(Array.isArray(r.blockIds) && r.blockIds.every((id) => typeof id === "string")
+      ? { blockIds: r.blockIds as string[] }
+      : {}),
   };
 }
 
@@ -143,7 +160,33 @@ const turnContextValidator = v.object({
   dial: v.number(),
   history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("assistant")), content: v.string() })),
   page: v.union(v.null(), v.object({ title: v.string(), text: v.string() })),
+  tasks: v.array(v.object({ title: v.string(), minutes: v.union(v.null(), v.number()) })),
 });
+
+/** The caller's local day, from the client. Anything that is not about one day is ignored. */
+const dayBoundsArgs = { dayStartMs: v.optional(v.number()), dayEndMs: v.optional(v.number()) };
+const MAX_DAY_MS = 26 * 60 * 60_000;
+
+function dayBounds(args: { dayStartMs?: number; dayEndMs?: number }): { start: number; end: number } | null {
+  const { dayStartMs: start, dayEndMs: end } = args;
+  if (start === undefined || end === undefined || !Number.isFinite(start) || !Number.isFinite(end)) return null;
+  return end > start && end - start <= MAX_DAY_MS ? { start, end } : null;
+}
+
+/** The caller's open tasks due in their day, soonest first: what "these" means in "what order should I do these in?". */
+async function openTasksForDay(ctx: Db, userId: UserId, day: { start: number; end: number }): Promise<CoachTaskContext[]> {
+  const due = await ctx.db
+    .query("tasks")
+    .withIndex("by_userId_dueAt", (q) => q.eq("userId", userId).gte("dueAt", day.start).lt("dueAt", day.end))
+    .take(COACH_LIMITS.contextTasks * 5);
+  return due
+    .filter((t) => t.deletedAt === undefined && (t.status === "todo" || t.status === "in_progress"))
+    .slice(0, COACH_LIMITS.contextTasks)
+    .map((t) => ({
+      title: t.title,
+      minutes: t.timeEstimate !== undefined && t.timeEstimate > 0 ? Math.round(t.timeEstimate / 60_000) : null,
+    }));
+}
 
 /**
  * How long one `coach.reply` holds the pending turn: as long as a Convex action may run (10
@@ -169,7 +212,7 @@ function claimOf(toolCalls: unknown): { until: number; token: string | null } | 
  * gets the fixed card.
  */
 export const claimTurn = internalMutation({
-  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")) },
+  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")), ...dayBoundsArgs },
   returns: v.union(v.null(), v.literal("busy"), turnContextValidator),
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
@@ -210,8 +253,10 @@ export const claimTurn = internalMutation({
         };
       }
     }
+    const day = dayBounds(args);
+    const tasks = day ? await openTasksForDay(ctx, user._id, day) : [];
     const settings = await loadSettings(ctx, user._id);
-    return { replyTo: last._id, claim, dial: settings?.dial ?? DEFAULT_DIAL, history, page };
+    return { replyTo: last._id, claim, dial: settings?.dial ?? DEFAULT_DIAL, history, page, tasks };
   },
 });
 
@@ -285,7 +330,7 @@ function errorKind(error: unknown): string {
  */
 export async function runCoachReply(
   ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
-  args: { conversationId: Id<"conversations">; noteId?: Id<"notes"> },
+  args: { conversationId: Id<"conversations">; noteId?: Id<"notes">; dayStartMs?: number; dayEndMs?: number },
   call: typeof callLLM = callLLM,
 ): Promise<CoachReplyStatus> {
   await requireApprovedForAi(ctx as ActionCtx);
@@ -343,7 +388,7 @@ export async function runCoachReply(
 }
 
 export const reply = action({
-  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")) },
+  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")), ...dayBoundsArgs },
   returns: v.object({
     status: v.union(v.literal("replied"), v.literal("unavailable"), v.literal("idle"), v.literal("busy")),
   }),
@@ -384,15 +429,117 @@ const proposalEditValidator = v.object({
   period: v.optional(v.union(v.literal("daily"), v.literal("weekly"), v.literal("none"))),
 });
 
+const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+/** A block id the codec accepts: `blk_` + a 26-character ULID (time first, then randomness). */
+function newBlockId(now: number): string {
+  let time = "";
+  let t = Math.max(0, Math.floor(now));
+  for (let i = 0; i < 10; i += 1) {
+    time = CROCKFORD[t % 32] + time;
+    t = Math.floor(t / 32);
+  }
+  let rand = "";
+  for (let i = 0; i < 16; i += 1) rand += CROCKFORD[Math.floor(Math.random() * 32) % 32];
+  return `blk_${time}${rand}`;
+}
+
+/** A decision step as the task block the decision card draws: the first is "now", the rest "later". */
+function decisionBlock(step: CoachDecisionStep, index: number, now: number): TempoBlock {
+  return {
+    id: newBlockId(now),
+    v: 1,
+    type: "task",
+    data: {
+      title: step.title,
+      durationMin: step.minutes,
+      status: index === 0 ? "now" : "later",
+      order: index,
+      inelastic: false,
+      ...(step.reason ? { reason: step.reason } : {}),
+    },
+  };
+}
+
+/** The decision as page text: its title as a heading (when it has one), then one task fence per step. */
+function decisionText(proposal: Extract<CoachProposal, { kind: "decision" }>, now: number) {
+  const blocks = proposal.steps.map((step, index) => decisionBlock(step, index, now));
+  const heading = proposal.title ? `### ${proposal.title}\n\n` : "";
+  const fences = blocks.map((block) => `\`\`\`json tempo\n${JSON.stringify(block)}\n\`\`\`\n`).join("");
+  return { text: heading + fences, blockIds: blocks.map((block) => block.id) };
+}
+
+/** The caller's live daily page for `date`. */
+async function dailyPage(ctx: MutationCtx, userId: UserId, date: string) {
+  return ctx.db
+    .query("notes")
+    .withIndex("by_userId_deletedAt_pageType_date", (q) =>
+      q.eq("userId", userId).eq("deletedAt", undefined).eq("pageType", "daily").eq("date", date),
+    )
+    .first();
+}
+
+/**
+ * Saves a decision at the end of today's daily page. The page must exist (Today makes it on first
+ * open) and must have room for the new blocks under the codec's limit, so no step is ever saved as
+ * a broken block.
+ */
+async function saveDecision(
+  ctx: MutationCtx,
+  userId: UserId,
+  proposal: Extract<CoachProposal, { kind: "decision" }>,
+  todayDate: string | undefined,
+  now: number,
+) {
+  if (todayDate === undefined || !isValidLocalDate(todayDate)) {
+    throw new Error("Open Today to save this.");
+  }
+  const page = await dailyPage(ctx, userId, todayDate);
+  if (!page) {
+    throw new Error("Today's page isn't ready yet. Try again in a moment.");
+  }
+  const blocks = parseTempoBlocks(page.body).filter((segment) => segment.kind !== "markdown").length;
+  if (blocks + proposal.steps.length > BLOCK_CODEC_LIMITS.maxBlocks) {
+    throw new Error("Today's page is full. Make some room first.");
+  }
+  const { text, blockIds } = decisionText(proposal, now);
+  const separator = page.body === "" || page.body.endsWith("\n\n") ? "" : page.body.endsWith("\n") ? "\n" : "\n\n";
+  const appended = separator + text;
+  await updateNoteForUser(ctx, userId, { noteId: page._id, body: page.body + appended });
+  return { createdId: page._id as string, appended, blockIds };
+}
+
+/**
+ * Takes a saved decision back off the page. When the page still ends with exactly what was added,
+ * that text goes; otherwise only the decision's own task blocks are removed, and everything the
+ * person wrote since stays.
+ */
+function withoutDecision(body: string, appended: string | undefined, blockIds: readonly string[]): string {
+  if (appended && body.endsWith(appended)) {
+    return body.slice(0, body.length - appended.length);
+  }
+  const ids = new Set(blockIds);
+  return parseTempoBlocks(body)
+    .filter((segment) => !(segment.kind === "valid" && ids.has(segment.block.id)))
+    .map((segment) => segment.source)
+    .join("");
+}
+
 /**
  * Accept: the one place a coach proposal changes anything. `edit` carries the person's changes;
- * they pass the same checks the model's proposal did, and the kind never changes. Returns where
- * the new row lives.
+ * they pass the same checks the model's proposal did, and the kind never changes. A decision needs
+ * `todayDate`, the caller's local date, and is saved to that day's page. Returns where the new row
+ * lives (for a decision, the page).
  */
 export const acceptProposal = mutation({
-  args: { messageId: v.id("messages"), dueTodayAt: v.optional(v.number()), edit: v.optional(proposalEditValidator) },
+  args: {
+    messageId: v.id("messages"),
+    dueTodayAt: v.optional(v.number()),
+    todayDate: v.optional(v.string()),
+    edit: v.optional(proposalEditValidator),
+  },
   returns: v.object({
-    kind: v.union(v.literal("task"), v.literal("note"), v.literal("template")),
+    kind: v.union(v.literal("task"), v.literal("note"), v.literal("template"), v.literal("decision")),
     createdId: v.string(),
     undoUntilMs: v.number(),
   }),
@@ -412,7 +559,12 @@ export const acceptProposal = mutation({
     }
     const now = Date.now();
     let createdId: string;
-    if (proposal.kind === "task") {
+    let saved: { appended: string; blockIds: string[] } | null = null;
+    if (proposal.kind === "decision") {
+      const decision = await saveDecision(ctx, user._id, proposal, args.todayDate, now);
+      createdId = decision.createdId;
+      saved = { appended: decision.appended, blockIds: decision.blockIds };
+    } else if (proposal.kind === "task") {
       const due =
         proposal.when === "today" &&
         args.dueTodayAt !== undefined &&
@@ -448,7 +600,14 @@ export const acceptProposal = mutation({
       });
     }
     const undoUntilMs = undoUntil(now);
-    await setProposal(ctx, message._id, { ...proposal, status: "accepted", createdId, undoUntilMs, decidedAt: now });
+    await setProposal(ctx, message._id, {
+      ...proposal,
+      status: "accepted",
+      createdId,
+      undoUntilMs,
+      decidedAt: now,
+      ...(saved ?? {}),
+    });
     return { kind: proposal.kind, createdId, undoUntilMs };
   },
 });
@@ -468,7 +627,10 @@ export const rejectProposal = mutation({
   },
 });
 
-/** Undo, within 5 minutes of Accept: the row Accept made is soft-deleted, as any delete is. */
+/**
+ * Undo, within 5 minutes of Accept: the row Accept made is soft-deleted, as any delete is. A saved
+ * decision is taken back off its page instead (the page itself stays).
+ */
 export const undoProposal = mutation({
   args: { messageId: v.id("messages") },
   returns: v.null(),
@@ -481,6 +643,18 @@ export const undoProposal = mutation({
     }
     if (now > proposal.undoUntilMs) {
       throw new Error("The 5 minutes to undo this have passed.");
+    }
+    if (proposal.kind === "decision") {
+      const pageId = ctx.db.normalizeId("notes", proposal.createdId);
+      const page = pageId ? await ctx.db.get(pageId) : null;
+      if (pageId && page && page.userId === user._id && page.deletedAt === undefined) {
+        const body = withoutDecision(page.body, proposal.appended, proposal.blockIds ?? []);
+        if (body !== page.body) {
+          await updateNoteForUser(ctx, user._id, { noteId: pageId, body });
+        }
+      }
+      await setProposal(ctx, message._id, { ...proposal, status: "undone", decidedAt: now });
+      return null;
     }
     const table = proposal.kind === "task" ? "tasks" : proposal.kind === "note" ? "notes" : "templates";
     const id = ctx.db.normalizeId(table, proposal.createdId);

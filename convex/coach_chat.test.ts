@@ -5,6 +5,7 @@ import type { ActionCtx, MutationCtx } from "./_generated/server";
 import * as approval from "./approval";
 import * as coach from "./coach";
 import { AiAuthError, AiUpstreamError } from "./lib/ai_errors";
+import { parseTempoBlocks } from "@tempo/utils";
 import type { AiCallOptions, AiResult, callLLM } from "./lib/ai_router";
 import { PENDING_APPROVAL_MESSAGE } from "./lib/approval";
 
@@ -42,15 +43,21 @@ function makeWorld() {
   function builder(rows: Row[]) {
     return {
       withIndex: (_name: string, fn: (q: unknown) => unknown) => {
-        const conds: Array<{ field: string; value: unknown }> = [];
+        const conds: Array<(row: Row) => boolean> = [];
+        const cmp = (test: (a: number, b: number) => boolean) => (field: string, value: number) => {
+          conds.push((row) => typeof row[field] === "number" && test(row[field] as number, value));
+          return q;
+        };
         const q = {
           eq: (field: string, value: unknown) => {
-            conds.push({ field, value });
+            conds.push((row) => row[field] === value);
             return q;
           },
+          gte: cmp((a, b) => a >= b),
+          lt: cmp((a, b) => a < b),
         };
         fn(q);
-        return builder(rows.filter((row) => conds.every((c) => row[c.field] === c.value)));
+        return builder(rows.filter((row) => conds.every((c) => c(row))));
       },
       order: (direction: "asc" | "desc") => builder(direction === "desc" ? [...rows].reverse() : rows),
       collect: async () => [...rows],
@@ -544,5 +551,157 @@ describe("proposals change nothing until Accept, and Accept has a 5-minute Undo"
       await expect(run(fn, world.as(B), { messageId })).rejects.toThrow("Proposal not found");
     }
     expect(world.rows("notes")).toHaveLength(0);
+  });
+});
+
+const DAY_START = Date.UTC(2026, 9, 15, 0, 0);
+const DAY_END = DAY_START + 24 * 60 * 60_000;
+const TODAY = "2026-10-15";
+
+async function seedTask(world: World, fields: Record<string, unknown>) {
+  return world.db.insert("tasks", {
+    userId: A,
+    status: "todo",
+    priority: "medium",
+    createdAt: 1,
+    updatedAt: 1,
+    ...fields,
+  });
+}
+
+async function seedDailyPage(world: World, body: string, userId = A, date = TODAY) {
+  return (await world.db.insert("notes", {
+    userId,
+    title: "Thu 15 Oct",
+    body,
+    pinned: false,
+    periodType: "daily",
+    pageType: "daily",
+    date,
+    createdAt: 1,
+    updatedAt: 1,
+  })) as Id<"notes">;
+}
+
+const DECISION = {
+  kind: "decision",
+  title: "This afternoon",
+  steps: [
+    { title: "Reply to Dana", minutes: 10, reason: "Quick, and it unblocks her" },
+    { title: "Draft the report", minutes: 45 },
+    { title: "Laundry", minutes: 20 },
+  ],
+};
+
+/** The task blocks on a page, in order: title and status. */
+function pageTasks(body: string) {
+  return parseTempoBlocks(body).flatMap((segment) =>
+    segment.kind === "valid" && segment.block.type === "task"
+      ? [{ title: segment.block.data.title, status: segment.block.data.status }]
+      : [],
+  );
+}
+
+describe("a decision: the coach orders today's tasks, and saving it writes to today's page", () => {
+  test("the model sees the caller's open tasks for their day, and only those", async () => {
+    const world = makeWorld();
+    await seedTask(world, { title: "Reply to Dana", dueAt: DAY_START + 9 * 3_600_000, timeEstimate: 10 * 60_000 });
+    await seedTask(world, { title: "Draft the report", dueAt: DAY_START + 10 * 3_600_000, status: "in_progress" });
+    await seedTask(world, { title: "Already done", dueAt: DAY_START + 3_600_000, status: "done" });
+    await seedTask(world, { title: "Deleted", dueAt: DAY_START + 3_600_000, deletedAt: 5 });
+    await seedTask(world, { title: "Tomorrow", dueAt: DAY_END + 3_600_000 });
+    await seedTask(world, { title: "Someone else's", dueAt: DAY_START + 3_600_000, userId: B });
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "What order should I do these in?");
+    const model = fakeModel(JSON.stringify({ reply: "Dana first.", proposal: DECISION }));
+    await coach.runCoachReply(world.actionAs(A), { conversationId, dayStartMs: DAY_START, dayEndMs: DAY_END }, model.call);
+    const sent = model.calls[0]?.messages.map((m) => m.content).join("\n") ?? "";
+    expect(sent).toContain("<tasks>\n- Reply to Dana (10 min)\n- Draft the report\n</tasks>");
+    for (const hidden of ["Already done", "Deleted", "Tomorrow", "Someone else's"]) {
+      expect(sent).not.toContain(hidden);
+    }
+  });
+
+  test("without a day, or with bounds that are not one day, no tasks are sent", async () => {
+    const world = makeWorld();
+    await seedTask(world, { title: "Reply to Dana", dueAt: DAY_START + 3_600_000 });
+    for (const bounds of [{}, { dayStartMs: DAY_START, dayEndMs: DAY_START + 7 * 86_400_000 }, { dayStartMs: DAY_END, dayEndMs: DAY_START }]) {
+      const conversationId = await seedConversation(world);
+      await say(world, conversationId, "what first?");
+      const model = fakeModel('{"reply":"Start small.","proposal":null}');
+      await coach.runCoachReply(world.actionAs(A), { conversationId, ...bounds }, model.call);
+      expect(model.calls[0]?.messages.some((m) => m.content.startsWith("Their open tasks"))).toBe(false);
+    }
+  });
+
+  test("a decision is stored pending and the page is untouched", async () => {
+    const world = makeWorld();
+    const pageId = await seedDailyPage(world, "## Intention\n");
+    const { messageId } = await proposalTurn(world, DECISION);
+    expect(coach.storedProposal(world.row(messageId)?.toolCalls)).toEqual({ ...DECISION, status: "pending" } as never);
+    expect((world.row(pageId) as Row).body).toBe("## Intention\n");
+  });
+
+  test("Save adds the title and one task block per step, in order, to the end of today's page; Undo takes them off", async () => {
+    const world = makeWorld();
+    const pageId = await seedDailyPage(world, "## Intention\nRest after lunch\n");
+    const { messageId } = await proposalTurn(world, DECISION);
+    const accepted = await run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY });
+    expect(accepted).toMatchObject({ kind: "decision", createdId: pageId });
+    expect(accepted.undoUntilMs - Date.now()).toBeGreaterThan(4 * 60_000);
+
+    const body = (world.row(pageId) as Row).body as string;
+    expect(body.startsWith("## Intention\nRest after lunch\n\n### This afternoon\n\n```json tempo\n")).toBe(true);
+    expect(pageTasks(body)).toEqual([
+      { title: "Reply to Dana", status: "now" },
+      { title: "Draft the report", status: "later" },
+      { title: "Laundry", status: "later" },
+    ]);
+    expect(parseTempoBlocks(body).some((segment) => segment.kind === "broken")).toBe(false);
+    const stored = coach.storedProposal(world.row(messageId)?.toolCalls);
+    expect(stored?.status).toBe("accepted");
+    expect(stored?.blockIds).toHaveLength(3);
+    expect(world.rows("tasks")).toHaveLength(0);
+
+    await run(coach.undoProposal, world.as(A), { messageId });
+    expect((world.row(pageId) as Row).body).toBe("## Intention\nRest after lunch\n");
+    expect((world.row(pageId) as Row).deletedAt).toBeUndefined();
+    expect(coach.storedProposal(world.row(messageId)?.toolCalls)?.status).toBe("undone");
+  });
+
+  test("Undo after the person wrote more keeps their words and removes only the decision's blocks", async () => {
+    const world = makeWorld();
+    const pageId = await seedDailyPage(world, "## Intention\n");
+    const { messageId } = await proposalTurn(world, DECISION);
+    await run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY });
+    const saved = (world.row(pageId) as Row).body as string;
+    await world.db.patch(pageId, { body: `${saved}Then a walk.\n` });
+    await run(coach.undoProposal, world.as(A), { messageId });
+    const body = (world.row(pageId) as Row).body as string;
+    expect(pageTasks(body)).toEqual([]);
+    expect(body).toContain("## Intention\n");
+    expect(body).toContain("Then a walk.\n");
+  });
+
+  test("Save needs today's date and today's own page; nothing changes when either is missing", async () => {
+    const world = makeWorld();
+    await seedDailyPage(world, "B's day\n", B);
+    const { messageId } = await proposalTurn(world, DECISION);
+    await expect(run(coach.acceptProposal, world.as(A), { messageId })).rejects.toThrow("Open Today");
+    await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: "2026-02-30" })).rejects.toThrow("Open Today");
+    await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY })).rejects.toThrow("isn't ready");
+    expect(coach.storedProposal(world.row(messageId)?.toolCalls)?.status).toBe("pending");
+    expect(world.rows("notes").map((n) => n.body)).toEqual(["B's day\n"]);
+  });
+
+  test("a full page refuses the save instead of writing broken blocks", async () => {
+    const world = makeWorld();
+    const fences = Array.from({ length: 255 }, (_, i) =>
+      `\`\`\`json tempo\n${JSON.stringify({ id: `blk_01JQ8Z3K4M5N6P7Q8R9S${String(i).padStart(6, "0")}`, v: 1, type: "task", data: { title: `t${i}`, durationMin: 5, status: "later", order: i, inelastic: false } })}\n\`\`\`\n`,
+    ).join("");
+    const pageId = await seedDailyPage(world, fences);
+    const { messageId } = await proposalTurn(world, DECISION);
+    await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY })).rejects.toThrow("full");
+    expect((world.row(pageId) as Row).body).toBe(fences);
   });
 });
