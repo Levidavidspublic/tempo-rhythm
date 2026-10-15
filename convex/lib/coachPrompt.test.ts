@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { COACH_LIMITS, buildCoachMessages, parseCoachReply, readProposal, truncate } from "./coachPrompt";
+import { COACH_LIMITS, buildCoachMessages, dayName, parseCoachReply, readProposal, truncate } from "./coachPrompt";
 
 const META =
   '```json tempo\n{"id":"blk_01JQ8Z3K4M5N6P7Q8R9S0T1V2X","v":1,"type":"page-meta","data":{"pageType":"daily","date":"2026-10-13","tags":[]}}\n```\n';
@@ -71,6 +71,21 @@ describe("buildCoachMessages", () => {
     const messages = buildCoachMessages({ dial: 5, history: [], page: { title: "", text: "y".repeat(50_000) } });
     expect(messages[1]?.content).toContain('title="Untitled"');
     expect(messages[1]?.content.length).toBeLessThan(COACH_LIMITS.pageChars + 200);
+  });
+});
+
+describe("the person's date", () => {
+  test("names the weekday of the date itself, in any time zone", () => {
+    expect(dayName("2026-10-16")).toBe("Friday, 16 October 2026");
+    expect(dayName("2024-02-29")).toBe("Thursday, 29 February 2024");
+    expect(dayName("2026-02-30")).toBeNull();
+    expect(dayName("16/10/2026")).toBeNull();
+  });
+
+  test("goes right after the system prompt, and only when it is a real date", () => {
+    const messages = buildCoachMessages({ dial: 5, history: [], page: null, today: "2026-10-16" });
+    expect(messages[1]).toEqual({ role: "system", content: "For them it is Friday, 16 October 2026." });
+    expect(buildCoachMessages({ dial: 5, history: [], page: null, today: "2026-13-01" })).toHaveLength(1);
   });
 });
 
