@@ -1,10 +1,25 @@
 // L4: ask the coach to plan the afternoon -> the proposal card shows the exact change -> Accept ->
 // the change appears -> Undo within 5 minutes restores it.
-import { BASE_URL, assertSignedIn, controlFail, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
+import {
+  BASE_URL,
+  assertSignedIn,
+  completeOpenTasks,
+  controlFail,
+  expectVisible,
+  fail,
+  marker,
+  runLoop,
+  sendCoachMessage,
+} from "./lib.mjs";
 
 const LIST_FOR_KIND = { task: "/tasks", note: "/notes", template: "/templates" };
 
 await runLoop("l4", "Coach plans the afternoon: proposal, Accept, Undo", async (page, shot) => {
+  // The synthetic account's open tasks are all earlier runs' leftovers (an attempt that stopped
+  // between Accept and Undo leaves its task). With one on the list the coach orders it instead of
+  // suggesting a task (13:44, "10-minute tidy … already on your list"), so each run starts with
+  // none. The sweep's own fixture task stays.
+  await completeOpenTasks(page, /^Mark (?!Alpha sweep ).* complete$/, "leftover task(s)");
   await page.goto(`${BASE_URL}/coach`, { waitUntil: "domcontentloaded" });
   await assertSignedIn(page);
   await expectVisible(page.getByRole("textbox", { name: "Message" }), "the coach message box", 45_000);

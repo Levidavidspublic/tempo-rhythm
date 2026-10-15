@@ -172,6 +172,27 @@ export async function completeAlphaTasks(page) {
   throw fail("more than 30 open Alpha tasks on Today");
 }
 
+/**
+ * Completes every open task on the task list (/tasks, which shows all of them) whose "Mark …
+ * complete" button matches `name`, then fails setup if any is left: a run that starts on an earlier
+ * run's leftovers doesn't test the same thing.
+ */
+export async function completeOpenTasks(page, name, what) {
+  await page.goto(`${BASE_URL}/tasks`, { waitUntil: "domcontentloaded" });
+  await assertSignedIn(page);
+  await expectVisible(page.getByRole("heading", { name: "Inbox" }), "the task list", 45_000);
+  // The heading comes before the tasks: wait for the first row (the shared account always has some).
+  await page.getByRole("button", { name: /^Mark .* (complete|not done)$/ }).first().waitFor({ timeout: 30_000 }).catch(() => {});
+  const open = page.getByRole("button", { name });
+  for (let i = 0; i < 60 && (await open.count()) > 0; i += 1) {
+    const label = await open.first().getAttribute("aria-label");
+    await open.first().click();
+    await page.getByRole("button", { name: label, exact: true }).first().waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+  }
+  const left = await open.count();
+  if (left > 0) throw fail(`${left} ${what} still open after cleanup`);
+}
+
 /** The "Saved" status of the page editor (PageEditorView). */
 export async function waitForPageSaved(page) {
   await expectVisible(page.getByText("Saved", { exact: true }), "the page's Saved status", 30_000);
