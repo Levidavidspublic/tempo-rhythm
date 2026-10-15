@@ -203,7 +203,18 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
     // What the screen showed when the run stopped.
     if (page) await shot(page, "stopped").catch(() => {});
   } finally {
-    if (context && process.env.ALPHA_STORAGE_STATE) await saveState(context).catch(() => {});
+    // This browser already rotated the refresh token: a state that isn't saved signs the next run
+    // out, so a failed save fails a run that would otherwise pass.
+    if (context && process.env.ALPHA_STORAGE_STATE) {
+      try {
+        await saveState(context);
+      } catch (error) {
+        if (code === EXIT.PASS) {
+          code = EXIT.FAIL;
+          reason = `could not save the session state: ${String(error?.message ?? error).split("\n")[0]}`;
+        }
+      }
+    }
     await browser.close();
   }
   const result = Object.entries(EXIT).find(([, v]) => v === code)?.[0] ?? "FAIL";

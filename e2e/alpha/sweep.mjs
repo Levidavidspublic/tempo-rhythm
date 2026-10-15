@@ -73,7 +73,7 @@ async function render(context, route, v, discovered = false) {
   const page = await context.newPage();
   await page.setViewportSize({ width: v.width, height: v.width < 600 ? 844 : 900 });
   await page.emulateMedia({ colorScheme: v.theme });
-  const rec = { route, ...v, discovered, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "", missingText: "" };
+  const rec = { route, ...v, discovered, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "", missingText: "", appliedTheme: "" };
   page.on("pageerror", (e) => rec.errors.push(String(e.message || e).split("\n")[0].slice(0, 200)));
   page.on("console", (m) => {
     if (m.type() === "error") rec.console.push(m.text().split("\n")[0].slice(0, 200));
@@ -94,13 +94,18 @@ async function render(context, route, v, discovered = false) {
       overflow: Math.max(document.documentElement.scrollWidth, document.body?.scrollWidth ?? 0) - document.documentElement.clientWidth,
       waiting: Boolean(document.querySelector('[data-testid="approval-waiting"]')),
       dir: document.documentElement.dir,
+      // The theme the screen shows: an explicit data-theme wins over the system preference.
+      theme:
+        document.documentElement.getAttribute("data-theme") ||
+        (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
     }))
-    .catch(() => ({ text: "", overflow: 0, waiting: false, dir: "" }));
+    .catch(() => ({ text: "", overflow: 0, waiting: false, dir: "", theme: "" }));
   rec.overflow = Math.max(0, probe.overflow);
   rec.errorText = ERROR_TEXT.exec(probe.text)?.[0] ?? "";
   rec.missingText = discovered ? (MISSING_TEXT.exec(probe.text)?.[0] ?? "") : "";
   rec.waiting = probe.waiting;
   rec.dir = probe.dir;
+  rec.appliedTheme = probe.theme;
   const shot = path.join(OUT, `${route.replace(/\//g, "_")}__${v.width}-${v.theme}-${v.lang}.png`);
   await page.screenshot({ path: shot }).catch(() => {});
   rec.shot = path.relative(process.cwd(), shot);
@@ -124,7 +129,8 @@ const failed = (r) =>
   r.overflow > 1 ||
   r.finalPath.startsWith("/sign-in") ||
   r.waiting ||
-  r.dir !== DIR[r.lang];
+  r.dir !== DIR[r.lang] ||
+  r.appliedTheme !== r.theme;
 
 async function main() {
   const statePath = process.env.ALPHA_STORAGE_STATE;
@@ -168,8 +174,15 @@ async function main() {
     for (const route of [...found.values()].flat()) for (const v of VARIANTS) dynQueue.push({ route, v, discovered: true });
     await runQueue(dynQueue);
   }
-  await saveState(context).catch(() => {});
+  // The context rotated the refresh token: an unsaved state signs the next run out, so it fails this one.
+  const saveError = await saveState(context).then(
+    () => "",
+    (error) => String(error?.message ?? error).split("\n")[0],
+  );
   await browser.close();
+  // Every route with a parameter must be reached: a list page that stops linking to its detail
+  // screen, or an account without the data, would otherwise pass a sweep that skipped screens.
+  const missing = only ? [] : DYNAMIC_ROUTES.filter((d) => !found.has(d.pattern.source)).map((d) => d.pattern.source);
 
   // Approval is per account: one "Waiting for approval" screen means the session is not approved,
   // even though a few screens sit outside the approval gate (/settings/passkeys).
@@ -185,7 +198,8 @@ async function main() {
     "",
     `${BASE_URL}: ${results.length} renders of ${new Set(results.map((r) => r.route)).size} routes, ${bad.length} failing.`,
     `Routes with a parameter found: ${[...found.values()].flat().join(", ") || "none"}.`,
-    `Not found (no link on its list page): ${DYNAMIC_ROUTES.filter((d) => !found.has(d.pattern.source)).map((d) => d.pattern.source).join(", ") || "none"}.`,
+    `Not reached (no link on its list page; fails the run): ${missing.join(", ") || "none"}.`,
+    ...(saveError ? [`Session state not saved (fails the run): ${saveError}`] : []),
     "",
     "| route | variant | problem |",
     "|---|---|---|",
@@ -197,6 +211,7 @@ async function main() {
           r.missingText ? `linked screen says "${r.missingText}"` : "",
           r.status >= 400 || r.status === 0 ? `HTTP ${r.status || "none"}` : "",
           r.dir !== DIR[r.lang] ? `dir "${r.dir}", not ${DIR[r.lang]}` : "",
+          r.appliedTheme !== r.theme ? `theme "${r.appliedTheme}", not ${r.theme}` : "",
           r.overflow > 1 ? `horizontal scroll ${r.overflow}px` : "",
           r.finalPath.startsWith("/sign-in") ? "redirected to sign-in" : "",
           r.waiting ? "waiting for approval" : "",
@@ -211,7 +226,7 @@ async function main() {
   ];
   writeFileSync(path.join(OUT, "summary.md"), `${lines.join("\n")}\n`);
   writeFileSync(path.join(OUT, "results.json"), `${JSON.stringify(results, null, 1)}\n`);
-  const code = blocked ? EXIT.BLOCKED_VERIFICATION : bad.length ? EXIT.FAIL : EXIT.PASS;
+  const code = blocked ? EXIT.BLOCKED_VERIFICATION : bad.length || missing.length || saveError ? EXIT.FAIL : EXIT.PASS;
   console.log(`sweep ${Object.entries(EXIT).find(([, c]) => c === code)?.[0]}: ${results.length} renders, ${bad.length} failing (${path.relative(process.cwd(), OUT)}/summary.md)`);
   process.exit(code);
 }
