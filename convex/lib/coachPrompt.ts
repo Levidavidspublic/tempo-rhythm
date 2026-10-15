@@ -302,9 +302,9 @@ function salvageReply(content: string): string | null {
 }
 
 // A promise that a card waits for the person's yes: "Nothing changes until you accept it" (or
-// "will change", "unless", "approve", "say yes"), up to its object. "Nothing changes until you
-// accept that rest counts" is advice, not a promise.
-const PROMISE = String.raw`nothing (?:will )?changes? (?:until|unless) you (?:accept|approve|say yes(?: to)?)(?: (?:it|this|that|them|the \p{L}+))?(?: (?:first|here|below))?(?= *(?:[.!?\n,;:—–-]|$))`;
+// "will change", "unless", "approve", "say yes"), up to its object ("it", "this proposal", "the new
+// plan"). "Nothing changes until you accept that rest counts" is advice, not a promise.
+const PROMISE = String.raw`nothing (?:will )?changes? (?:until|unless) you (?:accept|approve|say yes(?: to)?)(?: (?:(?:it|this|that|them)(?: \p{L}+)?|the \p{L}+(?: \p{L}+)?))?(?: (?:first|here|below))?(?= *(?:[.!?\n,;:—–-]|$))`;
 /**
  * The promise opening a sentence: "A tidy. Nothing changes until you accept it." goes whole, and
  * "But nothing changes until you say yes, so no rush." keeps what follows it ("So no rush.").
