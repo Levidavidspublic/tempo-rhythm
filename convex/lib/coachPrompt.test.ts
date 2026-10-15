@@ -15,8 +15,10 @@ describe("buildCoachMessages", () => {
     // first (alpha run, L4); a request it can't act on still gets one short question (HARD_RULES §6.3).
     expect(system?.content).toContain("make a concrete proposal in this reply instead of asking first");
     expect(system?.content).toContain("Only when you can't tell what they want, ask one short question.");
-    // Proposals can't carry a date or time yet, so the coach isn't told to propose schedules.
+    // Proposals can't carry a date or time yet, so the coach isn't told to propose schedules, and
+    // an add for another day or a time is asked about instead of losing its date.
     expect(system?.content).not.toContain("schedule something");
+    expect(system?.content).toContain("A task can only be added for today or with no date.");
   });
 
   test("the open page comes before the thread, marked as the person's material", () => {
