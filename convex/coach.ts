@@ -173,19 +173,31 @@ function dayBounds(args: { dayStartMs?: number; dayEndMs?: number }): { start: n
   return end > start && end - start <= MAX_DAY_MS ? { start, end } : null;
 }
 
-/** The caller's open tasks due in their day, soonest first: what "these" means in "what order should I do these in?". */
+/** Most task rows one turn reads while looking for the day's open tasks (bounds the read). */
+const MAX_DAY_TASKS_SCANNED = 500;
+
+/**
+ * The caller's open tasks due in their day, soonest first: what "these" means in "what order
+ * should I do these in?". Done and deleted rows are skipped while reading, so they never crowd
+ * open tasks out of the cap (Codex P2 on #940).
+ */
 async function openTasksForDay(ctx: Db, userId: UserId, day: { start: number; end: number }): Promise<CoachTaskContext[]> {
-  const due = await ctx.db
+  const open: CoachTaskContext[] = [];
+  let scanned = 0;
+  for await (const t of ctx.db
     .query("tasks")
-    .withIndex("by_userId_dueAt", (q) => q.eq("userId", userId).gte("dueAt", day.start).lt("dueAt", day.end))
-    .take(COACH_LIMITS.contextTasks * 5);
-  return due
-    .filter((t) => t.deletedAt === undefined && (t.status === "todo" || t.status === "in_progress"))
-    .slice(0, COACH_LIMITS.contextTasks)
-    .map((t) => ({
-      title: t.title,
-      minutes: t.timeEstimate !== undefined && t.timeEstimate > 0 ? Math.round(t.timeEstimate / 60_000) : null,
-    }));
+    .withIndex("by_userId_dueAt", (q) => q.eq("userId", userId).gte("dueAt", day.start).lt("dueAt", day.end))) {
+    scanned += 1;
+    if (t.deletedAt === undefined && (t.status === "todo" || t.status === "in_progress")) {
+      open.push({
+        title: t.title,
+        minutes: t.timeEstimate !== undefined && t.timeEstimate > 0 ? Math.round(t.timeEstimate / 60_000) : null,
+      });
+      if (open.length === COACH_LIMITS.contextTasks) break;
+    }
+    if (scanned === MAX_DAY_TASKS_SCANNED) break;
+  }
+  return open;
 }
 
 /**
@@ -469,6 +481,16 @@ function decisionText(proposal: Extract<CoachProposal, { kind: "decision" }>, no
   return { text: heading + fences, blockIds: blocks.map((block) => block.id) };
 }
 
+/**
+ * True when `date` is today in some time zone (UTC-12 to UTC+14): "Save to today" never writes to
+ * another day's page (Codex P2 on #940). Only the client knows its own zone.
+ */
+function isTodaySomewhere(date: string, now: number): boolean {
+  if (!isValidLocalDate(date)) return false;
+  const midnightUtc = Date.parse(`${date}T00:00:00Z`);
+  return now >= midnightUtc - 14 * 60 * 60_000 && now < midnightUtc + 36 * 60 * 60_000;
+}
+
 /** The caller's live daily page for `date`. */
 async function dailyPage(ctx: MutationCtx, userId: UserId, date: string) {
   return ctx.db
@@ -491,7 +513,7 @@ async function saveDecision(
   todayDate: string | undefined,
   now: number,
 ) {
-  if (todayDate === undefined || !isValidLocalDate(todayDate)) {
+  if (todayDate === undefined || !isTodaySomewhere(todayDate, now)) {
     throw new Error("Open Today to save this.");
   }
   const page = await dailyPage(ctx, userId, todayDate);

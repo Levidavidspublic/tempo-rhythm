@@ -61,6 +61,9 @@ function makeWorld() {
       },
       order: (direction: "asc" | "desc") => builder(direction === "desc" ? [...rows].reverse() : rows),
       collect: async () => [...rows],
+      [Symbol.asyncIterator]: async function* () {
+        yield* rows;
+      },
       take: async (n: number) => rows.slice(0, n),
       first: async () => rows[0] ?? null,
     };
@@ -556,7 +559,9 @@ describe("proposals change nothing until Accept, and Accept has a 5-minute Undo"
 
 const DAY_START = Date.UTC(2026, 9, 15, 0, 0);
 const DAY_END = DAY_START + 24 * 60 * 60_000;
-const TODAY = "2026-10-15";
+/** Today's UTC date: Save only writes to a page dated today somewhere on Earth. */
+const TODAY = new Date().toISOString().slice(0, 10);
+const DAYS_AGO = new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10);
 
 async function seedTask(world: World, fields: Record<string, unknown>) {
   return world.db.insert("tasks", {
@@ -620,6 +625,20 @@ describe("a decision: the coach orders today's tasks, and saving it writes to to
     for (const hidden of ["Already done", "Deleted", "Tomorrow", "Someone else's"]) {
       expect(sent).not.toContain(hidden);
     }
+  });
+
+  test("closed tasks never crowd open ones out of the cap", async () => {
+    const world = makeWorld();
+    for (let i = 0; i < 120; i += 1) {
+      await seedTask(world, { title: `Done ${i}`, dueAt: DAY_START + i * 1_000, status: "done" });
+    }
+    await seedTask(world, { title: "Still open", dueAt: DAY_START + 200_000 });
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "What order should I do these in?");
+    const model = fakeModel('{"reply":"Open one first.","proposal":null}');
+    await coach.runCoachReply(world.actionAs(A), { conversationId, dayStartMs: DAY_START, dayEndMs: DAY_END }, model.call);
+    const sent = model.calls[0]?.messages.map((m) => m.content).join("\n") ?? "";
+    expect(sent).toContain("<tasks>\n- Still open\n</tasks>");
   });
 
   test("without a day, or with bounds that are not one day, no tasks are sent", async () => {
@@ -689,9 +708,12 @@ describe("a decision: the coach orders today's tasks, and saving it writes to to
     const { messageId } = await proposalTurn(world, DECISION);
     await expect(run(coach.acceptProposal, world.as(A), { messageId })).rejects.toThrow("Open Today");
     await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: "2026-02-30" })).rejects.toThrow("Open Today");
+    // A real page on another day is never written to by "Save to today".
+    await seedDailyPage(world, "Monday\n", A, DAYS_AGO);
+    await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: DAYS_AGO })).rejects.toThrow("Open Today");
     await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY })).rejects.toThrow("isn't ready");
     expect(coach.storedProposal(world.row(messageId)?.toolCalls)?.status).toBe("pending");
-    expect(world.rows("notes").map((n) => n.body)).toEqual(["B's day\n"]);
+    expect(world.rows("notes").map((n) => n.body)).toEqual(["B's day\n", "Monday\n"]);
   });
 
   test("a full page refuses the save instead of writing broken blocks", async () => {
