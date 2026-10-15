@@ -152,15 +152,21 @@ async function ownedLease(ctx: Db, userId: Id<"users">, sessionId: Id<"voiceSess
   return lease;
 }
 
-/** An active, unexpired lease whose conversation is still the caller's and live. */
-async function liveLease(ctx: MutationCtx, userId: Id<"users">, sessionId: Id<"voiceSessions">, now: number) {
-  const lease = await ownedLease(ctx, userId, sessionId);
+/**
+ * An active, unexpired lease whose conversation is still the caller's and live, within the
+ * caller's minutes today. Provider work (a token, a sentence) re-checks the cap, so an account that
+ * stops being paid mid-session gets no more of either; the next heartbeat ends the lease.
+ */
+async function liveLease(ctx: MutationCtx, user: Doc<"users">, sessionId: Id<"voiceSessions">, now: number) {
+  const lease = await ownedLease(ctx, user._id, sessionId);
   if (lease.status !== "active") throw voiceError("voice_session_ended");
   if (leaseExpired(lease, now)) {
     await endLease(ctx, lease, "expired", now);
     throw voiceError("voice_session_ended");
   }
-  await requireLegacyWritableConversation(ctx, userId, lease.conversationId);
+  await requireLegacyWritableConversation(ctx, user._id, lease.conversationId);
+  const spent = (await usedTodayMs(ctx, user._id, lease.dateKey, now, lease._id)) + leaseMs(lease, now);
+  if (spent >= dailyCapMs(user)) throw voiceError("voice_daily_limit");
   return lease;
 }
 
@@ -330,12 +336,26 @@ export const admitGrant = internalMutation({
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     const now = Date.now();
-    const lease = await liveLease(ctx, user._id, args.sessionId, now);
+    const lease = await liveLease(ctx, user, args.sessionId, now);
     if (lease.grants >= VOICE_LIMITS.grantsPerLease) throw voiceError("voice_session_ended");
     const lane = laneFor(lease.language);
     if (!lane) throw voiceError("voice_language");
     await ctx.db.patch(lease._id, { grants: lease.grants + 1, lastRenewalAt: now, updatedAt: now });
     return { url: lane.url };
+  },
+});
+
+/** Gives back a grant whose token couldn't be minted, so failed attempts don't use up the lease. */
+export const releaseGrant = internalMutation({
+  args: { sessionId: v.id("voiceSessions") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const lease = await ctx.db.get(args.sessionId);
+    if (lease && lease.userId === user._id && lease.status === "active" && lease.grants > 0) {
+      await ctx.db.patch(lease._id, { grants: lease.grants - 1, updatedAt: Date.now() });
+    }
+    return null;
   },
 });
 
@@ -349,34 +369,46 @@ export const grant = action({
   returns: v.object({ token: v.string(), url: v.string() }),
   handler: async (ctx, args): Promise<{ token: string; url: string }> => {
     await requireApprovedForAi(ctx);
-    const { url }: { url: string } = await ctx.runMutation(internal.voice.admitGrant, args);
     const key = process.env.DEEPGRAM_API_KEY;
     if (!key) throw voiceError("voice_off");
-    let response: Response;
+    // The grant is reserved first (so concurrent calls can't pass the limit) and given back if no
+    // token comes of it.
+    const { url }: { url: string } = await ctx.runMutation(internal.voice.admitGrant, args);
     try {
-      response = await fetch(DEEPGRAM_GRANT_URL, {
-        method: "POST",
-        headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ttl_seconds: VOICE_LIMITS.tokenTtlSeconds }),
-        signal: AbortSignal.timeout(10_000),
-      });
+      return { token: await mintDeepgramToken(key), url };
     } catch (error) {
-      console.error(`voice.grant: Deepgram could not be reached (${error instanceof Error ? error.name : typeof error})`);
-      throw voiceError("voice_connect");
+      await ctx.runMutation(internal.voice.releaseGrant, args).catch(() => {});
+      throw error;
     }
-    if (!response.ok) {
-      console.error(`voice.grant: Deepgram returned HTTP ${response.status}`);
-      throw voiceError("voice_connect");
-    }
-    const body: unknown = await response.json().catch(() => null);
-    const token = body && typeof body === "object" ? (body as { access_token?: unknown }).access_token : undefined;
-    if (typeof token !== "string" || token.length < 16 || token.length > 8192) {
-      console.error("voice.grant: Deepgram returned no usable token");
-      throw voiceError("voice_connect");
-    }
-    return { token, url };
   },
 });
+
+/** One short-lived Deepgram token (TRD §5a step 1). Errors say nothing of the provider's body. */
+async function mintDeepgramToken(key: string): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch(DEEPGRAM_GRANT_URL, {
+      method: "POST",
+      headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ttl_seconds: VOICE_LIMITS.tokenTtlSeconds }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    console.error(`voice.grant: Deepgram could not be reached (${error instanceof Error ? error.name : typeof error})`);
+    throw voiceError("voice_connect");
+  }
+  if (!response.ok) {
+    console.error(`voice.grant: Deepgram returned HTTP ${response.status}`);
+    throw voiceError("voice_connect");
+  }
+  const body: unknown = await response.json().catch(() => null);
+  const token = body && typeof body === "object" ? (body as { access_token?: unknown }).access_token : undefined;
+  if (typeof token !== "string" || token.length < 16 || token.length > 8192) {
+    console.error("voice.grant: Deepgram returned no usable token");
+    throw voiceError("voice_connect");
+  }
+  return token;
+}
 
 type SentenceResult =
   | { status: "sentence"; text: string; language: string; count: number }
@@ -402,7 +434,7 @@ export const admitSentence = internalMutation({
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     const now = Date.now();
-    const lease = await liveLease(ctx, user._id, args.sessionId, now);
+    const lease = await liveLease(ctx, user, args.sessionId, now);
     const message = await ctx.db.get(args.messageId);
     if (
       !message ||

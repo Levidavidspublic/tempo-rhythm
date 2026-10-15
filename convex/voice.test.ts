@@ -73,6 +73,7 @@ function makeWorld() {
   const handlers: Record<string, unknown> = {
     "approval:assertApprovedForAi": approval.assertApprovedForAi,
     "voice:admitGrant": voice.admitGrant,
+    "voice:releaseGrant": voice.releaseGrant,
     "voice:admitSentence": voice.admitSentence,
   };
   const actionAs = (userId: string) => {
@@ -392,6 +393,45 @@ describe("grant: a 30-second Deepgram token per lease", () => {
     }
     await run(voice.stop, world.as(A), { sessionId: second.sessionId });
     await expect(run(voice.grant, world.actionAs(A), { sessionId: second.sessionId })).rejects.toThrow("ended");
+  });
+
+  test("a failed mint gives its grant back, so retries don't use up the lease", async () => {
+    const world = makeWorld();
+    const { sessionId } = await startSession(world, await conversation(world));
+    const failing = fakeFetch(() => new Response("upstream down", { status: 503 }));
+    try {
+      for (let i = 0; i < VOICE_LIMITS.grantsPerLease + 1; i += 1) {
+        await expect(run(voice.grant, world.actionAs(A), { sessionId })).rejects.toThrow("couldn't connect");
+      }
+    } finally {
+      failing.restore();
+    }
+    expect((world.row(sessionId) as Row).grants).toBe(0);
+    const net = fakeFetch(() => Response.json({ access_token: "jwt-for-the-browser-0123456789" }));
+    try {
+      expect((await run(voice.grant, world.actionAs(A), { sessionId })).token).toBe("jwt-for-the-browser-0123456789");
+    } finally {
+      net.restore();
+    }
+    expect((world.row(sessionId) as Row).grants).toBe(1);
+  });
+
+  test("an account that stops being paid mid-session gets no token and no sentence, with no provider call", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const { sessionId } = await startSession(world, conversationId);
+    const messageId = await reply(world, conversationId, "First this. Then that.");
+    await world.db.patch(A, { userType: "free" });
+    const net = fakeFetch(() => Response.json({ access_token: "jwt-for-the-browser-0123456789" }));
+    try {
+      await expect(run(voice.grant, world.actionAs(A), { sessionId })).rejects.toThrow("today's voice time");
+      await expect(run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 })).rejects.toThrow("today's voice time");
+      expect(net.calls).toHaveLength(0);
+    } finally {
+      net.restore();
+    }
+    // The next heartbeat ends the lease.
+    expect((await run(voice.renew, world.as(A), { sessionId })).status).toBe("exhausted");
   });
 
   test("a pending account gets no token and no provider call", async () => {
