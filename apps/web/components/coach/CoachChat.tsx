@@ -11,8 +11,11 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
 import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { useOnline } from "@/lib/useOnline";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
+import { VoiceCall } from "./voice/VoiceCall";
+import { useVoiceCall, type VoiceSendResult } from "./voice/useVoiceCall";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -76,6 +79,10 @@ export function CoachConversation({
   const bounds = useLocalDayBounds();
   // Today's chat answers with today's page as context: it waits until that page is on screen.
   const waitingForPage = variant === "today" && !pageId;
+  const online = useOnline();
+  // Voice mode shows only when the server says it can start (both keys set, an English lane,
+  // minutes left today); otherwise the composer is unchanged.
+  const voiceAvailability = useQuery(api.voice.availability, isAuthenticated && profile ? {} : "skip");
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
@@ -134,7 +141,8 @@ export function CoachConversation({
   });
 
   // A failed or missing reply never throws past here: the message is saved, and the thread says so.
-  const reply = async (id: Id<"conversations">) => {
+  // True only when the coach wrote a reply to this turn.
+  const reply = async (id: Id<"conversations">): Promise<boolean> => {
     setReplying(true);
     setUnavailable(false);
     setPageUnsaved(false);
@@ -146,7 +154,7 @@ export function CoachConversation({
           await flushPage();
         } catch {
           setPageUnsaved(true);
-          return;
+          return false;
         }
       }
       const result = await requestReply({
@@ -157,12 +165,43 @@ export function CoachConversation({
         todayDate: localIsoDate(new Date(bounds.startMs)),
       });
       setUnavailable(result.status === "unavailable");
+      return result.status === "replied";
     } catch {
       setUnavailable(true);
+      return false;
     } finally {
       setReplying(false);
     }
   };
+
+  // A spoken turn takes the typed path: the crisis guard first, then the coach (VOICE.md L-16).
+  const sendSpoken = async (text: string): Promise<VoiceSendResult> => {
+    if (!conversationId) return { kind: "none" };
+    let serverCrisis = false;
+    const outcome = await deliverCoachMessage(text, guard, async (content) => {
+      const result = await sendMessage({ conversationId, content });
+      serverCrisis = result.crisis === true;
+    });
+    if (outcome === "resources") {
+      setCrisisHold(true);
+      return { kind: "crisis" };
+    }
+    setCrisisHold(false);
+    if (serverCrisis) return { kind: "crisis" };
+    // No reply written (page unsaved, coach unavailable, another reply in flight): the call goes
+    // back to listening instead of waiting for a message that won't come.
+    return (await reply(conversationId)) ? { kind: "reply" } : { kind: "none" };
+  };
+  const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card");
+  // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
+  // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
+  const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
+  const voice = useVoiceCall({
+    conversationId,
+    send: sendSpoken,
+    latestReply: lastAssistant ? { id: lastAssistant._id, content: lastAssistant.content } : null,
+    replyInFlight: inFlightUntil !== null,
+  });
 
   const handleSend = async () => {
     const text = input.trim();
@@ -194,9 +233,6 @@ export function CoachConversation({
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
   const inputId = variant === "page" ? "coach-message" : variant === "panel" ? "coach-panel-message" : "today-coach-message";
   const shown = variant === "today" ? messages?.slice(-TODAY_MESSAGES) : messages;
-  // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
-  // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
-  const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
   const busy = isSending || replying || inFlightUntil !== null;
   // A reply that runs past the wait (its action died) gets Try again without a new message.
   const [, setWaitedOut] = useState(0);
@@ -294,10 +330,23 @@ export function CoachConversation({
           />
           <div className="tp-composer__bar">
             <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
+            {voiceAvailability?.available ? (
+              <button
+                className="tp-btn tp-btn--ghost tp-btn--sm"
+                type="button"
+                style={{ marginInlineStart: "auto" }}
+                disabled={!conversationId || busy || waitingForPage || voice.open}
+                onClick={() => void voice.start()}
+                data-component="VoiceStart"
+              >
+                <TpIcon name="mic" size="sm" />
+                <span>{t("coachChat.talk")}</span>
+              </button>
+            ) : null}
             <button
               className="tp-btn tp-btn--primary tp-btn--sm"
               type="submit"
-              style={{ marginInlineStart: "auto" }}
+              style={voiceAvailability?.available ? undefined : { marginInlineStart: "auto" }}
               disabled={!conversationId || busy || waitingForPage || !input.trim()}
             >
               <TpIcon name="send" size="sm" />
@@ -311,6 +360,24 @@ export function CoachConversation({
           </p>
         ) : null}
       </form>
+      {voice.open ? (
+        <VoiceCall
+          open={voice.open}
+          session={voice.session}
+          connecting={voice.connecting}
+          ended={voice.ended}
+          online={online}
+          micOn={voice.micOn}
+          lines={voice.lines}
+          callLang="en"
+          minutesLeft={voice.minutesLeft}
+          onMicToggle={voice.toggleMic}
+          onInterrupt={voice.interrupt}
+          onEnd={voice.end}
+          onClose={voice.close}
+          onRetry={() => void voice.start()}
+        />
+      ) : null}
     </>
   );
 }
