@@ -9,9 +9,10 @@ describe("buildCoachMessages", () => {
     const [system] = buildCoachMessages({ dial: 7, history: [{ role: "user", content: "hi" }], page: null });
     expect(system?.role).toBe("system");
     expect(system?.content).toContain("Current accountability dial: 7 / 10. Match tone accordingly.");
-    // "proposal" comes first, so the model settles the card before it writes about it (alpha run, L4:
-    // a reply said "Nothing changes until you accept it" with no card).
-    expect(system?.content).toContain('{"proposal": null, "reply": "what you say"}');
+    // "reply" stays first: a long proposal cut off by the token limit still leaves a whole reply.
+    expect(system?.content).toContain('{"reply": "what you say", "proposal": null}');
+    // A reply never promises a card it doesn't carry (alpha run, L4: "Nothing changes until you
+    // accept it" with no card).
     expect(system?.content).toContain('never say "nothing changes until you accept" when "proposal" is null');
     expect(system?.content).toContain("Reply in the language the person writes in.");
     // Asked to plan or suggest with enough to go on, the coach proposes now instead of asking
