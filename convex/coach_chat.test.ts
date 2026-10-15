@@ -280,6 +280,26 @@ describe("a coach turn", () => {
     expect(messages(world, conversationId)).toHaveLength(2);
   });
 
+  test("a newer message while the model runs: the reply isn't saved and says superseded, not replied", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "help me start");
+    const call = (async (opts: AiCallOptions): Promise<AiResult> => {
+      // Another tab sends a message while this turn's model call is out.
+      await say(world, conversationId, "actually, one more thing");
+      return {
+        tier: opts.tier,
+        requestedTier: opts.tier,
+        model: "test-model",
+        content: '{"reply":"Start small.","proposal":null}',
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+        escalated: false,
+      };
+    }) as typeof callLLM;
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, call)).toBe("superseded");
+    expect(messages(world, conversationId).filter((m) => m.role === "assistant")).toHaveLength(0);
+  });
+
   test("overlapping replies claim the turn once: one model call, the other is busy", async () => {
     const world = makeWorld();
     const conversationId = await seedConversation(world);

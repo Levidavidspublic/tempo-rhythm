@@ -328,8 +328,11 @@ export const saveReply = internalMutation({
   },
 });
 
-/** "busy": another reply holds this turn; its answer appears in the thread when it lands. */
-export type CoachReplyStatus = "replied" | "unavailable" | "idle" | "busy";
+/**
+ * "busy": another reply holds this turn; its answer appears in the thread when it lands.
+ * "superseded": a newer message arrived while the model ran, so this reply was not saved.
+ */
+export type CoachReplyStatus = "replied" | "unavailable" | "idle" | "busy" | "superseded";
 
 /** The error's class name only: never its message, which can carry provider text. */
 function errorKind(error: unknown): string {
@@ -381,8 +384,9 @@ export async function runCoachReply(
     await release();
     return "unavailable";
   }
+  let saved: boolean;
   try {
-    await ctx.runMutation(internal.coach.saveReply, {
+    saved = await ctx.runMutation(internal.coach.saveReply, {
       conversationId: args.conversationId,
       replyTo: context.replyTo,
       claim: context.claim,
@@ -396,13 +400,19 @@ export async function runCoachReply(
     await release();
     return "unavailable";
   }
-  return "replied";
+  return saved ? "replied" : "superseded";
 }
 
 export const reply = action({
   args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")), ...dayBoundsArgs },
   returns: v.object({
-    status: v.union(v.literal("replied"), v.literal("unavailable"), v.literal("idle"), v.literal("busy")),
+    status: v.union(
+      v.literal("replied"),
+      v.literal("unavailable"),
+      v.literal("idle"),
+      v.literal("busy"),
+      v.literal("superseded"),
+    ),
   }),
   handler: async (ctx, args) => ({ status: await runCoachReply(ctx, args) }),
 });
