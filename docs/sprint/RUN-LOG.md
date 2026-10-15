@@ -18,6 +18,12 @@ If this session restarts: read this file and continue from the first unchecked i
 
 **Usable BETA on preview by Sunday 18 October:** every loop below proven 5 times in a row, plus every signed-in screen clicked through with no page errors at 390 and 1280 px, light and dark, en and he. Run `node e2e/alpha/run.mjs --times 5` after each merge. Same merge gate, stop codes and final report.
 
+**Status, 2026-10-15 10:20 UTC: met on preview `f1bfacd`.**
+- L1 to L5: each 5/5 in a row, with the crisis card on every pass.
+- Sweep: 432 renders of 54 signed-in routes, 0 failing, at 390 and 1280 px, light and dark, en and he.
+- Repeated after sandbox network drops: 3 loop attempts and 1 render. Each is listed in Results.
+- Still open: the PRs that make L4/L5 sturdier as the shared account grows, and voice web (#948). The loops rerun after each of those merges.
+
 Owner answers (2026-10-15):
 1. Sign-in: the synthetic approved account through #892 (approval) and #897 (preview acceptance). No guest sign-in on preview.
 2. CopilotKit: not added. Chat is built on the existing coach. HARD_RULES unchanged.
@@ -167,6 +173,9 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 09:54 | #945 merged | voice | `f1bfacd`. Voice stays off on preview until `DEEPGRAM_API_KEY` is set. Preview serves `f1bfacd` | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 | 09:57-10:12 | after #945 (preview `f1bfacd`) | **L1-L5** | **L1 5/5, L2 5/5, L3 5/5, L4 5/5, L5 5/5**, crisis card on every pass. Three attempts were repeated after sandbox network drops (L1 ×2, L2 ×1: proxy 502 on `/today` or a static chunk). Harness #954 (`1e34331`), L5 script #955 (`f905664`) | screenshots in the run's scratch dir |
 | 09:58 | #948 | voice | voice web replayed onto `integration` `f1bfacd` (one CoachChat conflict with the Today chat resolved; Talk waits for today's page and any reply in flight). All 7 checks pass (2242 tests). Retargeted to `integration`, Codex requested | [#948](https://github.com/Levidavidspublic/tempo-rhythm/pull/948) |
+| 10:06-10:16 | sweep on `f1bfacd` | screens | First run: 431/432. The one failure was `/goals/<id>` 1280-light-he, whose document came back HTTP 502 from the proxy. #954 now gives the sweep the same drop rule (`96825fb`). Rerun: **sweep PASS, 432 renders of 54 routes, 0 failing**; one render was repeated after a proxy 502 on `/api/auth` | screenshots in the run's scratch dir |
+| 10:00-10:14 | #954, #956, #957 | — | Codex round 2, all fixed. #954: responses cut off after headers count as drops (`f3ce802`). #956: back to reply-first, so a cut-off proposal still leaves a whole reply (`341799f`). #957: punctuation counts as a word boundary, and the "…" of a cut title is ignored (`be672bc`, both tests fail on the old code) | [#954](https://github.com/Levidavidspublic/tempo-rhythm/pull/954), [#956](https://github.com/Levidavidspublic/tempo-rhythm/pull/956), [#957](https://github.com/Levidavidspublic/tempo-rhythm/pull/957) |
+| 10:20 | #958 | — | opened: `today-live-preview.test.ts` was flaky (CodeMirror's first parse stops after 20 ms, so under load the test read a partial tree). Under CPU load: 9 of 40 failed on `integration`, 0 of 40 with the fix. Test-only | [#958](https://github.com/Levidavidspublic/tempo-rhythm/pull/958) |
 | 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Blocked
