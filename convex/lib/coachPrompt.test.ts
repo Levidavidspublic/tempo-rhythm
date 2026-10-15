@@ -11,8 +11,12 @@ describe("buildCoachMessages", () => {
     expect(system?.content).toContain("Current accountability dial: 7 / 10. Match tone accordingly.");
     expect(system?.content).toContain('{"reply": "what you say", "proposal": null}');
     expect(system?.content).toContain("Reply in the language the person writes in.");
-    // Asked to plan or suggest, the coach proposes now instead of asking first (alpha run, L4).
-    expect(system?.content).toContain("make a concrete proposal in this reply");
+    // Asked to plan or suggest with enough to go on, the coach proposes now instead of asking
+    // first (alpha run, L4); a request it can't act on still gets one short question (HARD_RULES §6.3).
+    expect(system?.content).toContain("make a concrete proposal in this reply instead of asking first");
+    expect(system?.content).toContain("Only when you can't tell what they want, ask one short question.");
+    // Proposals can't carry a date or time yet, so the coach isn't told to propose schedules.
+    expect(system?.content).not.toContain("schedule something");
   });
 
   test("the open page comes before the thread, marked as the person's material", () => {
