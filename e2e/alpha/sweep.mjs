@@ -55,6 +55,12 @@ if (!Number.isInteger(WORKERS) || WORKERS < 1 || WORKERS > 16) {
 const VARIANTS = [];
 for (const width of widths) for (const theme of ["light", "dark"]) for (const lang of ["en", "he"]) VARIANTS.push({ width, theme, lang });
 
+/**
+ * A detail screen's own "not found" text (en, he). On a route found through a real link on a list
+ * page it means a broken link, so it fails the render (a starter template's Use link did this).
+ */
+const MISSING_TEXT = /was not found|isn't here any ?more|Couldn't (open|load) this|לא נמצאה|כבר לא כאן|לא הצלחנו (לפתוח|לטעון)/i;
+
 /** Text that means the screen failed, even when nothing threw. */
 const ERROR_TEXT = /Application error: a client-side exception|Something went wrong|Unhandled Runtime Error|This page could not be found|Internal Server Error/i;
 
@@ -63,11 +69,11 @@ const ERROR_TEXT = /Application error: a client-side exception|Something went wr
  * rotates the refresh token on load and serialises that across pages of a context with a browser
  * lock, while separate contexts would each replay the same token and sign the session out.
  */
-async function render(context, route, v) {
+async function render(context, route, v, discovered = false) {
   const page = await context.newPage();
   await page.setViewportSize({ width: v.width, height: v.width < 600 ? 844 : 900 });
   await page.emulateMedia({ colorScheme: v.theme });
-  const rec = { route, ...v, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "" };
+  const rec = { route, ...v, discovered, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "", missingText: "" };
   page.on("pageerror", (e) => rec.errors.push(String(e.message || e).split("\n")[0].slice(0, 200)));
   page.on("console", (m) => {
     if (m.type() === "error") rec.console.push(m.text().split("\n")[0].slice(0, 200));
@@ -92,6 +98,7 @@ async function render(context, route, v) {
     .catch(() => ({ text: "", overflow: 0, waiting: false, dir: "" }));
   rec.overflow = Math.max(0, probe.overflow);
   rec.errorText = ERROR_TEXT.exec(probe.text)?.[0] ?? "";
+  rec.missingText = discovered ? (MISSING_TEXT.exec(probe.text)?.[0] ?? "") : "";
   rec.waiting = probe.waiting;
   rec.dir = probe.dir;
   const shot = path.join(OUT, `${route.replace(/\//g, "_")}__${v.width}-${v.theme}-${v.lang}.png`);
@@ -111,6 +118,7 @@ const DIR = { en: "ltr", he: "rtl" };
 const failed = (r) =>
   r.errors.length > 0 ||
   r.errorText ||
+  r.missingText ||
   r.status >= 400 ||
   r.status === 0 ||
   r.overflow > 1 ||
@@ -142,7 +150,7 @@ async function main() {
   const runQueue = async (items) => {
     const workers = Array.from({ length: WORKERS }, async () => {
       for (let item = items.shift(); item; item = items.shift()) {
-        const { rec, links } = await render(context, item.route, item.v);
+        const { rec, links } = await render(context, item.route, item.v, Boolean(item.discovered));
         results.push(rec);
         for (const dyn of DYNAMIC_ROUTES) {
           if (dyn.from !== item.route || found.has(dyn.pattern.source)) continue;
@@ -157,7 +165,7 @@ async function main() {
   await runQueue(queue);
   if (!only) {
     const dynQueue = [];
-    for (const route of [...found.values()].flat()) for (const v of VARIANTS) dynQueue.push({ route, v });
+    for (const route of [...found.values()].flat()) for (const v of VARIANTS) dynQueue.push({ route, v, discovered: true });
     await runQueue(dynQueue);
   }
   await saveState(context).catch(() => {});
@@ -186,6 +194,7 @@ async function main() {
         `| ${r.route} | ${r.width}-${r.theme}-${r.lang} | ${[
           r.errors.length ? `page error: ${r.errors.join(" ; ")}` : "",
           r.errorText ? `error text: ${r.errorText}` : "",
+          r.missingText ? `linked screen says "${r.missingText}"` : "",
           r.status >= 400 || r.status === 0 ? `HTTP ${r.status || "none"}` : "",
           r.dir !== DIR[r.lang] ? `dir "${r.dir}", not ${DIR[r.lang]}` : "",
           r.overflow > 1 ? `horizontal scroll ${r.overflow}px` : "",
