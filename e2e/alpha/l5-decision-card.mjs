@@ -20,18 +20,19 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
     await quickAdd.press("Enter");
     await expectVisible(list.getByText(title, { exact: true }), `seed task ${name}`);
   }
-  const cards = page.locator('[data-component="DecisionCard"]');
-  const before = await cards.count();
   if ((await page.getByRole("textbox", { name: "Message" }).count()) === 0) throw fail("Today has no chat box");
-  await sendCoachMessage(page, "What order should I do these in?");
+  // Every run shares the account's one coach thread. This run's card is the first decision card
+  // after its own message, found by a run marker (never an earlier run's card).
+  const ask = `What order should I do these in? (${marker("run")})`;
+  const mine = page.locator(".tp-msg--user", { hasText: ask }).last();
+  const card = mine.locator('xpath=following::*[@data-component="DecisionCard"][1]');
+  await sendCoachMessage(page, ask);
+  await expectVisible(mine, "this run's message in the thread");
   try {
-    await page.waitForFunction((n) => document.querySelectorAll('[data-component="DecisionCard"]').length > n, before, {
-      timeout: 120_000,
-    });
+    await card.waitFor({ state: "attached", timeout: 120_000 });
   } catch {
-    throw fail("no decision card within 120 s");
+    throw fail("no decision card for this run's message within 120 s");
   }
-  const card = cards.last();
   const titles = (await card.locator(".tp-task-row__title").allInnerTexts()).map((t) => t.trim()).filter(Boolean);
   const seededOnCard = new Set(titles.filter((title) => seeded.includes(title)));
   if (seededOnCard.size < 2) throw fail(`the decision card orders ${seededOnCard.size} of the 3 seeded tasks`);
