@@ -57,6 +57,7 @@ import type * as lib_taskRepeat from "../lib/taskRepeat.js";
 import type * as lib_task_filters from "../lib/task_filters.js";
 import type * as lib_templateCatalog from "../lib/templateCatalog.js";
 import type * as lib_testFakeCtx from "../lib/testFakeCtx.js";
+import type * as lib_voicePolicy from "../lib/voicePolicy.js";
 import type * as mcp from "../mcp.js";
 import type * as mcpHttp from "../mcpHttp.js";
 import type * as mcpTools from "../mcpTools.js";
@@ -76,6 +77,7 @@ import type * as tasks from "../tasks.js";
 import type * as templates from "../templates.js";
 import type * as timeBlocks from "../timeBlocks.js";
 import type * as users from "../users.js";
+import type * as voice from "../voice.js";
 
 import type {
   ApiFromModules,
@@ -133,6 +135,7 @@ declare const fullApi: ApiFromModules<{
   "lib/task_filters": typeof lib_task_filters;
   "lib/templateCatalog": typeof lib_templateCatalog;
   "lib/testFakeCtx": typeof lib_testFakeCtx;
+  "lib/voicePolicy": typeof lib_voicePolicy;
   mcp: typeof mcp;
   mcpHttp: typeof mcpHttp;
   mcpTools: typeof mcpTools;
@@ -152,6 +155,7 @@ declare const fullApi: ApiFromModules<{
   templates: typeof templates;
   timeBlocks: typeof timeBlocks;
   users: typeof users;
+  voice: typeof voice;
 }>;
 
 /**

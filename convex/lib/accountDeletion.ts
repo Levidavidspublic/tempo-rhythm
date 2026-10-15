@@ -39,6 +39,7 @@ export const USER_OWNED_TABLES = [
   "pageOperations",
   "pageOperationPayloads",
   "pageProposals",
+  "voiceSessions",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

@@ -134,6 +134,45 @@ export default defineSchema({
    * letters/digits/underscore/hyphen; payloadDigest lowercase SHA-256 hex; sequence and
    * generationEpoch nonnegative safe integers; timestamps finite server epoch milliseconds.
    */
+  /**
+   * Live voice usage (HARD_RULES §9, docs/contracts/VOICE.md R-4): one row per voice session
+   * (a lease). Content-free: no audio, transcript, reply text, token or provider response.
+   * `durationMs` is server lease time, set when the session ends; the daily budget sums it
+   * per local day (`dateKey`), and the global ceiling per UTC day (`utcDateKey`).
+   */
+  voiceSessions: defineTable({
+    userId: v.id("users"),
+    conversationId: v.id("conversations"),
+    /** The client's key for this start, so a repeated start returns the same lease. */
+    clientKey: v.string(),
+    status: v.union(v.literal("active"), v.literal("ended")),
+    language: v.union(v.literal("en"), v.literal("he")),
+    startedAt: v.number(),
+    lastRenewalAt: v.number(),
+    endedAt: v.optional(v.number()),
+    durationMs: v.optional(v.number()),
+    endReason: v.optional(
+      v.union(
+        v.literal("stopped"),
+        v.literal("replaced"),
+        v.literal("expired"),
+        v.literal("exhausted"),
+        v.literal("revoked"),
+      ),
+    ),
+    dateKey: v.string(),
+    utcDateKey: v.string(),
+    grants: v.number(),
+    sentences: v.number(),
+    ttsChars: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_userId_dateKey", ["userId", "dateKey"])
+    .index("by_utcDateKey", ["utcDateKey"]),
   chatRequests: defineTable({
     userId: v.id("users"),
     conversationId: v.id("conversations"),

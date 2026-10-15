@@ -346,11 +346,21 @@ function errorKind(error: unknown): string {
  */
 export async function runCoachReply(
   ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
-  args: { conversationId: Id<"conversations">; noteId?: Id<"notes">; dayStartMs?: number; dayEndMs?: number },
+  args: {
+    conversationId: Id<"conversations">;
+    noteId?: Id<"notes">;
+    dayStartMs?: number;
+    dayEndMs?: number;
+    todayDate?: string;
+  },
   call: typeof callLLM = callLLM,
 ): Promise<CoachReplyStatus> {
   await requireApprovedForAi(ctx as ActionCtx);
-  const context = await ctx.runMutation(internal.coach.claimTurn, args);
+  const { todayDate, ...turn } = args;
+  // The person's date tells the coach whether "Friday" is today. Only a date that is today
+  // somewhere on Earth is used; anything else is left out rather than trusted.
+  const today = todayDate !== undefined && isTodaySomewhere(todayDate, Date.now()) ? todayDate : undefined;
+  const context = await ctx.runMutation(internal.coach.claimTurn, turn);
   if (context === null) {
     return "idle";
   }
@@ -368,7 +378,7 @@ export async function runCoachReply(
   try {
     const result = await call({
       tier: "balanced",
-      messages: buildCoachMessages(context),
+      messages: buildCoachMessages({ ...context, ...(today ? { today } : {}) }),
       maxTokens: 900,
       temperature: 0.4,
       responseFormat: "json_object",
@@ -407,7 +417,12 @@ export async function runCoachReply(
 }
 
 export const reply = action({
-  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")), ...dayBoundsArgs },
+  args: {
+    conversationId: v.id("conversations"),
+    noteId: v.optional(v.id("notes")),
+    ...dayBoundsArgs,
+    todayDate: v.optional(v.string()),
+  },
   returns: v.object({
     status: v.union(
       v.literal("replied"),

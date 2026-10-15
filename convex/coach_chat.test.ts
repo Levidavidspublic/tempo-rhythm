@@ -8,6 +8,7 @@ import { AiAuthError, AiUpstreamError } from "./lib/ai_errors";
 import { parseTempoBlocks } from "@tempo/utils";
 import type { AiCallOptions, AiResult, callLLM } from "./lib/ai_router";
 import { PENDING_APPROVAL_MESSAGE } from "./lib/approval";
+import { dayName } from "./lib/coachPrompt";
 
 /**
  * The real-AI coach turn (OVERNIGHT-RUN.md run 2, item 2): the user's message is saved first, an
@@ -174,6 +175,21 @@ describe("a coach turn", () => {
     expect(model.calls[0]?.tier).toBe("balanced");
     expect(model.calls[0]?.responseFormat).toBe("json_object");
     expect(model.calls[0]?.messages.at(-1)).toEqual({ role: "user", content: "I can't start today" });
+  });
+
+  test("the person's local date reaches the model; a date that is today nowhere is left out", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "add Call Dana Friday");
+    const today = new Date().toISOString().slice(0, 10);
+    const model = fakeModel('{"reply":"Added for today?","proposal":null}');
+    await coach.runCoachReply(world.actionAs(A), { conversationId, todayDate: today }, model.call);
+    expect(model.calls[0]?.messages[1]?.content).toBe(`For them it is ${dayName(today)}.`);
+
+    await say(world, conversationId, "and the report");
+    const stale = fakeModel('{"reply":"Sure.","proposal":null}');
+    await coach.runCoachReply(world.actionAs(A), { conversationId, todayDate: "2001-01-01" }, stale.call);
+    expect(stale.calls[0]?.messages.map((m) => m.content).join("\n")).not.toContain("For them it is");
   });
 
   test("the open page's text goes to the model; its Tempo block JSON does not", async () => {

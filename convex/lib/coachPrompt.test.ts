@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { COACH_LIMITS, alignDecisionSteps, buildCoachMessages, parseCoachReply, readProposal, truncate } from "./coachPrompt";
+import { COACH_LIMITS, alignDecisionSteps, buildCoachMessages, dayName, parseCoachReply, readProposal, truncate } from "./coachPrompt";
 
 const META =
   '```json tempo\n{"id":"blk_01JQ8Z3K4M5N6P7Q8R9S0T1V2X","v":1,"type":"page-meta","data":{"pageType":"daily","date":"2026-10-13","tags":[]}}\n```\n';
@@ -9,7 +9,11 @@ describe("buildCoachMessages", () => {
     const [system] = buildCoachMessages({ dial: 7, history: [{ role: "user", content: "hi" }], page: null });
     expect(system?.role).toBe("system");
     expect(system?.content).toContain("Current accountability dial: 7 / 10. Match tone accordingly.");
+    // "reply" stays first: a long proposal cut off by the token limit still leaves a whole reply.
     expect(system?.content).toContain('{"reply": "what you say", "proposal": null}');
+    // A reply never promises a card it doesn't carry (alpha run, L4: "Nothing changes until you
+    // accept it" with no card).
+    expect(system?.content).toContain('never say "nothing changes until you accept" when "proposal" is null');
     expect(system?.content).toContain("Reply in the language the person writes in.");
     // Asked to plan or suggest with enough to go on, the coach proposes now instead of asking
     // first (alpha run, L4); a request it can't act on still gets one short question (HARD_RULES §6.3).
@@ -130,6 +134,21 @@ describe("alignDecisionSteps", () => {
   });
 });
 
+describe("the person's date", () => {
+  test("names the weekday of the date itself, in any time zone", () => {
+    expect(dayName("2026-10-16")).toBe("Friday, 16 October 2026");
+    expect(dayName("2024-02-29")).toBe("Thursday, 29 February 2024");
+    expect(dayName("2026-02-30")).toBeNull();
+    expect(dayName("16/10/2026")).toBeNull();
+  });
+
+  test("goes right after the system prompt, and only when it is a real date", () => {
+    const messages = buildCoachMessages({ dial: 5, history: [], page: null, today: "2026-10-16" });
+    expect(messages[1]).toEqual({ role: "system", content: "For them it is Friday, 16 October 2026." });
+    expect(buildCoachMessages({ dial: 5, history: [], page: null, today: "2026-13-01" })).toHaveLength(1);
+  });
+});
+
 describe("parseCoachReply", () => {
   test("reads the reply and a task proposal", () => {
     const parsed = parseCoachReply(
@@ -182,6 +201,17 @@ describe("parseCoachReply", () => {
 });
 
 describe("readProposal", () => {
+  test("takes the same card as a JSON string, in a one-item list, or with a capitalised kind", () => {
+    const task = { kind: "task", title: "10-minute reset", minutes: 10, when: "today" };
+    expect(readProposal(JSON.stringify(task))).toEqual(task);
+    expect(readProposal([task])).toEqual(task);
+    expect(readProposal({ ...task, kind: " Task " })).toEqual(task);
+    expect(parseCoachReply(JSON.stringify({ proposal: JSON.stringify(task), reply: "Try this." }))?.proposal).toEqual(task);
+    expect(readProposal([task, task])).toBeNull();
+    expect(readProposal("Call the bank")).toBeNull();
+    expect(readProposal({ kind: "Delete_Everything" })).toBeNull();
+  });
+
   test("task minutes are whole, at least 1 and at most 480; when defaults to later", () => {
     expect(readProposal({ kind: "task", title: "A", minutes: 0 })).toEqual({ kind: "task", title: "A", minutes: 1, when: "later" });
     expect(readProposal({ kind: "task", title: "A", minutes: 9999 })).toMatchObject({ minutes: 480 });

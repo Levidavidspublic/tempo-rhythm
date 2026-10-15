@@ -70,7 +70,8 @@ How you talk:
 - You are not a therapist or a doctor. If they mention danger to themselves or others, tell them to contact local emergency services now.
 
 What you can do:
-- You cannot change anything yourself. When one change would clearly help, propose exactly one, and say in the reply that nothing changes until they accept it.
+- You cannot change anything yourself. When one change would clearly help, put exactly one in "proposal", and say in the reply that nothing changes until they accept it.
+- The card they accept is made only from "proposal". When your reply offers a task, page, template or order, "proposal" carries it; never offer a change in words alone, and never say "nothing changes until you accept" when "proposal" is null.
 - When they ask you to plan, suggest or add something and there is enough to go on (their words, the open page, their tasks), make a concrete proposal in this reply instead of asking first; they can edit or decline it. Only when you can't tell what they want, ask one short question.
 - A task can only be added for today or with no date. If they name another day or a clock time ("Friday", "at 15:00"), don't propose it yet: say so plainly and ask whether today or no date suits them. A part of today ("this afternoon", "tonight") is just today: propose.
 - A proposal is one of: a task, a note (a new Markdown page), a template (a Markdown page with tokens such as {{date}} or {{weekday}}), or a decision (an order for things they already have to do).
@@ -87,14 +88,46 @@ or with "proposal" set to one of:
 "when" is "today" or "later". "period" is "daily", "weekly" or "none".`;
 }
 
-/** System prompt, the open page (when the coach sits beside one), today's open tasks, then the newest messages. */
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+/** "Friday, 16 October 2026" for a real `YYYY-MM-DD` date, else null. The weekday is the date's own. */
+export function dayName(date: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return null;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const at = new Date(Date.UTC(year, month - 1, day));
+  if (at.getUTCFullYear() !== year || at.getUTCMonth() !== month - 1 || at.getUTCDate() !== day) return null;
+  return `${WEEKDAYS[at.getUTCDay()]}, ${day} ${MONTHS[month - 1]} ${year}`;
+}
+
+/** System prompt, the person's date, the open page (when the coach sits beside one), today's open tasks, then the newest messages. */
 export function buildCoachMessages(args: {
   dial: number;
   history: readonly CoachHistoryItem[];
   page: CoachPageContext | null;
   tasks?: readonly CoachTaskContext[];
+  /** The person's local date (`YYYY-MM-DD`), so "Friday" or "tomorrow" can be told apart from today. */
+  today?: string;
 }): AiMessage[] {
   const messages: AiMessage[] = [{ role: "system", content: systemPrompt(args.dial) }];
+  const today = args.today ? dayName(args.today) : null;
+  if (today) {
+    messages.push({ role: "system", content: `For them it is ${today}.` });
+  }
   if (args.page) {
     const title = truncate(args.page.title.trim() || "Untitled", COACH_LIMITS.titleChars);
     const text = truncate(args.page.text.trim(), COACH_LIMITS.pageChars);
@@ -202,8 +235,18 @@ function decisionSteps(value: unknown): CoachDecisionStep[] | null {
 
 /** A proposal the UI can render and Accept can run, or null for anything else. */
 export function readProposal(raw: unknown): CoachProposal | null {
+  // Shapes a model sends for the same card: the object as a JSON string, or inside a one-item list.
+  if (typeof raw === "string") {
+    const inner = jsonObject(raw);
+    return inner ? readProposal(inner) : null;
+  }
+  if (Array.isArray(raw)) return raw.length === 1 ? readProposal(raw[0]) : null;
   if (!raw || typeof raw !== "object") return null;
-  const p = raw as Record<string, unknown>;
+  const fields = raw as Record<string, unknown>;
+  const p: Record<string, unknown> = {
+    ...fields,
+    kind: typeof fields.kind === "string" ? fields.kind.trim().toLowerCase() : fields.kind,
+  };
   if (p.kind === "task") {
     const title = text(p.title, COACH_LIMITS.titleChars);
     if (!title) return null;

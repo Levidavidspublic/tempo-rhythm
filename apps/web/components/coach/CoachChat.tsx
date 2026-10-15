@@ -9,6 +9,7 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
+import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
@@ -153,6 +154,7 @@ export function CoachConversation({
         ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
         dayStartMs: bounds.startMs,
         dayEndMs: bounds.endMs,
+        todayDate: localIsoDate(new Date(bounds.startMs)),
       });
       setUnavailable(result.status === "unavailable");
     } catch {
