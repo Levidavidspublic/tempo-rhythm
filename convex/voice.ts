@@ -72,13 +72,16 @@ async function preferencesOf(ctx: Db, userId: Id<"users">) {
     .first();
 }
 
-/** The person's leases on one local day (at most `sessionsPerUserPerDay`, enforced at start). */
+/**
+ * The person's leases on one local day (at most `sessionsPerUserPerDay`, enforced at start), for
+ * the caps only. Tombstoned rows count too: deleting the account and restoring it in the grace
+ * period doesn't give back today's minutes.
+ */
 async function leasesToday(ctx: Db, userId: Id<"users">, dateKey: string) {
-  const rows = await ctx.db
+  return ctx.db
     .query("voiceSessions")
     .withIndex("by_userId_dateKey", (q) => q.eq("userId", userId).eq("dateKey", dateKey))
     .collect();
-  return rows.filter((r) => r.deletedAt === undefined);
 }
 
 /** Live minutes used (ms) on one local day, `except` one lease. */
@@ -548,7 +551,8 @@ async function synthesize(key: string, text: string, language: string): Promise<
     console.error(`voice.speak: DeepInfra returned HTTP ${response.status}`);
     throw voiceError("voice_connect");
   }
-  const audio = await audioFrom(response);
+  // The body can still fail after the headers (a dropped connection); that is a connect error too.
+  const audio = await audioFrom(response).catch(() => null);
   if (!audio || audio.bytes.byteLength === 0 || audio.bytes.byteLength > VOICE_LIMITS.maxAudioBytes) {
     console.error("voice.speak: DeepInfra returned no usable audio");
     throw voiceError("voice_connect");

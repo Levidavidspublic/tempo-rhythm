@@ -195,6 +195,21 @@ describe("starting a voice session", () => {
     await expect(startSession(world, other, "client_key_b", B)).rejects.toThrow("resting for today");
   });
 
+  test("a tombstoned lease still counts, so deleting and restoring the account gives back no minutes", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const now = Date.now();
+    const today = new Date(now).toISOString().slice(0, 10);
+    await world.db.insert("voiceSessions", {
+      userId: A, conversationId, clientKey: "old_key_1", status: "ended", language: "en",
+      startedAt: now - 20.5 * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
+      dateKey: today, utcDateKey: today, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
+      deletedAt: now - 60_000,
+    });
+    expect(await run(voice.availability, world.as(A), {})).toMatchObject({ available: false, reason: "budget", minutesLeft: 0 });
+    await expect(startSession(world, conversationId)).rejects.toThrow("today's voice time");
+  });
+
   test("the cap comes from the person's tier, held under the preview cap; no tier gets no live voice", async () => {
     const world = makeWorld();
     const conversationId = await conversation(world);
@@ -542,6 +557,27 @@ describe("speak: one sentence of a coach reply, resolved on the server", () => {
       }
       expect((await run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 })).status).toBe("audio");
       expect(world.row(sessionId)).toMatchObject({ sentences: 1, ttsChars: "Start with Dana.".length });
+    } finally {
+      net.restore();
+    }
+  });
+
+  test("audio that breaks off mid-body is a calm connect error, and the sentence is given back", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const messageId = await reply(world, conversationId, "Start with Dana.");
+    const { sessionId } = await startSession(world, conversationId);
+    const broken = new ReadableStream({
+      start(controller) {
+        controller.error(new Error("connection reset"));
+      },
+    });
+    const net = fakeFetch(() => new Response(broken, { headers: { "content-type": "audio/wav" } }));
+    try {
+      const error = await run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 }).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ConvexError);
+      expect((error as ConvexError<{ code: string }>).data.code).toBe("voice_connect");
+      expect(world.row(sessionId)).toMatchObject({ sentences: 0, ttsChars: 0 });
     } finally {
       net.restore();
     }
