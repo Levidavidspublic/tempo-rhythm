@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { EditorState } from "@codemirror/state";
 import { pageLanguage, pageSurface } from "@/components/editor/LivePreviewEditor";
-import { inlineDecorations, tempoBlocksField } from "@/components/editor/live-preview";
+import { inlineDecorations, lineDirections, tempoBlocksField } from "@/components/editor/live-preview";
 import { STARTER_TEMPLATES } from "@/convex/lib/templateCatalog";
 import { periodPageDraft } from "@/lib/period-pages";
 
@@ -116,5 +116,41 @@ describe("Today and /week mount the page editor with live preview", () => {
     expect(editor).toMatch(/\bpageSurface\(\{/);
     const state = EditorState.create({ doc: "", extensions: [pageLanguage(), pageSurface({ labels: LABELS, ariaLabel: "Page" })] });
     expect(state.field(tempoBlocksField, false)).toBeDefined();
+  });
+});
+
+describe("each page line takes its own direction (F-72)", () => {
+  /** The `dir` each line gets, by line text. */
+  function directions(body: string, ranges?: { from: number; to: number }[]) {
+    const state = EditorState.create({ doc: body });
+    const out: Array<[string, string | undefined]> = [];
+    lineDirections(state, ranges ?? [{ from: 0, to: state.doc.length }]).between(0, state.doc.length, (from, _to, deco) => {
+      const spec = deco.spec as { attributes?: { dir?: string } };
+      out.push([state.doc.lineAt(from).text, spec.attributes?.dir]);
+    });
+    return out;
+  }
+
+  test("every line of the daily starter gets dir=auto, once, in order", () => {
+    const body = starter("daily");
+    const lines = body.split("\n");
+    expect(directions(body)).toEqual(lines.map((line) => [line, "auto"]));
+  });
+
+  test("an English line and a Hebrew line each get their own dir=auto; empty lines too", () => {
+    expect(directions("One line for what would make today feel complete.\n\nשורה אחת בעברית.")).toEqual([
+      ["One line for what would make today feel complete.", "auto"],
+      ["", "auto"],
+      ["שורה אחת בעברית.", "auto"],
+    ]);
+  });
+
+  test("only the visible ranges are decorated, and a line two ranges share is decorated once", () => {
+    const body = "a\nb\nc\nd";
+    expect(directions(body, [{ from: 0, to: 1 }, { from: 1, to: 3 }, { from: 6, to: 7 }])).toEqual([
+      ["a", "auto"],
+      ["b", "auto"],
+      ["d", "auto"],
+    ]);
   });
 });
