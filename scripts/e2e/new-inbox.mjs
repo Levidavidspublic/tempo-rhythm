@@ -16,6 +16,8 @@ import { dirname, resolve } from "node:path";
 
 const MAIL_API = "https://api.mail.tm";
 const ATTEMPTS = 3;
+// One deadline per attempt, covering the headers and the body read.
+const REQUEST_TIMEOUT_MS = 20_000;
 
 function arg(flag) {
   const index = process.argv.indexOf(flag);
@@ -34,6 +36,7 @@ async function mail(path, { method = "GET", body } = {}) {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   const text = await response.text();
   let json = null;
@@ -46,10 +49,19 @@ async function mail(path, { method = "GET", body } = {}) {
 }
 
 // mail.tm rate-limits bursts (429) and has short outages (5xx): retry those, a few times.
-async function mailWithRetry(path, options) {
+// A request that fails or times out before a response is retried only for GET: a POST may
+// already have created the account, so replaying it could leave an orphan inbox behind.
+async function mailWithRetry(path, options = {}) {
+  const replaySafe = (options.method ?? "GET") === "GET";
   let last = { status: 0, json: null };
   for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
-    last = await mail(path, options);
+    try {
+      last = await mail(path, options);
+    } catch (error) {
+      if (!replaySafe || attempt === ATTEMPTS) throw error;
+      await sleep(attempt * 2_000);
+      continue;
+    }
     if (last.status !== 429 && last.status < 500) return last;
     if (attempt < ATTEMPTS) await sleep(attempt * 2_000);
   }
