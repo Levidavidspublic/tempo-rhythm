@@ -109,8 +109,10 @@ async function signedInContext(browser, shot, network) {
   return context;
 }
 
-// Connection-level errors: the request never reached the server or its answer never came back.
-const DROPPED = /^net::ERR_(TIMED_OUT|CONNECTION_\w+|TUNNEL_CONNECTION_FAILED|PROXY_\w+|SSL_\w+|EMPTY_RESPONSE|SOCKET_\w+|NETWORK_\w+|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE)$/;
+// Connection-level errors: the request never reached the server, or its answer never came back
+// whole (cut off after the headers: a short body, a broken chunked stream, an HTTP/2 or QUIC error).
+const DROPPED =
+  /^net::ERR_(TIMED_OUT|CONNECTION_\w+|TUNNEL_CONNECTION_FAILED|PROXY_\w+|SSL_\w+|EMPTY_RESPONSE|SOCKET_\w+|NETWORK_\w+|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE|CONTENT_LENGTH_MISMATCH|INCOMPLETE_CHUNKED_ENCODING|HTTP2_\w+|QUIC_PROTOCOL_ERROR)$/;
 
 /** The hosts a loop depends on: the app and its Convex deployment. Other hosts' drops don't count. */
 function ownHost(url) {
