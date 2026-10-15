@@ -167,9 +167,13 @@ export const availability = query({
     const prefs = await preferencesOf(ctx, user._id);
     if (!laneFor(prefs?.locale)) return { available: false, reason: "language" as const, minutesLeft: 0 };
     const now = Date.now();
-    const left = dailyCapMs(user) - (await usedTodayMs(ctx, user._id, localDateKey(now, prefs?.timeZone), now));
+    const today = await leasesToday(ctx, user._id, localDateKey(now, prefs?.timeZone));
+    const left = dailyCapMs(user) - today.reduce((ms, r) => ms + leaseMs(r, now), 0);
     const minutesLeft = Math.max(0, Math.floor(left / 60_000));
-    if (left < VOICE_LIMITS.minStartMs) return { available: false, reason: "budget" as const, minutesLeft };
+    // The same two limits `start` applies: minutes left, and sessions started today.
+    if (left < VOICE_LIMITS.minStartMs || today.length >= VOICE_LIMITS.sessionsPerUserPerDay) {
+      return { available: false, reason: "budget" as const, minutesLeft };
+    }
     if (GLOBAL_CAP_MS - (await usedGlobalMs(ctx, utcDateKey(now), now)) < VOICE_LIMITS.minStartMs) {
       return { available: false, reason: "resting" as const, minutesLeft };
     }

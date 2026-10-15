@@ -247,6 +247,7 @@ describe("starting a voice session", () => {
         dateKey: today, utcDateKey: today, grants: 0, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
       });
     }
+    expect(await run(voice.availability, world.as(A), {})).toMatchObject({ available: false, reason: "budget" });
     await expect(startSession(world, conversationId)).rejects.toThrow("today's voice time");
   });
 });
