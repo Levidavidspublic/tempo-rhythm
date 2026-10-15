@@ -1,5 +1,6 @@
 import { TemplateEditorScreen } from "@/components/template-builder/TemplateEditor";
 import { ProfileReady } from "@/components/today/ProfileReady";
+import { routeParam } from "@/lib/route-param";
 
 type Params = { id: string };
 
@@ -9,7 +10,7 @@ export default async function Page({
 }: {
   params: Promise<Params>;
 }) {
-  const { id } = await params;
+  const id = routeParam((await params).id);
   return (
     <div data-testid="template-editor-route">
       <ProfileReady>
