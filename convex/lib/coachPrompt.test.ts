@@ -9,7 +9,10 @@ describe("buildCoachMessages", () => {
     const [system] = buildCoachMessages({ dial: 7, history: [{ role: "user", content: "hi" }], page: null });
     expect(system?.role).toBe("system");
     expect(system?.content).toContain("Current accountability dial: 7 / 10. Match tone accordingly.");
-    expect(system?.content).toContain('{"reply": "what you say", "proposal": null}');
+    // "proposal" comes first, so the model settles the card before it writes about it (alpha run, L4:
+    // a reply said "Nothing changes until you accept it" with no card).
+    expect(system?.content).toContain('{"proposal": null, "reply": "what you say"}');
+    expect(system?.content).toContain('never say "nothing changes until you accept" when "proposal" is null');
     expect(system?.content).toContain("Reply in the language the person writes in.");
     // Asked to plan or suggest with enough to go on, the coach proposes now instead of asking
     // first (alpha run, L4); a request it can't act on still gets one short question (HARD_RULES §6.3).
@@ -126,6 +129,17 @@ describe("parseCoachReply", () => {
 });
 
 describe("readProposal", () => {
+  test("takes the same card as a JSON string, in a one-item list, or with a capitalised kind", () => {
+    const task = { kind: "task", title: "10-minute reset", minutes: 10, when: "today" };
+    expect(readProposal(JSON.stringify(task))).toEqual(task);
+    expect(readProposal([task])).toEqual(task);
+    expect(readProposal({ ...task, kind: " Task " })).toEqual(task);
+    expect(parseCoachReply(JSON.stringify({ proposal: JSON.stringify(task), reply: "Try this." }))?.proposal).toEqual(task);
+    expect(readProposal([task, task])).toBeNull();
+    expect(readProposal("Call the bank")).toBeNull();
+    expect(readProposal({ kind: "Delete_Everything" })).toBeNull();
+  });
+
   test("task minutes are whole, at least 1 and at most 480; when defaults to later", () => {
     expect(readProposal({ kind: "task", title: "A", minutes: 0 })).toEqual({ kind: "task", title: "A", minutes: 1, when: "later" });
     expect(readProposal({ kind: "task", title: "A", minutes: 9999 })).toMatchObject({ minutes: 480 });
