@@ -140,7 +140,8 @@ export function CoachConversation({
   });
 
   // A failed or missing reply never throws past here: the message is saved, and the thread says so.
-  const reply = async (id: Id<"conversations">) => {
+  // True only when the coach wrote a reply to this turn.
+  const reply = async (id: Id<"conversations">): Promise<boolean> => {
     setReplying(true);
     setUnavailable(false);
     setPageUnsaved(false);
@@ -152,7 +153,7 @@ export function CoachConversation({
           await flushPage();
         } catch {
           setPageUnsaved(true);
-          return;
+          return false;
         }
       }
       const result = await requestReply({
@@ -162,8 +163,10 @@ export function CoachConversation({
         dayEndMs: bounds.endMs,
       });
       setUnavailable(result.status === "unavailable");
+      return result.status === "replied";
     } catch {
       setUnavailable(true);
+      return false;
     } finally {
       setReplying(false);
     }
@@ -183,14 +186,15 @@ export function CoachConversation({
     }
     setCrisisHold(false);
     if (serverCrisis) return { kind: "crisis" };
-    await reply(conversationId);
-    return { kind: "reply" };
+    // No reply written (page unsaved, coach unavailable, another reply in flight): the call goes
+    // back to listening instead of waiting for a message that won't come.
+    return (await reply(conversationId)) ? { kind: "reply" } : { kind: "none" };
   };
   const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card");
   const voice = useVoiceCall({
     conversationId,
     send: sendSpoken,
-    latestReply: lastAssistant ? { id: lastAssistant._id, content: lastAssistant.content, createdAt: lastAssistant.createdAt } : null,
+    latestReply: lastAssistant ? { id: lastAssistant._id, content: lastAssistant.content } : null,
   });
 
   const handleSend = async () => {

@@ -15,7 +15,7 @@ type Phase = VoiceSessionState["phase"];
 export type VoiceSendResult = { kind: "reply" } | { kind: "crisis" } | { kind: "none" };
 
 /** A coach reply the call may read aloud (the newest assistant message in the thread). */
-export type VoiceReply = { id: Id<"messages">; content: string; createdAt: number } | null;
+export type VoiceReply = { id: Id<"messages">; content: string } | null;
 
 /**
  * The voice call runtime (docs/contracts/VOICE.md defaults): the microphone streams straight to
@@ -61,8 +61,12 @@ export function useVoiceCall({
   const audioUrls = useRef<string[]>([]);
   const timers = useRef<number[]>([]);
   const lastActivity = useRef(0);
-  const startedAt = useRef(0);
   const awaitingReply = useRef(false);
+  // The newest coach reply when the pending turn was sent: the answer is the next one after it,
+  // matched by id, never by comparing the server's clock with this device's.
+  const replyBefore = useRef<Id<"messages"> | null>(null);
+  const latest = useRef<VoiceReply>(latestReply);
+  latest.current = latestReply;
   const spoken = useRef(new Set<string>());
   const phaseRef = useRef<Phase>("idle");
   const setPhaseBoth = useCallback((next: Phase) => {
@@ -158,7 +162,7 @@ export function useVoiceCall({
   // A new coach reply after a spoken turn: show it and read it aloud.
   useEffect(() => {
     if (!latestReply || !open || !awaitingReply.current) return;
-    if (latestReply.createdAt < startedAt.current || spoken.current.has(latestReply.id)) return;
+    if (latestReply.id === replyBefore.current || spoken.current.has(latestReply.id)) return;
     spoken.current.add(latestReply.id);
     awaitingReply.current = false;
     setLines((current) => [...current, { id: latestReply.id, who: "coach", text: latestReply.content }]);
@@ -169,8 +173,12 @@ export function useVoiceCall({
     async (text: string) => {
       const gen = generation.current;
       setInterim("");
+      // One turn at a time: words while the coach is still answering aren't sent (no second
+      // model call racing the first). Talking over the reply once it plays still interrupts it.
+      if (awaitingReply.current) return;
       setLines((current) => [...current, { id: `you-${Date.now()}`, who: "you", text }]);
       setPhaseBoth("awaitingReply");
+      replyBefore.current = latest.current?.id ?? null;
       awaitingReply.current = true;
       try {
         const result = await send(text);
@@ -206,7 +214,6 @@ export function useVoiceCall({
     setLines([]);
     setMicOn(true);
     setPhaseBoth("listening");
-    startedAt.current = Date.now();
     lastActivity.current = Date.now();
     try {
       const mime = recorderMime((m) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m));
@@ -220,7 +227,11 @@ export function useVoiceCall({
       }
       stream.current = media;
       const lease = await startLease({ conversationId, clientKey: newClientKey() });
-      if (gen !== generation.current) return;
+      if (gen !== generation.current) {
+        // Ended while the lease was being made: stop it, or it lingers and counts against today.
+        void stopLease({ sessionId: lease.sessionId }).catch(() => {});
+        return;
+      }
       session.current = lease.sessionId;
       setMinutesLeft(lease.minutesLeft);
       const { token, url } = await grant({ sessionId: lease.sessionId });
@@ -305,7 +316,7 @@ export function useVoiceCall({
     } catch {
       if (gen === generation.current) fail();
     }
-  }, [conversationId, end, fail, grant, onFinal, renewLease, setPhaseBoth, startLease, stopPlayback]);
+  }, [conversationId, end, fail, grant, onFinal, renewLease, setPhaseBoth, startLease, stopLease, stopPlayback]);
 
   /**
    * Mic off mutes the track instead of pausing the recorder: the socket keeps getting (silent)
