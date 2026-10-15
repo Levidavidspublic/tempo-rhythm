@@ -96,7 +96,8 @@ function useCoachReply(): CoachReply {
   const [state, setState] = useState<CoachReply["state"]>("idle");
   const request = (id: Id<"conversations">) => {
     setState("typing");
-    ask({ conversationId: id })
+    // The local date tells the coach whether "Friday" is today.
+    ask({ conversationId: id, todayDate: localIsoDate(new Date()) })
       .then((result) => setState(result.status === "unavailable" ? "unavailable" : "idle"))
       .catch(() => setState("unavailable"));
   };
