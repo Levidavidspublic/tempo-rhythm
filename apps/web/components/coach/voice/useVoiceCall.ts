@@ -307,17 +307,17 @@ export function useVoiceCall({
     }
   }, [conversationId, end, fail, grant, onFinal, renewLease, setPhaseBoth, startLease, stopPlayback]);
 
+  /**
+   * Mic off mutes the track instead of pausing the recorder: the socket keeps getting (silent)
+   * audio, so the speech provider never closes it for lack of data while the person is muted.
+   */
   const toggleMic = useCallback(() => {
-    const rec = recorder.current;
-    if (!rec) return;
-    if (rec.state === "recording") {
-      rec.pause();
-      setMicOn(false);
-    } else if (rec.state === "paused") {
-      rec.resume();
-      setMicOn(true);
-      lastActivity.current = Date.now();
-    }
+    const tracks = stream.current?.getAudioTracks() ?? [];
+    if (tracks.length === 0) return;
+    const on = !tracks.every((track) => track.enabled);
+    for (const track of tracks) track.enabled = on;
+    setMicOn(on);
+    if (on) lastActivity.current = Date.now();
   }, []);
 
   const interrupt = useCallback(() => {
