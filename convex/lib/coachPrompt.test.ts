@@ -35,6 +35,28 @@ describe("buildCoachMessages", () => {
     for (const m of messages.slice(1)) expect(m.content.length).toBe(COACH_LIMITS.historyChars);
   });
 
+  test("today's open tasks come after the page and before the thread, marked as the person's material", () => {
+    const messages = buildCoachMessages({
+      dial: 5,
+      history: [{ role: "user", content: "What order should I do these in?" }],
+      page: { title: "Thu", text: "Intention" },
+      tasks: [
+        { title: "Reply to  Dana", minutes: 10 },
+        { title: "Laundry", minutes: null },
+      ],
+    });
+    expect(messages.map((m) => m.role)).toEqual(["system", "system", "system", "user"]);
+    expect(messages[2]?.content).toBe("Their open tasks for today.\n<tasks>\n- Reply to Dana (10 min)\n- Laundry\n</tasks>");
+    expect(messages[0]?.content).toContain("copy its title exactly from <tasks>");
+  });
+
+  test("no tasks, no tasks message; many tasks are cut to the limit", () => {
+    expect(buildCoachMessages({ dial: 5, history: [], page: null, tasks: [] })).toHaveLength(1);
+    const tasks = Array.from({ length: 40 }, (_, i) => ({ title: `t${i}`, minutes: null }));
+    const content = buildCoachMessages({ dial: 5, history: [], page: null, tasks })[1]?.content ?? "";
+    expect(content.split("\n").filter((line) => line.startsWith("- "))).toHaveLength(COACH_LIMITS.contextTasks);
+  });
+
   test("a long page is cut", () => {
     const messages = buildCoachMessages({ dial: 5, history: [], page: { title: "", text: "y".repeat(50_000) } });
     expect(messages[1]?.content).toContain('title="Untitled"');
@@ -110,6 +132,43 @@ describe("readProposal", () => {
 
   test("a body that is only a Tempo block is no proposal", () => {
     expect(readProposal({ kind: "note", title: "Plan", body: META })).toBeNull();
+  });
+
+  test("a decision keeps its steps in order, each checked like a task", () => {
+    const decision = readProposal({
+      kind: "decision",
+      title: " This afternoon ",
+      steps: [
+        { title: " Reply to Dana ", minutes: 10, reason: " Quick " },
+        { title: "Draft the report", minutes: 9999 },
+        { title: "   " },
+        "Laundry",
+        { title: "Laundry", minutes: "ten", reason: "" },
+      ],
+    });
+    expect(decision).toEqual({
+      kind: "decision",
+      title: "This afternoon",
+      steps: [
+        { title: "Reply to Dana", minutes: 10, reason: "Quick" },
+        { title: "Draft the report", minutes: 480 },
+        { title: "Laundry", minutes: 15 },
+      ],
+    });
+  });
+
+  test("a decision needs at least 2 steps, keeps at most 7, and may have no title", () => {
+    expect(readProposal({ kind: "decision", steps: [{ title: "Only one", minutes: 5 }] })).toBeNull();
+    expect(readProposal({ kind: "decision", title: "x", steps: "first A then B" })).toBeNull();
+    const many = readProposal({
+      kind: "decision",
+      steps: Array.from({ length: 10 }, (_, i) => ({ title: `Step ${i}`, minutes: 5 })),
+    });
+    expect(many).toMatchObject({ kind: "decision" });
+    expect(many && "steps" in many ? many.steps.map((s) => s.title) : []).toEqual(
+      Array.from({ length: COACH_LIMITS.maxSteps }, (_, i) => `Step ${i}`),
+    );
+    expect(many && "title" in many).toBe(false);
   });
 
   test("anything else is null", () => {
