@@ -21,6 +21,7 @@ import {
   slashQuery,
   tempoBlockRanges,
   tempoFence,
+  textChange,
   wikiLinkAtOffset,
   wikiQuery,
 } from "./markdown-model";
@@ -183,5 +184,45 @@ describe("task titles", () => {
     const id = insertedBlockId(text);
     expect(id).toMatch(/^blk_[0-9A-Z]{26}$/);
     expect(text).toContain(id!);
+  });
+});
+
+describe("textChange", () => {
+  const apply = (before: string, c: { from: number; to: number; insert: string }) =>
+    before.slice(0, c.from) + c.insert + before.slice(c.to);
+
+  test("an append is one insertion at the end", () => {
+    const before = "## Intention\nRest\n";
+    const after = `${before}\n### This afternoon\n`;
+    expect(textChange(before, after)).toEqual({ from: before.length, to: before.length, insert: "\n### This afternoon\n" });
+  });
+
+  test("a removal in the middle touches only that range", () => {
+    expect(textChange("a\nXYZ\nb", "a\nb")).toEqual({ from: 2, to: 6, insert: "" });
+  });
+
+  test("equal text is an empty change", () => {
+    expect(textChange("same", "same")).toEqual({ from: 4, to: 4, insert: "" });
+  });
+
+  test("a repeated run is never counted twice", () => {
+    const c = textChange("aaa", "aaaa");
+    expect(apply("aaa", c)).toBe("aaaa");
+    expect(c.to - c.from).toBe(0);
+  });
+
+  test("never splits a surrogate pair", () => {
+    const before = "x😀y";
+    const after = "x😃y";
+    const c = textChange(before, after);
+    expect(apply(before, c)).toBe(after);
+    expect(c).toEqual({ from: 1, to: 3, insert: "😃" });
+  });
+
+  test("any pair of texts round-trips", () => {
+    const samples = ["", "a", "ab", "abc", "😀", "a😀b", "hello\nworld\n", "שלום עולם", "```json tempo\n{}\n```\n"];
+    for (const before of samples) {
+      for (const after of samples) expect(apply(before, textChange(before, after))).toBe(after);
+    }
   });
 });

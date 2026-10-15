@@ -101,6 +101,33 @@ export function setTaskTitle(body: string, range: BlockRange, title: string): st
   return body.slice(0, range.from) + replacement + body.slice(range.to);
 }
 
+/**
+ * The one change that turns `before` into `after`: the differing middle, after the longest common
+ * start and end. Applied to an open editor, every caret and selection outside that range keeps
+ * its place. A range edge never splits a surrogate pair.
+ */
+export function textChange(before: string, after: string): { from: number; to: number; insert: string } {
+  const max = Math.min(before.length, after.length);
+  let start = 0;
+  while (start < max && before.charCodeAt(start) === after.charCodeAt(start)) start += 1;
+  if (start > 0) {
+    const prev = before.charCodeAt(start - 1);
+    if (prev >= 0xd800 && prev <= 0xdbff) start -= 1;
+  }
+  let end = 0;
+  while (
+    end < max - start &&
+    before.charCodeAt(before.length - 1 - end) === after.charCodeAt(after.length - 1 - end)
+  ) {
+    end += 1;
+  }
+  if (end > 0) {
+    const next = before.charCodeAt(before.length - end);
+    if (next >= 0xdc00 && next <= 0xdfff) end -= 1;
+  }
+  return { from: start, to: before.length - end, insert: after.slice(start, after.length - end) };
+}
+
 /** The id of the block an inserted fence carries (to focus the new task card's title). */
 export function insertedBlockId(text: string): string | null {
   return /"id"\s*:\s*"(blk_[0-9A-HJKMNP-TV-Z]{26})"/.exec(text)?.[1] ?? null;
