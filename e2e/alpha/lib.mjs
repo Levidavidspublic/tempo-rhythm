@@ -84,13 +84,17 @@ export async function assertSignedIn(page) {
  * A browser context with a signed-in session. Order: ALPHA_STORAGE_STATE, then a guest control
  * on /sign-in. Neither -> BLOCKED_VERIFICATION, since preview's only other sign-in is a magic link.
  */
-async function signedInContext(browser, shot) {
+async function signedInContext(browser, shot, network) {
   const statePath = process.env.ALPHA_STORAGE_STATE;
   if (statePath) {
     if (!existsSync(statePath)) throw blocked(`ALPHA_STORAGE_STATE does not exist: ${statePath}`);
-    return newContext(browser, statePath);
+    const context = await newContext(browser, statePath);
+    watchNetwork(context, network);
+    return context;
   }
   const context = await newContext(browser, undefined);
+  // Watched from the start, so a drop during the guest sign-in counts too.
+  watchNetwork(context, network);
   const page = await context.newPage();
   await page.goto(`${BASE_URL}/sign-in`, { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /send magic link/i }).waitFor({ timeout: 30_000 });
@@ -108,16 +112,27 @@ async function signedInContext(browser, shot) {
 // Connection-level errors: the request never reached the server or its answer never came back.
 const DROPPED = /^net::ERR_(TIMED_OUT|CONNECTION_\w+|TUNNEL_CONNECTION_FAILED|PROXY_\w+|SSL_\w+|EMPTY_RESPONSE|SOCKET_\w+|NETWORK_\w+|NAME_NOT_RESOLVED|ADDRESS_UNREACHABLE)$/;
 
+/** The hosts a loop depends on: the app and its Convex deployment. Other hosts' drops don't count. */
+function ownHost(url) {
+  try {
+    const { host } = new URL(url);
+    return host === new URL(BASE_URL).host || host.endsWith(".convex.cloud") || host.endsWith(".convex.site");
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Records requests the network dropped, as "<what> <path>": a connection-level failure on any
- * host, or a 5xx for the app that no Vercel server sent (no `x-vercel-id`: the sandbox proxy's
- * own "upstream request failed"). A 5xx from Vercel itself is the app's and is not recorded.
+ * Records requests the network dropped, as "<what> <path>": a connection-level failure on the
+ * app's or Convex's host, or a 5xx for the app that no Vercel server sent (no `x-vercel-id`: the
+ * sandbox proxy's own "upstream request failed"). A 5xx from Vercel itself is the app's and is not
+ * recorded, and neither is a drop on any other host, so it can't turn a real failure into NETWORK.
  */
 function watchNetwork(context, into) {
   const where = (url) => url.replace(/\?.*$/, "").replace(BASE_URL, "");
   context.on("requestfailed", (request) => {
     const error = request.failure()?.errorText ?? "";
-    if (DROPPED.test(error)) into.push(`${error} ${where(request.url())}`);
+    if (DROPPED.test(error) && ownHost(request.url())) into.push(`${error} ${where(request.url())}`);
   });
   context.on("response", (response) => {
     if (response.status() >= 500 && response.url().startsWith(BASE_URL) && !response.headers()["x-vercel-id"]) {
@@ -214,8 +229,7 @@ export async function runLoop(id, title, steps, { crisis = true } = {}) {
   let page = null;
   const network = [];
   try {
-    context = await signedInContext(browser, async (p, name) => shot(p, name));
-    watchNetwork(context, network);
+    context = await signedInContext(browser, async (p, name) => shot(p, name), network);
     page = await context.newPage();
     page.setDefaultTimeout(30_000);
     // A cold preview function or a slow network can take longer than an element wait to load a page.
