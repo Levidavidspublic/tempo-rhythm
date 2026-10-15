@@ -12,13 +12,24 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
   await expectVisible(quickAdd, "Today's quick add", 45_000);
   await completeAlphaTasks(page);
   const list = page.locator('[aria-labelledby="today-task-list-heading"]');
+  // Today's list shows 3 open tasks ("Showing 3 of 4 open today."), so a task that isn't this
+  // script's can push a seeded one out of sight: each add is confirmed by the open count instead.
+  const openToday = async () => {
+    const m = /of (\d+) open today|(\d+) still open today/.exec(await list.innerText());
+    return m ? Number(m[1] ?? m[2]) : 0;
+  };
   const seeded = [];
   for (const name of ["email", "laundry", "bill"]) {
     const title = marker(`Alpha L5 ${name}`);
     seeded.push(title);
+    const before = await openToday();
     await quickAdd.fill(title);
     await quickAdd.press("Enter");
-    await expectVisible(list.getByText(title, { exact: true }), `seed task ${name}`);
+    const deadline = Date.now() + 30_000;
+    while ((await openToday()) <= before) {
+      if (Date.now() > deadline) throw fail(`seed task ${name} was not added (still ${before} open today)`);
+      await page.waitForTimeout(250);
+    }
   }
   if ((await page.getByRole("textbox", { name: "Message" }).count()) === 0) throw fail("Today has no chat box");
   // Every run shares the account's one coach thread. This run's card is the first decision card
