@@ -94,6 +94,22 @@ describe("alignDecisionSteps", () => {
     ]);
   });
 
+  test("punctuation after the step's words counts as a word boundary; a word cut in half does not", () => {
+    const one = [{ title: "Laundry: towels", minutes: null }, { title: "Callback for Sam", minutes: null }];
+    const aligned = alignDecisionSteps(decision(["Laundry", "Call"]), one);
+    expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual(["Laundry: towels", "Call"]);
+  });
+
+  test("a title shown cut short with …, even re-cased, still finds its task, kept within the step's limit", () => {
+    const long = `Write the grant report ${"x".repeat(250)}`;
+    const shown = truncate(long, COACH_LIMITS.titleChars);
+    expect(shown.endsWith("…")).toBe(true);
+    const aligned = alignDecisionSteps(decision([shown.toLowerCase()]), [{ title: long, minutes: null }]);
+    expect(aligned.kind === "decision" ? aligned.steps[0]?.title : null).toBe(shown);
+    const moved = alignDecisionSteps(decision(["Write the grant report"]), [{ title: long, minutes: null }]);
+    expect(moved.kind === "decision" ? moved.steps[0]?.title : null).toBe(shown);
+  });
+
   test("only decisions change, and a step keeps its minutes and reason", () => {
     const task = { kind: "task" as const, title: "Alpha L5 bill", minutes: 5, when: "today" as const };
     expect(alignDecisionSteps(task, tasks)).toBe(task);
