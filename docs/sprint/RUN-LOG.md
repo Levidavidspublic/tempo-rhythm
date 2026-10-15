@@ -197,9 +197,9 @@ From CodeRabbit (Minor) and Codex (left after the switch to CodeRabbit), in the 
 1. Alpha harness: a crisis-check or Undo-count failure is never turned into NETWORK (CodeRabbit medium concern on #954). **In #960.**
 2. L5: fail setup if leftover seeds remain after the cleanup cap (CodeRabbit Minor on #955). **In #960.**
 3. `alignDecisionSteps`: keep a task's raw title (spacing), and use a case/punctuation-insensitive match only when it is unique (CodeRabbit Minor ×2 on #957); strip Unicode closing punctuation such as "。" and "”" (Codex on #957). **In #962.**
-6. Coach history: a reply over 2,000 characters lost its card note; a promise sharing a sentence with advice was kept (CodeRabbit Minor ×2 on #959). **In #961.**
 4. Voice (off on preview until `DEEPGRAM_API_KEY` is set): an in-call "not sent" line when a spoken send fails (CodeRabbit Minor on #948); stop a call at once when another tab replaces its lease; tear down when the recorder errors; use the current page for spoken turns after navigation; bind playback to the saved reply's id returned by `coach.reply` (Codex on #948).
 5. Alpha harness: count a dropped Convex WebSocket as a network drop; keep a dynamic route whose source render was network-only as NETWORK, not missing (Codex on #954).
+6. Coach history: a reply over 2,000 characters lost its card note; a promise sharing a sentence with advice was kept (CodeRabbit Minor ×2 on #959). **In #961.**
 
 ## Re-skin tickets for next week
 
