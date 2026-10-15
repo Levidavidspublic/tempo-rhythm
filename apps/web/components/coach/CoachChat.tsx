@@ -9,6 +9,7 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation } from "@/lib/coach-conversation";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
 
@@ -37,13 +38,24 @@ export function CoachCrisisReply() {
 /** Longest message the coach takes (convex/coach.ts MAX_MESSAGE_CHARS). */
 const MAX_MESSAGE_CHARS = 4000;
 
+/** Today shows only the newest turns; the whole thread is on /coach. */
+const TODAY_MESSAGES = 6;
+
 /**
  * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
- * classes. Used by the /coach page and by the coach panel beside any page, which passes that
- * page's id so the coach reads it. The message is saved first; the reply comes from the model
- * through `coach.reply`, with a typing state while it runs (the model seam does not stream).
+ * classes. Used by the /coach page, by the coach panel beside any page, and inline on Today; the
+ * panel and Today pass the open page's id so the coach reads it. Every reply also sends the local
+ * day, so the coach sees today's open tasks ("what order should I do these in?"). The message is
+ * saved first; the reply comes from the model through `coach.reply`, with a typing state while it
+ * runs (the model seam does not stream).
  */
-export function CoachConversation({ variant, pageId = null }: { variant: "page" | "panel"; pageId?: string | null }) {
+export function CoachConversation({
+  variant,
+  pageId = null,
+}: {
+  variant: "page" | "panel" | "today";
+  pageId?: string | null;
+}) {
   const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // conversations.list calls requireUser: wait for the users row (getProfile is null until then).
@@ -54,6 +66,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const requestReply = useAction(api.coach.reply);
   const flushPage = useFlushCoachPage();
   const { guard } = useCrisisGuard();
+  const bounds = useLocalDayBounds();
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
@@ -65,6 +78,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const [pageUnsaved, setPageUnsaved] = useState(false);
   const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -90,6 +104,12 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
   const messages = useQuery(api.messages.list, conversationId ? { conversationId } : "skip");
 
   useEffect(() => {
+    // Inline on Today the thread scrolls inside its own box: the page itself never jumps.
+    if (variant === "today") {
+      const thread = threadRef.current;
+      if (thread) thread.scrollTop = thread.scrollHeight;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ block: "end" });
   });
 
@@ -112,6 +132,8 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
       const result = await requestReply({
         conversationId: id,
         ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
+        dayStartMs: bounds.startMs,
+        dayEndMs: bounds.endMs,
       });
       setUnavailable(result.status === "unavailable");
     } catch {
@@ -149,7 +171,8 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
 
   const isLoading =
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
-  const inputId = variant === "page" ? "coach-message" : "coach-panel-message";
+  const inputId = variant === "page" ? "coach-message" : variant === "panel" ? "coach-panel-message" : "today-coach-message";
+  const shown = variant === "today" ? messages?.slice(-TODAY_MESSAGES) : messages;
   const busy = isSending || replying;
   // The newest message is the user's and no reply is on its way: a reply failed, or the page
   // reloaded while one was running. Either way the message is saved and can be answered again.
@@ -157,13 +180,13 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
 
   return (
     <>
-      <div className="tp-coach-thread" data-component="CoachThread" aria-live="polite">
+      <div ref={threadRef} className="tp-coach-thread" data-component="CoachThread" data-variant={variant} aria-live="polite">
         {isLoading ? (
           <p className="tp-muted tp-small">{t("coachChat.loading")}</p>
-        ) : messages && messages.length === 0 ? (
-          <p className="tp-muted">{t("coachChat.empty")}</p>
+        ) : shown && shown.length === 0 ? (
+          variant === "today" ? null : <p className="tp-muted">{t("coachChat.empty")}</p>
         ) : (
-          messages?.map((message) => {
+          shown?.map((message) => {
             const proposal = message.role === "assistant" ? proposalOf(message.toolCalls) : null;
             return (
               <Fragment key={message._id}>
@@ -201,7 +224,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
             </div>
           </div>
         ) : null}
-        <div ref={bottomRef} />
+        {variant === "today" ? null : <div ref={bottomRef} />}
       </div>
 
       <form
@@ -234,7 +257,7 @@ export function CoachConversation({ variant, pageId = null }: { variant: "page" 
                 void handleSend();
               }
             }}
-            placeholder={t("coachChat.placeholder")}
+            placeholder={variant === "today" ? t("today.chat.placeholder") : t("coachChat.placeholder")}
             maxLength={MAX_MESSAGE_CHARS}
             disabled={!conversationId || busy}
           />

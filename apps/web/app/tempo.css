@@ -417,6 +417,16 @@ svg.tp-icon--sm { width: 16px; height: 16px; }
 .tp-proposal[data-status="rejected"] .tp-proposal__actions,
 .tp-proposal[data-status="rejected"] .tp-proposal__changes { display: none; }
 
+/* Coach on Today: a compact card; the thread scrolls inside it, newest turns only. */
+.tp-today-chat { padding: 0; gap: 0; display: grid; overflow: hidden; }
+.tp-today-chat__head { display: flex; align-items: center; gap: var(--tp-space-2); padding: var(--tp-space-3) var(--tp-space-3) var(--tp-space-3) var(--tp-space-5); border-bottom: 1px solid var(--tp-glass-line); }
+.tp-today-chat__title { flex: 1 1 0; min-width: 0; display: grid; }
+.tp-today-chat__title h2 { font-family: var(--tp-font-serif); font-size: var(--tp-text-lg); font-weight: 500; }
+.tp-today-chat__title p { font-size: var(--tp-text-xs); color: var(--tp-ink-muted); }
+.tp-coach-thread[data-variant="today"] { max-height: min(60dvh, 560px); }
+.tp-coach-thread[data-variant="today"]:empty { display: none; }
+.tp-today-chat .tp-composer { border-top: 0; }
+
 /* Composer */
 .tp-composer { padding: var(--tp-space-3) var(--tp-space-4) var(--tp-space-4); border-top: 1px solid var(--tp-glass-line); }
 .tp-composer__box { display: grid; gap: var(--tp-space-2); padding: var(--tp-space-3); background: var(--tp-paper); border: 1px solid var(--tp-line-control); border-radius: var(--tp-radius-lg); }

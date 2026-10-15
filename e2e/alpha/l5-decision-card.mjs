@@ -41,7 +41,10 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
   await page.reload({ waitUntil: "domcontentloaded" });
   const day = page.getByTestId("today-daily-page");
   await expectVisible(day, "today's daily page", 45_000);
-  const onPage = (await day.locator(".tp-task-row__title").allInnerTexts()).map((t) => t.trim());
+  // On the page a task title is an <input> (editable in place), so read its value, not its text.
+  const onPage = await day
+    .locator(".tp-task-row__title")
+    .evaluateAll((els) => els.map((el) => (el instanceof HTMLInputElement ? el.value : (el.textContent ?? "")).trim()));
   let at = -1;
   for (const title of titles) {
     const next = onPage.indexOf(title, at + 1);
