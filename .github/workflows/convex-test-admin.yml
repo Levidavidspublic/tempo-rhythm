@@ -58,10 +58,14 @@ permissions:
   contents: read
 
 concurrency:
-  # Both actors are part of the group: workflow concurrency applies before the job's actor check,
-  # so a run by anyone else, or an owner rerun of someone else's dispatch (actor stays theirs),
-  # must never share (and replace) the owner's pending run.
-  group: convex-test-admin-${{ github.actor }}-${{ github.triggering_actor }}-${{ inputs.email }}
+  # Workflow concurrency applies before the job's checks, so only a run that passes them (owner
+  # dispatch and owner trigger, on integration) shares a per-email group. Every other run, including
+  # an owner rerun of someone else's dispatch (actor stays theirs), gets a group of its own (its run
+  # id), so it can never replace the owner's pending run.
+  group: >-
+    ${{ (github.actor == 'Division6066' && github.triggering_actor == 'Division6066' && github.ref == 'refs/heads/integration')
+    && format('convex-test-admin-owner-{0}', inputs.email)
+    || format('convex-test-admin-run-{0}', github.run_id) }}
   cancel-in-progress: false
 
 env:
