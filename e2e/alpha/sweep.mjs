@@ -7,7 +7,7 @@
 import { accessSync, constants, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BASE_URL, EXIT, launch, newContext, saveState } from "./lib.mjs";
+import { BASE_URL, EXIT, launch, newContext, saveState, watchNetwork } from "./lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(process.env.ALPHA_OUT || path.join(HERE, "out"), "sweep", new Date().toISOString().replace(/[:.]/g, "-"));
@@ -70,10 +70,22 @@ const ERROR_TEXT = /Application error: a client-side exception|Something went wr
  * lock, while separate contexts would each replay the same token and sign the session out.
  */
 async function render(context, route, v, discovered = false) {
+  const first = await renderOnce(context, route, v, discovered);
+  // A failed render with a request the sandbox network dropped (lib.mjs watchNetwork) says nothing
+  // about the screen: it is rendered once more, and the summary lists the repeat.
+  if (!failed(first.rec) || first.rec.dropped.length === 0) return first;
+  const again = await renderOnce(context, route, v, discovered);
+  again.rec.networkRepeat = first.rec.dropped[0];
+  return again;
+}
+
+async function renderOnce(context, route, v, discovered) {
   const page = await context.newPage();
+  const dropped = [];
+  watchNetwork(page, dropped);
   await page.setViewportSize({ width: v.width, height: v.width < 600 ? 844 : 900 });
   await page.emulateMedia({ colorScheme: v.theme });
-  const rec = { route, ...v, discovered, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "", missingText: "", appliedTheme: "" };
+  const rec = { route, ...v, discovered, errors: [], console: [], status: 0, finalPath: "", overflow: 0, errorText: "", missingText: "", appliedTheme: "", dropped };
   page.on("pageerror", (e) => rec.errors.push(String(e.message || e).split("\n")[0].slice(0, 200)));
   page.on("console", (m) => {
     if (m.type() === "error") rec.console.push(m.text().split("\n")[0].slice(0, 200));
@@ -220,6 +232,11 @@ async function main() {
           .join("; ")
           .replace(/\|/g, "/")} |`,
     ),
+    "",
+    "Rendered again after a sandbox network drop (the first render failed with a dropped request):",
+    ...(results.some((r) => r.networkRepeat)
+      ? results.filter((r) => r.networkRepeat).map((r) => `- ${r.route} ${r.width}-${r.theme}-${r.lang}: ${r.networkRepeat}`)
+      : ["- none"]),
     "",
     "Console errors (reported, not failing):",
     ...[...new Set(results.flatMap((r) => r.console.map((c) => `${r.route}: ${c}`)))].slice(0, 40).map((c) => `- ${c}`),

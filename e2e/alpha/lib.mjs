@@ -129,8 +129,9 @@ function ownHost(url) {
  * app's or Convex's host, or a 5xx for the app that no Vercel server sent (no `x-vercel-id`: the
  * sandbox proxy's own "upstream request failed"). A 5xx from Vercel itself is the app's and is not
  * recorded, and neither is a drop on any other host, so it can't turn a real failure into NETWORK.
+ * `context` can also be a single page (the sweep watches each render on its own).
  */
-function watchNetwork(context, into) {
+export function watchNetwork(context, into) {
   const where = (url) => url.replace(/\?.*$/, "").replace(BASE_URL, "");
   context.on("requestfailed", (request) => {
     const error = request.failure()?.errorText ?? "";
