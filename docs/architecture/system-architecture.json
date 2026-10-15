@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "893e0a628c30043ad8da3c464a5766254f612a35"
     }
   },
   "components": [
@@ -426,7 +426,9 @@
       "items": [
         "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
         "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
-        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
+        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow.",
+        "convex/crons.ts registers one scheduled job: every 5 minutes pageCleanup.runBatch expires transient page payloads.",
+        "Manual, integration-only, TEST-only workflows: convex-test-admin sets the approval status of one synthetic account on ceaseless-dog-617, and preview-acceptance runs signed-in Playwright against preview.tempoflow.dev."
       ]
     },
     {

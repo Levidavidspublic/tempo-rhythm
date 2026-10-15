@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "893e0a628c30043ad8da3c464a5766254f612a35"
     }
   },
   "lanes": [
@@ -327,7 +327,8 @@
       "items": [
         "Batch loop (factory-batch, factory/LOOP.md): component PRs merge into batch/<loop-id>; ONE Cursor Bugbot review runs on the batch PR. factory-review-fix sends findings back to the lane, max 3 rounds, then blocked:amit.",
         "Ship: batch PR enters the GitHub merge queue (enqueue via GraphQL) into integration, then Vercel preview plus convex-deploy-test to ceaseless-dog-617. Queue enabled on the repo: UNKNOWN.",
-        "Live: Amit runs Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans, Playwright and Bugbot, deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
+        "Live: Amit runs Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans, Playwright and Bugbot, deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists.",
+        "Manual TEST-only helpers, dispatched on integration: convex-deploy-test also has a codegen-only job (workflow_dispatch, ticket branch input), convex-test-admin approves one synthetic account, and preview-acceptance runs signed-in Playwright against the preview on ceaseless-dog-617. None deploys to live."
       ]
     },
     {
