@@ -176,6 +176,28 @@ jobs:
             echo "Google Chrome is not on this runner; installing it through Playwright."
             bunx playwright install --with-deps chrome
           fi
+      - name: Wait until preview serves this integration commit (up to 15 minutes, fail closed)
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+          # Acceptance evidence must come from the build of this commit (Codex P2 on #897).
+          head_sha="$(git rev-parse --short=7 HEAD)"
+          header=()
+          if [ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
+            header=(-H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET")
+          fi
+          deployed=""
+          for _ in $(seq 1 60); do
+            deployed="$(curl -fsS --max-time 15 "${header[@]}" "$PREVIEW_URL/api/health" | jq -r '.commit // empty' 2>/dev/null || true)"
+            if [ "$deployed" = "$head_sha" ]; then
+              echo "Preview serves $head_sha."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Preview still serves ${deployed:-an unknown commit}, not $head_sha, after 15 minutes. Dispatch again once the deploy is live."
+          exit 1
       - name: Create a disposable mail.tm inbox (address and password masked)
         run: |
           set -euo pipefail
