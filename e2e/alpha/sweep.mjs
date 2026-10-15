@@ -4,7 +4,7 @@
 // Exit: 0 clean, 1 at least one failing render, 2 BLOCKED_VERIFICATION (no approved session).
 //
 //   ALPHA_STORAGE_STATE=… node e2e/alpha/sweep.mjs [--only today,notes] [--widths 390,1280]
-import { mkdirSync, writeFileSync } from "node:fs";
+import { accessSync, constants, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { BASE_URL, EXIT, launch, newContext } from "./lib.mjs";
@@ -23,14 +23,17 @@ const STATIC_ROUTES = [
   "/billing", "/billing/trial-end", "/ask-founder", "/admin/approvals", "/onboarding",
 ];
 
-/** Routes with a parameter: the first matching link found on the listed page (1280, light, en). */
+/**
+ * Routes with a parameter: the first matching link found on the listed page (1280, light, en).
+ * `nested` are the screens under a found route that have no link to discover from a list page.
+ */
 const DYNAMIC_ROUTES = [
   { from: "/notes", pattern: /^\/notes\/[^/?#]+$/ },
   { from: "/today", pattern: /^\/week\/[^/?#]+$/ },
   { from: "/templates", pattern: /^\/templates\/run\/[^/?#]+$/ },
   { from: "/templates", pattern: /^\/templates\/editor\/[^/?#]+$/ },
   { from: "/goals", pattern: /^\/goals\/(?!progress)[^/?#]+$/ },
-  { from: "/projects", pattern: /^\/projects\/[^/?#]+$/ },
+  { from: "/projects", pattern: /^\/projects\/[^/?#]+$/, nested: ["/kanban"] },
   { from: "/habits", pattern: /^\/habits\/[^/?#]+$/ },
   { from: "/routines", pattern: /^\/routines\/[^/?#]+$/ },
 ];
@@ -101,6 +104,12 @@ async function main() {
     console.log("sweep BLOCKED_VERIFICATION: ALPHA_STORAGE_STATE is not set");
     process.exit(EXIT.BLOCKED_VERIFICATION);
   }
+  try {
+    accessSync(statePath, constants.R_OK);
+  } catch {
+    console.log("sweep BLOCKED_VERIFICATION: ALPHA_STORAGE_STATE is not a readable file");
+    process.exit(EXIT.BLOCKED_VERIFICATION);
+  }
   mkdirSync(OUT, { recursive: true });
   const browser = await launch();
   const results = [];
@@ -117,7 +126,7 @@ async function main() {
         for (const dyn of DYNAMIC_ROUTES) {
           if (dyn.from !== item.route || found.has(dyn.pattern.source)) continue;
           const hit = links.find((l) => dyn.pattern.test(l));
-          if (hit) found.set(dyn.pattern.source, hit);
+          if (hit) found.set(dyn.pattern.source, [hit, ...(dyn.nested ?? []).map((tail) => `${hit}${tail}`)]);
         }
         console.log(`${failed(rec) ? "FAIL" : "ok  "} ${rec.route} ${rec.width}-${rec.theme}-${rec.lang}`);
       }
@@ -127,18 +136,22 @@ async function main() {
   await runQueue(queue);
   if (!only) {
     const dynQueue = [];
-    for (const route of found.values()) for (const v of VARIANTS) dynQueue.push({ route, v });
+    for (const route of [...found.values()].flat()) for (const v of VARIANTS) dynQueue.push({ route, v });
     await runQueue(dynQueue);
   }
   await browser.close();
 
-  const blocked = results.length > 0 && results.every((r) => r.waiting || r.finalPath.startsWith("/sign-in"));
+  // Approval is per account: one "Waiting for approval" screen means the session is not approved,
+  // even though a few screens sit outside the approval gate (/settings/passkeys).
+  const blocked =
+    results.length > 0 &&
+    (results.some((r) => r.waiting) || results.every((r) => r.finalPath.startsWith("/sign-in")));
   const bad = results.filter(failed);
   const lines = [
     `# Signed-in sweep, ${new Date().toISOString()}`,
     "",
     `${BASE_URL}: ${results.length} renders of ${new Set(results.map((r) => r.route)).size} routes, ${bad.length} failing.`,
-    `Routes with a parameter found: ${[...found.values()].join(", ") || "none"}.`,
+    `Routes with a parameter found: ${[...found.values()].flat().join(", ") || "none"}.`,
     `Not found (no link on its list page): ${DYNAMIC_ROUTES.filter((d) => !found.has(d.pattern.source)).map((d) => d.pattern.source).join(", ") || "none"}.`,
     "",
     "| route | variant | problem |",
