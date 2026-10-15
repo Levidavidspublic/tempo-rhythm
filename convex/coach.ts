@@ -24,6 +24,7 @@ import {
   type CoachTaskContext,
   alignDecisionSteps,
   buildCoachMessages,
+  cardOutcome,
   parseCoachReply,
   readProposal,
 } from "./lib/coachPrompt";
@@ -250,10 +251,18 @@ export const claimTurn = internalMutation({
     const claim = crypto.randomUUID();
     await ctx.db.patch(last._id, { toolCalls: { coachClaimUntil: now + TURN_CLAIM_MS, coachClaim: claim } });
 
+    // An earlier reply's card carries what happened to it, so the coach never takes an undone or
+    // declined change for one that happened (alpha run, L4: "It's already on your list").
     const history = newest
       .filter((m) => m.role === "user" || m.role === "assistant")
       .reverse()
-      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      .map((m) => {
+        const card = m.role === "assistant" ? storedProposal(m.toolCalls) : null;
+        return {
+          role: m.role as "user" | "assistant",
+          content: card ? `${m.content}\n${cardOutcome(card, card.status)}` : m.content,
+        };
+      });
 
     let page: { title: string; text: string } | null = null;
     if (args.noteId) {
