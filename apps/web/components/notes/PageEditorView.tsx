@@ -51,6 +51,11 @@ type Props = {
   title: string;
   initialBody: string;
   body: string;
+  /**
+   * Text another writer saved to this page while it is open with no unsaved edits. Each new `seq`
+   * hands it to the editor once. When the editor has moved on, its own text wins and is saved.
+   */
+  remoteBody?: { before: string; after: string; seq: number } | null;
   pinned: boolean;
   saveState: SaveState;
   confirmingDelete: boolean;
@@ -102,6 +107,16 @@ export function PageEditorView(props: Props) {
   // The text the editor mounts with: the loaded body first, then the current body each time
   // Edit comes back after Read (the editor is uncontrolled; a stale seed would revert edits).
   const [editSeed, setEditSeed] = useState(initialBody);
+
+  const remoteBody = props.remoteBody ?? null;
+  const onBodyChange = props.onBodyChange;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once per remote change (seq); the rest is read at that moment
+  useEffect(() => {
+    if (!remoteBody) return;
+    const view = editor.current;
+    if (!view) return; // Read mode: ReadView draws `body`, and Edit mounts with it.
+    if (!view.adopt(remoteBody.before, remoteBody.after)) onBodyChange(view.getText());
+  }, [remoteBody?.seq]);
 
   // Esc dismisses the menu for this trigger only; once the trigger is gone, a new one opens again.
   const onTrigger = (next: EditorTrigger | null) => {

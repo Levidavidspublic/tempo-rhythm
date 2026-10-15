@@ -2,10 +2,10 @@
 
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { Compartment, EditorSelection, EditorState, type Extension, Prec } from "@codemirror/state";
+import { Annotation, Compartment, EditorSelection, EditorState, type Extension, Prec, Transaction } from "@codemirror/state";
 import { EditorView, keymap, placeholder as placeholderExtension } from "@codemirror/view";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { slashQuery, wikiQuery } from "@/lib/editor/markdown-model";
+import { slashQuery, textChange, wikiQuery } from "@/lib/editor/markdown-model";
 import { type EditorLabels, labelsChanged, livePreview } from "./live-preview";
 
 /** What the page editor needs to draw the slash menu or the [[ picker under the caret. */
@@ -27,7 +27,16 @@ export type LivePreviewEditorHandle = {
   replace: (from: number, to: number, text: string, cursor?: number) => void;
   focus: () => void;
   getText: () => string;
+  /**
+   * Takes in text another writer saved (the coach adding a decision to today's page). Applies only
+   * when the editor still holds `before`, as one minimal change outside the undo history, and is
+   * not reported through `onChange`: it is already saved. False when the text moved on since.
+   */
+  adopt: (before: string, after: string) => boolean;
 };
+
+/** Marks a change the editor took in from the server, so it is not saved back as an edit. */
+const fromServer = Annotation.define<boolean>();
 
 /**
  * What every page draws with: Markdown with the live preview. Notes, Today and the weekly pages
@@ -103,6 +112,17 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
     getText() {
       return viewRef.current?.state.doc.toString() ?? "";
     },
+    adopt(before, after) {
+      const view = viewRef.current;
+      if (!view) return false;
+      if (view.state.doc.toString() !== before) return false;
+      if (before === after) return true;
+      view.dispatch({
+        changes: textChange(before, after),
+        annotations: [fromServer.of(true), Transaction.addToHistory.of(false)],
+      });
+      return true;
+    },
   }));
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the editor is created once per mount; remount with a new key to load another page
@@ -126,7 +146,9 @@ export const LivePreviewEditor = forwardRef<LivePreviewEditorHandle, Props>(func
         pageLanguage(),
         localized.current.of(localizedExtensions()),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) callbacks.current.onChange(update.state.doc.toString());
+          if (update.docChanged && !update.transactions.some((tr) => tr.annotation(fromServer))) {
+            callbacks.current.onChange(update.state.doc.toString());
+          }
           if (!(update.docChanged || update.selectionSet || update.focusChanged)) return;
           const report = callbacks.current.onTrigger;
           if (!report) return;

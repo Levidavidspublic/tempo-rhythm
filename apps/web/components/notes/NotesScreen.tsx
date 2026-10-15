@@ -294,6 +294,19 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
 
   // True from an edit until a save of that same text succeeds, so a failed save is never taken for saved.
   const dirty = useRef(false);
+
+  // Another writer changed this page while it is open: the coach saving a decision to today's
+  // page. With no unsaved edits here the editor takes the new text, so the next autosave can't
+  // write over it. With unsaved edits (or a save on its way) those edits win, as before.
+  const [remoteBody, setRemoteBody] = useState<{ before: string; after: string; seq: number } | null>(null);
+  useEffect(() => {
+    if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
+    if (note.body === bodyRef.current || dirty.current || saveTimer.current) return;
+    const before = bodyRef.current;
+    bodyRef.current = note.body;
+    setBody(note.body);
+    setRemoteBody((current) => ({ before, after: note.body, seq: (current?.seq ?? 0) + 1 }));
+  }, [note]);
   const saveNow = async () => {
     const title = titleRef.current;
     const body = bodyRef.current;
@@ -416,6 +429,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       title={title}
       initialBody={note?.body ?? body}
       body={body}
+      remoteBody={remoteBody}
       pinned={note?.pinned ?? false}
       saveState={saveState}
       confirmingDelete={confirmingDelete}
