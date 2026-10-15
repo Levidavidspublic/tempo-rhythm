@@ -13,6 +13,7 @@ import {
   type Extension,
   Prec,
   type Range,
+  RangeSetBuilder,
   StateEffect,
   StateField,
   type Transaction,
@@ -685,6 +686,48 @@ const inlinePreview = ViewPlugin.fromClass(
 );
 
 /* ------------------------------------------------------------------ */
+/* Line direction                                                       */
+/* ------------------------------------------------------------------ */
+
+const autoDirection = Decoration.line({ attributes: { dir: "auto" } });
+
+/**
+ * Every line in `ranges` takes its own direction (dir=auto, F-72): an English line on a Hebrew
+ * page reads left to right with its full stop at the end, a Hebrew line on an English page right
+ * to left. `perLineTextDirection` only reads each line's direction (for the cursor); this sets it.
+ */
+export function lineDirections(state: EditorState, ranges: readonly { from: number; to: number }[]): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  let last = -1;
+  for (const { from, to } of ranges) {
+    for (let pos = from; pos <= to; ) {
+      const line = state.doc.lineAt(pos);
+      if (line.from > last) {
+        builder.add(line.from, line.from, autoDirection);
+        last = line.from;
+      }
+      pos = line.to + 1;
+    }
+  }
+  return builder.finish();
+}
+
+const lineDirection = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = lineDirections(view.state, view.visibleRanges);
+    }
+    update(update: ViewUpdate) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = lineDirections(update.state, update.view.visibleRanges);
+      }
+    }
+  },
+  { decorations: (plugin) => plugin.decorations },
+);
+
+/* ------------------------------------------------------------------ */
 /* Theme: tokens only                                                   */
 /* ------------------------------------------------------------------ */
 
@@ -810,6 +853,7 @@ export function livePreview(options: LivePreviewOptions): Extension {
     EditorState.lineSeparator.of(LINE_SEPARATOR),
     EditorView.lineWrapping,
     EditorView.perLineTextDirection.of(true),
+    lineDirection,
     tempoBlocksField,
     boundaryGuard,
     inlinePreview,
