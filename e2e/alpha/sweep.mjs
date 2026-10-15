@@ -69,14 +69,24 @@ const ERROR_TEXT = /Application error: a client-side exception|Something went wr
  * rotates the refresh token on load and serialises that across pages of a context with a browser
  * lock, while separate contexts would each replay the same token and sign the session out.
  */
+/** Renders tried per screen while each failed try came with a dropped request (as run.mjs repeats). */
+const MAX_NETWORK_TRIES = 3;
+
 async function render(context, route, v, discovered = false) {
-  const first = await renderOnce(context, route, v, discovered);
   // A failed render with a request the sandbox network dropped (lib.mjs watchNetwork) says nothing
-  // about the screen: it is rendered once more, and the summary lists the repeat.
-  if (!failed(first.rec) || first.rec.dropped.length === 0) return first;
-  const again = await renderOnce(context, route, v, discovered);
-  again.rec.networkRepeat = first.rec.dropped[0];
-  return again;
+  // about the screen: it is rendered again, up to MAX_NETWORK_TRIES, and the summary lists the
+  // repeat. If every try dropped a request, the render is NETWORK: not proven, but not the screen's.
+  let firstDrop = "";
+  for (let attempt = 1; ; attempt += 1) {
+    const out = await renderOnce(context, route, v, discovered);
+    if (firstDrop) out.rec.networkRepeat = firstDrop;
+    if (!failed(out.rec) || out.rec.dropped.length === 0) return out;
+    if (attempt >= MAX_NETWORK_TRIES) {
+      out.rec.networkOnly = true;
+      return out;
+    }
+    firstDrop ||= out.rec.dropped[0];
+  }
 }
 
 async function renderOnce(context, route, v, discovered) {
@@ -204,11 +214,12 @@ async function main() {
     (results.some((r) => r.waiting) ||
       results.every((r) => r.finalPath.startsWith("/sign-in")) ||
       results.every((r) => r.status === 401 || r.status === 403));
-  const bad = results.filter(failed);
+  const bad = results.filter((r) => failed(r) && !r.networkOnly);
+  const networkOnly = results.filter((r) => failed(r) && r.networkOnly);
   const lines = [
     `# Signed-in sweep, ${new Date().toISOString()}`,
     "",
-    `${BASE_URL}: ${results.length} renders of ${new Set(results.map((r) => r.route)).size} routes, ${bad.length} failing.`,
+    `${BASE_URL}: ${results.length} renders of ${new Set(results.map((r) => r.route)).size} routes, ${bad.length} failing, ${networkOnly.length} not proven (network).`,
     `Routes with a parameter found: ${[...found.values()].flat().join(", ") || "none"}.`,
     `Not reached (no link on its list page; fails the run): ${missing.join(", ") || "none"}.`,
     ...(saveError ? [`Session state not saved (fails the run): ${saveError}`] : []),
@@ -233,9 +244,14 @@ async function main() {
           .replace(/\|/g, "/")} |`,
     ),
     "",
+    `Not proven, the sandbox network dropped a request on all ${MAX_NETWORK_TRIES} tries (NETWORK, not the screen):`,
+    ...(networkOnly.length
+      ? networkOnly.map((r) => `- ${r.route} ${r.width}-${r.theme}-${r.lang}: ${r.dropped[0]}`)
+      : ["- none"]),
+    "",
     "Rendered again after a sandbox network drop (the first render failed with a dropped request):",
-    ...(results.some((r) => r.networkRepeat)
-      ? results.filter((r) => r.networkRepeat).map((r) => `- ${r.route} ${r.width}-${r.theme}-${r.lang}: ${r.networkRepeat}`)
+    ...(results.some((r) => r.networkRepeat && !r.networkOnly)
+      ? results.filter((r) => r.networkRepeat && !r.networkOnly).map((r) => `- ${r.route} ${r.width}-${r.theme}-${r.lang}: ${r.networkRepeat}`)
       : ["- none"]),
     "",
     "Console errors (reported, not failing):",
@@ -243,8 +259,14 @@ async function main() {
   ];
   writeFileSync(path.join(OUT, "summary.md"), `${lines.join("\n")}\n`);
   writeFileSync(path.join(OUT, "results.json"), `${JSON.stringify(results, null, 1)}\n`);
-  const code = blocked ? EXIT.BLOCKED_VERIFICATION : bad.length || missing.length || saveError ? EXIT.FAIL : EXIT.PASS;
-  console.log(`sweep ${Object.entries(EXIT).find(([, c]) => c === code)?.[0]}: ${results.length} renders, ${bad.length} failing (${path.relative(process.cwd(), OUT)}/summary.md)`);
+  const code = blocked
+    ? EXIT.BLOCKED_VERIFICATION
+    : bad.length || missing.length || saveError
+      ? EXIT.FAIL
+      : networkOnly.length
+        ? EXIT.NETWORK
+        : EXIT.PASS;
+  console.log(`sweep ${Object.entries(EXIT).find(([, c]) => c === code)?.[0]}: ${results.length} renders, ${bad.length} failing, ${networkOnly.length} not proven (network) (${path.relative(process.cwd(), OUT)}/summary.md)`);
   process.exit(code);
 }
 
