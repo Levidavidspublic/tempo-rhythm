@@ -75,6 +75,7 @@ function makeWorld() {
     "voice:admitGrant": voice.admitGrant,
     "voice:releaseGrant": voice.releaseGrant,
     "voice:admitSentence": voice.admitSentence,
+    "voice:releaseSentence": voice.releaseSentence,
   };
   const actionAs = (userId: string) => {
     const dispatch = (ref: unknown, args: unknown) => {
@@ -516,6 +517,31 @@ describe("speak: one sentence of a coach reply, resolved on the server", () => {
       await expect(run(voice.speak, world.actionAs(A), { sessionId, messageId: ok, index: -1 })).rejects.toThrow();
       await expect(run(voice.speak, world.actionAs(A), { sessionId, messageId: ok, index: 0.5 })).rejects.toThrow();
       expect(net.calls).toHaveLength(0);
+    } finally {
+      net.restore();
+    }
+  });
+
+  test("a sentence that brings no audio is given back, so an outage can't use up the day's read-aloud", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const messageId = await reply(world, conversationId, "Start with Dana.");
+    const { sessionId } = await startSession(world, conversationId);
+    let calls = 0;
+    const net = fakeFetch(() => {
+      calls += 1;
+      if (calls === 1) throw new TypeError("network down");
+      if (calls === 2) return new Response("busy", { status: 503 });
+      if (calls === 3) return Response.json({ nothing: true });
+      return new Response(WAV, { headers: { "content-type": "audio/wav" } });
+    });
+    try {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        await expect(run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 })).rejects.toThrow();
+        expect(world.row(sessionId)).toMatchObject({ sentences: 0, ttsChars: 0 });
+      }
+      expect((await run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 })).status).toBe("audio");
+      expect(world.row(sessionId)).toMatchObject({ sentences: 1, ttsChars: "Start with Dana.".length });
     } finally {
       net.restore();
     }

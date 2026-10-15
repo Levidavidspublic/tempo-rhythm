@@ -463,6 +463,24 @@ export const admitSentence = internalMutation({
   },
 });
 
+/** Gives back a sentence that produced no audio, so a provider outage can't use up the day's read-aloud. */
+export const releaseSentence = internalMutation({
+  args: { sessionId: v.id("voiceSessions"), chars: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const lease = await ctx.db.get(args.sessionId);
+    if (lease && lease.userId === user._id && lease.sentences > 0) {
+      await ctx.db.patch(lease._id, {
+        sentences: lease.sentences - 1,
+        ttsChars: Math.max(0, lease.ttsChars - args.chars),
+        updatedAt: Date.now(),
+      });
+    }
+    return null;
+  },
+});
+
 /** Audio bytes from a TTS response: raw audio, or JSON carrying base64 or a data: URL. */
 export async function audioFrom(response: Response): Promise<{ bytes: ArrayBuffer; mime: string } | null> {
   const type = (response.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
@@ -496,31 +514,44 @@ export const speak = action({
   ),
   handler: async (ctx, args): Promise<SpeakResult> => {
     await requireApprovedForAi(ctx);
-    const admitted: SentenceResult = await ctx.runMutation(internal.voice.admitSentence, args);
-    if (admitted.status !== "sentence") return admitted;
     const key = process.env.DEEPINFRA_API_KEY;
     if (!key) throw voiceError("voice_off");
-    let response: Response;
+    // The sentence is counted first (so concurrent calls can't pass the day's allowance) and given
+    // back if no audio comes of it.
+    const admitted: SentenceResult = await ctx.runMutation(internal.voice.admitSentence, args);
+    if (admitted.status !== "sentence") return admitted;
     try {
-      response = await fetch(CHATTERBOX_URL, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ text: admitted.text, language_id: admitted.language }),
-        signal: AbortSignal.timeout(30_000),
-      });
+      const audio = await synthesize(key, admitted.text, admitted.language);
+      return { status: "audio" as const, audio: audio.bytes, mime: audio.mime, count: admitted.count };
     } catch (error) {
-      console.error(`voice.speak: DeepInfra could not be reached (${error instanceof Error ? error.name : typeof error})`);
-      throw voiceError("voice_connect");
+      await ctx.runMutation(internal.voice.releaseSentence, { sessionId: args.sessionId, chars: admitted.text.length }).catch(() => {});
+      throw error;
     }
-    if (!response.ok) {
-      console.error(`voice.speak: DeepInfra returned HTTP ${response.status}`);
-      throw voiceError("voice_connect");
-    }
-    const audio = await audioFrom(response);
-    if (!audio || audio.bytes.byteLength === 0 || audio.bytes.byteLength > VOICE_LIMITS.maxAudioBytes) {
-      console.error("voice.speak: DeepInfra returned no usable audio");
-      throw voiceError("voice_connect");
-    }
-    return { status: "audio" as const, audio: audio.bytes, mime: audio.mime, count: admitted.count };
   },
 });
+
+/** One sentence as audio from DeepInfra. Errors say nothing of the provider's body. */
+async function synthesize(key: string, text: string, language: string): Promise<{ bytes: ArrayBuffer; mime: string }> {
+  let response: Response;
+  try {
+    response = await fetch(CHATTERBOX_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ text, language_id: language }),
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch (error) {
+    console.error(`voice.speak: DeepInfra could not be reached (${error instanceof Error ? error.name : typeof error})`);
+    throw voiceError("voice_connect");
+  }
+  if (!response.ok) {
+    console.error(`voice.speak: DeepInfra returned HTTP ${response.status}`);
+    throw voiceError("voice_connect");
+  }
+  const audio = await audioFrom(response);
+  if (!audio || audio.bytes.byteLength === 0 || audio.bytes.byteLength > VOICE_LIMITS.maxAudioBytes) {
+    console.error("voice.speak: DeepInfra returned no usable audio");
+    throw voiceError("voice_connect");
+  }
+  return audio;
+}
