@@ -10,8 +10,11 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { useOnline } from "@/lib/useOnline";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
+import { VoiceCall } from "./voice/VoiceCall";
+import { useVoiceCall, type VoiceSendResult } from "./voice/useVoiceCall";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -75,6 +78,10 @@ export function CoachConversation({
   const bounds = useLocalDayBounds();
   // Today's chat answers with today's page as context: it waits until that page is on screen.
   const waitingForPage = variant === "today" && !pageId;
+  const online = useOnline();
+  // Voice mode shows only when the server says it can start (both keys set, an English lane,
+  // minutes left today); otherwise the composer is unchanged.
+  const voiceAvailability = useQuery(api.voice.availability, isAuthenticated && profile ? {} : "skip");
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
@@ -161,6 +168,30 @@ export function CoachConversation({
       setReplying(false);
     }
   };
+
+  // A spoken turn takes the typed path: the crisis guard first, then the coach (VOICE.md L-16).
+  const sendSpoken = async (text: string): Promise<VoiceSendResult> => {
+    if (!conversationId) return { kind: "none" };
+    let serverCrisis = false;
+    const outcome = await deliverCoachMessage(text, guard, async (content) => {
+      const result = await sendMessage({ conversationId, content });
+      serverCrisis = result.crisis === true;
+    });
+    if (outcome === "resources") {
+      setCrisisHold(true);
+      return { kind: "crisis" };
+    }
+    setCrisisHold(false);
+    if (serverCrisis) return { kind: "crisis" };
+    await reply(conversationId);
+    return { kind: "reply" };
+  };
+  const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card");
+  const voice = useVoiceCall({
+    conversationId,
+    send: sendSpoken,
+    latestReply: lastAssistant ? { id: lastAssistant._id, content: lastAssistant.content, createdAt: lastAssistant.createdAt } : null,
+  });
 
   const handleSend = async () => {
     const text = input.trim();
@@ -292,10 +323,23 @@ export function CoachConversation({
           />
           <div className="tp-composer__bar">
             <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
+            {voiceAvailability?.available ? (
+              <button
+                className="tp-btn tp-btn--ghost tp-btn--sm"
+                type="button"
+                style={{ marginInlineStart: "auto" }}
+                disabled={!conversationId || busy || waitingForPage || voice.open}
+                onClick={() => void voice.start()}
+                data-component="VoiceStart"
+              >
+                <TpIcon name="mic" size="sm" />
+                <span>{t("coachChat.talk")}</span>
+              </button>
+            ) : null}
             <button
               className="tp-btn tp-btn--primary tp-btn--sm"
               type="submit"
-              style={{ marginInlineStart: "auto" }}
+              style={voiceAvailability?.available ? undefined : { marginInlineStart: "auto" }}
               disabled={!conversationId || busy || waitingForPage || !input.trim()}
             >
               <TpIcon name="send" size="sm" />
@@ -309,6 +353,24 @@ export function CoachConversation({
           </p>
         ) : null}
       </form>
+      {voice.open ? (
+        <VoiceCall
+          open={voice.open}
+          session={voice.session}
+          connecting={voice.connecting}
+          ended={voice.ended}
+          online={online}
+          micOn={voice.micOn}
+          lines={voice.lines}
+          callLang="en"
+          minutesLeft={voice.minutesLeft}
+          onMicToggle={voice.toggleMic}
+          onInterrupt={voice.interrupt}
+          onEnd={voice.end}
+          onClose={voice.close}
+          onRetry={() => void voice.start()}
+        />
+      ) : null}
     </>
   );
 }
