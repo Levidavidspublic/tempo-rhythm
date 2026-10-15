@@ -4,7 +4,7 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** (2026-10-15 07:00 UTC) waiting on Codex for #892 (`a8e1988`) and #897 (`8e74a0d`), the sign-in path. Meanwhile: L5 in three PRs: backend #940, editor #941, and the Today chat with the decision card (branch `v3/today-chat`, opens once #940 is in). Then voice.
+**Now working on:** (2026-10-15 07:25 UTC) L3 fix #943 and L4 fix #944 through Codex; full signed-in sweep running; voice mode (backend + web) under checks. L5 waits on #940/#941 and the Today chat PR (`v3/today-chat`).
 
 ## Target 2 (from 2026-10-15, owner message)
 
@@ -24,8 +24,8 @@ Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workf
 
 ### Plan (target 2)
 
-- [ ] Merge #892 and #897 (gate), dispatch #892 to approve the synthetic account.
-- [ ] Run L1-L4 5x; fix what fails.
+- [x] Merge #892 (merged 07:00 UTC as `8345b4a`) and dispatch it: the synthetic account is **approved** (run 38695751179, 06:59 UTC, success). #897 queued for merge (07:25).
+- [ ] Run L1-L4 5x; fix what fails. First run (07:01-07:05): L1 4/5 (5th: page load timeout), **L2 5/5 PASS**, L3 0/1 (bug: starter templates "not found" → #943), L4 0/1 (bug: proposal card collapsed to 2 px → #944).
 - [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails. Script: #939 (open).
 - [ ] Chat on Today + decision card (L5) on the coach; follow the chat-first designs when they land. Backend #940 and editor #941 open; UI on `v3/today-chat`. No chat-first designs in `docs/design/` yet (checked 06:58 UTC).
 - [ ] Voice mode (Deepgram STT, Chatterbox TTS) per `docs/contracts/VOICE.md` (#871).
@@ -107,6 +107,15 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 06:54 | #939 | sweep | Codex P2s fixed in `08ea78b`: project Kanban swept; a pending session is BLOCKED_VERIFICATION (reproduced on preview: `/settings/passkeys` renders, `/today` waits, now exit 2); an unreadable state file is BLOCKED_VERIFICATION | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
 | 06:46 | #940 | L5 | opened: coach `decision` proposals from today's open tasks; Save writes task blocks to today's page; Undo takes them off. 2178 tests, all 7 checks pass | [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940) |
 | 07:00 | #941 | L5 | opened: an open page takes in a server-side change when it has no unsaved edits (so Save to today isn't overwritten by the next autosave). 2173 tests, all 7 checks pass | [#941](https://github.com/Levidavidspublic/tempo-rhythm/pull/941) |
+| 07:00 | #892 merged | — | merge queue, `8345b4a`: green CI, Codex P1 (owner-only) fixed, P2 (queued request dropped) fixed; last P2 (other actor shares the group) answered and fixed in #942 | [#892](https://github.com/Levidavidspublic/tempo-rhythm/pull/892) |
+| 06:59 | dispatch `convex-test-admin.yml` | L1-L5 | the synthetic `tempo-accept-…` account set to **approved** on TEST (job success, 20 s) | run 38695751179 |
+| 07:00 | harness | L1-L5 | the 2nd L1 run hit the sign-in form: Convex Auth rotates the refresh token on every load, and each run replayed the saved one. Fix (on #939's branch): each run writes the refreshed session back (`saveState`, 0600); the sweep shares one context. Re-signed in by magic link. | — |
+| 07:01-07:05 | after #892 (preview `4d7be6a`) | L1 | **4/5**, then FAIL: `page.goto` timeout 30 s (sandbox network; navigation timeout raised to 60 s on #939's branch) | screenshots in the run's scratch dir |
+| 07:02-07:04 | after #892 (preview `4d7be6a`) | L2 | **5/5 PASS** in a row, each with the crisis check (fixed card, no `coach:reply` frame) | screenshots in the run's scratch dir |
+| 07:03 | after #892 | L3 | FAIL: "This template was not found". Starter ids reach `templates.get` percent-encoded (`starter%3Adaily-page`; TEST returns the starter for `starter:daily-page`, null for the encoded one) → **#943** | [#943](https://github.com/Levidavidspublic/tempo-rhythm/pull/943) |
+| 07:04, 07:10 | after #892 | L4 | the real coach answered (DeepInfra works on TEST). Run 1: a reply without a proposal. Run 2: the task card rendered **2 px tall** (grid row squeezed: `overflow: hidden` in a full thread), so Accept could not be clicked → **#944** (injected on preview: 2 → 196 px, Accept clickable) | [#944](https://github.com/Levidavidspublic/tempo-rhythm/pull/944) |
+| 07:15 | #940 | L5 | Codex P2s fixed in `2bb7793`: Save only to today's page; closed tasks never crowd the context | [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940) |
+| 07:15 | #939 | sweep | Codex P1 (a protected-preview 401/403 would pass) + 3 P2s (module preview route, `dir` per language, worker count) fixed locally with the session fixes; pushed after the first full sweep | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
 
 ## Blocked
 
