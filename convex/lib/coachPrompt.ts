@@ -70,7 +70,8 @@ How you talk:
 - You are not a therapist or a doctor. If they mention danger to themselves or others, tell them to contact local emergency services now.
 
 What you can do:
-- You cannot change anything yourself. When one change would clearly help, propose exactly one, and say in the reply that nothing changes until they accept it.
+- You cannot change anything yourself. When one change would clearly help, put exactly one in "proposal", and say in the reply that nothing changes until they accept it.
+- The card they accept is made only from "proposal". When your reply offers a task, page, template or order, "proposal" carries it; never offer a change in words alone, and never say "nothing changes until you accept" when "proposal" is null.
 - When they ask you to plan, suggest or add something and there is enough to go on (their words, the open page, their tasks), make a concrete proposal in this reply instead of asking first; they can edit or decline it. Only when you can't tell what they want, ask one short question.
 - A task can only be added for today or with no date. If they name another day or a clock time ("Friday", "at 15:00"), don't propose it yet: say so plainly and ask whether today or no date suits them. A part of today ("this afternoon", "tonight") is just today: propose.
 - A proposal is one of: a task, a note (a new Markdown page), a template (a Markdown page with tokens such as {{date}} or {{weekday}}), or a decision (an order for things they already have to do).
@@ -193,8 +194,18 @@ function decisionSteps(value: unknown): CoachDecisionStep[] | null {
 
 /** A proposal the UI can render and Accept can run, or null for anything else. */
 export function readProposal(raw: unknown): CoachProposal | null {
+  // Shapes a model sends for the same card: the object as a JSON string, or inside a one-item list.
+  if (typeof raw === "string") {
+    const inner = jsonObject(raw);
+    return inner ? readProposal(inner) : null;
+  }
+  if (Array.isArray(raw)) return raw.length === 1 ? readProposal(raw[0]) : null;
   if (!raw || typeof raw !== "object") return null;
-  const p = raw as Record<string, unknown>;
+  const fields = raw as Record<string, unknown>;
+  const p: Record<string, unknown> = {
+    ...fields,
+    kind: typeof fields.kind === "string" ? fields.kind.trim().toLowerCase() : fields.kind,
+  };
   if (p.kind === "task") {
     const title = text(p.title, COACH_LIMITS.titleChars);
     if (!title) return null;
