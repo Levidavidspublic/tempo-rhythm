@@ -19,6 +19,8 @@ describe("buildCoachMessages", () => {
     // an add for another day or a time is asked about instead of losing its date.
     expect(system?.content).not.toContain("schedule something");
     expect(system?.content).toContain("A task can only be added for today or with no date.");
+    // "Plan my afternoon" (L4) is today, not a schedule: the guard covers other days and clock times only.
+    expect(system?.content).toContain('A part of today ("this afternoon", "tonight") is just today: propose.');
   });
 
   test("the open page comes before the thread, marked as the person's material", () => {
