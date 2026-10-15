@@ -110,6 +110,18 @@ describe("alignDecisionSteps", () => {
     expect(moved.kind === "decision" ? moved.steps[0]?.title : null).toBe(shown);
   });
 
+  test("a cut title matches the longer task it was cut from, not a task equal to the cut part", () => {
+    const long = `Write the grant report ${"x".repeat(250)}`;
+    const shown = truncate(long, COACH_LIMITS.titleChars);
+    const short = shown.slice(0, -1);
+    const aligned = alignDecisionSteps(decision([shown]), [
+      { title: short, minutes: null },
+      { title: long, minutes: null },
+    ]);
+    expect(aligned.kind === "decision" ? aligned.steps[0]?.title : null).toBe(shown);
+    expect(aligned.kind === "decision" ? aligned.steps[0]?.title : null).not.toBe(short);
+  });
+
   test("only decisions change, and a step keeps its minutes and reason", () => {
     const task = { kind: "task" as const, title: "Alpha L5 bill", minutes: 5, when: "today" as const };
     expect(alignDecisionSteps(task, tasks)).toBe(task);

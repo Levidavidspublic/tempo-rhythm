@@ -144,11 +144,15 @@ export function alignDecisionSteps(proposal: CoachProposal, tasks: readonly Coac
   const steps = proposal.steps.map((step) => {
     const key = titleKey(step.title);
     if (key.length < 3) return step;
-    const same = titles.find((title) => titleKey(title) === key);
-    if (same) return { ...step, title: same };
-    // A title cut short with "…" can end mid-word, so there a plain prefix is enough.
+    // A title cut short with "…" came from a longer one and can end mid-word: it matches only a
+    // task whose title goes on past it, never one that merely equals the cut part.
     const cut = /…\s*$/.test(step.title);
-    const longer = titles.filter((title) => (cut ? titleKey(title).startsWith(key) : startsWithWords(titleKey(title), key)));
+    const same = cut ? undefined : titles.find((title) => titleKey(title) === key);
+    if (same) return { ...step, title: same };
+    const longer = titles.filter((title) => {
+      const full = titleKey(title);
+      return cut ? full.length > key.length && full.startsWith(key) : startsWithWords(full, key);
+    });
     return longer.length === 1 && longer[0] ? { ...step, title: truncate(longer[0], COACH_LIMITS.titleChars) } : step;
   });
   return { ...proposal, steps };
