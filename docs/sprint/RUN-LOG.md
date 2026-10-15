@@ -4,7 +4,7 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** (2026-10-15 06:40 UTC) getting #892 and #897 through Codex and merged, so the synthetic account can be approved. Meanwhile: the signed-in sweep script.
+**Now working on:** (2026-10-15 07:00 UTC) waiting on Codex for #892 (`a8e1988`) and #897 (`8e74a0d`), the sign-in path. Meanwhile: L5 in three PRs: backend #940, editor #941, and the Today chat with the decision card (branch `v3/today-chat`, opens once #940 is in). Then voice.
 
 ## Target 2 (from 2026-10-15, owner message)
 
@@ -26,8 +26,8 @@ Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workf
 
 - [ ] Merge #892 and #897 (gate), dispatch #892 to approve the synthetic account.
 - [ ] Run L1-L4 5x; fix what fails.
-- [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails.
-- [ ] Chat on Today + decision card (L5) on the coach; follow the chat-first designs when they land.
+- [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails. Script: #939 (open).
+- [ ] Chat on Today + decision card (L5) on the coach; follow the chat-first designs when they land. Backend #940 and editor #941 open; UI on `v3/today-chat`. No chat-first designs in `docs/design/` yet (checked 06:58 UTC).
 - [ ] Voice mode (Deepgram STT, Chatterbox TTS) per `docs/contracts/VOICE.md` (#871).
 - [ ] Prove: every loop 5x in a row after the last merge; sweep clean.
 
@@ -100,6 +100,13 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 20:31 | after #938 (preview `4d7be6a`) | L1-L5 | L1-L4 BLOCKED_VERIFICATION. L5 first FAILED on a 30 s timeout loading `/sign-in` (sandbox network: two checker loads timed out at the same minute, and `/contact` and `/terms` link probes dropped). The three `curl` checks right after returned 200 in under 0.6 s. L5 re-run: BLOCKED_VERIFICATION. `/` and `/sign-in` at 1280, light/dark, en/he: 0 findings on the re-run; the one remaining "broken link" (`/terms`, socket disconnected) returns 200 to `curl` | — |
 | 19:40 | #938 merged | — | squash into `integration` by auto-merge: green required CI, Codex "no major issues" on `fb8823d` | [#938](https://github.com/Levidavidspublic/tempo-rhythm/pull/938) |
 | 19:39 | after #935 (`integration` `36bf34d`, preview still `8d5b55d`: #935 has no app change) | L1-L5 | BLOCKED_VERIFICATION, 0/1 each: no guest or test sign-in on preview | — |
+| 06:31 | #892, #897 | — | Codex P1 on #892 (any write-access user could dispatch) fixed in `4637632`; the same owner-only guard on #897 (`c03ecfb`) | [#892](https://github.com/Levidavidspublic/tempo-rhythm/pull/892), [#897](https://github.com/Levidavidspublic/tempo-rhythm/pull/897) |
+| 06:36-06:56 | #897 | — | Codex P2s: wait for the dispatched commit on preview (`6f5490e`); bound that wait by wall clock (`8e74a0d`, simulated: fails closed before the deadline). CodeRabbit: mail.tm request deadline and GET-only retry (`926ba16`) | [#897](https://github.com/Levidavidspublic/tempo-rhythm/pull/897) |
+| 06:44 | #892 | — | Codex P2 (a 3rd dispatch cancelled a queued 2nd one): one concurrency group per email (`a8e1988`) | [#892](https://github.com/Levidavidspublic/tempo-rhythm/pull/892) |
+| 06:40 | #939 | sweep | opened: signed-in sweep script, all 7 checks pass locally | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
+| 06:54 | #939 | sweep | Codex P2s fixed in `08ea78b`: project Kanban swept; a pending session is BLOCKED_VERIFICATION (reproduced on preview: `/settings/passkeys` renders, `/today` waits, now exit 2); an unreadable state file is BLOCKED_VERIFICATION | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
+| 06:46 | #940 | L5 | opened: coach `decision` proposals from today's open tasks; Save writes task blocks to today's page; Undo takes them off. 2178 tests, all 7 checks pass | [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940) |
+| 07:00 | #941 | L5 | opened: an open page takes in a server-side change when it has no unsaved edits (so Save to today isn't overwritten by the next autosave). 2173 tests, all 7 checks pass | [#941](https://github.com/Levidavidspublic/tempo-rhythm/pull/941) |
 
 ## Blocked
 
@@ -120,6 +127,8 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 - #937 "chore: CodeRabbit advisory config" was opened at 18:47 UTC by the Division6066 account from another session or by hand. Left alone.
 
 ## UNKNOWN
+
+- Voice: the contract (#871) is still a proposal with owner decisions open (region, retention, caps, a provider-side spend limit). Whether `DEEPGRAM_API_KEY` is set on TEST is UNKNOWN; voice is built to stay off without it.
 
 - Signed-in behaviour of every loop on preview (no session).
 - The loop scripts' selectors past sign-in (taken from source, never run signed in).
