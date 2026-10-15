@@ -4,7 +4,12 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** (2026-10-15 07:25 UTC) L3 fix #943 and L4 fix #944 through Codex; full signed-in sweep running; voice mode (backend + web) under checks. L5 waits on #940/#941 and the Today chat PR (`v3/today-chat`).
+**Now working on:** (2026-10-15 07:45 UTC)
+- **Proven 5/5 on preview `dd96d4e`:** L1, L2 and L3.
+- **L4** waits on #944, now in Codex review.
+- **L5** waits on #940, then the Today chat PR.
+- **Sweep:** 432 renders with 4 failing, all on the kanban at 390 px. The fix is `v3/kanban-sr-only`; its checks are running.
+- **Voice:** backend #945 is in Codex review.
 
 ## Target 2 (from 2026-10-15, owner message)
 
@@ -24,9 +29,9 @@ Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workf
 
 ### Plan (target 2)
 
-- [x] Merge #892 (merged 07:00 UTC as `8345b4a`) and dispatch it: the synthetic account is **approved** (run 38695751179, 06:59 UTC, success). #897 queued for merge (07:25).
-- [ ] Run L1-L4 5x; fix what fails. First run (07:01-07:05): L1 4/5 (5th: page load timeout), **L2 5/5 PASS**, L3 0/1 (bug: starter templates "not found" → #943), L4 0/1 (bug: proposal card collapsed to 2 px → #944).
-- [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails. Script: #939 (open).
+- [x] Merge #892 (merged 07:00 UTC as `8345b4a`) and dispatch it: the synthetic account is **approved** (run 38695751179, 06:59 UTC, success). #897 merged (`101b060`), #941 merged (`780414c`), #943 merged (`dd96d4e`).
+- [ ] Run L1-L4 5x; fix what fails. On preview `dd96d4e` (07:31-07:37): **L1 5/5, L2 5/5, L3 5/5 PASS**. L4 0/1: the proposal card collapse, fixed by #944, which is waiting on Codex.
+- [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails. Script: #939, open, in Codex review. Seeded run: 432 renders of 54 routes with 4 failing, all on the project kanban at 390 px (page scrolls sideways, fix `v3/kanban-sr-only`).
 - [ ] Chat on Today + decision card (L5) on the coach; follow the chat-first designs when they land. Backend #940 and editor #941 open; UI on `v3/today-chat`. No chat-first designs in `docs/design/` yet (checked 06:58 UTC).
 - [ ] Voice mode (Deepgram STT, Chatterbox TTS) per `docs/contracts/VOICE.md` (#871).
 - [ ] Prove: every loop 5x in a row after the last merge; sweep clean.
@@ -116,20 +121,27 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 | 07:04, 07:10 | after #892 | L4 | the real coach answered (DeepInfra works on TEST). Run 1: a reply without a proposal. Run 2: the task card rendered **2 px tall** (grid row squeezed: `overflow: hidden` in a full thread), so Accept could not be clicked → **#944** (injected on preview: 2 → 196 px, Accept clickable) | [#944](https://github.com/Levidavidspublic/tempo-rhythm/pull/944) |
 | 07:15 | #940 | L5 | Codex P2s fixed in `2bb7793`: Save only to today's page; closed tasks never crowd the context | [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940) |
 | 07:15 | #939 | sweep | Codex P1 (a protected-preview 401/403 would pass) + 3 P2s (module preview route, `dir` per language, worker count) fixed locally with the session fixes; pushed after the first full sweep | [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
+| 07:19 | after #892 (preview `4d7be6a`) | sweep | first full sweep **PASS**: 384 renders of 48 routes, 0 failing. Six detail routes were not reached (no data yet) | — |
+| 07:27 | #941, #943 merged | — | merge queue (`780414c`, `dd96d4e`): green CI, clean Codex review of the latest commit. Preview on `dd96d4e` at 07:27 | [#941](https://github.com/Levidavidspublic/tempo-rhythm/pull/941), [#943](https://github.com/Levidavidspublic/tempo-rhythm/pull/943) |
+| 07:31-07:32 | after #943 (preview `dd96d4e`) | L1 | **5/5 PASS** in a row, each with the crisis check | screenshots in the run's scratch dir |
+| 07:33-07:34 | after #943 (preview `dd96d4e`) | L3 | **5/5 PASS** in a row (was 0/1: starter template "not found"), each with the crisis check | screenshots in the run's scratch dir |
+| 07:32, 07:36-07:37 | after #943 (preview `dd96d4e`) | L2 | 1st batch: 1/5 then `net::ERR_TIMED_OUT` loading `/today` (sandbox network). Re-run: **5/5 PASS** in a row | screenshots in the run's scratch dir |
+| 07:34 | after #943 (preview `dd96d4e`) | L4 | FAIL 0/1: the coach answered, and the proposal card collapsed to a line (the #944 bug, not merged yet) | screenshots in the run's scratch dir |
+| 07:25-07:31 | after #943 | sweep | seeded data (goal, project, habit, routine, template): **432 renders of 54 routes, 4 failing**. All four are `/projects/<id>/kanban` at 390 px (light/dark, en/he), where the page scrolls sideways ~600 px. No page errors, no "not found" screens, `dir` right in all 216 Hebrew renders | — |
+| 07:40 | kanban | sweep | cause measured on preview: each column count's hidden "cards" label (`.tp-sr-only`, `position: absolute`) has no positioned ancestor, so it sits against the page, outside the board's scroll, at x=994. Reproduced from the app CSS (604 px LTR, 597 px RTL), and `position: relative` on `.tp-kanban` gives 0 in both. Branch `v3/kanban-sr-only` | — |
+| 07:30-07:40 | #940, #942, #944, #939 | — | Codex P2s fixed: #940 Undo removes only the heading right above its blocks (`9066db6`, two new tests that fail on the old code); #942 non-owner runs get their own concurrency group (`f34b285`); #944 canonical stylesheet synced (`40e726a`); #939 P1 (unreached routes passed) + 2 P2s (theme check, unsaved session) fixed (`e857c7f`). Codex review requested on each | [#940](https://github.com/Levidavidspublic/tempo-rhythm/pull/940), [#942](https://github.com/Levidavidspublic/tempo-rhythm/pull/942), [#944](https://github.com/Levidavidspublic/tempo-rhythm/pull/944), [#939](https://github.com/Levidavidspublic/tempo-rhythm/pull/939) |
+| 07:22 | #945 | voice | opened: voice-mode backend (Deepgram token grant, Chatterbox sentences, leases, per-user and global caps). Off until `DEEPGRAM_API_KEY` is set. CI green; Codex review running | [#945](https://github.com/Levidavidspublic/tempo-rhythm/pull/945) |
 
 ## Blocked
 
 | loop | stop code | why | who can unblock |
 |---|---|---|---|
-| L1-L5, crisis | BLOCKED_VERIFICATION | No guest or test sign-in on preview; a new account would also wait for approval | Amit (AT) |
-| L5 / Phase 3 CopilotKit | BLOCKED_USER_CHANGES | CopilotKit's runtime brings forbidden AI SDKs (HARD_RULES §2, §6.1) | Amit (AT) |
+| (none open) | — | Sign-in unblocked 07:00 (synthetic approved account, #892/#897). CopilotKit: owner said don't add it; chat is built on the coach | — |
 
 ## Needs Amit (AT), in order
 
-1. **Pick a preview sign-in for the loops.** Either (a) review and merge #892 and #897 (TEST-only approval dispatch and the synthetic mail.tm acceptance run; they touch `.github/workflows`, so they need your `config` label), or (b) approve a synthetic test account by hand and give its Playwright storage state to the run as `ALPHA_STORAGE_STATE` (a 1Password item name), or (c) decide on a preview-only guest sign-in (a Convex Auth change plus an approval rule for guests; it opens AI spend on TEST to anyone who finds preview, so it's your call).
-2. **CopilotKit:** allow its runtime's SDK dependencies, or drop CopilotKit and build the chat layer on the existing coach (`convex/coach.ts` + `callLLM`).
-3. `DEEPINFRA_API_KEY` on the TEST Convex deployment: still UNKNOWN (L4 and L5 need the model).
-4. Optional: install the Claude GitHub App on the repo so PR events wake the session.
+1. **Voice keys and caps (AT):** set provider-side spend limits on Deepgram and DeepInfra first. Then, if you want voice on preview, set `DEEPGRAM_API_KEY` on the TEST Convex deployment. Until then voice stays off (the Talk button doesn't show).
+2. Optional: install the Claude GitHub App on the repo so PR events wake the session (you said skip for now).
 
 ## Not mine
 
@@ -139,7 +151,5 @@ I ran the design checker's probes (overflow incl. `::before`/`::after`, forbidde
 
 - Voice: the contract (#871) is still a proposal with owner decisions open (region, retention, caps, a provider-side spend limit). Whether `DEEPGRAM_API_KEY` is set on TEST is UNKNOWN; voice is built to stay off without it.
 
-- Signed-in behaviour of every loop on preview (no session).
-- The loop scripts' selectors past sign-in (taken from source, never run signed in).
-- Whether `DEEPINFRA_API_KEY` is set on TEST.
-- Whether the known v3 issues exist in signed-in states (they don't render with mock Convex).
+- Whether `DEEPGRAM_API_KEY` is set on TEST (voice stays off without it).
+- DeepInfra Chatterbox's exact response shape: the backend accepts both `audio/*` and JSON base64.
