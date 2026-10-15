@@ -4,7 +4,32 @@ Branch `run/weekend-alpha` (tracking PR #934, never merged). Started 2026-10-14 
 
 If this session restarts: read this file and continue from the first unchecked item under **Plan**.
 
-**Now working on:** stopped (20:30 UTC). #935, #936 and #938 are merged. Every loop is blocked on a preview sign-in only Amit can provide (see Needs Amit). The final report is on #934.
+**Now working on:** (2026-10-15 06:40 UTC) getting #892 and #897 through Codex and merged, so the synthetic account can be approved. Meanwhile: the signed-in sweep script.
+
+## Target 2 (from 2026-10-15, owner message)
+
+**Usable BETA on preview by Sunday 18 October:** every loop below proven 5 times in a row, plus every signed-in screen clicked through with no page errors at 390 and 1280 px, light and dark, en and he. Run `node e2e/alpha/run.mjs --times 5` after each merge. Same merge gate, stop codes and final report.
+
+Owner answers (2026-10-15):
+1. Sign-in: the synthetic approved account through #892 (approval) and #897 (preview acceptance). No guest sign-in on preview.
+2. CopilotKit: not added. Chat is built on the existing coach. HARD_RULES unchanged.
+3. `DEEPINFRA_API_KEY` is set on the Convex deployment (owner checked by name).
+4. Claude GitHub App: skipped for now.
+5. Also asked: "merge all of the tickets and PRs", add the chat features, "the stuff from Deep Infra", and Deepgram voice mode and voice chat. Read as: merge #892, #897 and this run's PRs through the gate (not the "DO NOT MERGE" PRs, not PRs into `master`, not other tickets' PRs); build chat on the coach; build voice per the voice contract (#871): Deepgram STT, DeepInfra Chatterbox TTS.
+6. Chat-first designs from Open Design will land in `docs/design/`; follow them for the chat screens, keep the v3 identity.
+
+Found at 06:25 UTC: #892 and #897 were still **open**, not merged; neither workflow was on `integration`. With the owner's go-ahead:
+- #892 had an open Codex P1: anyone with write access could dispatch it. I added an owner-only guard (actor and triggering actor = Division6066) to #892 and #897, merged `integration` into both and re-added the `config` label. #897 is marked ready. Codex review requested on both.
+- A disposable `tempo-accept-…` mail.tm account is signed in on preview from this session. The session is in a private scratch file, never committed or printed. It waits for approval through #892.
+
+### Plan (target 2)
+
+- [ ] Merge #892 and #897 (gate), dispatch #892 to approve the synthetic account.
+- [ ] Run L1-L4 5x; fix what fails.
+- [ ] Signed-in sweep: every app route at 390/1280, light/dark, en/he, no page errors; fix what fails.
+- [ ] Chat on Today + decision card (L5) on the coach; follow the chat-first designs when they land.
+- [ ] Voice mode (Deepgram STT, Chatterbox TTS) per `docs/contracts/VOICE.md` (#871).
+- [ ] Prove: every loop 5x in a row after the last merge; sweep clean.
 
 ## Loops (EXTRAPOLATED)
 
