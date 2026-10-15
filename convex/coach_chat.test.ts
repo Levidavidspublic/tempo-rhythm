@@ -647,6 +647,33 @@ describe("a decision: the coach orders today's tasks, and saving it writes to to
     }
   });
 
+  test("a step the model shortened or re-cased is stored with the person's own task title", async () => {
+    const world = makeWorld();
+    await seedTask(world, { title: "Reply to Dana about Friday's draft", dueAt: DAY_START + 9 * 3_600_000 });
+    await seedTask(world, { title: "Draft the report", dueAt: DAY_START + 10 * 3_600_000 });
+    await seedTask(world, { title: "Laundry: towels", dueAt: DAY_START + 11 * 3_600_000 });
+    await seedTask(world, { title: "Laundry: sheets", dueAt: DAY_START + 12 * 3_600_000 });
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "What order should I do these in?");
+    const steps = [
+      { title: "Reply to Dana", minutes: 10 },
+      { title: "draft the report.", minutes: 45 },
+      { title: "Laundry", minutes: 20 },
+      { title: "Stretch", minutes: 5 },
+    ];
+    const model = fakeModel(JSON.stringify({ reply: "Dana first.", proposal: { kind: "decision", steps } }));
+    await coach.runCoachReply(world.actionAs(A), { conversationId, dayStartMs: DAY_START, dayEndMs: DAY_END }, model.call);
+    const reply = messages(world, conversationId).find((m) => m.role === "assistant");
+    const stored = coach.storedProposal(reply?.toolCalls);
+    expect(stored?.kind === "decision" ? stored.steps.map((step) => step.title) : null).toEqual([
+      "Reply to Dana about Friday's draft",
+      "Draft the report",
+      // Two tasks begin with "Laundry": which one is meant can't be told, so the step stays as written.
+      "Laundry",
+      "Stretch",
+    ]);
+  });
+
   test("closed tasks never crowd open ones out of the cap", async () => {
     const world = makeWorld();
     for (let i = 0; i < 120; i += 1) {

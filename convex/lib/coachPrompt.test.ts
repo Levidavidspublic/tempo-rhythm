@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { COACH_LIMITS, buildCoachMessages, parseCoachReply, readProposal, truncate } from "./coachPrompt";
+import { COACH_LIMITS, alignDecisionSteps, buildCoachMessages, parseCoachReply, readProposal, truncate } from "./coachPrompt";
 
 const META =
   '```json tempo\n{"id":"blk_01JQ8Z3K4M5N6P7Q8R9S0T1V2X","v":1,"type":"page-meta","data":{"pageType":"daily","date":"2026-10-13","tags":[]}}\n```\n';
@@ -71,6 +71,34 @@ describe("buildCoachMessages", () => {
     const messages = buildCoachMessages({ dial: 5, history: [], page: { title: "", text: "y".repeat(50_000) } });
     expect(messages[1]?.content).toContain('title="Untitled"');
     expect(messages[1]?.content.length).toBeLessThan(COACH_LIMITS.pageChars + 200);
+  });
+});
+
+describe("alignDecisionSteps", () => {
+  const tasks = [
+    { title: "Alpha L5 bill 20261015094848-x1y2", minutes: null },
+    { title: "Call the  bank", minutes: 10 },
+    { title: "Laundry: towels", minutes: null },
+    { title: "Laundry: sheets", minutes: null },
+  ];
+  const decision = (titles: string[]) => ({ kind: "decision" as const, steps: titles.map((title) => ({ title, minutes: 10 })) });
+
+  test("a step that is a task's title, or the start of exactly one, takes the task's title", () => {
+    const aligned = alignDecisionSteps(decision(["Alpha L5 bill", "call the bank!", "Laundry", "Go for a walk", "Al"]), tasks);
+    expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual([
+      "Alpha L5 bill 20261015094848-x1y2",
+      "Call the bank",
+      "Laundry",
+      "Go for a walk",
+      "Al",
+    ]);
+  });
+
+  test("only decisions change, and a step keeps its minutes and reason", () => {
+    const task = { kind: "task" as const, title: "Alpha L5 bill", minutes: 5, when: "today" as const };
+    expect(alignDecisionSteps(task, tasks)).toBe(task);
+    const aligned = alignDecisionSteps({ kind: "decision", steps: [{ title: "Alpha L5 bill", minutes: 15, reason: "Quick" }] }, tasks);
+    expect(aligned).toEqual({ kind: "decision", steps: [{ title: "Alpha L5 bill 20261015094848-x1y2", minutes: 15, reason: "Quick" }] });
   });
 });
 

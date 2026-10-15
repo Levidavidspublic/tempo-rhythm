@@ -117,6 +117,32 @@ export function buildCoachMessages(args: {
   return messages;
 }
 
+/** A title as compared with another: lower case, single spaces, no closing punctuation. */
+function titleKey(title: string): string {
+  return title.toLowerCase().replace(/\s+/g, " ").replace(/[\s.!?,;:]+$/, "").trim();
+}
+
+/**
+ * A decision's steps with the person's own task titles. Asked to copy a title exactly, a model
+ * still sometimes shortens or re-cases it ("Reply to Dana" for "Reply to Dana about Friday's
+ * draft"), and the step would then be saved as a second task under another name. A step becomes
+ * the title of one of today's open tasks when it is the same title, or when exactly one task's
+ * title begins with it; anything else is left as the model wrote it.
+ */
+export function alignDecisionSteps(proposal: CoachProposal, tasks: readonly CoachTaskContext[]): CoachProposal {
+  if (proposal.kind !== "decision" || tasks.length === 0) return proposal;
+  const titles = tasks.map((task) => task.title.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const steps = proposal.steps.map((step) => {
+    const key = titleKey(step.title);
+    if (key.length < 3) return step;
+    const same = titles.find((title) => titleKey(title) === key);
+    if (same) return { ...step, title: same };
+    const longer = titles.filter((title) => titleKey(title).startsWith(`${key} `));
+    return longer.length === 1 && longer[0] ? { ...step, title: truncate(longer[0], COACH_LIMITS.titleChars) } : step;
+  });
+  return { ...proposal, steps };
+}
+
 /** Markdown only: Tempo blocks in a proposed body would claim to be page meta or tasks. */
 function plainMarkdown(body: string): string {
   return parseTempoBlocks(body)
