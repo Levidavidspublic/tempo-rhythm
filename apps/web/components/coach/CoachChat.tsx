@@ -42,6 +42,12 @@ const MAX_MESSAGE_CHARS = 4000;
 const TODAY_MESSAGES = 6;
 
 /**
+ * A first conversation being created, per person. Today's chat and the coach panel can be on
+ * screen together; both wait on one create instead of each making its own thread.
+ */
+const creating = new Map<string, Promise<Id<"conversations">>>();
+
+/**
  * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
  * classes. Used by the /coach page, by the coach panel beside any page, and inline on Today; the
  * panel and Today pass the open page's id so the coach reads it. Every reply also sends the local
@@ -67,6 +73,8 @@ export function CoachConversation({
   const flushPage = useFlushCoachPage();
   const { guard } = useCrisisGuard();
   const bounds = useLocalDayBounds();
+  // Today's chat answers with today's page as context: it waits until that page is on screen.
+  const waitingForPage = variant === "today" && !pageId;
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
   const [input, setInput] = useState("");
@@ -76,7 +84,6 @@ export function CoachConversation({
   const [replying, setReplying] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [pageUnsaved, setPageUnsaved] = useState(false);
-  const creatingRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -88,13 +95,25 @@ export function CoachConversation({
       setConversationId(latest._id);
       return;
     }
-    if (creatingRef.current) return;
-    creatingRef.current = true;
-    void createConversation({}).then((id) => {
-      setConversationId(id);
-      creatingRef.current = false;
-    });
-  }, [isAuthenticated, conversations, conversationId, createConversation]);
+    if (!profile) return;
+    let pending = creating.get(profile._id);
+    if (!pending) {
+      pending = createConversation({});
+      creating.set(profile._id, pending);
+      // A failed create can be tried again; a made one stays shared until the list shows it.
+      pending.catch(() => creating.delete(profile._id));
+    }
+    let live = true;
+    void pending.then(
+      (id) => {
+        if (live) setConversationId(id);
+      },
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [isAuthenticated, profile, conversations, conversationId, createConversation]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -145,7 +164,7 @@ export function CoachConversation({
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || !conversationId || isSending || replying) return;
+    if (!text || !conversationId || isSending || replying || waitingForPage) return;
     setInput("");
     setIsSending(true);
     try {
@@ -259,7 +278,7 @@ export function CoachConversation({
             }}
             placeholder={variant === "today" ? t("today.chat.placeholder") : t("coachChat.placeholder")}
             maxLength={MAX_MESSAGE_CHARS}
-            disabled={!conversationId || busy}
+            disabled={!conversationId || busy || waitingForPage}
           />
           <div className="tp-composer__bar">
             <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
@@ -267,7 +286,7 @@ export function CoachConversation({
               className="tp-btn tp-btn--primary tp-btn--sm"
               type="submit"
               style={{ marginInlineStart: "auto" }}
-              disabled={!conversationId || busy || !input.trim()}
+              disabled={!conversationId || busy || waitingForPage || !input.trim()}
             >
               <TpIcon name="send" size="sm" />
               <span>{t("coachChat.send")}</span>
