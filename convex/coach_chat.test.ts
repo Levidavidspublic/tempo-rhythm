@@ -500,6 +500,22 @@ describe("proposals change nothing until Accept, and Accept has a 5-minute Undo"
     expect(coach.storedProposal(world.row(messageId)?.toolCalls)?.status).toBe("undone");
   });
 
+  test("the next turn tells the model what happened to an earlier card: here, added then undone", async () => {
+    const world = makeWorld();
+    const { conversationId, messageId } = await proposalTurn(world, { kind: "task", title: "Call the bank", minutes: 10, when: "today" });
+    await run(coach.acceptProposal, world.as(A), { messageId, dueTodayAt: Date.now() + 60_000 });
+    await run(coach.undoProposal, world.as(A), { messageId });
+    await say(world, conversationId, "Plan my afternoon");
+    const model = fakeModel('{"reply":"Start with the bank call.","proposal":null}');
+    await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call);
+    const earlier = model.calls[0]?.messages.find((m) => m.role === "assistant")?.content ?? "";
+    expect(earlier).toBe(
+      'Here is what I would add.\n[Card: a task "Call the bank" for today. They added it, then undid it; nothing is left of it.]',
+    );
+    // The stored message itself is unchanged: the note is only for the model.
+    expect(messages(world, conversationId).find((m) => m._id === messageId)?.content).toBe("Here is what I would add.");
+  });
+
   test("a 'later' task, or a due time far from now, has no due date", async () => {
     const world = makeWorld();
     const later = await proposalTurn(world, { kind: "task", title: "Sort photos", minutes: 30, when: "later" });
