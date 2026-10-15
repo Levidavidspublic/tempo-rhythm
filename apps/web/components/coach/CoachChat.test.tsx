@@ -134,7 +134,7 @@ describe("ChatProposal", () => {
     expect(html).not.toContain(">Edit<");
   });
 
-  test("a saved decision says so, links to Today and offers Undo while it lasts; untitled ones get a default title", () => {
+  test("a saved decision says so, links to the page that got the steps and offers Undo while it lasts; untitled ones get a default title", () => {
     const html = markup(
       createElement(ChatProposal, {
         messageId: "messages:4" as never,
@@ -143,7 +143,7 @@ describe("ChatProposal", () => {
     );
     expect(html).toContain("An order for today");
     expect(html).toContain("Saved to today. You can undo this for 5 minutes.");
-    expect(html).toContain('href="/today"');
+    expect(html).toContain('href="/notes/notes:1"');
     expect(html).toContain(">Undo<");
     expect(html).not.toContain("Save to today<");
   });

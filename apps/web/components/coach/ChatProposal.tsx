@@ -197,7 +197,8 @@ function DecisionProposal({ messageId, proposal }: { messageId: Id<"messages">; 
                 : t("proposal.rejected")}
           </span>
           {proposal.status === "accepted" ? (
-            <Link className="tp-btn tp-btn--ghost tp-btn--sm" href="/today">
+            // The page that got the steps: on a later day /today is another page.
+            <Link className="tp-btn tp-btn--ghost tp-btn--sm" href={proposal.createdId ? `/notes/${proposal.createdId}` : "/today"}>
               {t("proposal.open")}
             </Link>
           ) : null}
