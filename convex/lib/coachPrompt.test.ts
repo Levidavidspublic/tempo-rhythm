@@ -91,10 +91,26 @@ describe("alignDecisionSteps", () => {
     const aligned = alignDecisionSteps(decision(["Alpha L5 bill", "call the bank!", "Laundry", "Go for a walk", "Al"]), tasks);
     expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual([
       "Alpha L5 bill 20261015094848-x1y2",
-      "Call the bank",
+      "Call the  bank",
       "Laundry",
       "Go for a walk",
       "Al",
+    ]);
+  });
+
+  test("closing punctuation in any script is ignored, and the task's title is kept as stored", () => {
+    const one = [{ title: "Call the  bank", minutes: null }];
+    const aligned = alignDecisionSteps(decision(["Call the bank。", "call the bank!”"]), one);
+    expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual(["Call the  bank", "Call the  bank"]);
+  });
+
+  test("when two tasks differ only in case or punctuation, only an exact title is matched", () => {
+    const two = [{ title: "Email Dana", minutes: null }, { title: "email dana.", minutes: null }];
+    const aligned = alignDecisionSteps(decision(["EMAIL DANA", "email dana.", "Email Dana"]), two);
+    expect(aligned.kind === "decision" ? aligned.steps.map((step) => step.title) : null).toEqual([
+      "EMAIL DANA",
+      "email dana.",
+      "Email Dana",
     ]);
   });
 

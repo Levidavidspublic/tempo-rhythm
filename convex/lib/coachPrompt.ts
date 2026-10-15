@@ -152,11 +152,11 @@ export function buildCoachMessages(args: {
 }
 
 /**
- * A title as compared with another: lower case, single spaces, no closing punctuation, and no
- * closing "…" (titles over the limit reach the model cut short with one).
+ * A title as compared with another: lower case, single spaces, and no closing punctuation in any
+ * script ("。", "”", and the "…" that titles over the limit reach the model cut short with).
  */
 function titleKey(title: string): string {
-  return title.toLowerCase().replace(/\s+/g, " ").replace(/[\s.!?,;:…]+$/, "").trim();
+  return title.toLowerCase().replace(/\s+/g, " ").replace(/[\s\p{P}]+$/u, "").trim();
 }
 
 /** True when `title` begins with `key` as whole words: what follows is a space or punctuation. */
@@ -170,19 +170,24 @@ function startsWithWords(title: string, key: string): boolean {
  * draft"), and the step would then be saved as a second task under another name. A step becomes
  * the title of one of today's open tasks when it is the same title, or when exactly one task's
  * title begins with it as whole words ("Laundry" for "Laundry: towels"); anything else is left as
- * the model wrote it.
+ * the model wrote it. A step takes the task's title exactly as stored, spacing included; when two
+ * tasks differ only in case or punctuation, only an exact match counts.
  */
 export function alignDecisionSteps(proposal: CoachProposal, tasks: readonly CoachTaskContext[]): CoachProposal {
   if (proposal.kind !== "decision" || tasks.length === 0) return proposal;
-  const titles = tasks.map((task) => task.title.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const titles = tasks.map((task) => task.title).filter((title) => title.trim().length > 0);
   const steps = proposal.steps.map((step) => {
     const key = titleKey(step.title);
     if (key.length < 3) return step;
     // A title cut short with "…" came from a longer one and can end mid-word: it matches only a
     // task whose title goes on past it, never one that merely equals the cut part.
     const cut = /…\s*$/.test(step.title);
-    const same = cut ? undefined : titles.find((title) => titleKey(title) === key);
-    if (same) return { ...step, title: same };
+    if (!cut) {
+      if (titles.includes(step.title)) return step;
+      const same = titles.filter((title) => titleKey(title) === key);
+      if (same.length === 1 && same[0]) return { ...step, title: same[0] };
+      if (same.length > 1) return step;
+    }
     const longer = titles.filter((title) => {
       const full = titleKey(title);
       return cut ? full.length > key.length && full.startsWith(key) : startsWithWords(full, key);
