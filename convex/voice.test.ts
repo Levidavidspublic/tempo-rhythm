@@ -395,9 +395,11 @@ describe("grant: a 30-second Deepgram token per lease", () => {
     await expect(run(voice.grant, world.actionAs(A), { sessionId: second.sessionId })).rejects.toThrow("ended");
   });
 
-  test("a failed mint gives its grant back, so retries don't use up the lease", async () => {
+  test("a failed mint gives its grant back, so retries don't use up the lease or keep it alive", async () => {
     const world = makeWorld();
     const { sessionId } = await startSession(world, await conversation(world));
+    const renewedAt = Date.now() - 20_000;
+    await world.db.patch(sessionId, { lastRenewalAt: renewedAt });
     const failing = fakeFetch(() => new Response("upstream down", { status: 503 }));
     try {
       for (let i = 0; i < VOICE_LIMITS.grantsPerLease + 1; i += 1) {
@@ -407,6 +409,8 @@ describe("grant: a 30-second Deepgram token per lease", () => {
       failing.restore();
     }
     expect((world.row(sessionId) as Row).grants).toBe(0);
+    // Failed grants never count as a heartbeat: the lease isn't kept alive by retries.
+    expect((world.row(sessionId) as Row).lastRenewalAt).toBe(renewedAt);
     const net = fakeFetch(() => Response.json({ access_token: "jwt-for-the-browser-0123456789" }));
     try {
       expect((await run(voice.grant, world.actionAs(A), { sessionId })).token).toBe("jwt-for-the-browser-0123456789");

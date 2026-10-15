@@ -340,7 +340,8 @@ export const admitGrant = internalMutation({
     if (lease.grants >= VOICE_LIMITS.grantsPerLease) throw voiceError("voice_session_ended");
     const lane = laneFor(lease.language);
     if (!lane) throw voiceError("voice_language");
-    await ctx.db.patch(lease._id, { grants: lease.grants + 1, lastRenewalAt: now, updatedAt: now });
+    // A grant is not a heartbeat: only `renew` keeps a lease alive, so failed mints can't.
+    await ctx.db.patch(lease._id, { grants: lease.grants + 1, updatedAt: now });
     return { url: lane.url };
   },
 });
