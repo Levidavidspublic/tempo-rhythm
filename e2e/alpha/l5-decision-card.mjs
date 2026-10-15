@@ -5,7 +5,27 @@
 // "Save to today" button; after saving, today's daily page lists the same titles in the same order.
 import { BASE_URL, assertSignedIn, completeAlphaTasks, expectVisible, fail, marker, runLoop, sendCoachMessage } from "./lib.mjs";
 
+/**
+ * Completes open tasks earlier L5 runs seeded ("Alpha L5 …"), wherever they are. Today's list shows
+ * only 3 open tasks, so with other open tasks ahead of them, seeds there can't be reached; the
+ * task list (/tasks) shows every task. Other tasks are left alone.
+ */
+async function completeOwnSeeds(page) {
+  await page.goto(`${BASE_URL}/tasks`, { waitUntil: "domcontentloaded" });
+  await assertSignedIn(page);
+  await expectVisible(page.getByRole("heading", { name: "Inbox" }), "the task list", 45_000);
+  // The heading comes before the tasks: wait for the first row (the shared account always has some).
+  await page.getByRole("button", { name: /^Mark .* (complete|not done)$/ }).first().waitFor({ timeout: 30_000 }).catch(() => {});
+  const open = page.getByRole("button", { name: /^Mark Alpha L5 .* complete$/ });
+  for (let i = 0; i < 60 && (await open.count()) > 0; i += 1) {
+    const name = await open.first().getAttribute("aria-label");
+    await open.first().click();
+    await page.getByRole("button", { name, exact: true }).first().waitFor({ state: "detached", timeout: 15_000 }).catch(() => {});
+  }
+}
+
 await runLoop("l5", "Decision card on Today, saved to today's page", async (page, shot) => {
+  await completeOwnSeeds(page);
   await page.goto(`${BASE_URL}/today`, { waitUntil: "domcontentloaded" });
   await assertSignedIn(page);
   const quickAdd = page.getByLabel("Add something small for today");
