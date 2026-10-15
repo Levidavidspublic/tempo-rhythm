@@ -54,15 +54,29 @@ await runLoop("l5", "Decision card on Today, saved to today's page", async (page
   const day = page.getByTestId("today-daily-page");
   await expectVisible(day, "today's daily page", 45_000);
   // On the page a task title is an <input> (editable in place), so read its value, not its text.
-  const onPage = await day
-    .locator(".tp-task-row__title")
-    .evaluateAll((els) => els.map((el) => (el instanceof HTMLInputElement ? el.value : (el.textContent ?? "")).trim()));
-  let at = -1;
-  for (const title of titles) {
-    const next = onPage.indexOf(title, at + 1);
-    if (next < 0) throw fail(`today's page is missing the decision step "${title}"`);
-    at = next;
-  }
+  const readRows = () =>
+    day
+      .locator(".tp-task-row__title")
+      .evaluateAll((els) => els.map((el) => (el instanceof HTMLInputElement ? el.value : (el.textContent ?? "")).trim()));
+  // Save adds the steps at the end of today's page, as its newest rows. The page grows run by run,
+  // and its editor only draws the lines near the screen, so read it from its end, and match the
+  // steps from the last row back (an earlier run can have left rows with the same titles).
+  const missingStep = (rows) => {
+    let at = rows.length;
+    for (const title of [...titles].reverse()) {
+      at = at > 0 ? rows.lastIndexOf(title, at - 1) : -1;
+      if (at < 0) return title;
+    }
+    return null;
+  };
+  let missing = null;
+  const deadline = Date.now() + 20_000;
+  do {
+    await day.locator(".cm-content").evaluate((el) => el.scrollIntoView({ block: "end" }));
+    await page.waitForTimeout(500);
+    missing = missingStep(await readRows());
+  } while (missing !== null && Date.now() < deadline);
+  if (missing !== null) throw fail(`today's page is missing the decision step "${missing}"`);
   await shot(page, "today-page");
   await completeAlphaTasks(page);
 });
