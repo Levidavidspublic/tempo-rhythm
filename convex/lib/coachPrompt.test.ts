@@ -11,6 +11,8 @@ describe("buildCoachMessages", () => {
     expect(system?.content).toContain("Current accountability dial: 7 / 10. Match tone accordingly.");
     expect(system?.content).toContain('{"reply": "what you say", "proposal": null}');
     expect(system?.content).toContain("Reply in the language the person writes in.");
+    // Asked to plan or suggest, the coach proposes now instead of asking first (alpha run, L4).
+    expect(system?.content).toContain("make a concrete proposal in this reply");
   });
 
   test("the open page comes before the thread, marked as the person's material", () => {
