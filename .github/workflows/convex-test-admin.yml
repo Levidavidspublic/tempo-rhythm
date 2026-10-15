@@ -34,7 +34,8 @@
 #     survive a redaction filter are printed.
 #   - Concurrency: one run at a time per email (cancel-in-progress: false). GitHub keeps only the newest
 #     pending run of a group, so a group per email means a queued request is only ever replaced by a newer
-#     request for the same account, never dropped for another one (Codex P2 on #892).
+#     request for the same account, never dropped for another one (Codex P2 on #892). The group also
+#     names the triggering actor, so a run by anyone else can't take the owner's pending slot.
 name: convex-test-admin
 
 on:
@@ -57,7 +58,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: convex-test-admin-${{ inputs.email }}
+  # The triggering actor is part of the group: workflow concurrency applies before the job's actor
+  # check, so a run by anyone else must never share (and replace) the owner's pending run.
+  group: convex-test-admin-${{ github.triggering_actor }}-${{ inputs.email }}
   cancel-in-progress: false
 
 env:
