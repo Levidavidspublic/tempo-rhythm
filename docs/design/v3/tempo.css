@@ -370,7 +370,9 @@ svg.tp-icon--sm { width: 16px; height: 16px; }
 .tp-coach-panel__title { flex: 1 1 0; min-width: 0; display: grid; }
 .tp-coach-panel__title strong { font-family: var(--tp-font-serif); font-size: var(--tp-text-lg); font-weight: 500; }
 .tp-coach-panel__title span { font-size: var(--tp-text-xs); color: var(--tp-ink-muted); }
-.tp-coach-thread { overflow-y: auto; overscroll-behavior: contain; padding: var(--tp-space-5); display: grid; align-content: start; gap: var(--tp-space-4); }
+/* Rows keep their content height: a long thread scrolls instead of squeezing an overflow-hidden
+   ProposalCard down to its borders (a grid item with overflow: hidden has no automatic minimum). */
+.tp-coach-thread { overflow-y: auto; overscroll-behavior: contain; padding: var(--tp-space-5); display: grid; align-content: start; grid-auto-rows: max-content; gap: var(--tp-space-4); }
 
 .tp-msg { display: grid; gap: var(--tp-space-1); max-width: 100%; }
 .tp-msg__who { font-size: var(--tp-text-xs); font-weight: 600; color: var(--tp-ink-muted); }
