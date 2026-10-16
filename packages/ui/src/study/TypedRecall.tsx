@@ -38,14 +38,24 @@ export function recallKeyAction(
 
 type RecallKeyEvent = {
   key: string;
+  /** 229 while an input method (Japanese, Chinese, Korean…) is composing. */
+  keyCode?: number;
   preventDefault: () => void;
   nativeEvent?: { isComposing?: boolean };
 };
 
+/**
+ * Whether a key belongs to an input method's composition. Safari sends the Enter that ends one
+ * with `isComposing` false but `keyCode` 229, so either counts.
+ */
+function isComposingKey(event: RecallKeyEvent): boolean {
+  return event.nativeEvent?.isComposing === true || event.keyCode === 229;
+}
+
 /** The answer field's keydown handler. Returns the action it took, so a host can move focus. */
 export function recallKeyDown(value: string, act: (action: RecallKeyAction) => void) {
   return (event: RecallKeyEvent): RecallKeyAction | null => {
-    const action = recallKeyAction(event.key, value, event.nativeEvent?.isComposing === true);
+    const action = recallKeyAction(event.key, value, isComposingKey(event));
     if (!action) return null;
     event.preventDefault();
     act(action);

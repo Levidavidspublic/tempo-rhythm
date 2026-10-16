@@ -81,6 +81,23 @@ describe("recall keys", () => {
   });
 });
 
+describe("recall keys in Safari's IME", () => {
+  test("the Enter or Escape that ends a composition (keyCode 229, isComposing false) is left alone", () => {
+    const taken: string[] = [];
+    const take = (action: string) => taken.push(action);
+    const enter = keyEvent("Enter", { keyCode: 229, nativeEvent: { isComposing: false } });
+    expect(recallKeyDown("日本", take)(enter)).toBeNull();
+    expect(enter.preventDefault).not.toHaveBeenCalled();
+    const cancel = keyEvent("Escape", { keyCode: 229, nativeEvent: { isComposing: false } });
+    expect(recallKeyDown("日本", take)(cancel)).toBeNull();
+    expect(taken).toEqual([]);
+    const after = keyEvent("Enter", { keyCode: 13, nativeEvent: { isComposing: false } });
+    expect(recallKeyDown("日本", take)(after)).toBe("check");
+    expect(after.preventDefault).toHaveBeenCalledTimes(1);
+    expect(taken).toEqual(["check"]);
+  });
+});
+
 describe("RecallVerdict", () => {
   test.each([
     ["matches", "Matches"],
