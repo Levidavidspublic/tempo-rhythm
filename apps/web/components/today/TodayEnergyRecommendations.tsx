@@ -206,15 +206,16 @@ export function EnergySuggestions({
           className="rounded-2xl border border-border/80 bg-background/70 px-4 py-4"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="font-medium text-foreground" dir="auto">
+            {/* At least 12rem for the words: on a phone the buttons wrap below them instead of squeezing them. */}
+            <div className="min-w-48 flex-1">
+              <p className="font-medium text-foreground wrap-anywhere" dir="auto">
                 {task.title}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {t(exactMatch ? EXACT_REASON[energy] : NEAR_REASON[energy])}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <button
                 type="button"
                 disabled={pendingId === task.id}
