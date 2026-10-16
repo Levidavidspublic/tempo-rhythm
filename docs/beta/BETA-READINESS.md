@@ -200,7 +200,7 @@ Before clicking:
 - Web search with a real Mistral key (no key here, and none should be used).
 - Whether amit@tempoflow.app is read.
 - How the merged beta behaves on preview: proven per PR and as a combined local build, but not seen on preview, because nothing is merged yet.
-- Two wave-6 cases seen only in unit tests, not in a browser: /tracking with zero habits (#1071; no test account has zero habits), and the sign-out step of #1073 (signing the test account out would end the session these proofs use). #1073's browser proof covers the other half: kept tab state survives reloads and page changes while signed in.
+- /tracking with zero habits (#1071) is seen only in its unit tests. No test account has zero habits, and habits can only be deleted, not hidden and brought back. (#1073's sign-out step, UNKNOWN earlier, was walked at 18:37: before, signing out left the kept dump and task draft in the tab; after, they are cleared.)
 - A native Hebrew read of all new copy.
 
 ## Evidence in this folder
