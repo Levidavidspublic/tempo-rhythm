@@ -321,6 +321,7 @@ function LoadedSet({
           pageTitle={note.title}
           state={edit}
           currentVersion={version}
+          online={online}
           t={t}
           onSave={saveEdit}
           onCancel={cancelEdit}

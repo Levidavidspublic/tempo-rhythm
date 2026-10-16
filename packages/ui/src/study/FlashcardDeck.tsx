@@ -22,7 +22,7 @@ import { RecallField, type RecallLabels, RecallVerdict, recallKeyDown } from "./
  *
  * Typed mode (`typed`, optional): on the front, a labelled "Your answer" field and Check take the
  * place of Show the back (Enter checks, Escape clears). The back then shows what was typed with
- * "Matches" / "Close" / "Different" from `compareRecall`. Moving to another card clears the answer.
+ * "Matches" / "Almost" / "Different" from `compareRecall`. Moving to another card clears the answer.
  */
 
 export type FlashcardDeckLabels = {

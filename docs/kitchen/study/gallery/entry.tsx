@@ -555,7 +555,7 @@ const VIEWS: Record<string, () => ReactNode> = {
     steps(click('[data-action="review-reveal"]'), click('[data-action="review-grade"][data-grade="good"]'));
     return <ReviewSession />;
   },
-  // Typed recall: "Type answers" on, an answer half typed; then a near miss checked ("Close",
+  // Typed recall: "Type answers" on, an answer half typed; then a near miss checked ("Almost",
   // with Hard marked as suggested). Fictional answers.
   "study-review-typed": () => {
     steps(click('[data-component="TypeAnswersToggle"] [role="switch"]'), fill('[data-action="recall-input"]', "Cell division that makes two"));
