@@ -91,6 +91,36 @@ describe("plans.createFromPreview", () => {
   });
 });
 
+describe("plans.createFromPreview across a daylight-saving change", () => {
+  test("a session's own startAt wins when it is within a DST shift of the offset time", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A);
+    // Israel leaves summer time on 2026-10-25: 09:00 local on the 27th is 07:00 UTC, not 06:00.
+    const after = Date.UTC(2026, 9, 27, 7, 0);
+    const result = await run(
+      plans.createFromPreview,
+      ctx,
+      preview({ sessions: [session({ date: "2026-10-27", startAt: after })] }),
+    );
+    const plan = await ctx.db.get(result.planId);
+    const task = await ctx.db.get(plan.taskIds[0]);
+    expect(task.dueAt).toBe(after);
+  });
+
+  test("a startAt far from the session's date is ignored", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A);
+    const result = await run(
+      plans.createFromPreview,
+      ctx,
+      preview({ sessions: [session({ startAt: Date.UTC(2027, 0, 1) })] }),
+    );
+    const plan = await ctx.db.get(result.planId);
+    const task = await ctx.db.get(plan.taskIds[0]);
+    expect(task.dueAt).toBe(Date.UTC(2026, 9, 20, 6, 0));
+  });
+});
+
 describe("plans.undoCreate", () => {
   test("soft-deletes the plan and its tasks inside the 5 minutes", async () => {
     setSystemTime(T0);

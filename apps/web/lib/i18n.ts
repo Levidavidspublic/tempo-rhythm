@@ -14,6 +14,7 @@ import * as settingsCopy from "./i18n-groups/settings";
 import * as youCopy from "./i18n-groups/you";
 import * as memoryCopy from "./i18n-groups/memory";
 import * as ingestCopy from "./i18n-groups/ingest";
+import * as planCopy from "./i18n-groups/plan";
 
 export const LANG_STORAGE_KEY = "tempo-lang";
 
@@ -528,6 +529,7 @@ const en = {
   ...youCopy.en,
   ...memoryCopy.en,
   ...ingestCopy.en,
+  ...planCopy.en,
   ...settingsCopy.en,
   ...extrasCopy.en,
 } as const;
@@ -1025,6 +1027,7 @@ const he: Record<MessageKey, string> = {
   ...youCopy.he,
   ...memoryCopy.he,
   ...ingestCopy.he,
+  ...planCopy.he,
   ...settingsCopy.he,
   ...extrasCopy.he,
 };

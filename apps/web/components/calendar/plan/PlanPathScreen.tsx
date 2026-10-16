@@ -77,11 +77,11 @@ export function PlanPathScreen() {
           title: s.label,
           date: s.date,
           startMinute: s.startMinute,
+          // Each session's own local start, so a daylight-saving change in the plan is honoured.
+          startAt: localStartMs(s.date, s.startMinute),
           minutes: s.minutes,
           kind: s.kind,
         })),
-        // EXTRAPOLATED: today's offset is used for every session, so a plan that crosses a
-        // daylight-saving change lands an hour off after the change.
         timezoneOffsetMinutes: new Date().getTimezoneOffset(),
       });
       const created = result.planId;
@@ -162,4 +162,10 @@ export function PlanPathScreen() {
       {toast ? <UndoToast onClose={closeToast} toast={toast} /> : null}
     </div>
   );
+}
+
+/** Unix ms for a local `YYYY-MM-DD` date and clock minute, in this browser's time zone. */
+function localStartMs(date: string, startMinute: number): number {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1, 0, startMinute).getTime();
 }

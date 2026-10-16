@@ -34,6 +34,12 @@ const sessionValidator = v.object({
   date: v.string(),
   /** Local clock minute the session starts, 0–1439. */
   startMinute: v.number(),
+  /**
+   * The session's start as Unix ms, worked out in the browser for that date, so a plan that
+   * crosses a daylight-saving change keeps each session at its local clock time. Optional; without
+   * it the start comes from `timezoneOffsetMinutes`.
+   */
+  startAt: v.optional(v.number()),
   minutes: v.number(),
   kind: sessionKindValidator,
 });
@@ -76,6 +82,26 @@ export function localStartToUtcMs(
 ): number {
   const { year, month, day } = parseLocalDate(date);
   return Date.UTC(year, month - 1, day) + (startMinute + timezoneOffsetMinutes) * 60_000;
+}
+
+/** A daylight-saving shift moves a local time by at most this much against today's offset. */
+const MAX_DST_SHIFT_MS = 2 * 60 * 60_000;
+
+/**
+ * The session's start: the browser's own `startAt` when it is within a DST shift of the time the
+ * offset gives (so a wrong or hostile value can't move a session to another day), else the
+ * offset-based time.
+ */
+function sessionStart(
+  session: { date: string; startMinute: number; startAt?: number },
+  offset: number,
+): number {
+  const fromOffset = localStartToUtcMs(session.date, session.startMinute, offset);
+  const startAt = session.startAt;
+  if (startAt !== undefined && Number.isFinite(startAt) && Math.abs(startAt - fromOffset) <= MAX_DST_SHIFT_MS) {
+    return startAt;
+  }
+  return fromOffset;
 }
 
 function cleanTitle(raw: string, what: string): string {
@@ -143,7 +169,7 @@ export const createFromPreview = mutation({
           flexibility: "elastic",
           timeEstimate: Math.round(session.minutes * 60_000),
           projectName: title,
-          dueAt: localStartToUtcMs(session.date, session.startMinute, offset),
+          dueAt: sessionStart(session, offset),
         }),
       );
     }
