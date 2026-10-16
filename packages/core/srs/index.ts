@@ -11,4 +11,5 @@ export * from "./grading";
 export * from "./ids";
 export * from "./plugins";
 export * from "./queue";
+export * from "./recall";
 export * from "./sm2";
