@@ -183,3 +183,48 @@ describe("Accept / Edit / Reject", () => {
     expect(state.created).toBeNull();
   });
 });
+
+describe("edit limits the codec sets", () => {
+  const fullSection = {
+    title: "Long test",
+    style: "standard" as const,
+    origin: "user" as const,
+    sections: [
+      {
+        id: "sec1",
+        title: "Part 1",
+        questions: Array.from({ length: 20 }, (_, i) => ({ plugin: "short" as const, id: `q${i}`, prompt: `Question ${i}`, points: 1, accepted: [`Answer ${i}`] })),
+      },
+    ],
+  };
+
+  test("test: Add stops at 20 questions in a section, and Accept says why instead of going quiet", () => {
+    const practice = toPreview("test", fullSection);
+    if (practice?.kind !== "test") throw new Error("fixture");
+    const d0 = draftFrom(practice);
+    expect(draftProblems(d0)).toEqual([]);
+    const added = apply(d0, { type: "add" });
+    expect(added.items).toHaveLength(20);
+    // After removing one there is room for exactly one more.
+    const d1 = apply(d0, { type: "remove", id: "q0" }, { type: "add" });
+    expect(d1.items).toHaveLength(20);
+    expect(apply(d1, { type: "add" }).items).toHaveLength(20);
+    // A draft that already holds too many (e.g. built before the cap) names the problem.
+    const over: Draft = { ...d0, items: [...d0.items, { id: "n99", primary: "Extra", secondary: "Yes" }] };
+    expect(draftProblems(over)).toContain("st.ed.sectionFull");
+    expect(draftToData(over)).toBeNull();
+    expect(canAccept(initialProposal, over)).toBe(false);
+  });
+
+  test("quiz: a right answer edited to match another choice is flagged", () => {
+    const quiz = outlinePreview("quiz", PAGE, "Cell biology");
+    if (quiz?.kind !== "quiz") throw new Error("fixture");
+    const q0 = quiz.data.questions[0];
+    const other = q0?.choices.find((c) => c.id !== q0.answerId);
+    if (!q0 || !other) throw new Error("fixture");
+    const dup = apply(draftFrom(quiz), { type: "change", id: q0.id, field: "secondary", value: ` ${other.text.toUpperCase()} ` });
+    expect(draftProblems(dup)).toContain("st.ed.sameChoice");
+    expect(draftToData(dup)).toBeNull();
+    expect(draftProblems(draftFrom(quiz))).not.toContain("st.ed.sameChoice");
+  });
+});

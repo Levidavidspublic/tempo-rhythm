@@ -218,6 +218,9 @@ export const en = {
   "st.ed.needOne": "Keep at least one item.",
   "st.ed.needChoices": "A quiz question needs at least two different answers to choose from.",
   "st.ed.titleInvalid": "Give it a title of up to 200 characters.",
+  "st.ed.sameChoice": "A right answer reads the same as another choice. Change one so they differ.",
+  "st.ed.sectionFull": "A section holds up to 20 questions. Remove one to add another.",
+  "st.ed.cantSave": "Something in this list can't be saved yet. Check the items and try again.",
 
   // Opening a study block from a page
   "st.open.loading": "Opening your set",
@@ -432,6 +435,9 @@ export const he: Record<StudyCopyKey, string> = {
   "st.ed.needOne": "השאירו לפחות פריט אחד.",
   "st.ed.needChoices": "בשאלת בוחן צריך לפחות שתי תשובות שונות לבחירה.",
   "st.ed.titleInvalid": "תנו כותרת של עד 200 תווים.",
+  "st.ed.sameChoice": "תשובה נכונה זהה לאחת האפשרויות האחרות. שנו אחת מהן כדי שיהיו שונות.",
+  "st.ed.sectionFull": "בחלק אחד יש מקום לעד 20 שאלות. הסירו שאלה כדי להוסיף אחרת.",
+  "st.ed.cantSave": "משהו ברשימה עוד לא יכול להישמר. בדקו את הפריטים ונסו שוב.",
 
   "st.open.loading": "פותחים את החומר",
   "st.open.error": "לא הצלחנו לפתוח את החומר מהדף.",

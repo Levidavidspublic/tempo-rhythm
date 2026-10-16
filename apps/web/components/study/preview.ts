@@ -105,6 +105,9 @@ const MAX_TEXT = 500;
 const MAX_TITLE = 200;
 const MAX_ITEMS = 100;
 const MAX_SHORT = 200;
+/** The codec's limits on a practice test: questions per section and sections per test. */
+export const MAX_SECTION_QUESTIONS = 20;
+export const MAX_SECTIONS = 10;
 
 function answerText(question: {
   choices: { id: string; text: string }[];
@@ -164,6 +167,7 @@ export function draftReducer(draft: Draft, action: DraftAction): Draft {
       };
     case "add":
       if (draft.items.length >= MAX_ITEMS) return draft;
+      if (draft.preview.kind === "test" && !testHasRoom(draft, draft.preview.data)) return draft;
       return {
         ...draft,
         items: [...draft.items, { id: freshId(draft), primary: "", secondary: "" }],
@@ -251,6 +255,37 @@ function testQuestion(item: DraftItem, old: TestQuestion | undefined): TestQuest
   return { ...old, stem: item.primary.trim() };
 }
 
+/** How many questions each base section holds once the draft is read back (new ones not placed). */
+function keptPerSection(draft: Draft, base: TestData): number[] {
+  const ids = new Set(draft.items.map((item) => item.id));
+  return base.sections.map((section) => section.questions.filter((q) => ids.has(q.id)).length);
+}
+
+/** The section new questions join: the last one that still has questions (or the last one). */
+function targetSection(counts: number[]): number {
+  for (let i = counts.length - 1; i >= 0; i -= 1) if ((counts[i] ?? 0) > 0) return i;
+  return counts.length - 1;
+}
+
+function newTestItems(draft: Draft, base: TestData): number {
+  const known = new Set(base.sections.flatMap((section) => section.questions.map((q) => q.id)));
+  return draft.items.filter((item) => !known.has(item.id)).length;
+}
+
+/** Whether the section new questions join would still fit the codec's 20 questions. */
+function testFits(draft: Draft, base: TestData, extra = 0): boolean {
+  if (base.sections.length > MAX_SECTIONS) return false;
+  const counts = keptPerSection(draft, base);
+  const at = targetSection(counts);
+  const added = newTestItems(draft, base) + extra;
+  if (added === 0) return counts.every((n) => n <= MAX_SECTION_QUESTIONS);
+  return at >= 0 && (counts[at] ?? 0) + added <= MAX_SECTION_QUESTIONS;
+}
+
+function testHasRoom(draft: Draft, base: TestData): boolean {
+  return testFits(draft, base, 1);
+}
+
 function testData(draft: Draft, base: TestData): TestData | null {
   const byId = new Map(draft.items.map((item) => [item.id, item]));
   const known = new Set(base.sections.flatMap((section) => section.questions.map((q) => q.id)));
@@ -267,8 +302,7 @@ function testData(draft: Draft, base: TestData): TestData | null {
   }
   // New questions join the last section that still has questions (or the last section).
   if (added.length > 0) {
-    const target =
-      [...sections].reverse().find((section) => section.questions.length > 0) ?? sections.at(-1);
+    const target = sections[targetSection(sections.map((section) => section.questions.length))];
     if (!target) return null;
     target.questions = [...target.questions, ...added];
   }
@@ -285,6 +319,10 @@ function testData(draft: Draft, base: TestData): TestData | null {
 /** The draft as data the codec accepts, or null while something needs fixing. */
 export function draftToData(draft: Draft): StudyPreview | null {
   if (draftProblems(draft).length > 0) return null;
+  return buildData(draft);
+}
+
+function buildData(draft: Draft): StudyPreview | null {
   const { preview } = draft;
   if (preview.kind === "flashcards") {
     const cards = draft.items.map((item) => {
@@ -334,7 +372,31 @@ export function draftProblems(draft: Draft): MessageKey[] {
     );
     if (lonely) problems.push("st.ed.needChoices");
   }
+  if (textOk && hasDuplicateChoice(draft)) problems.push("st.ed.sameChoice");
+  if (draft.preview.kind === "test" && !testFits(draft, draft.preview.data))
+    problems.push("st.ed.sectionFull");
+  // Anything else the codec would still turn down gets a kind word too, never a silent Accept.
+  if (problems.length === 0 && buildData(draft) === null) problems.push("st.ed.cantSave");
   return problems;
+}
+
+/** An edited right answer that now reads the same as one of the other choices. */
+function hasDuplicateChoice(draft: Draft): boolean {
+  const { preview } = draft;
+  const questions: { id: string; choices: { id: string; text: string }[]; answerId: string }[] =
+    preview.kind === "quiz"
+      ? preview.data.questions
+      : preview.kind === "test"
+        ? preview.data.sections.flatMap((section) =>
+            section.questions.flatMap((q) => (q.plugin === "mcq" ? [q] : []))
+          )
+        : [];
+  return draft.items.some((item) => {
+    const old = questions.find((q) => q.id === item.id);
+    if (!old || item.secondary === null) return false;
+    const answer = item.secondary;
+    return old.choices.some((choice) => choice.id !== old.answerId && sameText(choice.text, answer));
+  });
 }
 
 function shortItem(draft: Draft, id: string): boolean {
