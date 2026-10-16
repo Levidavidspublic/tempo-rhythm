@@ -51,3 +51,32 @@
 @media (prefers-reduced-motion: reduce) {
   .tp-study-deck .tp-flashcard__face, .tp-study-review .tp-flashcard__face { animation: none; }
 }
+
+/* Study screens (apps/web/components/study): hub, session, set, Turn into preview. Layout only. */
+.tp-study-stack { gap: var(--tp-space-6); }
+.tp-study-focus .tp-nextup__meta { align-items: center; font-size: var(--tp-text-sm); }
+.tp-study-group { display: grid; gap: var(--tp-space-2); min-width: 0; }
+.tp-study-group__title { display: inline-flex; align-items: center; gap: var(--tp-space-2); margin: 0; }
+.tp-study-list { padding-inline: var(--tp-space-1); }
+.tp-study-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tp-study-session { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-study-lock { border: 0; margin: 0; padding: 0; min-width: 0; }
+.tp-study-session__status:empty { display: none; }
+.tp-study-deckbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-2) var(--tp-space-3); }
+.tp-study-deckbar__text { margin: 0; color: var(--tp-ink-muted); font-size: var(--tp-text-sm); }
+.tp-study-kind { display: inline-flex; align-items: center; gap: var(--tp-space-1); margin: 0; font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-study-source { display: flex; align-items: flex-start; gap: var(--tp-space-2); margin: 0; }
+.tp-study-what { margin: 0; overflow-wrap: anywhere; }
+.tp-study-changes { list-style: none; margin: 0; padding: 0; max-height: none; }
+.tp-study-edit { display: grid; gap: var(--tp-space-4); padding: var(--tp-space-4); border-bottom: 1px solid var(--tp-line); }
+.tp-study-edit__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.tp-study-edit__set { display: grid; gap: var(--tp-space-2); margin: 0; padding: var(--tp-space-3); min-width: 0; border: 1px solid var(--tp-line); border-radius: var(--tp-radius-md); }
+.tp-study-edit__set > .tp-btn { justify-self: start; }
+.tp-study-problem { display: block; }
+.tp-proposal__note .tp-btn--link { min-height: var(--tp-touch); }
+.tp-proposal__note { flex-wrap: wrap; }
+[data-component="StudyBlock"] .tp-card__head { flex-wrap: wrap; }
+[data-component="StudyBlock"] .tp-btn { margin-inline-start: auto; }
+@media (pointer: coarse) {
+  .tp-study-edit__set > .tp-btn, [data-component="StudyBlock"] .tp-btn { min-height: var(--tp-touch); }
+}

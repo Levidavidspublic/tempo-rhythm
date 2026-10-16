@@ -36,3 +36,18 @@ export function studyBlockSummary(block: StudyBlock, lang: string): { kind: stri
   const l = lang === "he" ? "he" : "en";
   return { kind: KIND[l][block.type], count: COUNT[l][block.type](studyItemCount(block)) };
 }
+
+/**
+ * Where a study block's "Study" link goes. With the page's id (read from the closest
+ * `[data-note-id]`, which PageEditorView puts on its content), /study/new registers the block as a
+ * set and moves on to /study/<setId>. Without it, the study hub.
+ */
+export function studyBlockHref(noteId: string | null | undefined, blockId: string): string {
+  if (!noteId) return "/study";
+  return `/study/new?from=${encodeURIComponent(noteId)}&block=${encodeURIComponent(blockId)}`;
+}
+
+/** The page id around a study block's card, or null. */
+export function noteIdAround(element: Element | null): string | null {
+  return element?.closest?.("[data-note-id]")?.getAttribute("data-note-id") ?? null;
+}
