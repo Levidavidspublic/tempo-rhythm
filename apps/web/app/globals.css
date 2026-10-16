@@ -648,6 +648,8 @@
 .bd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
 .bd-group { display: grid; gap: var(--tp-space-2); }
 .bd-group__title { margin: 0; font-size: var(--tp-text-sm); }
+/* A plan line's reason is a sentence, not a label: tp-chip is nowrap, which pushed rows past a phone's width. */
+.bd-group .tp-import-row__bar .tp-chip { white-space: normal; max-width: 100%; padding-block: var(--tp-space-1); }
 .bd-row__actions { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-inline-start: auto; }
 .bd-saved { flex-wrap: wrap; }
 .bd-saved .tp-notice__action { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }

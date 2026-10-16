@@ -14,6 +14,7 @@ import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { useOnline } from "@/lib/useOnline";
 import { ChatProposal, proposalOf } from "./ChatProposal";
 import { useFlushCoachPage } from "./CoachPage";
+import { CoachSources } from "./CoachSources";
 import { VoiceCall } from "./voice/VoiceCall";
 import { useVoiceCall, type VoiceSendResult } from "./voice/useVoiceCall";
 
@@ -267,6 +268,7 @@ export function CoachConversation({
                     {message.content}
                   </p>
                 </div>
+                {message.role === "assistant" ? <CoachSources content={message.content} sources={message.sources} /> : null}
                 {proposal ? <ChatProposal messageId={message._id} proposal={proposal} /> : null}
               </Fragment>
             );
@@ -329,7 +331,8 @@ export function CoachConversation({
             disabled={!conversationId || busy || waitingForPage}
           />
           <div className="tp-composer__bar">
-            <span className="tp-muted tp-small">{t("coachChat.hint")}</span>
+            {/* A keyboard hint: on phones and touch screens it only squeezes the buttons. */}
+            <span className="tp-muted tp-small max-sm:hidden pointer-coarse:hidden">{t("coachChat.hint")}</span>
             {voiceAvailability?.available ? (
               <button
                 className="tp-btn tp-btn--ghost tp-btn--sm"
