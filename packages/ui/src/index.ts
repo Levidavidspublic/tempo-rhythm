@@ -12,6 +12,7 @@
  */
 
 export { BrandMark, Wordmark } from "./brand";
+export * from "./plan";
 export * from "./primitives";
 export * from "./study";
 export {
