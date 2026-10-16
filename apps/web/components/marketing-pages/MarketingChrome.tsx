@@ -12,8 +12,9 @@ type Current = "about" | "changelog";
 /**
  * LanguageSwitch (tempo.css): links with hreflang + lang; the current one has
  * aria-current="true". A click switches in place (LocaleProvider keeps the choice on this device).
+ * The marketing pages and the landing page (/) share it.
  */
-function LanguageSwitch({ long }: { long: boolean }) {
+export function LanguageSwitch({ long, className }: { long: boolean; className?: string }) {
   const { t, lang, setLang } = useLocale();
   const pick = (next: Lang) => (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -21,7 +22,12 @@ function LanguageSwitch({ long }: { long: boolean }) {
   };
   return (
     // biome-ignore lint/a11y/useSemanticElements: the v3 LanguageSwitch is a labelled group of two links, not a form field set
-    <div className="tp-lang-switch" data-component="LanguageSwitch" role="group" aria-label={t("mk.lang")}>
+    <div
+      className={className ? `tp-lang-switch ${className}` : "tp-lang-switch"}
+      data-component="LanguageSwitch"
+      role="group"
+      aria-label={t("mk.lang")}
+    >
       <a href="?lang=en" hrefLang="en" lang="en" aria-current={lang === "en" ? "true" : undefined} onClick={pick("en")}>
         {long ? "English" : "EN"}
       </a>
