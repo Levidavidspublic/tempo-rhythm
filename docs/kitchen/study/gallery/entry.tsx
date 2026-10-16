@@ -5,6 +5,7 @@
 // mount (Check, Submit, Ask the coach). Not part of the app. All people and data are fictional
 // (DESIGN.md §13). Supports ?view=, ?theme=light|dark and ?lang=en|he.
 // S9 adds plan-guided, plan-guided-edit and plan-guided-accepted: the GuidedPlanCard on a sample plan.
+// Typed recall adds study-review-typed and study-review-typed-checked.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -421,6 +422,20 @@ const VIEWS: Record<string, () => ReactNode> = {
   "study-review": () => <ReviewSession />,
   "study-review-done": () => {
     steps(click('[data-action="review-reveal"]'), click('[data-action="review-grade"][data-grade="good"]'));
+    return <ReviewSession />;
+  },
+  // Typed recall: "Type answers" on, an answer half typed; then a near miss checked ("Close",
+  // with Hard marked as suggested). Fictional answers.
+  "study-review-typed": () => {
+    steps(click('[data-component="TypeAnswersToggle"] [role="switch"]'), fill('[data-action="recall-input"]', "Cell division that makes two"));
+    return <ReviewSession />;
+  },
+  "study-review-typed-checked": () => {
+    steps(
+      click('[data-component="TypeAnswersToggle"] [role="switch"]'),
+      fill('[data-action="recall-input"]', "Cell divison that makes two identical cells"),
+      click('[data-action="review-check"]'),
+    );
     return <ReviewSession />;
   },
   "study-deck": () => <StudySetScreen setId="studySets:1" />,
