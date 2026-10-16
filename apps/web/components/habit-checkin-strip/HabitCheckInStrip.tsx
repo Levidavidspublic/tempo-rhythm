@@ -4,14 +4,18 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
-import { cn } from "@/lib/utils";
 import { checkedHabitIds, localDateKey } from "./checkedState";
 
-const SAVE_ERROR = "That didn't save. Try again when you want.";
-
+/**
+ * Habits today, on Today (HabitBlock / TaskRow): one tick per habit for this calendar day, undo by
+ * ticking again. v3 Section and TaskRow classes; long names wrap; a tick that doesn't save says so.
+ */
 export function HabitCheckInStrip() {
+  const { t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const bounds = useLocalDayBounds();
@@ -36,30 +40,20 @@ export function HabitCheckInStrip() {
   const serverChecked = checkedHabitIds(checkIns);
 
   return (
-    <section
-      className="rounded-3xl border border-border/80 bg-card/90 p-5"
-      aria-labelledby="habit-checkin-strip-heading"
-    >
-      <h2
-        id="habit-checkin-strip-heading"
-        className="font-heading text-xl font-semibold text-foreground"
-      >
-        Habits today
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Check a habit for this calendar day. Undo it whenever you want.
-      </p>
+    <section className="tp-surface" aria-labelledby="habit-checkin-strip-heading" data-component="HabitsToday">
+      <div className="tp-section__head">
+        <h2 id="habit-checkin-strip-heading" className="tp-section__title">
+          {t("hc.title")}
+        </h2>
+      </div>
+      <p className="tp-help">{t("hc.sub")}</p>
 
       {liveHabits.length === 0 ? (
-        <p className="mt-5 text-sm font-medium text-foreground">
-          No habits yet. Add one on the{" "}
-          <Link
-            href="/habits"
-            className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            Habits page
+        <p className="tp-help">
+          {t("hc.none")}{" "}
+          <Link href="/habits" className="tp-btn tp-btn--link">
+            {t("hc.openHabits")}
           </Link>
-          .
         </p>
       ) : (
         <HabitCheckInList
@@ -86,6 +80,7 @@ function HabitCheckInList({
   }[];
   serverChecked: Set<string>;
 }) {
+  const { t } = useLocale();
   const check = useMutation(api.habitCheckIns.check);
   const undo = useMutation(api.habitCheckIns.undo);
   const [optimistic, setOptimistic] = useState<ReadonlyMap<string, boolean>>(() => new Map());
@@ -156,7 +151,7 @@ function HabitCheckInList({
           next.delete(habitId);
           return next;
         });
-        setNotice(SAVE_ERROR);
+        setNotice(t("hc.saveError"));
       })
       .finally(() => {
         setBusy((prev) => {
@@ -170,39 +165,40 @@ function HabitCheckInList({
   return (
     <>
       {notice ? (
-        <output className="mt-3 block text-sm text-muted-foreground">{notice}</output>
+        <p className="tp-error-text" role="alert">
+          <TpIcon name="alert" size="sm" />
+          <span>{notice}</span>
+        </p>
       ) : null}
-      <ul className="mt-5 flex flex-col gap-3">
+      <ul className="tp-list">
         {habits.map((habit) => {
           const pending = optimistic.get(habit._id);
           const pressed = pending ?? serverChecked.has(habit._id);
           const streak = streakOverride.get(habit._id) ?? habit.currentStreak;
           const isBusy = busy.has(habit._id);
           return (
-            <li key={habit._id}>
+            <li key={habit._id} className="tp-task-row hc-row" data-done={pressed ? "true" : undefined}>
               <button
                 type="button"
+                className="tp-check"
                 aria-pressed={pressed}
-                aria-label={
-                  pressed
-                    ? `Undo today's check for ${habit.name}`
-                    : `Check ${habit.name} for today`
-                }
+                aria-label={pressed ? `Undo today's check for ${habit.name}` : `Check ${habit.name} for today`}
                 disabled={isBusy}
                 onClick={() => toggle(habit._id, pressed)}
-                className={cn(
-                  "flex min-h-11 w-full items-center justify-between gap-3 rounded-full border px-4 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-70",
-                  pressed
-                    ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-border bg-background text-foreground hover:border-primary hover:text-primary",
-                )}
               >
-                <span className="font-medium text-foreground">{habit.name}</span>
-                <span className="text-muted-foreground">{pressed ? "Checked" : "Check"}</span>
+                <span className="tp-check__box">
+                  <TpIcon name="check" />
+                </span>
               </button>
-              {streak >= 2 ? (
-                <p className="mt-1 px-4 text-xs text-muted-foreground">{streak} days in a row</p>
-              ) : null}
+              <div className="tp-task-row__body">
+                <span className="tp-task-row__title" dir="auto">
+                  {habit.name}
+                </span>
+                <span className="tp-task-row__meta">
+                  <span>{pressed ? t("hc.checked") : t("hc.notYet")}</span>
+                  {streak >= 2 ? <span>{t("hc.inARow").replace("{n}", String(streak))}</span> : null}
+                </span>
+              </div>
             </li>
           );
         })}
@@ -213,10 +209,10 @@ function HabitCheckInList({
 
 function StripSkeleton() {
   return (
-    <div
-      className="h-32 animate-pulse rounded-3xl bg-muted"
-      aria-hidden
-      data-testid="habit-checkin-strip-loading"
-    />
+    <div className="tp-surface" aria-hidden data-testid="habit-checkin-strip-loading">
+      <span className="tp-skeleton tp-skeleton--w40" />
+      <span className="tp-skeleton tp-skeleton--w80" />
+      <span className="tp-skeleton tp-skeleton--w60" />
+    </div>
   );
 }

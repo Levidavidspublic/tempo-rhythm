@@ -858,3 +858,17 @@
 .prio-card__controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3); }
 .prio-card__controls .tp-field { flex: 1 1 calc(var(--tp-space-20) * 1.75); min-width: 0; }
 .prio-card__delete { margin-inline-start: auto; }
+/* Today: still open from earlier days (CarryOverStrip). Layout only. */
+.co-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-1) var(--tp-space-3); }
+.co-row__check { flex: 1 1 calc(var(--tp-space-20) * 2.5); min-width: 0; }
+.co-row__title { overflow-wrap: anywhere; }
+.co-row__error { flex: 1 1 100%; padding-block-end: var(--tp-space-2); }
+/* Today: habits (HabitCheckInStrip). The check uses aria-pressed, so its filled state is set here. */
+.hc-row .tp-check[aria-pressed="true"] .tp-check__box { background: var(--tp-done); border-color: var(--tp-done); color: var(--tp-paper); }
+/* Today's page: one column of sections with the v3 gutter; quick add and the task list side by
+   side from 1280 px. */
+.today-stack, .today-strips { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.today-strips:empty { display: none; }
+.today-pair { display: grid; gap: var(--tp-space-6); align-items: start; }
+@media (min-width: 1280px) { .today-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 767px) { .tp-page > .today-stack > .tp-pagehead { padding-inline: var(--tp-space-4); } }

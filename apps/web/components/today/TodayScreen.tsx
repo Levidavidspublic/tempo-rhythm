@@ -1,14 +1,13 @@
 "use client";
 
 import { useConvexAuth, useQuery } from "convex/react";
-import Link from "next/link";
 import { CarryOverStrip } from "@/components/carry-over-strip/CarryOverStrip";
 import { DayPlanPanel } from "@/components/day-plan-panel/DayPlanPanel";
 import { DayPlanSummary } from "@/components/day-plan-summary/DayPlanSummary";
 import { HabitCheckInStrip } from "@/components/habit-checkin-strip/HabitCheckInStrip";
-import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
-import { Button } from "@/components/ui/button";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { StateLoading, StateSignedOut } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { mapCalendarEventsToAgenda } from "@/lib/todayAgenda";
@@ -25,7 +24,7 @@ import { TodayTaskList } from "./TodayTaskList";
 // api.habits.list so the signed-in screen does not open before that read resolves.
 function TodayWiredStrips() {
   return (
-    <div className="space-y-6">
+    <div className="today-strips">
       <div className="empty:hidden" data-testid="today-day-plan-panel">
         <DayPlanPanel />
       </div>
@@ -43,6 +42,7 @@ function TodayWiredStrips() {
 }
 
 export function TodayScreen() {
+  const { t } = useLocale();
   // Reactive bounds: refreshes across local midnight, on visibility change, and
   // on window focus, so quick-add and brain-dump-to-Today never tag tasks with
   // yesterday's `dueAt` after a tab is left open overnight.
@@ -79,15 +79,8 @@ export function TodayScreen() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto max-w-5xl px-6 py-12">
-        <div className="space-y-6">
-          <div className="h-12 w-64 animate-pulse rounded-xl bg-muted" />
-          <div className="h-80 animate-pulse rounded-[2rem] bg-muted" />
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <div className="h-32 animate-pulse rounded-2xl bg-muted" />
-            <div className="h-64 animate-pulse rounded-2xl bg-muted" />
-          </div>
-        </div>
+      <div className="tp-page" data-component="PageLayout">
+        <StateLoading label={t("today.loading")} rows={5} />
       </div>
     );
   }
@@ -103,30 +96,22 @@ export function TodayScreen() {
 
   if (!profile || !todayTasks || !habits || !calendarEvents) {
     return (
-      <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
-        <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">Sign in required</h1>
-          <p className="mt-3 text-muted-foreground">
-            We could not load your session. Sign in again to pick up where you left off.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/sign-in">Sign in</Link>
-          </Button>
-        </SoftCard>
+      <div className="tp-page" data-component="PageLayout">
+        <StateSignedOut body={t("today.signInAgain")} />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-5xl px-6 py-12">
-      <div className="space-y-8">
+    <div className="tp-page today-page" data-component="PageLayout">
+      <div className="today-stack">
         <TodayGreeting greetingName={profile.greetingName} />
         <TodayChat />
         <DailyPage dayStartMs={bounds.startMs} tasks={todayTasks} />
         <TodayWiredStrips />
         <TodayBrainDumpPanel dueAt={bounds.endMs - 1} />
         <TodayAgenda events={mapCalendarEventsToAgenda(calendarEvents)} />
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:items-start">
+        <div className="today-pair">
           <TodayQuickAdd dueAt={bounds.endMs - 1} />
           <TodayTaskList tasks={todayTasks} />
         </div>
