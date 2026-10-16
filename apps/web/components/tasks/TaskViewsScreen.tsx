@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { type ToastState, UNDO_WINDOW_MS, UndoToast } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TaskRowEditor, type TaskEditorUpdate } from "@/components/tasks/TaskRowEditor";
@@ -15,6 +15,15 @@ import {
   toggleChecklistItem,
 } from "@/convex/lib/taskChecklists";
 import type { MessageKey } from "@/lib/i18n";
+import {
+  clearTaskDraft,
+  type KeptTaskDraft,
+  loadTaskDraft,
+  saveTaskDraft,
+  type TaskDraft,
+  type TaskDraftRepeat,
+  tabSessionStore,
+} from "@/lib/task-draft-session";
 import {
   filterTasksForView,
   groupTasksByEnergy,
@@ -46,18 +55,10 @@ type LocalTaskRecord = TaskViewRecord & {
   createdAt: number;
 };
 
-type RepeatDraft = "none" | "daily" | "weekly";
+type RepeatDraft = TaskDraftRepeat;
 
-type Draft = {
-  title: string;
-  projectName: string;
-  priority: TaskPriority;
-  energy: TaskEnergy;
-  dueToday: boolean;
-  dueDate: string;
-  repeat: RepeatDraft;
-  checklistText: string;
-};
+/** The add form's fields; lib/task-draft-session.ts keeps them for this tab. */
+type Draft = TaskDraft;
 
 const localStorageKey = "tempo:task-views-core:v1";
 
@@ -351,6 +352,15 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [showTitleHint, setShowTitleHint] = useState(false);
 
+  // Leaving and coming back (Back, Forward, a reload) brings back what was typed in this view's
+  // add form, in this tab only.
+  const draftScope = projectSlug ? `${view}:${projectSlug}` : view;
+  const restoreDraft = useCallback((kept: KeptTaskDraft) => {
+    titleRef.current = kept.title;
+    setDraft((current) => ({ ...current, ...kept }));
+  }, []);
+  const forgetDraft = useKeptTaskDraft(draftScope, draft, restoreDraft);
+
   // The create area is a form: Enter in any of its fields submits, the same as Add task.
   const handleCreate = async () => {
     if (creatingRef.current || !taskStoreReady) return;
@@ -421,6 +431,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
       return;
     }
 
+    // The task exists now: Back then Forward must not offer its title again.
+    forgetDraft();
     titleRef.current = "";
     setDraft((current) => ({ ...current, title: "", checklistText: "" }));
   };
@@ -1057,4 +1069,59 @@ function TaskRow({
       </div>
     </li>
   );
+}
+
+/** Typing is kept after this pause; leaving the screen or the page during it still keeps it. */
+const KEEP_TYPING_MS = 400;
+
+type DraftToKeep = { scope: string; draft: Draft };
+type PendingDraft = { current: DraftToKeep | null };
+
+/**
+ * Keeps this tab's add-form draft for this view (lib/task-draft-session.ts). The kept copy is read
+ * in a layout effect: after hydration, so the server's HTML still matches, and before the first
+ * paint, so the title doesn't flash empty. Returns `forget`, for when the task is added.
+ */
+function useKeptTaskDraft(scope: string, draft: Draft, restore: (kept: KeptTaskDraft) => void) {
+  const [ready, setReady] = useState(false);
+  const shown = useRef<Draft | null>(null);
+  const pending = useRef<DraftToKeep | null>(null);
+
+  useLayoutEffect(() => {
+    const kept = loadTaskDraft(tabSessionStore(), scope, Date.now());
+    if (kept) restore(kept);
+    setReady(true);
+  }, [restore, scope]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const prev = shown.current;
+    shown.current = draft;
+    // The first run only notes the form as it opened, kept or new: nothing was typed yet, and
+    // keeping it again would restart the 2-hour expiry.
+    if (prev !== null && prev !== draft) pending.current = { scope, draft };
+    if (!pending.current) return;
+    const timer = window.setTimeout(() => keepPending(pending), KEEP_TYPING_MS);
+    return () => window.clearTimeout(timer);
+  }, [ready, scope, draft]);
+
+  useEffect(() => {
+    const flush = () => keepPending(pending);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
+
+  return useCallback(() => {
+    pending.current = null;
+    clearTaskDraft(tabSessionStore(), scope);
+  }, [scope]);
+}
+
+function keepPending(pending: PendingDraft) {
+  const next = pending.current;
+  pending.current = null;
+  if (next) saveTaskDraft(tabSessionStore(), next.scope, next.draft, Date.now());
 }
