@@ -125,6 +125,13 @@ export function guidedEditReducer(
   }
 }
 
+/** The step whose name field takes the keyboard after `id` is removed: the next one, else the one before. */
+export function stepAfterRemove(steps: readonly GuidedStep[], id: string): string | null {
+  const at = steps.findIndex((s) => s.id === id);
+  if (at < 0) return null;
+  return steps[at + 1]?.id ?? steps[at - 1]?.id ?? null;
+}
+
 export type GuidedStepError = "titleEmpty" | "titleLong" | "minutesRange";
 
 /** What is wrong with one step, or null. */

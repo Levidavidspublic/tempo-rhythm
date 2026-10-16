@@ -42,6 +42,7 @@ import {
   guidedEditReducer,
   guidedStepSpecs,
   statusOf,
+  stepAfterRemove,
   summarizeGuidedPlan,
   validateGuidedPlan,
 } from "./guided-plan";
@@ -213,7 +214,6 @@ export function GuidedPlanCard({
 }: GuidedPlanCardProps) {
   const baseId = useId();
   const titleId = `${baseId}-title`;
-  const rootRef = useRef<HTMLElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const [steps, dispatch] = useReducer(guidedEditReducer, initialSteps, (s) =>
     guidedEditReducer(s, { type: "reset", steps: s })
@@ -221,8 +221,12 @@ export function GuidedPlanCard({
   const [editorOpen, setEditing] = useState(initialEditing);
   // The editor belongs to the proposal: once it is accepted, undone or set aside, it closes.
   const editing = editorOpen && status === "pending";
-  const [focusAfterMove, setFocusAfterMove] = useState<string | null>(null);
+  // The step whose name field takes the keyboard once it is drawn (after a move or a remove).
+  const [focusStep, setFocusStep] = useState<string | null>(null);
+  const titleFields = useRef(new Map<string, HTMLInputElement>());
+  const noteRef = useRef<HTMLSpanElement>(null);
   const left = useUndoCountdown(status === "accepted" ? undoUntilMs : undefined);
+  const undoOpen = Boolean(left && onUndo);
 
   const validation = useMemo(() => validateGuidedPlan(steps), [steps]);
   const summary = useMemo(() => summarizeGuidedPlan(steps), [steps]);
@@ -238,19 +242,35 @@ export function GuidedPlanCard({
     onStepsChange?.(steps);
   }, [steps, onStepsChange]);
 
-  // A moved step can land in another group's list; keep the keyboard on it.
+  // A moved step can land in another group's list; keep the keyboard on it. After a remove, the
+  // next step's name (or the one before) takes it, rather than the page.
   useEffect(() => {
-    if (!focusAfterMove) return;
-    const row = rootRef.current?.querySelector<HTMLElement>(
-      `[data-step-id="${CSS.escape(focusAfterMove)}"] [data-field="title"]`
-    );
-    row?.focus();
-    setFocusAfterMove(null);
-  }, [focusAfterMove]);
+    if (!focusStep) return;
+    titleFields.current.get(focusStep)?.focus();
+    setFocusStep(null);
+  }, [focusStep]);
+
+  // Accept, Reject and Undo take their own button away, and so does the end of the Undo window.
+  // When that leaves the keyboard nowhere, it goes to the note that says what happened.
+  const shown = useRef({ status, undoOpen });
+  useEffect(() => {
+    const before = shown.current;
+    shown.current = { status, undoOpen };
+    if (status === "pending" || (before.status === status && before.undoOpen === undoOpen)) return;
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
+    noteRef.current?.focus({ preventScroll: true });
+  }, [status, undoOpen]);
 
   const move = (id: string, by: -1 | 1) => {
     dispatch({ type: "move", id, by });
-    setFocusAfterMove(id);
+    setFocusStep(id);
+  };
+
+  const remove = (id: string) => {
+    const next = stepAfterRemove(steps, id);
+    dispatch({ type: "remove", id });
+    if (next) setFocusStep(next);
   };
 
   const closeEditor = () => {
@@ -319,6 +339,10 @@ export function GuidedPlanCard({
               <label className="tp-field tp-guided__name">
                 <span className="tp-sr-only">{fillText(labels.nameField, { n })}</span>
                 <input
+                  ref={(field) => {
+                    if (field) titleFields.current.set(step.id, field);
+                    else titleFields.current.delete(step.id);
+                  }}
                   className="tp-input"
                   data-field="title"
                   dir="auto"
@@ -392,7 +416,7 @@ export function GuidedPlanCard({
               data-action="guided-remove"
               aria-label={fillText(labels.remove, { title: step.title.trim() || n })}
               disabled={steps.length <= GUIDED_LIMITS.minSteps}
-              onClick={() => dispatch({ type: "remove", id: step.id })}
+              onClick={() => remove(step.id)}
             >
               <Trash className="tp-icon" size={16} />
             </button>
@@ -455,7 +479,6 @@ export function GuidedPlanCard({
 
   return (
     <section
-      ref={rootRef}
       className="tp-proposal tp-guided"
       data-component="GuidedPlanCard"
       data-kind="plan"
@@ -582,7 +605,7 @@ export function GuidedPlanCard({
             ) : (
               <Refresh className="tp-icon" size={16} />
             )}
-            <span>
+            <span className="tp-guided__said" ref={noteRef} tabIndex={-1}>
               {status === "accepted"
                 ? left
                   ? labels.accepted

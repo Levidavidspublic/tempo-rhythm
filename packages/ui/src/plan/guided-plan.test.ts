@@ -8,6 +8,7 @@ import {
   guidedStepBlock,
   guidedStepSpecs,
   restack,
+  stepAfterRemove,
   stepError,
   summarizeGuidedPlan,
   validateGuidedPlan,
@@ -150,5 +151,14 @@ describe("json-render bridge", () => {
     expect(block.data.durationMin).toBe(1);
     const [spec] = guidedStepSpecs([{ id: "z", title: "", minutes: 0, kind: "task" }]);
     expect(spec?.elements[spec.root]?.type).toBe("TaskBlock");
+  });
+});
+
+describe("stepAfterRemove", () => {
+  test("the next step takes the keyboard, or the one before when the last goes", () => {
+    expect(stepAfterRemove(steps, "b")).toBe("c");
+    expect(stepAfterRemove(steps, "d")).toBe("c");
+    expect(stepAfterRemove(steps.slice(0, 1), "a")).toBeNull();
+    expect(stepAfterRemove(steps, "zz")).toBeNull();
   });
 });
