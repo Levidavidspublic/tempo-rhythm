@@ -1,5 +1,5 @@
 import { fullReading } from "./recap";
-import { detectLang, type RecapLang } from "./text";
+import { pageLang, type RecapLang } from "./text";
 
 /**
  * "Ask a question" on the listening screen, kitchen T4 (S16): finds the sentences of the page
@@ -80,7 +80,7 @@ const has = (bag: Set<string>, term: string) => variants(term).some((form) => ba
 export function answerFromPage(markdown: string, question: string, options: AnswerOptions = {}): PageMatch[] {
   const asked = [...new Set(terms(question))];
   if (asked.length === 0) return [];
-  const lang = options.lang ?? detectLang(markdown);
+  const lang = options.lang ?? pageLang(markdown);
   const limit = Math.max(1, Math.floor(options.limit ?? 3));
   const sentences = fullReading(markdown, { lang });
   const bags = sentences.map((sentence) => bagOf(sentence.text));

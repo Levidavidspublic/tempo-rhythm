@@ -4,10 +4,10 @@ import { useEffect, useId, useMemo, useReducer, useRef, useState } from "react";
 import {
   answerFromPage,
   buildRecap,
-  detectLang,
   estimateTimeline,
   fullReading,
   type PageMatch,
+  pageLang,
 } from "../../../../../packages/core/recap";
 import { AudioRecapPlayerView } from "./AudioRecapPlayerView";
 import { elapsedSeconds, initialPlayer, type ListenMode, playerReducer } from "./player";
@@ -34,7 +34,9 @@ const TICK_MS = 250;
 
 export function AudioRecapPlayer({ noteId, title, body, mode, engine: override }: AudioRecapPlayerProps) {
   const idBase = useId();
-  const lang = useMemo(() => detectLang(body), [body]);
+  // The page's language from its readable words, so a link or a json tempo block on a Hebrew page
+  // doesn't pick an English voice (and the list joiners follow the page).
+  const lang = useMemo(() => pageLang(body), [body]);
   const sentences = useMemo(
     () => (mode === "full" ? fullReading(body, { lang }) : buildRecap(body, { lang })),
     [body, lang, mode]

@@ -171,6 +171,24 @@ describe("the listen screen's states", () => {
     expect(states({ from: "n1", note: null })).toContain("This page isn&#x27;t here anymore");
     expect(states({ from: "n1", note: { title: "Empty", body: "```json tempo\n{}\n```" } })).toContain("Nothing to read aloud yet");
   });
+  test("a Hebrew page with a link and a json tempo block is read as Hebrew, list joiners and all", () => {
+    const body = [
+      "# שלבי המיטוזה",
+      "",
+      "התא עובר כמה שלבים. עוד ב[ויקיפדיה](https://en.wikipedia.org/wiki/Mitosis_and_cell_division).",
+      "",
+      "- פרופאזה",
+      "- מטאפאזה",
+      "- אנאפאזה",
+      "",
+      "```json tempo",
+      '{"type":"flashcards","title":"Mitosis","origin":"user","cards":[{"id":"a","front":"Prophase","back":"Chromosomes condense"}]}',
+      "```",
+    ].join("\n");
+    const markup = states({ from: "n1", note: { title: "מיטוזה", body } });
+    expect(markup).toContain("פרופאזה, מטאפאזה ואנאפאזה.");
+    expect(markup).not.toContain(" and ");
+  });
   test("a page with text draws the player (checking until the device answers)", () => {
     const markup = states({ from: "n1", note: { title: "Cells", body: PAGE } });
     expect(markup).toContain('data-component="AudioRecapPlayer"');

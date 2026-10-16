@@ -13,7 +13,7 @@ import {
 import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
-import { detectLang, fullReading } from "../../../../../packages/core/recap";
+import { fullReading, pageLang } from "../../../../../packages/core/recap";
 import { BackToStudy } from "../StudySetView";
 import { AudioRecapPlayer } from "./AudioRecapPlayer";
 import type { ListenMode } from "./player";
@@ -119,7 +119,7 @@ export function ListenStates({
       </Frame>
     );
   }
-  if (fullReading(note.body, { lang: detectLang(note.body) }).length === 0) {
+  if (fullReading(note.body, { lang: pageLang(note.body) }).length === 0) {
     return (
       <Frame>
         <StateEmpty icon="page" title={t("st.ls.empty.title")} body={t("st.ls.empty.body")} action={<BackToStudy t={t} />} />

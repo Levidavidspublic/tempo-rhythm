@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { detectLang, joinItems, plainInline, readableBlocks, splitSentences, wordCount } from "./text";
+import { detectLang, joinItems, pageLang, plainInline, readableBlocks, splitSentences, wordCount } from "./text";
 
 describe("splitSentences", () => {
   test("splits English on . ? ! and keeps numbers like 3.5 whole", () => {
@@ -82,6 +82,16 @@ describe("small helpers", () => {
     expect(detectLang("שלום world")).toBe("en");
     expect(detectLang("מיטוזה היא חלוקת תא")).toBe("he");
     expect(detectLang("")).toBe("en");
+  });
+  test("pageLang reads only the page's words: a link or a json tempo block keeps a Hebrew page Hebrew", () => {
+    const linked = "התא מתחלק לשניים, ראו [כאן](https://en.wikipedia.org/wiki/Mitosis_and_cell_division_in_eukaryotes).";
+    expect(detectLang(linked)).toBe("en");
+    expect(pageLang(linked)).toBe("he");
+    const block = '# חלוקת תאים\n\nמיטוזה היא חלוקה.\n\n```json tempo\n{"type":"flashcards","title":"Mitosis","cards":[]}\n```';
+    expect(detectLang(block)).toBe("en");
+    expect(pageLang(block)).toBe("he");
+    expect(pageLang("# Cells\n\nCells divide. See [תאים](https://example.com).")).toBe("en");
+    expect(pageLang("")).toBe("en");
   });
   test("wordCount counts words, at least one", () => {
     expect(wordCount("Cell division, then two cells.")).toBe(5);

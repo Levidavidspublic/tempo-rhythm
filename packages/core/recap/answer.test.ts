@@ -42,6 +42,22 @@ describe("answerFromPage", () => {
     const he = "# תאים\n\nמיטוזה היא חלוקת תא לשני תאים זהים.\nאוסמוזה היא מעבר מים דרך קרום.";
     expect(answerFromPage(he, "מה זה המיטוזה?").map((m) => m.text)).toEqual(["מיטוזה היא חלוקת תא לשני תאים זהים."]);
   });
+  test("a Hebrew page with a link and a json tempo block is read as Hebrew (its list joins with ו)", () => {
+    const he = [
+      "# שלבי המיטוזה",
+      "",
+      "התא עובר כמה שלבים. עוד ב[ויקיפדיה](https://en.wikipedia.org/wiki/Mitosis_and_cell_division).",
+      "",
+      "- פרופאזה",
+      "- מטאפאזה",
+      "- אנאפאזה",
+      "",
+      "```json tempo",
+      '{"type":"flashcards","title":"Mitosis","origin":"user","cards":[{"id":"a","front":"Prophase","back":"Chromosomes condense"}]}',
+      "```",
+    ].join("\n");
+    expect(answerFromPage(he, "מה זה מטאפאזה?").map((m) => m.text)).toEqual(["פרופאזה, מטאפאזה ואנאפאזה."]);
+  });
   test("nothing in common, or only question words, finds nothing", () => {
     expect(answerFromPage(PAGE, "photosynthesis")).toEqual([]);
     expect(answerFromPage(PAGE, "what is it?")).toEqual([]);

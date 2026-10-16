@@ -151,6 +151,20 @@ export function readableBlocks(markdown: string): RecapBlock[] {
   return blocks;
 }
 
+function blockWords(block: RecapBlock): string {
+  if (block.type === "definition") return `${block.term} ${block.meaning}`;
+  if (block.type === "list") return block.items.join(" ");
+  return block.text;
+}
+
+/**
+ * The language a page is read in: `detectLang` over its readable words only (`readableBlocks`),
+ * so link URLs, code and ```json tempo blocks, all Latin letters, don't make a Hebrew page "en".
+ */
+export function pageLang(markdown: string): RecapLang {
+  return detectLang(readableBlocks(markdown).map(blockWords).join(" "));
+}
+
 const ABBREVIATIONS = new Set([
   "e.g",
   "i.e",
