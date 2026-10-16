@@ -12,8 +12,15 @@ import {
 } from "@tempo/ui";
 import type { FlashcardsData, QuizData, StudyBlockType, TestData } from "@tempo/utils";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { OfflineNotice, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  makeToast,
+  OfflineNotice,
+  StateEmpty,
+  StateLoading,
+  type ToastState,
+  UndoToast,
+} from "@/components/goals/shared";
 import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -21,6 +28,9 @@ import { reviewHref } from "./hub";
 import { listenHref } from "./recap/player";
 import { useReadAloudSlot } from "./recap/useReadAloud";
 import { deckLabels, KIND_ICON, KIND_KEY, quizLabels, type StudyT, testLabels } from "./labels";
+import type { StudyPreview } from "./preview";
+import { SetEditor } from "./SetEditor";
+import { blockPreview, closedEdit, type EditResult, setEditReducer } from "./set-edit";
 import { TypeAnswersToggle } from "./TypeAnswersToggle";
 import { useTypedAnswers } from "./useTypedAnswers";
 import {
@@ -32,7 +42,11 @@ import {
   testAttempt,
 } from "./set-logic";
 
-/** A set's markup (deck, quiz, test), with no data access: StudySetScreen.tsx passes data and saves. */
+/**
+ * A set's markup (deck, quiz, test), with no data access: StudySetScreen.tsx passes data and saves.
+ * Edit swaps the study panel for the edit list (SetEditor); the existing study action stays the
+ * one primary, and Save changes takes its place while editing.
+ */
 export type SetBlock =
   | { id: string; type: "flashcards"; data: FlashcardsData }
   | { id: string; type: "quiz"; data: QuizData }
@@ -42,6 +56,8 @@ export type SetData = {
   set: { setId: string; noteId: string; kind: StudyBlockType; title: string; itemCount: number };
   note: { id: string; title: string };
   block: SetBlock;
+  /** The block's content version (`getSet`): Edit sends it back so a save never writes over newer words. */
+  blockVersion?: string;
   states: Record<string, { dueAt: number }>;
   attempts: readonly { percent: number; passed?: boolean; finishedAt: number }[];
 };
@@ -53,6 +69,11 @@ export type RecordAttempt = (attempt: {
   answers: AttemptAnswer[];
   startedAt: number;
 }) => Promise<unknown>;
+
+/** Save an edited set into its page (`study.updateBlock`), from the version the edit started at. */
+export type SaveEdit = (next: StudyPreview, baseVersion: string) => Promise<EditResult>;
+/** Undo a saved edit (`study.undoUpdate`): `before` goes back while the block is still `version`. */
+export type UndoEdit = (before: StudyPreview, version: string) => Promise<EditResult>;
 
 export function BackToStudy({ t }: { t: StudyT }) {
   return (
@@ -71,17 +92,14 @@ export type StudySetViewProps = {
   onRecord: RecordAttempt;
   onRemove: () => void;
   removeError?: boolean;
+  /** Without it (or without a `blockVersion`), the set has no Edit. */
+  onSaveEdit?: SaveEdit;
+  onUndoEdit?: UndoEdit;
+  /** Open with the edit list showing (the gallery and static renders). */
+  initialPanel?: "edit";
 };
 
-export function StudySetView({
-  data,
-  online,
-  now,
-  signedOut,
-  onRecord,
-  onRemove,
-  removeError,
-}: StudySetViewProps) {
+export function StudySetView({ data, online, signedOut, ...rest }: StudySetViewProps) {
   const { t } = useLocale();
   if (signedOut || data === undefined || data === null) {
     return (
@@ -106,8 +124,90 @@ export function StudySetView({
       </div>
     );
   }
+  return <LoadedSet data={data} online={online} t={t} {...rest} />;
+}
+
+function LoadedSet({
+  data,
+  online,
+  now,
+  t,
+  onRecord,
+  onRemove,
+  removeError,
+  onSaveEdit,
+  onUndoEdit,
+  initialPanel,
+}: Omit<StudySetViewProps, "data" | "signedOut"> & { data: SetData; t: StudyT }) {
   const { set, block, note } = data;
   const last = data.attempts[0];
+  const version = data.blockVersion;
+  const canEdit = Boolean(onSaveEdit && version);
+  const [edit, dispatchEdit] = useReducer(
+    setEditReducer,
+    initialPanel === "edit" && canEdit && version
+      ? setEditReducer(closedEdit, { type: "open", version })
+      : closedEdit
+  );
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const closeToast = useCallback(() => setToast(null), []);
+  // After Undo: taken back, or not, because the block changed again after the edit.
+  const [undoNote, setUndoNote] = useState<"undone" | "changed" | null>(null);
+  const editButton = useRef<HTMLButtonElement>(null);
+  const focusEdit = useRef(false);
+  const saving = useRef(false);
+
+  // Closing the edit list (Cancel, or a save) puts focus back on Edit.
+  useEffect(() => {
+    if (edit.phase !== "closed" || !focusEdit.current) return;
+    focusEdit.current = false;
+    editButton.current?.focus();
+  }, [edit.phase]);
+
+  const openEdit = () => {
+    if (!version) return;
+    setUndoNote(null);
+    dispatchEdit({ type: "open", version });
+  };
+  const cancelEdit = () => {
+    focusEdit.current = true;
+    dispatchEdit({ type: "cancel" });
+  };
+  const saveEdit = (next: StudyPreview, before: StudyPreview) => {
+    const base = edit.baseVersion;
+    if (!onSaveEdit || !base || saving.current) return;
+    saving.current = true;
+    dispatchEdit({ type: "save" });
+    onSaveEdit(next, base)
+      .then((result) => {
+        if (result.status === "changed") {
+          dispatchEdit({ type: "changed" });
+          return;
+        }
+        focusEdit.current = true;
+        dispatchEdit({ type: "saved" });
+        setToast(
+          makeToast(
+            t("st.se.toast"),
+            onUndoEdit
+              ? async () => {
+                  const back = await onUndoEdit(before, result.version);
+                  setUndoNote(back.status === "changed" ? "changed" : "undone");
+                }
+              : undefined
+          )
+        );
+      })
+      .catch(() => dispatchEdit({ type: "saveError" }))
+      .finally(() => {
+        saving.current = false;
+      });
+  };
+  const reloadEdit = () => {
+    if (version) dispatchEdit({ type: "reload", version });
+  };
+  const editing = edit.phase !== "closed";
+
   return (
     <div
       className="tp-page tp-page--narrow tp-study-stack"
@@ -139,26 +239,64 @@ export function StudySetView({
             <TpIcon name="volume" size="sm" />
             <span>{t("st.set.listen")}</span>
           </Link>
-          <button
-            className="tp-btn tp-btn--ghost"
-            type="button"
-            data-action="remove-set"
-            onClick={onRemove}
-          >
-            <TpIcon name="x" size="sm" />
-            <span>{t("st.set.remove")}</span>
-          </button>
+          {editing ? null : (
+            <>
+              {canEdit ? (
+                <button
+                  ref={editButton}
+                  className="tp-btn tp-btn--ghost"
+                  type="button"
+                  data-action="edit-set"
+                  onClick={openEdit}
+                >
+                  <TpIcon name="edit" size="sm" />
+                  <span>{t("st.set.edit")}</span>
+                </button>
+              ) : null}
+              <button
+                className="tp-btn tp-btn--ghost"
+                type="button"
+                data-action="remove-set"
+                onClick={onRemove}
+              >
+                <TpIcon name="x" size="sm" />
+                <span>{t("st.set.remove")}</span>
+              </button>
+            </>
+          )}
         </div>
       </header>
       {online ? null : <OfflineNotice text={t("gx.offline")} />}
       {removeError ? <Notice text={t("st.set.removeError")} /> : null}
-      {block.type === "flashcards" ? (
+      {undoNote === "changed" ? <Notice text={t("st.se.undoChanged")} /> : null}
+      {undoNote === "undone" ? (
+        <output className="tp-notice" data-tone="info">
+          <span className="tp-notice__icon">
+            <TpIcon name="undo" size="sm" />
+          </span>
+          <span className="tp-notice__text">{t("st.se.undone")}</span>
+        </output>
+      ) : null}
+      {editing && version ? (
+        <SetEditor
+          key={edit.baseVersion ?? ""}
+          base={blockPreview(block)}
+          pageTitle={note.title}
+          state={edit}
+          currentVersion={version}
+          t={t}
+          onSave={saveEdit}
+          onCancel={cancelEdit}
+          onReload={reloadEdit}
+        />
+      ) : block.type === "flashcards" ? (
         <DeckPanel setId={set.setId} data={block.data} states={data.states} now={now} t={t} />
       ) : block.type === "quiz" ? (
         <QuizPanel key={block.id} data={block.data} t={t} onRecord={onRecord} />
       ) : (
         <TestPanel key={block.id} data={block.data} t={t} onRecord={onRecord} />
       )}
+      {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
     </div>
   );
 }

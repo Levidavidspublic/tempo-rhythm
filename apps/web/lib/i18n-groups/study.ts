@@ -284,6 +284,22 @@ export const en = {
   "st.ls.fromPage": "From your page:",
   "st.ls.notFound": "Your page doesn't seem to say. The coach can help with that.",
   "st.ls.askCoach": "Ask the coach",
+
+  // Editing a saved set (StudyFetch parity)
+  "st.set.edit": "Edit",
+  "st.se.title": "Edit this set",
+  "st.se.intro": "Changes are saved into the page {page}, with 5 minutes to undo.",
+  "st.se.schedule": "Cards you keep keep their review times. New cards start fresh.",
+  "st.se.save": "Save changes",
+  "st.se.cancel": "Cancel",
+  "st.se.saveError": "That didn't save. Your edits are still here.",
+  "st.se.changed":
+    "This set changed in its page after you started editing, so your edits weren't saved over it. Reload to start again from the newest version.",
+  "st.se.reload": "Reload the newest version",
+  "st.se.toast": "Changes saved to the page",
+  "st.se.undone": "Taken back. The set is as it was.",
+  "st.se.undoChanged":
+    "This set changed again after your edit, so Undo would write over that. Nothing was taken back.",
 } as const;
 
 export type StudyCopyKey = keyof typeof en;
@@ -556,4 +572,19 @@ export const he: Record<StudyCopyKey, string> = {
   "st.ls.fromPage": "מתוך הדף שלכם:",
   "st.ls.notFound": "נראה שהדף לא מתייחס לזה. המאמן יכול לעזור.",
   "st.ls.askCoach": "לשאול את המאמן",
+
+  "st.set.edit": "עריכה",
+  "st.se.title": "עריכת החומר",
+  "st.se.intro": "השינויים נשמרים בדף {page}, ואפשר לבטל אותם במשך 5 דקות.",
+  "st.se.schedule": "כרטיסים שנשארים שומרים על זמני החזרה שלהם. כרטיסים חדשים מתחילים מההתחלה.",
+  "st.se.save": "שמירת השינויים",
+  "st.se.cancel": "ביטול",
+  "st.se.saveError": "השמירה לא עברה. העריכות שלכם עדיין כאן.",
+  "st.se.changed":
+    "החומר השתנה בדף אחרי שהתחלתם לערוך, ולכן העריכות לא נשמרו מעליו. אפשר לטעון מחדש ולהתחיל מהגרסה החדשה ביותר.",
+  "st.se.reload": "טעינת הגרסה החדשה ביותר",
+  "st.se.toast": "השינויים נשמרו בדף",
+  "st.se.undone": "בוטל. החומר חזר להיות כמו שהיה.",
+  "st.se.undoChanged":
+    "החומר השתנה שוב אחרי העריכה, ולכן ביטול היה כותב מעל השינוי. שום דבר לא בוטל.",
 };

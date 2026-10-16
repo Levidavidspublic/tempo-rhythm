@@ -142,9 +142,14 @@ export function draftFrom(preview: StudyPreview): Draft {
   return { preview, title: preview.data.title, items };
 }
 
-/** A fresh item id that no item (and no section) in the draft uses yet. */
+/**
+ * A fresh item id that no item (and no section) in the draft uses yet. Ids the draft started from
+ * stay taken after a remove: a saved card's schedule is keyed by its id, so a new card never
+ * takes a removed card's id (and its schedule).
+ */
 function freshId(draft: Draft): string {
   const taken = new Set(draft.items.map((item) => item.id));
+  for (const item of draftFrom(draft.preview).items) taken.add(item.id);
   if (draft.preview.kind === "test")
     for (const section of draft.preview.data.sections) taken.add(section.id);
   let n = draft.items.length + 1;

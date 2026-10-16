@@ -21,7 +21,9 @@ import { BackToStudy, type RecordAttempt, type SetData, StudySetView } from "./S
  * AdaptiveQuiz over the core engine, in the block's mode. A practice test: TestRunner with the
  * core scorer. Quizzes and tests end in ScoreCard and record the attempt. "Open the page" goes to
  * the page holding the block; "Remove set" takes it off the hub (the page stays) with a 5-minute
- * Undo.
+ * Undo. "Edit" opens the Turn-into edit list on the saved set and saves it back into the page
+ * (`study.updateBlock`, from the block version it started at) with a 5-minute Undo
+ * (`study.undoUpdate`).
  */
 
 export function StudySetScreen({ setId }: { setId: string }) {
@@ -48,6 +50,8 @@ function StudySetData({ setId }: { setId: string }) {
   const record = useMutation(api.study.recordAttempt);
   const remove = useMutation(api.study.removeSet);
   const restore = useMutation(api.study.restoreSet);
+  const update = useMutation(api.study.updateBlock);
+  const undoUpdate = useMutation(api.study.undoUpdate);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [removeError, setRemoveError] = useState(false);
   const closeToast = useCallback(() => setToast(null), []);
@@ -70,6 +74,8 @@ function StudySetData({ setId }: { setId: string }) {
         onRecord={onRecord}
         onRemove={onRemove}
         removeError={removeError}
+        onSaveEdit={(next, baseVersion) => update({ setId: id, data: next.data, baseVersion })}
+        onUndoEdit={(before, version) => undoUpdate({ setId: id, data: before.data, version })}
       />
       {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
     </>

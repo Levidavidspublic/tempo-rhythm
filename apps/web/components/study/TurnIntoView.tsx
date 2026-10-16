@@ -433,7 +433,8 @@ const ADD_KEY: Record<StudyBlockType, MessageKey> = {
   test: "st.ed.add.test",
 };
 
-function DraftEditor({
+/** The edit list (change, add, remove items), shared by the preview and a saved set's Edit. */
+export function DraftEditor({
   draft,
   kind,
   t,
