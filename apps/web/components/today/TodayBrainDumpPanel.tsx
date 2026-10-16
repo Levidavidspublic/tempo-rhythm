@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const urgencyTone: Record<BrainDumpPriority["urgency"], string> = {
-  now: "border-[#D97757]/30 bg-[#D97757]/10 text-[#9A4C2F]",
+  now: "border-primary/30 bg-primary/10 text-primary",
   soon: "border-primary/20 bg-primary/10 text-primary",
   later: "border-border bg-muted/60 text-muted-foreground",
 };
@@ -182,10 +182,10 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
       className="overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 shadow-[0_16px_45px_rgba(26,25,23,0.08)]"
       aria-labelledby="today-brain-dump-heading"
     >
-      <div className="border-b border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.22),transparent_40%),linear-gradient(135deg,rgba(255,248,240,0.98),rgba(255,255,255,0.85))] px-6 py-6">
+      <div className="border-b border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.22),transparent_40%),linear-gradient(135deg,var(--color-card),var(--color-surface-sunken))] px-6 py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#D97757]/20 bg-white/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A4C2F]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               Brain dump to plan
             </div>
@@ -204,7 +204,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+          <div className="rounded-2xl border border-border/70 bg-card/80 px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
               Best input
             </p>
@@ -318,7 +318,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
         <div className="space-y-4">
           {isPlanning ? (
             <output
-              className="flex min-h-64 flex-col justify-center gap-4 rounded-[1.75rem] border border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,241,235,0.92))] p-8 text-center"
+              className="flex min-h-64 flex-col justify-center gap-4 rounded-[1.75rem] border border-border/80 bg-[linear-gradient(180deg,var(--color-card),var(--color-surface-sunken))] p-8 text-center"
               aria-live="polite"
             >
               <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" aria-hidden />
@@ -330,7 +330,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
               </div>
             </output>
           ) : !plan ? (
-            <div className="flex min-h-64 flex-col justify-between rounded-[1.75rem] border border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,241,235,0.92))] p-5">
+            <div className="flex min-h-64 flex-col justify-between rounded-[1.75rem] border border-border/80 bg-[linear-gradient(180deg,var(--color-card),var(--color-surface-sunken))] p-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Prioritized output
@@ -348,7 +348,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                 {["Now", "Soon", "Later"].map((lane) => (
                   <div
                     key={lane}
-                    className="rounded-[1.25rem] border border-border/70 bg-white/70 px-4 py-4 text-sm text-muted-foreground"
+                    className="rounded-[1.25rem] border border-border/70 bg-card/70 px-4 py-4 text-sm text-muted-foreground"
                   >
                     <p className="font-medium text-foreground">{lane}</p>
                     <p className="mt-2">Empty until you run the first sorting pass.</p>
@@ -358,7 +358,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-[1.75rem] border border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,244,239,0.92))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+              <div className="rounded-[1.75rem] border border-border/80 bg-[linear-gradient(180deg,var(--color-card),var(--color-surface-sunken))] p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -375,7 +375,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                   </div>
                   {laneSummary ? (
                     <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em]">
-                      <span className="rounded-full border border-[#D97757]/30 bg-[#D97757]/10 px-3 py-1 text-[#9A4C2F]">
+                      <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">
                         {laneSummary.now} now
                       </span>
                       <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">
