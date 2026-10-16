@@ -813,3 +813,48 @@
    its text while you type. */
 .tpl-skel__card { min-height: calc(var(--tp-space-20) * 2); }
 .bld-split > .tp-paper { width: 100%; margin-inline: 0; }
+
+/* Tasks at 390 px: a long project name on a row's chip wraps instead of widening every row
+   (the page measured 447 px wide); grouped views and the view switcher keep the 16 px gutter. */
+.tk-row .tp-chip { white-space: normal; max-width: 100%; overflow-wrap: anywhere; }
+.tk-row .tp-task-row__title { overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .tp-page > :is(.tk-groups, .tk-views) { padding-inline: var(--tp-space-4); }
+  /* The create form's extra fields sit two to a row on a phone, so the list starts sooner. */
+  .tk-create__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tk-create__more { gap: var(--tp-space-3); }
+}
+
+/* List rows (calendar events, routine steps, notes): a long title wraps instead of being cut to
+   one line with no way to read the rest. */
+.tp-list-row__title { white-space: normal; overflow-wrap: anywhere; }
+
+/* Touch: small buttons and segmented options reach the 44 px touch size on touch screens
+   (they are 36 px for a mouse). */
+@media (pointer: coarse) {
+  .tp-btn--sm { min-height: var(--tp-touch); }
+  .tp-btn--sm.tp-btn--icon { width: var(--tp-touch); }
+  .tp-segmented .tp-seg__opt { min-height: var(--tp-touch); }
+}
+/* Checklists (/tasks/checklists). Layout only. */
+.ck-cards { list-style: none; margin: 0; padding: 0; }
+.ck-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+.ck-card__head { align-items: flex-start; margin-bottom: 0; }
+.ck-card__title { flex: 1 1 auto; min-width: 0; display: grid; gap: var(--tp-space-1); }
+.ck-card__title .tp-h3 { margin: 0; }
+.ck-step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-1) var(--tp-space-2); }
+.ck-step__check { flex: 1 1 calc(var(--tp-space-20) * 2); min-width: 0; }
+.ck-step__actions { display: inline-flex; gap: var(--tp-space-1); }
+.ck-step__edit, .ck-add { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); flex: 1 1 100%; padding-block: var(--tp-space-2); }
+:is(.ck-step__edit, .ck-add) .tp-input { flex: 1 1 calc(var(--tp-space-20) * 2.5); min-width: 0; }
+/* Priority (production /tasks/priority). Layout only. */
+.prio-grid { display: grid; gap: var(--tp-space-8); }
+@media (min-width: 1024px) { .prio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .tp-page > .prio-grid { padding-inline: var(--tp-space-4); } }
+.prio-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.prio-card { display: grid; gap: var(--tp-space-3); }
+.prio-card__head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--tp-space-2); }
+.prio-card__head .tp-task-row__title { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.prio-card__controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3); }
+.prio-card__controls .tp-field { flex: 1 1 calc(var(--tp-space-20) * 1.75); min-width: 0; }
+.prio-card__delete { margin-inline-start: auto; }

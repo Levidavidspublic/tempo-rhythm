@@ -1,27 +1,26 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
+import { StateEmpty, StateLoading, StateSignedOut } from "@/components/you/ScreenStates";
+import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import {
-  addStep,
-  progress,
-  removeStep,
-  renameStep,
-  toggleStep,
-  type ChecklistStep,
-  undoFeedback,
-} from "./checklistOps";
+import { addStep, type ChecklistStep, progress, removeStep, renameStep, toggleStep } from "./checklistOps";
 
 type OpenTask = Doc<"tasks"> & { checklist?: ChecklistStep[] };
 
-function messageFor(error: unknown) {
-  return error instanceof Error ? error.message : "Something went wrong. Please try again.";
-}
-
+/**
+ * /tasks/checklists (tasks.html, Checklist component): open tasks broken into small steps. Built on
+ * the v3 page, card, checklist and state classes; a failed save says so kindly (never Convex text),
+ * a deleted task gets the shared 5-minute Undo toast, and signed out shows a way in instead of a
+ * blank page.
+ */
 export function ChecklistBoard() {
+  const { t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
@@ -35,18 +34,6 @@ export function ChecklistBoard() {
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<{ taskId: Id<"tasks">; undoUntilMs: number } | null>(null);
   const [feedback, setFeedback] = useState("");
-  const undoInFlight = useRef(false);
-
-  useEffect(() => {
-    if (!removed) return;
-    const remaining = removed.undoUntilMs - Date.now();
-    if (remaining <= 0) {
-      setRemoved(null);
-      return;
-    }
-    const timeout = window.setTimeout(() => setRemoved(null), remaining);
-    return () => window.clearTimeout(timeout);
-  }, [removed]);
 
   const openTasks = useMemo(
     () =>
@@ -67,8 +54,8 @@ export function ChecklistBoard() {
     setFeedback("");
     try {
       await updateTask({ taskId: task._id, checklist });
-    } catch (error) {
-      setFeedback(messageFor(error));
+    } catch {
+      setFeedback(t("ck.saveError"));
     } finally {
       setPendingTaskId(null);
     }
@@ -80,72 +67,73 @@ export function ChecklistBoard() {
     try {
       const result = await removeTask({ taskId });
       setRemoved({ taskId, undoUntilMs: result.undoUntilMs });
-    } catch (error) {
-      setFeedback(messageFor(error));
+    } catch {
+      setFeedback(t("ck.saveError"));
     } finally {
       setPendingTaskId(null);
     }
   }
 
+  /** The toast awaits this; throwing keeps it open with "That didn't undo". */
   async function handleUndo() {
-    if (!removed || undoInFlight.current) return;
-    undoInFlight.current = true;
+    if (!removed) return;
     setPendingTaskId(removed.taskId);
-    setFeedback("");
     try {
       const result = await restoreTask({ taskId: removed.taskId });
-      setRemoved(null);
-      setFeedback(undoFeedback(result));
-    } catch (error) {
-      setFeedback(messageFor(error));
+      if (!result.success) throw new Error("undo window ended");
     } finally {
-      undoInFlight.current = false;
       setPendingTaskId(null);
     }
   }
 
+  const signedOut = !isLoading && (!isAuthenticated || profile === null);
+
   return (
-    <main className="container mx-auto max-w-5xl px-6 py-12">
-      <header className="mb-10 space-y-3">
-        <p className="font-eyebrow text-muted-foreground">Tasks</p>
-        <h1 className="font-heading text-4xl font-semibold text-foreground">Checklists</h1>
-        <p className="max-w-2xl text-muted-foreground">
-          Turn open tasks into small, manageable steps. Progress is progress, however small.
-        </p>
+    <div className="tp-page" data-component="PageLayout">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <span className="tp-eyebrow">{t("ck.eyebrow")}</span>
+          <h1 className="tp-pagehead__title">{t("ck.title")}</h1>
+          <p className="tp-pagehead__sub">{t("ck.sub")}</p>
+        </div>
       </header>
 
-      <div aria-live="polite" className="mb-6 min-h-6 text-sm text-muted-foreground">
-        {removed ? (
-          <span>
-            Task removed. {" "}
-            <button
-              className="font-semibold text-primary underline disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-              disabled={pendingTaskId === removed.taskId}
-              onClick={handleUndo}
-            >
-              Undo
-            </button>
+      {feedback ? (
+        <p className="tp-notice" data-tone="caution" role="alert">
+          <span className="tp-notice__icon">
+            <TpIcon name="alert" size="sm" />
           </span>
-        ) : (
-          feedback
-        )}
-      </div>
+          <span className="tp-notice__text">{feedback}</span>
+        </p>
+      ) : null}
 
-      {isLoading ? <p className="text-muted-foreground">Loading checklists…</p> : null}
-
-      {!isLoading && tasks !== undefined ? (
-        <div className="space-y-12">
-          <section aria-labelledby="checklists-with-steps" className="space-y-4">
-            <h2 id="checklists-with-steps" className="font-heading text-2xl font-semibold">
-              Your checklists
-            </h2>
+      {isLoading ? (
+        <StateLoading label={t("ck.loading")} rows={3} />
+      ) : signedOut ? (
+        <StateSignedOut />
+      ) : openTasks.length === 0 ? (
+        <StateEmpty
+          icon="checklist"
+          title={t("ck.noneTitle")}
+          body={t("ck.noneBody")}
+          action={
+            <Link className="tp-btn tp-btn--secondary" href="/tasks">
+              {t("ck.openTasks")}
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          <section aria-labelledby="checklists-with-steps" className="tp-section" data-component="Section">
+            <div className="tp-section__head">
+              <h2 id="checklists-with-steps" className="tp-section__title">
+                {t("ck.withSteps")}
+              </h2>
+            </div>
             {withSteps.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border p-6 text-muted-foreground">
-                No checklists yet. Add a first step below when you are ready.
-              </p>
+              <p className="tp-help">{t("ck.withStepsEmpty")}</p>
             ) : (
-              <ul className="grid gap-5">
+              <ul className="tp-cards ck-cards">
                 {withSteps.map((task) => (
                   <TaskChecklistCard
                     key={task._id}
@@ -159,14 +147,14 @@ export function ChecklistBoard() {
             )}
           </section>
 
-          <section aria-labelledby="tasks-without-steps" className="space-y-4">
-            <h2 id="tasks-without-steps" className="font-heading text-2xl font-semibold">
-              Add steps to a task
-            </h2>
-            {withoutSteps.length === 0 ? (
-              <p className="text-muted-foreground">Every open task already has steps.</p>
-            ) : (
-              <ul className="grid gap-4 sm:grid-cols-2">
+          {withoutSteps.length > 0 ? (
+            <section aria-labelledby="tasks-without-steps" className="tp-section" data-component="Section">
+              <div className="tp-section__head">
+                <h2 id="tasks-without-steps" className="tp-section__title">
+                  {t("ck.withoutSteps")}
+                </h2>
+              </div>
+              <ul className="tp-cards ck-cards">
                 {withoutSteps.map((task) => (
                   <TaskChecklistCard
                     key={task._id}
@@ -177,11 +165,20 @@ export function ChecklistBoard() {
                   />
                 ))}
               </ul>
-            )}
-          </section>
-        </div>
+            </section>
+          ) : null}
+        </>
+      )}
+
+      {removed ? (
+        <UndoToast
+          title={t("ck.removed")}
+          untilMs={removed.undoUntilMs}
+          onUndo={handleUndo}
+          onClose={() => setRemoved(null)}
+        />
       ) : null}
-    </main>
+    </div>
   );
 }
 
@@ -196,6 +193,7 @@ function TaskChecklistCard({
   onSave: (steps: ChecklistStep[]) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
+  const { t } = useLocale();
   const steps = task.checklist ?? [];
   const tally = progress(steps);
   const [newStep, setNewStep] = useState("");
@@ -221,62 +219,77 @@ function TaskChecklistCard({
   }
 
   return (
-    <li className="rounded-2xl border border-border bg-card p-5 shadow-card">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-heading text-xl font-semibold text-foreground">{task.title}</h3>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
-            {tally.completed} of {tally.total} steps
-          </p>
+    <li className="tp-card ck-card" data-component="ChecklistCard">
+      <div className="tp-card__head ck-card__head">
+        <div className="ck-card__title">
+          <h3 className="tp-h3" dir="auto">
+            {task.title}
+          </h3>
+          <span className="tp-checklist__count">
+            {t("ck.count").replace("{n}", String(tally.completed)).replace("{m}", String(tally.total))}
+          </span>
         </div>
-        <Button type="button" variant="outline" disabled={disabled} onClick={onDelete}>
-          Delete task
-        </Button>
+        <button className="tp-btn tp-btn--danger-ghost tp-btn--sm" type="button" disabled={disabled} onClick={onDelete}>
+          {t("ck.deleteTask")}
+        </button>
       </div>
 
       {steps.length > 0 ? (
-        <ul className="mb-4 space-y-2" aria-label={`${task.title} steps`}>
+        <ul className="tp-checklist" aria-label={t("ck.stepsOf").replace("{title}", task.title)}>
           {steps.map((step) => (
-            <li key={step.id} className="flex min-h-11 items-center gap-3 rounded-xl bg-surface-sunken px-3 py-2">
-              <input
-                type="checkbox"
-                checked={step.completed}
-                disabled={disabled}
-                aria-label={`Mark ${step.text} ${step.completed ? "not complete" : "complete"}`}
-                onChange={() => void onSave(toggleStep(steps, step.id))}
-                className="h-5 w-5 rounded border-border text-primary"
-              />
+            <li key={step.id} className="tp-checklist__item ck-step" data-done={step.completed ? "true" : undefined}>
               {editingId === step.id ? (
-                <form className="flex min-w-0 flex-1 gap-2" onSubmit={(event) => submitRename(event, step.id)}>
+                <form className="ck-step__edit" onSubmit={(event) => submitRename(event, step.id)}>
                   <input
-                    aria-label={`Rename ${step.text}`}
+                    className="tp-input"
+                    dir="auto"
+                    aria-label={t("ck.renameStep").replace("{step}", step.text)}
                     value={editingText}
                     onChange={(event) => setEditingText(event.target.value)}
-                    className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3"
                   />
-                  <Button type="submit" disabled={disabled || !editingText.trim()}>Save</Button>
+                  <button className="tp-btn tp-btn--secondary tp-btn--sm" type="submit" disabled={disabled || !editingText.trim()}>
+                    {t("ck.save")}
+                  </button>
+                  <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={() => setEditingId(null)}>
+                    {t("ck.cancel")}
+                  </button>
                 </form>
               ) : (
                 <>
-                  <span className={`min-w-0 flex-1 ${step.completed ? "text-muted-foreground line-through" : ""}`}>
-                    {step.text}
+                  <label className="tp-choice ck-step__check">
+                    <input
+                      type="checkbox"
+                      className="tp-checkbox"
+                      checked={step.completed}
+                      disabled={disabled}
+                      aria-label={`Mark ${step.text} ${step.completed ? "not complete" : "complete"}`}
+                      onChange={() => void onSave(toggleStep(steps, step.id))}
+                    />
+                    <span className="tp-choice__text tp-checklist__text" dir="auto">
+                      {step.text}
+                    </span>
+                  </label>
+                  <span className="ck-step__actions">
+                    <button
+                      className="tp-btn tp-btn--ghost tp-btn--sm"
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        setEditingId(step.id);
+                        setEditingText(step.text);
+                      }}
+                    >
+                      {t("ck.rename")}
+                    </button>
+                    <button
+                      className="tp-btn tp-btn--danger-ghost tp-btn--sm"
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => void onSave(removeStep(steps, step.id))}
+                    >
+                      {t("ck.remove")}
+                    </button>
                   </span>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => { setEditingId(step.id); setEditingText(step.text); }}
-                    className="min-h-11 px-2 text-sm font-medium text-primary"
-                  >
-                    Rename
-                  </button>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => void onSave(removeStep(steps, step.id))}
-                    className="min-h-11 px-2 text-sm font-medium text-destructive"
-                  >
-                    Remove
-                  </button>
                 </>
               )}
             </li>
@@ -284,17 +297,23 @@ function TaskChecklistCard({
         </ul>
       ) : null}
 
-      <form className="flex flex-col gap-2 sm:flex-row" onSubmit={submitNewStep}>
-        <label className="sr-only" htmlFor={`new-step-${task._id}`}>Add a step to {task.title}</label>
+      <form className="ck-add" onSubmit={submitNewStep}>
+        <label className="tp-sr-only" htmlFor={`new-step-${task._id}`}>
+          {t("ck.addStepTo").replace("{title}", task.title)}
+        </label>
         <input
           id={`new-step-${task._id}`}
+          className="tp-input"
+          dir="auto"
           value={newStep}
           disabled={disabled}
           onChange={(event) => setNewStep(event.target.value)}
-          placeholder="What is the next small step?"
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-foreground"
+          placeholder={t("ck.stepPh")}
         />
-        <Button type="submit" disabled={disabled || !newStep.trim()}>Add step</Button>
+        <button className="tp-btn tp-btn--secondary" type="submit" disabled={disabled || !newStep.trim()}>
+          <TpIcon name="plus" size="sm" />
+          <span>{t("ck.addStep")}</span>
+        </button>
       </form>
     </li>
   );
