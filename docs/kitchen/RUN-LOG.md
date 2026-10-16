@@ -30,7 +30,7 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 
 ## Now working on
 
-T3 Builder D (study web screens + gallery), T8 Builder G (plan backend + week/month grids + `/study/plan`) and Builder F (RecordSession), each in its own worktree. Next: screenshots + Delivery Gate per screen, then T10.
+T3 Builder D (study web screens + gallery). Fix builders for the T8 plan review and the record/T10 review. Next: merge, wiring smoke spec for `/study/*` (the dev-only E2E bypass lists routes in `apps/web/lib/e2eWiringRoutes.ts`), screenshots + Delivery Gate per screen.
 
 ## Log
 
@@ -46,6 +46,9 @@ T3 Builder D (study web screens + gallery), T8 Builder G (plan backend + week/mo
 | 2026-10-16 22:35 | `e8dd0f7` | T3 | Reviewer on the study backend: 4 findings (double tap, undo order, source-line injection, 200-row state cap), all fixed with tests (30 pass) | `bun test convex/study.test.ts` |
 | 2026-10-16 22:45 | `36638ed` | T3 | Builder C: study blocks draw as their own catalog cards (the red catalog test is green, list extended, invariant kept); FlashcardDeck, FlashcardReview, AdaptiveQuiz, TestRunner, ScoreCard; adapters to the core engine and scorer | `bun test packages/ui/src/study` (63 pass) |
 | 2026-10-16 22:55 | `c0e199b` | T9 | Builder H IngestSheet (27 tests) and Builder I MemoryManager parity (`memory.update`, search, edit with Undo) merged. Full suite: 2670 pass, 0 fail; lint, typecheck, scans OK; pushed | `bun run test` |
+| 2026-10-16 23:15 | `f95b9d4` | T8 | Builder G: plans backend (`convex-arch:`), real MonthGrid / WeekGrid / ItemMover, CalendarViews Week and Month on the grids, `/study/plan` (PlanPath + SessionScheduler). Lead fix: each session keeps its local time across a DST change (2 new tests). Full suite 2711 pass | `bun test convex/plans.test.ts tests/unit/plan packages/core/plan` |
+| 2026-10-16 23:30 | `7f1390f` | T10, T8 | Builder J (reminders seam + `convex-arch:` deliver that always refuses, Settings → Reminders, ShareSheet, MiniAppFrame) and Builder F (RecordSession: consent, live words via Deepgram token, pins, review rows, save + Undo; `convex-arch:` recordings) merged. Full suite 2798 pass; lint, typecheck, scans OK; pushed | `bun run test` |
+| 2026-10-16 23:40 | — | T8, T10 | Reviewers: plan (1 high, 4 medium, 4 low) and record/T10 (3 medium, 4 low). Two fix builders started with every finding | reviewer reports in this log's Decisions once fixed |
 
 ## Decisions
 
@@ -68,6 +71,10 @@ T3 Builder D (study web screens + gallery), T8 Builder G (plan backend + week/mo
 - Live provider round trips: there is no `DEEPINFRA_API_KEY` or `DEEPGRAM_API_KEY` in this sandbox (names checked, no values read).
 
 ## Notes for doc sync
+
+- The shell's `aside` has a 260 ms transition on every signed-in screen (measured on `/today`, `/settings/memory`, `/calendar`). DESIGN.md §7 caps motion at 250 ms. It is not in this run's files; listed here for the shell's owner.
+- `convex/voice.ts` does not count recording minutes; `recordings` counts voice + recording against the same daily budget, so the shared budget holds only from the recording side (Builder F).
+- The existing Hebrew `mm.*` strings in `apps/web/lib/i18n-groups/you.ts` are feminine singular (כתבי, נסי), not the neutral plural the briefs ask for (Builder I).
 
 - `factory/SLOTS.md` → Secrets does not list `DEEPINFRA_API_KEY` or `DEEPGRAM_API_KEY`, but `convex/lib/ai_router.ts` and `convex/voice.ts` read them.
 - HARD_RULES §6.1 still says Mistral; the code and PRD §7 use DeepSeek V4.1 Flash on DeepInfra.
