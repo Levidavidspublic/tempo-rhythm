@@ -2,7 +2,8 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ToastState, UNDO_WINDOW_MS, UndoToast } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TaskRowEditor, type TaskEditorUpdate } from "@/components/tasks/TaskRowEditor";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -214,6 +215,29 @@ export function projectForCreate(name: string): { projectId?: string; projectNam
   return { projectId: slugifyProjectName(projectName) || undefined, projectName };
 }
 
+/**
+ * The toast a delete shows: Undo until `undoUntilMs` (the server's, or the same 5 minutes in the
+ * local store), then it goes. There is one at a time; a newer delete replaces it.
+ */
+export function deletedTaskToast(
+  title: string,
+  undoUntilMs: number,
+  onUndo: () => Promise<void>
+): ToastState {
+  return { id: Date.now(), title, undoUntilMs, onUndo };
+}
+
+/** Undo in the local store: the task goes back where it was, and never twice. */
+export function restoreLocalTask<T extends { id: string }>(
+  tasks: T[],
+  task: T,
+  index: number
+): T[] {
+  if (tasks.some((item) => item.id === task.id)) return tasks;
+  const at = Math.min(Math.max(index, 0), tasks.length);
+  return [...tasks.slice(0, at), task, ...tasks.slice(at)];
+}
+
 function getViewTitle(view: TaskView, t: Translate, projectSlug?: string): string {
   // A project's title is its own name (user data), so it is not translated.
   if (view === "project") return titleFromProjectSlug(projectSlug ?? "project");
@@ -246,6 +270,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   const setTaskRepeatCfg = useMutation(api.tasks.setTaskRepeatCfg);
   const updateTask = useMutation(api.tasks.update);
   const removeTask = useMutation(api.tasks.remove);
+  const restoreTask = useMutation(api.tasks.restore);
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
   const [localTasks, setLocalTasks] = useState<LocalTaskRecord[]>([]);
   const [draft, setDraft] = useState<Draft>(() => ({
@@ -254,6 +279,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     projectName: view === "project" ? getViewTitle(view, t, projectSlug) : defaultDraft.projectName,
   }));
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const closeToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
     if (allowLocalTaskViews) {
@@ -451,12 +478,31 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     setEditingId(null);
   };
 
+  const cancelEdit = () => setEditingId(null);
+
   const handleDelete = async (task: TaskViewRecord) => {
     if (!taskStoreReady) return;
     if (usesConvex) {
-      await removeTask({ taskId: task.id as Id<"tasks"> });
+      const taskId = task.id as Id<"tasks">;
+      const { undoUntilMs } = await removeTask({ taskId });
+      setToast(
+        deletedTaskToast(t("tasks.deleted"), undoUntilMs, async () => {
+          // A false here means the server no longer lets it back; the toast says Undo failed.
+          const { success } = await restoreTask({ taskId });
+          if (!success) throw new Error("Task not restored");
+        })
+      );
     } else if (usesLocalStore) {
+      const index = localTasks.findIndex((item) => item.id === task.id);
+      const removed = localTasks[index];
       persistLocal((tasks) => tasks.filter((item) => item.id !== task.id));
+      if (removed) {
+        setToast(
+          deletedTaskToast(t("tasks.deleted"), Date.now() + UNDO_WINDOW_MS, async () =>
+            persistLocal((tasks) => restoreLocalTask(tasks, removed, index))
+          )
+        );
+      }
     }
     setEditingId((current) => (current === task.id ? null : current));
   };
@@ -718,6 +764,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           actionsDisabled={!taskStoreReady}
           onEdit={startEditing}
           onSave={(task, update) => void saveEdit(task, update)}
+          onCancelEdit={cancelEdit}
           onDelete={(task) => void handleDelete(task)}
           onToggle={(task) => void handleToggle(task)}
           onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
@@ -730,6 +777,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           actionsDisabled={!taskStoreReady}
           onEdit={startEditing}
           onSave={(task, update) => void saveEdit(task, update)}
+          onCancelEdit={cancelEdit}
           onDelete={(task) => void handleDelete(task)}
           onToggle={(task) => void handleToggle(task)}
           onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
@@ -741,11 +789,14 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           actionsDisabled={!taskStoreReady}
           onEdit={startEditing}
           onSave={(task, update) => void saveEdit(task, update)}
+          onCancelEdit={cancelEdit}
           onDelete={(task) => void handleDelete(task)}
           onToggle={(task) => void handleToggle(task)}
           onChecklistToggle={(task, itemId) => void handleChecklistToggle(task, itemId)}
         />
       )}
+
+      {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
     </div>
   );
 }
@@ -756,6 +807,7 @@ type TaskListProps = {
   actionsDisabled: boolean;
   onEdit: (task: TaskViewRecord) => void;
   onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onCancelEdit: () => void;
   onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
@@ -767,6 +819,7 @@ function TaskList({
   actionsDisabled,
   onEdit,
   onSave,
+  onCancelEdit,
   onDelete,
   onToggle,
   onChecklistToggle,
@@ -792,6 +845,7 @@ function TaskList({
           actionsDisabled={actionsDisabled}
           onEdit={onEdit}
           onSave={onSave}
+          onCancelEdit={onCancelEdit}
           onDelete={onDelete}
           onToggle={onToggle}
           onChecklistToggle={onChecklistToggle}
@@ -813,6 +867,7 @@ function GroupedTaskList<TGroup extends string>({
   actionsDisabled,
   onEdit,
   onSave,
+  onCancelEdit,
   onDelete,
   onToggle,
   onChecklistToggle,
@@ -836,6 +891,7 @@ function GroupedTaskList<TGroup extends string>({
             actionsDisabled={actionsDisabled}
             onEdit={onEdit}
             onSave={onSave}
+            onCancelEdit={onCancelEdit}
             onDelete={onDelete}
             onToggle={onToggle}
             onChecklistToggle={onChecklistToggle}
@@ -852,6 +908,7 @@ type TaskRowProps = {
   actionsDisabled: boolean;
   onEdit: (task: TaskViewRecord) => void;
   onSave: (task: TaskViewRecord, update: TaskEditorUpdate) => void;
+  onCancelEdit: () => void;
   onDelete: (task: TaskViewRecord) => void;
   onToggle: (task: TaskViewRecord) => void;
   onChecklistToggle: (task: TaskViewRecord, itemId: string) => void;
@@ -863,6 +920,7 @@ function TaskRow({
   actionsDisabled,
   onEdit,
   onSave,
+  onCancelEdit,
   onDelete,
   onToggle,
   onChecklistToggle,
@@ -871,7 +929,17 @@ function TaskRow({
   const isDone = task.status === "done";
   const checklistProgress = getChecklistProgress(task.checklist);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const named = (key: MessageKey) => fillSlot(t(key), "title", task.title);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  // Set when this editor closes by Save or Cancel: focus goes back to Edit, not to the page.
+  const refocusEditRef = useRef(false);
+
+  useEffect(() => {
+    if (editing || !refocusEditRef.current) return;
+    refocusEditRef.current = false;
+    editButtonRef.current?.focus();
+  }, [editing]);
+
+  const named =(key: MessageKey) => fillSlot(t(key), "title", task.title);
   // "{n} steps": the count stays a left-to-right number inside the sentence (DESIGN.md §10).
   const [stepsBefore, stepsAfter = ""] = t("tasks.steps").split("{n}");
 
@@ -895,7 +963,14 @@ function TaskRow({
             key={task.id}
             task={task}
             disabled={actionsDisabled}
-            onSave={(update) => onSave(task, update)}
+            onSave={(update) => {
+              refocusEditRef.current = true;
+              onSave(task, update);
+            }}
+            onCancel={() => {
+              refocusEditRef.current = true;
+              onCancelEdit();
+            }}
           />
         ) : (
           <span className="tp-task-row__title" dir="auto">
@@ -950,6 +1025,7 @@ function TaskRow({
       <div className="tk-row__actions">
         {!editing ? (
           <button
+            ref={editButtonRef}
             type="button"
             className="tp-btn tp-btn--ghost tp-btn--sm"
             disabled={actionsDisabled}

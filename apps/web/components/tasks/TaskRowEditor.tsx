@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type KeyboardEvent, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type {
   TaskChecklistItem,
@@ -21,7 +21,41 @@ type TaskRowEditorProps = {
   task: TaskViewRecord;
   disabled: boolean;
   onSave: (update: TaskEditorUpdate) => void;
+  onCancel: () => void;
 };
+
+/** Where a key was pressed: a one-line field (title, due date), a select, or the new-step field. */
+export type EditorFieldKind = "line" | "select" | "step";
+
+/** The parts of a keydown the editor's key rules read. */
+export type EditorKey = { key: string; isComposing: boolean; keyCode?: number };
+
+/**
+ * True while an input method (IME) is composing: that Enter or Escape belongs to the IME, not
+ * the editor. Safari sends the Enter that ends a composition with keyCode 229 and isComposing off.
+ */
+export function isComposingKey(event: EditorKey): boolean {
+  return event.isComposing || event.keyCode === 229;
+}
+
+/** An Enter the editor may act on. */
+export function isEditorEnter(event: EditorKey): boolean {
+  return event.key === "Enter" && !isComposingKey(event);
+}
+
+/** Enter saves from a one-line field or a select. In the new-step field it adds the step instead. */
+export function shouldSaveOnEnter(event: EditorKey, field: EditorFieldKind): boolean {
+  return isEditorEnter(event) && field !== "step";
+}
+
+/** Escape cancels the edit from any field. */
+export function shouldCancelOnEscape(event: EditorKey): boolean {
+  return event.key === "Escape" && !isComposingKey(event);
+}
+
+function editorKey(event: KeyboardEvent): EditorKey {
+  return { key: event.key, isComposing: event.nativeEvent.isComposing, keyCode: event.keyCode };
+}
 
 function dateInputValue(timestamp?: number): string {
   if (timestamp === undefined) return "";
@@ -38,7 +72,7 @@ function localEndOfDay(value: string): number | null {
   return new Date(year, month - 1, day + 1).getTime() - 1;
 }
 
-export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
+export function TaskRowEditor({ task, disabled, onSave, onCancel }: TaskRowEditorProps) {
   const { t } = useLocale();
   const [title, setTitle] = useState(task.title);
   const [priority, setPriority] = useState(task.priority);
@@ -46,6 +80,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
   const [dueDate, setDueDate] = useState(() => dateInputValue(task.dueAt));
   const [checklist, setChecklist] = useState<TaskChecklistItem[]>(() => task.checklist ?? []);
   const [newStep, setNewStep] = useState("");
+  const canSave = !disabled && title.trim().length > 0;
 
   const addStep = () => {
     const text = newStep.trim();
@@ -57,10 +92,34 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
     setNewStep("");
   };
 
+  const save = () => {
+    if (!canSave) return;
+    onSave({
+      title: title.trim(),
+      priority,
+      energy,
+      dueAt: localEndOfDay(dueDate),
+      checklist: checklist.length > 0 ? checklist : null,
+    });
+  };
+
+  // Enter in a field saves, the same as Save task. The editor is not a form: forms never nest here.
+  const saveOnEnter = (field: EditorFieldKind) => (event: KeyboardEvent) => {
+    if (!shouldSaveOnEnter(editorKey(event), field)) return;
+    event.preventDefault();
+    save();
+  };
+
   return (
     <fieldset
       className="tk-editor"
       aria-label={t("tasks.editName").replace("{title}", () => task.title)}
+      onKeyDown={(event) => {
+        if (!shouldCancelOnEscape(editorKey(event))) return;
+        // Taken here, so the shell's own Escape (it closes the coach) leaves this one alone.
+        event.preventDefault();
+        onCancel();
+      }}
     >
       <label className="tp-field">
         <span className="tp-label">{t("editor.taskTitle")}</span>
@@ -70,6 +129,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
           value={title}
           disabled={disabled}
           onChange={(event) => setTitle(event.target.value)}
+          onKeyDown={saveOnEnter("line")}
           className="tp-input"
         />
       </label>
@@ -81,6 +141,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
             value={priority}
             disabled={disabled}
             onChange={(event) => setPriority(event.target.value as TaskPriority)}
+            onKeyDown={saveOnEnter("select")}
             className="tp-input"
           >
             <option value="high">{t("tasks.level.high")}</option>
@@ -95,6 +156,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
             value={energy}
             disabled={disabled}
             onChange={(event) => setEnergy(event.target.value as TaskEnergy)}
+            onKeyDown={saveOnEnter("select")}
             className="tp-input"
           >
             <option value="low">{t("tasks.level.low")}</option>
@@ -110,6 +172,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
             value={dueDate}
             disabled={disabled}
             onChange={(event) => setDueDate(event.target.value)}
+            onKeyDown={saveOnEnter("line")}
             className="tp-input"
           />
         </label>
@@ -140,7 +203,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
             disabled={disabled}
             onChange={(event) => setNewStep(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
+              if (isEditorEnter(editorKey(event))) {
                 event.preventDefault();
                 addStep();
               }
@@ -158,22 +221,19 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
           </button>
         </div>
       </div>
-      <button
-        type="button"
-        className="tp-btn tp-btn--primary tk-editor__save"
-        disabled={disabled || !title.trim()}
-        onClick={() =>
-          onSave({
-            title: title.trim(),
-            priority,
-            energy,
-            dueAt: localEndOfDay(dueDate),
-            checklist: checklist.length > 0 ? checklist : null,
-          })
-        }
-      >
-        {t("tasks.save")}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="tp-btn tp-btn--primary tk-editor__save"
+          disabled={!canSave}
+          onClick={save}
+        >
+          {t("tasks.save")}
+        </button>
+        <button type="button" className="tp-btn tp-btn--ghost" onClick={onCancel}>
+          {t("tasks.cancel")}
+        </button>
+      </div>
     </fieldset>
   );
 }
