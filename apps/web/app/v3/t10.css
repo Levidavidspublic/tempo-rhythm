@@ -1,0 +1,98 @@
+/* Kitchen T10 stretch: Settings > Reminders, ShareSheet and MiniAppFrame. Layout only, tp-*
+   classes and --tp-* tokens; logical properties so dir="rtl" mirrors for free. No motion here:
+   the sheet's own enter/exit comes from tempo.css. */
+
+/* S14 Settings > Reminders */
+.tp-rem-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+}
+
+/* S26 ShareSheet */
+.tp-share-subject {
+  margin: 0 0 var(--tp-space-3);
+  font-size: var(--tp-text-sm);
+  color: var(--tp-ink-muted);
+  overflow-wrap: anywhere;
+}
+.tp-share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--tp-line);
+}
+.tp-share-list .tp-touch-row {
+  padding-block: var(--tp-space-2);
+  cursor: pointer;
+  font: inherit;
+}
+.tp-share-row__text {
+  display: grid;
+  gap: var(--tp-space-1);
+}
+.tp-share-status,
+.tp-share-private {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-2);
+  margin: var(--tp-space-3) 0 0;
+  font-size: var(--tp-text-sm);
+}
+.tp-share-status:empty {
+  margin: 0;
+}
+.tp-share-status[data-tone="done"] {
+  color: var(--tp-done);
+}
+.tp-share-status[data-tone="caution"] {
+  color: var(--tp-ink);
+}
+.tp-share-status[data-tone="caution"] .tp-icon {
+  color: var(--tp-caution);
+}
+
+/* S24 MiniAppFrame */
+.tp-miniapp {
+  display: grid;
+  gap: var(--tp-space-2);
+  min-width: 0;
+}
+.tp-miniapp__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tp-space-1);
+  margin: 0;
+  font-size: var(--tp-text-xs);
+  color: var(--tp-ink-muted);
+}
+.tp-miniapp__title {
+  margin: 0;
+  font-size: var(--tp-text-md);
+  overflow-wrap: anywhere;
+}
+.tp-miniapp__body {
+  margin: 0;
+  max-inline-size: var(--tp-measure);
+}
+.tp-miniapp__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-2);
+  margin: 0;
+  font-size: var(--tp-text-sm);
+}
+.tp-miniapp__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tp-space-2);
+}
+.tp-miniapp__frame {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 80px;
+  max-block-size: 800px;
+  border: 1px solid var(--tp-line-card);
+  border-radius: var(--tp-radius-md);
+  background: var(--tp-paper);
+}
