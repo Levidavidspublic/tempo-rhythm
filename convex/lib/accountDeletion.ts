@@ -46,6 +46,8 @@ export const USER_OWNED_TABLES = [
   "studyReviews",
   "studyAttempts",
   "studyPlans",
+  // Record a meeting or lecture (kitchen T8): a content-free lease, like `voiceSessions`.
+  "recordingSessions",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
