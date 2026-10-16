@@ -7,23 +7,35 @@ import { parseTempoBlocks } from "@tempo/utils";
 
 export type ShareCard = { front: string; back: string };
 
-/** One Anki field: tabs and line breaks would split the row, so they become single spaces. */
+/** One Anki field's text: tabs and line breaks would split the row, so they become single spaces. */
 function ankiField(text: string): string {
   return text.replace(/[\t\r\n]+/g, " ").trim();
 }
 
 /**
- * Cards as Anki's plain-text import reads them: `front<TAB>back`, one card per line. Cards with
- * an empty side after cleaning are left out, since Anki would reject them.
+ * A field as Anki's importer quotes it: in double quotes, with any `"` inside doubled. Quoting
+ * keeps a leading `#` from being read as a comment and a stray `"` from merging rows.
+ */
+function ankiQuoted(text: string): string {
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+/** The header Anki reads first: tab-separated fields, plain text (not HTML). */
+export const ANKI_HEADER = "#separator:tab\n#html:false\n";
+
+/**
+ * Cards as Anki's plain-text import reads them: the header, then `"front"<TAB>"back"`, one card
+ * per line. Cards with an empty side after cleaning are left out, since Anki would reject them;
+ * no cards gives an empty file.
  */
 export function toAnkiTsv(cards: readonly ShareCard[]): string {
   const lines: string[] = [];
   for (const card of cards) {
     const front = ankiField(card.front);
     const back = ankiField(card.back);
-    if (front && back) lines.push(`${front}\t${back}`);
+    if (front && back) lines.push(`${ankiQuoted(front)}\t${ankiQuoted(back)}`);
   }
-  return lines.length ? `${lines.join("\n")}\n` : "";
+  return lines.length ? `${ANKI_HEADER}${lines.join("\n")}\n` : "";
 }
 
 function baseName(title: string): string {
@@ -64,7 +76,10 @@ export function canSystemShare(nav: { share?: unknown } | undefined): boolean {
   return typeof nav?.share === "function";
 }
 
-/** Saves `text` as a file through a short-lived object URL, revoked straight after. */
+/** How long the object URL lives after the click: some browsers start the download late. */
+export const DOWNLOAD_REVOKE_MS = 5_000;
+
+/** Saves `text` as a file through a short-lived object URL, revoked a few seconds after. */
 export function downloadText(text: string, fileName: string, type: string): void {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement("a");
@@ -74,5 +89,5 @@ export function downloadText(text: string, fileName: string, type: string): void
   document.body.appendChild(a);
   a.click();
   a.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  window.setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_REVOKE_MS);
 }
