@@ -108,6 +108,7 @@ export function OnboardingFlow() {
   if (!profile || alreadyOnboarded || coach === undefined) {
     return (
       <Card>
+        <span className="tp-auth-card__brand">Tempo</span>
         <StateLoading label="set.onb.loading" rows={3} />
       </Card>
     );

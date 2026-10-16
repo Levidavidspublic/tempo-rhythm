@@ -141,7 +141,8 @@ function DeletedSignOut({ className }: { className: string }) {
 
 /**
  * Frame for the bare (no shell) v3 screens: onboarding and trial end. A skip link, the `.tp-auth`
- * main with the icon sprite (outside TempoShell), and the AuthCard loading / error states.
+ * main with the icon sprite (outside TempoShell), and the AuthCard loading / error states, each
+ * with the brand row so the card never looks blank.
  */
 export function BareScreen({
   testId,
@@ -175,6 +176,7 @@ export function BareScreen({
         <SettingsErrorBoundary
           fallback={(retry) => (
             <div className="tp-auth-card" data-component="AuthCard">
+              <span className="tp-auth-card__brand">Tempo</span>
               <StateError title={errorTitle} body={errorBody} onRetry={retry} heading="h1" extra={errorExtra} />
             </div>
           )}
@@ -182,6 +184,7 @@ export function BareScreen({
           <ProfileReady
             fallback={
               <div className="tp-auth-card" data-component="AuthCard">
+                <span className="tp-auth-card__brand">Tempo</span>
                 <StateLoading label={loading} rows={3} />
               </div>
             }

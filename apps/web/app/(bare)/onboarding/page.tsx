@@ -12,8 +12,8 @@ export default function Page() {
     <BareScreen
       testId="onboarding-route"
       loading="set.onb.loading"
-      errorTitle="set.profile.errorTitle"
-      errorBody="set.profile.errorBody"
+      errorTitle="set.onb.errorTitle"
+      errorBody="set.onb.errorBody"
     >
       <OnboardingFlow />
     </BareScreen>

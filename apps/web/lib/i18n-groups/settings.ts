@@ -325,6 +325,13 @@ export const en = {
   "set.onb.next": "Continue",
   "set.onb.finish": "Start using Tempo",
   "set.onb.loading": "Loading your setup", // new
+  "set.onb.errorTitle": "Couldn't open your setup.", // new
+  "set.onb.errorBody": "Nothing you chose is lost. Try again in a moment.", // new
+
+  // Signed out on a screen that needs an account (new)
+  "set.profile.signedOut": "Sign in to see your profile.",
+  "set.billing.signedOut": "Sign in to see your plan.",
+  "set.trial.signedOut": "Sign in to see your trial details.",
 
   // Approval: paused account (new)
   "set.approval.contact": "Open the Contact page",
@@ -644,6 +651,12 @@ export const he: Record<keyof typeof en, string> = {
   "set.onb.next": "המשך",
   "set.onb.finish": "להתחיל להשתמש ב-Tempo",
   "set.onb.loading": "טוען את ההגדרה שלך",
+  "set.onb.errorTitle": "לא הצלחנו לפתוח את ההגדרה.",
+  "set.onb.errorBody": "שום דבר ממה שבחרתם לא אבד. נסו שוב בעוד רגע.",
+
+  "set.profile.signedOut": "צריך להתחבר כדי לראות את הפרופיל.",
+  "set.billing.signedOut": "צריך להתחבר כדי לראות את המסלול.",
+  "set.trial.signedOut": "צריך להתחבר כדי לראות את פרטי הניסיון.",
 
   "set.approval.contact": "לדף יצירת הקשר",
 

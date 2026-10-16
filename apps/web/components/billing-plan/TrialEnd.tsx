@@ -5,10 +5,23 @@ import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { StateLoading, StateOffline } from "@/components/settings/states";
 import { TpIcon } from "@/components/tempo/TpIcon";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 import { formatUsd, isEarlyAccess, isOnTrial, TIERS } from "@/lib/settings/billing";
 
 const BASIC_MONTHLY = TIERS.find((tier) => tier.id === "basic")?.monthly ?? 10;
+
+/** The card's brand row (trial-end.html), also on the loading card so it never looks blank. */
+function TrialBrand() {
+  return (
+    <div className="tp-auth-card__brand">
+      <span className="tp-rail__mark" aria-hidden="true">
+        T
+      </span>
+      <span>Tempo</span>
+    </div>
+  );
+}
 
 /**
  * Trial ending (docs/design/v3/screens/web/trial-end.html), in the AuthCard on the bare layout.
@@ -21,22 +34,23 @@ export function TrialEnd() {
   const { t } = useLocale();
   const plan = useQuery(api.users.getMyPlan, {});
 
-  if (!plan) {
+  // undefined: still loading. null: no signed-in account, so say how to get back in.
+  if (plan === undefined || plan === null) {
     return (
       <div className="tp-auth-card" data-component="AuthCard">
-        <StateLoading label="set.trial.loading" rows={3} />
+        <TrialBrand />
+        {plan === undefined ? (
+          <StateLoading label="set.trial.loading" rows={3} />
+        ) : (
+          <StateSignedOut body={t("set.trial.signedOut")} />
+        )}
       </div>
     );
   }
 
   return (
     <div className="tp-auth-card" data-component="AuthCard">
-      <div className="tp-auth-card__brand">
-        <span className="tp-rail__mark" aria-hidden="true">
-          T
-        </span>
-        <span>Tempo</span>
-      </div>
+      <TrialBrand />
 
       <StateOffline title="set.trial.offTitle" body="set.trial.offBody" />
 
