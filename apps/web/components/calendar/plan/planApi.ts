@@ -3,20 +3,35 @@
 // A namespace import: test files swap convex/react module mocks, and a named import of a hook that
 // another file's mock lacks would stop this module from linking.
 import * as convexReact from "convex/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import type { BusyWindows } from "./busyWindows";
 
 /**
- * The plan screen's reads of the person's calendar, as hooks in one place, so tests can replace
- * this one module instead of convex/react.
+ * The plan screen's reads of the person's calendar and the re-plan's backend calls, as hooks in
+ * one place, so tests can replace this one module instead of convex/react.
  */
+
+/** One saved plan with its live tasks (`plans.get`). */
+export function usePlan(planId: Id<"studyPlans">) {
+  return convexReact.useQuery(api.plans.get, { planId });
+}
+
+/** "Re-plan the rest" and its Undo (`plans.replan`, `plans.undoReplan`). */
+export function useReplanActions() {
+  return {
+    replan: convexReact.useMutation(api.plans.replan),
+    undoReplan: convexReact.useMutation(api.plans.undoReplan),
+  };
+}
 
 /**
  * Events and dated tasks over `span` (busyWindows.ts): one `calendar_events.listInRange` per
  * window, never more than 31 days each, and one `tasks.listDueInRange` over the whole range.
- * `events` stays undefined until every window has answered. There are exactly MAX_BUSY_WINDOWS
- * (6) event queries; the ones past the span's windows are skipped.
+ * There are exactly MAX_BUSY_WINDOWS (6) event queries; the ones past the span's windows are
+ * skipped. Until every window has answered, the last range's answer stands in (a later date
+ * picked in the re-plan preview widens the range, and the preview shouldn't empty meanwhile).
  */
 export function useBusyTime(span: BusyWindows | null) {
   const w = span?.windows ?? [];
@@ -33,5 +48,13 @@ export function useBusyTime(span: BusyWindows | null) {
     if (count === 0 || parts.some((part) => part === undefined)) return undefined;
     return parts.flatMap((part) => part ?? []);
   }, [count, e0, e1, e2, e3, e4, e5]);
+  const last = useRef<{
+    events: NonNullable<typeof events>;
+    tasks: NonNullable<typeof tasks>;
+  } | null>(null);
+  useEffect(() => {
+    if (events !== undefined && tasks !== undefined) last.current = { events, tasks };
+  }, [events, tasks]);
+  if (span && (events === undefined || tasks === undefined) && last.current) return last.current;
   return { events, tasks };
 }

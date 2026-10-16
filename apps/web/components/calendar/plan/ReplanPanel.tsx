@@ -10,10 +10,9 @@
  *
  * The new times come from `replanRest` (packages/core/plan/replan.ts): done sessions, sessions in
  * progress and fixed events stay where they are. Data: plans.get, and busy time from today to the
- * plan's date read in windows of at most 31 days (busyWindows.ts, planApi.ts). Copy:
- * lib/i18n-groups/plan.ts.
+ * plan's date (or the later one picked in the preview) read in windows of at most 31 days
+ * (busyWindows.ts, planApi.ts). Copy: lib/i18n-groups/plan.ts.
  */
-import { useMutation, useQuery } from "convex/react";
 import {
   type KeyboardEvent,
   type RefObject,
@@ -25,7 +24,6 @@ import {
 } from "react";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { LocalDate } from "../../../../../packages/core/plan/calendar-math";
 import {
@@ -47,7 +45,7 @@ import {
   shortDate,
 } from "../planCopy";
 import { busyWindows } from "./busyWindows";
-import { useBusyTime } from "./planApi";
+import { useBusyTime, usePlan, useReplanActions } from "./planApi";
 import { type ReplanOverrides, replanInput, replanNotice, replanToastTitle } from "./replanForm";
 
 /** Local date and clock minute now, read in the browser and again every minute. */
@@ -324,9 +322,8 @@ export type ReplanPanelProps = {
 };
 
 export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) {
-  const saved = useQuery(api.plans.get, { planId });
-  const replan = useMutation(api.plans.replan);
-  const undoReplan = useMutation(api.plans.undoReplan);
+  const saved = usePlan(planId);
+  const { replan, undoReplan } = useReplanActions();
   const liveNow = useNowMoment();
   const [open, setOpen] = useState(false);
   // The preview holds still while it is open: now is read once, when it opens.
@@ -343,7 +340,8 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
 
   const now = open && openedAt ? openedAt : liveNow;
   const deadline = saved?.plan.deadline;
-  const span = now && deadline ? busyWindows(now.date, deadline) : null;
+  // Up to the later date when one is picked here, so the days it adds have their busy time too.
+  const span = now && deadline ? busyWindows(now.date, overrides.deadline ?? deadline) : null;
   const { events, tasks } = useBusyTime(span);
 
   const input = useMemo(
