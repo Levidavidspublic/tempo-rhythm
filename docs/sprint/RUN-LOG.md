@@ -42,3 +42,19 @@ How the runs work:
 | 08:25 | branch preview `44bd624` (account 1, 2 tasks ticked) | S4 | `/week` → this week's page: glance in all 8 variants, 0 errors: **Finished 2** (sparkline peaks on Friday), **Focus time 0 min**, the day grid with Less/More, readable in light and dark, en and he. At 390 the three cards stacked to ~600 px, so the two numbers now sit side by side | [weekly glance](../demo/evidence/s4-week-glance.jpg) |
 | 08:27 | branch preview `44bd624` | S3 | Plan view at 390 dark he: 390 px wide now (was 513), reasons wrap inside their chips | — |
 | 08:28 | — | S5 | `docs/demo/DEMO-SCRIPT.md` written: 5 minutes, the exact taps on phone and laptop, what to say, a "before the demo" list for Amit and a "if something goes sideways" table | [DEMO-SCRIPT.md](../demo/DEMO-SCRIPT.md) |
+
+### UI ideas for next week
+
+Seen during the demo run, outside the demo path or bigger than a polish fix. Not built here.
+
+1. **Insights with PanelUI.** `/insights` draws its own bar and line charts and pattern cards; PanelUI's KPI and Day Grid (now in `components/panelui`) would make it match the weekly glance. Phone first: the charts there are wide.
+2. **One brain dump, not two.** Today still has the older brain-dump panel (English only, copy like "We run a planning pass on the server when it is available"), next to the v3 `/brain-dump` page that the demo uses. Either link to `/brain-dump` from Today or port the panel to v3 and the en/he dictionary.
+3. **Landing in Hebrew.** The landing, sign-in and sign-up pages are English-only by design (`dir="ltr" lang="en"`). Open PR #768 moves the landing copy into en/he dictionaries.
+4. **Legal pages.** `/privacy` and `/terms` are generic Hebrew template text (now laid out right to left). HARD_RULES §10 says they should come from GetTerms; the sign-up card asks people to agree to them.
+5. **OpenUI, next step.** Today the program is built from the stored proposal. Next: let the coach stream OpenUI Lang for UI that changes nothing (a choice, a checklist, "which of these?"), while every change stays a server-side proposal with Accept and Undo. Needs a coach-prompt change in `convex/` (a `convex-arch` ticket).
+6. **First name.** A new account is greeted with its email handle ("Hi, dana.k84") because onboarding's name step is never offered. Route a first sign-in through `/onboarding`, or ask for a name on the waiting screen.
+7. **Coach duplicates.** A proposal suggested a task that was already on Today. The proposal guard could compare titles with today's open tasks (backend).
+8. **The sign-in email.** It is a bare "Sign in to <host>" with one link (Convex Auth's Resend provider); a short branded line would help it look less like spam.
+9. **Phone overlaps.** The floating coach button sits over row actions at the bottom right (seen on the Notes list at 390 px).
+10. **Sparklines in Hebrew.** PanelUI's sparklines run Monday→Sunday left to right on a right-to-left page; mirror them, or keep time left to right on purpose.
+11. **Habits and routines.** PanelUI's Day Grid fits habit history on a phone better than the current list.
