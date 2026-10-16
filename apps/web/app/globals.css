@@ -750,3 +750,9 @@
 .tp-composer__count { font-variant-numeric: tabular-nums; }
 .tp-composer__actions { margin-inline-start: auto; display: inline-flex; align-items: center; gap: var(--tp-space-1); }
 .tp-composer__actions .tp-composer__send { margin-inline-start: 0; }
+
+/* Loading states (StateLoading): .tp-state centres its children, which shrank the skeleton list to
+   nothing, and a row without its box put the lines in the zero-width first column. Both showed a
+   blank body while a screen loaded (settings, onboarding, billing, memory). */
+.tp-state--loading > .tp-skel-list { justify-self: stretch; width: 100%; }
+.tp-skel-row > .tp-skel-row__lines:only-child { grid-column: 1 / -1; }
