@@ -93,6 +93,18 @@ export const en = {
   "st.dk.shuffle": "Shuffle",
   "st.dk.keys": "Space flips. Arrows move.",
 
+  // Typed recall: type the answer before the card turns over (review session and deck)
+  "st.typed.toggle": "Type answers",
+  "st.rc.yourAnswer": "Your answer",
+  "st.rc.check": "Check",
+  "st.rc.matches": "Matches",
+  "st.rc.close": "Close",
+  "st.rc.different": "Different",
+  "st.rc.empty": "No answer typed",
+  "st.rc.suggested": "Suggested",
+  "st.rc.keys.review": "Enter checks. Escape clears. Then 1 to 4 grade it.",
+  "st.rc.keys.deck": "Enter checks. Escape clears.",
+
   // AdaptiveQuiz labels
   "st.qz.position": "Question {current}",
   "st.qz.check": "Check",
@@ -359,6 +371,17 @@ export const he: Record<StudyCopyKey, string> = {
   "st.dk.next": "הבא",
   "st.dk.shuffle": "ערבוב",
   "st.dk.keys": "רווח הופך. החצים מעבירים.",
+
+  "st.typed.toggle": "להקליד תשובות",
+  "st.rc.yourAnswer": "התשובה שלכם",
+  "st.rc.check": "בדיקה",
+  "st.rc.matches": "תואמת",
+  "st.rc.close": "קרובה",
+  "st.rc.different": "שונה",
+  "st.rc.empty": "לא הוקלדה תשובה",
+  "st.rc.suggested": "מוצע",
+  "st.rc.keys.review": "Enter בודק. Escape מנקה את השדה. אחר כך 1 עד 4 מדרגים.",
+  "st.rc.keys.deck": "Enter בודק. Escape מנקה את השדה.",
 
   "st.qz.position": "שאלה {current}",
   "st.qz.check": "בדיקה",

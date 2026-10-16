@@ -1,4 +1,5 @@
-import { type KeyboardEvent, type ReactNode, useReducer } from "react";
+import { type KeyboardEvent, type ReactNode, type Ref, useEffect, useReducer, useRef } from "react";
+import { compareRecall, suggestedButton } from "../../../core/srs/recall";
 import {
   newCardState,
   previewIntervals,
@@ -7,6 +8,7 @@ import {
 } from "../../../core/srs/sm2";
 import { Check } from "../icons";
 import { fillNodes, fillText, isActivationKey, isFromControl } from "./shared";
+import { RecallField, type RecallLabels, RecallVerdict, recallKeyDown } from "./TypedRecall";
 
 /**
  * S19 FlashcardReview: the review session view. One card at a time: Show answer, then Again / Hard
@@ -19,6 +21,13 @@ import { fillNodes, fillText, isActivationKey, isFromControl } from "./shared";
  *
  * Keyboard on the session's buttons: Space or Enter shows the answer (Show answer is a button);
  * 1 to 4 grade once it is shown.
+ *
+ * Typed mode (`typed`, optional): the card shows its front, a labelled "Your answer" field and
+ * Check instead of Show answer. Enter in the field checks, Escape clears it. Check turns the card
+ * over and shows what was typed with "Matches" / "Close" / "Different" (or "No answer typed"),
+ * from `compareRecall`; focus then moves to the grade group. The person still picks the grade:
+ * the button `suggestedButton` names only gets a "Suggested" marker. The typed answer lives in the
+ * session state, so Undo brings it back with the card.
  */
 
 export const REVIEW_BUTTONS: readonly ReviewButton[] = ["again", "hard", "good", "easy"];
@@ -58,6 +67,12 @@ export type FlashcardReviewLabels = {
   doneBody: string;
   /** Short keyboard help, e.g. "Space shows the answer. 1 to 4 grade it." */
   keys: string;
+  /** Typed mode: the answer field, Check and the comparison words. */
+  recall: RecallLabels;
+  /** Typed mode: marks the grade that fits the comparison, e.g. "Suggested". A hint only. */
+  suggested: string;
+  /** Typed mode keyboard help, e.g. "Enter checks. Escape clears. Then 1 to 4 grade it." */
+  typedKeys: string;
 };
 
 export type ReviewGrade = { key: string; button: ReviewButton };
@@ -76,11 +91,15 @@ export type FlashcardReviewProps = {
    * ReadAloudButton, or null where speech isn't available. Left out, nothing is drawn.
    */
   readAloud?: (text: string) => ReactNode;
+  /** Typed recall mode: type the answer, then Check. Off when left out. */
+  typed?: boolean;
 };
 
 export type ReviewState = {
   queue: string[];
   revealed: boolean;
+  /** Typed mode: what the person typed for the card on top. Empty otherwise. */
+  answer: string;
   again: Record<string, number>;
   done: number;
   history: { grade: ReviewGrade; before: Omit<ReviewState, "history"> }[];
@@ -89,13 +108,18 @@ export type ReviewState = {
 export type ReviewAction =
   | { type: "reveal" }
   | { type: "grade"; button: ReviewButton }
-  | { type: "undo" };
+  | { type: "undo" }
+  | { type: "type"; text: string }
+  | { type: "clear" };
 
 export function initReview(keys: readonly string[]): ReviewState {
-  return { queue: [...keys], revealed: false, again: {}, done: 0, history: [] };
+  return { queue: [...keys], revealed: false, answer: "", again: {}, done: 0, history: [] };
 }
 
-/** Pure session state. Grading needs the answer shown first. */
+/**
+ * Pure session state. Grading needs the answer shown first. Typing only changes the answer while
+ * the front is showing; a grade starts the next card with an empty answer.
+ */
 export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewState {
   const { history, ...rest } = state;
   switch (action.type) {
@@ -109,6 +133,7 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
       return {
         queue: comesBack ? [...queue, key] : queue,
         revealed: false,
+        answer: "",
         again: comesBack ? { ...state.again, [key]: seen + 1 } : state.again,
         done: comesBack ? state.done : state.done + 1,
         history: [...history, { grade: { key, button: action.button }, before: rest }],
@@ -119,6 +144,10 @@ export function reviewReducer(state: ReviewState, action: ReviewAction): ReviewS
       if (!last) return state;
       return { ...last.before, history: history.slice(0, -1) };
     }
+    case "type":
+      return state.queue.length === 0 || state.revealed ? state : { ...state, answer: action.text };
+    case "clear":
+      return state.revealed || state.answer === "" ? state : { ...state, answer: "" };
   }
 }
 
@@ -167,7 +196,19 @@ export type FlashcardReviewViewProps = {
   onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
   undoAvailable?: boolean;
   readAloud?: (text: string) => ReactNode;
+  /** Typed recall mode. */
+  typed?: boolean;
+  /** Typed mode: the answer field, so the host can focus it when the next card comes up. */
+  answerRef?: Ref<HTMLInputElement>;
 };
+
+/**
+ * Moves focus to the grade group when it appears after Check in typed mode. A stable function,
+ * so React calls it only when the group mounts (turning typed mode on never moves focus).
+ */
+function focusTypedGrades(node: HTMLFieldSetElement | null) {
+  if (node?.dataset.typed === "true") node.focus();
+}
 
 export function FlashcardReviewView({
   cards,
@@ -178,6 +219,8 @@ export function FlashcardReviewView({
   onKeyDown,
   undoAvailable = true,
   readAloud,
+  typed = false,
+  answerRef,
 }: FlashcardReviewViewProps) {
   const key = state.queue[0];
   const card = key === undefined ? undefined : cards.find((item) => item.key === key);
@@ -212,6 +255,11 @@ export function FlashcardReviewView({
 
   const intervals = previewIntervals(card.state ?? newCardState(now), now);
   const side = state.revealed ? "back" : "front";
+  const comparison = typed && state.revealed ? compareRecall(state.answer, card.back) : null;
+  const suggested = comparison ? suggestedButton(comparison.result) : null;
+  const onAnswerKeyDown = recallKeyDown(state.answer, (action) =>
+    onAction(action === "check" ? { type: "reveal" } : { type: "clear" })
+  );
   return (
     <section
       className="tp-artifact tp-study-review"
@@ -253,16 +301,43 @@ export function FlashcardReviewView({
               {card.back}
             </p>
             {readAloud?.(card.back)}
+            {comparison ? (
+              <RecallVerdict typed={state.answer} result={comparison.result} labels={labels.recall} />
+            ) : null}
           </div>
         </div>
-        <p className="tp-study-keys">{labels.keys}</p>
+        {typed && !state.revealed ? (
+          <RecallField
+            value={state.answer}
+            labels={labels.recall}
+            onChange={(text) => onAction({ type: "type", text })}
+            onKeyDown={onAnswerKeyDown}
+            inputRef={answerRef}
+          />
+        ) : null}
+        <p className="tp-study-keys">{typed ? labels.typedKeys : labels.keys}</p>
       </div>
       <div className="tp-artifact__foot">
         {state.revealed ? (
-          <fieldset className="tp-study-grades" aria-label={labels.gradeGroup}>
+          <fieldset
+            className="tp-study-grades"
+            aria-label={labels.gradeGroup}
+            data-typed={typed ? "true" : undefined}
+            tabIndex={typed ? -1 : undefined}
+            ref={focusTypedGrades}
+            onKeyDown={
+              typed && onKeyDown
+                ? (event) => {
+                    // 1 to 4 also work while the group itself has focus (right after Check).
+                    if (event.target === event.currentTarget) onKeyDown(event);
+                  }
+                : undefined
+            }
+          >
             {REVIEW_BUTTONS.map((button, index) => {
               const days = intervals[button];
               const interval = days === 1 ? labels.intervalOne : labels.intervalMany;
+              const hint = button === suggested;
               return (
                 <button
                   type="button"
@@ -271,12 +346,16 @@ export function FlashcardReviewView({
                   data-action="review-grade"
                   onKeyDown={onKeyDown}
                   data-grade={button}
+                  data-suggested={hint ? "true" : undefined}
                   aria-keyshortcuts={String(index + 1)}
-                  aria-label={`${labels.grades[button]} · ${fillText(interval, { days })}`}
+                  aria-label={`${labels.grades[button]} · ${fillText(interval, { days })}${
+                    hint ? ` · ${labels.suggested}` : ""
+                  }`}
                   onClick={() => onAction({ type: "grade", button })}
                 >
                   <span>{labels.grades[button]}</span>
                   <span className="tp-study-grade__interval">{fillNodes(interval, { days })}</span>
+                  {hint ? <span className="tp-study-grade__suggested">{labels.suggested}</span> : null}
                 </button>
               );
             })}
@@ -285,11 +364,11 @@ export function FlashcardReviewView({
           <button
             type="button"
             className="tp-btn tp-btn--primary"
-            data-action="review-reveal"
+            data-action={typed ? "review-check" : "review-reveal"}
             onKeyDown={onKeyDown}
             onClick={() => onAction({ type: "reveal" })}
           >
-            {labels.showAnswer}
+            {typed ? labels.recall.check : labels.showAnswer}
           </button>
         )}
       </div>
@@ -305,14 +384,25 @@ export function FlashcardReview({
   onUndo,
   undoAvailable,
   readAloud,
+  typed = false,
 }: FlashcardReviewProps) {
   const [state, dispatch] = useReducer(
     reviewReducer,
     cards.map((card) => card.key),
     initReview
   );
+  // Typed mode: after a grade, the next card's answer field takes focus.
+  const answerRef = useRef<HTMLInputElement>(null);
+  const focusAnswer = useRef(false);
+  const graded = state.history.length;
+  useEffect(() => {
+    if (graded === 0 || !focusAnswer.current) return;
+    focusAnswer.current = false;
+    answerRef.current?.focus();
+  }, [graded]);
   const act = (action: ReviewAction) => {
     notifyReview(state, action, { onGrade, onUndo });
+    if (action.type === "grade" && typed && state.revealed) focusAnswer.current = true;
     dispatch(action);
   };
   const onKeyDown = reviewKeyDown(state.revealed, act);
@@ -326,6 +416,8 @@ export function FlashcardReview({
       onKeyDown={onKeyDown}
       undoAvailable={undoAvailable}
       readAloud={readAloud}
+      typed={typed}
+      answerRef={answerRef}
     />
   );
 }

@@ -4,6 +4,7 @@ import type { FlashcardDeckLabels } from "./FlashcardDeck";
 import type { FlashcardReviewLabels } from "./FlashcardReview";
 import type { ScoreCardLabels } from "./ScoreCard";
 import type { TestRunnerLabels } from "./TestRunner";
+import type { RecallLabels } from "./TypedRecall";
 
 /** Synthetic English labels and data for the study component tests. */
 
@@ -19,6 +20,15 @@ export const scoreLabels: ScoreCardLabels = {
   tryAgain: "Try again",
 };
 
+export const recallLabels: RecallLabels = {
+  yourAnswer: "Your answer",
+  check: "Check",
+  matches: "Matches",
+  close: "Close",
+  different: "Different",
+  empty: "No answer typed",
+};
+
 export const deckLabels: FlashcardDeckLabels = {
   deck: "Flashcard",
   front: "Front",
@@ -31,6 +41,8 @@ export const deckLabels: FlashcardDeckLabels = {
   next: "Next",
   shuffle: "Shuffle",
   keys: "Space flips. Arrows move.",
+  recall: recallLabels,
+  typedKeys: "Enter checks. Escape clears.",
 };
 
 export const reviewLabels: FlashcardReviewLabels = {
@@ -48,6 +60,9 @@ export const reviewLabels: FlashcardReviewLabels = {
   doneTitle: "All done for now",
   doneBody: "You reviewed {count} cards.",
   keys: "Space shows the answer. 1 to 4 grade it.",
+  recall: recallLabels,
+  suggested: "Suggested",
+  typedKeys: "Enter checks. Escape clears. Then 1 to 4 grade it.",
 };
 
 export const quizLabels: AdaptiveQuizLabels = {

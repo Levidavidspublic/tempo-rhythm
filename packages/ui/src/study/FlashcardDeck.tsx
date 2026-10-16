@@ -1,5 +1,6 @@
 import type { Flashcard } from "@tempo/utils";
 import { type KeyboardEvent, type ReactNode, useReducer } from "react";
+import { compareRecall } from "../../../core/srs/recall";
 import { ArrowRight, Layers } from "../icons";
 import {
   fillNodes,
@@ -9,6 +10,7 @@ import {
   type StudyDir,
   stepForKey,
 } from "./shared";
+import { RecallField, type RecallLabels, RecallVerdict, recallKeyDown } from "./TypedRecall";
 
 /**
  * S18 FlashcardDeck: browse a deck. One card at a time, flipped by a button (`aria-pressed`),
@@ -17,6 +19,10 @@ import {
  * natively; the deck handler skips them on other buttons so they keep their own meaning).
  * Shuffle reorders the deck. The card region is `aria-live` so a flip is announced.
  * Presentational: no data access, every word from `labels`.
+ *
+ * Typed mode (`typed`, optional): on the front, a labelled "Your answer" field and Check take the
+ * place of Show the back (Enter checks, Escape clears). The back then shows what was typed with
+ * "Matches" / "Close" / "Different" from `compareRecall`. Moving to another card clears the answer.
  */
 
 export type FlashcardDeckLabels = {
@@ -34,6 +40,10 @@ export type FlashcardDeckLabels = {
   shuffle: string;
   /** Short keyboard help, e.g. "Space flips. Arrows move." */
   keys: string;
+  /** Typed mode: the answer field, Check and the comparison words. */
+  recall: RecallLabels;
+  /** Typed mode keyboard help, e.g. "Enter checks. Escape clears." */
+  typedKeys: string;
 };
 
 export type FlashcardDeckCard = Pick<Flashcard, "front" | "back" | "hint">;
@@ -50,21 +60,40 @@ export type FlashcardDeckProps = {
    * ReadAloudButton, or null where speech isn't available. Left out, nothing is drawn.
    */
   readAloud?: (text: string) => ReactNode;
+  /** Typed recall mode: type the answer, then Check. Off when left out. */
+  typed?: boolean;
 };
 
 export type DeckSide = "front" | "back";
-export type DeckState = { order: number[]; index: number; side: DeckSide };
+export type DeckState = {
+  order: number[];
+  index: number;
+  side: DeckSide;
+  /** Typed mode: what the person typed for the card shown. Left out while nothing is typed. */
+  answer?: string;
+};
 export type DeckAction =
   | { type: "flip" }
   | { type: "next" }
   | { type: "prev" }
-  | { type: "shuffle"; random: () => number };
+  | { type: "shuffle"; random: () => number }
+  | { type: "type"; text: string }
+  | { type: "clear" };
 
 export function initDeck(count: number): DeckState {
   return { order: Array.from({ length: count }, (_, i) => i), index: 0, side: "front" };
 }
 
-/** Pure deck state. Moving shows the front of the new card; the ends do not wrap. */
+/** The state with this typed answer; an empty answer is left out. */
+function withAnswer(state: DeckState, answer: string): DeckState {
+  const { answer: _typed, ...rest } = state;
+  return answer === "" ? rest : { ...rest, answer };
+}
+
+/**
+ * Pure deck state. Moving shows the front of the new card with no typed answer; the ends do not
+ * wrap. Typing only changes the answer while the front is showing.
+ */
 export function deckReducer(state: DeckState, action: DeckAction): DeckState {
   switch (action.type) {
     case "flip":
@@ -72,9 +101,15 @@ export function deckReducer(state: DeckState, action: DeckAction): DeckState {
     case "next":
       return state.index >= state.order.length - 1
         ? state
-        : { ...state, index: state.index + 1, side: "front" };
+        : withAnswer({ ...state, index: state.index + 1, side: "front" }, "");
     case "prev":
-      return state.index <= 0 ? state : { ...state, index: state.index - 1, side: "front" };
+      return state.index <= 0
+        ? state
+        : withAnswer({ ...state, index: state.index - 1, side: "front" }, "");
+    case "type":
+      return state.side === "front" ? withAnswer(state, action.text) : state;
+    case "clear":
+      return state.side === "front" && state.answer ? withAnswer(state, "") : state;
     case "shuffle": {
       const order = [...state.order];
       for (let i = order.length - 1; i > 0; i -= 1) {
@@ -120,7 +155,17 @@ export type FlashcardDeckViewProps = {
   onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
   random?: () => number;
   readAloud?: (text: string) => ReactNode;
+  /** Typed recall mode. */
+  typed?: boolean;
 };
+
+/** After Enter in the answer field, focus stays on the deck's main button (Check, then Flip). */
+function focusDeckPrimary(from: Element) {
+  from
+    .closest('[data-component="FlashcardDeck"]')
+    ?.querySelector<HTMLElement>('[data-action="card-check"]')
+    ?.focus();
+}
 
 /** The deck drawn from a given state. `FlashcardDeck` owns the state; tests draw this directly. */
 export function FlashcardDeckView({
@@ -131,11 +176,23 @@ export function FlashcardDeckView({
   onKeyDown,
   random = Math.random,
   readAloud,
+  typed = false,
 }: FlashcardDeckViewProps) {
   const card = cards[state.order[state.index] ?? 0];
   if (!card) return null;
   const total = state.order.length;
   const flipped = state.side === "back";
+  // Typed mode on the front: the main button is Check. One button element either way, so focus
+  // stays on it when the card turns over.
+  const checking = typed && !flipped;
+  const answer = state.answer ?? "";
+  const comparison = typed && flipped ? compareRecall(answer, card.back) : null;
+  const onAnswerKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    const taken = recallKeyDown(answer, (action) =>
+      onAction(action === "check" ? { type: "flip" } : { type: "clear" })
+    )(event);
+    if (taken === "check") focusDeckPrimary(event.currentTarget);
+  };
   return (
     <section
       className="tp-artifact tp-study-deck"
@@ -168,9 +225,20 @@ export function FlashcardDeckView({
               {card.back}
             </p>
             {readAloud?.(card.back)}
+            {comparison ? (
+              <RecallVerdict typed={answer} result={comparison.result} labels={labels.recall} />
+            ) : null}
           </div>
         </div>
-        <p className="tp-study-keys">{labels.keys}</p>
+        {checking ? (
+          <RecallField
+            value={answer}
+            labels={labels.recall}
+            onChange={(text) => onAction({ type: "type", text })}
+            onKeyDown={onAnswerKeyDown}
+          />
+        ) : null}
+        <p className="tp-study-keys">{typed ? labels.typedKeys : labels.keys}</p>
       </div>
       <div className="tp-artifact__foot">
         <span className="tp-flashcard__count" aria-live="polite">
@@ -191,12 +259,12 @@ export function FlashcardDeckView({
         <button
           type="button"
           className="tp-btn tp-btn--primary"
-          data-action="card-flip"
+          data-action={checking ? "card-check" : "card-flip"}
           onKeyDown={onKeyDown}
-          aria-pressed={flipped}
+          aria-pressed={checking ? undefined : flipped}
           onClick={() => onAction({ type: "flip" })}
         >
-          {flipped ? labels.showFront : labels.showBack}
+          {checking ? labels.recall.check : flipped ? labels.showFront : labels.showBack}
         </button>
         <button
           type="button"
@@ -226,7 +294,14 @@ export function FlashcardDeckView({
   );
 }
 
-export function FlashcardDeck({ cards, labels, dir, random, readAloud }: FlashcardDeckProps) {
+export function FlashcardDeck({
+  cards,
+  labels,
+  dir,
+  random,
+  readAloud,
+  typed = false,
+}: FlashcardDeckProps) {
   const [state, dispatch] = useReducer(deckReducer, cards.length, initDeck);
   const onKeyDown = deckKeyDown(dir, dispatch);
   return (
@@ -238,6 +313,7 @@ export function FlashcardDeck({ cards, labels, dir, random, readAloud }: Flashca
       onKeyDown={onKeyDown}
       random={random}
       readAloud={readAloud}
+      typed={typed}
     />
   );
 }

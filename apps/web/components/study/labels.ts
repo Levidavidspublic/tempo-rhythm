@@ -2,6 +2,7 @@ import type {
   AdaptiveQuizLabels,
   FlashcardDeckLabels,
   FlashcardReviewLabels,
+  RecallLabels,
   ScoreCardLabels,
   TestRunnerLabels,
 } from "@tempo/ui";
@@ -28,6 +29,20 @@ export function deckLabels(t: StudyT): FlashcardDeckLabels {
     next: t("st.dk.next"),
     shuffle: t("st.dk.shuffle"),
     keys: t("st.dk.keys"),
+    recall: recallLabels(t),
+    typedKeys: t("st.rc.keys.deck"),
+  };
+}
+
+/** Typed recall: the answer field, Check and the comparison words. */
+export function recallLabels(t: StudyT): RecallLabels {
+  return {
+    yourAnswer: t("st.rc.yourAnswer"),
+    check: t("st.rc.check"),
+    matches: t("st.rc.matches"),
+    close: t("st.rc.close"),
+    different: t("st.rc.different"),
+    empty: t("st.rc.empty"),
   };
 }
 
@@ -52,6 +67,9 @@ export function reviewLabels(t: StudyT): FlashcardReviewLabels {
     doneTitle: t("st.rv.doneTitle"),
     doneBody: t("st.rv.doneBody"),
     keys: t("st.rv.keys"),
+    recall: recallLabels(t),
+    suggested: t("st.rc.suggested"),
+    typedKeys: t("st.rc.keys.review"),
   };
 }
 

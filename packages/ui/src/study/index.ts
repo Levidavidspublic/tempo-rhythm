@@ -12,3 +12,4 @@ export * from "./ScoreCard";
 export * from "./shared";
 export * from "./TestRunner";
 export * from "./test-scorer";
+export * from "./TypedRecall";
