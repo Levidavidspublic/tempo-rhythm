@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { safeFilename, toBlobParts } from "@/components/memory-export/download";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { DOWNLOAD_REVOKE_MS } from "@/components/share/share-helpers";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { ConfirmSheet, Segmented } from "@/components/you/Controls";
 import {
@@ -329,13 +330,15 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
       const { parts, type } = toBlobParts(result.markdown);
       const file = safeFilename(result.filename);
       const url = URL.createObjectURL(new Blob(parts, { type }));
+      // Some browsers start the download after click() returns, so the URL lives a few seconds
+      // (as ShareSheet's downloadText does) and is let go even if the click throws.
       try {
         const anchor = document.createElement("a");
         anchor.href = url;
         anchor.download = file;
         anchor.click();
       } finally {
-        URL.revokeObjectURL(url);
+        window.setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_REVOKE_MS);
       }
       setExporting({ status: "ready", file });
     } catch {

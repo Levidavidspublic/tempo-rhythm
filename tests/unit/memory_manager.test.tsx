@@ -625,6 +625,37 @@ describe("MemoryManager", () => {
     expect(calls.at(-1)).toEqual({ name: "memory:restoreAll", args: { forgottenAt: 42 } });
   });
 
+  test("export keeps the file's link for 5 seconds after the click, then lets it go", async () => {
+    const realCreate = URL.createObjectURL;
+    const realRevoke = URL.revokeObjectURL;
+    const realTimeout = globalThis.setTimeout;
+    const revoked: string[] = [];
+    const later: { fn: () => void; ms: number }[] = [];
+    URL.createObjectURL = () => "blob:memories-1";
+    URL.revokeObjectURL = (url: string) => void revoked.push(url);
+    globalThis.setTimeout = ((fn: () => void, ms?: number, ...rest: unknown[]) => {
+      if (ms === 5000) {
+        later.push({ fn, ms });
+        return 0;
+      }
+      return realTimeout(fn, ms, ...rest);
+    }) as typeof setTimeout;
+    try {
+      const view = await renderUi();
+      await click(view, "Export");
+      expect(view.textContent).toContain("Your file is ready. It downloaded as m.md.");
+      // Some browsers start the download after click() returns, so the link must outlive it.
+      expect(revoked).toEqual([]);
+      expect(later.map((item) => item.ms)).toEqual([5000]);
+      later[0]?.fn();
+      expect(revoked).toEqual(["blob:memories-1"]);
+    } finally {
+      URL.createObjectURL = realCreate;
+      URL.revokeObjectURL = realRevoke;
+      globalThis.setTimeout = realTimeout;
+    }
+  });
+
   test("a long memory shows its first lines and a Show all button", async () => {
     memories = [{ _id: "long", content: LONG, createdAt: NOW }];
     const view = await renderUi();
