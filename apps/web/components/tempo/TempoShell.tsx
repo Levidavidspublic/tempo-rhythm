@@ -5,6 +5,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { CoachPageProvider } from "@/components/coach/CoachPage";
 import { CoachPanel } from "@/components/coach/CoachPanel";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useAccountLanguage } from "@/components/providers/useAccountLanguage";
 import { CoachButton } from "./CoachButton";
 import { CommandPalette } from "./CommandPalette";
 import { type ShellSlots, ShellSlotsContext } from "./ShellSlots";
@@ -41,6 +42,8 @@ export function TempoShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLocale();
+  // A new device (nothing saved) shows every signed-in screen in the account's language.
+  useAccountLanguage();
   // The coach panel docks beside the page at 1280 px and up and is a sheet below that. On /coach
   // the coach is the page itself, so the panel and the button stay away.
   const onCoachRoute = pathname === "/coach" || Boolean(pathname?.startsWith("/coach/"));
