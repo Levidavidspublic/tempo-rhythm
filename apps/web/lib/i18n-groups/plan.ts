@@ -86,6 +86,7 @@ export const en = {
   "pp.signIn": "Sign in to add these sessions to your calendar.",
   "pp.signInLink": "Sign in",
   "pp.error": "That didn't go through. Your plan is still here, so try again in a moment.",
+  "pp.busyCap": "Events on your calendar are checked up to {date}. Later ones aren't checked yet.",
 
   // GuidedPlanCard (S9): the plan preview as a proposal with Accept / Edit / Reject
   "pp.g.kind": "Plan",
@@ -259,6 +260,7 @@ export const he: Record<keyof typeof en, string> = {
   "pp.signIn": "התחברו כדי להוסיף את המפגשים ליומן.",
   "pp.signInLink": "התחברות",
   "pp.error": "זה לא עבר. התוכנית עדיין כאן, אפשר לנסות שוב בעוד רגע.",
+  "pp.busyCap": "האירועים ביומן נבדקים עד {date}. אירועים מאוחרים יותר עוד לא נבדקים.",
 
   "pp.g.kind": "תוכנית",
   "pp.g.target": "נכנסת ליומן",

@@ -9,8 +9,9 @@
  * that. Saving calls `plans.replan`; an Undo toast stays for 5:00 (`plans.undoReplan`).
  *
  * The new times come from `replanRest` (packages/core/plan/replan.ts): done sessions, sessions in
- * progress and fixed events stay where they are. Data: plans.get, calendar_events.listInRange and
- * tasks.listDueInRange from today to the plan's date. Copy: lib/i18n-groups/plan.ts.
+ * progress and fixed events stay where they are. Data: plans.get, and busy time from today to the
+ * plan's date read in windows of at most 31 days (busyWindows.ts, planApi.ts). Copy:
+ * lib/i18n-groups/plan.ts.
  */
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -26,11 +27,7 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import {
-  isLocalDate,
-  type LocalDate,
-  toDayNumber,
-} from "../../../../../packages/core/plan/calendar-math";
+import type { LocalDate } from "../../../../../packages/core/plan/calendar-math";
 import {
   type LocalMoment,
   type ReplanResult,
@@ -49,6 +46,8 @@ import {
   ptNodes,
   shortDate,
 } from "../planCopy";
+import { busyWindows } from "./busyWindows";
+import { useBusyTime } from "./planApi";
 import { type ReplanOverrides, replanInput, replanNotice, replanToastTitle } from "./replanForm";
 
 /** Local date and clock minute now, read in the browser and again every minute. */
@@ -118,6 +117,8 @@ export type ReplanPreviewProps = {
   titles: ReadonlyMap<string, string>;
   /** The date nothing may reach (the plan's, or the later one picked here). */
   deadline: LocalDate;
+  /** Set when calendar events are only read up to this day (busyWindows.ts). */
+  checkedUntil?: LocalDate | null;
   /** Set when a later date was picked: the plan's date moves to it. */
   newDate?: LocalDate | null;
   ways?: ReplanWaysOut | null;
@@ -140,6 +141,7 @@ export function ReplanPreview({
   result,
   titles,
   deadline,
+  checkedUntil = null,
   newDate = null,
   ways = null,
   leaveOut,
@@ -176,6 +178,9 @@ export function ReplanPreview({
         {pt(lang, "rp.h")}
       </h2>
       <p className="tp-muted">{pt(lang, "rp.sub")}</p>
+      {checkedUntil ? (
+        <p className="tp-help">{pt(lang, "pp.busyCap", { date: longDate(lang, checkedUntil) })}</p>
+      ) : null}
       {newDate ? <p>{pt(lang, "rp.newDate", { date: longDate(lang, newDate) })}</p> : null}
       {result.moves.length > 0 ? (
         <ul className="tp-plan__sessions tp-plan__moves">
@@ -338,12 +343,8 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
 
   const now = open && openedAt ? openedAt : liveNow;
   const deadline = saved?.plan.deadline;
-  const range =
-    now && deadline && isLocalDate(deadline) && toDayNumber(deadline) > toDayNumber(now.date)
-      ? { startMs: localSlotToMs(now.date, 0), endMs: localSlotToMs(deadline, 0) }
-      : null;
-  const events = useQuery(api.calendar_events.listInRange, range ?? "skip");
-  const tasks = useQuery(api.tasks.listDueInRange, range ?? "skip");
+  const span = now && deadline ? busyWindows(now.date, deadline) : null;
+  const { events, tasks } = useBusyTime(span);
 
   const input = useMemo(
     () =>
@@ -457,6 +458,7 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
             result={result}
             titles={titles}
             deadline={input.deadline}
+            checkedUntil={span?.checkedUntil ?? null}
             newDate={overrides.deadline ?? null}
             ways={ways}
             leaveOut={leaveOut}

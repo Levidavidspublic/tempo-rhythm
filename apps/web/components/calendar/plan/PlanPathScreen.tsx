@@ -19,15 +19,12 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useCountdown } from "@/lib/useCountdown";
-import {
-  isLocalDate,
-  type LocalDate,
-  toDayNumber,
-} from "../../../../../packages/core/plan/calendar-math";
-import { localSlotToMs } from "../gridData";
+import type { LocalDate } from "../../../../../packages/core/plan/calendar-math";
 import { todayLocal } from "../MonthGrid";
 import { pt, shortDate } from "../planCopy";
+import { busyWindows } from "./busyWindows";
 import { PlanForm, PlanPreview } from "./PlanParts";
+import { useBusyTime } from "./planApi";
 import { ReplanPanel } from "./ReplanPanel";
 import {
   buildPreview,
@@ -66,16 +63,11 @@ export function PlanPathScreen() {
   const topicsRef = useRef<HTMLTextAreaElement>(null);
 
   // What is already on the calendar from today up to the deadline (read only), so the plan only
-  // uses the time that is left on each day.
+  // uses the time that is left on each day. Events come in windows of at most 31 days, which
+  // `calendar_events.listInRange` accepts however far off the date is (busyWindows.ts).
   const planWindow =
-    signedIn === "ready" &&
-    today !== null &&
-    isLocalDate(values.deadline) &&
-    toDayNumber(values.deadline) > toDayNumber(today)
-      ? { startMs: localSlotToMs(today, 0), endMs: localSlotToMs(values.deadline, 0) }
-      : null;
-  const fixedEvents = useQuery(api.calendar_events.listInRange, planWindow ?? "skip");
-  const dueTasks = useQuery(api.tasks.listDueInRange, planWindow ?? "skip");
+    signedIn === "ready" && today !== null ? busyWindows(today, values.deadline) : null;
+  const { events: fixedEvents, tasks: dueTasks } = useBusyTime(planWindow);
   const hasWindow = planWindow !== null;
   const planTitle = values.title.trim();
   const busy = useMemo(
@@ -298,6 +290,7 @@ export function PlanPathScreen() {
         onUseMinutes={(minutesPerDay) => change({ minutesPerDay })}
         state={preview}
         ways={ways}
+        checkedUntil={planWindow?.checkedUntil ?? null}
         pinned={
           pinned ? card(pinned.key, pinned.title || pt(lang, "pp.preview.h"), pinned.steps) : null
         }

@@ -174,6 +174,8 @@ export type PlanPreviewProps = {
   lang: PlanLang;
   /** Only needed when the plan is short. */
   ways?: WaysOut | null;
+  /** Set when calendar events are only read up to this day (busyWindows.ts). */
+  checkedUntil?: LocalDate | null;
   onUseMinutes?: (minutes: number) => void;
   onUseDate?: (date: LocalDate) => void;
   onEditTopics?: () => void;
@@ -194,6 +196,7 @@ export function PlanPreview({
   state,
   lang,
   ways = null,
+  checkedUntil = null,
   onUseMinutes,
   onUseDate,
   onEditTopics,
@@ -231,6 +234,11 @@ export function PlanPreview({
               })}
             </p>
           )}
+          {checkedUntil ? (
+            <p className="tp-help">
+              {pt(lang, "pp.busyCap", { date: longDate(lang, checkedUntil) })}
+            </p>
+          ) : null}
           {state.result.shortBy > 0 ? (
             <div
               className="tp-notice"
