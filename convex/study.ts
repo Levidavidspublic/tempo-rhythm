@@ -71,6 +71,8 @@ const answerValidator = v.object({
 });
 
 const PAGE_TITLE_MAX = 200;
+/** Two grades of one card closer than this are one double-tapped answer. */
+const DOUBLE_SUBMIT_MS = 2_000;
 const ITEM_ID = /^[A-Za-z0-9_-]{1,32}$/;
 const MAX_ANSWERS = 300;
 
@@ -129,7 +131,10 @@ export const hub = query({
     let newCount = 0;
     const rows = [];
     for (const { set, block } of sets) {
-      const states = block.type === "flashcards" ? await liveStates(ctx, user._id, set._id) : new Map();
+      const states =
+        block.type === "flashcards"
+          ? await liveStates(ctx, user._id, set._id, block.data.cards.map((card) => card.id))
+          : new Map();
       const counts = cardCounts(block, states, now);
       dueCount += counts.dueCount;
       newCount += counts.newCount;
@@ -174,7 +179,12 @@ export const getSet = query({
     const { set, note, block } = live;
     const states: Record<string, StateView> = {};
     if (block.type === "flashcards") {
-      const rows = await liveStates(ctx, user._id, set._id);
+      const rows = await liveStates(
+        ctx,
+        user._id,
+        set._id,
+        block.data.cards.map((card) => card.id),
+      );
       for (const card of block.data.cards) {
         const row = rows.get(card.id);
         if (row) states[card.id] = stateView(row);
@@ -230,7 +240,12 @@ export const reviewQueue = query({
     const fresh: QueueCard[] = [];
     for (const { set, block } of sets) {
       if (block.type !== "flashcards") continue;
-      const states = await liveStates(ctx, user._id, set._id);
+      const states = await liveStates(
+        ctx,
+        user._id,
+        set._id,
+        block.data.cards.map((card) => card.id),
+      );
       for (const card of block.data.cards) {
         const row = states.get(card.id);
         const base = {
@@ -298,14 +313,28 @@ export const createFromPreview = mutation({
     if (title.length === 0 || title.length > PAGE_TITLE_MAX) {
       throw new Error("Give the page a title of up to 200 characters.");
     }
-    const parsed = dataSchemaFor(args.kind).safeParse(args.data);
+    let prefix = "";
+    let source: { noteId: string; title: string } | undefined;
+    if (args.sourceNoteId !== undefined) {
+      const { note } = await requireLivePage(ctx, user._id, args.sourceNoteId);
+      // One line only: a title with line breaks, brackets or backticks can't open a fence or a link.
+      const sourceTitle = note.title.replace(/[\r\n]+/g, " ").replace(/\[\[|\]\]/g, "").trim().slice(0, 200);
+      if (sourceTitle.length > 0) {
+        prefix = `Made from [[${sourceTitle}]]\n\n`;
+        source = { noteId: String(args.sourceNoteId), title: sourceTitle };
+      }
+    }
+    // The block's `source` comes from the checked page only, never from the client.
+    const candidate =
+      args.data !== null && typeof args.data === "object" && !Array.isArray(args.data)
+        ? { ...(args.data as Record<string, unknown>), source }
+        : args.data;
+    if (candidate && typeof candidate === "object" && source === undefined) {
+      delete (candidate as Record<string, unknown>).source;
+    }
+    const parsed = dataSchemaFor(args.kind).safeParse(candidate);
     if (!parsed.success) {
       throw new Error("This preview can't be saved as it is. Try editing it.");
-    }
-    let prefix = "";
-    if (args.sourceNoteId !== undefined) {
-      const { note: source } = await requireLivePage(ctx, user._id, args.sourceNoteId);
-      prefix = `Made from [[${source.title}]]\n\n`;
     }
     const now = Date.now();
     const blockId = newStudyBlockId(now);
@@ -426,8 +455,29 @@ export const review = mutation({
     }
     const now = Date.now();
     const row = await stateRow(ctx, user._id, set._id, args.cardId);
+    // A second tap on the same card within a moment is the same answer, not a new review.
+    if (
+      row &&
+      row.deletedAt === undefined &&
+      row.lastReviewId !== undefined &&
+      row.lastReviewedAt !== undefined &&
+      now - row.lastReviewedAt < DOUBLE_SUBMIT_MS
+    ) {
+      return { reviewId: row.lastReviewId, state: toSm2State(row), undoUntil: row.lastReviewedAt + UNDO_WINDOW_MS };
+    }
     const prev = row && row.deletedAt === undefined ? toSm2State(row) : null;
     const next = reviewCard(prev ?? newCardState(now), GRADE_FOR_BUTTON[args.button as ReviewButton], now);
+    const reviewId = await ctx.db.insert("studyReviews", {
+      userId: user._id,
+      setId: set._id,
+      cardId: args.cardId,
+      button: args.button,
+      reviewedAt: now,
+      prev,
+      ...(prev !== null && row?.lastReviewId !== undefined ? { prevReviewId: row.lastReviewId } : {}),
+      createdAt: now,
+      updatedAt: now,
+    });
     const stateFields = {
       ease: next.ease,
       intervalDays: next.intervalDays,
@@ -435,6 +485,7 @@ export const review = mutation({
       lapses: next.lapses,
       dueAt: next.dueAt,
       lastReviewedAt: now,
+      lastReviewId: reviewId,
     };
     if (row) {
       await ctx.db.patch(row._id, { ...stateFields, deletedAt: undefined, updatedAt: now });
@@ -448,16 +499,6 @@ export const review = mutation({
         updatedAt: now,
       });
     }
-    const reviewId = await ctx.db.insert("studyReviews", {
-      userId: user._id,
-      setId: set._id,
-      cardId: args.cardId,
-      button: args.button,
-      reviewedAt: now,
-      prev,
-      createdAt: now,
-      updatedAt: now,
-    });
     await ctx.db.patch(set._id, { lastStudiedAt: now, updatedAt: now });
     return { reviewId, state: next, undoUntil: now + UNDO_WINDOW_MS };
   },
@@ -478,11 +519,11 @@ export const undoReview = mutation({
     }
     await requireLiveSet(ctx, user._id, row.setId);
     const state = await stateRow(ctx, user._id, row.setId, row.cardId);
-    if (!state || state.deletedAt !== undefined || state.lastReviewedAt !== row.reviewedAt) {
+    if (!state || state.deletedAt !== undefined || state.lastReviewId !== row._id) {
       throw new Error("Only the latest grade of a card can be undone.");
     }
     if (row.prev === null) {
-      await ctx.db.patch(state._id, { deletedAt: now, updatedAt: now });
+      await ctx.db.patch(state._id, { deletedAt: now, lastReviewId: undefined, updatedAt: now });
     } else {
       await ctx.db.patch(state._id, {
         ease: row.prev.ease,
@@ -491,6 +532,8 @@ export const undoReview = mutation({
         lapses: row.prev.lapses,
         dueAt: row.prev.dueAt,
         lastReviewedAt: row.prev.lastReviewedAt,
+        // The grade before this one becomes the latest, so undo can step back one grade at a time.
+        lastReviewId: row.prevReviewId,
         updatedAt: now,
       });
     }
@@ -692,8 +735,9 @@ export async function runGenerate(
     return { status: "unavailable", reason: "failed" };
   }
   const sourceTitle = page.title.trim().slice(0, 500);
+  const { source: _modelSource, ...modelData } = raw as Record<string, unknown>;
   const candidate = {
-    ...(raw as Record<string, unknown>),
+    ...modelData,
     origin: "coach",
     ...(sourceTitle.length > 0 ? { source: { noteId: page.noteId, title: sourceTitle } } : {}),
   };

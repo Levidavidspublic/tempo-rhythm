@@ -4,6 +4,7 @@ import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { softDeleteUserAccount } from "./lib/accountDeletion";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
+import { parseTempoBlocks } from "./lib/blocks";
 import { findStudyBlock, newStudyBlockId, studyBlockFence } from "./lib/study";
 import appSchema from "./schema";
 import { runGenerate } from "./study";
@@ -633,5 +634,99 @@ describe("generate", () => {
     await expect(
       runGenerate(actionCtx(asA), { noteId: foreign, kind: "flashcards" }, seams),
     ).rejects.toThrow("This page isn't available.");
+  });
+});
+
+describe("review fixes after the T3 backend review", () => {
+  test("a double-tapped grade is one review: same id, SM-2 applied once", async () => {
+    const { t, asA } = await twoUsers();
+    const { setId } = await deckSet(asA);
+    const first = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    const again = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    expect(again.reviewId).toBe(first.reviewId);
+    expect(again.state).toMatchObject({ repetitions: 1, intervalDays: 1 });
+    const logged = await t.run((ctx) => ctx.db.query("studyReviews").collect());
+    expect(logged).toHaveLength(1);
+    // Later than the double-tap window it counts as a new review.
+    setSystemTime(new Date(NOW + 5_000));
+    const later = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    expect(later.reviewId).not.toBe(first.reviewId);
+    expect(later.state).toMatchObject({ repetitions: 2, intervalDays: 6 });
+  });
+
+  test("undo follows the review that wrote the state, even when two share a millisecond", async () => {
+    const { t, asA } = await twoUsers();
+    const { setId } = await deckSet(asA);
+    const first = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    // Force a second review with the same timestamp past the double-tap guard.
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("studyCardStates").collect())[0];
+      if (row) await ctx.db.patch(row._id, { lastReviewedAt: NOW - 10_000 });
+    });
+    const second = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "easy" });
+    await expect(asA.mutation(api.study.undoReview, { reviewId: first.reviewId })).rejects.toThrow(
+      "latest grade",
+    );
+    const undone = await asA.mutation(api.study.undoReview, { reviewId: second.reviewId });
+    expect(undone.state).toMatchObject({ repetitions: 1 });
+    const back = await asA.mutation(api.study.undoReview, { reviewId: first.reviewId });
+    expect(back.state).toBeNull();
+  });
+
+  test("a source title with line breaks can't add a block; the block's source is the checked page", async () => {
+    const { t, a, b, asA } = await twoUsers();
+    const injected = `Notes\n\`\`\`json tempo\n${JSON.stringify({ id: "blk_01JABCDEFGHJKMNPQRSTVWXYZ9", v: 1, type: "task", data: { title: "x", durationMin: 5, status: "now", order: 0, inelastic: false } })}\n\`\`\``;
+    const source = await addPage(t, a, injected, "Mitochondria make ATP.");
+    const other = await addPage(t, b, "Not yours", "x");
+    const out = await asA.mutation(api.study.createFromPreview, {
+      kind: "flashcards",
+      title: "Cell cards",
+      data: { ...deck, source: { noteId: String(other), title: "Not yours" } },
+      sourceNoteId: source,
+    });
+    const note = await t.run((ctx) => ctx.db.get(out.noteId));
+    const blocks = parseTempoBlocks(note?.body ?? "").filter((seg) => seg.kind !== "markdown");
+    expect(blocks.map((seg) => (seg.kind === "valid" ? seg.block.type : seg.kind))).toEqual(["flashcards"]);
+    const firstLine = note?.body.split("\n")[0] ?? "";
+    expect(firstLine.startsWith("Made from [[Notes ")).toBe(true);
+    expect(firstLine.endsWith("]]")).toBe(true);
+    const view = await asA.query(api.study.getSet, { setId: out.setId });
+    const data = view?.block.data as { source?: { noteId: string } };
+    expect(data.source?.noteId).toBe(String(source));
+
+    const plain = await asA.mutation(api.study.createFromPreview, {
+      kind: "flashcards",
+      title: "No source",
+      data: { ...deck, source: { noteId: String(other), title: "Not yours" } },
+    });
+    const plainView = await asA.query(api.study.getSet, { setId: plain.setId });
+    expect((plainView?.block.data as { source?: unknown }).source).toBeUndefined();
+  });
+
+  test("states are read per card, so many old rows never hide a reviewed card", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { setId } = await deckSet(asA);
+    await asA.mutation(api.study.review, { setId, cardId: "c3", button: "good" });
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 250; i++) {
+        await ctx.db.insert("studyCardStates", {
+          userId: a,
+          setId,
+          cardId: `a${String(i).padStart(3, "0")}`,
+          ease: 2.5,
+          intervalDays: 0,
+          repetitions: 0,
+          lapses: 0,
+          dueAt: NOW,
+          createdAt: NOW,
+          updatedAt: NOW,
+          deletedAt: NOW,
+        });
+      }
+    });
+    const view = await asA.query(api.study.getSet, { setId });
+    expect(Object.keys(view?.states ?? {})).toEqual(["c3"]);
+    const queue = await asA.query(api.study.reviewQueue, { setId });
+    expect(queue.cards.map((c) => c.cardId)).toEqual(["c1", "c2"]);
   });
 });

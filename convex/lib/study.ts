@@ -167,19 +167,20 @@ export async function listLiveSetsWithBlocks(
   return out;
 }
 
-/** Live card states of a set, keyed by card id. */
+/**
+ * Live card states of a set for the given cards, keyed by card id. One indexed lookup per card
+ * (a deck holds at most 100), so old or orphaned state rows can never crowd a live one out.
+ */
 export async function liveStates(
   ctx: DbCtx,
   userId: Id<"users">,
   setId: Id<"studySets">,
+  cardIds: readonly string[],
 ): Promise<Map<string, Doc<"studyCardStates">>> {
-  const rows = await ctx.db
-    .query("studyCardStates")
-    .withIndex("by_set_card", (q) => q.eq("setId", setId))
-    .take(STATE_SCAN_LIMIT);
   const out = new Map<string, Doc<"studyCardStates">>();
-  for (const row of rows) {
-    if (row.userId === userId && row.deletedAt === undefined) out.set(row.cardId, row);
+  for (const cardId of new Set(cardIds)) {
+    const row = await stateRow(ctx, userId, setId, cardId);
+    if (row && row.deletedAt === undefined) out.set(cardId, row);
   }
   return out;
 }

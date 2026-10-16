@@ -57,6 +57,8 @@ export const studyTables = {
     setId: v.id("studySets"),
     cardId: v.string(),
     ...sm2StateFields,
+    /** The review that wrote this state; only that review can be undone. */
+    lastReviewId: v.optional(v.id("studyReviews")),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
@@ -73,6 +75,8 @@ export const studyTables = {
     reviewedAt: v.number(),
     /** The card's state before this review, or null for a card seen for the first time. */
     prev: v.union(v.null(), v.object(sm2StateFields)),
+    /** The review that wrote `prev`, so undoing this one makes that one the latest again. */
+    prevReviewId: v.optional(v.id("studyReviews")),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
