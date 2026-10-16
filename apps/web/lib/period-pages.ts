@@ -6,6 +6,7 @@
 import { parseTempoBlocks } from "@tempo/utils";
 import { applyTemplateTokens, dayTokens, newBlockId, tempoFence } from "@/lib/editor/markdown-model";
 import type { Lang } from "@/lib/i18n";
+import { localizedStarterBody } from "@/lib/period-page-bodies";
 
 export type PeriodKind = "daily" | "weekly";
 
@@ -119,7 +120,8 @@ function withoutTemplateBlocks(body: string): string {
  * The title and body of a new dated page made from `templateBody`. Known {{tokens}} are filled
  * (date, weekday, day, week, range, year, title); unknown ones stay as typed. The body opens with
  * the page-meta block that says what the page is (NT-07: it is the truth, and `notes.pageType`
- * and `notes.date` mirror it). For a weekly page the date is the week's Monday.
+ * and `notes.date` mirror it). For a weekly page the date is the week's Monday. A Hebrew page
+ * made from the unchanged English starter gets the Hebrew starter outline instead.
  */
 export function periodPageDraft(
   kind: PeriodKind,
@@ -136,6 +138,7 @@ export function periodPageDraft(
     type: "page-meta",
     data: { pageType: kind, date: iso, tags: [] },
   });
-  const prose = applyTemplateTokens(withoutTopHeading(withoutTemplateBlocks(templateBody)), tokens);
+  const template = localizedStarterBody(kind, templateBody, lang);
+  const prose = applyTemplateTokens(withoutTopHeading(withoutTemplateBlocks(template)), tokens);
   return { title: tokens.title ?? iso, body: `${meta}${prose}` };
 }
