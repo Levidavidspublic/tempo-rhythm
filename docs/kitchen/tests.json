@@ -1,0 +1,26 @@
+{
+  "run": "kitchen/tempo-study",
+  "updated": "2026-10-16T21:20Z",
+  "baseline": {
+    "command": "bun run test",
+    "last_result": "2348 pass, 3 todo, 0 fail (2351 tests, 127 files) on 5f1b3ec"
+  },
+  "finish_lines": {
+    "T3": {
+      "proof": "bun test packages/core apps/web/lib/study tests/unit/study convex/study.test.ts",
+      "last_result": "pending"
+    },
+    "T8": {
+      "proof": "bun test apps/web/lib/plan-path tests/unit/record convex/recordings.test.ts",
+      "last_result": "pending"
+    },
+    "T9": {
+      "proof": "bun test tests/unit/ingest tests/unit/memory_manager.test.tsx",
+      "last_result": "pending"
+    },
+    "T10": {
+      "proof": "bun test tests/unit/share convex/reminders.test.ts",
+      "last_result": "pending"
+    }
+  }
+}

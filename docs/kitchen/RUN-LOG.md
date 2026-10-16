@@ -1,4 +1,66 @@
-# Kitchen: polish pass — run log
+# Kitchen: Tempo study and planning — run log
+
+Branch `kitchen/tempo-study` from `kitchen/polish-pass` (`5f1b3ec`), so the polish work in PR #1053 is kept. One draft PR into `integration`, stacked on #1053. Mode: kitchen 0→100, long unattended run (24–72 h).
+Code model: the lead session plus Opus subagents at medium effort (one builder per finish line in its own worktree, one reviewer per finish line). Runtime model: unchanged (DeepSeek V4.1 Flash on DeepInfra, `convex/lib/ai_router.ts`).
+
+**If this run restarts:** read this file, `docs/kitchen/tests.json` and `git log --oneline -20`, run `bun run test`, then continue from the first unchecked line below.
+
+**Tags.** `AWAY` = the agent does it while Amit is away. `WALK` = Amit can do it from his phone. `AT` = Amit needs to be at the computer.
+
+## Finish lines
+
+Order from the second brief (this run owns study, recording, planning, uploads, memory and the stretch items):
+
+- [ ] `AWAY` T3 Study layer: S18 FlashcardDeck · S20 AdaptiveQuiz · S19 ReviewHub + SM-2 scheduler in `packages/core/srs` · S21 TestRunner + Bagrut-style question plugin · S25 TurnIntoMenu on notes and pages. Saved as json-render blocks. Study is its own area; Today does not change.
+- [ ] `AWAY` T8 S7 RecordSession (consent, live Deepgram transcript, pinned notes → notes + tasks, audio never stored) · S3 PlanPath + S4 SessionScheduler with real week and month grids.
+- [ ] `AWAY` T9 S2 IngestSheet (file, paste, photo → OCR) · S31 MemoryManager parity.
+- [ ] `AWAY` T10 Stretch: S14 reminders through a messaging channel (adapter only; channel UNKNOWN) · S26 ShareSheet · S24 MiniAppFrame.
+
+Backlog, after the four lines above (the first brief's lines and the SHARED KIT). Before each one, check whether the parallel run already claims it on its branch; if it does, log it and skip it:
+
+- [ ] `AWAY` T1 Chat kit: S8 ChatShell (history grouped Today / Yesterday / 7 days, auto-title, rename, search, delete, edit, regenerate, stop, follow-ups, attachments, 390 px) and "turn this into a task" with Accept / Undo.
+- [ ] `AWAY` T2 Cards in chat: OpenUI cards + templates; S9 GuidedPlanCard grown from the decision card.
+- [ ] `AWAY` T4 S16 AudioRecapPlayer + ReadAloudButton on every message (Hebrew via Chatterbox Multilingual).
+- [ ] `AWAY` T5 English live voice round trip (Deepgram Flux → runtime model → Kokoro), barge-in, voice-gated streaming; Hebrew call = text in + read-aloud out.
+- [ ] `AWAY` T6 Bring your own voice: Settings screen + adapters.
+- [ ] `AWAY` T7 Coach dial + Council view with a Scribe seat.
+- [ ] `AWAY` Remaining SHARED KIT pieces (S10, S13, S22, S28, S32, S35), then ROADMAP items, then quality passes.
+- [ ] `AWAY` Last step: fresh-context correctness review, fixes, RESUME comment.
+- [ ] `AT` Amit reviews and decides. The agent never merges.
+
+## Now working on
+
+Setup: issue, draft PR, T3 design.
+
+## Log
+
+| time (UTC) | commit | finish line | result | proof |
+|---|---|---|---|---|
+| 2026-10-16 21:20 | `5f1b3ec` | setup | Branch `kitchen/tempo-study` cut from `kitchen/polish-pass`. Bun 1.3.9, `bun install --frozen-lockfile` OK (2000 packages). Code map done by a read-only subagent | — |
+
+## Decisions
+
+- **Two briefs merged (Amit, 2026-10-16).** The first brief asked for `kitchen/study-kit` (chat, study and voice kit). The second brief, sent mid-run, asked for `kitchen/tempo-study` (study and planning) "plus what you're doing right now". The newer brief wins where they differ: branch `kitchen/tempo-study`, its issue title, its order (T3 → T8 → T9 → T10) and its file ownership. The first brief's other lines (T1, T2, T4–T7) are kept as backlog and are only built where the parallel run hasn't claimed them.
+- **`@openuidev/react-headless` is not added.** Its `package.json` (0.18.1) has `zustand` as a required peer dependency. HARD_RULES §2 forbids Zustand ("never add as a dependency"), and `scan:forbidden-tech` lists it. HARD_RULES wins over the brief. Chat cards stay on `@openuidev/react-lang` 1.0.1 (MIT, already in `apps/web` from #964) with Tempo's own Zod component library.
+- **Ticket type `component`, no hot files.** The ticket's scope leaves out `convex/`, so the `convex-arch:` commits stay red in scope-guard until Amit adds the `convex-arch` label (rules d/h). Scope-guard fails hot files even with the label (`package.json`, `bun.lock`, `tsconfig*.json`, `next.config.*`, `route.ts`), so this run adds none. That is why `packages/core/srs` is plain TypeScript imported by relative path, not a new workspace package with its own `package.json`. EXTRAPOLATED.
+
+## Needs Amit
+
+- `AT` Add the `convex-arch` label to the PR once the `convex-arch:` commits look right. Until then scope-guard is red on purpose.
+
+## UNKNOWN
+
+- Live provider round trips: there is no `DEEPINFRA_API_KEY` or `DEEPGRAM_API_KEY` in this sandbox (names checked, no values read).
+
+## Notes for doc sync
+
+- `factory/SLOTS.md` → Secrets does not list `DEEPINFRA_API_KEY` or `DEEPGRAM_API_KEY`, but `convex/lib/ai_router.ts` and `convex/voice.ts` read them.
+- HARD_RULES §6.1 still says Mistral; the code and PRD §7 use DeepSeek V4.1 Flash on DeepInfra.
+- SLOTS.md says there is no `packages/core`; the brief and AGENTS.md put the SM-2 scheduler there. This run creates `packages/core/srs/` as plain files (no workspace package).
+
+---
+
+# Earlier run: Kitchen polish pass (PR #1053) — run log
 
 Branch `kitchen/polish-pass` from `integration` (`eb0b12c`). One draft PR into `integration`: https://github.com/Levidavidspublic/tempo-rhythm/pull/1053 (ticket #1051). Mode: kitchen polish, unattended overnight.
 If this run restarts: continue from the first unchecked item below.
