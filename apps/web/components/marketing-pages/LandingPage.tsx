@@ -74,7 +74,10 @@ export function LandingPage() {
       <nav className={`${wrap} flex flex-wrap items-center gap-4 py-6 md:gap-8`}>
         <Link href="/" className="flex items-center gap-3" aria-label={copy.nav.home}>
           <BrandMark size={32} />
-          <Wordmark size={22} />
+          {/* The wordmark is a flex row: kept left to right so Hebrew doesn't read it "Flow Tempo". */}
+          <span dir="ltr">
+            <Wordmark size={22} />
+          </span>
         </Link>
         <div className="ms-auto hidden items-center gap-6 text-small text-muted-foreground md:flex">
           <a href="#features" className="hover:text-foreground">
@@ -410,7 +413,9 @@ export function LandingPage() {
             <div>
               <div className="mb-4 flex items-center gap-3">
                 <BrandMark size={28} />
-                <Wordmark size={22} color="var(--color-mkt-dark-fg)" />
+                <span dir="ltr">
+                  <Wordmark size={22} color="var(--color-mkt-dark-fg)" />
+                </span>
               </div>
               <p className="max-w-[30ch] font-serif text-h3 leading-relaxed text-mkt-dark-fg-muted">
                 {footer.tagline}

@@ -137,7 +137,7 @@ const en: LandingCopy = {
     coachBody:
       "Book the dentist · 10 min. Accept, Edit or Not now. Nothing changes until you accept.",
     weekLabel: "This week · example",
-    weekBody: "Days with something finished. No streaks, no scores.",
+    weekBody: "Days with something finished this week.",
   },
   features: {
     eyebrow: "What's inside",
@@ -145,8 +145,8 @@ const en: LandingCopy = {
     lede: "Today shows your tasks and a Markdown page for the day. The journal is those daily pages, newest first. You can edit, link and export every page.",
     page: {
       eyebrow: "★ Daily page",
-      title: "Plain Markdown, with links between pages.",
-      body: "Type [[ and a page name to link to it. The other page lists it under Linked here. Tags sit on the page, and Ctrl K (⌘K on a Mac) opens the command bar to jump between screens.",
+      title: "Markdown pages, with links between them.",
+      body: "Type [[ and a page name to link to it. The other page lists it under Linked here. Ctrl K (⌘K on a Mac) opens the command bar to jump between screens.",
       chips: ["[[ links ]]", "Linked here", "Ctrl K · ⌘K"],
       sampleLabel: "Example page",
       sample: [
@@ -162,7 +162,7 @@ const en: LandingCopy = {
     brainDump: {
       eyebrow: "01 — Brain dump",
       title: "Empty your head. Tempo puts it in order.",
-      body: "Type everything in one messy pile. The AI sorts it into Now, Soon and Later, with a reason for each line. Nothing is added until you accept it, and the Now lines go on Today.",
+      body: "Type everything in one messy pile. Tempo picks out up to six things and sorts them into Now, Soon and Later, with a reason for each. Nothing is added until you accept it.",
       orderLabel: "Your order · example",
       order: [
         { text: "Pay the electricity bill", tag: "NOW" },
@@ -180,7 +180,7 @@ const en: LandingCopy = {
     order: {
       eyebrow: "03 — An order for today",
       title: "Ask what to do first. Keep the answer on today's page.",
-      body: "Ask the coach “What order should I do these in?” It answers with a card: numbered steps, minutes, and a short reason for each. Save to today puts the steps on today's page, and you can undo it for 5 minutes.",
+      body: "Ask the coach “What order should I do these in?” It answers with a card: numbered steps with minutes, and a short reason where it helps. Save to today puts the steps on today's page, and you can undo it for 5 minutes.",
     },
     journal: {
       eyebrow: "04 — Journal",
@@ -201,7 +201,7 @@ const en: LandingCopy = {
   coach: {
     eyebrow: "The coach",
     title: "Nothing changes until you say yes.",
-    lede: "Every change the coach suggests comes as a card that shows exactly what will change, with Accept, Edit and Not now. After you accept, you can undo it for 5 minutes. The lines below are examples of what it can say. They are not quotes from users.",
+    lede: "Every change the coach suggests comes as a card that shows exactly what will change. You accept it or say Not now, and most cards can be edited first. After you accept, you can undo it for 5 minutes. The lines below are examples of what it can say. They are not quotes from users.",
     examples: [
       {
         line: "“I can add ‘Pay the electricity bill’ to today, 5 minutes. Nothing changes until you accept.”",
@@ -316,7 +316,7 @@ const he: LandingCopy = {
     coachBody:
       "לקבוע תור לרופא שיניים · 10 דק׳. אישור, עריכה או לא עכשיו. שום דבר לא משתנה עד שמאשרים.",
     weekLabel: "השבוע · דוגמה",
-    weekBody: "ימים שבהם משהו הושלם. בלי רצפים ובלי ציונים.",
+    weekBody: "הימים השבוע שבהם משהו הושלם.",
   },
   features: {
     eyebrow: "מה יש בפנים",
@@ -324,8 +324,8 @@ const he: LandingCopy = {
     lede: "בדף ״היום״ יש את המשימות שלך ודף Markdown ליום. היומן הוא הדפים היומיים האלה, החדש ביותר ראשון. כל דף אפשר לערוך, לקשר ולייצא.",
     page: {
       eyebrow: "★ הדף היומי",
-      title: "Markdown פשוט, עם קישורים בין דפים.",
-      body: "מקלידים [[ ושם של דף כדי לקשר אליו. הדף השני מציג את הקישור תחת ״מקושר לכאן״. תגיות יושבות על הדף, ו-Ctrl K (או ⌘K במק) פותח חיפוש כדי לעבור בין מסכים.",
+      title: "דפי Markdown, עם קישורים ביניהם.",
+      body: "מקלידים [[ ושם של דף כדי לקשר אליו. הדף השני מציג את הקישור תחת ״מקושר לכאן״. Ctrl K (או ⌘K במק) פותח חיפוש כדי לעבור בין מסכים.",
       chips: ["[[ קישורים ]]", "מקושר לכאן", "קיצור Ctrl K · ⌘K"],
       sampleLabel: "דף לדוגמה",
       sample: [
@@ -341,7 +341,7 @@ const he: LandingCopy = {
     brainDump: {
       eyebrow: "01 — פריקת מחשבות",
       title: "מרוקנים את הראש. Tempo עושה סדר.",
-      body: "כותבים הכול בערימה אחת מבולגנת. ה-AI ממיין ל״עכשיו״, ״בקרוב״ ו״אחר כך״, עם סיבה לכל שורה. שום דבר לא נוסף עד שמאשרים, והשורות של ״עכשיו״ נכנסות לדף היום.",
+      body: "כותבים הכול בערימה אחת מבולגנת. Tempo בוחר עד שישה דברים וממיין אותם ל״עכשיו״, ״בקרוב״ ו״אחר כך״, עם סיבה לכל אחד. שום דבר לא נוסף עד שמאשרים.",
       orderLabel: "הסדר שלך · דוגמה",
       order: [
         { text: "לשלם חשמל", tag: "עכשיו" },
@@ -359,7 +359,7 @@ const he: LandingCopy = {
     order: {
       eyebrow: "03 — סדר להיום",
       title: "שואלים מה קודם. שומרים את התשובה בדף היום.",
-      body: "שואלים את המאמן ״באיזה סדר כדאי לי לעשות את אלה?״ והוא עונה בכרטיס: שלבים ממוספרים, דקות וסיבה קצרה לכל שלב. ״שמירה להיום״ מכניסה את השלבים לדף היום, ואפשר לבטל במשך 5 דקות.",
+      body: "שואלים את המאמן ״באיזה סדר כדאי לי לעשות את אלה?״ והוא עונה בכרטיס: שלבים ממוספרים עם דקות, וסיבה קצרה כשזה עוזר. ״שמירה להיום״ מכניסה את השלבים לדף היום, ואפשר לבטל במשך 5 דקות.",
     },
     journal: {
       eyebrow: "04 — יומן",
@@ -380,7 +380,7 @@ const he: LandingCopy = {
   coach: {
     eyebrow: "המאמן",
     title: "שום דבר לא משתנה עד שמאשרים.",
-    lede: "כל שינוי שהמאמן מציע מגיע ככרטיס שמראה בדיוק מה ישתנה, עם אישור, עריכה ולא עכשיו. אחרי שמאשרים, אפשר לבטל במשך 5 דקות. השורות למטה הן דוגמאות למה שהוא יכול לכתוב, לא ציטוטים של משתמשים.",
+    lede: "כל שינוי שהמאמן מציע מגיע ככרטיס שמראה בדיוק מה ישתנה. מאשרים או בוחרים ״לא עכשיו״, ואת רוב הכרטיסים אפשר לערוך קודם. אחרי שמאשרים, אפשר לבטל במשך 5 דקות. השורות למטה הן דוגמאות למה שהוא יכול לכתוב, לא ציטוטים של משתמשים.",
     examples: [
       {
         line: "״אפשר להוסיף את ׳לשלם חשמל׳ להיום, 5 דקות. שום דבר לא משתנה עד שמאשרים.״",
