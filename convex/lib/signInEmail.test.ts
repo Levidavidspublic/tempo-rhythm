@@ -15,7 +15,7 @@ const EN_LIFETIME = "The link works for 30 minutes and only once.";
 const EN_IGNORE =
   "If you didn't ask for this, you can ignore this email. Nobody can sign in without the link.";
 const HE_LIFETIME = "הקישור עובד במשך 30 דקות ופעם אחת בלבד.";
-const HE_IGNORE = "אם לא ביקשת את זה, אפשר להתעלם מהמייל הזה. אף אחד לא יכול להיכנס בלי הקישור.";
+const HE_IGNORE = "אם לא ביקשתם את זה, אפשר להתעלם מהמייל הזה. אף אחד לא יכול להיכנס בלי הקישור.";
 
 function count(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
@@ -49,7 +49,7 @@ describe("signInEmail (pure builder)", () => {
     const { subject } = signInEmail({ url: URL_, host: HOST });
     expect(subject).toBe(SIGN_IN_EMAIL_SUBJECT);
     expect(subject.startsWith("Your Tempo Flow sign-in link")).toBe(true);
-    expect(subject).toContain("קישור הכניסה שלך");
+    expect(subject).toContain("קישור הכניסה שלכם");
     expect(subject.length).toBeLessThanOrEqual(60);
   });
 

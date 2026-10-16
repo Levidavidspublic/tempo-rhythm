@@ -18,7 +18,7 @@
 
 export type SignInEmail = { subject: string; html: string; text: string };
 
-export const SIGN_IN_EMAIL_SUBJECT = "Your Tempo Flow sign-in link · קישור הכניסה שלך";
+export const SIGN_IN_EMAIL_SUBJECT = "Your Tempo Flow sign-in link · קישור הכניסה שלכם";
 
 export const RESEND_EMAILS_URL = "https://api.resend.com/emails";
 
@@ -70,11 +70,11 @@ export function signInEmail({ url, host }: { url: string; host: string }): SignI
   ].join("\n");
 
   const hebrew = [
-    paragraph(`זה קישור הכניסה שלך ל-Tempo Flow באתר <span dir="ltr">${safeHost}</span>.`, INK),
+    paragraph(`זה קישור הכניסה שלכם ל-Tempo Flow באתר <span dir="ltr">${safeHost}</span>.`, INK),
     paragraph("כדי להיכנס, לחצו על הכפתור למעלה, או העתיקו לדפדפן את הקישור שמתחתיו.", INK),
     paragraph("הקישור עובד במשך 30 דקות ופעם אחת בלבד.", INK),
     paragraph(
-      "אם לא ביקשת את זה, אפשר להתעלם מהמייל הזה. אף אחד לא יכול להיכנס בלי הקישור.",
+      "אם לא ביקשתם את זה, אפשר להתעלם מהמייל הזה. אף אחד לא יכול להיכנס בלי הקישור.",
       INK,
       0
     ),
@@ -122,12 +122,12 @@ export function signInEmail({ url, host }: { url: string; host: string }): SignI
     "",
     "---",
     "",
-    `זה קישור הכניסה שלך ל-Tempo Flow באתר ${host}.`,
+    `זה קישור הכניסה שלכם ל-Tempo Flow באתר ${host}.`,
     "כדי להיכנס, פתחו את הקישור שלמעלה.",
     "",
     "הקישור עובד במשך 30 דקות ופעם אחת בלבד.",
     "",
-    "אם לא ביקשת את זה, אפשר להתעלם מהמייל הזה. אף אחד לא יכול להיכנס בלי הקישור.",
+    "אם לא ביקשתם את זה, אפשר להתעלם מהמייל הזה. אף אחד לא יכול להיכנס בלי הקישור.",
     "",
   ].join("\n");
 
