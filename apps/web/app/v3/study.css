@@ -10,6 +10,23 @@
 .tp-study-grades { border: 0; margin: 0; padding: 0; min-width: 0; flex: 1 1 auto; display: grid; gap: var(--tp-space-2); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) + var(--tp-space-4)), 1fr)); }
 .tp-study-grade { flex-direction: column; gap: 0; padding-block: var(--tp-space-1); }
 .tp-study-grade__interval { font-size: var(--tp-text-xs); font-weight: 400; color: var(--tp-ink-muted); }
+.tp-study-grades[tabindex]:focus-visible { border-radius: var(--tp-radius-md); }
+
+/* Typed recall: the "Type answers" switch, the answer field, and the comparison after Check (icon + word; colour only adds to it). The "Suggested" marker is a word on the grade button, never a colour alone. No motion of its own: the back face's existing pop is the one transition. */
+.tp-study-typed { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--tp-space-1) var(--tp-space-2); }
+.tp-study-typed__label { font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink); cursor: pointer; }
+.tp-study-recall__field { text-align: start; }
+.tp-study-recall { justify-self: stretch; display: grid; gap: var(--tp-space-2); margin-top: var(--tp-space-2); padding-top: var(--tp-space-3); border-top: 1px solid var(--tp-line); text-align: start; }
+.tp-study-recall__given { margin: 0; overflow-wrap: anywhere; }
+.tp-study-recall__label { font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-study-recall__verdict { justify-self: start; display: inline-flex; align-items: center; gap: var(--tp-space-1); margin: 0; padding: var(--tp-space-1) var(--tp-space-3); border-radius: var(--tp-radius-pill); background: var(--tp-sunken); color: var(--tp-ink); font-size: var(--tp-text-sm); font-weight: 600; }
+.tp-study-recall__verdict svg { flex: none; color: var(--tp-ink-muted); }
+.tp-study-recall[data-result="matches"] .tp-study-recall__verdict { background: var(--tp-done-wash); }
+.tp-study-recall[data-result="matches"] .tp-study-recall__verdict svg { color: var(--tp-done); }
+.tp-study-recall[data-result="close"] .tp-study-recall__verdict { background: var(--tp-caution-wash); }
+.tp-study-recall[data-result="close"] .tp-study-recall__verdict svg { color: var(--tp-caution); }
+.tp-study-grade[data-suggested="true"] { border-color: var(--tp-ink); }
+.tp-study-grade__suggested { font-size: var(--tp-text-xs); font-weight: 600; color: var(--tp-ink); }
 
 .tp-study-feedback__text { display: grid; gap: var(--tp-space-1); min-width: 0; }
 

@@ -21,6 +21,8 @@ import { reviewHref } from "./hub";
 import { listenHref } from "./recap/player";
 import { useReadAloudSlot } from "./recap/useReadAloud";
 import { deckLabels, KIND_ICON, KIND_KEY, quizLabels, type StudyT, testLabels } from "./labels";
+import { TypeAnswersToggle } from "./TypeAnswersToggle";
+import { useTypedAnswers } from "./useTypedAnswers";
 import {
   type AttemptAnswer,
   deckCounts,
@@ -188,6 +190,7 @@ function DeckPanel({
   const { due, fresh } = deckCounts(data.cards, states, now);
   const labels = useMemo(() => deckLabels(t), [t]);
   const readAloud = useReadAloudSlot();
+  const [typed, setTyped] = useTypedAnswers();
   return (
     <>
       <div className="tp-study-deckbar" data-component="Toolbar">
@@ -208,7 +211,8 @@ function DeckPanel({
           </Link>
         ) : null}
       </div>
-      <FlashcardDeck cards={data.cards} labels={labels} readAloud={readAloud} />
+      <TypeAnswersToggle t={t} on={typed} onChange={setTyped} />
+      <FlashcardDeck cards={data.cards} labels={labels} readAloud={readAloud} typed={typed} />
     </>
   );
 }

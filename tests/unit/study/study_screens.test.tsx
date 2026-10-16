@@ -223,3 +223,50 @@ describe("a set and a session", () => {
     expect(primaries(markup)).toBe(1);
   });
 });
+
+describe("Type answers (typed recall)", () => {
+  const card = { setId: "s1", setTitle: "Deck", cardId: "a", front: "Mitosis", back: "Division", state: null };
+  test("a session has the switch, off by default, named by its visible label", () => {
+    const markup = html(
+      createElement(ReviewSessionView, { cards: [card], now: 0, online: true, onSave: async () => ({ reviewId: "r", undoUntil: 0 }), onUndo: noop }),
+    );
+    expect(markup).toContain('data-component="TypeAnswersToggle"');
+    const label = markup.match(/<label class="tp-study-typed__label" id="([^"]+)" for="([^"]+)">Type answers<\/label>/);
+    expect(label).not.toBeNull();
+    expect(markup).toContain(`id="${label?.[2]}" class="tp-switch" type="button" role="switch" aria-checked="false" aria-labelledby="${label?.[1]}"`);
+    expect(markup).toContain('<span class="tp-switch__state">Off</span>');
+    // Off: the session looks as before, with Show answer as the one primary.
+    expect(markup).toContain("Show answer");
+    expect(markup).not.toContain("recall-input");
+    expect(primaries(markup)).toBe(1);
+  });
+  test("a deck has the same switch above the card, and still one primary", () => {
+    const markup = html(
+      createElement(StudySetView, {
+        data: {
+          set: { setId: "s1", noteId: "n1", kind: "flashcards", title: "Cell biology", itemCount: 1 },
+          note: { id: "n1", title: "Cell biology" },
+          block: { id: "blk", type: "flashcards", data: { title: "Cell biology", origin: "user", cards: [{ id: "a", front: "Mitosis", back: "Division" }] } },
+          states: {},
+          attempts: [],
+        },
+        online: true,
+        now: 10,
+        onRecord: noop,
+        onRemove: () => {},
+      }),
+    );
+    expect(markup).toContain('data-component="TypeAnswersToggle"');
+    expect(markup.indexOf("TypeAnswersToggle")).toBeLessThan(markup.indexOf('data-component="FlashcardDeck"'));
+    expect(markup).toContain('role="switch" aria-checked="false"');
+    expect(primaries(markup)).toBe(1);
+  });
+  test("the switch shows its state in words when on", async () => {
+    const { TypeAnswersToggle } = await import("../../../apps/web/components/study/TypeAnswersToggle");
+    const t = (key: Parameters<typeof translate>[1]) => translate("en", key);
+    const markup = html(createElement(TypeAnswersToggle, { t, on: true, onChange: () => {} }));
+    expect(markup).toContain('aria-checked="true"');
+    expect(markup).toContain('<span class="tp-switch__state">On</span>');
+    expect(markup).not.toMatch(BANNED);
+  });
+});

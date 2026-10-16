@@ -24,6 +24,8 @@ import {
   type SavedGrade,
   sessionItems,
 } from "./session";
+import { TypeAnswersToggle } from "./TypeAnswersToggle";
+import { useTypedAnswers } from "./useTypedAnswers";
 
 /** The review session's markup and session state, with no data access (ReviewSession.tsx saves). */
 export function SessionHeader({ t, count }: { t: StudyT; count: number | null }) {
@@ -137,16 +139,27 @@ function SessionRunner({
   }, [last]);
   const undoAvailable =
     last !== undefined && last.undoUntil > clock && saved.current.length === state.history.length;
+  // "Type answers" (typed recall), remembered per browser. After a grade in typed mode, the next
+  // card's answer field takes focus once the save is done (the session is locked until then).
+  const [typed, setTyped] = useTypedAnswers();
+  const answerRef = useRef<HTMLInputElement>(null);
+  const focusAnswer = useRef(false);
+  useEffect(() => {
+    if (busy || !focusAnswer.current) return;
+    focusAnswer.current = false;
+    answerRef.current?.focus();
+  }, [busy]);
 
   const act = (action: ReviewAction) => {
     if (busyRef.current) return;
-    if (action.type === "reveal") {
+    if (action.type === "reveal" || action.type === "type" || action.type === "clear") {
       dispatch(action);
       return;
     }
     if (action.type === "grade") {
       const key = state.queue[0];
       if (key === undefined || !state.revealed) return;
+      focusAnswer.current = typed;
       busyRef.current = true;
       setBusy(true);
       setNotice(null);
@@ -190,6 +203,7 @@ function SessionRunner({
 
   return (
     <div className="tp-study-session">
+      {state.queue.length > 0 ? <TypeAnswersToggle t={t} on={typed} onChange={setTyped} /> : null}
       {/* While a grade saves, every control in the session is disabled (one answer at a time). */}
       <fieldset className="tp-study-lock" disabled={busy} aria-busy={busy}>
         <FlashcardReviewView
@@ -201,6 +215,8 @@ function SessionRunner({
           onKeyDown={reviewKeyDown(state.revealed, act)}
           undoAvailable={undoAvailable}
           readAloud={readAloud}
+          typed={typed}
+          answerRef={answerRef}
         />
       </fieldset>
       <p className="tp-small tp-muted tp-study-session__status" aria-live="polite">
