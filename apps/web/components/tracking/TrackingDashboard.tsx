@@ -4,16 +4,21 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Flame } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { fillTemplate } from "@/lib/habits-view";
+import type { MessageKey } from "@/lib/i18n";
 import {
   buildTrackingDashboard,
   completeTrackingSession,
+  formatBlockCount,
   formatSessionMinutes,
+  formatTrackingDay,
   parseTrackingLogs,
   trackingLogsStorageKey,
 } from "@/lib/trackingDashboard";
@@ -21,7 +26,9 @@ import {
   lastLocalDaysRange,
   lastSevenDaysSeries,
   localDayKey,
+  MAX_BLOCK_MINUTES,
   minutesFromMs,
+  parseBlockMinutes,
 } from "./focusBlockStats";
 
 type PendingUndo = { focusBlockId: Id<"focusBlocks">; undoUntilMs: number };
@@ -32,6 +39,7 @@ const importsInFlight = new Map<string, Promise<void>>();
 const MAX_IMPORT_DURATION_MS = 8 * 60 * 60 * 1000;
 
 export function TrackingDashboard() {
+  const { lang, t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
@@ -68,11 +76,13 @@ export function TrackingDashboard() {
   const [intention, setIntention] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("25");
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<MessageKey | null>(null);
   const migratedFor = useRef<string | null>(null);
   const [importRetry, setImportRetry] = useState(0);
   const [isUndoing, setIsUndoing] = useState(false);
   const undoingRef = useRef(false);
+  const [isLogging, setIsLogging] = useState(false);
+  const loggingRef = useRef(false);
   const userId = profile?._id;
 
   // One-time import of logs the old localStorage version saved. Each log leaves the stored list
@@ -183,37 +193,40 @@ export function TrackingDashboard() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto w-full max-w-4xl p-8">
+      <div className="mx-auto w-full max-w-4xl p-8">
         <div className="space-y-4">
           <div className="h-12 w-56 animate-pulse rounded-xl bg-muted" />
           <div className="h-28 animate-pulse rounded-3xl bg-muted" />
           <div className="h-24 animate-pulse rounded-3xl bg-muted" />
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!isAuthenticated || !profile || !habitStreak || !blocks) {
     return (
-      <main className="mx-auto w-full max-w-4xl p-8 text-center">
+      <div className="mx-auto w-full max-w-4xl p-8 text-center">
         <SoftCard className="mx-auto max-w-xl">
-          <h1 className="font-heading text-2xl font-semibold text-foreground">Session tracking</h1>
-          <p className="mt-3 text-muted-foreground">
-            Sign in again to see habit streaks and log a focus block.
-          </p>
+          <h1 className="font-heading text-2xl font-semibold text-foreground">{t("track.title")}</h1>
+          <p className="mt-3 text-muted-foreground">{t("track.signedOut")}</p>
           <Button asChild className="mt-6">
-            <Link href="/sign-in?next=/tracking">Sign in</Link>
+            <Link href="/sign-in?next=/tracking">{t("track.signIn")}</Link>
           </Button>
         </SoftCard>
-      </main>
+      </div>
     );
   }
 
+  const minutes = parseBlockMinutes(durationMinutes);
+  const minutesOutOfRange = durationMinutes.trim() !== "" && minutes === null;
+
   const logSession = async () => {
-    const minutes = Number.parseInt(durationMinutes, 10);
-    if (!Number.isFinite(minutes) || minutes <= 0 || intention.trim().length === 0) {
+    // One block per press: a double click (or Enter twice) must not log it twice.
+    if (loggingRef.current || minutes === null || intention.trim().length === 0) {
       return;
     }
+    loggingRef.current = true;
+    setIsLogging(true);
     const durationMs = minutes * 60_000;
     try {
       await createBlock({
@@ -224,7 +237,10 @@ export function TrackingDashboard() {
       setIntention("");
       setMessage(null);
     } catch {
-      setMessage("That block did not save. Try once more.");
+      setMessage("track.saveError");
+    } finally {
+      loggingRef.current = false;
+      setIsLogging(false);
     }
   };
 
@@ -234,7 +250,7 @@ export function TrackingDashboard() {
       setPendingUndo({ focusBlockId, undoUntilMs: result.undoUntilMs });
       setMessage(null);
     } catch {
-      setMessage("That block could not be removed.");
+      setMessage("track.removeError");
     }
   };
 
@@ -246,11 +262,11 @@ export function TrackingDashboard() {
     setIsUndoing(true);
     try {
       const result = await restoreBlock({ focusBlockId: pendingUndo.focusBlockId });
-      setMessage(result.success ? null : "The undo window has passed.");
+      setMessage(result.success ? null : "track.undoPassed");
       setPendingUndo(null);
     } catch {
       // Keep the Undo action (until its window ends) so a network failure can be retried.
-      setMessage("Could not restore that block. Try Undo again.");
+      setMessage("track.restoreError");
     } finally {
       undoingRef.current = false;
       setIsUndoing(false);
@@ -258,62 +274,59 @@ export function TrackingDashboard() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-8">
       <header className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Flame className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              You
+            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground rtl:tracking-normal">
+              {t("track.eyebrow")}
             </p>
             <h1 className="font-heading text-4xl font-semibold text-foreground">
-              Session tracking
+              {t("track.title")}
             </h1>
           </div>
         </div>
-        <p className="max-w-2xl text-muted-foreground">
-          A quiet place to notice what you already did. Coming back later still counts — there is no
-          falling behind here.
-        </p>
+        <p className="max-w-2xl text-muted-foreground">{t("track.lede")}</p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <SoftCard>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Habit streak
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground rtl:tracking-normal">
+            {t("track.streak")}
           </p>
           <p className="mt-3 font-heading text-3xl font-semibold text-foreground">
             {habitStreak.streakCount}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Longest among {habitStreak.habitCount}{" "}
-            {habitStreak.habitCount === 1 ? "habit" : "habits"}: {habitStreak.longestAmongHabits}.
-            Streaks are information, not pressure.{" "}
+            {fillTemplate(
+              t(habitStreak.habitCount === 1 ? "track.longest.one" : "track.longest.many"),
+              { n: habitStreak.habitCount, longest: habitStreak.longestAmongHabits }
+            )}{" "}
+            {t("track.streakNote")}{" "}
             <Link href="/habits" className="underline underline-offset-4">
-              Open habits
+              {t("track.openHabits")}
             </Link>
           </p>
         </SoftCard>
         <SoftCard>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Focus blocks today
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground rtl:tracking-normal">
+            {t("track.today")}
           </p>
           <p className="mt-3 font-heading text-3xl font-semibold text-foreground">
-            {formatSessionMinutes(todayMinutes)}
+            {formatSessionMinutes(todayMinutes, lang)}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Saved to your account, so they are here after a reload or on another device.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("track.saved")}</p>
         </SoftCard>
       </section>
 
       <div aria-live="polite">
-        {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        {message ? <p className="text-sm text-muted-foreground">{t(message)}</p> : null}
         {pendingUndo ? (
           <p className="flex items-center gap-3 text-sm text-foreground">
-            Focus block removed.
+            {t("track.removed")}
             <Button
               type="button"
               variant="outline"
@@ -321,7 +334,7 @@ export function TrackingDashboard() {
               disabled={isUndoing}
               onClick={() => void undoDelete()}
             >
-              Undo
+              {t("track.undo")}
             </Button>
           </p>
         ) : null}
@@ -336,41 +349,51 @@ export function TrackingDashboard() {
       >
         <div className="grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end">
           <div className="space-y-2">
-            <Label htmlFor="session-intention">What this block was for</Label>
+            <Label htmlFor="session-intention">{t("track.intention")}</Label>
             <Input
               id="session-intention"
+              dir="auto"
               value={intention}
               onChange={(event) => setIntention(event.target.value)}
-              placeholder="A gentle first stretch, inbox, meds..."
+              placeholder={t("track.intentionPh")}
               autoComplete="off"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="session-minutes">Minutes</Label>
+            <Label htmlFor="session-minutes">{t("track.minutesLabel")}</Label>
             <Input
               id="session-minutes"
               type="number"
               min={1}
+              max={MAX_BLOCK_MINUTES}
               inputMode="numeric"
               value={durationMinutes}
+              aria-invalid={minutesOutOfRange || undefined}
+              aria-describedby={minutesOutOfRange ? "session-minutes-hint" : undefined}
               onChange={(event) => setDurationMinutes(event.target.value)}
             />
           </div>
-          <Button type="submit" disabled={intention.trim().length === 0}>
-            Log this block
+          <Button
+            type="submit"
+            disabled={intention.trim().length === 0 || minutes === null || isLogging}
+          >
+            {t("track.log")}
           </Button>
         </div>
+        {minutesOutOfRange ? (
+          <p id="session-minutes-hint" className="mt-3 text-sm text-muted-foreground">
+            {fillTemplate(t("track.minutesHint"), { max: MAX_BLOCK_MINUTES })}
+          </p>
+        ) : null}
       </form>
 
       {blocks.length === 0 ? (
         <div className="rounded-3xl border border-border/80 bg-card/90 px-6 py-10 text-center">
-          <p className="text-base font-medium text-foreground">No focus blocks logged yet.</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            When you finish a short stretch, log it here. One block is enough.
-          </p>
+          <p className="text-base font-medium text-foreground">{t("track.empty")}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("track.emptyHint")}</p>
         </div>
       ) : (
-        <section aria-label="Logged focus blocks">
+        <section aria-label={t("track.listLabel")}>
           <ul className="space-y-3">
             {blocks.map((block) => (
               <li
@@ -378,14 +401,18 @@ export function TrackingDashboard() {
                 className="flex items-center justify-between gap-3 rounded-3xl border border-border/80 bg-card/90 p-5"
               >
                 <div>
-                  <p className="font-medium text-foreground">{block.label ?? "Focus block"}</p>
+                  <p dir="auto" className="font-medium text-foreground">
+                    {block.label ?? t("track.untitled")}
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {formatSessionMinutes(minutesFromMs(block.durationMs))} ·{" "}
-                    {localDayKey(block.startedAtMs)}
+                    {formatSessionMinutes(minutesFromMs(block.durationMs), lang)} ·{" "}
+                    <time dateTime={localDayKey(block.startedAtMs)}>
+                      {formatTrackingDay(localDayKey(block.startedAtMs), lang)}
+                    </time>
                   </p>
                 </div>
                 <Button type="button" variant="ghost" onClick={() => void deleteBlock(block._id)}>
-                  Remove
+                  {t("track.remove")}
                 </Button>
               </li>
             ))}
@@ -396,15 +423,16 @@ export function TrackingDashboard() {
                 key={point.day}
                 className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground"
               >
-                <span className="font-medium text-foreground">{point.day}</span>
+                <time dateTime={point.day} className="font-medium text-foreground">
+                  {formatTrackingDay(point.day, lang)}
+                </time>
                 {" · "}
-                {point.blocks} {point.blocks === 1 ? "block" : "blocks"},{" "}
-                {formatSessionMinutes(point.minutes)}
+                {formatBlockCount(point.blocks, lang)}, {formatSessionMinutes(point.minutes, lang)}
               </li>
             ))}
           </ol>
         </section>
       )}
-    </main>
+    </div>
   );
 }
