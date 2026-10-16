@@ -9,6 +9,7 @@ import { parseTempoBlocks } from "@tempo/utils";
 import type { AiCallOptions, AiResult, callLLM } from "./lib/ai_router";
 import { PENDING_APPROVAL_MESSAGE } from "./lib/approval";
 import { dayName } from "./lib/coachPrompt";
+import { WebSearchError, type WebSearchResult, stubWebSearch } from "./lib/webSearch";
 
 /**
  * The real-AI coach turn (OVERNIGHT-RUN.md run 2, item 2): the user's message is saved first, an
@@ -93,6 +94,7 @@ function makeWorld() {
     "coach:claimTurn": coach.claimTurn,
     "coach:releaseTurn": coach.releaseTurn,
     "coach:saveReply": coach.saveReply,
+    "coach:reserveWebSearch": coach.reserveWebSearch,
   };
   /** An action ctx whose runQuery / runMutation run the named handler as the same user. */
   const actionAs = (userId: string) => {
@@ -866,5 +868,324 @@ describe("a decision: the coach orders today's tasks, and saving it writes to to
     const { messageId } = await proposalTurn(world, DECISION);
     await expect(run(coach.acceptProposal, world.as(A), { messageId, todayDate: TODAY })).rejects.toThrow("full");
     expect((world.row(pageId) as Row).body).toBe(fences);
+  });
+});
+
+/** A stand-in for `callLLM` that answers each call with the next of `contents` (the last repeats). */
+function fakeModels(...contents: Array<string | (() => never)>) {
+  const calls: AiCallOptions[] = [];
+  const call = (async (opts: AiCallOptions): Promise<AiResult> => {
+    const content = contents[Math.min(calls.length, contents.length - 1)] as string | (() => never);
+    calls.push(opts);
+    if (typeof content === "function") content();
+    return {
+      tier: opts.tier,
+      requestedTier: opts.tier,
+      model: `test-model-${calls.length}`,
+      content: content as string,
+      usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      escalated: false,
+    };
+  }) as typeof callLLM;
+  return { call, calls };
+}
+
+const RESULTS: WebSearchResult[] = [
+  { title: "Library opening hours", site: "citylib.example", url: "https://citylib.example/hours", snippet: "Open 9 to 18 on weekdays." },
+  { title: "Holiday closures", site: "news.example", url: "https://news.example/closures", snippet: "Closed on Monday for the holiday." },
+];
+
+const ASKS_TO_SEARCH = JSON.stringify({
+  reply: "Libraries are often open 9 to 5, but check first.",
+  proposal: null,
+  search: "city library opening hours",
+});
+const ANSWERS_FROM_RESULTS = JSON.stringify({
+  reply: "It's open 9 to 18 on weekdays [1], but closed this Monday [2].",
+  proposal: null,
+});
+
+async function turnOnSearch(world: World, userId = A, locale: "en" | "he" = "en") {
+  await world.db.insert("userPreferences", {
+    userId,
+    theme: "system",
+    locale,
+    weekStartsOn: 1,
+    timeZone: "UTC",
+    emailReminders: true,
+    inAppNotifications: true,
+    coachWebSearch: true,
+    createdAt: 1,
+    updatedAt: 1,
+  });
+}
+
+async function seedSearches(world: World, count: number, userId = A, day = new Date().toISOString().slice(0, 10)) {
+  for (let i = 0; i < count; i += 1) {
+    await world.db.insert("coachWebSearches", { userId, utcDateKey: day, createdAt: 1, updatedAt: 1 });
+  }
+}
+
+function sentText(call: AiCallOptions | undefined) {
+  return call?.messages.map((m) => m.content).join("\n") ?? "";
+}
+
+function searchesBy(world: World, userId = A) {
+  return world.rows("coachWebSearches").filter((r) => r.userId === userId);
+}
+
+describe("web search on the coach (TEMPO-B07-01)", () => {
+  test("turned on, available and asked: one search, a second call with the results, and the reply saved with its sources", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH, ANSWERS_FROM_RESULTS);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+
+    expect(search.calls).toEqual([{ query: "city library opening hours", maxResults: 5 }]);
+    expect(model.calls).toHaveLength(2);
+    expect(sentText(model.calls[0])).toContain('add "search": "a short query"');
+    const second = sentText(model.calls[1]);
+    expect(second).toContain('You searched the web for "city library opening hours"');
+    expect(second).toContain("[1] Library opening hours (citylib.example)\nOpen 9 to 18 on weekdays.");
+    expect(second).toContain("[2] Holiday closures (news.example)");
+    expect(second).not.toContain('add "search"');
+    // The person's message stays last, so the model answers it.
+    expect(model.calls[1]?.messages.at(-1)).toEqual({ role: "user", content: "Is the city library open on Monday?" });
+
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.content).toBe("It's open 9 to 18 on weekdays [1], but closed this Monday [2].");
+    expect(reply.modelUsed).toBe("test-model-2");
+    expect(reply.sources).toEqual([
+      { title: "Library opening hours", site: "citylib.example", url: "https://citylib.example/hours" },
+      { title: "Holiday closures", site: "news.example", url: "https://news.example/closures" },
+    ]);
+    // Only title, site and link are stored: no snippet, and the count row has no query.
+    expect(JSON.stringify(reply.sources)).not.toContain("Open 9 to 18");
+    expect(searchesBy(world)).toHaveLength(1);
+    expect(JSON.stringify(searchesBy(world))).not.toContain("library");
+  });
+
+  test("a search that finds nothing still answers, with no sources", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH, '{"reply":"I could not find that online.","proposal":null}');
+    const search = stubWebSearch([]);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(sentText(model.calls[1])).toContain("found nothing useful");
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.content).toBe("I could not find that online.");
+    expect(reply.sources).toBeUndefined();
+    expect(searchesBy(world)).toHaveLength(1);
+  });
+
+  test("search turned off: it is never mentioned and never runs, even if the model asks", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect(model.calls).toHaveLength(1);
+    expect(sentText(model.calls[0])).not.toContain("search");
+    expect((messages(world, conversationId).at(-1) as Row).content).toBe("Libraries are often open 9 to 5, but check first.");
+    expect(searchesBy(world)).toHaveLength(0);
+  });
+
+  test("no provider on the deployment: never mentioned, never run", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, null)).toBe("replied");
+    expect(model.calls).toHaveLength(1);
+    expect(sentText(model.calls[0])).not.toContain("search");
+    expect((messages(world, conversationId).at(-1) as Row).sources).toBeUndefined();
+    expect(searchesBy(world)).toHaveLength(0);
+  });
+
+  test("today's searches used up: the model is told so, and no search runs", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    await seedSearches(world, coach.WEB_SEARCH_DAILY_LIMIT);
+    // Yesterday's searches and someone else's don't count toward today.
+    await seedSearches(world, 3, A, "2001-01-01");
+    await seedSearches(world, 3, B);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect(model.calls).toHaveLength(1);
+    expect(sentText(model.calls[0])).toContain("Web search is used up for today");
+    expect(sentText(model.calls[0])).not.toContain('add "search"');
+    expect(searchesBy(world)).toHaveLength(coach.WEB_SEARCH_DAILY_LIMIT + 3);
+  });
+
+  test("used up while the model ran: no search, and the reply says so plainly in the app language", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world, A, "he");
+    await seedSearches(world, coach.WEB_SEARCH_DAILY_LIMIT - 1);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const racing = (async (opts: AiCallOptions) => {
+      // A reply in another conversation spends the last search meanwhile.
+      await seedSearches(world, 1);
+      return model.call(opts);
+    }) as typeof callLLM;
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, racing, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect((messages(world, conversationId).at(-1) as Row).content).toBe(
+      `Libraries are often open 9 to 5, but check first.\n\n${coach.WEB_SEARCH_NOTES.used_up.he}`,
+    );
+    expect(searchesBy(world)).toHaveLength(coach.WEB_SEARCH_DAILY_LIMIT);
+  });
+
+  test("a failed search is logged by kind only, counted, and the first answer is saved with a plain line", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const search = stubWebSearch(() => {
+      throw new WebSearchError("timeout");
+    });
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(1);
+    expect(model.calls).toHaveLength(1);
+    expect(errorLog).toHaveBeenCalledWith("coach.reply: the web search could not be reached (WebSearchError: timeout)");
+    expect(errorLog.mock.calls.flat().join(" ")).not.toContain("city library");
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.content).toBe(`Libraries are often open 9 to 5, but check first.\n\n${coach.WEB_SEARCH_NOTES.failed.en}`);
+    expect(reply.sources).toBeUndefined();
+    expect(searchesBy(world)).toHaveLength(1);
+  });
+
+  test("a second call that fails after searching saves the first answer with a plain line", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH, () => {
+      throw new AiUpstreamError("DeepInfra returned HTTP 503", 503, "x");
+    });
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.content).toBe(`Libraries are often open 9 to 5, but check first.\n\n${coach.WEB_SEARCH_NOTES.failed.en}`);
+    expect(reply.sources).toBeUndefined();
+  });
+
+  test("the model did not ask: no search, one call", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "help me start my morning");
+    const model = fakeModels('{"reply":"Start with water.","proposal":null}');
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect(model.calls).toHaveLength(1);
+    expect(searchesBy(world)).toHaveLength(0);
+  });
+
+  test("crisis text reaches neither the model nor the search", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "I want to kill myself, search how");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("idle");
+    expect(model.calls).toHaveLength(0);
+    expect(search.calls).toHaveLength(0);
+    expect(searchesBy(world)).toHaveLength(0);
+  });
+
+  test("a pending account is refused before any model call or search", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world, PENDING);
+    const conversationId = await seedConversation(world, PENDING);
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const search = stubWebSearch(RESULTS);
+    await expect(
+      coach.runCoachReply(world.actionAs(PENDING), { conversationId }, model.call, search.provider),
+    ).rejects.toThrow(PENDING_APPROVAL_MESSAGE);
+    expect(model.calls).toHaveLength(0);
+    expect(search.calls).toHaveLength(0);
+  });
+
+  test("a newer message before the search: nothing is searched or saved", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const interrupted = (async (opts: AiCallOptions) => {
+      await say(world, conversationId, "never mind");
+      return model.call(opts);
+    }) as typeof callLLM;
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, interrupted, search.provider)).toBe("superseded");
+    expect(search.calls).toHaveLength(0);
+    expect(searchesBy(world)).toHaveLength(0);
+    expect(messages(world, conversationId).filter((m) => m.role === "assistant")).toHaveLength(0);
+  });
+
+  test("asked to search with no reply text when search is off: unavailable, not a blank message", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "news today?");
+    const model = fakeModels('{"reply":"","proposal":null,"search":"news today"}');
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("unavailable");
+    expect(search.calls).toHaveLength(0);
+    expect(messages(world, conversationId)).toHaveLength(1);
+  });
+});
+
+describe("coach.webSearchStatus", () => {
+  test("off by default, with today's count against the limit", async () => {
+    const world = makeWorld();
+    expect(await coach.webSearchStatusFor(world.as(A), A as Id<"users">, false)).toEqual({
+      available: false,
+      enabled: false,
+      usedToday: 0,
+      dailyLimit: coach.WEB_SEARCH_DAILY_LIMIT,
+    });
+  });
+
+  test("turned on: counts only the caller's searches on today's UTC date", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    await seedSearches(world, 3);
+    await seedSearches(world, 2, A, "2001-01-01");
+    await seedSearches(world, 4, B);
+    expect(await coach.webSearchStatusFor(world.as(A), A as Id<"users">, true)).toEqual({
+      available: true,
+      enabled: true,
+      usedToday: 3,
+      dailyLimit: coach.WEB_SEARCH_DAILY_LIMIT,
+    });
+  });
+
+  test("the query answers for the signed-in person, and refuses no one signed in", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    await seedSearches(world, 2);
+    const status = await run(coach.webSearchStatus, world.as(A), {});
+    expect(status).toMatchObject({ enabled: true, usedToday: 2, dailyLimit: coach.WEB_SEARCH_DAILY_LIMIT });
+    expect(typeof status.available).toBe("boolean");
+    const signedOut = { auth: { getUserIdentity: async () => null }, db: world.db };
+    await expect(run(coach.webSearchStatus, signedOut, {})).rejects.toThrow("Not authenticated");
   });
 });

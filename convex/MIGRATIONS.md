@@ -287,3 +287,20 @@ shapes and indexes; the semantic limits stay with the later helper.
 
 Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
 separate; live is not touched here.
+
+## 2026-10-16 — TEMPO-B07-01 coach web search + done-tasks range index
+
+Branch `t/976-coach-web-search`, ticket #976 (Ticket 0, `convex-arch`). Additive only — one new
+table, three new optional fields, one new index. No backfill.
+
+- **New optional field `userPreferences.coachWebSearch`** — the person turned coach web search on.
+  Missing reads as `false` (`preferences.get`, `preferencesFor`).
+- **New optional field `messages.sources`** — `{ title, site, url }[]` on a coach reply that searched
+  the web, in `[1]`, `[2]` citation order. No page text or snippet is stored.
+- **New table `coachWebSearches`** — one content-free row per web search the coach actually ran
+  (`userId`, `utcDateKey`, timestamps, `deletedAt`): the per-person daily limit counts them per UTC
+  day. Indexes `by_userId`, `by_userId_utcDateKey`. Enrolled in account deletion
+  (`USER_OWNED_TABLES`); tombstoned rows still count toward their day.
+- **New index `tasks.by_userId_deletedAt_completedAt`** — `tasks.listDoneInRange`.
+
+Deployed to: **not deployed by this authoring ticket**.

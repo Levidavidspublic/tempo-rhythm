@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
@@ -131,6 +131,44 @@ export const listDueInRange = query({
       .withIndex("by_userId_deletedAt", (q) => q.eq("userId", user._id).eq("deletedAt", undefined))
       .collect();
     return filterTasksDueInRange(rows, args.startMs, args.endMs);
+  },
+});
+
+/** Longest range `listDoneInRange` takes: a month, for a weekly or monthly look back. */
+export const MAX_DONE_RANGE_MS = 31 * 24 * 60 * 60 * 1000;
+
+/** Most tasks one `listDoneInRange` call returns (bounds the read). */
+export const MAX_DONE_IN_RANGE = 1000;
+
+/**
+ * The caller's live tasks finished in [startMs, endMs), oldest completion first (TEMPO-B07-01,
+ * #976): what a week's look back counts as done. Read through `by_userId_deletedAt_completedAt`,
+ * so deleted tasks and tasks with no completion time are never read. `completedAt` is set when a
+ * task becomes done and cleared when it leaves done; only rows still done are returned. At most
+ * `MAX_DONE_IN_RANGE`. The range must end after it starts and be at most 31 days.
+ */
+export const listDoneInRange = query({
+  args: {
+    startMs: v.number(),
+    endMs: v.number(),
+  },
+  returns: v.array(taskReturnValidator),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const { startMs, endMs } = args;
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+      throw new ConvexError({ code: "invalid_range", message: "The range must end after it starts." });
+    }
+    if (endMs - startMs > MAX_DONE_RANGE_MS) {
+      throw new ConvexError({ code: "range_too_long", message: "The range can be at most 31 days." });
+    }
+    const rows = await ctx.db
+      .query("tasks")
+      .withIndex("by_userId_deletedAt_completedAt", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined).gte("completedAt", startMs).lt("completedAt", endMs)
+      )
+      .take(MAX_DONE_IN_RANGE);
+    return rows.filter((t) => t.status === "done");
   },
 });
 
