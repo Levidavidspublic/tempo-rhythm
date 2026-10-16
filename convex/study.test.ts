@@ -730,3 +730,41 @@ describe("review fixes after the T3 backend review", () => {
     expect(queue.cards.map((c) => c.cardId)).toEqual(["c1", "c2"]);
   });
 });
+
+describe("review fixes after the T3 web review", () => {
+  test("Again then quickly Good on the same card are two reviews; Good is not lost", async () => {
+    const { t, asA } = await twoUsers();
+    const { setId } = await deckSet(asA);
+    const again = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "again" });
+    setSystemTime(new Date(NOW + 500));
+    const good = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    expect(good.reviewId).not.toBe(again.reviewId);
+    const logged = await t.run((ctx) => ctx.db.query("studyReviews").collect());
+    expect(logged.map((row) => row.button)).toEqual(["again", "good"]);
+    // The same button again inside the window is still one answer.
+    setSystemTime(new Date(NOW + 800));
+    const tap = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    expect(tap.reviewId).toBe(good.reviewId);
+    // After undoing Good, a quick Good again is a new review (Again was the last button).
+    await asA.mutation(api.study.undoReview, { reviewId: good.reviewId });
+    setSystemTime(new Date(NOW + 900));
+    const redo = await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    expect(redo.reviewId).not.toBe(good.reviewId);
+    expect(redo.reviewId).not.toBe(again.reviewId);
+  });
+
+  test("the hub's new count stops at the session's 20 new cards, per set and in total", async () => {
+    const { asA } = await twoUsers();
+    const many = {
+      ...deck,
+      cards: Array.from({ length: 30 }, (_, i) => ({ id: `m${i}`, front: `Front ${i}`, back: `Back ${i}` })),
+    };
+    await asA.mutation(api.study.createFromPreview, { kind: "flashcards", title: "Big", data: many });
+    await deckSet(asA);
+    const hub = await asA.query(api.study.hub, { dayStartMs: NOW });
+    expect(hub.sets.map((s) => s.newCount).sort((x, y) => x - y)).toEqual([3, 20]);
+    expect(hub.newCount).toBe(20);
+    const queue = await asA.query(api.study.reviewQueue, {});
+    expect(queue.cards).toHaveLength(hub.newCount);
+  });
+});

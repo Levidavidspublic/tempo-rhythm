@@ -59,6 +59,8 @@ export const studyTables = {
     ...sm2StateFields,
     /** The review that wrote this state; only that review can be undone. */
     lastReviewId: v.optional(v.id("studyReviews")),
+    /** The button of that review, so only the same button tapped twice is one answer. */
+    lastButton: v.optional(reviewButton),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),

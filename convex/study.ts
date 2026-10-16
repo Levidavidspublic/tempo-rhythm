@@ -136,8 +136,10 @@ export const hub = query({
           ? await liveStates(ctx, user._id, set._id, block.data.cards.map((card) => card.id))
           : new Map();
       const counts = cardCounts(block, states, now);
+      // A session takes at most DEFAULT_NEW_LIMIT new cards (reviewQueue), so the hub says the same.
+      const setNew = Math.min(counts.newCount, DEFAULT_NEW_LIMIT);
       dueCount += counts.dueCount;
-      newCount += counts.newCount;
+      newCount += setNew;
       const [last] = block.type === "flashcards" ? [] : await recentAttempts(ctx, user._id, set._id, 1);
       rows.push({
         setId: set._id,
@@ -146,7 +148,7 @@ export const hub = query({
         title: block.data.title,
         itemCount: blockItemCount(block),
         dueCount: counts.dueCount,
-        newCount: counts.newCount,
+        newCount: setNew,
         ...(set.lastStudiedAt !== undefined ? { lastStudiedAt: set.lastStudiedAt } : {}),
         ...(last
           ? {
@@ -165,7 +167,7 @@ export const hub = query({
       .withIndex("by_user_reviewed", (q) => q.eq("userId", user._id).gte("reviewedAt", dayStartMs))
       .take(REVIEW_COUNT_LIMIT);
     const reviewedToday = reviews.filter((row) => row.deletedAt === undefined).length;
-    return { dueCount, newCount, reviewedToday, sets: rows };
+    return { dueCount, newCount: Math.min(newCount, DEFAULT_NEW_LIMIT), reviewedToday, sets: rows };
   },
 });
 
@@ -455,13 +457,15 @@ export const review = mutation({
     }
     const now = Date.now();
     const row = await stateRow(ctx, user._id, set._id, args.cardId);
-    // A second tap on the same card within a moment is the same answer, not a new review.
+    // A second tap of the same button on the same card within a moment is the same answer, not a
+    // new review. A different button (Again, then Good on the card when it comes back) is a new one.
     if (
       row &&
       row.deletedAt === undefined &&
       row.lastReviewId !== undefined &&
       row.lastReviewedAt !== undefined &&
-      now - row.lastReviewedAt < DOUBLE_SUBMIT_MS
+      now - row.lastReviewedAt < DOUBLE_SUBMIT_MS &&
+      (row.lastButton ?? (await ctx.db.get(row.lastReviewId))?.button) === args.button
     ) {
       return { reviewId: row.lastReviewId, state: toSm2State(row), undoUntil: row.lastReviewedAt + UNDO_WINDOW_MS };
     }
@@ -486,6 +490,7 @@ export const review = mutation({
       dueAt: next.dueAt,
       lastReviewedAt: now,
       lastReviewId: reviewId,
+      lastButton: args.button,
     };
     if (row) {
       await ctx.db.patch(row._id, { ...stateFields, deletedAt: undefined, updatedAt: now });
@@ -523,7 +528,12 @@ export const undoReview = mutation({
       throw new Error("Only the latest grade of a card can be undone.");
     }
     if (row.prev === null) {
-      await ctx.db.patch(state._id, { deletedAt: now, lastReviewId: undefined, updatedAt: now });
+      await ctx.db.patch(state._id, {
+        deletedAt: now,
+        lastReviewId: undefined,
+        lastButton: undefined,
+        updatedAt: now,
+      });
     } else {
       await ctx.db.patch(state._id, {
         ease: row.prev.ease,
@@ -534,6 +544,8 @@ export const undoReview = mutation({
         lastReviewedAt: row.prev.lastReviewedAt,
         // The grade before this one becomes the latest, so undo can step back one grade at a time.
         lastReviewId: row.prevReviewId,
+        // Read from that review when it's needed (the double-tap check).
+        lastButton: undefined,
         updatedAt: now,
       });
     }
