@@ -505,6 +505,26 @@ describe("the mounted player", () => {
     expect(byAction(view, "recap-play")[0]?.getAttribute("aria-pressed")).toBe("true");
   });
 
+  test("a voice that errors on every sentence pauses on the first and says so, not 'That's the end'", async () => {
+    const tried: string[] = [];
+    const synth = {
+      getVoices: () => [{ lang: "en-US", name: "Listed, not installed", localService: true }],
+      speak: (u: unknown) => {
+        const utterance = u as { text: string; onerror: ((event: { error: string }) => void) | null };
+        tried.push(utterance.text);
+        utterance.onerror?.({ error: "voice-unavailable" });
+      },
+      cancel: () => {},
+    };
+    const engine = speech.createSynthEngine(synth, (text) => ({ text, lang: "", rate: 1, voice: null, onend: null, onerror: null, onboundary: null }) as never);
+    const view = await mount(playerOf(engine));
+    await click(byAction(view, "recap-play")[0]);
+    expect(tried).toEqual([sentences[0]?.text]);
+    expect(byAction(view, "recap-play")[0]?.getAttribute("aria-pressed")).toBe("false");
+    const said = findAll(view, (n) => n.getAttribute?.("aria-live") === "polite")[0]?.textContent;
+    expect(said).toBe("The voice stopped on this sentence. Play tries it again.");
+  });
+
   test("an edit elsewhere in the page doesn't restart the sentence being read", async () => {
     const { engine, said } = recordingEngine();
     const view = await mount(playerOf(engine));
