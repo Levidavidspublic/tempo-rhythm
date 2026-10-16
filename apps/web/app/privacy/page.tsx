@@ -3,7 +3,8 @@ import Link from "next/link";
 // דף מדיניות פרטיות: מסמך משפטי המסביר כיצד נאסף ומנוהל המידע באתר
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen py-20 px-4">
+    // The text is Hebrew: right to left in either app language, so the full stops land on the right side.
+    <div className="min-h-screen py-20 px-4" dir="rtl" lang="he">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-5xl font-bold mb-8">מדיניות פרטיות</h1>
 
@@ -69,7 +70,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-2xl font-semibold text-foreground mb-4">8. יצירת קשר</h2>
-            <p>לשאלות או בקשות הנוגעות לפרטיות שלכם, אנא צרו קשר: support@temporhythm.app</p>
+            <p>לשאלות או בקשות הנוגעות לפרטיות שלכם, אנא צרו קשר: amit@tempoflow.app</p>
           </section>
         </div>
 
