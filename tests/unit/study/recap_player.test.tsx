@@ -134,6 +134,12 @@ describe("AudioRecapPlayer view", () => {
     expect(markup).toContain('data-component="RecapAsk"');
   });
 
+  test("after a speech error the player says so in words, and Play is ready again", () => {
+    const markup = html(view({ state: { ...player.initialPlayer, index: 1, speechError: true } }));
+    expect(markup).toContain('<p class="tp-small tp-muted" aria-live="polite">The voice stopped on this sentence. Play tries it again.</p>');
+    expect(markup).toContain('data-action="recap-play" aria-pressed="false"');
+  });
+
   test("no speech at all, and the quiet checking state", () => {
     expect(html(view({ status: "none" }))).toContain("This browser can&#x27;t read aloud.");
     const checking = html(view({ status: "checking" }));
@@ -232,6 +238,13 @@ describe("player state", () => {
     expect(state.rate).toBe(1.5);
     expect(playerReducer(state, { type: "pause" })).toBe(state);
   });
+  test("a speech error pauses on the same sentence and says so; Play tries it again", () => {
+    let state = playerReducer({ ...initialPlayer, index: 2, playing: true }, { type: "speechError" });
+    expect(state).toMatchObject({ index: 2, playing: false, ended: false, speechError: true });
+    state = playerReducer(state, { type: "play" });
+    expect(state).toMatchObject({ index: 2, playing: true, speechError: false });
+    expect(playerReducer({ ...state, speechError: true }, { type: "jump", index: 0 }).speechError).toBe(false);
+  });
   test("elapsed time never runs past the sentence", () => {
     expect(player.elapsedSeconds(timeline, 1, 0)).toBe(timeline[1]?.start ?? -1);
     expect(player.elapsedSeconds(timeline, 1, 999)).toBe(timeline[1]?.end ?? -1);
@@ -263,7 +276,13 @@ describe("the speech seam", () => {
   });
 
   function fakeSynth(list = voices) {
-    const spoken: { text: string; lang: string; rate: number; onend: (() => void) | null }[] = [];
+    const spoken: {
+      text: string;
+      lang: string;
+      rate: number;
+      onend: (() => void) | null;
+      onerror: ((event?: { error?: string }) => void) | null;
+    }[] = [];
     let cancels = 0;
     const synth = {
       getVoices: () => list,
@@ -296,6 +315,49 @@ describe("the speech seam", () => {
     engine.speak("First", { lang: "en", rate: 1, onEnd: () => {}, onInterrupt: () => (interrupted += 1) });
     engine.speak("Second", { lang: "en", rate: 1, onEnd: () => {} });
     expect(interrupted).toBe(1);
+  });
+
+  test("an engine error is never 'read to the end': onError gets the reason, once", () => {
+    const { engine, spoken } = fakeSynth();
+    const seen: string[] = [];
+    engine.speak("Hello", {
+      lang: "en",
+      rate: 1,
+      onEnd: () => seen.push("end"),
+      onInterrupt: () => seen.push("interrupt"),
+      onError: (reason) => seen.push(`error:${reason}`),
+    });
+    spoken[0]?.onerror?.({ error: "voice-unavailable" });
+    spoken[0]?.onerror?.({ error: "voice-unavailable" });
+    spoken[0]?.onend?.();
+    expect(seen).toEqual(["error:voice-unavailable"]);
+  });
+
+  test("a cancel from elsewhere reads as an interruption; our own cancel detaches first", () => {
+    const { engine, spoken } = fakeSynth();
+    const seen: string[] = [];
+    const handlers = {
+      onEnd: () => seen.push("end"),
+      onInterrupt: () => seen.push("interrupt"),
+      onError: () => seen.push("error"),
+    };
+    engine.speak("One", { lang: "en", rate: 1, ...handlers });
+    spoken[0]?.onerror?.({ error: "interrupted" });
+    expect(seen).toEqual(["interrupt"]);
+    const handle = engine.speak("Two", { lang: "en", rate: 1, ...handlers });
+    handle.cancel();
+    expect(spoken[1]?.onerror).toBeNull();
+    expect(seen).toEqual(["interrupt"]);
+  });
+
+  test("without onError, an error falls back to onInterrupt, then onEnd", () => {
+    const { engine, spoken } = fakeSynth();
+    const seen: string[] = [];
+    engine.speak("A", { lang: "en", rate: 1, onEnd: () => seen.push("end"), onInterrupt: () => seen.push("interrupt") });
+    spoken[0]?.onerror?.({ error: "audio-busy" });
+    engine.speak("B", { lang: "en", rate: 1, onEnd: () => seen.push("end") });
+    spoken[1]?.onerror?.({ error: "audio-busy" });
+    expect(seen).toEqual(["interrupt", "end"]);
   });
 
   test("availability per language, and the status the screens show", () => {

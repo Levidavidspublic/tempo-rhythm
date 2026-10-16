@@ -61,6 +61,8 @@ export function AudioRecapPlayer({ noteId, title, body, mode, engine: override }
       rate: state.rate,
       onEnd: () => dispatch({ type: "sentenceEnd", count: sentences.length }),
       onInterrupt: () => dispatch({ type: "pause" }),
+      // An error is not "read": stop here and say so, rather than racing to the end.
+      onError: () => dispatch({ type: "speechError" }),
     });
     const tick = window.setInterval(() => setWithin((Date.now() - startedAt.current) / 1000), TICK_MS);
     return () => {

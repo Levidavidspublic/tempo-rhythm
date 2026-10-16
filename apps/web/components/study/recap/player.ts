@@ -14,7 +14,14 @@ export const FORWARD_SECONDS = 30;
 
 export type ListenMode = "recap" | "full";
 
-export type PlayerState = { index: number; playing: boolean; ended: boolean; rate: Rate };
+export type PlayerState = {
+  index: number;
+  playing: boolean;
+  ended: boolean;
+  rate: Rate;
+  /** The voice stopped on the current sentence (an engine error); Play tries it again. */
+  speechError: boolean;
+};
 
 export type PlayerAction =
   | { type: "play" }
@@ -23,22 +30,28 @@ export type PlayerAction =
   | { type: "skip"; seconds: number; timeline: readonly TimelineEntry[] }
   /** The current sentence was read to the end. */
   | { type: "sentenceEnd"; count: number }
+  /** The engine couldn't read the current sentence: pause there and say so. */
+  | { type: "speechError" }
   | { type: "rate"; rate: Rate };
 
-export const initialPlayer: PlayerState = { index: 0, playing: false, ended: false, rate: 1 };
+export const initialPlayer: PlayerState = { index: 0, playing: false, ended: false, rate: 1, speechError: false };
 
 export function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
     case "play":
-      return state.ended ? { ...state, index: 0, playing: true, ended: false } : { ...state, playing: true };
+      return state.ended
+        ? { ...state, index: 0, playing: true, ended: false, speechError: false }
+        : { ...state, playing: true, speechError: false };
     case "pause":
       return state.playing ? { ...state, playing: false } : state;
     case "jump":
-      return { ...state, index: Math.max(0, Math.floor(action.index)), ended: false };
+      return { ...state, index: Math.max(0, Math.floor(action.index)), ended: false, speechError: false };
     case "skip": {
       const next = skip(action.timeline, state.index, action.seconds);
-      return next < 0 ? state : { ...state, index: next, ended: false };
+      return next < 0 ? state : { ...state, index: next, ended: false, speechError: false };
     }
+    case "speechError":
+      return { ...state, playing: false, speechError: true };
     case "sentenceEnd":
       return state.index + 1 < action.count
         ? { ...state, index: state.index + 1 }

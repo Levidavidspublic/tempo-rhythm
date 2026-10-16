@@ -16,12 +16,18 @@ export type SpeakOptions = {
   lang: string;
   /** 0.5 to 2; 1 is normal speed. */
   rate: number;
-  /** Called once when the text has been read to the end (or the engine gave up). Not on cancel. */
+  /** Called once when the text has been read to the end. Not on cancel, and not when the engine couldn't read it. */
   onEnd: () => void;
   /** Called as the engine reaches each word, with its character offset, where supported. */
   onBoundary?: (charIndex: number) => void;
-  /** Called when another reading took over before this one finished. */
+  /** Called when another reading took over before this one finished (here, or a cancel from elsewhere). */
   onInterrupt?: () => void;
+  /**
+   * Called once when the engine couldn't read the text (a voice that is listed but not installed,
+   * the audio busy, and so on), with the engine's reason. Without it, `onInterrupt` is called, and
+   * without that, `onEnd`, so a caller is never left waiting.
+   */
+  onError?: (reason: string) => void;
 };
 
 export type SpeechHandle = { cancel(): void };
@@ -50,7 +56,7 @@ type UtteranceLike = {
   rate: number;
   voice: unknown;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((event?: { error?: string }) => void) | null;
   onboundary: ((event: { charIndex: number }) => void) | null;
 };
 
@@ -90,7 +96,7 @@ export function createSynthEngine(synth: SynthLike, makeUtterance: UtteranceFact
   let active: { interrupt: () => void } | null = null;
   return {
     available: (lang) => pickVoice(synth.getVoices(), lang) !== null,
-    speak(text, { lang, rate, onEnd, onBoundary, onInterrupt }) {
+    speak(text, { lang, rate, onEnd, onBoundary, onInterrupt, onError }) {
       const voice = pickVoice(synth.getVoices(), lang);
       const utterance = makeUtterance(text);
       let done = false;
@@ -113,6 +119,21 @@ export function createSynthEngine(synth: SynthLike, makeUtterance: UtteranceFact
         if (active === self) active = null;
         onEnd();
       };
+      // An error is never "read to the end". Our own cancels detach first, so they never get here;
+      // "interrupted" or "canceled" means something else cleared the device's speech queue.
+      const fail = (event?: { error?: string }) => {
+        if (done) return;
+        const reason = event?.error ?? "unknown";
+        if (active === self) active = null;
+        if (reason === "interrupted" || reason === "canceled") {
+          self.interrupt();
+          return;
+        }
+        detach();
+        if (onError) onError(reason);
+        else if (onInterrupt) onInterrupt();
+        else onEnd();
+      };
       // One voice at a time: a new reading replaces whatever was being read, and says so.
       const before = active;
       active = self;
@@ -122,7 +143,7 @@ export function createSynthEngine(synth: SynthLike, makeUtterance: UtteranceFact
       if (voice) utterance.voice = voice;
       utterance.rate = rate;
       utterance.onend = finish;
-      utterance.onerror = finish;
+      utterance.onerror = fail;
       utterance.onboundary = onBoundary ? (event) => onBoundary(event.charIndex) : null;
       synth.speak(utterance);
       return {

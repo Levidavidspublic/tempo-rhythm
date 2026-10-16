@@ -194,7 +194,13 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
                 </div>
               </div>
               <p className="tp-small tp-muted" aria-live="polite">
-                {status === "checking" ? t("st.ls.checking") : state.ended ? t("st.ls.ended") : ""}
+                {status === "checking"
+                  ? t("st.ls.checking")
+                  : state.speechError
+                    ? t("st.ls.speechError")
+                    : state.ended
+                      ? t("st.ls.ended")
+                      : ""}
               </p>
             </>
           ) : (

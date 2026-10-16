@@ -110,7 +110,13 @@ export function useReadAloud({ engine: override, rate = 1 }: { engine?: SpeechEn
         handle.current = null;
         setSpeaking((current) => (current === text ? null : current));
       };
-      handle.current = engine.speak(text, { lang: detectLang(text), rate, onEnd: done, onInterrupt: done });
+      handle.current = engine.speak(text, {
+        lang: detectLang(text),
+        rate,
+        onEnd: done,
+        onInterrupt: done,
+        onError: done,
+      });
       setSpeaking(text);
     },
     [engine, rate, speaking, stop]
