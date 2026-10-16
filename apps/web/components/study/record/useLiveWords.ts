@@ -161,17 +161,22 @@ export function useLiveWords({
         socket.current = ws;
         ws.onopen = () => {
           if (gen !== generation.current) return;
-          const rec = new MediaRecorder(media, { mimeType: mime });
-          recorder.current = rec;
-          rec.ondataavailable = (event) => {
-            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
-          };
-          rec.onerror = () => fail("connect");
-          rec.onstop = () => {
-            if (gen === generation.current && recorder.current === rec) fail("connect");
-          };
-          rec.start(VOICE_CLIENT_LIMITS.chunkMs);
-          setStatus(pausedRef.current ? "paused" : "live");
+          // A recorder that can't be made or started must not leave the mic and socket open.
+          try {
+            const rec = new MediaRecorder(media, { mimeType: mime });
+            recorder.current = rec;
+            rec.ondataavailable = (event) => {
+              if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(event.data);
+            };
+            rec.onerror = () => fail("connect");
+            rec.onstop = () => {
+              if (gen === generation.current && recorder.current === rec) fail("connect");
+            };
+            rec.start(VOICE_CLIENT_LIMITS.chunkMs);
+            setStatus(pausedRef.current ? "paused" : "live");
+          } catch {
+            fail("connect");
+          }
         };
         ws.onmessage = (event) => {
           if (gen !== generation.current || typeof event.data !== "string") return;
