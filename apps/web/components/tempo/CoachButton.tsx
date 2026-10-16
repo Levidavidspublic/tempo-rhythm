@@ -4,7 +4,10 @@ import { forwardRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "./TpIcon";
 
-/** CoachButton: the glass coach FAB, bottom trailing corner (F-81). Opens the coach panel (Ctrl J). */
+/**
+ * CoachButton: the glass coach FAB, bottom trailing corner (F-81). Opens the coach panel (Ctrl J).
+ * On a phone, main ends above it (tempo.css "COACH BUTTON CLEARANCE"), so keep the two in step.
+ */
 export const CoachButton = forwardRef<HTMLButtonElement, { expanded: boolean; onOpen: () => void }>(
   function CoachButton({ expanded, onOpen }, ref) {
     const { t } = useLocale();
