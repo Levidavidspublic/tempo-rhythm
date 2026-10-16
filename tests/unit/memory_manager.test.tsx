@@ -447,6 +447,24 @@ function facts(view: TestNode): string[] {
   return out;
 }
 
+/** Makes focus() set the document's activeElement for one test; returns what has focus. */
+function trackFocus() {
+  const real = TestNode.prototype.focus;
+  TestNode.prototype.focus = function focus(this: TestNode) {
+    documentNode.activeElement = this;
+  };
+  return {
+    now: () => {
+      const node = documentNode.activeElement;
+      return node ? `${node.tagName}#${node.id}` : "none";
+    },
+    stop: () => {
+      TestNode.prototype.focus = real;
+      documentNode.activeElement = documentNode.body;
+    },
+  };
+}
+
 /** The titles of the Undo toasts on screen, in order. */
 function toasts(view: TestNode): string[] {
   const out: string[] = [];
@@ -649,6 +667,44 @@ describe("MemoryManager", () => {
     await click(view, "Undo", 1);
     expect(calls.at(-1)).toEqual({ name: "memory:restore", args: { memoryId: "m2" } });
     expect(toasts(view)).toEqual(["Memory updated"]);
+  });
+
+  test("an edit the search no longer matches leaves focus on the search box, with no jump later", async () => {
+    const focus = trackFocus();
+    try {
+      const view = await renderUi();
+      const box = byId(view, "memory-search");
+      await type(box, "phone");
+      await click(view, "Edit");
+      await type(find(view, "TEXTAREA"), "Calls are easier before 11.");
+      await fire(find(view, "FORM", "Change the words"), "submit");
+      expect(facts(view)).toEqual([]);
+      expect(focus.now()).toBe("INPUT#memory-search");
+
+      await type(box, "");
+      expect(facts(view)).toHaveLength(4);
+      expect(focus.now()).toBe("INPUT#memory-search");
+    } finally {
+      focus.stop();
+    }
+  });
+
+  test("Undo of a forget the filter now hides puts focus on the list heading, not on a row later", async () => {
+    const focus = trackFocus();
+    try {
+      const view = await renderUi();
+      await click(view, "Forget", 0);
+      await click(view, "Imported");
+      await click(view, "Undo");
+      expect(calls.at(-1)).toEqual({ name: "memory:restore", args: { memoryId: "m1" } });
+      expect(focus.now()).toBe("H2#mm-list-title");
+
+      await click(view, "All");
+      expect(facts(view)).toContain("Phone calls feel easier before noon.");
+      expect(focus.now()).toBe("H2#mm-list-title");
+    } finally {
+      focus.stop();
+    }
   });
 
   test("forget everything asks first; Keep my memories changes nothing, confirming forgets with Undo", async () => {

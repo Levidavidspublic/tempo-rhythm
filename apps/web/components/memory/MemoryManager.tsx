@@ -191,6 +191,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const pendingFocus = useRef<string | null>(null);
   const pendingEditFocus = useRef<string | null>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
+  const searchBox = useRef<HTMLInputElement>(null);
 
   const all: Memory[] = (memories ?? []).filter((m) => !hidden.has(m._id));
   const capped = (memories?.length ?? 0) >= LIST_LIMIT;
@@ -198,21 +199,22 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const shown = filtered.filter((memory) => matchesSearch(memory.content, query));
   const searching = query.trim().length > 0;
 
-  // After Undo brings a memory back, focus returns to its Forget button.
+  // After Undo brings a memory back, focus returns to its Forget button; after Save or Cancel,
+  // to that row's Edit button. When the search or filter hides the row, focus goes to the search
+  // box (or the list heading) at once and the wait ends, so it never jumps to the row later.
   useEffect(() => {
-    const id = pendingFocus.current;
-    const button = id ? forgetButtons.current.get(id) : undefined;
-    if (button) {
-      button.focus();
-      pendingFocus.current = null;
-    }
-    // After Save or Cancel, focus goes back to that row's Edit button.
-    const editId = pendingEditFocus.current;
-    const editButton = editId ? editButtons.current.get(editId) : undefined;
-    if (editButton) {
-      editButton.focus();
-      pendingEditFocus.current = null;
-    }
+    const visible = new Set<string>(shown.map((memory) => memory._id));
+    const settle = (pending: typeof pendingFocus, buttons: Map<string, HTMLButtonElement>) => {
+      const id = pending.current;
+      if (!id) return;
+      const button = buttons.get(id);
+      if (button) button.focus();
+      else if (!visible.has(id)) (searching ? searchBox.current : listHeading.current)?.focus();
+      else return;
+      pending.current = null;
+    };
+    settle(pendingFocus, forgetButtons.current);
+    settle(pendingEditFocus, editButtons.current);
   });
 
   const setHiddenId = (id: string, on: boolean) =>
@@ -462,6 +464,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
                       <TpIcon name="search" size="sm" />
                     </span>
                     <input
+                      ref={searchBox}
                       className="tp-input"
                       id="memory-search"
                       type="search"
@@ -687,7 +690,11 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
           {forgotten.length > 0 ? (
             <UndoToast
               key={`forgot-${forgotten.length}`}
-              title={forgotten.length === 1 ? t("mm.forgot") : fill(t("mm.forgotN"), { n: forgotten.length })}
+              title={
+                forgotten.length === 1
+                  ? t("mm.forgot")
+                  : fill(t("mm.forgotN"), { n: forgotten.length })
+              }
               untilMs={Math.max(...forgotten.map((item) => item.untilMs))}
               onUndo={undoForgotten}
               onClose={() => setForgottenList([])}
