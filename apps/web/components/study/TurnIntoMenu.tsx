@@ -24,7 +24,11 @@ const LABEL: Record<StudyBlockType, MessageKey> = {
 };
 
 export function turnIntoItems(noteId: string): TurnIntoItem[] {
-  return (["flashcards", "quiz", "test"] as const).map((kind) => ({ kind, href: studyHref(noteId, kind), label: LABEL[kind] }));
+  return (["flashcards", "quiz", "test"] as const).map((kind) => ({
+    kind,
+    href: studyHref(noteId, kind),
+    label: LABEL[kind],
+  }));
 }
 
 export function TurnIntoMenu({ noteId, onNavigate }: { noteId: string; onNavigate?: () => void }) {

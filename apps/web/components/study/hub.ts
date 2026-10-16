@@ -57,7 +57,7 @@ export function groupSets(sets: readonly HubSet[]): { kind: StudyBlockType; sets
         (a, b) =>
           Number(b.dueCount > 0) - Number(a.dueCount > 0) ||
           (b.lastStudiedAt ?? 0) - (a.lastStudiedAt ?? 0) ||
-          a.title.localeCompare(b.title),
+          a.title.localeCompare(b.title)
       );
     if (inKind.length > 0) groups.push({ kind, sets: inKind });
   }

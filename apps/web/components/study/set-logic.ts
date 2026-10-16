@@ -7,13 +7,18 @@ import type { QuizQuestion, TestData } from "@tempo/utils";
  * "Review the ones you missed" subsets.
  */
 
-export type AttemptAnswer = { itemId: string; correct?: boolean; points?: number; maxPoints?: number };
+export type AttemptAnswer = {
+  itemId: string;
+  correct?: boolean;
+  points?: number;
+  maxPoints?: number;
+};
 
 /** Cards due now and cards never reviewed, from `getSet`'s states. */
 export function deckCounts(
   cards: readonly { id: string }[],
   states: Readonly<Record<string, { dueAt: number }>>,
-  now: number,
+  now: number
 ): { due: number; fresh: number } {
   let due = 0;
   let fresh = 0;
@@ -26,13 +31,21 @@ export function deckCounts(
 }
 
 /** A quiz attempt: one answer per question asked, the last answer for a question winning. */
-export function quizAttempt(log: ReadonlyMap<string, boolean>): { score: number; maxScore: number; answers: AttemptAnswer[] } {
+export function quizAttempt(log: ReadonlyMap<string, boolean>): {
+  score: number;
+  maxScore: number;
+  answers: AttemptAnswer[];
+} {
   const answers = [...log].map(([itemId, correct]) => ({ itemId, correct }));
   return { score: answers.filter((a) => a.correct).length, maxScore: answers.length, answers };
 }
 
 /** A test attempt: the counted questions with their points (written answers are never sent). */
-export function testAttempt(score: TestScore): { score: number; maxScore: number; answers: AttemptAnswer[] } {
+export function testAttempt(score: TestScore): {
+  score: number;
+  maxScore: number;
+  answers: AttemptAnswer[];
+} {
   const answers: AttemptAnswer[] = [];
   for (const section of score.sections) {
     for (const itemId of section.counted) {
@@ -44,7 +57,10 @@ export function testAttempt(score: TestScore): { score: number; maxScore: number
 }
 
 /** The quiz questions with these ids, in their saved order. */
-export function onlyQuizQuestions(questions: readonly QuizQuestion[], ids: readonly string[]): QuizQuestion[] {
+export function onlyQuizQuestions(
+  questions: readonly QuizQuestion[],
+  ids: readonly string[]
+): QuizQuestion[] {
   const wanted = new Set(ids);
   return questions.filter((q) => wanted.has(q.id));
 }
@@ -56,7 +72,10 @@ export function onlyQuizQuestions(questions: readonly QuizQuestion[], ids: reado
 export function onlyTestQuestions(test: TestData, ids: readonly string[]): TestData | null {
   const wanted = new Set(ids);
   const sections = test.sections
-    .map(({ pick: _pick, ...section }) => ({ ...section, questions: section.questions.filter((q) => wanted.has(q.id)) }))
+    .map(({ pick: _pick, ...section }) => ({
+      ...section,
+      questions: section.questions.filter((q) => wanted.has(q.id)),
+    }))
     .filter((section) => section.questions.length > 0);
   if (sections.length === 0) return null;
   const { durationMin: _duration, ...rest } = test;

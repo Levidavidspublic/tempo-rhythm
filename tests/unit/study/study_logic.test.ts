@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import type { TestData } from "@tempo/utils";
 import { dayStart, groupSets, type HubData, type HubSet, hubFocus, reviewHref, setHref } from "../../../apps/web/components/study/hub";
 import { countKey } from "../../../apps/web/components/study/labels";
-import { cardKey, sessionItems, splitKey } from "../../../apps/web/components/study/ReviewSession";
+import { cardKey, sessionItems, splitKey } from "../../../apps/web/components/study/session";
 import {
   deckCounts,
   onlyQuizQuestions,

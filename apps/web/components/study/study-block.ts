@@ -32,7 +32,10 @@ const COUNT: Record<"en" | "he", Record<StudyBlockType, (n: number) => string>> 
 };
 
 /** The card's kind word and count, in the page's language. */
-export function studyBlockSummary(block: StudyBlock, lang: string): { kind: string; count: string } {
+export function studyBlockSummary(
+  block: StudyBlock,
+  lang: string
+): { kind: string; count: string } {
   const l = lang === "he" ? "he" : "en";
   return { kind: KIND[l][block.type], count: COUNT[l][block.type](studyItemCount(block)) };
 }

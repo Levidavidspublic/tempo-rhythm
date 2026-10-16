@@ -40,7 +40,12 @@ export function reviewLabels(t: StudyT): FlashcardReviewLabels {
     showAnswer: t("st.rv.showAnswer"),
     progress: t("st.rv.progress"),
     gradeGroup: t("st.rv.gradeGroup"),
-    grades: { again: t("st.rv.again"), hard: t("st.rv.hard"), good: t("st.rv.good"), easy: t("st.rv.easy") },
+    grades: {
+      again: t("st.rv.again"),
+      hard: t("st.rv.hard"),
+      good: t("st.rv.good"),
+      easy: t("st.rv.easy"),
+    },
     intervalOne: t("st.rv.intervalOne"),
     intervalMany: t("st.rv.intervalMany"),
     undo: t("st.rv.undo"),
@@ -119,6 +124,16 @@ export const KIND_KEY: Record<StudyBlockType, MessageKey> = {
 export const KIND_ICON = { flashcards: "card", quiz: "question", test: "checklist" } as const;
 
 /** A count in words: the ".one" key for 1, the ".many" key (with {n}) otherwise. */
-export function countKey(base: "st.row.cards" | "st.row.questions" | "st.due" | "st.new" | "st.today" | "st.review.sub" | "st.due.newOnly", n: number): MessageKey {
+export function countKey(
+  base:
+    | "st.row.cards"
+    | "st.row.questions"
+    | "st.due"
+    | "st.new"
+    | "st.today"
+    | "st.review.sub"
+    | "st.due.newOnly",
+  n: number
+): MessageKey {
   return `${base}.${n === 1 ? "one" : "many"}` as MessageKey;
 }

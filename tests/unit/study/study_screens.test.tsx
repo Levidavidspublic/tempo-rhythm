@@ -20,11 +20,35 @@ mock.module("../../../apps/web/components/providers/LocaleProvider", () => ({
   }),
 }));
 
-const { ReviewHubView } = await import("../../../apps/web/components/study/ReviewHub");
+// The screens' shared states live in components/goals/shared, which imports useConvexAuth from
+// convex/react. Other test files replace convex/react process-wide without that export, so the
+// shared module can't link here; stand in for it with the same markup hooks (data-component and
+// the words) so these renders test the study screens, not test order.
+const goalsShared = Bun.resolveSync("../../../apps/web/components/goals/shared", import.meta.dir);
+mock.module(goalsShared, () => {
+  const h = createElement;
+  type Kids = { children?: unknown };
+  return {
+    UNDO_WINDOW_MS: 300_000,
+    useSignedIn: () => "ready",
+    useOnline: () => true,
+    ScreenBoundary: ({ children }: Kids) => children,
+    SignedOutState: () => h("div", { "data-component": "StateSignedOut" }),
+    OfflineNotice: ({ text }: { text: string }) => h("output", { "data-component": "StateOffline" }, text),
+    StateLoading: ({ label }: { label: string }) => h("output", { "data-component": "StateLoading" }, label),
+    StateEmpty: ({ title, body, action }: { title: string; body: string; action?: unknown }) =>
+      h("div", { "data-component": "StateEmpty" }, h("h2", null, title), h("p", null, body), action as never),
+    StateError: ({ title, action }: { title: string; action?: unknown }) => h("div", { "data-component": "StateError" }, title, action as never),
+    makeToast: (title: string) => ({ id: 1, title, undoUntilMs: 0 }),
+    UndoToast: () => null,
+  };
+});
+
+const { ReviewHubView } = await import("../../../apps/web/components/study/ReviewHubView");
 const { TurnIntoMenu, turnIntoItems } = await import("../../../apps/web/components/study/TurnIntoMenu");
-const { TurnIntoView } = await import("../../../apps/web/components/study/TurnIntoPreview");
-const { StudySetView } = await import("../../../apps/web/components/study/StudySetScreen");
-const { ReviewSessionView } = await import("../../../apps/web/components/study/ReviewSession");
+const { TurnIntoView } = await import("../../../apps/web/components/study/TurnIntoView");
+const { StudySetView } = await import("../../../apps/web/components/study/StudySetView");
+const { ReviewSessionView } = await import("../../../apps/web/components/study/ReviewSessionView");
 
 const html = (node: ReactElement) => renderToStaticMarkup(node);
 const primaries = (markup: string) => markup.match(/tp-btn--primary/g)?.length ?? 0;
