@@ -19,17 +19,21 @@ import {
   BLOCK_COMPONENT_TYPES,
   BLOCK_EVENT_NAMES,
   brokenBlockCardPropsSchema,
+  flashcardsBlockPropsSchema,
   JSON_RENDER_VERSION,
   pageMetaPropsSchema,
+  quizBlockPropsSchema,
+  STUDY_PREVIEW_ITEMS,
   setTaskDoneParamsSchema,
   taskBlockPropsSchema,
   templateBlockPropsSchema,
   tempoBlockCatalog,
+  testBlockPropsSchema,
 } from "./catalog";
 
 /**
  * TEMPO-B06-02. All fixtures are synthetic. The tests pin: the json-render version, the fixed
- * allowlist (four components, one action, one event), agreement with the shared codec, the
+ * allowlist (seven components, one action, one event), agreement with the shared codec, the
  * envelope -> spec mapping, and the safe fallback for anything else.
  */
 
@@ -41,6 +45,9 @@ const ids = {
   meta: "blk_01K5F3Z8Q0A7M2N4P6R8T0V2X4",
   task: "blk_01K5F3Z8Q2C9P4Q6R8T0V2X4Z6",
   template: "blk_01K5F3Z8Q4E1N3P5R7T9V1X3Z5",
+  flashcards: "blk_01K5F3Z8Q6G3N5P7R9T1V3X5Z7",
+  quiz: "blk_01K5F3Z8Q8J5N7P9R1T3V5X7Z9",
+  test: "blk_01K5F3Z8QAK7N9P1R3T5V7X9ZB",
 };
 
 const task = {
@@ -69,6 +76,99 @@ const template = {
     enabled: true,
   },
 };
+
+// Study blocks (kitchen T3). Item ids and the source page id are sentinels: never a prop.
+const SOURCE_NOTE_ID = "note_SECRET_SOURCE_ID";
+const flashcards = {
+  type: "flashcards",
+  id: ids.flashcards,
+  v: 1,
+  data: {
+    title: "Cell biology",
+    cards: [
+      { id: "card_ITEMID_1", front: "Mitochondria", back: "Makes ATP" },
+      { id: "card_ITEMID_2", front: "Ribosome", back: "Builds proteins", hint: "Tiny" },
+      { id: "card_ITEMID_3", front: "תא", back: "Cell" },
+      { id: "card_ITEMID_4", front: "Nucleus", back: "Holds DNA" },
+    ],
+    origin: "outline",
+    source: { noteId: SOURCE_NOTE_ID, title: "Biology notes" },
+  },
+};
+const quiz = {
+  type: "quiz",
+  id: ids.quiz,
+  v: 1,
+  data: {
+    title: "Cell check",
+    mode: "adaptive",
+    questions: [
+      {
+        id: "q_ITEMID_1",
+        prompt: "What makes ATP?",
+        choices: [
+          { id: "c_ITEMID_a", text: "Mitochondria" },
+          { id: "c_ITEMID_b", text: "Ribosome" },
+        ],
+        answerId: "c_ITEMID_a",
+        difficulty: 1,
+      },
+    ],
+    origin: "coach",
+  },
+};
+const practiceTest = {
+  type: "test",
+  id: ids.test,
+  v: 1,
+  data: {
+    title: "Biology paper",
+    style: "bagrut",
+    durationMin: 90,
+    passMark: 55,
+    sections: [
+      {
+        id: "s_ITEMID_1",
+        title: "Part one",
+        pick: 1,
+        questions: [
+          {
+            plugin: "mcq",
+            id: "q_ITEMID_m",
+            prompt: "Pick the organelle that makes ATP.",
+            points: 10,
+            choices: [
+              { id: "c_ITEMID_x", text: "Mitochondria" },
+              { id: "c_ITEMID_y", text: "Nucleus" },
+            ],
+            answerId: "c_ITEMID_x",
+          },
+          {
+            plugin: "short",
+            id: "q_ITEMID_s",
+            prompt: "Name the cell's control centre.",
+            points: 5,
+            accepted: ["nucleus"],
+          },
+        ],
+      },
+      {
+        id: "s_ITEMID_2",
+        title: "Part two",
+        questions: [
+          {
+            plugin: "bagrut",
+            id: "q_ITEMID_b",
+            stem: "Describe the cell membrane.",
+            parts: [{ id: "p_ITEMID_a", label: "א", prompt: "What is it made of?", points: 20 }],
+          },
+        ],
+      },
+    ],
+    origin: "user",
+  },
+};
+const studyBlocks = [flashcards, quiz, practiceTest] as const;
 
 function fence(value: unknown) {
   return `\`\`\`json tempo\n${JSON.stringify(value)}\n\`\`\`\n`;
@@ -153,12 +253,15 @@ describe("version pin and package evidence", () => {
 });
 
 describe("the catalog is a fixed allowlist", () => {
-  test("exactly four component types, in order", () => {
+  test("exactly seven component types, in order", () => {
     expect(tempoBlockCatalog.componentNames).toEqual([
       "TaskBlock",
       "PageMeta",
       "TemplateBlock",
       "BrokenBlockCard",
+      "FlashcardsBlock",
+      "QuizBlock",
+      "TestBlock",
     ]);
     expect(tempoBlockCatalog.componentNames).toEqual([...BLOCK_COMPONENT_TYPES]);
   });
@@ -181,6 +284,9 @@ describe("the catalog is a fixed allowlist", () => {
       PageMeta: pageMetaPropsSchema,
       TemplateBlock: templateBlockPropsSchema,
       BrokenBlockCard: brokenBlockCardPropsSchema,
+      FlashcardsBlock: flashcardsBlockPropsSchema,
+      QuizBlock: quizBlockPropsSchema,
+      TestBlock: testBlockPropsSchema,
     } as const;
     for (const name of BLOCK_COMPONENT_TYPES) {
       const { props, example } = tempoBlockCatalog.data.components[name];
@@ -189,9 +295,9 @@ describe("the catalog is a fixed allowlist", () => {
     }
   });
 
-  test("the generated prompt lists the four components and the one catalog action", () => {
+  test("the generated prompt lists the seven components and the one catalog action", () => {
     const prompt = tempoBlockCatalog.prompt();
-    expect(prompt).toContain("AVAILABLE COMPONENTS (4):");
+    expect(prompt).toContain("AVAILABLE COMPONENTS (7):");
     for (const name of BLOCK_COMPONENT_TYPES) expect(prompt).toContain(`- ${name}: {`);
     expect(prompt).toContain("- setTaskDone:");
     expect(tempoBlockCatalog.jsonSchema()).toBeObject();
@@ -203,9 +309,28 @@ describe("props schemas", () => {
   const goodBroken = { message: BROKEN_BLOCK_MESSAGES.invalid_spec, undoAvailable: false };
   const goodMeta = { pageType: "daily", tags: [] };
   const goodAction = { blockId: ids.task, done: true };
+  const goodFlashcards = { title: "Deck", cardCount: 2, fronts: ["A", "B"], origin: "user" };
+  const goodQuiz = {
+    title: "Quiz",
+    mode: "fixed",
+    questionCount: 1,
+    prompts: ["Q"],
+    origin: "user",
+  };
+  const goodTest = {
+    title: "Paper",
+    style: "standard",
+    sectionCount: 1,
+    questionCount: 3,
+    prompts: ["Q"],
+    origin: "coach",
+  };
   const maxText = BLOCK_CODEC_LIMITS.maxTextChars;
 
   test("accept valid props", () => {
+    expect(flashcardsBlockPropsSchema.safeParse(goodFlashcards).success).toBe(true);
+    expect(quizBlockPropsSchema.safeParse(goodQuiz).success).toBe(true);
+    expect(testBlockPropsSchema.safeParse(goodTest).success).toBe(true);
     expect(taskBlockPropsSchema.safeParse(goodTask).success).toBe(true);
     expect(pageMetaPropsSchema.safeParse(goodMeta).success).toBe(true);
     expect(templateBlockPropsSchema.safeParse(blockData(template)).success).toBe(true);
@@ -251,6 +376,32 @@ describe("props schemas", () => {
     ],
     ["broken: truthy undo", brokenBlockCardPropsSchema, { ...goodBroken, undoAvailable: "yes" }],
     ["broken: payload prop", brokenBlockCardPropsSchema, { ...goodBroken, source: SENTINEL }],
+    [
+      "flashcards: block id as a prop",
+      flashcardsBlockPropsSchema,
+      { ...goodFlashcards, id: ids.flashcards },
+    ],
+    [
+      "flashcards: source page id as a prop",
+      flashcardsBlockPropsSchema,
+      { ...goodFlashcards, sourceNoteId: SOURCE_NOTE_ID },
+    ],
+    ["flashcards: whole cards as a prop", flashcardsBlockPropsSchema, flashcards.data],
+    [
+      "flashcards: too many fronts",
+      flashcardsBlockPropsSchema,
+      { ...goodFlashcards, fronts: Array(STUDY_PREVIEW_ITEMS + 1).fill("a") },
+    ],
+    ["flashcards: no fronts", flashcardsBlockPropsSchema, { ...goodFlashcards, fronts: [] }],
+    ["flashcards: zero cards", flashcardsBlockPropsSchema, { ...goodFlashcards, cardCount: 0 }],
+    ["flashcards: unknown origin", flashcardsBlockPropsSchema, { ...goodFlashcards, origin: "x" }],
+    ["quiz: unknown mode", quizBlockPropsSchema, { ...goodQuiz, mode: "timed" }],
+    ["quiz: expression prompt", quizBlockPropsSchema, { ...goodQuiz, prompts: [{ $state: "/p" }] }],
+    ["quiz: questions as a prop", quizBlockPropsSchema, { ...goodQuiz, questions: [] }],
+    ["test: unknown style", testBlockPropsSchema, { ...goodTest, style: "exam" }],
+    ["test: too many sections", testBlockPropsSchema, { ...goodTest, sectionCount: 11 }],
+    ["test: pass mark over 100", testBlockPropsSchema, { ...goodTest, passMark: 101 }],
+    ["test: sections as a prop", testBlockPropsSchema, { ...goodTest, sections: [] }],
     ["action: no done state", setTaskDoneParamsSchema, { blockId: ids.task }],
     [
       "action: lowercase id",
@@ -318,6 +469,49 @@ describe("agreement with the shared codec", () => {
         },
       },
     ],
+    ["flashcards", flashcards],
+    [
+      "flashcards: one card, Hebrew, no source",
+      {
+        ...flashcards,
+        data: {
+          title: "כרטיסיות",
+          cards: [{ id: "a", front: "שלום", back: "hello" }],
+          origin: "user",
+        },
+      },
+    ],
+    [
+      "flashcards: 100 cards, fronts at the text limit",
+      {
+        ...flashcards,
+        data: {
+          ...flashcards.data,
+          title: long(maxText),
+          cards: Array.from({ length: 100 }, (_, index) => ({
+            id: `c${index}`,
+            front: long(maxText),
+            back: "b",
+          })),
+        },
+      },
+    ],
+    ["quiz", quiz],
+    ["quiz: fixed", { ...quiz, data: { ...quiz.data, mode: "fixed" } }],
+    ["test", practiceTest],
+    [
+      "test: standard, no timer or pass mark",
+      {
+        ...practiceTest,
+        data: {
+          title: "Quick check",
+          style: "standard",
+          sections: [practiceTest.data.sections[0]],
+          origin: "outline",
+          source: { noteId: SOURCE_NOTE_ID, title: "Notes" },
+        },
+      },
+    ],
   ];
 
   for (const [name, envelope] of fixtures) {
@@ -334,11 +528,18 @@ describe("agreement with the shared codec", () => {
 
   test("every block type the codec knows has a component", () => {
     const codecTypes = tempoBlockSchema.options.map((option) => option.shape.type.value);
-    expect(codecTypes).toEqual(["page-meta", "task", "template"]);
-    const drawn = [meta, task, template].map(
+    expect(codecTypes).toEqual(["page-meta", "task", "template", "flashcards", "quiz", "test"]);
+    const drawn = [meta, task, template, ...studyBlocks].map(
       (envelope) => onlyElement(tempoBlockToSpec(envelope)).type
     );
-    expect(drawn).toEqual(["PageMeta", "TaskBlock", "TemplateBlock"]);
+    expect(drawn).toEqual([
+      "PageMeta",
+      "TaskBlock",
+      "TemplateBlock",
+      "FlashcardsBlock",
+      "QuizBlock",
+      "TestBlock",
+    ]);
   });
 });
 
@@ -395,13 +596,53 @@ describe("envelope to spec mapping", () => {
   });
 
   test("ids and internal fields never become props or the element key", () => {
-    for (const envelope of [task, meta, template]) {
+    for (const envelope of [task, meta, template, ...studyBlocks]) {
       const spec = tempoBlockToSpec(envelope);
       const props = JSON.stringify(onlyElement(spec).props);
       expect(props).not.toContain("blk_");
       expect(props).not.toContain('"v"');
       expect(props).not.toContain('"order"');
+      expect(props).not.toContain("ITEMID");
+      expect(props).not.toContain(SOURCE_NOTE_ID);
       expect(Object.keys(spec.elements)).toEqual(["block"]);
+    }
+  });
+
+  test("study blocks become display-only summary cards with counts and the first few lines", () => {
+    const deck = onlyElement(tempoBlockToSpec(flashcards));
+    expect(deck).toMatchObject({ type: "FlashcardsBlock", children: [] });
+    expect(deck.props).toEqual({
+      title: "Cell biology",
+      cardCount: 4,
+      fronts: ["Mitochondria", "Ribosome", "תא"],
+      origin: "outline",
+      sourceTitle: "Biology notes",
+    });
+    expect(onlyElement(tempoBlockToSpec(quiz)).props).toEqual({
+      title: "Cell check",
+      mode: "adaptive",
+      questionCount: 1,
+      prompts: ["What makes ATP?"],
+      origin: "coach",
+    });
+    expect(onlyElement(tempoBlockToSpec(practiceTest)).props).toEqual({
+      title: "Biology paper",
+      style: "bagrut",
+      sectionCount: 2,
+      questionCount: 3,
+      durationMin: 90,
+      passMark: 55,
+      prompts: [
+        "Pick the organelle that makes ATP.",
+        "Name the cell's control centre.",
+        "Describe the cell membrane.",
+      ],
+      origin: "user",
+    });
+    // No new actions or events: a study card never binds anything, interactive or not.
+    for (const envelope of studyBlocks) {
+      expect(onlyElement(tempoBlockToSpec(envelope)).on).toBeUndefined();
+      expect(onlyElement(tempoBlockToSpec(envelope, { interactive: true })).on).toBeUndefined();
     }
   });
 
@@ -753,6 +994,18 @@ describe("a spec from anywhere else must pass the allowlist or it becomes a safe
     ["malformed block id", withEvent("params.blockId", "blk_short")],
     ["lowercase block id", withEvent("params.blockId", ids.task.toLowerCase())],
     ["PageMeta with an action", edit(tempoBlockToSpec(meta), "elements.block.on", toggleOn)],
+    ...studyBlocks.map((envelope): [string, unknown] => [
+      `${envelope.type} card with an action`,
+      edit(tempoBlockToSpec(envelope), "elements.block.on", toggleOn),
+    ]),
+    [
+      "FlashcardsBlock with QuizBlock props",
+      edit(tempoBlockToSpec(quiz), "elements.block.type", "FlashcardsBlock"),
+    ],
+    [
+      "FlashcardsBlock with a card id prop",
+      edit(tempoBlockToSpec(flashcards), "elements.block.props.cardId", "card_ITEMID_1"),
+    ],
     [
       "BrokenBlockCard with an action",
       edit(brokenBlockSpec("malformed_json"), "elements.block.on", toggleOn),
@@ -782,7 +1035,7 @@ describe("a spec from anywhere else must pass the allowlist or it becomes a safe
   ];
 
   test("the builders' own output passes", () => {
-    for (const envelope of [task, meta, template]) {
+    for (const envelope of [task, meta, template, ...studyBlocks]) {
       expect(validateBlockSpec(tempoBlockToSpec(envelope)).ok).toBe(true);
     }
     expect(validateBlockSpec(taskSpec())).toEqual({ ok: true, spec: taskSpec() });
