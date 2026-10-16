@@ -101,6 +101,67 @@ export function studyBlockFence(blockId: string, kind: StudyKind, data: unknown)
   return `\`\`\`json tempo\n${JSON.stringify({ id: blockId, v: 1, type: kind, data })}\n\`\`\`\n`;
 }
 
+/**
+ * The page body with this study block's fence rewritten to hold `data`, or null when the page has
+ * no valid block with that id. Every other part of the page is kept exactly as it was, and the
+ * fence keeps its own line ending. The caller still reads the result back with `findStudyBlock`,
+ * which applies the codec's size caps.
+ */
+export function replaceStudyBlock(
+  body: string,
+  blockId: string,
+  kind: StudyKind,
+  data: unknown,
+): string | null {
+  const segments = parseTempoBlocks(body);
+  const old = segments.find(
+    (segment) => segment.kind === "valid" && segment.block.id === blockId && isStudyKind(segment.block.type),
+  );
+  if (!old) return null;
+  const ending = /(?:\r\n|\r|\n)$/.exec(old.source)?.[0] ?? "";
+  const fence = studyBlockFence(blockId, kind, data).replace(/\n$/, ending);
+  return `${body.slice(0, old.start)}${fence}${body.slice(old.end)}`;
+}
+
+/** JSON with every object's keys sorted, so the same content always reads the same. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record)
+      .filter((key) => record[key] !== undefined)
+      .sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+/** A 53-bit string hash: two multiply-xor lanes, after cyrb53 (public domain). Not cryptographic. */
+function hash53(text: string): number {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 2654435761);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+/**
+ * The version of a block's content: the same title, cards or questions always give the same
+ * string, and any change gives another. An edit carries the version it started from, so a save
+ * never overwrites a block that changed in the page meanwhile. An edit guard, not a security check.
+ */
+export function blockVersion(block: { type: StudyKind; data: unknown }): string {
+  const text = canonicalJson({ type: block.type, data: block.data });
+  return `v1-${text.length.toString(36)}-${hash53(text).toString(36)}`;
+}
+
 export type LiveSet = { set: Doc<"studySets">; note: Doc<"notes"> };
 
 /**

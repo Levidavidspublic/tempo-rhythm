@@ -5,11 +5,12 @@ import {
   type ActionCtx,
   action,
   internalQuery,
+  type MutationCtx,
   mutation,
   type QueryCtx,
   query,
 } from "./_generated/server";
-import { createNoteForUser } from "./notes";
+import { createNoteForUser, updateNoteForUser } from "./notes";
 import {
   GRADE_FOR_BUTTON,
   newCardState,
@@ -25,6 +26,7 @@ import { requireUser } from "./lib/requireUser";
 import { isRestorable, UNDO_WINDOW_MS } from "./lib/softDelete";
 import {
   blockItemCount,
+  blockVersion,
   cardCounts,
   DEFAULT_NEW_LIMIT,
   dataSchemaFor,
@@ -37,6 +39,7 @@ import {
   passMarkFor,
   readLiveSetWithBlock,
   REVIEW_COUNT_LIMIT,
+  replaceStudyBlock,
   requireLiveSet,
   SET_UNAVAILABLE,
   type StudyBlock,
@@ -53,7 +56,8 @@ import {
  * schedule state, the review log (for Undo) and quiz/test scores. Every function is owner-checked
  * (`requireUser`), and every set read goes through the page guard (`requireLivePage`), so a set on
  * a deleted page or account is unreachable. AI only proposes (`generate` never saves); the person
- * accepts with `createFromPreview`, which can be undone for 5 minutes (HARD_RULES §1, §6.2).
+ * accepts with `createFromPreview`, which can be undone for 5 minutes (HARD_RULES §1, §6.2). A
+ * saved set can be edited later (`updateBlock`, written back into its page), with the same Undo.
  */
 
 const kindValidator = v.union(v.literal("flashcards"), v.literal("quiz"), v.literal("test"));
@@ -209,6 +213,8 @@ export const getSet = query({
       },
       note: { id: note._id, title: note.title },
       block: { id: block.id, type: block.type, data: block.data },
+      /** The block's content version: an edit sends it back so a save never overwrites newer words. */
+      blockVersion: blockVersion(block),
       states,
       attempts,
     };
@@ -439,6 +445,134 @@ export const registerBlock = mutation({
       createdAt: now,
       updatedAt: now,
     });
+  },
+});
+
+// ---------------------------------------------------------------------------------------------
+// Editing a saved set
+// ---------------------------------------------------------------------------------------------
+
+/** What an edit's save (or its Undo) did: saved, or nothing written because the block changed. */
+export type EditResult =
+  | { status: "saved"; version: string; undoUntil: number }
+  | { status: "changed"; version: string };
+
+const EDIT_INVALID = "This edit can't be saved as it is. Check the items and try again.";
+
+/**
+ * Write a set's block back into its page: the one path for `updateBlock` and `undoUpdate`.
+ *
+ * - The set and its page pass the same guards as every set write (`requireLiveSet`: the caller's
+ *   live set on the caller's live page and account), and the page is written through
+ *   `updateNoteForUser`, which checks the owner again.
+ * - `data` is checked with the kind's codec schema. `origin` and `source` stay the block's own,
+ *   never the client's. The new body must read back with the block intact, so the codec's caps
+ *   (64 KB per block, 1 MB per page) hold; the rest of the page is kept as it was.
+ * - Nothing is written unless the block is still the version the edit started from: the result
+ *   says "changed" instead. Writing what the block already holds is a no-op that reports saved,
+ *   so a double-tapped Save writes once.
+ * - Card schedules are keyed by set and card id, and every read joins them by the block's card
+ *   ids. A kept card keeps its id and schedule. A removed card's state is left as it is: nothing
+ *   reads it, and Undo brings the card back with its schedule. With `freshCardIds`, a card id
+ *   that is new to the block but already has a live state (an id used again after an earlier
+ *   removal) gets that state soft-deleted, so a new card always starts new.
+ */
+async function writeSetBlock(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  args: { setId: Id<"studySets">; data: unknown; baseVersion: string },
+  options: { freshCardIds: boolean; markEdited: boolean },
+): Promise<EditResult> {
+  const { set, note } = await requireLiveSet(ctx, userId, args.setId);
+  const block = findStudyBlock(note.body, set.blockId);
+  if (!block || block.type !== set.kind) {
+    throw new Error(SET_UNAVAILABLE);
+  }
+  if (args.data === null || typeof args.data !== "object" || Array.isArray(args.data)) {
+    throw new Error(EDIT_INVALID);
+  }
+  const { origin: _origin, source: _source, ...content } = args.data as Record<string, unknown>;
+  const candidate = {
+    ...content,
+    origin: block.data.origin,
+    ...(block.data.source !== undefined ? { source: block.data.source } : {}),
+  };
+  const parsed = dataSchemaFor(set.kind).safeParse(candidate);
+  if (!parsed.success) {
+    throw new Error(EDIT_INVALID);
+  }
+  const now = Date.now();
+  const current = blockVersion(block);
+  if (blockVersion({ type: set.kind, data: parsed.data }) === current) {
+    return { status: "saved", version: current, undoUntil: (set.editedAt ?? now) + UNDO_WINDOW_MS };
+  }
+  if (current !== args.baseVersion) {
+    return { status: "changed", version: current };
+  }
+  const body = replaceStudyBlock(note.body, set.blockId, set.kind, parsed.data);
+  const written = body === null ? null : findStudyBlock(body, set.blockId);
+  if (body === null || !written || written.type !== set.kind) {
+    throw new Error("This set is too large for one page block.");
+  }
+  if (options.freshCardIds && block.type === "flashcards" && written.type === "flashcards") {
+    const before = new Set(block.data.cards.map((card) => card.id));
+    for (const card of written.data.cards) {
+      if (before.has(card.id)) continue;
+      const row = await stateRow(ctx, userId, set._id, card.id);
+      if (row && row.deletedAt === undefined) {
+        await ctx.db.patch(row._id, { deletedAt: now, updatedAt: now });
+      }
+    }
+  }
+  await updateNoteForUser(ctx, userId, { noteId: note._id, body });
+  await ctx.db.patch(set._id, {
+    title: written.data.title,
+    itemCount: blockItemCount(written),
+    ...(options.markEdited ? { editedAt: now } : {}),
+    updatedAt: now,
+  });
+  return { status: "saved", version: blockVersion(written), undoUntil: now + UNDO_WINDOW_MS };
+}
+
+/**
+ * Save an edited set back into the page that holds it. `data` is the block's whole data as the
+ * edit list reads it back; `baseVersion` is the `blockVersion` `getSet` gave when the edit started.
+ * Undo with `undoUpdate` for 5 minutes.
+ */
+export const updateBlock = mutation({
+  args: { setId: v.id("studySets"), data: v.any(), baseVersion: v.string() },
+  handler: async (ctx, args): Promise<EditResult> => {
+    const user = await requireUser(ctx);
+    return writeSetBlock(ctx, user._id, args, { freshCardIds: true, markEdited: true });
+  },
+});
+
+/**
+ * Undo `updateBlock` within 5 minutes: writes back the block as it was before the edit (`data`,
+ * which the screen kept), through the same guarded write. It runs only while the block is still
+ * exactly what the edit saved (`version`); if the page changed since, nothing is written and the
+ * result says so. A card the edit removed comes back with its schedule.
+ */
+export const undoUpdate = mutation({
+  args: { setId: v.id("studySets"), data: v.any(), version: v.string() },
+  handler: async (ctx, args): Promise<EditResult> => {
+    const user = await requireUser(ctx);
+    const set = await ctx.db.get(args.setId);
+    if (!set || set.userId !== user._id || set.deletedAt !== undefined) {
+      throw new Error(SET_UNAVAILABLE);
+    }
+    if (set.editedAt === undefined) {
+      throw new Error("There is nothing to undo.");
+    }
+    if (Date.now() - set.editedAt > UNDO_WINDOW_MS) {
+      throw new Error("The 5 minutes to undo this have passed.");
+    }
+    return writeSetBlock(
+      ctx,
+      user._id,
+      { setId: args.setId, data: args.data, baseVersion: args.version },
+      { freshCardIds: false, markEdited: false },
+    );
   },
 });
 

@@ -44,6 +44,8 @@ export const studyTables = {
     /** True when `createFromPreview` made the page, so its Undo removes the page too. */
     createdByTempo: v.boolean(),
     lastStudiedAt: v.optional(v.number()),
+    /** When `updateBlock` last saved an edit of the block; its Undo runs for 5 minutes after. */
+    editedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),

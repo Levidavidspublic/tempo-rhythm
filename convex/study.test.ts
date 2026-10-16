@@ -768,3 +768,199 @@ describe("review fixes after the T3 web review", () => {
     expect(queue.cards).toHaveLength(hub.newCount);
   });
 });
+
+describe("updateBlock and undoUpdate (edit a saved set)", () => {
+  /** A deck on a page with words around the block, as a person's page would have. */
+  async function deckInPage(t: T, a: Id<"users">, asA: ReturnType<typeof as>) {
+    const blockId = newStudyBlockId(NOW);
+    const fence = studyBlockFence(blockId, "flashcards", { ...deck, source: { noteId: "n0", title: "Biology notes" } });
+    const noteId = await addPage(t, a, "My deck", `Intro words\n\n${fence}\nClosing words`);
+    const setId = await asA.mutation(api.study.registerBlock, { noteId, blockId });
+    const view = await asA.query(api.study.getSet, { setId });
+    if (!view) throw new Error("fixture");
+    return { noteId, blockId, setId, version: view.blockVersion };
+  }
+
+  const edited = {
+    ...deck,
+    title: "Cell biology, edited",
+    cards: [
+      { id: "c1", front: "Mitochondria", back: "Makes ATP from glucose" },
+      { id: "c3", front: "Nucleus", back: "Holds DNA" },
+      { id: "n4", front: "Golgi body", back: "Packs proteins" },
+    ],
+  };
+
+  test("happy path: the block is rewritten in place, kept cards keep their schedule, new cards start new", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { noteId, blockId, setId, version } = await deckInPage(t, a, asA);
+    await asA.mutation(api.study.review, { setId, cardId: "c1", button: "good" });
+    await asA.mutation(api.study.review, { setId, cardId: "c2", button: "good" });
+    setSystemTime(new Date(NOW + MIN));
+    // The client's origin and source are ignored: they stay the block's own.
+    const out = await asA.mutation(api.study.updateBlock, {
+      setId,
+      data: { ...edited, origin: "coach", source: { noteId: "elsewhere", title: "Not this" } },
+      baseVersion: version,
+    });
+    expect(out).toMatchObject({ status: "saved", undoUntil: NOW + MIN + UNDO_WINDOW_MS });
+
+    const note = await t.run((ctx) => ctx.db.get(noteId));
+    expect(note?.body.startsWith("Intro words\n\n```json tempo\n")).toBe(true);
+    expect(note?.body.endsWith("```\n\nClosing words")).toBe(true);
+    expect(note?.updatedAt).toBe(NOW + MIN);
+    const block = findStudyBlock(note?.body ?? "", blockId);
+    expect(block?.type === "flashcards" && block.data).toMatchObject({
+      title: "Cell biology, edited",
+      origin: "outline",
+      source: { noteId: "n0", title: "Biology notes" },
+    });
+    const set = await t.run((ctx) => ctx.db.get(setId));
+    expect(set).toMatchObject({ title: "Cell biology, edited", itemCount: 3, editedAt: NOW + MIN });
+
+    const view = await asA.query(api.study.getSet, { setId });
+    expect(view?.blockVersion).toBe(out.version);
+    expect(view?.blockVersion).not.toBe(version);
+    expect(Object.keys(view?.states ?? {})).toEqual(["c1"]);
+    expect(view?.states.c1).toMatchObject({ repetitions: 1 });
+    // The removed card's state is left alone (nothing reads it); the new card is new.
+    const c2 = await t.run((ctx) => ctx.db.query("studyCardStates").collect());
+    expect(c2.find((row) => row.cardId === "c2")?.deletedAt).toBeUndefined();
+    const queue = await asA.query(api.study.reviewQueue, { setId });
+    expect(queue.cards.map((c) => [c.cardId, c.state === null])).toEqual([
+      ["c3", true],
+      ["n4", true],
+    ]);
+  });
+
+  test("error: a base version the page has moved past writes nothing and says changed", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { noteId, setId, version } = await deckInPage(t, a, asA);
+    const first = await asA.mutation(api.study.updateBlock, {
+      setId,
+      data: { ...deck, title: "Changed in another tab" },
+      baseVersion: version,
+    });
+    const before = await t.run((ctx) => ctx.db.get(noteId));
+    const stale = await asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version });
+    expect(stale).toEqual({ status: "changed", version: first.version });
+    const after = await t.run((ctx) => ctx.db.get(noteId));
+    expect(after?.body).toBe(before?.body);
+  });
+
+  test("a double-tapped Save writes once and reports saved both times", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { noteId, setId, version } = await deckInPage(t, a, asA);
+    const first = await asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version });
+    setSystemTime(new Date(NOW + 300));
+    const second = await asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version });
+    expect(second).toEqual({ status: "saved", version: first.version, undoUntil: NOW + UNDO_WINDOW_MS });
+    const note = await t.run((ctx) => ctx.db.get(noteId));
+    expect(note?.updatedAt).toBe(NOW);
+  });
+
+  test("error: data the codec turns down, a block too large for the page, someone else's set", async () => {
+    const { t, a, asA, asB } = await twoUsers();
+    const { noteId, setId, version } = await deckInPage(t, a, asA);
+    const before = await t.run((ctx) => ctx.db.get(noteId));
+    await expect(
+      asA.mutation(api.study.updateBlock, { setId, data: { ...deck, cards: [] }, baseVersion: version }),
+    ).rejects.toThrow("can't be saved");
+    await expect(
+      asA.mutation(api.study.updateBlock, { setId, data: quiz, baseVersion: version }),
+    ).rejects.toThrow("can't be saved");
+    await expect(
+      asA.mutation(api.study.updateBlock, { setId, data: "not an object", baseVersion: version }),
+    ).rejects.toThrow("can't be saved");
+    // 100 cards of 500 + 500 characters pass the schema but not the 64 KB block cap.
+    const long = "x".repeat(500);
+    const huge = { ...deck, cards: Array.from({ length: 100 }, (_, i) => ({ id: `h${i}`, front: long, back: long })) };
+    await expect(
+      asA.mutation(api.study.updateBlock, { setId, data: huge, baseVersion: version }),
+    ).rejects.toThrow("too large");
+    await expect(
+      asB.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version }),
+    ).rejects.toThrow("This study set isn't available.");
+    const after = await t.run((ctx) => ctx.db.get(noteId));
+    expect(after?.body).toBe(before?.body);
+    await t.run((ctx) => ctx.db.patch(noteId, { deletedAt: NOW }));
+    await expect(
+      asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version }),
+    ).rejects.toThrow("This page isn't available.");
+  });
+
+  test("a card id used again after an earlier removal starts new", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { setId, version } = await deckInPage(t, a, asA);
+    await asA.mutation(api.study.review, { setId, cardId: "c2", button: "easy" });
+    const without = { ...deck, cards: deck.cards.filter((card) => card.id !== "c2") };
+    const first = await asA.mutation(api.study.updateBlock, { setId, data: without, baseVersion: version });
+    const reused = { ...deck, cards: [...without.cards, { id: "c2", front: "Golgi body", back: "Packs proteins" }] };
+    await asA.mutation(api.study.updateBlock, { setId, data: reused, baseVersion: first.version });
+    const view = await asA.query(api.study.getSet, { setId });
+    expect(view?.states.c2).toBeUndefined();
+    const rows = await t.run((ctx) => ctx.db.query("studyCardStates").collect());
+    expect(rows.find((row) => row.cardId === "c2")?.deletedAt).toBe(NOW);
+  });
+
+  test("undoUpdate inside 5 minutes puts the block back; a removed card keeps its schedule", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { noteId, setId, version } = await deckInPage(t, a, asA);
+    const original = await t.run((ctx) => ctx.db.get(noteId));
+    await asA.mutation(api.study.review, { setId, cardId: "c2", button: "good" });
+    const saved = await asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version });
+    setSystemTime(new Date(NOW + 4 * MIN));
+    const undone = await asA.mutation(api.study.undoUpdate, { setId, data: deck, version: saved.version });
+    expect(undone).toMatchObject({ status: "saved", version });
+    const note = await t.run((ctx) => ctx.db.get(noteId));
+    expect(note?.body).toBe(original?.body);
+    const view = await asA.query(api.study.getSet, { setId });
+    expect(view?.set).toMatchObject({ title: "Cell biology", itemCount: 3 });
+    expect(view?.states.c2).toMatchObject({ repetitions: 1 });
+    // A second tap of Undo is the same undo.
+    expect(await asA.mutation(api.study.undoUpdate, { setId, data: deck, version: saved.version })).toMatchObject({
+      status: "saved",
+      version,
+    });
+  });
+
+  test("error: undoUpdate after 5 minutes, over newer words, with no edit, or by someone else", async () => {
+    const { t, a, asA, asB } = await twoUsers();
+    const { noteId, blockId, setId, version } = await deckInPage(t, a, asA);
+    await expect(asA.mutation(api.study.undoUpdate, { setId, data: deck, version })).rejects.toThrow(
+      "nothing to undo",
+    );
+    const saved = await asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version });
+    await expect(
+      asB.mutation(api.study.undoUpdate, { setId, data: deck, version: saved.version }),
+    ).rejects.toThrow("This study set isn't available.");
+    // The block changed again after the edit (another tab): Undo would overwrite it, so it says so.
+    const later = await asA.mutation(api.study.updateBlock, {
+      setId,
+      data: { ...edited, title: "Edited again" },
+      baseVersion: saved.version,
+    });
+    const refused = await asA.mutation(api.study.undoUpdate, { setId, data: deck, version: saved.version });
+    expect(refused).toEqual({ status: "changed", version: later.version });
+    const kept = await t.run((ctx) => ctx.db.get(noteId));
+    expect(findStudyBlock(kept?.body ?? "", blockId)?.data.title).toBe("Edited again");
+    setSystemTime(new Date(NOW + UNDO_WINDOW_MS + 1));
+    await expect(
+      asA.mutation(api.study.undoUpdate, { setId, data: edited, version: later.version }),
+    ).rejects.toThrow("5 minutes");
+  });
+
+  test("the block version follows the block's words, not the rest of the page", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { noteId, setId, version } = await deckInPage(t, a, asA);
+    const note = await t.run((ctx) => ctx.db.get(noteId));
+    await t.run((ctx) => ctx.db.patch(noteId, { body: `${note?.body ?? ""}\n\nA new paragraph.` }));
+    expect((await asA.query(api.study.getSet, { setId }))?.blockVersion).toBe(version);
+    // A save still goes through after the page grew elsewhere, and keeps the new paragraph.
+    const out = await asA.mutation(api.study.updateBlock, { setId, data: edited, baseVersion: version });
+    expect(out.status).toBe("saved");
+    const after = await t.run((ctx) => ctx.db.get(noteId));
+    expect(after?.body.endsWith("Closing words\n\nA new paragraph.")).toBe(true);
+    expect(parseTempoBlocks(after?.body ?? "").filter((s) => s.kind === "valid")).toHaveLength(1);
+  });
+});
