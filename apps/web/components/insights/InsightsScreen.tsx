@@ -421,7 +421,8 @@ function WeeksGlance({
               <Kpi.Title>{t("wk.focus")}</Kpi.Title>
             </Kpi.Header>
             <Kpi.Content>
-              <Kpi.Value className="tp-num">
+              {/* Words and numbers ("6 שע׳ 0 דק׳"): tp-num's left-to-right would read it backwards in Hebrew. */}
+              <Kpi.Value className="tabular-nums">
                 {formatMinutes(glance.focusMinutes, minutes)}
               </Kpi.Value>
             </Kpi.Content>
