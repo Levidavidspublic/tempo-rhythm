@@ -170,6 +170,22 @@ describe("GuidedPlanCard, mounted", () => {
     }
   });
 
+  test("a moved step keeps the keyboard on its name field", async () => {
+    const focus = trackFocus();
+    try {
+      const view = await mount(card({ initialEditing: true }));
+      await press(byAction(view, "guided-move-down")[0]);
+      expect(focus.active?.getAttribute("data-field")).toBe("title");
+      expect(focus.active?.value).toBe("Learn: Algebra");
+      const titles = findAll(view, (n) => n.getAttribute("data-field") === "title").map(
+        (n) => n.value
+      );
+      expect(titles).toEqual(["Review: Algebra", "Learn: Algebra", "Practice test"]);
+    } finally {
+      focus.restore();
+    }
+  });
+
   test("Reject, Accept and Undo leave the keyboard on the note that says what happened", async () => {
     const focus = trackFocus();
     try {
