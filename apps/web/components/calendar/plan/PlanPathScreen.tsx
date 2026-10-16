@@ -23,13 +23,7 @@ import { localSlotToMs } from "../gridData";
 import { todayLocal } from "../MonthGrid";
 import { pt } from "../planCopy";
 import { PlanForm, PlanPreview } from "./PlanParts";
-import {
-  buildPreview,
-  busyByDate,
-  DEFAULT_FORM,
-  type PlanFormValues,
-  waysOut,
-} from "./planForm";
+import { buildPreview, busyByDate, DEFAULT_FORM, type PlanFormValues, waysOut } from "./planForm";
 import { SessionScheduler } from "./SessionScheduler";
 
 export function PlanPathScreen() {

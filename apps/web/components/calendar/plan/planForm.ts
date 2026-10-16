@@ -156,7 +156,8 @@ export function buildPreview(
   }
   const start = startMinuteOf(values);
   // A day's sessions follow each other from the start time, so they have to end by midnight.
-  if (start + values.minutesPerDay > DAY_MINUTES) return { status: "error", message: "pp.err.late" };
+  if (start + values.minutesPerDay > DAY_MINUTES)
+    return { status: "error", message: "pp.err.late" };
   const result = planBack(planInput(values, today, {}, busy));
   return { status: "ok", result, sessions: stackSessions(result.sessions, start, lang) };
 }

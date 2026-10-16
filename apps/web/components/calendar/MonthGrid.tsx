@@ -167,10 +167,10 @@ export function MonthGrid({
     active && inMonth(active, shown.year, shown.month)
       ? active
       : selected && inMonth(selected, shown.year, shown.month)
-      ? selected
-      : inMonth(today, shown.year, shown.month)
-        ? today
-        : formatLocalDate(shown.year, shown.month, 1);
+        ? selected
+        : inMonth(today, shown.year, shown.month)
+          ? today
+          : formatLocalDate(shown.year, shown.month, 1);
 
   const onKey = (event: KeyboardEvent<HTMLButtonElement>, date: LocalDate) => {
     const action = monthKeyAction(date, event.key, {
