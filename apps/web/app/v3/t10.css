@@ -96,3 +96,8 @@
   border-radius: var(--tp-radius-md);
   background: var(--tp-paper);
 }
+
+/* S2 IngestSheet: a notice with an action ("Paste text instead") lets the button drop under the
+   words on a phone, instead of squeezing the words into a narrow column. */
+[data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) { flex-wrap: wrap; }
+[data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) .tp-notice__text { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
