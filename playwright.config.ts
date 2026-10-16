@@ -5,10 +5,10 @@ const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: "tests/e2e",
-  // These specs need the local dev webServer's E2E env below (auth bypass, public /calendar,
+  // These two specs need the local dev webServer's E2E env below (auth bypass, public /calendar,
   // browser-storage task/event sources). A deployed preview has none of that, so against a preview
   // (factory-nightly runs the full suite there) they always failed. CI's E2E job still runs them.
-  ...(previewBaseURL ? { testIgnore: ["**/calendar-views.spec.ts", "**/task-views-core.spec.ts", "**/fix/calendar-add.spec.ts"] } : {}),
+  ...(previewBaseURL ? { testIgnore: ["**/calendar-views.spec.ts", "**/task-views-core.spec.ts"] } : {}),
   timeout: 30_000,
   expect: {
     timeout: 10_000,

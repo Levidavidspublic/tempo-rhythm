@@ -24,6 +24,10 @@ test.describe("calendar add event", () => {
   });
 
   test("local mode: form renders and adds without a sign-in message", async ({ page }) => {
+    test.skip(
+      !!process.env.PLAYWRIGHT_BASE_URL,
+      "local dev webServer only (e2e calendar bypass); a deployed preview redirects /calendar to sign-in"
+    );
     await page.goto("/calendar");
     await expect(page.getByRole("textbox", { name: "Event title" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Add event|One moment/ })).toBeVisible();
