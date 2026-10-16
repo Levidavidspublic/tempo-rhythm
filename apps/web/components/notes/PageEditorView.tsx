@@ -16,6 +16,7 @@ import { ReadView } from "@/components/editor/ReadView";
 import { type MenuItem, SlashMenu } from "@/components/editor/SlashMenu";
 import { useRegisterCoachPage } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { flashcardsInBody, ShareSheet } from "@/components/share";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import {
@@ -104,6 +105,7 @@ export function PageEditorView(props: Props) {
   const editor = useRef<LivePreviewEditorHandle | null>(null);
   const [mode, setMode] = useState<"edit" | "read">("edit");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   // The page menu behaves like a menu: focus goes to its first item, arrows move, Escape closes and
@@ -346,6 +348,18 @@ export function PageEditorView(props: Props) {
                       type="button"
                       role="menuitem"
                       onClick={() => {
+                        setMenuOpen(false);
+                        setShareOpen(true);
+                      }}
+                    >
+                      <TpIcon name="send" size="sm" />
+                      {t("share.menu")}
+                    </button>
+                    <button
+                      className="tp-menu__item"
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
                         if (mode === "read") setEditSeed(body);
                         setMode(mode === "edit" ? "read" : "edit");
                         setMenuOpen(false);
@@ -468,6 +482,19 @@ export function PageEditorView(props: Props) {
           </section>
         ) : null}
       </div>
+      {shareOpen ? (
+        <ShareSheet
+          target={{
+            kind: "page",
+            title: title.trim() || t("page.untitled"),
+            markdown: exportContents(body),
+            url: window.location.href,
+            cards: flashcardsInBody(body),
+          }}
+          returnFocus={menuButtonRef}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }
