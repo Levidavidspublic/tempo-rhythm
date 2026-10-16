@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { BLOCK_CODEC_LIMITS, parseTempoBlocks, projectPageText, type TempoBlock } from "@tempo/utils";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -27,6 +27,7 @@ import {
   buildCoachMessages,
   cardOutcome,
   parseCoachReply,
+  parseSearchedReply,
   readProposal,
   readSearchRequest,
   withCardOutcome,
@@ -39,6 +40,8 @@ import {
   WebSearchError,
   type WebSearchProvider,
   type WebSearchResult,
+  pruneOldWebSearches,
+  utcDay,
   webSearchConfigured,
   webSearchProvider,
 } from "./lib/webSearch";
@@ -74,8 +77,8 @@ const AVAILABLE_MINUTES_BAD_DAY = 60;
  * coachWebSearch: true })`) and the deployment has a search provider (lib/webSearch.ts). Then the
  * coach may ask for one search per reply; `reply` runs it (at most `WEB_SEARCH_DAILY_LIMIT` a UTC
  * day per person), makes a second model call with the numbered results, and saves the reply with
- * its `sources`. `webSearchStatus` tells the client whether it is available, on, and how much is
- * left today.
+ * its `sources`. `webSearchStatus({ utcDay })` tells the client whether it is available, on, and
+ * how much of that UTC day's limit is used.
  */
 
 /** Longest message the coach takes. */
@@ -199,11 +202,6 @@ const turnContextValidator = v.object({
  */
 export const WEB_SEARCH_DAILY_LIMIT = 10;
 
-/** The UTC date (`YYYY-MM-DD`) a moment falls on: the web search limit's day. */
-function utcDay(now: number): string {
-  return new Date(now).toISOString().slice(0, 10);
-}
-
 /**
  * Searches the person ran on one UTC day, counting at most `WEB_SEARCH_DAILY_LIMIT` (bounds the
  * read). Tombstoned rows count too: deleting and restoring the account doesn't give searches back.
@@ -216,13 +214,16 @@ async function searchesOn(ctx: Db, userId: UserId, day: string): Promise<number>
   return rows.length;
 }
 
-/** The person's web search setting and today's count. `available` is the deployment's, passed in. */
-export async function webSearchStatusFor(ctx: Db, userId: UserId, available: boolean, now = Date.now()) {
+/**
+ * The person's web search setting and their count on `day` (a UTC date, `YYYY-MM-DD`). `available`
+ * is the deployment's, passed in. Reads no clock, so it is safe in a query (C-26).
+ */
+export async function webSearchStatusFor(ctx: Db, userId: UserId, available: boolean, day: string) {
   const prefs = await preferencesFor(ctx, userId);
   return {
     available,
     enabled: prefs.coachWebSearch,
-    usedToday: await searchesOn(ctx, userId, utcDay(now)),
+    usedToday: await searchesOn(ctx, userId, day),
     dailyLimit: WEB_SEARCH_DAILY_LIMIT,
   };
 }
@@ -230,19 +231,25 @@ export async function webSearchStatusFor(ctx: Db, userId: UserId, available: boo
 /**
  * Coach web search for the signed-in person: `available` when the deployment has a search
  * provider, `enabled` when they turned it on (`preferences.update({ coachWebSearch })`), and the
- * searches run today (UTC day) against the daily limit.
+ * searches run on `utcDay` against the daily limit. A query never reads the clock (C-26), so the
+ * client passes today's UTC date (`new Date().toISOString().slice(0, 10)`); anything that is not
+ * a real `YYYY-MM-DD` date is refused with `invalid_day`. The limit itself is held by the server's
+ * clock when a search is booked.
  */
 export const webSearchStatus = query({
-  args: {},
+  args: { utcDay: v.string() },
   returns: v.object({
     available: v.boolean(),
     enabled: v.boolean(),
     usedToday: v.number(),
     dailyLimit: v.number(),
   }),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    return webSearchStatusFor(ctx, user._id, webSearchConfigured());
+    if (!isValidLocalDate(args.utcDay)) {
+      throw new ConvexError({ code: "invalid_day", message: "The day must be a date like 2026-10-16." });
+    }
+    return webSearchStatusFor(ctx, user._id, webSearchConfigured(), args.utcDay);
   },
 });
 
@@ -399,7 +406,8 @@ async function holdsTurn(
  * conversations race. "lost": this reply no longer holds the turn, so nothing is searched;
  * "off": the person turned search off meanwhile; "used_up": today's searches are spent. Only a
  * "reserved" search is counted, and it counts once it is sent, even if the provider then fails
- * (the provider may bill it).
+ * (the provider may bill it). The day is the server's UTC date. Booking also removes up to
+ * `WEB_SEARCH_PRUNE_BATCH` of the caller's count rows from more than `WEB_SEARCH_KEEP_DAYS` days ago.
  */
 export const reserveWebSearch = internalMutation({
   args: { conversationId: v.id("conversations"), replyTo: v.id("messages"), claim: v.string() },
@@ -418,6 +426,8 @@ export const reserveWebSearch = internalMutation({
     if ((await searchesOn(ctx, user._id, day)) >= WEB_SEARCH_DAILY_LIMIT) {
       return "used_up" as const;
     }
+    // The limit only reads today's rows, so the caller's old ones go as new ones are booked.
+    await pruneOldWebSearches(ctx, user._id, now);
     await ctx.db.insert("coachWebSearches", { userId: user._id, utcDateKey: day, createdAt: now, updatedAt: now });
     return "reserved" as const;
   },
@@ -497,12 +507,17 @@ type CoachAnswer = { reply: string; proposal: CoachProposal | null };
 
 /**
  * The line added to a reply whose web search did not run, in the person's app language (the coach
- * itself answers in the language they write in).
+ * itself answers in the language they write in): today's searches were used up, the person turned
+ * search off while the coach was answering, or the search or its answer failed.
  */
 export const WEB_SEARCH_NOTES = {
   used_up: {
-    en: "(I didn't search the web for this: today's web searches are used up.)",
-    he: "(לא חיפשתי ברשת: החיפושים ברשת להיום נגמרו.)",
+    en: "(Web search is used up for today, so this is from what I already know.)",
+    he: "(החיפושים ברשת להיום נגמרו, אז זה ממה שכבר ידוע לי.)",
+  },
+  off: {
+    en: "(Web search is off, so this is from what I already know.)",
+    he: "(החיפוש ברשת כבוי, אז זה ממה שכבר ידוע לי.)",
   },
   failed: {
     en: "(I couldn't reach web search just now, so this is from what I already know.)",
@@ -515,13 +530,17 @@ export const WEB_SEARCH_NOTES = {
  * web search seam (null: no provider on this deployment); tests pass stand-ins for both. Approval
  * is checked before anything is read or any provider is called.
  *
- * Web search: only when there is a provider and the person turned search on is the model told it
- * may ask for one (`"search"` in its JSON), or, once today's searches are spent, that they are.
- * When it asks, the search is booked (`reserveWebSearch`), run, and a second model call answers
- * from the numbered results; the reply is saved with them as `sources`. When it asked but the
- * search can't run (used up meanwhile, or the provider or the second call failed), its first
- * answer is saved with a plain line saying so. Crisis text never gets here: `claimTurn` returns
- * null for it, so it reaches neither the model nor the search.
+ * Web search: only when there is a provider, the person turned search on and nothing they wrote in
+ * the thread is crisis text is the model told it may ask for one (`"search"` in its JSON), or,
+ * once today's searches are spent, that they are. Otherwise it is told it can't check the web, so
+ * it says so plainly when a question needs current facts. When it asks (in words that aren't
+ * crisis text), the search is booked (`reserveWebSearch`), run, and a second model call words the
+ * reply from the numbered results; the reply is saved with them as `sources`. The card always
+ * comes from the first answer, which never saw web text. When it asked but the search didn't run
+ * (used up, turned off meanwhile, or the provider or the second call failed), its first answer is
+ * saved with a plain line saying so; with no first answer there is nothing to save, and the turn
+ * is "unavailable". Crisis text as the newest message never gets here: `claimTurn` returns null
+ * for it, so it reaches neither the model nor the search.
  */
 export async function runCoachReply(
   ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
@@ -551,21 +570,22 @@ export async function runCoachReply(
   const release = () =>
     ctx.runMutation(internal.coach.releaseTurn, { conversationId: args.conversationId, messageId: replyTo, claim });
   const base = { ...prompt, ...(today ? { today } : {}) };
-  const ask = (search: CoachWebSearch | undefined) =>
+  const ask = (search: CoachWebSearch) =>
     call({
       tier: "balanced",
-      messages: buildCoachMessages({ ...base, ...(search ? { webSearch: search } : {}) }),
+      messages: buildCoachMessages({ ...base, webSearch: search }),
       maxTokens: 900,
       temperature: 0.4,
       responseFormat: "json_object",
     });
-  // Search is mentioned only when the deployment has a provider and the person turned it on.
-  const offer: CoachWebSearch | undefined =
-    searchProvider !== null && webSearch.enabled
-      ? webSearch.left > 0
+  // Crisis text anywhere in what the person wrote in the thread: no search this turn.
+  const crisis = prompt.history.some((m) => m.role === "user" && isCrisisText(m.content));
+  const offer: CoachWebSearch =
+    searchProvider === null || !webSearch.enabled || crisis
+      ? { mode: "off" }
+      : webSearch.left > 0
         ? { mode: "offer" }
-        : { mode: "used_up" }
-      : undefined;
+        : { mode: "used_up" };
 
   let answer: CoachAnswer | null;
   let model: string;
@@ -574,7 +594,9 @@ export async function runCoachReply(
     const result = await ask(offer);
     answer = parseCoachReply(result.content);
     model = result.model;
-    query = offer?.mode === "offer" ? readSearchRequest(result.content) : null;
+    const asked = offer.mode === "offer" || offer.mode === "used_up" ? readSearchRequest(result.content) : null;
+    // A query in crisis words is never booked or sent.
+    query = asked !== null && !isCrisisText(asked) ? asked : null;
   } catch (error) {
     console.error(`coach.reply: the model could not be reached (${errorKind(error)})`);
     await release();
@@ -583,7 +605,10 @@ export async function runCoachReply(
 
   let sources: CoachSource[] = [];
   let note: keyof typeof WEB_SEARCH_NOTES | null = null;
-  if (query !== null && searchProvider !== null) {
+  if (query !== null && offer.mode === "used_up") {
+    // Told today's searches were spent, it asked anyway: nothing runs, and the reply says why.
+    note = "used_up";
+  } else if (query !== null && searchProvider !== null) {
     let booked: "reserved" | "off" | "used_up" | "lost" | "failed";
     try {
       booked = await ctx.runMutation(internal.coach.reserveWebSearch, {
@@ -599,9 +624,10 @@ export async function runCoachReply(
       // A newer message arrived or another reply took the turn: nothing is searched or saved.
       return "superseded";
     }
-    if (booked === "used_up" || booked === "failed") {
+    if (booked !== "reserved") {
+      // "off": they turned search off while the coach was answering.
       note = booked;
-    } else if (booked === "reserved") {
+    } else {
       let results: WebSearchResult[] | null = null;
       try {
         results = await searchProvider.search(query, { maxResults: WEB_SEARCH_LIMITS.maxResults });
@@ -611,11 +637,14 @@ export async function runCoachReply(
       if (results === null) {
         note = "failed";
       } else {
+        // The second call only words the reply and cites the results: the card stays the first
+        // answer's, made before any web text was read.
+        const card = answer?.proposal ?? null;
         try {
-          const second = await ask({ mode: "results", query, results });
-          const searched = parseCoachReply(second.content);
+          const second = await ask({ mode: "results", query, results, card });
+          const searched = parseSearchedReply(second.content, card);
           if (searched) {
-            answer = searched;
+            answer = { reply: searched, proposal: card };
             model = second.model;
             sources = results.map(({ title, site, url }) => ({ title, site, url }));
           } else {
@@ -629,14 +658,14 @@ export async function runCoachReply(
       }
     }
   }
-  if (note !== null) {
-    const line = WEB_SEARCH_NOTES[note][locale];
-    answer = { reply: answer ? `${answer.reply}\n\n${line}` : line, proposal: answer?.proposal ?? null };
-  }
   if (!answer) {
+    // No words to save: a note on its own is no reply, so the turn is given back.
     console.error("coach.reply: the model gave an empty answer");
     await release();
     return "unavailable";
+  }
+  if (note !== null) {
+    answer = { ...answer, reply: `${answer.reply}\n\n${WEB_SEARCH_NOTES[note][locale]}` };
   }
   // A decision's steps carry the person's own task titles, so Save orders their tasks.
   if (answer.proposal) answer.proposal = alignDecisionSteps(answer.proposal, prompt.tasks);

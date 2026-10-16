@@ -3,6 +3,7 @@ import {
   MISTRAL_CONVERSATIONS_URL,
   WEB_SEARCH_LIMITS,
   WebSearchError,
+  type WebSearchErrorKind,
   mistralWebSearch,
   readMistralSearch,
   searchQuery,
@@ -206,7 +207,7 @@ describe("the Mistral provider", () => {
   });
 
   test("errors carry a kind only, never the key, the query or the provider's text", async () => {
-    const cases: Array<[number, string]> = [
+    const cases: Array<[number, WebSearchErrorKind]> = [
       [401, "auth"],
       [403, "auth"],
       [429, "rate_limited"],

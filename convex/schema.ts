@@ -837,7 +837,8 @@ export default defineSchema({
   /**
    * TEMPO-B07-01 (#976): one row per web search the coach actually ran, for the per-person daily
    * limit (`coach.WEB_SEARCH_DAILY_LIMIT`, counted per UTC day in `utcDateKey`). Content-free: no
-   * query, result or page text. Tombstoned rows still count toward their day.
+   * query, result or page text. Tombstoned rows still count toward their day. Rows from more than
+   * 7 days ago are pruned as new searches are booked (`coach.reserveWebSearch`).
    */
   coachWebSearches: defineTable({
     userId: v.id("users"),

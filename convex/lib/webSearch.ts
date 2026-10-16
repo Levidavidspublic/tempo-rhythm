@@ -16,11 +16,16 @@
  * - Plain `fetch`, no vendor SDK (HARD_RULES §2). A timeout bounds the whole call, body included.
  *   Errors carry a kind only, never the key, the query or any provider text, so a log line can
  *   name what failed without leaking anything.
+ * - `pruneOldWebSearches` keeps the per-person daily count rows (`coachWebSearches`) to about a
+ *   week: `coach.reserveWebSearch` calls it as it books a search.
  *
  * Shape checked against Mistral's public docs (platform-docs-public: `studio/agents/agent-tools/
  * websearch` and the `beta/conversations` API reference), 16 Oct 2026. Lines marked
  * `EXTRAPOLATED:` are not confirmed by those docs.
  */
+
+import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 
 export type WebSearchResult = {
   title: string;
@@ -245,6 +250,37 @@ export function webSearchConfigured(env: Env = process.env): boolean {
 export function webSearchProvider(env: Env = process.env): WebSearchProvider | null {
   const key = env.MISTRAL_API_KEY?.trim();
   return key ? mistralWebSearch(key) : null;
+}
+
+/** Count rows from more than this many days ago are pruned when a search is booked. */
+export const WEB_SEARCH_KEEP_DAYS = 7;
+/** Most old count rows one booked search removes (bounds the write). */
+export const WEB_SEARCH_PRUNE_BATCH = 10;
+
+const DAY_MS = 24 * 60 * 60_000;
+
+/** The UTC date (`YYYY-MM-DD`) a moment falls on: the web search limit's day. */
+export function utcDay(now: number): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+/**
+ * Removes up to `WEB_SEARCH_PRUNE_BATCH` of one person's `coachWebSearches` count rows from more
+ * than `WEB_SEARCH_KEEP_DAYS` UTC days before `now`, through the index; returns how many went. The
+ * daily limit only reads today's rows, so these are expired rate-limit counts with no content,
+ * which HARD_RULES §5 lets go for good. Only this table; the chat modules themselves never
+ * hard-delete (messages.test.ts), so it lives here, not in coach.ts.
+ */
+export async function pruneOldWebSearches(ctx: MutationCtx, userId: Id<"users">, now: number): Promise<number> {
+  const before = utcDay(now - WEB_SEARCH_KEEP_DAYS * DAY_MS);
+  const stale = await ctx.db
+    .query("coachWebSearches")
+    .withIndex("by_userId_utcDateKey", (q) => q.eq("userId", userId).lt("utcDateKey", before))
+    .take(WEB_SEARCH_PRUNE_BATCH);
+  for (const row of stale) {
+    await ctx.db.delete(row._id);
+  }
+  return stale.length;
 }
 
 /** A provider for tests: answers with `results` (or throws), and records each call. */

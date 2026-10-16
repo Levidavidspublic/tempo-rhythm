@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { getFunctionName } from "convex/server";
+import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { ActionCtx, MutationCtx } from "./_generated/server";
 import * as approval from "./approval";
@@ -9,7 +10,13 @@ import { parseTempoBlocks } from "@tempo/utils";
 import type { AiCallOptions, AiResult, callLLM } from "./lib/ai_router";
 import { PENDING_APPROVAL_MESSAGE } from "./lib/approval";
 import { dayName } from "./lib/coachPrompt";
-import { WebSearchError, type WebSearchResult, stubWebSearch } from "./lib/webSearch";
+import {
+  WEB_SEARCH_KEEP_DAYS,
+  WEB_SEARCH_PRUNE_BATCH,
+  WebSearchError,
+  type WebSearchResult,
+  stubWebSearch,
+} from "./lib/webSearch";
 
 /**
  * The real-AI coach turn (OVERNIGHT-RUN.md run 2, item 2): the user's message is saved first, an
@@ -46,8 +53,15 @@ function makeWorld() {
     return {
       withIndex: (_name: string, fn: (q: unknown) => unknown) => {
         const conds: Array<(row: Row) => boolean> = [];
-        const cmp = (test: (a: number, b: number) => boolean) => (field: string, value: number) => {
-          conds.push((row) => typeof row[field] === "number" && test(row[field] as number, value));
+        // Index order for numbers and strings (a UTC date key); anything else never matches a range.
+        const order = (a: unknown, b: number | string) =>
+          typeof a === "number" && typeof b === "number"
+            ? a - b
+            : typeof a === "string" && typeof b === "string"
+              ? a < b ? -1 : a > b ? 1 : 0
+              : Number.NaN;
+        const cmp = (test: (diff: number) => boolean) => (field: string, value: number | string) => {
+          conds.push((row) => test(order(row[field], value)));
           return q;
         };
         const q = {
@@ -55,8 +69,8 @@ function makeWorld() {
             conds.push((row) => row[field] === value);
             return q;
           },
-          gte: cmp((a, b) => a >= b),
-          lt: cmp((a, b) => a < b),
+          gte: cmp((diff) => diff >= 0),
+          lt: cmp((diff) => diff < 0),
         };
         fn(q);
         return builder(rows.filter((row) => conds.every((c) => c(row))));
@@ -84,6 +98,9 @@ function makeWorld() {
       const existing = t.get(id);
       if (!existing) throw new Error(`patch on missing row ${id}`);
       t.set(id, { ...existing, ...patch });
+    },
+    delete: async (id: string) => {
+      table(id.split(":")[0] as string).delete(id);
     },
     query: (t: string) => builder(Array.from(table(t).values())),
   };
@@ -232,7 +249,9 @@ describe("a coach turn", () => {
     const model = fakeModel('{"reply":"Hi.","proposal":null}');
     await coach.runCoachReply(world.actionAs(A), { conversationId, noteId }, model.call);
     expect(model.calls[0]?.messages.map((m) => m.content).join("\n")).not.toContain("secret");
-    expect(model.calls[0]?.messages).toHaveLength(2);
+    // The system prompt, the line that web search is off, and the message: no page.
+    expect(model.calls[0]?.messages).toHaveLength(3);
+    expect(model.calls[0]?.messages.some((m) => m.content.startsWith("The person has this page open"))).toBe(false);
   });
 
   test("crisis text gets the fixed card and never reaches a model", async () => {
@@ -904,6 +923,13 @@ const ANSWERS_FROM_RESULTS = JSON.stringify({
   reply: "It's open 9 to 18 on weekdays [1], but closed this Monday [2].",
   proposal: null,
 });
+/** The line a coach gets when it can't search this turn (ticket step 3: it says so plainly). */
+const CANT_CHECK_THE_WEB =
+  "You can't look things up on the web right now. If their newest message needs current facts (opening hours, news, prices), say plainly that you can't check the web, then answer from what you know.";
+
+function daysAgo(days: number) {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+}
 
 async function turnOnSearch(world: World, userId = A, locale: "en" | "he" = "en") {
   await world.db.insert("userPreferences", {
@@ -983,7 +1009,7 @@ describe("web search on the coach (TEMPO-B07-01)", () => {
     expect(searchesBy(world)).toHaveLength(1);
   });
 
-  test("search turned off: it is never mentioned and never runs, even if the model asks", async () => {
+  test("search turned off: the coach is told plainly it can't check the web, and nothing runs, even if the model asks", async () => {
     const world = makeWorld();
     const conversationId = await seedConversation(world);
     await say(world, conversationId, "Is the city library open on Monday?");
@@ -992,12 +1018,14 @@ describe("web search on the coach (TEMPO-B07-01)", () => {
     expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
     expect(search.calls).toHaveLength(0);
     expect(model.calls).toHaveLength(1);
-    expect(sentText(model.calls[0])).not.toContain("search");
+    expect(sentText(model.calls[0])).toContain(CANT_CHECK_THE_WEB);
+    expect(sentText(model.calls[0])).not.toContain('add "search"');
+    // The person's own setting: the coach was told, so no note is added.
     expect((messages(world, conversationId).at(-1) as Row).content).toBe("Libraries are often open 9 to 5, but check first.");
     expect(searchesBy(world)).toHaveLength(0);
   });
 
-  test("no provider on the deployment: never mentioned, never run", async () => {
+  test("no provider on the deployment: the coach is told it can't check the web; nothing runs", async () => {
     const world = makeWorld();
     await turnOnSearch(world);
     const conversationId = await seedConversation(world);
@@ -1005,12 +1033,35 @@ describe("web search on the coach (TEMPO-B07-01)", () => {
     const model = fakeModels(ASKS_TO_SEARCH);
     expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, null)).toBe("replied");
     expect(model.calls).toHaveLength(1);
-    expect(sentText(model.calls[0])).not.toContain("search");
+    expect(sentText(model.calls[0])).toContain(CANT_CHECK_THE_WEB);
+    expect(sentText(model.calls[0])).not.toContain('add "search"');
     expect((messages(world, conversationId).at(-1) as Row).sources).toBeUndefined();
     expect(searchesBy(world)).toHaveLength(0);
   });
 
-  test("today's searches used up: the model is told so, and no search runs", async () => {
+  test("turned off while the model ran: no search, and the reply says web search is off", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const switchingOff = (async (opts: AiCallOptions) => {
+      // The person turns web search off in Settings while the coach is answering.
+      const prefs = world.rows("userPreferences").find((r) => r.userId === A) as Row;
+      await world.db.patch(prefs._id, { coachWebSearch: false });
+      return model.call(opts);
+    }) as typeof callLLM;
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, switchingOff, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect(searchesBy(world)).toHaveLength(0);
+    expect((messages(world, conversationId).at(-1) as Row).content).toBe(
+      `Libraries are often open 9 to 5, but check first.\n\n${coach.WEB_SEARCH_NOTES.off.en}`,
+    );
+    expect(coach.WEB_SEARCH_NOTES.off.en).toBe("(Web search is off, so this is from what I already know.)");
+  });
+
+  test("today's searches used up: the model is told so; if it asks anyway, nothing runs and the reply says so", async () => {
     const world = makeWorld();
     await turnOnSearch(world);
     await seedSearches(world, coach.WEB_SEARCH_DAILY_LIMIT);
@@ -1024,9 +1075,13 @@ describe("web search on the coach (TEMPO-B07-01)", () => {
     expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
     expect(search.calls).toHaveLength(0);
     expect(model.calls).toHaveLength(1);
-    expect(sentText(model.calls[0])).toContain("Web search is used up for today");
+    expect(sentText(model.calls[0])).toContain("Web search is used up for today, so you can't look things up on the web right now");
     expect(sentText(model.calls[0])).not.toContain('add "search"');
     expect(searchesBy(world)).toHaveLength(coach.WEB_SEARCH_DAILY_LIMIT + 3);
+    expect((messages(world, conversationId).at(-1) as Row).content).toBe(
+      `Libraries are often open 9 to 5, but check first.\n\n${coach.WEB_SEARCH_NOTES.used_up.en}`,
+    );
+    expect(coach.WEB_SEARCH_NOTES.used_up.en).toBe("(Web search is used up for today, so this is from what I already know.)");
   });
 
   test("used up while the model ran: no search, and the reply says so plainly in the app language", async () => {
@@ -1141,6 +1196,163 @@ describe("web search on the coach (TEMPO-B07-01)", () => {
     expect(messages(world, conversationId).filter((m) => m.role === "assistant")).toHaveLength(0);
   });
 
+  test("a task card from the first answer survives the search, and the searched reply keeps its promise", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Add calling the pharmacy to today, and when does it open?");
+    const first = JSON.stringify({
+      reply: "Here is a task for today. Pharmacies often open at 9. Nothing changes until you accept it.",
+      proposal: { kind: "task", title: "Call the pharmacy", minutes: 10, when: "today" },
+      search: "pharmacy opening hours",
+    });
+    const second = JSON.stringify({
+      reply: "It opens at 8:30 [1]. The task to call them is below; nothing changes until you accept it.",
+      proposal: null,
+    });
+    const model = fakeModels(first, second);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(1);
+    expect(sentText(model.calls[1])).toContain("Your first answer already offered a card: a task 'Call the pharmacy' for today.");
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.content).toBe("It opens at 8:30 [1]. The task to call them is below; nothing changes until you accept it.");
+    expect(reply.modelUsed).toBe("test-model-2");
+    expect(reply.sources).toHaveLength(2);
+    expect(coach.storedProposal(reply.toolCalls)).toEqual({
+      kind: "task",
+      title: "Call the pharmacy",
+      minutes: 10,
+      when: "today",
+      status: "pending",
+    });
+  });
+
+  test("a card in the second answer is ignored: it saw web text, so it never makes one", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const second = JSON.stringify({
+      reply: "It's open 9 to 18 on weekdays [1]. Nothing changes until you accept it.",
+      proposal: { kind: "note", title: "Library", body: "- [ ] Go on Tuesday" },
+    });
+    const model = fakeModels(ASKS_TO_SEARCH, second);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.toolCalls).toBeUndefined();
+    // No card, so no promise about one.
+    expect(reply.content).toBe("It's open 9 to 18 on weekdays [1].");
+    expect(reply.sources).toHaveLength(2);
+  });
+
+  test("a decision card from the first answer survives the search, aligned to the person's task titles", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    await seedTask(world, { title: "Reply to Dana about Friday's draft", dueAt: DAY_START + 9 * 3_600_000 });
+    await seedTask(world, { title: "Pick up the prescription", dueAt: DAY_START + 10 * 3_600_000 });
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "What order should I do these in? And when does the pharmacy open?");
+    const first = JSON.stringify({
+      reply: "Dana first, then the pharmacy.",
+      proposal: {
+        kind: "decision",
+        steps: [
+          { title: "Reply to Dana", minutes: 10 },
+          { title: "pick up the prescription.", minutes: 20 },
+        ],
+      },
+      search: "pharmacy opening hours",
+    });
+    const model = fakeModels(first, '{"reply":"Dana first; the pharmacy opens at 8:30 [1].","proposal":null}');
+    const search = stubWebSearch(RESULTS);
+    expect(
+      await coach.runCoachReply(world.actionAs(A), { conversationId, dayStartMs: DAY_START, dayEndMs: DAY_END }, model.call, search.provider),
+    ).toBe("replied");
+    const reply = messages(world, conversationId).at(-1) as Row;
+    expect(reply.content).toBe("Dana first; the pharmacy opens at 8:30 [1].");
+    const stored = coach.storedProposal(reply.toolCalls);
+    expect(stored?.kind === "decision" ? stored.steps.map((step) => step.title) : null).toEqual([
+      "Reply to Dana about Friday's draft",
+      "Pick up the prescription",
+    ]);
+  });
+
+  test("a first answer with no words, and a search that can't run: unavailable, nothing saved, the turn given back", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "news today?");
+    const model = fakeModels('{"reply":"","proposal":null,"search":"news today"}');
+    const search = stubWebSearch(() => {
+      throw new WebSearchError("upstream");
+    });
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("unavailable");
+    expect(search.calls).toHaveLength(1);
+    expect(messages(world, conversationId).map((m) => m.role)).toEqual(["user"]);
+    // The claim is released, so Try again reaches the model at once.
+    const retry = fakeModels('{"reply":"I can tell you what I know.","proposal":null}');
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, retry.call, search.provider)).toBe("replied");
+    expect(retry.calls).toHaveLength(1);
+  });
+
+  test("a search asked for in crisis words is never booked or sent", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Everything feels heavy today.");
+    const model = fakeModels(
+      JSON.stringify({ reply: "That sounds heavy. Would a short walk help?", proposal: null, search: "ways to hurt myself" }),
+    );
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect(model.calls).toHaveLength(1);
+    expect(searchesBy(world)).toHaveLength(0);
+    expect((messages(world, conversationId).at(-1) as Row).content).toBe("That sounds heavy. Would a short walk help?");
+  });
+
+  test("crisis words earlier in the thread: no search is offered or run this turn", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "I want to kill myself");
+    await say(world, conversationId, "Is the city library open on Monday?");
+    const model = fakeModels(ASKS_TO_SEARCH);
+    const search = stubWebSearch(RESULTS);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    expect(searchesBy(world)).toHaveLength(0);
+    expect(sentText(model.calls[0])).toContain(CANT_CHECK_THE_WEB);
+    expect(sentText(model.calls[0])).not.toContain('add "search"');
+    // The crisis card is still in the thread, untouched.
+    expect(messages(world, conversationId).filter((m) => m.modelUsed === "crisis-card")).toHaveLength(1);
+  });
+
+  test("booking a search prunes the caller's count rows from more than 7 days ago, at most 10 at a time", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    await seedSearches(world, 12, A, daysAgo(30));
+    await seedSearches(world, 1, A, daysAgo(8));
+    await seedSearches(world, 2, A, daysAgo(WEB_SEARCH_KEEP_DAYS));
+    await seedSearches(world, 3, B, daysAgo(30));
+    const conversationId = await seedConversation(world);
+    const old = () => searchesBy(world).filter((r) => (r.utcDateKey as string) < daysAgo(WEB_SEARCH_KEEP_DAYS));
+
+    await say(world, conversationId, "Is the city library open on Monday?");
+    await coach.runCoachReply(world.actionAs(A), { conversationId }, fakeModels(ASKS_TO_SEARCH, ANSWERS_FROM_RESULTS).call, stubWebSearch(RESULTS).provider);
+    expect(old()).toHaveLength(13 - WEB_SEARCH_PRUNE_BATCH);
+
+    await say(world, conversationId, "And on Tuesday?");
+    await coach.runCoachReply(world.actionAs(A), { conversationId }, fakeModels(ASKS_TO_SEARCH, ANSWERS_FROM_RESULTS).call, stubWebSearch(RESULTS).provider);
+    expect(old()).toHaveLength(0);
+    // A week ago still stays, today's two searches are counted, and someone else's rows are never touched.
+    expect(searchesBy(world).filter((r) => r.utcDateKey === daysAgo(WEB_SEARCH_KEEP_DAYS))).toHaveLength(2);
+    expect(searchesBy(world).filter((r) => r.utcDateKey === daysAgo(0))).toHaveLength(2);
+    expect(searchesBy(world, B)).toHaveLength(3);
+  });
+
   test("asked to search with no reply text when search is off: unavailable, not a blank message", async () => {
     const world = makeWorld();
     const conversationId = await seedConversation(world);
@@ -1154,9 +1366,11 @@ describe("web search on the coach (TEMPO-B07-01)", () => {
 });
 
 describe("coach.webSearchStatus", () => {
-  test("off by default, with today's count against the limit", async () => {
+  const today = daysAgo(0);
+
+  test("off by default, with the day's count against the limit", async () => {
     const world = makeWorld();
-    expect(await coach.webSearchStatusFor(world.as(A), A as Id<"users">, false)).toEqual({
+    expect(await coach.webSearchStatusFor(world.as(A), A as Id<"users">, false, today)).toEqual({
       available: false,
       enabled: false,
       usedToday: 0,
@@ -1164,13 +1378,13 @@ describe("coach.webSearchStatus", () => {
     });
   });
 
-  test("turned on: counts only the caller's searches on today's UTC date", async () => {
+  test("turned on: counts only the caller's searches on the given UTC date", async () => {
     const world = makeWorld();
     await turnOnSearch(world);
     await seedSearches(world, 3);
     await seedSearches(world, 2, A, "2001-01-01");
     await seedSearches(world, 4, B);
-    expect(await coach.webSearchStatusFor(world.as(A), A as Id<"users">, true)).toEqual({
+    expect(await coach.webSearchStatusFor(world.as(A), A as Id<"users">, true, today)).toEqual({
       available: true,
       enabled: true,
       usedToday: 3,
@@ -1178,14 +1392,41 @@ describe("coach.webSearchStatus", () => {
     });
   });
 
-  test("the query answers for the signed-in person, and refuses no one signed in", async () => {
+  test("the query counts the UTC day the client passes, for the signed-in person only", async () => {
     const world = makeWorld();
     await turnOnSearch(world);
     await seedSearches(world, 2);
-    const status = await run(coach.webSearchStatus, world.as(A), {});
+    await seedSearches(world, 3, A, "2001-01-01");
+    await seedSearches(world, 4, B);
+    const status = await run(coach.webSearchStatus, world.as(A), { utcDay: today });
     expect(status).toMatchObject({ enabled: true, usedToday: 2, dailyLimit: coach.WEB_SEARCH_DAILY_LIMIT });
     expect(typeof status.available).toBe("boolean");
+    // After UTC midnight the client passes the new day, and the subscription follows it.
+    expect((await run(coach.webSearchStatus, world.as(A), { utcDay: "2001-01-01" })).usedToday).toBe(3);
     const signedOut = { auth: { getUserIdentity: async () => null }, db: world.db };
-    await expect(run(coach.webSearchStatus, signedOut, {})).rejects.toThrow("Not authenticated");
+    await expect(run(coach.webSearchStatus, signedOut, { utcDay: today })).rejects.toThrow("Not authenticated");
+  });
+
+  test("a day that is not a real YYYY-MM-DD date is refused with invalid_day", async () => {
+    const world = makeWorld();
+    for (const utcDay of ["", "today", "2026-02-30", "2026-10-16T00:00:00Z", "16/10/2026", " 2026-10-16"]) {
+      const error = await run(coach.webSearchStatus, world.as(A), { utcDay }).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ConvexError);
+      expect((error as ConvexError<{ code: string }>).data.code).toBe("invalid_day");
+    }
+  });
+
+  test("the query never reads the clock (C-26)", async () => {
+    const world = makeWorld();
+    await turnOnSearch(world);
+    await seedSearches(world, 1);
+    const clock = spyOn(Date, "now").mockImplementation(() => {
+      throw new Error("a query read the clock");
+    });
+    try {
+      expect((await run(coach.webSearchStatus, world.as(A), { utcDay: today })).usedToday).toBe(1);
+    } finally {
+      clock.mockRestore();
+    }
   });
 });
