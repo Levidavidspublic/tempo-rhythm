@@ -1,6 +1,6 @@
 "use client";
 
-import { ReadAloudButton } from "@tempo/ui";
+import { ReadAloudButton, type ReadAloudLabels } from "@tempo/ui";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { detectLang, type RecapLang } from "../../../../../packages/core/recap";
@@ -128,16 +128,63 @@ export function useReadAloud({ engine: override, rate = 1 }: { engine?: SpeechEn
   return { speech, speaking, status, toggle, stop };
 }
 
+/** Counts the slot's buttons on screen per text; `remove` reports a text that has none left. */
+type DrawnTexts = { add: (text: string) => void; remove: (text: string) => void };
+
+/**
+ * One read-aloud button in the slot. While it is drawn its text counts as on screen; when it goes
+ * or shows another text (the card turned, the next question came), that text is off screen.
+ */
+function SlotButton({
+  text,
+  pressed,
+  onToggle,
+  labels,
+  drawn,
+}: {
+  text: string;
+  pressed: boolean;
+  onToggle: (text: string) => void;
+  labels: ReadAloudLabels;
+  drawn: DrawnTexts;
+}) {
+  useEffect(() => {
+    drawn.add(text);
+    return () => drawn.remove(text);
+  }, [drawn, text]);
+  return <ReadAloudButton text={text} pressed={pressed} onToggle={onToggle} labels={labels} />;
+}
+
 /**
  * The `readAloud` slot for the @tempo/ui study components: a ReadAloudButton beside each text the
  * device can read, a plain note for Hebrew text when there is no Hebrew voice, and nothing while
- * checking or where the browser can't speak at all. Pass `resetKey` to stop reading when it changes.
+ * checking or where the browser can't speak at all. Reading stops once the text being read is no
+ * longer drawn (its card or question changed, even inside a component that keeps its own place),
+ * so a voice never runs on with no pressed button left to stop it. Pass `resetKey` to also stop
+ * when it changes.
  */
-export function useReadAloudSlot(resetKey?: unknown): (text: string) => ReactNode {
+export function useReadAloudSlot(resetKey?: unknown, options: { engine?: SpeechEngine } = {}): (text: string) => ReactNode {
   const { t } = useLocale();
-  const reader = useReadAloud();
+  const reader = useReadAloud({ engine: options.engine });
   const labels = useMemo(() => ({ read: t("st.ra.read"), stop: t("st.ra.stop") }), [t]);
   const { speaking, status, toggle, stop } = reader;
+  const speakingNow = useRef(speaking);
+  speakingNow.current = speaking;
+  const drawn = useMemo<DrawnTexts>(() => {
+    const counts = new Map<string, number>();
+    return {
+      add: (text) => counts.set(text, (counts.get(text) ?? 0) + 1),
+      remove: (text) => {
+        const left = (counts.get(text) ?? 1) - 1;
+        if (left > 0) {
+          counts.set(text, left);
+          return;
+        }
+        counts.delete(text);
+        if (speakingNow.current === text) stop();
+      },
+    };
+  }, [stop]);
   // When `resetKey` changes (a review moves to the next card), stop reading the old one.
   const lastKey = useRef(resetKey);
   useEffect(() => {
@@ -153,10 +200,8 @@ export function useReadAloudSlot(resetKey?: unknown): (text: string) => ReactNod
         return <p className="tp-readaloud-note">{t("st.ra.noHebrew")}</p>;
       }
       if (state !== "ready") return null;
-      return (
-        <ReadAloudButton text={text} pressed={speaking === text} onToggle={toggle} labels={labels} />
-      );
+      return <SlotButton text={text} pressed={speaking === text} onToggle={toggle} labels={labels} drawn={drawn} />;
     },
-    [labels, speaking, status, t, toggle]
+    [drawn, labels, speaking, status, t, toggle]
   );
 }

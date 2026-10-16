@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, mock, test } from "bun:test";
 // react is only installed under apps/web (not the repo root), so import it from there.
-import { act, createElement, type ReactElement } from "../../../apps/web/node_modules/react";
+import { act, createElement, type ReactElement, type ReactNode, useState } from "../../../apps/web/node_modules/react";
 import { createRoot, type Root } from "../../../apps/web/node_modules/react-dom/client";
 import { renderToStaticMarkup } from "../../../apps/web/node_modules/react-dom/server";
 import { translate } from "../../../apps/web/lib/i18n";
@@ -62,7 +62,7 @@ const { ListenStates } = await import("../../../apps/web/components/study/recap/
 const { StudySetView } = await import("../../../apps/web/components/study/StudySetView");
 const player = await import("../../../apps/web/components/study/recap/player");
 const speech = await import("../../../apps/web/components/study/recap/speech");
-const { speechStatus } = await import("../../../apps/web/components/study/recap/useReadAloud");
+const { speechStatus, useReadAloudSlot } = await import("../../../apps/web/components/study/recap/useReadAloud");
 
 const html = (node: ReactElement) => renderToStaticMarkup(node);
 const primaries = (markup: string) => markup.match(/tp-btn--primary/g)?.length ?? 0;
@@ -541,6 +541,34 @@ describe("the mounted player", () => {
     expect(looked).not.toContain("st.ls.now");
     expect(looked).not.toContain("st.ls.transcriptHint");
     expect(findAll(mounted, (n) => n.getAttribute?.("aria-current") === "true")).toHaveLength(1);
+  });
+
+  test("read-aloud stops once the text being read leaves the screen, even inside a deck that keeps its own place", async () => {
+    const { engine, said } = recordingEngine();
+    const cards = ["Mitosis", "Meiosis"];
+    let turn: (index: number) => void = () => {};
+    function Deck({ slot }: { slot: (text: string) => ReactNode }) {
+      const [at, setAt] = useState(0);
+      turn = setAt;
+      return createElement("div", null, slot(cards[at] ?? ""));
+    }
+    function Host({ title }: { title: string }) {
+      const slot = useReadAloudSlot(undefined, { engine });
+      return createElement("section", { title }, createElement(Deck, { slot }));
+    }
+    const view = await mount(createElement(Host, { title: "a" }));
+    const button = () => findAll(view, (n) => n.getAttribute?.("data-component") === "ReadAloudButton")[0];
+    await click(button());
+    expect(said.map((call) => call.text)).toEqual(["Mitosis"]);
+    expect(button()?.getAttribute("aria-pressed")).toBe("true");
+    // Still on screen: a redraw of the host keeps reading.
+    await rerender(createElement(Host, { title: "b" }));
+    expect(said[0]?.cancelled).toBe(false);
+    // The deck turns to the next card on its own: the old card's reading stops.
+    await act(async () => turn(1));
+    expect(said[0]?.cancelled).toBe(true);
+    expect(button()?.getAttribute("aria-pressed")).toBe("false");
+    expect(said).toHaveLength(1);
   });
 
   test("an edit elsewhere in the page doesn't restart the sentence being read", async () => {
