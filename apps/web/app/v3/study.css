@@ -7,7 +7,9 @@
 .tp-flashcard:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; border-radius: var(--tp-radius-md); }
 
 /* Again / Hard / Good / Easy, each with its interval */
-.tp-study-grades { border: 0; margin: 0; padding: 0; min-width: 0; flex: 1 1 auto; display: grid; gap: var(--tp-space-2); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) + var(--tp-space-4)), 1fr)); }
+.tp-study-grades { border: 0; margin: 0; padding: 0; min-width: 0; flex: 1 1 auto; display: grid; gap: var(--tp-space-2); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Four grades in one row, or two by two on a phone (never three and one). */
+@media (max-width: 559px) { .tp-study-grades { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tp-study-grade { flex-direction: column; gap: 0; padding-block: var(--tp-space-1); }
 .tp-study-grade__interval { font-size: var(--tp-text-xs); font-weight: 400; color: var(--tp-ink-muted); }
 .tp-study-grades[tabindex]:focus-visible { border-radius: var(--tp-radius-md); }

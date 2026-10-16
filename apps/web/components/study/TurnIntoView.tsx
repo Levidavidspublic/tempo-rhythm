@@ -509,9 +509,12 @@ export function DraftEditor({
                   <label className="tp-label" htmlFor={`st-ed-${item.id}-b`}>
                     {t(second)}
                   </label>
-                  <input
+                  {/* A card's back or an answer is often a sentence: two lines, so it isn't cut off. */}
+                  <textarea
                     id={`st-ed-${item.id}-b`}
-                    className="tp-input"
+                    className="tp-textarea"
+                    data-component="Textarea"
+                    rows={2}
                     dir="auto"
                     maxLength={500}
                     value={item.secondary}

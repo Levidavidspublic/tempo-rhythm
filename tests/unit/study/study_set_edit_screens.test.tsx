@@ -132,9 +132,10 @@ describe("the edit list on the set screen", () => {
     expect(markup).not.toContain('data-component="FlashcardDeck"');
     expect(markup).toContain("Edit this set");
     expect(markup).toContain('Changes are saved into the page <span dir="auto">Biology notes</span>, with 5 minutes to undo.');
-    expect(markup).toContain("Cards you keep keep their review times. New cards start fresh.");
+    expect(markup).toContain("Cards you keep stay on their review schedule. New cards start fresh.");
     expect(markup).toContain('value="Mitosis"');
-    expect(markup).toContain('value="Division"');
+    // A card's back is a two-line field.
+    expect(markup).toContain('rows="2" dir="auto" maxLength="500">Division</textarea>');
     expect(markup).toContain('data-action="save-edit"');
     expect(markup).toContain('data-action="cancel-edit"');
     expect(markup).toContain('data-action="add-item"');
@@ -149,8 +150,8 @@ describe("the edit list on the set screen", () => {
     const markup = view(quizData, { initialPanel: "edit" });
     expect(markup).toContain(">Question</label>");
     expect(markup).toContain(">Right answer</label>");
-    expect(markup).toContain('value="Mitochondria"');
-    expect(markup).not.toContain("review times");
+    expect(markup).toContain('>Mitochondria</textarea>');
+    expect(markup).not.toContain("review schedule");
     expect(primaries(markup)).toBe(1);
   });
 });

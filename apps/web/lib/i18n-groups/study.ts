@@ -290,7 +290,7 @@ export const en = {
   "st.set.share": "Share",
   "st.se.title": "Edit this set",
   "st.se.intro": "Changes are saved into the page {page}, with 5 minutes to undo.",
-  "st.se.schedule": "Cards you keep keep their review times. New cards start fresh.",
+  "st.se.schedule": "Cards you keep stay on their review schedule. New cards start fresh.",
   "st.se.save": "Save changes",
   "st.se.cancel": "Cancel",
   "st.se.saveError": "That didn't save. Your edits are still here.",
