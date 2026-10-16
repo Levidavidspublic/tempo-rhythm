@@ -355,8 +355,10 @@ function installModuleMocks() {
     },
   }));
   mock.module(nextLink, () => ({
-    default: ({ href, children, className }: { href: string; children: unknown; className?: string }) =>
-      createElement("a", { href, className }, children as never),
+    // Like next/link, pass every other prop (role, aria-*, data-*) through to the anchor: Bun's
+    // module mocks are process-wide, so a narrower stand-in would change other files' renders.
+    default: ({ href, children, ...rest }: { href: string; children: unknown } & Record<string, unknown>) =>
+      createElement("a", { href, ...rest }, children as never),
   }));
   mock.module(localeProvider, () => ({
     useLocale: () => ({
