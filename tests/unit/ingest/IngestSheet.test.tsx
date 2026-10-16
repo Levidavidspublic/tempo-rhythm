@@ -123,9 +123,10 @@ describe("after saving", () => {
 
   test("Open the page is the one primary action, and three study links point at /study/new", () => {
     const html = inLocale(createElement(IngestDone, { noteId: "abc123", t }));
-    expect(html).toMatch(
-      /class="tp-btn tp-btn--primary"[^>]*href="\/notes\/abc123"[^>]*>.*Open the page/
-    );
+    // The primary link opens the page. Attribute order depends on which next/link renders it.
+    const primary = html.match(/<a [^>]*tp-btn--primary[^>]*>.*?<\/a>/)?.[0] ?? "";
+    expect(primary).toContain('href="/notes/abc123"');
+    expect(primary).toContain("Open the page");
     expect(count(html, /tp-btn--primary/g)).toBe(1);
     expect(html).toContain('href="/study/new?from=abc123&amp;kind=flashcards"');
     expect(html).toContain('href="/study/new?from=abc123&amp;kind=quiz"');

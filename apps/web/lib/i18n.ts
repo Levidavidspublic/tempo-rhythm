@@ -12,6 +12,8 @@ import * as goalsCopy from "./i18n-groups/goals";
 import * as habitsCopy from "./i18n-groups/habits";
 import * as settingsCopy from "./i18n-groups/settings";
 import * as youCopy from "./i18n-groups/you";
+import * as memoryCopy from "./i18n-groups/memory";
+import * as ingestCopy from "./i18n-groups/ingest";
 
 export const LANG_STORAGE_KEY = "tempo-lang";
 
@@ -524,6 +526,8 @@ const en = {
   "approval.signingOut": "Signing out…",
   ...goalsCopy.en,
   ...youCopy.en,
+  ...memoryCopy.en,
+  ...ingestCopy.en,
   ...settingsCopy.en,
   ...extrasCopy.en,
 } as const;
@@ -1019,6 +1023,8 @@ const he: Record<MessageKey, string> = {
   "approval.signingOut": "מתנתקים…",
   ...goalsCopy.he,
   ...youCopy.he,
+  ...memoryCopy.he,
+  ...ingestCopy.he,
   ...settingsCopy.he,
   ...extrasCopy.he,
 };
