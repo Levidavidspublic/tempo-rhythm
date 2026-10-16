@@ -43,15 +43,23 @@ function render(p: ProgramProposal, state: { busy?: boolean; failed?: boolean; l
 }
 
 describe("openui flag", () => {
-  test("production builds default off, previews and local builds on", () => {
-    expect(openUiDefault("production", "preview.tempoflow.dev")).toBe(false);
-    expect(openUiDefault("preview", "tempoflow.dev")).toBe(true);
+  test("on by default everywhere: production, preview, local, any host", () => {
+    expect(openUiDefault("production", "tempoflow.dev")).toBe(true);
+    expect(openUiDefault("production", "www.tempoflow.dev")).toBe(true);
+    expect(openUiDefault("preview", "tempo-rhythm-git-integration.vercel.app")).toBe(true);
     expect(openUiDefault("development", "localhost")).toBe(true);
-    // No Vercel environment name: the production domain stays off, everything else is on.
-    expect(openUiDefault(undefined, "www.tempoflow.dev")).toBe(false);
-    expect(openUiDefault(undefined, "TempoFlow.dev")).toBe(false);
-    expect(openUiDefault(undefined, "preview.tempoflow.dev")).toBe(true);
+    // No Vercel environment name: the production domains are on too.
+    expect(openUiDefault(undefined, "tempoflow.dev")).toBe(true);
+    expect(openUiDefault(undefined, "www.tempoflow.dev")).toBe(true);
+    expect(openUiDefault(undefined, "TempoFlow.dev")).toBe(true);
     expect(openUiDefault(undefined, "localhost")).toBe(true);
+  });
+
+  test("?openui=off or a stored off still turns it off with the default on; ?openui=on turns it back on", () => {
+    expect(resolveOpenUi("off", null, true)).toBe(false);
+    expect(resolveOpenUi(null, "off", true)).toBe(false);
+    expect(resolveOpenUi("on", "off", true)).toBe(true);
+    expect(resolveOpenUi(null, null, true)).toBe(true);
   });
 
   test("?openui= wins over the stored choice, which wins over the default", () => {
