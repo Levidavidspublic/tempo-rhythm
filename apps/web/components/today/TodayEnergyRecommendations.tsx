@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { BatteryLow, BatteryMedium, Plus, Sparkles, X, Zap } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
+import { toDateInputValue } from "@/lib/calendar/date-math";
 import {
   type EnergyLevel,
   recommendTasksForEnergy,
@@ -38,7 +39,12 @@ export function TodayEnergyRecommendations({
   todayStartMs,
   todayEndMs,
 }: TodayEnergyRecommendationsProps) {
-  const [energy, setEnergy] = useState<EnergyLevel | null>(null);
+  const localDate = useMemo(() => toDateInputValue(new Date(todayStartMs)), [todayStartMs]);
+  const plan = useQuery(api.dayPlans.getForDate, { localDate });
+  const upsertPlan = useMutation(api.dayPlans.upsert);
+  const energy = plan?.energy ?? null;
+  const [isSavingEnergy, setIsSavingEnergy] = useState(false);
+  const [energyError, setEnergyError] = useState<string | null>(null);
   const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(new Set());
   const [pendingId, setPendingId] = useState<string | null>(null);
   const updateTask = useMutation(api.tasks.update);
@@ -79,6 +85,18 @@ export function TodayEnergyRecommendations({
     });
   };
 
+  const pickEnergy = async (nextEnergy: EnergyLevel) => {
+    setIsSavingEnergy(true);
+    setEnergyError(null);
+    try {
+      await upsertPlan({ localDate, energy: nextEnergy });
+    } catch {
+      setEnergyError("We couldn't save that just now. Please try again.");
+    } finally {
+      setIsSavingEnergy(false);
+    }
+  };
+
   return (
     <section
       className="rounded-3xl border border-border/80 bg-card/90 p-6 shadow-[0_10px_30px_rgba(26,25,23,0.08)]"
@@ -110,9 +128,12 @@ export function TodayEnergyRecommendations({
               key={option.level}
               type="button"
               aria-pressed={isActive}
-              onClick={() => setEnergy(isActive ? null : option.level)}
+              disabled={plan === undefined || isSavingEnergy}
+              onClick={() => {
+                void pickEnergy(option.level);
+              }}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
                 isActive
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-background/70 text-foreground hover:border-primary hover:text-primary",
@@ -124,6 +145,12 @@ export function TodayEnergyRecommendations({
           );
         })}
       </fieldset>
+
+      {energyError ? (
+        <p className="mt-3 text-sm text-destructive" role="alert">
+          {energyError}
+        </p>
+      ) : null}
 
       {energy === null ? null : recommendations === null ? (
         <div className="mt-4 space-y-3" aria-hidden>
