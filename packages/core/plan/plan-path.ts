@@ -10,7 +10,8 @@
  *    study days left, 2 from 4, 1 from 2, none below that).
  * 3. Every earlier study day is a learn day. Each topic gets `round(weight)` learn sessions
  *    (at least 1, weight defaults to 1), in topic order, spread evenly over the learn days.
- *    Learn sessions that don't fit a learn day may use what is left of a practice day.
+ *    Learn sessions that don't fit a learn day may use what is left of a practice day. When the
+ *    rest day is the only study day, learn sessions use what is left of it.
  * 4. Each learn session gets short review sessions 1, 3 and 7 days later when the review lands
  *    on a learn day with room left (before the practice phase). Reviews are a bonus: a review that
  *    doesn't fit is dropped, never counted as missing.
@@ -179,7 +180,9 @@ export function planBack(input: PlanBackInput): PlanBackResult {
 
   // 1. The day before the deadline: light review and rest.
   const pool = [...studyDays];
+  let restDay: LocalDate | null = null;
   if (lastDay !== null && pool.at(-1) === lastDay) {
+    restDay = lastDay;
     pool.pop();
     const minutes = Math.min(restMinutes, room.get(lastDay) ?? 0);
     take(lastDay, minutes);
@@ -204,12 +207,14 @@ export function planBack(input: PlanBackInput): PlanBackResult {
     });
   });
 
-  // 3. Learn sessions, spread evenly over the learn days.
+  // 3. Learn sessions, spread evenly over the learn days. With no other study day at all (an exam
+  // tomorrow), learning may use what is left of the rest day.
+  const lastResort = pool.length === 0 && restDay !== null ? [restDay] : [];
   const learned: PlanSession[] = [];
   let missingUnits = 0;
   units.forEach((unit, index) => {
     const target = Math.floor((index * learnDays.length) / units.length);
-    const order = [...learnDays.slice(target), ...learnDays.slice(0, target), ...practiceDays];
+    const order = [...learnDays.slice(target), ...learnDays.slice(0, target), ...practiceDays, ...lastResort];
     const date = order.find((day) => (room.get(day) ?? 0) >= sessionMinutes);
     if (date === undefined) {
       missingUnits += 1;

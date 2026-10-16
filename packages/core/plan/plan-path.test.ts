@@ -82,14 +82,31 @@ describe("planBack", () => {
     expect(planBack(BASE)).toEqual(planBack(structuredClone(BASE)));
   });
 
-  test("an exam tomorrow: just light review and rest, the learning is short", () => {
+  test("an exam tomorrow: learning uses what today has left, then light review and rest", () => {
     const plan = planBack({ ...BASE, deadline: addDays(TODAY, 1) });
-    expect(plan.sessions).toEqual([
-      { date: TODAY, kind: "rest", minutes: 30, title: "Light review and rest" },
+    expect(plan.sessions.map((s) => [s.kind, s.topic, s.minutes])).toEqual([
+      ["learn", "Cells", 45],
+      ["rest", undefined, 30],
     ]);
-    expect(plan.shortBy).toBe(4 * 45);
+    expect(plan.shortBy).toBe(3 * 45);
     expect(plan.daysUsed).toBe(1);
-    expect(plan.totalMinutes).toBe(30);
+    expect(plan.totalMinutes).toBe(75);
+  });
+
+  test("an exam tomorrow with room for everything is not short", () => {
+    const plan = planBack({
+      today: TODAY,
+      deadline: addDays(TODAY, 1),
+      topics: [{ title: "Cells" }],
+      minutesPerDay: 180,
+      sessionMinutes: 45,
+    });
+    expect(plan.shortBy).toBe(0);
+    expect(plan.sessions.map((s) => [s.date, s.kind])).toEqual([
+      [TODAY, "learn"],
+      [TODAY, "rest"],
+    ]);
+    expect(plan.totalMinutes).toBeLessThanOrEqual(180);
   });
 
   test("a deadline today or earlier plans nothing and says what's missing", () => {
