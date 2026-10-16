@@ -112,6 +112,40 @@ describe("compareRecall", () => {
 		expect(result("גרעין", "ריבוזום")).toBe("different");
 	});
 
+	test.each([
+		["1945", "1954"],
+		["1000", "2000"],
+		["3.14", "3.15"],
+		["2x+3", "2x-3"],
+		["The war ended in 1945", "The war ended in 1954"],
+		["x = 12", "x < 12"],
+		["1066 and 1215", "1215 and 1066"],
+		["Hastings", "Hastings 1066"],
+	] as const)("numbers and signs must match exactly: %p for %p is different", (typed, expected) => {
+		expect(compareRecall(typed, expected)).toMatchObject({
+			result: "different",
+			distance: -1,
+		});
+		expect(result(expected, typed)).toBe("different");
+	});
+
+	test("with the same numbers and signs in the same order, the letters around them may still be close", () => {
+		expect(result("Battle of Hastngs, 1066", "Battle of Hastings, 1066")).toBe(
+			"close",
+		);
+		expect(result("Mitosis makes 2 cels", "Mitosis makes 2 cells")).toBe(
+			"close",
+		);
+	});
+
+	test("spaces around a sign, and a minus sign or en dash for the hyphen, are not a difference", () => {
+		expect(result("2x + 3 = 11, so x = 4", "2x+3=11, so x=4")).toBe("matches");
+		expect(result("2x - 3", "2x-3")).toBe("matches");
+		expect(result("2x \u2212 3", "2x-3")).toBe("matches");
+		expect(result("1939\u20131945", "1939-1945")).toBe("matches");
+		expect(result("(2x)+3", "2x+3")).toBe("matches");
+	});
+
 	test("Hebrew and English mixed in one answer", () => {
 		expect(result("Passive of pa'al: נִכְתַּב", "passive of paal נכתב")).toBe(
 			"matches",

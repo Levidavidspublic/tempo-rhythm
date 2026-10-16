@@ -24,7 +24,7 @@ export const recallLabels: RecallLabels = {
   yourAnswer: "Your answer",
   check: "Check",
   matches: "Matches",
-  close: "Close",
+  close: "Almost",
   different: "Different",
   empty: "No answer typed",
 };

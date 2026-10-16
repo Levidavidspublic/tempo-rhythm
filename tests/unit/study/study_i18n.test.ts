@@ -42,6 +42,10 @@ describe("study copy", () => {
       expect(emptyLabelKeys(all)).toEqual([]);
     }
   });
+  test("a near miss in typed recall reads \"Almost\" in English, never \"Close\" (a dismiss word read aloud)", () => {
+    expect(translate("en", "st.rc.close")).toBe("Almost");
+    expect(translate("he", "st.rc.close")).toBe("קרובה");
+  });
   test("nav, crumbs and the command bar know Study", () => {
     expect(translate("en", "nav.study")).toBe("Study");
     expect(translate("he", "nav.study")).toBe("לימוד");

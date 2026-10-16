@@ -24,7 +24,7 @@ import { RecallField, type RecallLabels, RecallVerdict, recallKeyDown } from "./
  *
  * Typed mode (`typed`, optional): the card shows its front, a labelled "Your answer" field and
  * Check instead of Show answer. Enter in the field checks, Escape clears it. Check turns the card
- * over and shows what was typed with "Matches" / "Close" / "Different" (or "No answer typed"),
+ * over and shows what was typed with "Matches" / "Almost" / "Different" (or "No answer typed"),
  * from `compareRecall`; focus then moves to the grade group. The person still picks the grade:
  * the button `suggestedButton` names only gets a "Suggested" marker. The typed answer lives in the
  * session state, so Undo brings it back with the card.

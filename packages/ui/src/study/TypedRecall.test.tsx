@@ -84,7 +84,7 @@ describe("recall keys", () => {
 describe("RecallVerdict", () => {
   test.each([
     ["matches", "Matches"],
-    ["close", "Close"],
+    ["close", "Almost"],
     ["different", "Different"],
   ] as const)("%p: the typed answer, an icon and the word", (result, word) => {
     const markup = renderToStaticMarkup(
@@ -161,7 +161,7 @@ describe("FlashcardReview typed view", () => {
   test.each([
     ["Makes ATP", "matches", "Matches", "good"],
     ["makes atp!", "matches", "Matches", "good"],
-    ["Makes ATQ", "close", "Close", "hard"],
+    ["Makes ATQ", "close", "Almost", "hard"],
     ["Ribosome", "different", "Different", "again"],
   ] as const)("after Check, %p: %p in words, %p suggested, the person still grades", (typed, result, word, grade) => {
     const markup = html(run([typing(typed), reveal]));

@@ -98,7 +98,7 @@ export const en = {
   "st.rc.yourAnswer": "Your answer",
   "st.rc.check": "Check",
   "st.rc.matches": "Matches",
-  "st.rc.close": "Close",
+  "st.rc.close": "Almost",
   "st.rc.different": "Different",
   "st.rc.empty": "No answer typed",
   "st.rc.suggested": "Suggested",
