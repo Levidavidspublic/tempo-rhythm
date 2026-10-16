@@ -131,3 +131,12 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
+
+## UI rules (anti-slop + DESIGN.md)
+
+- Before any UI or copy work, load the anti-slop skills in `.agents/skills/` (mirrored in `.claude/skills/`; Cursor rule in `.cursor/rules/antislop.mdc`). For design work load `antislop`, `antislop-ui`, `antislop-copywriting`, `antislop-layoutmobile`, `antislop-human`. `antislop-code` is for code cleanup.
+- anti-slop is the filter. `DESIGN.md` is the direction, and it comes from Amit. If `DESIGN.md` is empty, ask; do not invent a style.
+- Every UI PR includes the anti-slop Delivery Gate report (PASS / FAIL) and browser proof at 390 px and 1280 px, light and dark, and right-to-left for Hebrew pages.
+- Forbidden on screens: `UNKNOWN`, `EXTRAPOLATED`, `Sample data`, `lorem`, `TODO`, `placeholder`, invented numbers, testimonials or ratings.
+- Components: see `docs/design/components.md` (shadcn + interior.dev).
+- Source: github.com/miqdadbadjuber/anti-slop (MIT) at commit b1cdf87, v3.2.20. Licence in `third_party/anti-slop/LICENSE`.
