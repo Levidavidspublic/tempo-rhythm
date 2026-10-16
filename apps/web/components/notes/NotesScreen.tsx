@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { notePatch, shouldAdoptRemoteTitle } from "@/lib/note-sync";
 import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
 import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
@@ -269,6 +270,9 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef("");
   const bodyRef = useRef("");
+  // Which fields were edited here since their last successful save. Saves send only those, so a
+  // failed save is never taken for saved, and another tab's change to the other field survives.
+  const edits = useRef({ title: false, body: false });
 
   useEffect(() => {
     if (note && loadedNoteId.current !== note._id) {
@@ -287,35 +291,42 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
       if (!wasDeleted.current) {
-        void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+        void updateNote({ noteId: noteId as Id<"notes">, ...notePatch(edits.current, titleRef.current, bodyRef.current) });
       }
     };
   }, [noteId, updateNote]);
 
-  // True from an edit until a save of that same text succeeds, so a failed save is never taken for saved.
-  const dirty = useRef(false);
-
   // Another writer changed this page while it is open: the coach saving a decision to today's
-  // page. With no unsaved edits here the editor takes the new text, so the next autosave can't
-  // write over it. With unsaved edits (or a save on its way) those edits win, as before.
+  // page, or the same page in another tab. With no unsaved body edit here the editor takes the
+  // new text, so the next autosave can't write over it. Unsaved edits here (or a save on its
+  // way) win, as before.
   const [remoteBody, setRemoteBody] = useState<{ before: string; after: string; seq: number } | null>(null);
   useEffect(() => {
     if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
-    if (note.body === bodyRef.current || dirty.current || saveTimer.current) return;
+    if (note.body === bodyRef.current || edits.current.body || saveTimer.current) return;
     const before = bodyRef.current;
     bodyRef.current = note.body;
     setBody(note.body);
     setRemoteBody((current) => ({ before, after: note.body, seq: (current?.seq ?? 0) + 1 }));
   }, [note]);
+  // The same for the title: a rename saved in another tab shows here instead of being written back.
+  useEffect(() => {
+    if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
+    if (!shouldAdoptRemoteTitle(note.title, titleRef.current, edits.current.title, saveTimer.current !== null)) return;
+    titleRef.current = note.title;
+    setTitle(note.title);
+  }, [note]);
   const saveNow = async () => {
     const title = titleRef.current;
     const body = bodyRef.current;
-    await updateNote({ noteId: noteId as Id<"notes">, title, body });
-    if (titleRef.current === title && bodyRef.current === body) dirty.current = false;
+    const patch = notePatch(edits.current, title, body);
+    if (patch.title === undefined && patch.body === undefined) return;
+    await updateNote({ noteId: noteId as Id<"notes">, ...patch });
+    if (titleRef.current === title) edits.current.title = false;
+    if (bodyRef.current === body) edits.current.body = false;
   };
 
   const scheduleSave = () => {
-    dirty.current = true;
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -336,7 +347,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
     }
-    if (!dirty.current) return;
+    if (!edits.current.title && !edits.current.body) return;
     try {
       await saveNow();
       setSaveState("saved");
@@ -350,12 +361,14 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const handleTitleChange = (value: string) => {
     setTitle(value);
     titleRef.current = value;
+    edits.current.title = true;
     scheduleSave();
   };
 
   const handleBodyChange = (value: string) => {
     setBody(value);
     bodyRef.current = value;
+    edits.current.body = true;
     scheduleSave();
   };
 
@@ -369,8 +382,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       saveTimer.current = null;
       await updateNote({
         noteId: noteId as Id<"notes">,
-        title: titleRef.current,
-        body: bodyRef.current,
+        ...notePatch(edits.current, titleRef.current, bodyRef.current),
       });
     }
     const result = await removeNote({ noteId: noteId as Id<"notes"> });
