@@ -2,25 +2,25 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { MAX_TOP_TASKS, pruneTopTasks, toggleTopTask, toLocalDateKey } from "./dayPlanDraft";
 
 type Energy = "low" | "medium" | "high";
-const ENERGY_OPTIONS: { value: Energy; label: string }[] = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
+const ENERGY_OPTIONS: { value: Energy; label: MessageKey }[] = [
+  { value: "low", label: "dp.energy.low" },
+  { value: "medium", label: "dp.energy.medium" },
+  { value: "high", label: "dp.energy.high" },
 ];
 
-const SAVE_ERROR = "We couldn't save that just now. Your changes are still here, so you can try again.";
-const COMMIT_ERROR = "We couldn't set your day just now. Nothing is lost, so you can try again.";
-
 export function DayPlanPanel() {
+  const { t } = useLocale();
   const bounds = useLocalDayBounds();
   // `startMs` changes exactly when the local day rolls over.
   const localDate = useMemo(() => toLocalDateKey(new Date(bounds.startMs)), [bounds.startMs]);
@@ -130,36 +130,37 @@ export function DayPlanPanel() {
   };
 
   return (
-    <Card aria-label="Plan for today">
+    <Card aria-label={t("dp.title")}>
       <CardHeader>
-        <CardTitle className="text-xl">Plan for today</CardTitle>
-        <CardDescription>
-          {readOnly ? "Your day is set." : "Set an intention, pick what matters most, and note your energy."}
-        </CardDescription>
+        <CardTitle className="text-xl">{t("dp.title")}</CardTitle>
+        <CardDescription>{readOnly ? t("dp.set") : t("dp.sub")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <label className="font-medium text-sm" htmlFor="day-plan-intention">
-            Intention
+            {t("dp.intention")}
           </label>
+          {/* A long intention scrolls inside the field; it never widens the card. */}
           <Input
+            dir="auto"
             disabled={readOnly}
             id="day-plan-intention"
             onBlur={() => {
               if (intention.trim() !== (plan?.intention ?? "")) void save({ intention });
             }}
             onChange={(e) => setIntention(e.target.value)}
-            placeholder="What would make today feel good?"
+            placeholder={t("dp.intention.ph")}
             value={intention}
           />
         </div>
 
-        <fieldset className="space-y-2" disabled={readOnly}>
-          <legend className="font-medium text-sm">Pick up to {MAX_TOP_TASKS}</legend>
+        {/* A fieldset is at least as wide as its widest word unless told otherwise (min-w-0). */}
+        <fieldset className="min-w-0 space-y-2" disabled={readOnly}>
+          <legend className="font-medium text-sm">
+            {t("dp.pick").replace("{n}", String(MAX_TOP_TASKS))}
+          </legend>
           {tasks.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No tasks to pick from yet. Add one below and it will show up here.
-            </p>
+            <p className="text-muted-foreground text-sm">{t("dp.noTasks")}</p>
           ) : (
             <ul className="space-y-1">
               {tasks.map((task) => {
@@ -170,11 +171,15 @@ export function DayPlanPanel() {
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         checked={checked}
+                        className="shrink-0"
                         disabled={atCap || readOnly}
                         onChange={() => onToggleTask(task._id)}
                         type="checkbox"
                       />
-                      <span>{task.title}</span>
+                      {/* A title with no spaces wraps inside the card. */}
+                      <span className="min-w-0 wrap-anywhere" dir="auto">
+                        {task.title}
+                      </span>
                     </label>
                   </li>
                 );
@@ -183,9 +188,9 @@ export function DayPlanPanel() {
           )}
         </fieldset>
 
-        <fieldset className="space-y-2" disabled={readOnly}>
-          <legend className="font-medium text-sm">Energy</legend>
-          <div className="flex gap-4">
+        <fieldset className="min-w-0 space-y-2" disabled={readOnly}>
+          <legend className="font-medium text-sm">{t("dp.energy")}</legend>
+          <div className="flex flex-wrap gap-4">
             {ENERGY_OPTIONS.map((opt) => (
               <label className="flex items-center gap-2 text-sm" key={opt.value}>
                 <input
@@ -195,7 +200,7 @@ export function DayPlanPanel() {
                   type="radio"
                   value={opt.value}
                 />
-                {opt.label}
+                {t(opt.label)}
               </label>
             ))}
           </div>
@@ -203,7 +208,9 @@ export function DayPlanPanel() {
 
         {error ? (
           <div className="flex flex-wrap items-center gap-3 text-sm" role="alert">
-            <span>{error === "save" ? SAVE_ERROR : COMMIT_ERROR}</span>
+            <span className="min-w-0">
+              {error === "save" ? t("dp.saveError") : t("dp.commitError")}
+            </span>
             <Button
               onClick={() =>
                 error === "commit"
@@ -213,24 +220,24 @@ export function DayPlanPanel() {
               size="sm"
               variant="outline"
             >
-              Try again
+              {t("today.retry")}
             </Button>
           </div>
         ) : null}
 
         {readOnly ? (
           <Button onClick={() => setEditing(true)} variant="outline">
-            Edit plan
+            {t("dp.edit")}
           </Button>
         ) : (
           <div className="flex gap-3">
             {committed ? (
               <Button onClick={() => setEditing(false)} variant="outline">
-                Done editing
+                {t("dp.doneEditing")}
               </Button>
             ) : (
               <Button disabled={busy} onClick={() => void onCommit()}>
-                This is my day
+                {t("dp.commit")}
               </Button>
             )}
           </div>
