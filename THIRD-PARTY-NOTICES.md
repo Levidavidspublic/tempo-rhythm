@@ -370,6 +370,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://nextjs.org
 - Used by: apps/web/package.json
 
+### panelui-web (copied source, not a dependency)
+
+- Version: 0.2.0 (shadcn registry items kpi and day-grid, https://panelui.dev/r/web/)
+- License: MIT, (c) Khalid Abdi
+- Source: https://github.com/panel-ui/PanelUI
+- Used by: apps/web/components/panelui/kpi.tsx, apps/web/components/panelui/day-grid.tsx (each file keeps the attribution header)
+
 ### react
 
 - Version: 19.1.0
@@ -476,6 +483,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT
 - Source: https://github.com/dcastil/tailwind-merge
 - Used by: apps/web/package.json, apps/mobile/package.json
+
+### tailwind-variants
+
+- Version: 3.3.1
+- License: MIT
+- Source: https://github.com/heroui-inc/tailwind-variants
+- Used by: apps/web/package.json (PanelUI's KPI and Day Grid, apps/web/components/panelui)
 
 ### zod
 
