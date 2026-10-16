@@ -6,8 +6,14 @@
 // (DESIGN.md §13). Supports ?view=, ?theme=light|dark and ?lang=en|he.
 // S9 adds plan-guided, plan-guided-edit and plan-guided-accepted: the GuidedPlanCard on a sample plan.
 import { GuidedPlanCard } from "@tempo/ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { MonthGrid, todayLocal } from "@/components/calendar/MonthGrid";
+import { PlanPathScreen } from "@/components/calendar/plan/PlanPathScreen";
+import { type WeekItem, WeekGrid } from "@/components/calendar/WeekGrid";
+import { IngestSheetView } from "@/components/ingest";
+import { MemoryManager } from "@/components/memory/MemoryManager";
+import { MiniAppFrame } from "@/components/mini-app";
 import { PageEditorView } from "@/components/notes/PageEditorView";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ReviewHub } from "@/components/study/ReviewHub";
@@ -15,9 +21,13 @@ import { ListenScreen } from "@/components/study/recap/ListenScreen";
 import { ReviewSession } from "@/components/study/ReviewSession";
 import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
+import { RecordSession } from "@/components/study/record/RecordSession";
+import { RemindersChannelList } from "@/components/settings-reminders/RemindersSettings";
+import { ShareSheet } from "@/components/share";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
 import { shortDate } from "@/components/calendar/planCopy";
 import { buildPreview, DEFAULT_FORM, guidedLabels, toGuidedSteps } from "@/components/calendar/plan/planForm";
+import { addDays, parseLocalDate, startOfWeek } from "../../../../packages/core/plan/calendar-math";
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view") ?? "study-hub";
@@ -234,6 +244,62 @@ const calls: Record<string, unknown> = {
   "study.registerBlock": "studySets:1",
 };
 
+// ---- The other screens this run built (calendar, plan, record, ingest, memory, reminders, share,
+// mini-app). Dates are relative to today, because the components read the real clock.
+const today = todayLocal();
+const he = lang === "he";
+const weekStart = startOfWeek(today, { weekStartsOn: he ? 0 : 1 });
+const at = (date: string, hour: number, minute = 0) => {
+  const { year, month, day } = parseLocalDate(date);
+  return new Date(year, month - 1, day, hour, minute).getTime();
+};
+const weekItems: WeekItem[] = [
+  { id: "e1", date: addDays(weekStart, 0), startMinute: 9 * 60, durationMinutes: 60, kind: "fixed", title: he ? "שיעור ביולוגיה" : "Biology lesson" },
+  { id: "t1", date: addDays(weekStart, 0), startMinute: 9 * 60 + 30, durationMinutes: 45, kind: "flexible", title: he ? "חזרה: מיטוזה" : "Review: mitosis", movable: true },
+  { id: "t2", date: addDays(weekStart, 1), startMinute: 17 * 60, durationMinutes: 45, kind: "flexible", title: he ? "תרגול בגרות" : "Practice test", movable: true },
+  { id: "e2", date: addDays(weekStart, 2), startMinute: 14 * 60, durationMinutes: 60, kind: "fixed", title: he ? "חוג שחייה" : "Swimming club" },
+  { id: "t3", date: addDays(weekStart, 3), startMinute: 16 * 60 + 30, durationMinutes: 30, kind: "flexible", title: he ? "כרטיסיות: אוסמוזה" : "Cards: osmosis", movable: true },
+  { id: "t4", date: addDays(weekStart, 4), startMinute: 18 * 60, durationMinutes: 90, kind: "flexible", title: he ? "ללמוד: פוטוסינתזה" : "Learn: photosynthesis", movable: true },
+];
+const monthItems = [
+  ...weekItems,
+  { id: "m1", date: addDays(today, 6), startMinute: 10 * 60, durationMinutes: 60, kind: "fixed" as const, title: "Exam" },
+  { id: "m2", date: addDays(today, 6), startMinute: 16 * 60, durationMinutes: 30, kind: "flexible" as const, title: "Rest" },
+  { id: "m3", date: addDays(today, 9), startMinute: 17 * 60, durationMinutes: 45, kind: "flexible" as const, title: "Review" },
+];
+const planTasks = [1, 2, 3, 4, 5].map((n) => ({
+  _id: `tasks:p${n}`,
+  title: he ? ["ללמוד: תאים", "ללמוד: מיטוזה", "חזרה: תאים", "ללמוד: פוטוסינתזה", "תרגול בגרות"][n - 1] : ["Learn: cells", "Learn: mitosis", "Review: cells", "Learn: photosynthesis", "Bagrut practice"][n - 1],
+  dueAt: at(addDays(weekStart, n - 1), 17),
+  timeEstimate: 45 * MIN,
+  status: "todo",
+  projectName: "Biology bagrut",
+}));
+Object.assign(queries, {
+  "plans.list": view === "plan-scheduler" ? [{ _id: "studyPlans:1", title: "Biology bagrut" }] : [],
+  "plans.get": { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 14) }, tasks: planTasks },
+  "calendar_events.listInRange": [{ _id: "calendar_events:1", title: he ? "שיעור ביולוגיה" : "Biology lesson", startsAtMs: at(addDays(weekStart, 1), 17, 30) }],
+  "tasks.listDueInRange": view === "plan-scheduler" ? planTasks : [],
+  "recordings.availability":
+    view === "record-consent"
+      ? { live: true, reason: null, minutesLeft: 42, proposals: true }
+      : { live: false, reason: "no_key", minutesLeft: 0, proposals: false },
+  "memory.list":
+    view === "memory-empty"
+      ? []
+      : [
+          { _id: "memories:1", content: he ? "לומדת לבגרות בביולוגיה, המבחן באמצע יוני" : "Studying for the biology bagrut, the exam is in mid June", createdAt: NOW - 2 * DAY },
+          { _id: "memories:2", content: he ? "מעדיפה ללמוד אחרי חמש בערב, בקטעים של 45 דקות" : "Prefers to study after 5 pm, in 45-minute blocks", createdAt: NOW - 5 * DAY },
+          { _id: "memories:3", content: "Swimming club on Wednesdays at 2 pm, so no study sessions then. Likes flashcards for vocabulary and short quizzes for science, and wants a rest day before each exam.", createdAt: NOW - 9 * DAY, importedFrom: "chatgpt" },
+          { _id: "memories:4", content: he ? "אוהבת שמזכירים לה בעדינות, בלי לחץ" : "Likes gentle reminders, never pushy ones", createdAt: NOW - 20 * DAY, importedFrom: "claude" },
+        ],
+});
+Object.assign(calls, {
+  "plans.createFromPreview": { planId: "studyPlans:1", undoUntil: NOW + 5 * MIN },
+  "notes.create": "notes:31",
+  "memory.update": { success: true },
+});
+
 (window as unknown as { __gallery: unknown }).__gallery = { queries, calls };
 
 /** Click through the real component after it mounts, one step at a time. */
@@ -248,6 +314,56 @@ function steps(...actions: (() => void)[]) {
   window.setTimeout(run, 250);
 }
 const click = (selector: string) => () => (document.querySelector(selector) as HTMLElement | null)?.click();
+/** Type into a React-controlled field the way a person would (the native setter, then input). */
+const fill = (selector: string, value: string) => () => {
+  const el = document.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | null;
+  if (!el) return;
+  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(el, value);
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+};
+
+const PLAN_TOPICS = he ? "תאים\nמיטוזה ומיוזה | 2\nפוטוסינתזה\nגנטיקה" : "Cells\nMitosis and meiosis | 2\nPhotosynthesis\nGenetics";
+const RECORD_NOTES = he
+  ? "פתחנו בחזרה על מיטוזה.\nאני אשלח את דוח המעבדה עד יום חמישי.\nהמורה הזכירה שהמבחן בעוד שבועיים.\nלא לשכוח להביא את המחברת."
+  : "We went over mitosis again.\nI will send the lab report by Thursday.\nThe teacher said the test is in two weeks.\nDon't forget to bring the workbook.";
+const INGEST_TEXT = he
+  ? "# פרק 3: נשימה תאית\n\nהתא מפרק גלוקוז כדי לקבל אנרגיה.\nהתהליך קורה במיטוכונדריה."
+  : "# Chapter 3: cell respiration\n\nThe cell breaks down glucose to get energy.\nIt happens in the mitochondria and needs oxygen.";
+const WIDGET = `<button id="b" style="font:inherit;padding:8px 14px">Flip a coin</button><p id="o"></p><script>b.onclick=()=>{o.textContent=Math.random()<.5?"Heads":"Tails"}</script>`;
+
+function MiniApp({ html, approved }: { html: string; approved: boolean }) {
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
+  return (
+    <MiniAppFrame
+      html={html}
+      title={he ? "מטבע" : "Coin flip"}
+      approvedFingerprint={approved ? fingerprint : null}
+      onApprove={setFingerprint}
+    />
+  );
+}
+
+function Page({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="tp-page">
+      <header className="tp-pagehead">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title">{title}</h1>
+        </div>
+      </header>
+      {children}
+    </div>
+  );
+}
+
+const planSteps = (deadlineDays: number, minutes: string) =>
+  steps(
+    fill('input[name="title"]', he ? "בגרות בביולוגיה" : "Biology bagrut"),
+    fill('input[name="deadline"]', addDays(today, deadlineDays)),
+    fill('textarea[name="topics"]', PLAN_TOPICS),
+    fill('input[name="minutesPerDay"]', minutes),
+  );
 
 /** A fictional two-week plan for a chemistry test, the way the plan screen would preview it. */
 function GuidedPlanSample({ mode }: { mode: "pending" | "edit" | "accepted" }) {
@@ -330,6 +446,89 @@ const VIEWS: Record<string, () => ReactNode> = {
   "study-new-nokey": () => {
     steps(click('[data-action="ask-coach"]'));
     return <TurnIntoPreview from="notes:11" kind="quiz" />;
+  },
+  "calendar-month": () => {
+    const { year, month } = parseLocalDate(today);
+    return (
+      <Page title={he ? "לוח שנה" : "Calendar"}>
+        <MonthGrid year={year} month={month} items={monthItems} today={today} selected={today} lang={lang} onSelectDay={() => {}} onMonthChange={() => {}} />
+      </Page>
+    );
+  },
+  "calendar-week": () => (
+    <Page title={he ? "לוח שנה" : "Calendar"}>
+      <WeekGrid weekStart={weekStart} items={weekItems} today={today} nowMinute={16 * 60} lang={lang} onMove={() => {}} />
+    </Page>
+  ),
+  "calendar-mover": () => {
+    steps(click('[data-component="WeekGrid"] button[data-item-id="t1"]'), click('[data-component="ItemMover"] [data-move="to"]'));
+    return (
+      <Page title={he ? "לוח שנה" : "Calendar"}>
+        <WeekGrid weekStart={weekStart} items={weekItems} today={today} nowMinute={16 * 60} lang={lang} onMove={() => {}} />
+      </Page>
+    );
+  },
+  "plan-preview": () => {
+    planSteps(21, "90");
+    return <PlanPathScreen />;
+  },
+  "plan-short": () => {
+    planSteps(3, "30");
+    return <PlanPathScreen />;
+  },
+  "plan-scheduler": () => <PlanPathScreen />,
+  "record-consent": () => <RecordSession />,
+  "record-typing": () => {
+    steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-pins .tp-btn--secondary"));
+    return <RecordSession />;
+  },
+  "record-review": () => {
+    steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-dock .tp-btn--primary"));
+    return <RecordSession />;
+  },
+  "ingest-paste": () => <IngestSheetView initialTab="paste" initialText={INGEST_TEXT} onClose={() => {}} onSave={async () => "notes:31"} online photoSupported />,
+  "ingest-photo-unsupported": () => <IngestSheetView initialTab="photo" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported={false} />,
+  "ingest-done": () => {
+    steps(click('[role="dialog"] button[type="submit"]'));
+    return <IngestSheetView initialTab="paste" initialText={INGEST_TEXT} onClose={() => {}} onSave={async () => "notes:31"} online photoSupported />;
+  },
+  "memory-list": () => <MemoryManager />,
+  "memory-edit": () => {
+    steps(click(".mm-row-actions button"));
+    return <MemoryManager />;
+  },
+  "memory-empty": () => <MemoryManager />,
+  reminders: () => (
+    <Page title={he ? "תזכורות" : "Reminders"}>
+      <RemindersChannelList
+        channels={[
+          { id: "whatsapp", label: "WhatsApp", connected: false },
+          { id: "telegram", label: "Telegram", connected: false },
+          { id: "sms", label: "SMS", connected: false },
+        ]}
+      />
+    </Page>
+  ),
+  "share-sheet": () => (
+    <ShareSheet
+      systemShare
+      onClose={() => {}}
+      target={{ kind: "set", title: deckData.title, markdown: PAGE_BODY, url: "/notes/notes:11", cards: deckData.cards.map((c) => ({ front: c.front, back: c.back })) }}
+    />
+  ),
+  "miniapp-approve": () => (
+    <div className="tp-paper">
+      <MiniApp html={WIDGET} approved={false} />
+    </div>
+  ),
+  "miniapp-stopped": () => {
+    steps(click('[data-component="MiniAppFrame"] .tp-btn--secondary'));
+    // This widget reloads its own frame, which counts as navigating it: the frame is taken down.
+    return (
+      <div className="tp-paper">
+        <MiniApp html={`<p>Loading</p><script>setTimeout(()=>location.reload(),50)</script>`} approved />
+      </div>
+    );
   },
   "page-menu-turn-into": () => {
     steps(click('[data-component="PageMenu"] button[aria-haspopup="menu"]'));
