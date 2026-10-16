@@ -4,7 +4,7 @@ import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/u
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type EditorTrigger,
   LivePreviewEditor,
@@ -98,7 +98,23 @@ export function PageEditorView(props: Props) {
   useRegisterCoachPage(noteId);
 
   const editor = useRef<LivePreviewEditorHandle | null>(null);
+  const titleField = useRef<HTMLTextAreaElement | null>(null);
   const [mode, setMode] = useState<"edit" | "read">("edit");
+
+  // The title wraps on a narrow screen instead of scrolling out of sight: a one-line textarea
+  // that grows with its text (where `field-sizing` isn't supported, its height is set here).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new title is what changes the height
+  useLayoutEffect(() => {
+    const field = titleField.current;
+    if (!field) return;
+    const fit = () => {
+      field.style.height = "auto";
+      field.style.height = `${field.scrollHeight}px`;
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [title]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [trigger, setTrigger] = useState<EditorTrigger | null>(null);
@@ -263,13 +279,19 @@ export function PageEditorView(props: Props) {
         <div className="tp-page-head" data-component="PageHead" data-variant="note">
           <div className="tp-page-head__row">
             <h1 className="tp-page-title" id="page-title">
-              <input
+              <textarea
+                ref={titleField}
                 aria-label={t("page.titleLabel")}
-                className="w-full min-w-0 border-0 bg-transparent p-0 placeholder:text-ink-subtle"
+                className="block w-full min-w-0 resize-none overflow-hidden border-0 bg-transparent p-0 field-sizing-content wrap-anywhere placeholder:text-ink-subtle"
                 dir="auto"
+                rows={1}
                 value={title}
                 placeholder={t("page.untitled")}
-                onChange={(event) => props.onTitleChange(event.target.value)}
+                // A title is one line: Enter doesn't add a line break, and pasted breaks become spaces.
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing) event.preventDefault();
+                }}
+                onChange={(event) => props.onTitleChange(event.target.value.replace(/[\r\n]+/g, " "))}
               />
             </h1>
             <div className="tp-page-head__actions">
