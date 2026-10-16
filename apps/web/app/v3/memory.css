@@ -53,6 +53,15 @@
   gap: var(--tp-space-2) var(--tp-space-3);
 }
 
+/* Undo toasts (edit, forget, forget everything) share one region and stack in its grid; each
+   UndoToast brings its own fixed region, which sits in the outer one as a plain grid row. */
+.mm-toasts > .tp-toast-region {
+  position: static;
+  transform: none;
+  width: auto;
+  max-width: none;
+}
+
 /* Phones (390 px): the actions drop under the fact and source instead of squeezing the text. */
 @media (max-width: 480px) {
   .mm-list .tp-memory-row {

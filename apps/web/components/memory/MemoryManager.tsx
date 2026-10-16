@@ -144,7 +144,10 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const [editing, setEditing] = useState<({ id: Id<"memories"> } & MemoryEdit) | null>(null);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [rowError, setRowError] = useState<{ id: string; text: string } | null>(null);
-  const [toast, setToast] = useState<Toast | null>(null);
+  // Each kind of Undo has its own toast, so one never takes away another's Undo before its
+  // window ends: the last edit, the one-by-one forgets (below), and "Forget everything".
+  const [editToast, setEditToast] = useState<Toast | null>(null);
+  const [forgetAllToast, setForgetAllToast] = useState<Toast | null>(null);
   // Forgets inside the Undo window share one toast, so a second Forget never takes away the
   // first one's Undo (Codex P2 on #928). Kept in a ref too, so Undo reads the current list.
   const [forgotten, setForgotten] = useState<Forgotten[]>([]);
@@ -251,7 +254,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
       pendingEditFocus.current = memory._id;
       setEditing(null);
       setLive(copy("mem.edited"));
-      setToast({
+      setEditToast({
         title: copy("mem.edited"),
         untilMs: Date.now() + UNDO_WINDOW_MS,
         onUndo: async () => {
@@ -279,7 +282,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
       await forget({ memoryId: memory._id });
       setLive(`${t("mm.forgot")}: ${memory.content}`);
       const now = Date.now();
-      setToast(null);
+      setForgetAllToast(null);
       setForgottenList([
         ...forgottenRef.current.filter((item) => item.untilMs > now),
         { id: memory._id, untilMs: now + UNDO_WINDOW_MS },
@@ -307,7 +310,9 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
       const result = await forgetAll({});
       setSheetOpen(false);
       setForgottenList([]);
-      setToast({
+      // The edited memory is forgotten too, so its Undo couldn't work any more.
+      setEditToast(null);
+      setForgetAllToast({
         title: t("mm.forgotAll"),
         untilMs: Date.now() + UNDO_WINDOW_MS,
         onUndo: async () => {
@@ -667,22 +672,37 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
           }}
         />
       ) : null}
-      {toast ? (
-        <UndoToast
-          key={toast.untilMs}
-          title={toast.title}
-          untilMs={toast.untilMs}
-          onUndo={toast.onUndo}
-          onClose={() => setToast(null)}
-        />
-      ) : forgotten.length > 0 ? (
-        <UndoToast
-          key={`forgot-${forgotten.length}`}
-          title={forgotten.length === 1 ? t("mm.forgot") : fill(t("mm.forgotN"), { n: forgotten.length })}
-          untilMs={Math.max(...forgotten.map((item) => item.untilMs))}
-          onUndo={undoForgotten}
-          onClose={() => setForgottenList([])}
-        />
+      {editToast || forgotten.length > 0 || forgetAllToast ? (
+        // One region, so the toasts stack (memory.css) instead of covering each other.
+        <div className="tp-toast-region mm-toasts">
+          {editToast ? (
+            <UndoToast
+              key={`edit-${editToast.untilMs}`}
+              title={editToast.title}
+              untilMs={editToast.untilMs}
+              onUndo={editToast.onUndo}
+              onClose={() => setEditToast(null)}
+            />
+          ) : null}
+          {forgotten.length > 0 ? (
+            <UndoToast
+              key={`forgot-${forgotten.length}`}
+              title={forgotten.length === 1 ? t("mm.forgot") : fill(t("mm.forgotN"), { n: forgotten.length })}
+              untilMs={Math.max(...forgotten.map((item) => item.untilMs))}
+              onUndo={undoForgotten}
+              onClose={() => setForgottenList([])}
+            />
+          ) : null}
+          {forgetAllToast ? (
+            <UndoToast
+              key={`all-${forgetAllToast.untilMs}`}
+              title={forgetAllToast.title}
+              untilMs={forgetAllToast.untilMs}
+              onUndo={forgetAllToast.onUndo}
+              onClose={() => setForgetAllToast(null)}
+            />
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

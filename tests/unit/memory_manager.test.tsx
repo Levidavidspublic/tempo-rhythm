@@ -447,6 +447,15 @@ function facts(view: TestNode): string[] {
   return out;
 }
 
+/** The titles of the Undo toasts on screen, in order. */
+function toasts(view: TestNode): string[] {
+  const out: string[] = [];
+  walk(view, (node) => {
+    if (node.className.includes("tp-toast__title")) out.push(node.textContent);
+  });
+  return out;
+}
+
 let root: Root | null = null;
 let host: TestNode | null = null;
 
@@ -603,6 +612,43 @@ describe("MemoryManager", () => {
     await click(view, "Undo");
     expect(calls.at(-1)).toEqual({ name: "memory:restore", args: { memoryId: "m2" } });
     expect(facts(view)).toContain("Dana is my manager. Yoni is my brother.");
+  });
+
+  test("an edit's Undo and a later forget's Undo both stay, each for its own window", async () => {
+    const view = await renderUi();
+    await click(view, "Edit");
+    await type(find(view, "TEXTAREA"), "Phone calls are easier before 11.");
+    await fire(find(view, "FORM", "Change the words"), "submit");
+    await click(view, "Forget", 1);
+    expect(calls.at(-1)).toEqual({ name: "memory:forget", args: { memoryId: "m2" } });
+    expect(toasts(view)).toEqual(["Memory updated", "Forgotten"]);
+    expect(findAll(view, "BUTTON", "Undo")).toHaveLength(2);
+
+    await click(view, "Undo", 0);
+    expect(calls.at(-1)).toEqual({
+      name: "memory:update",
+      args: { memoryId: "m1", content: "Phone calls feel easier before noon." },
+    });
+    expect(toasts(view)).toEqual(["Forgotten"]);
+    await click(view, "Undo", 0);
+    expect(calls.at(-1)).toEqual({ name: "memory:restore", args: { memoryId: "m2" } });
+    expect(toasts(view)).toEqual([]);
+  });
+
+  test("a forget's Undo isn't hidden by an edit that comes after it", async () => {
+    const view = await renderUi();
+    await click(view, "Forget", 1);
+    await click(view, "Edit");
+    await type(find(view, "TEXTAREA"), "Phone calls are easier before 11.");
+    await fire(find(view, "FORM", "Change the words"), "submit");
+    expect(toasts(view)).toEqual(["Memory updated", "Forgotten"]);
+    // Both sit in one toast region, so they stack instead of covering each other.
+    const regions = findAll(view, "DIV").filter((n) => n.className.includes("tp-toast-region"));
+    expect(regions.filter((n) => n.className.includes("mm-toasts"))).toHaveLength(1);
+
+    await click(view, "Undo", 1);
+    expect(calls.at(-1)).toEqual({ name: "memory:restore", args: { memoryId: "m2" } });
+    expect(toasts(view)).toEqual(["Memory updated"]);
   });
 
   test("forget everything asks first; Keep my memories changes nothing, confirming forgets with Undo", async () => {
