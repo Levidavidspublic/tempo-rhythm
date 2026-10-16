@@ -490,6 +490,34 @@ describe("ApprovalGate", () => {
     expect(mounts).toBe(0);
   });
 
+  test("loading shows a labelled placeholder, not an empty page", async () => {
+    const view = await renderUi(gate);
+    const loading = findByTag(view, "MAIN");
+    expect(loading.getAttribute("data-testid")).toBe("approval-loading");
+    expect(loading.getAttribute("aria-busy")).toBe("true");
+    expect(view.textContent).toContain("Opening Tempo…");
+  });
+
+  test("pending says what happens next: hand approval, no email, the page opens by itself", async () => {
+    approvalResult = { status: "pending", email: "a@b.co" };
+    const view = await renderUi(gate);
+    const text = view.textContent;
+    expect(text).toContain("Waiting for approval");
+    expect(text).toContain("Amit approves each new account by hand");
+    expect(text).toContain("What happens next");
+    expect(text).toContain("No email is sent");
+    expect(text).toContain("Tempo opens right here by itself");
+    expect(text).toContain("sign in with this email");
+    expect(text).toContain("a@b.co");
+  });
+
+  test("revoked shows the paused notice without the next steps", async () => {
+    approvalResult = { status: "revoked", email: "a@b.co" };
+    const view = await renderUi(gate);
+    expect(view.textContent).toContain("Your access is paused");
+    expect(view.textContent).not.toContain("What happens next");
+  });
+
   test("signed-out (null) still passes children through", async () => {
     approvalResult = null;
     const view = await renderUi(gate);
