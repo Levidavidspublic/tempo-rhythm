@@ -83,14 +83,35 @@ describe("replanRest: which sessions move", () => {
     });
   });
 
-  test("a session that has started counts as missed, even before it ends", () => {
-    const result = replanRest(
+  test("a session counts as missed only once it has ended; one under way stays where it is", () => {
+    const during = replanRest(
       input({
         sessions: [session("a", "2026-10-20", "17:30")],
         now: { date: "2026-10-20", minute: clock("17:40") },
       })
     );
-    expect(result.missed).toBe(1);
+    expect(during).toEqual({ moves: [], unplaced: [], missed: 0, clashing: 0 });
+    const ended = replanRest(
+      input({
+        sessions: [session("a", "2026-10-20", "17:30")],
+        now: { date: "2026-10-20", minute: clock("18:15") },
+      })
+    );
+    expect(ended.missed).toBe(1);
+    expect(ended.moves.map((m) => m.id)).toEqual(["a"]);
+  });
+
+  test("a session under way that overlaps busy time isn't moved mid-session, and keeps its time", () => {
+    const result = replanRest(
+      input({
+        sessions: [session("now", "2026-10-20", "17:30"), session("old", "2026-10-19", "17:45")],
+        now: { date: "2026-10-20", minute: clock("17:40") },
+        busy: [busy("2026-10-20", "18:00", 60)],
+      })
+    );
+    expect(result).toMatchObject({ missed: 1, clashing: 0 });
+    // The missed one can't start at 17:45 (the session under way runs to 18:15, then busy to 19:00).
+    expect(slots(result)).toEqual([["old", "2026-10-20", clock("19:00")]]);
   });
 });
 

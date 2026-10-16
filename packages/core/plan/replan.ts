@@ -7,9 +7,10 @@
  * things, so a daylight-saving change never shifts a session: a moved session keeps its local
  * time of day, and the browser turns it into Unix ms for that date (the plan backend's DST rule).
  *
- * Which sessions move: a session still to do whose start is before `now` ("missed") or that now
- * overlaps busy time ("clash"). Done and in-progress sessions stay where they are, and so do the
- * other sessions still to do. Busy time (events and other tasks) never moves.
+ * Which sessions move: a session still to do that ended at or before `now` ("missed"), or that is
+ * still ahead and now overlaps busy time ("clash"). A session under way (started, not ended) is
+ * not missed and stays where it is, like done and in-progress ones; so do the other sessions still
+ * to do. Busy time (events and other tasks) never moves.
  *
  * Where they go, one at a time in their old order:
  * 1. The earliest day, from today up to the day before the deadline, that has a free start within
@@ -191,9 +192,9 @@ export function replanRest(input: ReplanInput): ReplanResult {
   const toMove: Array<{ session: ReplanSession; reason: ReplanReason }> = [];
   for (const { session, start } of ordered) {
     const end = start + session.minutes;
-    if (session.status === "todo" && start < nowAbs) {
+    if (session.status === "todo" && end <= nowAbs) {
       toMove.push({ session, reason: "missed" });
-    } else if (session.status === "todo" && busy.overlaps(start, end)) {
+    } else if (session.status === "todo" && start >= nowAbs && busy.overlaps(start, end)) {
       toMove.push({ session, reason: "clash" });
     } else {
       taken.add(start, end);
