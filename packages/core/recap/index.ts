@@ -6,6 +6,7 @@
  */
 
 export * from "./answer";
+export * from "./ask-set";
 export * from "./recap";
 export * from "./text";
 export * from "./timeline";
