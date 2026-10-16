@@ -158,6 +158,15 @@ describe("/history", () => {
     expect(html).toContain("Pick up a conversation where you left it");
     expect(html).toContain("1 of 1 shown");
   });
+
+  test("a thread title with $ patterns is read as typed in the messages label", () => {
+    lang = "en";
+    conversations = [thread("c4", "Budget $& plan $1", 5)];
+    const html = renderHistory();
+    // The markup escapes "&" in attributes.
+    const label = en("hist.messagesFor").replace("{title}", () => "Budget $&amp; plan $1");
+    expect(html).toContain(`aria-label="${label}"`);
+  });
 });
 
 describe("/calendar", () => {

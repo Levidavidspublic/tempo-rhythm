@@ -364,7 +364,7 @@ export function HistoryScreen() {
             <div
               className="flex max-h-[36rem] flex-col gap-4 overflow-y-auto px-6 py-5"
               role="log"
-              aria-label={t("hist.messagesFor").replace("{title}", activeTitle)}
+              aria-label={t("hist.messagesFor").replace("{title}", () => activeTitle)}
             >
               {selectedConversationId !== activeId ? (
                 <p className="text-sm text-muted-foreground">{t("hist.choose")}</p>
