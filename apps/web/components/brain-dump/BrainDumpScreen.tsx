@@ -136,8 +136,9 @@ export function BrainDumpScreen() {
         return;
       }
       setPlan(await prioritize({ rawText: draft }));
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
+    } catch {
+      // Convex errors carry request ids and server wording: the screen says it kindly instead.
+      setError(t("bd.error"));
     } finally {
       setIsSorting(false);
     }
@@ -170,8 +171,9 @@ export function BrainDumpScreen() {
       setPlan(null);
       setAccepted([]);
       setRejected([]);
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
+    } catch {
+      // Convex errors carry request ids and server wording: the screen says it kindly instead.
+      setError(t("bd.error"));
     } finally {
       setIsAdding(false);
     }

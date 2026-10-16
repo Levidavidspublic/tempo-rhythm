@@ -756,3 +756,23 @@
    blank body while a screen loaded (settings, onboarding, billing, memory). */
 .tp-state--loading > .tp-skel-list { justify-self: stretch; width: 100%; }
 .tp-skel-row > .tp-skel-row__lines:only-child { grid-column: 1 / -1; }
+
+/* Today: brain dump card (TodayBrainDumpPanel). Layout only. */
+.tbd__head { display: grid; gap: var(--tp-space-2); justify-items: start; }
+.tbd__grid { display: grid; gap: var(--tp-space-6); }
+.tbd__col { display: grid; gap: var(--tp-space-4); align-content: start; min-width: 0; }
+.tbd__crisis { display: grid; gap: var(--tp-space-4); }
+.tbd__wait { display: grid; gap: var(--tp-space-2); padding-block: var(--tp-space-6); }
+.tbd__empty { padding-block: var(--tp-space-6); }
+.tbd__lanes { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tbd__n { color: var(--tp-ink-muted); }
+.tbd .tp-import-row[data-choice="keep"] { border-color: var(--tp-line-control); background: var(--tp-ground); }
+@media (min-width: 1280px) { .tbd__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.tqa__row { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tqa__row .tp-input { flex: 1 1 calc(var(--tp-space-20) * 3); min-width: 0; }
+.tag-list { display: grid; gap: var(--tp-space-2); }
+.tag-empty { display: grid; justify-items: start; gap: var(--tp-space-3); }
+
+/* Long unbroken names and titles (a pasted link, an email handle) wrap instead of scrolling a phone
+   page sideways. */
+:is(.tp-pagehead__title, .tp-page-title, .tp-section__title, .tp-h3, .tp-card__title) { overflow-wrap: anywhere; }
