@@ -1,7 +1,8 @@
 /**
- * Editing a saved set (/study/[setId]), the pure parts: the edit flow (open, save, refused because
- * the page's block moved on, reload), what counts as nothing to save, and new ids that never take
- * a removed card's id (its schedule). All sample data is fictional.
+ * Editing and sharing a saved set (/study/[setId]), the pure parts: the edit flow (open, save,
+ * refused because the page's block moved on, reload), what counts as nothing to save, new ids that
+ * never take a removed card's id (its schedule), and the set as Markdown and as a share target.
+ * All sample data is fictional.
  */
 import { describe, expect, test } from "bun:test";
 import { flashcardsDataSchema, type QuizData, type TestData } from "@tempo/utils";
@@ -15,6 +16,14 @@ import {
   type SetEditState,
   setEditReducer,
 } from "../../../apps/web/components/study/set-edit";
+import {
+  mdText,
+  type SetMarkdownWords,
+  setMarkdown,
+  setMarkdownWords,
+  setShareTarget,
+} from "../../../apps/web/components/study/set-share";
+import { translate } from "../../../apps/web/lib/i18n";
 
 const apply = (draft: Draft, ...actions: Parameters<typeof draftReducer>[1][]) => actions.reduce(draftReducer, draft);
 
@@ -161,5 +170,50 @@ describe("the edit list on a saved set", () => {
   test("kept cards keep their ids when their words change", () => {
     const out = draftToData(apply(draftFrom(blockPreview(deckBlock)), { type: "change", id: "n2", field: "primary", value: "Osmosis (water)" }));
     expect(out?.kind === "flashcards" && out.data.cards[1]).toEqual({ id: "n2", front: "Osmosis (water)", back: "Water across a membrane" });
+  });
+});
+
+describe("a set as Markdown and as a share target", () => {
+  const words = setMarkdownWords((key) => translate("en", key));
+
+  test("the words come from the study copy, never empty, in both languages", () => {
+    for (const lang of ["en", "he"] as const) {
+      const all: SetMarkdownWords = setMarkdownWords((key) => translate(lang, key));
+      for (const value of Object.values(all)) expect(value.trim().length).toBeGreaterThan(0);
+    }
+    expect(words.onePoint).toBe("1 point");
+  });
+  test("a deck: a title and one line per card", () => {
+    expect(setMarkdown(deckBlock, words)).toBe(
+      "# Cell biology\n\n- **Mitosis**: Two identical cells\n- **Osmosis**: Water across a membrane\n- **Enzyme**: Speeds up a reaction\n",
+    );
+  });
+  test("a quiz: numbered questions, the choices, the answer and why", () => {
+    const md = setMarkdown({ id: "b", type: "quiz", data: quiz }, words);
+    expect(md).toBe(
+      "# Photosynthesis check\n\n1. Where does photosynthesis happen?\n   - In the chloroplasts\n   - In the nucleus\n\n   Answer: In the chloroplasts\n   Why: Chloroplasts hold the chlorophyll.\n",
+    );
+  });
+  test("a test: sections, points (one point in words), other accepted answers, parts and model answers", () => {
+    const md = setMarkdown({ id: "b", type: "test", data: test_ }, words);
+    expect(md).toContain("## Part A\n\nChoose one answer.\n\n1. Which organelle makes energy? (10 points)\n   - The mitochondrion");
+    expect(md).toContain("2. Name the process. (1 point)\n\n   Answer: photosynthesis\n   Also accepted: photo-synthesis");
+    expect(md).toContain("## Part B\n\nAnswer 1 of these 2.\n\n3. A plant is kept in the dark.\n\n   - **a** What happens to its starch? (15 points)\n     Model answer: It goes down.");
+    expect(md).toContain("4. A leaf is tested with iodine.");
+    expect(md.endsWith("(5 points)\n")).toBe(true);
+  });
+  test("the person's words can't break the Markdown: line breaks fold, formatting is escaped", () => {
+    expect(mdText("Two\n  lines")).toBe("Two lines");
+    expect(mdText("a*b*_c_ [x](y) <b>")).toBe("a\\*b\\*\\_c\\_ \\[x\\](y) \\<b\\>");
+  });
+  test("share target: Markdown for every kind, Anki cards only for a deck, the set's own link", () => {
+    const deckTarget = setShareTarget("studySets:7", deckBlock, words, "https://tempo.example");
+    expect(deckTarget).toMatchObject({ kind: "set", title: "Cell biology", url: "https://tempo.example/study/studySets%3A7" });
+    expect(deckTarget.cards).toEqual(deck.cards.map(({ front, back }) => ({ front, back })));
+    expect(deckTarget.markdown.startsWith("# Cell biology")).toBe(true);
+    const quizTarget = setShareTarget("q1", { id: "b", type: "quiz", data: quiz }, words, "");
+    expect(quizTarget.cards).toBeUndefined();
+    expect(quizTarget.url).toBe("/study/q1");
+    expect(quizTarget.markdown).toContain("Answer: In the chloroplasts");
   });
 });

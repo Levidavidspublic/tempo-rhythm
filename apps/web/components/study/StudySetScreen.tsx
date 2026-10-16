@@ -23,7 +23,7 @@ import { BackToStudy, type RecordAttempt, type SetData, StudySetView } from "./S
  * the page holding the block; "Remove set" takes it off the hub (the page stays) with a 5-minute
  * Undo. "Edit" opens the Turn-into edit list on the saved set and saves it back into the page
  * (`study.updateBlock`, from the block version it started at) with a 5-minute Undo
- * (`study.undoUpdate`).
+ * (`study.undoUpdate`). "Share" opens the ShareSheet for the set.
  */
 
 export function StudySetScreen({ setId }: { setId: string }) {

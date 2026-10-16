@@ -1,8 +1,8 @@
 /**
- * Editing a saved set, static renders (the repo has no DOM library; same style as
- * study_screens.test.tsx): Edit on the set screen stays quiet next to the one primary, and the
- * edit list's states (editing, saving, didn't save, the page changed meanwhile). English, with
- * the real copy. Sample data is fictional.
+ * Editing and sharing a saved set, static renders (the repo has no DOM library; same style as
+ * study_screens.test.tsx): Edit and Share on the set screen stay quiet next to the one primary,
+ * the edit list's states (editing, saving, didn't save, the page changed meanwhile), and the
+ * ShareSheet for a deck and for a quiz. English, with the real copy. Sample data is fictional.
  */
 import { describe, expect, mock, test } from "bun:test";
 // react is only installed under apps/web (not the repo root), so import it from there.
@@ -220,5 +220,32 @@ describe("SetEditor states", () => {
     );
     expect(markup).toContain("Give it a title of up to 200 characters.");
     expect(markup).toMatch(/disabled=""[^>]*data-action="save-edit"|data-action="save-edit"[^>]*disabled=""/);
+  });
+});
+
+describe("sharing a set", () => {
+  test("Share sits with the quiet actions, with or without Edit; the one primary stays", () => {
+    const markup = view(deckData);
+    expect(markup).toMatch(/class="tp-btn tp-btn--ghost"[^>]*data-action="share-set"[^>]*aria-haspopup="dialog"/);
+    expect(markup).toContain(">Share</span>");
+    expect(primaries(markup)).toBe(1);
+    expect(view({ ...deckData, blockVersion: undefined })).toContain('data-action="share-set"');
+  });
+  test("while the edit list is open, Share steps aside", () => {
+    expect(view(deckData, { initialPanel: "edit" })).not.toContain('data-action="share-set"');
+  });
+  test("a deck: the set's ShareSheet with Markdown and Anki", () => {
+    const markup = view(deckData, { initialPanel: "share" });
+    expect(markup).toContain('data-testid="share-sheet"');
+    expect(markup).toContain("Share this study set");
+    expect(markup).toContain('data-share="copy"');
+    expect(markup).toContain('data-share="md"');
+    expect(markup).toContain('data-share="anki"');
+    expect(markup).toContain('data-component="FlashcardDeck"');
+  });
+  test("a quiz: Markdown, no Anki file", () => {
+    const markup = view(quizData, { initialPanel: "share" });
+    expect(markup).toContain('data-share="md"');
+    expect(markup).not.toContain('data-share="anki"');
   });
 });

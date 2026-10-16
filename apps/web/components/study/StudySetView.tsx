@@ -21,6 +21,7 @@ import {
   type ToastState,
   UndoToast,
 } from "@/components/goals/shared";
+import { ShareSheet } from "@/components/share";
 import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -31,6 +32,7 @@ import { deckLabels, KIND_ICON, KIND_KEY, quizLabels, type StudyT, testLabels } 
 import type { StudyPreview } from "./preview";
 import { SetEditor } from "./SetEditor";
 import { blockPreview, closedEdit, type EditResult, setEditReducer } from "./set-edit";
+import { setMarkdownWords, setShareTarget } from "./set-share";
 import { TypeAnswersToggle } from "./TypeAnswersToggle";
 import { useTypedAnswers } from "./useTypedAnswers";
 import {
@@ -44,8 +46,8 @@ import {
 
 /**
  * A set's markup (deck, quiz, test), with no data access: StudySetScreen.tsx passes data and saves.
- * Edit swaps the study panel for the edit list (SetEditor); the existing study action stays the
- * one primary, and Save changes takes its place while editing.
+ * Edit swaps the study panel for the edit list (SetEditor) and Share opens the ShareSheet; the
+ * existing study action stays the one primary, and Save changes takes its place while editing.
  */
 export type SetBlock =
   | { id: string; type: "flashcards"; data: FlashcardsData }
@@ -95,8 +97,8 @@ export type StudySetViewProps = {
   /** Without it (or without a `blockVersion`), the set has no Edit. */
   onSaveEdit?: SaveEdit;
   onUndoEdit?: UndoEdit;
-  /** Open with the edit list showing (the gallery and static renders). */
-  initialPanel?: "edit";
+  /** Open with the edit list or the share sheet showing (the gallery and static renders). */
+  initialPanel?: "edit" | "share";
 };
 
 export function StudySetView({ data, online, signedOut, ...rest }: StudySetViewProps) {
@@ -149,6 +151,7 @@ function LoadedSet({
       ? setEditReducer(closedEdit, { type: "open", version })
       : closedEdit
   );
+  const [sharing, setSharing] = useState(initialPanel === "share");
   const [toast, setToast] = useState<ToastState | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
   // After Undo: taken back, or not, because the block changed again after the edit.
@@ -256,6 +259,16 @@ function LoadedSet({
               <button
                 className="tp-btn tp-btn--ghost"
                 type="button"
+                data-action="share-set"
+                aria-haspopup="dialog"
+                onClick={() => setSharing(true)}
+              >
+                <TpIcon name="send" size="sm" />
+                <span>{t("st.set.share")}</span>
+              </button>
+              <button
+                className="tp-btn tp-btn--ghost"
+                type="button"
                 data-action="remove-set"
                 onClick={onRemove}
               >
@@ -296,6 +309,17 @@ function LoadedSet({
       ) : (
         <TestPanel key={block.id} data={block.data} t={t} onRecord={onRecord} />
       )}
+      {sharing ? (
+        <ShareSheet
+          target={setShareTarget(
+            set.setId,
+            block,
+            setMarkdownWords(t),
+            typeof window === "undefined" ? "" : window.location.origin
+          )}
+          onClose={() => setSharing(false)}
+        />
+      ) : null}
       {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
     </div>
   );

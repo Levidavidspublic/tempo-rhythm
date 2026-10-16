@@ -285,8 +285,9 @@ export const en = {
   "st.ls.notFound": "Your page doesn't seem to say. The coach can help with that.",
   "st.ls.askCoach": "Ask the coach",
 
-  // Editing a saved set (StudyFetch parity)
+  // Editing and sharing a saved set (StudyFetch parity)
   "st.set.edit": "Edit",
+  "st.set.share": "Share",
   "st.se.title": "Edit this set",
   "st.se.intro": "Changes are saved into the page {page}, with 5 minutes to undo.",
   "st.se.schedule": "Cards you keep keep their review times. New cards start fresh.",
@@ -300,6 +301,9 @@ export const en = {
   "st.se.undone": "Taken back. The set is as it was.",
   "st.se.undoChanged":
     "This set changed again after your edit, so Undo would write over that. Nothing was taken back.",
+  "st.md.also": "Also accepted",
+  "st.md.why": "Why",
+  "st.md.point": "1 point",
 } as const;
 
 export type StudyCopyKey = keyof typeof en;
@@ -574,6 +578,7 @@ export const he: Record<StudyCopyKey, string> = {
   "st.ls.askCoach": "לשאול את המאמן",
 
   "st.set.edit": "עריכה",
+  "st.set.share": "שיתוף",
   "st.se.title": "עריכת החומר",
   "st.se.intro": "השינויים נשמרים בדף {page}, ואפשר לבטל אותם במשך 5 דקות.",
   "st.se.schedule": "כרטיסים שנשארים שומרים על זמני החזרה שלהם. כרטיסים חדשים מתחילים מההתחלה.",
@@ -587,4 +592,7 @@ export const he: Record<StudyCopyKey, string> = {
   "st.se.undone": "בוטל. החומר חזר להיות כמו שהיה.",
   "st.se.undoChanged":
     "החומר השתנה שוב אחרי העריכה, ולכן ביטול היה כותב מעל השינוי. שום דבר לא בוטל.",
+  "st.md.also": "מתקבל גם",
+  "st.md.why": "הסבר",
+  "st.md.point": "נקודה אחת",
 };
