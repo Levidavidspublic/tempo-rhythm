@@ -8,7 +8,7 @@ test("event created in Day view appears in Week and Month views for that date", 
   page,
 }) => {
   await page.goto("/calendar");
-  await expect(page.getByRole("heading", { name: "One source for every calendar view" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Calendar", exact: true })).toBeVisible();
   await page.evaluate(() => window.localStorage.clear());
   await page.reload();
 
