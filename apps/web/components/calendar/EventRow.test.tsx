@@ -93,6 +93,18 @@ describe("an idle event row", () => {
     expect(html).toContain(new Date(startsAtMs).toLocaleDateString("he-IL", dateFormat));
     expect(html).toContain(`<span class="tp-list-row__title" dir="auto">${title}</span>`);
   });
+
+  test("a title with $ patterns is read as typed", () => {
+    lang = "en";
+    const odd = "Pay $& rent $1";
+    const html = renderToStaticMarkup(
+      createElement(EventRow, { event: { ...event, title: odd }, actions })
+    );
+    // The markup escapes "&" in attributes.
+    const label = odd.replace("&", "&amp;");
+    expect(html).toContain(`aria-label="Edit ${label}"`);
+    expect(html).toContain(`aria-label="Delete ${label}"`);
+  });
 });
 
 describe("an event row in its edit form", () => {

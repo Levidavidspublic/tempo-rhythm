@@ -137,7 +137,7 @@ export function EventRow({
           {actions ? (
             <span className="tp-list-row__end">
               <button
-                aria-label={t("cal.row.editName").replace("{title}", event.title)}
+                aria-label={t("cal.row.editName").replace("{title}", () => event.title)}
                 className="tp-btn tp-btn--ghost tp-btn--sm"
                 onClick={() => {
                   setTitle(event.title);
@@ -149,7 +149,7 @@ export function EventRow({
                 {t("cal.row.edit")}
               </button>
               <button
-                aria-label={t("cal.row.deleteName").replace("{title}", event.title)}
+                aria-label={t("cal.row.deleteName").replace("{title}", () => event.title)}
                 className="tp-btn tp-btn--danger-ghost tp-btn--sm"
                 disabled={isBusy}
                 onClick={() => void run(() => actions.onDelete(event), "cal.row.err")}
