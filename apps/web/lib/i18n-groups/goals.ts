@@ -117,6 +117,7 @@ export const en = {
   "pd.empty.title": "This project is just a name for now.",
   "pd.empty.body": "That's a fine start. Add one first task, or write a line about why it matters.",
   "pd.empty.add": "Add a first task",
+  "pd.keptHint": "This project is kept once it has its first task.", // new
   "pd.loading": "Loading this project",
   "pd.error": "Couldn't open this project.",
 
@@ -251,6 +252,7 @@ export const he: Record<keyof typeof en, string> = {
   "pd.empty.title": "הפרויקט הזה הוא בינתיים רק שם.",
   "pd.empty.body": "זו התחלה טובה. אפשר להוסיף משימה ראשונה, או לכתוב שורה על למה זה חשוב.",
   "pd.empty.add": "הוספת משימה ראשונה",
+  "pd.keptHint": "הפרויקט יישמר ברגע שתהיה בו משימה ראשונה.",
   "pd.loading": "טוען את הפרויקט",
   "pd.error": "לא הצלחנו לפתוח את הפרויקט הזה.",
 
