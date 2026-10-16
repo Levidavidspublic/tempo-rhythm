@@ -147,6 +147,17 @@ describe("GuidedPlanCard", () => {
     expect(html).toContain('data-done="true"');
   });
 
+  test("accepted: the live note holds only the words; Undo and its ticking time sit outside it", () => {
+    const html = render({ status: "accepted", undoUntilMs: Date.now() + 5 * 60_000, onUndo: () => {} });
+    const live = html.match(/<output[^>]*>[\s\S]*?<\/output>/)?.[0] ?? "";
+    expect(live).toContain(labels.accepted);
+    expect(live).not.toContain("guided-undo");
+    expect(live).not.toContain("left to undo");
+    expect(live).not.toMatch(/\d:\d\d/);
+    expect(html).toContain('data-action="guided-undo"');
+    expect(html).toContain("left to undo");
+  });
+
   test("accepted after the window: kept note, no Undo", () => {
     const html = render({ status: "accepted", undoUntilMs: Date.now() - 1, onUndo: () => {} });
     expect(html).toContain(labels.kept);

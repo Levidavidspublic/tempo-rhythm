@@ -33,8 +33,11 @@
 .tp-guided__tools { display: flex; gap: var(--tp-space-1); }
 .tp-guided__up { transform: rotate(180deg); }
 .tp-guided__hint { margin: 0; padding: 0 var(--tp-space-4) var(--tp-space-3); }
+/* After Accept: the note's words (a live region) and, beside them, Undo with its time. */
+.tp-guided__noterow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); padding: var(--tp-space-3) var(--tp-space-4); }
+.tp-guided__noterow .tp-guided__note { flex: 1 1 auto; min-width: 0; padding: 0; }
 .tp-guided__note { flex-wrap: wrap; }
-.tp-guided__note .tp-btn .tp-num { font-variant-numeric: tabular-nums; }
+.tp-guided__noterow .tp-btn .tp-num { font-variant-numeric: tabular-nums; }
 .tp-guided__message { padding: 0 var(--tp-space-4) var(--tp-space-3); }
 
 @media (max-width: 560px) {

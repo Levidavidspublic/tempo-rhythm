@@ -573,21 +573,25 @@ export function GuidedPlanCard({
           </button>
         </div>
       ) : (
-        <output className="tp-proposal__note tp-guided__note">
-          {status === "accepted" ? (
-            <Check className="tp-icon" size={16} />
-          ) : (
-            <Refresh className="tp-icon" size={16} />
-          )}
-          <span>
-            {status === "accepted"
-              ? left
-                ? labels.accepted
-                : labels.kept
-              : status === "undone"
-                ? labels.undone
-                : labels.rejected}
-          </span>
+        // The words are the live region, so each state is read once. Undo and its ticking time sit
+        // beside it, outside: inside, the whole note was read again every second for 5 minutes.
+        <div className="tp-guided__noterow">
+          <output className="tp-proposal__note tp-guided__note">
+            {status === "accepted" ? (
+              <Check className="tp-icon" size={16} />
+            ) : (
+              <Refresh className="tp-icon" size={16} />
+            )}
+            <span>
+              {status === "accepted"
+                ? left
+                  ? labels.accepted
+                  : labels.kept
+                : status === "undone"
+                  ? labels.undone
+                  : labels.rejected}
+            </span>
+          </output>
           {left && onUndo ? (
             <button
               className="tp-btn tp-btn--secondary tp-btn--sm"
@@ -605,7 +609,7 @@ export function GuidedPlanCard({
               </span>
             </button>
           ) : null}
-        </output>
+        </div>
       )}
       {message ? <div className="tp-guided__message">{message}</div> : null}
     </section>
