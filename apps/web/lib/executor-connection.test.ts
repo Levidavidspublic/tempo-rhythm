@@ -27,6 +27,7 @@ const PHASES: ExecutorPhase[] = [
   "connected",
   "needs_reauth",
   "not_answering",
+  "paused",
   "not_set_up",
 ];
 
@@ -35,9 +36,12 @@ describe("executorPhase", () => {
     expect(executorPhase(undefined)).toBe("loading");
     expect(executorPhase(null)).toBe("loading");
   });
-  test("Executor switched off on the deployment is 'not set up', whatever the status", () => {
+  test("Executor switched off on the deployment, with no connection, is 'not set up'", () => {
     expect(executorPhase({ status: "unavailable", enabled: false })).toBe("not_set_up");
     expect(executorPhase({ status: "connected", enabled: false })).toBe("not_set_up");
+  });
+  test("switched off with a connection still kept is 'paused', so Disconnect stays possible", () => {
+    expect(executorPhase({ status: "unavailable", enabled: false, connectedAt: 1 })).toBe("paused");
   });
   test("unavailable with Executor on means a live connection that didn't answer", () => {
     expect(executorPhase({ status: "unavailable", enabled: true })).toBe("not_answering");
@@ -89,6 +93,14 @@ describe("executorRow: the label and button per state", () => {
     expect(row.badge?.label).toBe("exec.badge.notSetUp");
     expect(row.primary?.disabled).toBe(true);
     expect(row.disconnect).toBe(false);
+  });
+  test("paused: Disconnect only, and no lookup chip", () => {
+    const row = executorRow("paused");
+    expect(row.badge?.label).toBe("exec.badge.paused");
+    expect(row.detail).toBe("exec.detail.paused");
+    expect(row.primary).toBeNull();
+    expect(row.disconnect).toBe(true);
+    expect(lookupAllowed("paused")).toBe(false);
   });
   test("loading shows no button", () => {
     expect(executorRow("loading").primary).toBeNull();

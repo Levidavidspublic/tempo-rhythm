@@ -21,9 +21,10 @@ export type ExecutorStatusView = {
 };
 
 /**
- * What the row shows. `unavailable` splits in two: the deployment has Executor off
- * (`enabled: false`, "Not set up yet") or a live connection whose last call got no answer
- * (`enabled: true`; it clears on the next good lookup).
+ * What the row shows. `unavailable` splits in three: the deployment has Executor off and the
+ * person has no connection (`enabled: false`, "Not set up yet"), or has one (`enabled: false`
+ * with `connectedAt`, "Off on Tempo": Disconnect still works), or a live connection whose last
+ * call got no answer (`enabled: true`; it clears on the next good lookup).
  */
 export type ExecutorPhase =
   | "loading"
@@ -32,11 +33,12 @@ export type ExecutorPhase =
   | "connected"
   | "needs_reauth"
   | "not_answering"
+  | "paused"
   | "not_set_up";
 
 export function executorPhase(view: ExecutorStatusView | null | undefined): ExecutorPhase {
   if (!view) return "loading";
-  if (!view.enabled) return "not_set_up";
+  if (!view.enabled) return view.connectedAt !== undefined ? "paused" : "not_set_up";
   switch (view.status) {
     case "connecting":
     case "connected":
@@ -97,6 +99,13 @@ const ROWS: Record<ExecutorPhase, ExecutorRowModel> = {
   not_answering: {
     badge: { label: "exec.badge.quiet", tone: "caution", icon: "alert" },
     detail: "exec.detail.quiet",
+    primary: null,
+    disconnect: true,
+    times: false,
+  },
+  paused: {
+    badge: { label: "exec.badge.paused", tone: "neutral", icon: "clock" },
+    detail: "exec.detail.paused",
     primary: null,
     disconnect: true,
     times: false,
