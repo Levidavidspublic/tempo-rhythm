@@ -119,7 +119,11 @@ type Lifecycle =
   /** Soft-deleted, and its child messages are soft-deleted with it. */
   | "conversation-cascade"
   /** One row per person; status goes to "inactive". */
-  | "subscription-inactive";
+  | "subscription-inactive"
+  /** Executor connection (#989): becomes "revoking" and is tombstoned; the revoke runs later. */
+  | "connection-revoke"
+  /** Executor connect attempt (#989): the encrypted PKCE verifier is scrubbed and the row tombstoned. */
+  | "pending-scrub";
 
 type OwnedFixture<T extends OwnedTableName> = {
   lifecycle: Lifecycle;
@@ -134,6 +138,8 @@ function fixture<T extends OwnedTableName>(
 }
 
 const NO_ID = (table: string) => `${table}:fixture`;
+// Built, not written out, so secret scanners don't read a fixture as a token.
+const FIXTURE_CIPHER = ["v1", "fixture", "cipher"].join(".");
 
 /** Synthetic request ids and digests for page-ledger fixtures. Not real keys or note content. */
 const REQUEST_ULID_PREFIX = "01ARZ3NDEKTSV4RRFFQ69G5F";
@@ -346,6 +352,12 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  coachWebSearches: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    utcDateKey: "2026-10-16",
+    createdAt: 1,
+    updatedAt: 1,
+  })),
   pageProposals: fixture("owned-table-soft-delete", (userId) => ({
     userId,
     kind: "add_task_to_today",
@@ -410,12 +422,66 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  connections: fixture("connection-revoke", (userId) => ({
+    userId,
+    provider: "executor",
+    status: "connected",
+    mcpUrl: "https://mcp.example.test/mcp",
+    issuer: "https://auth.example.test",
+    clientRowId: NO_ID("oauthClients") as Id<"oauthClients">,
+    connectedAt: 1,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  connectionSecrets: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    connectionId: NO_ID("connections") as Id<"connections">,
+    accessTokenCipher: FIXTURE_CIPHER,
+    refreshTokenCipher: FIXTURE_CIPHER,
+    keyVersion: 1,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  oauthPending: fixture("pending-scrub", (userId) => ({
+    userId,
+    provider: "executor",
+    stateHash: fakeDigest(4),
+    codeVerifierCipher: "v1.fixture.cipher",
+    keyVersion: 1,
+    issuer: "https://auth.example.test",
+    resource: "https://mcp.example.test/mcp",
+    redirectUri: "https://example.convex.site/connections/executor/callback",
+    clientRowId: NO_ID("oauthClients") as Id<"oauthClients">,
+    returnTo: "settings",
+    expiresAt: 2,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  connectionLimits: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    callWindowStartMs: 1,
+    callWindowCount: 3,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  connectionCalls: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    connectionId: NO_ID("connections") as Id<"connections">,
+    kind: "tool_call",
+    tool: "search",
+    decision: "auto",
+    outcome: "ok",
+    createdAt: 1,
+    updatedAt: 1,
+  })),
 };
 
 /** Tables with no `userId` that are not part of the auth library, and why that is fine. */
 const NON_USER_ID_TABLES = {
   users: "the account row; softDeleteUserAccount patches it directly",
   messages: "parent-owned through conversationId; soft-deleted with its conversation",
+  oauthClients:
+    "one OAuth client per issuer and redirect URI, shared by the deployment (#989); holds no person's data",
 } as const;
 
 type TableDefinitionShape = {
@@ -632,7 +698,8 @@ describe("account lifecycle coverage is derived from the schema", () => {
         !(name in NON_USER_ID_TABLES),
     );
     expect(unclassified).toEqual([]);
-    expect(Object.keys(NON_USER_ID_TABLES).sort()).toEqual(["messages", "users"]);
+    expect(Object.keys(NON_USER_ID_TABLES).sort()).toEqual(["messages", "oauthClients", "users"]);
+    expect(declaredFieldNames("oauthClients").has("userId")).toBe(false);
     expect(declaredFieldNames("messages").has("conversationId")).toBe(true);
     expect(declaredFieldNames("messages").has("userId")).toBe(false);
   });
@@ -668,6 +735,9 @@ describe("account lifecycle coverage is derived from the schema", () => {
     expect(USER_OWNED_TABLES).toContain("pageOperations");
     expect(USER_OWNED_TABLES).toContain("pageOperationPayloads");
     expect(USER_OWNED_TABLES).toContain("pageProposals");
+    expect(USER_OWNED_TABLES).toContain("connectionSecrets");
+    expect(USER_OWNED_TABLES).toContain("connectionCalls");
+    expect(USER_OWNED_TABLES).toContain("connectionLimits");
   });
 
   test("each lifecycle's tables declare the fields and by_userId index deletion relies on", () => {
@@ -682,6 +752,14 @@ describe("account lifecycle coverage is derived from the schema", () => {
         expect(fields.has("updatedAt")).toBe(true);
       } else {
         expect(fields.has("deletedAt")).toBe(true);
+      }
+      if (lifecycle === "connection-revoke") {
+        expect(fields.has("status")).toBe(true);
+        expect(fields.has("updatedAt")).toBe(true);
+      }
+      if (lifecycle === "pending-scrub") {
+        expect(fields.has("codeVerifierCipher")).toBe(true);
+        expect(fields.has("updatedAt")).toBe(true);
       }
     }
   });
@@ -742,6 +820,16 @@ describe("account lifecycle coverage is derived from the schema", () => {
         expect(after.status, table).toBe("inactive");
         expect(changedKeys(before, after), table).toEqual(["status", "updatedAt"]);
         expect(after.updatedAt, table).toBe(now);
+      } else if (lifecycle === "connection-revoke") {
+        expect(after.status, table).toBe("revoking");
+        expect(after.deletedAt, table).toBe(now);
+        expect(after.updatedAt, table).toBe(now);
+        expect(changedKeys(before, after), table).toEqual(["deletedAt", "status", "updatedAt"]);
+      } else if (lifecycle === "pending-scrub") {
+        expect(after.codeVerifierCipher, table).toBeUndefined();
+        expect(after.deletedAt, table).toBe(now);
+        expect(after.updatedAt, table).toBe(now);
+        expect(changedKeys(before, after), table).toEqual(["codeVerifierCipher", "deletedAt", "updatedAt"]);
       } else {
         const stampsUpdatedAt = declaredFieldNames(table).has("updatedAt");
         expect(after.deletedAt, table).toBe(now);

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { scheduleConnectionRevokes } from "./connections";
 import { isInactiveAccount, softDeleteUserAccount } from "./lib/accountDeletion";
 import { initialApprovalStatus } from "./lib/approval";
 import { buildReturningUserPatch, newUserFields } from "./lib/entitlements";
@@ -242,6 +243,8 @@ export const deleteMyAccount = mutation({
   handler: async (ctx) => {
     const user = await requireUser(ctx);
     const { deletedCount } = await softDeleteUserAccount(ctx, user._id);
+    // Executor tokens (#989): revoke at Executor and scrub, after this transaction commits.
+    await scheduleConnectionRevokes(ctx, user._id);
     return { success: true, deletedCount };
   },
 });
