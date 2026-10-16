@@ -816,7 +816,7 @@
 
 /* Tasks at 390 px: a long project name on a row's chip wraps instead of widening every row
    (the page measured 447 px wide); grouped views and the view switcher keep the 16 px gutter. */
-.tk-row .tp-chip { white-space: normal; max-width: 100%; overflow-wrap: anywhere; }
+.tk-list .tk-row .tp-chip { white-space: normal; max-width: 100%; overflow-wrap: anywhere; }
 .tk-row .tp-task-row__title { overflow-wrap: anywhere; }
 @media (max-width: 767px) {
   .tp-page > :is(.tk-groups, .tk-views) { padding-inline: var(--tp-space-4); }
