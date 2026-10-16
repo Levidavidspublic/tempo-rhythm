@@ -462,6 +462,8 @@ export function ItemMover<T extends WeekItem>({
                   selected={item.date}
                   lang={lang}
                   idPrefix={`${idPrefix}-pick`}
+                  // Choosing a day saves the move, so keys only move focus here.
+                  commitOnKey={false}
                   onSelectDay={(date) => {
                     if (daysBetween(item.date, date) === 0) return;
                     setPicking(false);

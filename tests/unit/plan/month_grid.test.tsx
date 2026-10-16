@@ -10,6 +10,7 @@ import { renderToStaticMarkup } from "../../../apps/web/node_modules/react-dom/s
 import {
   MonthGrid,
   type MonthGridProps,
+  monthKeyAction,
   monthKeyTarget,
   sameDayIn,
   shiftMonth,
@@ -111,6 +112,22 @@ describe("MonthGrid keys", () => {
     expect(monthKeyTarget("2026-01-31", "PageDown", false, 1)).toBe("2026-02-28");
     expect(monthKeyTarget("2026-03-15", "PageUp", false, 1)).toBe("2026-02-15");
     expect(monthKeyTarget("2026-10-20", "Enter", false, 1)).toBeNull();
+  });
+
+  test("a picker that saves (commitOnKey false) only moves focus on keys; views still follow", () => {
+    const picker = { rtl: false, weekStartsOn: 1 as const, commitOnKey: false, selectable: true };
+    for (const key of ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]) {
+      expect(monthKeyAction("2026-10-20", key, picker)?.select).toBe(false);
+    }
+    expect(monthKeyAction("2026-10-20", "ArrowRight", picker)).toEqual({ target: "2026-10-21", select: false });
+    expect(monthKeyAction("2026-10-20", "PageDown", picker)).toEqual({ target: "2026-11-20", select: false });
+    // Enter and Space aren't grid keys: the button's own click chooses the day.
+    expect(monthKeyAction("2026-10-20", "Enter", picker)).toBeNull();
+    expect(monthKeyAction("2026-10-20", " ", picker)).toBeNull();
+    // The default (calendar views) keeps choosing as focus moves; read-only grids never choose.
+    const view = { rtl: false, weekStartsOn: 1 as const, selectable: true };
+    expect(monthKeyAction("2026-10-20", "ArrowRight", view)).toEqual({ target: "2026-10-21", select: true });
+    expect(monthKeyAction("2026-10-20", "ArrowRight", { ...view, selectable: false })?.select).toBe(false);
   });
 
   test("month arithmetic wraps the year", () => {

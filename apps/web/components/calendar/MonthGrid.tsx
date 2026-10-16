@@ -5,7 +5,9 @@
  * dots and a "3 items" count. Today has `aria-current="date"`, the chosen day `aria-pressed`.
  * Previous / next really change the month. Keys: arrows move a day or a week (left and right
  * swap in Hebrew), Home / End go to the week's ends, Page Up / Page Down change the month.
- * Hebrew weeks start on Sunday.
+ * By default a key also chooses the day it lands on (a calendar view follows along). With
+ * `commitOnKey={false}` (a day picker that saves) keys only move focus; Enter, Space or a click
+ * chooses. Hebrew weeks start on Sunday.
  */
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -42,6 +44,11 @@ export type MonthGridProps = {
   /** Defaults to Sunday in Hebrew and Monday in English. */
   weekStartsOn?: Weekday;
   onSelectDay?: (date: LocalDate) => void;
+  /**
+   * True (default): arrow, Home / End and Page keys also choose the day they land on. False: keys
+   * only move focus, and Enter, Space or a click chooses. Use false when choosing saves something.
+   */
+  commitOnKey?: boolean;
   onMonthChange?: (year: number, month: number) => void;
   /** Unique prefix for ids when two grids share a page. */
   idPrefix?: string;
@@ -96,6 +103,20 @@ export function monthKeyTarget(
   }
 }
 
+/**
+ * What a key press does: the day it moves focus to, and whether that also chooses the day.
+ * Null when the key isn't a grid key.
+ */
+export function monthKeyAction(
+  date: LocalDate,
+  key: string,
+  options: { rtl: boolean; weekStartsOn: Weekday; commitOnKey?: boolean; selectable: boolean }
+): { target: LocalDate; select: boolean } | null {
+  const target = monthKeyTarget(date, key, options.rtl, options.weekStartsOn);
+  if (!target) return null;
+  return { target, select: options.selectable && (options.commitOnKey ?? true) };
+}
+
 function inMonth(date: LocalDate, year: number, month: number): boolean {
   const parts = parseLocalDate(date);
   return parts.year === year && parts.month === month;
@@ -110,10 +131,13 @@ export function MonthGrid({
   lang,
   weekStartsOn,
   onSelectDay,
+  commitOnKey = true,
   onMonthChange,
   idPrefix = "month",
 }: MonthGridProps) {
   const [shown, setShown] = useState({ year, month });
+  // The day keys moved focus to without choosing it (commitOnKey false): it holds the tab stop.
+  const [active, setActive] = useState<LocalDate | null>(null);
   useEffect(() => setShown({ year, month }), [year, month]);
   const gridRef = useRef<HTMLDivElement>(null);
   const pendingFocus = useRef<LocalDate | null>(null);
@@ -140,22 +164,34 @@ export function MonthGrid({
 
   // One tab stop: the chosen day, else today, else the 1st of the shown month.
   const focusDate =
-    selected && inMonth(selected, shown.year, shown.month)
+    active && inMonth(active, shown.year, shown.month)
+      ? active
+      : selected && inMonth(selected, shown.year, shown.month)
       ? selected
       : inMonth(today, shown.year, shown.month)
         ? today
         : formatLocalDate(shown.year, shown.month, 1);
 
   const onKey = (event: KeyboardEvent<HTMLButtonElement>, date: LocalDate) => {
-    const target = monthKeyTarget(date, event.key, rtl, firstDay);
-    if (!target) return;
+    const action = monthKeyAction(date, event.key, {
+      rtl,
+      weekStartsOn: firstDay,
+      commitOnKey,
+      selectable: Boolean(onSelectDay),
+    });
+    if (!action) return;
+    const { target } = action;
     event.preventDefault();
     const parts = parseLocalDate(target);
     if (!inMonth(target, shown.year, shown.month)) go({ year: parts.year, month: parts.month });
     pendingFocus.current = target;
-    onSelectDay?.(target);
-    if (!onSelectDay)
+    if (action.select) {
+      setActive(null);
+      onSelectDay?.(target);
+    } else {
+      setActive(target);
       gridRef.current?.querySelector<HTMLButtonElement>(`[data-date="${target}"]`)?.focus();
+    }
   };
 
   const titleId = `${idPrefix}-title`;
@@ -220,6 +256,7 @@ export function MonthGrid({
                     year: parseLocalDate(cell.date).year,
                     month: parseLocalDate(cell.date).month,
                   });
+                setActive(null);
                 onSelectDay?.(cell.date);
               }}
               onKeyDown={(event) => onKey(event, cell.date)}
