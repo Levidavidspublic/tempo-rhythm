@@ -93,7 +93,7 @@ describe("json-rpc dispatch", () => {
 		expect(await call("ping")).toMatchObject({ id: 1, result: {} });
 	});
 
-	test("tools/list lists all 11 tools, none that delete", async () => {
+	test("tools/list lists all 12 tools, none that delete", async () => {
 		const res = (await call("tools/list")) as {
 			result: { tools: { name: string }[] };
 		};
@@ -110,10 +110,11 @@ describe("json-rpc dispatch", () => {
 				"task_create",
 				"task_update",
 				"today_plan_get",
+				"today_plan_set",
 				"tasks_list",
 			].sort(),
 		);
-		expect(MCP_TOOLS).toHaveLength(11);
+		expect(MCP_TOOLS).toHaveLength(12);
 		expect(names.some((n) => /delete|remove/.test(n))).toBe(false);
 	});
 
@@ -217,6 +218,14 @@ describe("tool input validation", () => {
 		).toEqual([]);
 		expect(
 			validateAgainstSchema(schema("task_create"), { title: "" }),
+		).not.toEqual([]);
+		expect(
+			validateAgainstSchema(schema("today_plan_set"), {
+				intention: "x".repeat(281),
+			}),
+		).not.toEqual([]);
+		expect(
+			validateAgainstSchema(schema("today_plan_set"), { energy: "extreme" }),
 		).not.toEqual([]);
 	});
 });

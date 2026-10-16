@@ -9,7 +9,7 @@ import {
   maxCalendarRangeMs,
   updateEventForUser,
 } from "./calendar_events";
-import { getDayPlanForUser } from "./dayPlans";
+import { getDayPlanForUser, upsertDayPlanForUser } from "./dayPlans";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
 import { dayBoundsMs, isValidTimeZone, localDateOf } from "./lib/mcp/dates";
 import { createNoteForUser, listNotesForUser, updateNoteForUser } from "./notes";
@@ -195,6 +195,50 @@ export const runWriteTool = internalMutation({
         });
         const event = await ctx.db.get(eventId);
         return { event: event ? eventView(event) : { id: eventId } };
+      }
+      case "today_plan_set": {
+        const timezone = (a.timezone as string | undefined) ?? "UTC";
+        if (!isValidTimeZone(timezone)) throw new Error(`Unknown timezone: ${timezone}`);
+        const date = (a.date as string | undefined) ?? localDateOf(timezone, Date.now());
+        if (a.intention !== undefined && (typeof a.intention !== "string" || a.intention.length > 280)) {
+          throw new Error("Intention must be at most 280 characters");
+        }
+        if (a.topTaskIds !== undefined && !Array.isArray(a.topTaskIds)) {
+          throw new Error("topTaskIds must be an array");
+        }
+        if (
+          a.energy !== undefined &&
+          (typeof a.energy !== "string" || !["low", "medium", "high"].includes(a.energy))
+        ) {
+          throw new Error("Energy must be low, medium, or high");
+        }
+        const rawTaskIds = a.topTaskIds as unknown[] | undefined;
+        if (rawTaskIds && rawTaskIds.length > 3) {
+          throw new Error("A day plan can have at most 3 top tasks");
+        }
+        const topTaskIds: Id<"tasks">[] | undefined = rawTaskIds?.map((rawId) => {
+          const taskId = typeof rawId === "string" ? ctx.db.normalizeId("tasks", rawId) : null;
+          if (!taskId) throw new Error("Task not found");
+          return taskId;
+        });
+        await upsertDayPlanForUser(ctx, userId, {
+          localDate: date,
+          timezone: a.timezone as string | undefined,
+          intention: a.intention as string | undefined,
+          topTaskIds,
+          energy: a.energy as "low" | "medium" | "high" | undefined,
+        });
+        const plan = await getDayPlanForUser(ctx, userId, date);
+        return {
+          plan: plan
+            ? {
+                status: plan.status,
+                intention: plan.intention ?? null,
+                energy: plan.energy ?? null,
+                reflection: plan.reflection ?? null,
+              }
+            : null,
+        };
       }
       default:
         throw new Error(`Unknown write tool: ${name}`);

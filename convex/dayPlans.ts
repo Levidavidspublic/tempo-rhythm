@@ -114,6 +114,48 @@ export async function getDayPlanForUser(
 	return findLivePlan(ctx, userId, localDate);
 }
 
+type UpsertDayPlanArgs = {
+	localDate: string;
+	timezone?: string;
+	intention?: string;
+	topTaskIds?: Id<"tasks">[];
+	energy?: "low" | "medium" | "high";
+};
+
+/** Shared by the authenticated app mutation and token-scoped MCP mutation. */
+export async function upsertDayPlanForUser(
+	ctx: MutationCtx,
+	userId: Id<"users">,
+	args: UpsertDayPlanArgs,
+): Promise<Id<"dayPlans">> {
+	assertLocalDate(args.localDate);
+	if (args.topTaskIds !== undefined) {
+		await assertOwnedTasks(ctx, userId, args.topTaskIds);
+	}
+
+	const now = Date.now();
+	const fields: Partial<Doc<"dayPlans">> = {};
+	if (args.timezone !== undefined) fields.timezone = args.timezone;
+	if (args.intention !== undefined) fields.intention = args.intention.trim();
+	if (args.topTaskIds !== undefined) fields.topTaskIds = args.topTaskIds;
+	if (args.energy !== undefined) fields.energy = args.energy;
+
+	const existing = await findLivePlan(ctx, userId, args.localDate);
+	if (existing) {
+		// Patch only: never touches `status`, so a committed plan stays committed.
+		await ctx.db.patch(existing._id, { ...fields, updatedAt: now });
+		return existing._id;
+	}
+	return ctx.db.insert("dayPlans", {
+		userId,
+		localDate: args.localDate,
+		...fields,
+		status: "draft",
+		createdAt: now,
+		updatedAt: now,
+	});
+}
+
 export const upsert = mutation({
 	args: {
 		localDate: v.string(),
@@ -125,32 +167,7 @@ export const upsert = mutation({
 	returns: v.id("dayPlans"),
 	handler: async (ctx, args) => {
 		const user = await requireUser(ctx);
-		assertLocalDate(args.localDate);
-		if (args.topTaskIds !== undefined) {
-			await assertOwnedTasks(ctx, user._id, args.topTaskIds);
-		}
-
-		const now = Date.now();
-		const fields: Partial<Doc<"dayPlans">> = {};
-		if (args.timezone !== undefined) fields.timezone = args.timezone;
-		if (args.intention !== undefined) fields.intention = args.intention.trim();
-		if (args.topTaskIds !== undefined) fields.topTaskIds = args.topTaskIds;
-		if (args.energy !== undefined) fields.energy = args.energy;
-
-		const existing = await findLivePlan(ctx, user._id, args.localDate);
-		if (existing) {
-			// Patch only: never touches `status`, so a committed plan stays committed.
-			await ctx.db.patch(existing._id, { ...fields, updatedAt: now });
-			return existing._id;
-		}
-		return ctx.db.insert("dayPlans", {
-			userId: user._id,
-			localDate: args.localDate,
-			...fields,
-			status: "draft",
-			createdAt: now,
-			updatedAt: now,
-		});
+		return upsertDayPlanForUser(ctx, user._id, args);
 	},
 });
 

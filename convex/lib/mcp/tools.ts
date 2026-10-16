@@ -1,7 +1,7 @@
 import type { JsonSchema } from "./schema";
 
 /**
- * Tempo MCP tool registry (TEMPO-MCP-01). 11 tools, no delete tools in v1 (PRD F-100:
+ * Tempo MCP tool registry (TEMPO-MCP-01). 12 tools, no delete tools in v1 (PRD F-100:
  * heavy writes are refused). `kind` says which Convex function type runs the tool.
  */
 export type McpToolKind = "query" | "mutation" | "action";
@@ -188,6 +188,28 @@ export const MCP_TOOLS: readonly McpTool[] = [
 					type: "string",
 					description: "IANA name, e.g. Asia/Jerusalem",
 				},
+			},
+		},
+	},
+	{
+		name: "today_plan_set",
+		description:
+			"Set the day plan's intention, up to 3 top tasks, or energy. Omitted fields are unchanged. Defaults to today in the given timezone (UTC if none).",
+		kind: "mutation",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			properties: {
+				date: { type: "string", description: "YYYY-MM-DD" },
+				timezone: {
+					type: "string",
+					description: "IANA name, e.g. Asia/Jerusalem",
+				},
+				intention: { type: "string", maxLength: 280 },
+				// The shared schema validator does not inspect arrays; the mutation validates
+				// the array shape, three-item limit, IDs, and ownership before writing.
+				topTaskIds: { description: "Task ids from tasks_list (maximum 3)." },
+				energy: { type: "string", enum: ["low", "medium", "high"] },
 			},
 		},
 	},
