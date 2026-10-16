@@ -3,6 +3,7 @@
  * practice tests. No data access; every word comes from the host's `labels`.
  */
 export * from "./AdaptiveQuiz";
+export * from "./core-adapters";
 export * from "./FlashcardDeck";
 export * from "./FlashcardReview";
 export * from "./quiz-engine";
