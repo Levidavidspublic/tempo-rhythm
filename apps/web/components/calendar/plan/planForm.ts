@@ -100,15 +100,29 @@ export function sessionLabel(lang: PlanLang, session: PlanSession): string {
   }
 }
 
-/** Sessions on a day follow each other from the start time, in plan order. */
+/** Starts on the planner's clock are on these marks, like the re-plan's. */
+const START_STEP = 15;
+
+/** The first start today: now, rounded up to the next quarter hour. */
+export function firstStartToday(nowMinute: number): number {
+  return Math.ceil(nowMinute / START_STEP) * START_STEP;
+}
+
+/**
+ * Sessions on a day follow each other from the start time, in plan order. On `today` (when given)
+ * they start no earlier than `today.from`, so a plan made in the evening never starts in the past.
+ */
 export function stackSessions(
   sessions: readonly PlanSession[],
   startMinute: number,
-  lang: PlanLang
+  lang: PlanLang,
+  today?: { date: LocalDate; from: number }
 ): TimedSession[] {
   const next = new Map<LocalDate, number>();
   return sessions.map((session) => {
-    const at = next.get(session.date) ?? startMinute;
+    const first =
+      today && session.date === today.date ? Math.max(startMinute, today.from) : startMinute;
+    const at = next.get(session.date) ?? first;
     next.set(session.date, at + session.minutes);
     return {
       ...session,
@@ -118,13 +132,37 @@ export function stackSessions(
   });
 }
 
+/**
+ * Busy minutes with the part of today's study window that has already gone by: the day's sessions
+ * run from the start time for `minutesPerDay`, so from `nowMinute` (rounded up to the quarter hour)
+ * only what is left of that window can hold one, and nothing once it has passed.
+ */
+function withTodayGone(
+  busy: BusyMinutes | undefined,
+  today: LocalDate,
+  window: { start: number; minutes: number },
+  nowMinute: number | undefined
+): BusyMinutes | undefined {
+  if (nowMinute === undefined || !Number.isFinite(nowMinute)) return busy;
+  const gone = Math.min(window.minutes, Math.max(0, firstStartToday(nowMinute) - window.start));
+  if (gone === 0) return busy;
+  return { ...busy, [today]: (busy?.[today] ?? 0) + gone };
+}
+
 function planInput(
   values: PlanFormValues,
   today: LocalDate,
   overrides: Partial<PlanFormValues> = {},
-  busy?: BusyMinutes
+  busy?: BusyMinutes,
+  nowMinute?: number
 ) {
   const v = { ...values, ...overrides };
+  const taken = withTodayGone(
+    busy,
+    today,
+    { start: startMinuteOf(v), minutes: v.minutesPerDay },
+    nowMinute
+  );
   return {
     today,
     deadline: v.deadline,
@@ -132,7 +170,7 @@ function planInput(
     minutesPerDay: v.minutesPerDay,
     sessionMinutes: v.sessionMinutes,
     daysOff: v.daysOff,
-    ...(busy ? { busy } : {}),
+    ...(taken ? { busy: taken } : {}),
   };
 }
 
@@ -140,11 +178,17 @@ function startMinuteOf(values: PlanFormValues): number {
   return parseClock(values.startTime) ?? parseClock(DEFAULT_FORM.startTime) ?? 0;
 }
 
+/**
+ * The live preview. `nowMinute` is the local clock minute now (the screen reads it; this stays
+ * pure): today's sessions start no earlier than it, rounded up to the quarter hour, and today
+ * gets none once its study window has gone by. Without it today counts from the start time.
+ */
 export function buildPreview(
   values: PlanFormValues,
   today: LocalDate,
   lang: PlanLang,
-  busy?: BusyMinutes
+  busy?: BusyMinutes,
+  nowMinute?: number
 ): PreviewState {
   const topics = parseTopics(values.topicsText);
   if (!isLocalDate(values.deadline) || topics.length === 0) return { status: "empty" };
@@ -160,8 +204,9 @@ export function buildPreview(
   // A day's sessions follow each other from the start time, so they have to end by midnight.
   if (start + values.minutesPerDay > DAY_MINUTES)
     return { status: "error", message: "pp.err.late" };
-  const result = planBack(planInput(values, today, {}, busy));
-  return { status: "ok", result, sessions: stackSessions(result.sessions, start, lang) };
+  const result = planBack(planInput(values, today, {}, busy, nowMinute));
+  const from = nowMinute === undefined ? undefined : { date: today, from: firstStartToday(nowMinute) };
+  return { status: "ok", result, sessions: stackSessions(result.sessions, start, lang, from) };
 }
 
 export type WeekGroup = {
@@ -199,13 +244,21 @@ export type WaysOut = {
   laterDate: LocalDate | null;
 };
 
-/** The two ways out the form can apply for you (the third, fewer topics, is yours to choose). */
-export function waysOut(values: PlanFormValues, today: LocalDate, busy?: BusyMinutes): WaysOut {
+/**
+ * The two ways out the form can apply for you (the third, fewer topics, is yours to choose).
+ * `nowMinute` as for `buildPreview`.
+ */
+export function waysOut(
+  values: PlanFormValues,
+  today: LocalDate,
+  busy?: BusyMinutes,
+  nowMinute?: number
+): WaysOut {
   let longerMinutes: number | null = null;
   // Never offer a day that would run past midnight from the start time.
   const longest = Math.min(600, DAY_MINUTES - startMinuteOf(values));
   for (let m = Math.ceil(values.minutesPerDay / 15) * 15 + 15; m <= longest; m += 15) {
-    if (planBack(planInput(values, today, { minutesPerDay: m }, busy)).shortBy === 0) {
+    if (planBack(planInput(values, today, { minutesPerDay: m }, busy, nowMinute)).shortBy === 0) {
       longerMinutes = m;
       break;
     }
@@ -214,7 +267,7 @@ export function waysOut(values: PlanFormValues, today: LocalDate, busy?: BusyMin
   if (isLocalDate(values.deadline)) {
     for (let d = 1; d <= 180; d += 1) {
       const deadline = addDays(values.deadline, d);
-      if (planBack(planInput(values, today, { deadline }, busy)).shortBy === 0) {
+      if (planBack(planInput(values, today, { deadline }, busy, nowMinute)).shortBy === 0) {
         laterDate = deadline;
         break;
       }

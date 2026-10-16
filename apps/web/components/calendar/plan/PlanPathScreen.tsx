@@ -30,6 +30,7 @@ import {
   buildPreview,
   busyByDate,
   DEFAULT_FORM,
+  firstStartToday,
   guidedLabels,
   type PlanFormValues,
   previewKey,
@@ -49,9 +50,12 @@ export function PlanPathScreen() {
   const plans = useQuery(api.plans.list, signedIn === "ready" ? {} : "skip");
 
   const [values, setValues] = useState<PlanFormValues>(DEFAULT_FORM);
-  // No clock on the server: today is read once the page is in the browser.
-  const [today, setToday] = useState<LocalDate | null>(null);
-  useEffect(() => setToday(todayLocal()), []);
+  // No clock on the server: today and the time are read once the page is in the browser, and
+  // again whenever the form changes, so today's sessions never start before now.
+  const [clock, setClock] = useState<Clock | null>(null);
+  useEffect(() => setClock(readClock()), []);
+  const today = clock?.today ?? null;
+  const nowMinute = clock?.minute;
   const [titleError, setTitleError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -90,17 +94,22 @@ export function PlanPathScreen() {
   );
 
   const preview = useMemo(
-    () => (today ? buildPreview(values, today, lang, busy) : ({ status: "empty" } as const)),
-    [values, today, lang, busy]
+    () =>
+      today ? buildPreview(values, today, lang, busy, nowMinute) : ({ status: "empty" } as const),
+    [values, today, lang, busy, nowMinute]
   );
   const short = preview.status === "ok" && preview.result.shortBy > 0;
   const ways = useMemo(
-    () => (short && today ? waysOut(values, today, busy) : null),
-    [short, values, today, busy]
+    () => (short && today ? waysOut(values, today, busy, nowMinute) : null),
+    [short, values, today, busy, nowMinute]
   );
 
   const change = (patch: Partial<PlanFormValues>) => {
     setValues((current) => ({ ...current, ...patch }));
+    setClock((current) => {
+      const next = readClock();
+      return current?.today === next.today && current.minute === next.minute ? current : next;
+    });
     if (patch.title !== undefined && patch.title.trim() !== "") setTitleError(false);
     setMessage(null);
   };
@@ -304,6 +313,16 @@ export function PlanPathScreen() {
       ) : null}
     </div>
   );
+}
+
+/** Today and the first start left today (now, rounded up to the quarter hour). */
+type Clock = { today: LocalDate; minute: number };
+
+function readClock(now: Date = new Date()): Clock {
+  return {
+    today: todayLocal(now),
+    minute: firstStartToday(now.getHours() * 60 + now.getMinutes()),
+  };
 }
 
 type Message = "pp.signIn" | "pp.error" | "pp.err.title" | "pp.g.undoError" | "pp.g.statusError";
