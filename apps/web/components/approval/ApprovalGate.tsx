@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import type { ReactNode } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import { WaitingForApproval } from "./WaitingForApproval";
 
@@ -28,11 +29,35 @@ function ApprovalGateInner({ children }: { children: ReactNode }) {
   const me = useQuery(api.approval.myStatus);
   if (me === undefined) {
     // Loading: never mount protected children before the status is known.
-    return <div aria-busy="true" data-testid="approval-loading" />;
+    return <ApprovalLoading />;
   }
   if (me && me.status !== "approved") {
     return <WaitingForApproval email={me.email} revoked={me.status === "revoked"} />;
   }
   // null (signed out: the proxy redirects) or approved.
   return <>{children}</>;
+}
+
+/**
+ * Shown until the account's status arrives (about two seconds on a fresh sign-in, longer on a
+ * slow connection). A quiet skeleton with a label, not an empty page (HARD_RULES §7.4).
+ */
+function ApprovalLoading() {
+  const { t } = useLocale();
+  return (
+    <main
+      className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground"
+      aria-busy="true"
+      data-testid="approval-loading"
+    >
+      <output className="tp-state--loading block w-full max-w-md" data-component="StateLoading">
+        <span className="tp-skel-list">
+          <span className="tp-skeleton tp-skeleton--w60" />
+          <span className="tp-skeleton tp-skeleton--w100" />
+          <span className="tp-skeleton tp-skeleton--sm tp-skeleton--w80" />
+        </span>
+        <span className="mt-4 block text-center text-sm text-muted-foreground">{t("approval.loading")}</span>
+      </output>
+    </main>
+  );
 }
