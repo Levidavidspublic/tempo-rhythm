@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from "../../../apps/web/node_modules/react-dom/s
 import { PlanForm, PlanPreview } from "../../../apps/web/components/calendar/plan/PlanParts";
 import {
   buildPreview,
+  busyByDate,
   DEFAULT_FORM,
   groupByWeek,
   type PlanFormValues,
@@ -115,6 +116,52 @@ describe("PlanPreview", () => {
     expect(html).toContain("A later date");
     expect(html).toContain(`<span class="tp-num">${ways.longerMinutes}</span> minutes a day`);
     expect(html.toLowerCase()).not.toMatch(/fail|overdue|must|behind/);
+  });
+
+  test("a day that would run past midnight is a kind form error, in English and Hebrew", () => {
+    const late = form({ startTime: "23:30", minutesPerDay: 135 });
+    expect(buildPreview(late, TODAY, "en")).toEqual({ status: "error", message: "pp.err.late" });
+    // Ending exactly at midnight is fine.
+    expect(buildPreview(form({ startTime: "22:30", minutesPerDay: 90 }), TODAY, "en").status).toBe("ok");
+    for (const lang of ["en", "he"] as const) {
+      const html = renderToStaticMarkup(
+        createElement(PlanPreview, { state: { status: "error", message: "pp.err.late" }, lang })
+      );
+      expect(html).toContain('role="alert"');
+      expect(html).toContain(lang === "en" ? "past midnight" : "אחרי חצות");
+      expect(html.toLowerCase()).not.toMatch(/fail|overdue|must/);
+    }
+    // "Longer days" never offers a day that would cross midnight.
+    const tight = form({ deadline: "2026-10-19", topicsText: "A | 3\nB | 3\nC | 3", minutesPerDay: 60, startTime: "21:00" });
+    const ways = waysOut(tight, TODAY);
+    if (ways.longerMinutes !== null) expect(21 * 60 + ways.longerMinutes).toBeLessThanOrEqual(1440);
+  });
+
+  test("busy minutes from fixed events and dated tasks shrink the days the plan uses", () => {
+    const at = (date: string, h: number, m = 0) => {
+      const [y, mo, d] = date.split("-").map(Number);
+      return new Date(y!, mo! - 1, d!, h, m).getTime();
+    };
+    const busy = busyByDate({
+      events: [
+        { id: "e1", title: "Class", startsAtMs: at("2026-10-16", 9) },
+        { id: "e2", title: "Trip", startsAtMs: at("2026-10-17", 0) }, // all day: no time taken
+      ],
+      tasks: [
+        { _id: "t1", title: "Essay", dueAt: at("2026-10-16", 14), timeEstimate: 30 * 60_000, status: "todo" },
+        { _id: "t2", title: "Done", dueAt: at("2026-10-16", 15), status: "done" },
+        { _id: "t3", title: "Gone", dueAt: at("2026-10-16", 16), status: "cancelled" },
+      ],
+    });
+    expect(busy).toEqual({ "2026-10-16": 90 });
+
+    const values = form();
+    const free = buildPreview(values, TODAY, "en");
+    const taken = buildPreview(values, TODAY, "en", busy);
+    if (free.status !== "ok" || taken.status !== "ok") throw new Error("expected plans");
+    expect(free.sessions.some((s) => s.date === TODAY)).toBe(true);
+    // 90 busy minutes fill the 90-minute day, so nothing lands on it.
+    expect(taken.sessions.some((s) => s.date === TODAY)).toBe(false);
   });
 
   test("empty and error states read kindly", () => {

@@ -16,7 +16,28 @@ import {
   type PlanTopic,
   planBack,
 } from "../../../../../packages/core/plan/plan-path";
+import { type GridSource, toGridItems } from "../gridData";
 import { type PlanLang, parseClock, pt } from "../planCopy";
+
+/** Minutes in a day: a day's study has to end by midnight. */
+const DAY_MINUTES = 1440;
+
+/** Minutes already taken on each local date, keyed `YYYY-MM-DD`. */
+export type BusyMinutes = Readonly<Record<LocalDate, number>>;
+
+/**
+ * Busy minutes per date from the person's fixed calendar events and dated tasks, the way the
+ * grids draw them (events an hour, tasks their estimate). All-day items and done or cancelled
+ * tasks take no time.
+ */
+export function busyByDate(source: GridSource): BusyMinutes {
+  const busy: Record<LocalDate, number> = {};
+  for (const item of toGridItems(source).items) {
+    if (item.done) continue;
+    busy[item.date] = (busy[item.date] ?? 0) + Math.max(0, item.durationMinutes);
+  }
+  return busy;
+}
 
 export type PlanFormValues = {
   title: string;
@@ -60,7 +81,7 @@ export type TimedSession = PlanSession & { startMinute: number; label: string };
 
 export type PreviewState =
   | { status: "empty" }
-  | { status: "error"; message: "pp.err.date" | "pp.err.number" }
+  | { status: "error"; message: "pp.err.date" | "pp.err.number" | "pp.err.late" }
   | { status: "ok"; result: PlanBackResult; sessions: TimedSession[] };
 
 /** The session title in the person's language, from its kind and topic. */
@@ -98,7 +119,8 @@ export function stackSessions(
 function planInput(
   values: PlanFormValues,
   today: LocalDate,
-  overrides: Partial<PlanFormValues> = {}
+  overrides: Partial<PlanFormValues> = {},
+  busy?: BusyMinutes
 ) {
   const v = { ...values, ...overrides };
   return {
@@ -108,13 +130,19 @@ function planInput(
     minutesPerDay: v.minutesPerDay,
     sessionMinutes: v.sessionMinutes,
     daysOff: v.daysOff,
+    ...(busy ? { busy } : {}),
   };
+}
+
+function startMinuteOf(values: PlanFormValues): number {
+  return parseClock(values.startTime) ?? parseClock(DEFAULT_FORM.startTime) ?? 0;
 }
 
 export function buildPreview(
   values: PlanFormValues,
   today: LocalDate,
-  lang: PlanLang
+  lang: PlanLang,
+  busy?: BusyMinutes
 ): PreviewState {
   const topics = parseTopics(values.topicsText);
   if (!isLocalDate(values.deadline) || topics.length === 0) return { status: "empty" };
@@ -126,8 +154,10 @@ export function buildPreview(
   ) {
     return { status: "error", message: "pp.err.number" };
   }
-  const result = planBack(planInput(values, today));
-  const start = parseClock(values.startTime) ?? parseClock(DEFAULT_FORM.startTime) ?? 0;
+  const start = startMinuteOf(values);
+  // A day's sessions follow each other from the start time, so they have to end by midnight.
+  if (start + values.minutesPerDay > DAY_MINUTES) return { status: "error", message: "pp.err.late" };
+  const result = planBack(planInput(values, today, {}, busy));
   return { status: "ok", result, sessions: stackSessions(result.sessions, start, lang) };
 }
 
@@ -167,10 +197,12 @@ export type WaysOut = {
 };
 
 /** The two ways out the form can apply for you (the third, fewer topics, is yours to choose). */
-export function waysOut(values: PlanFormValues, today: LocalDate): WaysOut {
+export function waysOut(values: PlanFormValues, today: LocalDate, busy?: BusyMinutes): WaysOut {
   let longerMinutes: number | null = null;
-  for (let m = Math.ceil(values.minutesPerDay / 15) * 15 + 15; m <= 600; m += 15) {
-    if (planBack(planInput(values, today, { minutesPerDay: m })).shortBy === 0) {
+  // Never offer a day that would run past midnight from the start time.
+  const longest = Math.min(600, DAY_MINUTES - startMinuteOf(values));
+  for (let m = Math.ceil(values.minutesPerDay / 15) * 15 + 15; m <= longest; m += 15) {
+    if (planBack(planInput(values, today, { minutesPerDay: m }, busy)).shortBy === 0) {
       longerMinutes = m;
       break;
     }
@@ -179,7 +211,7 @@ export function waysOut(values: PlanFormValues, today: LocalDate): WaysOut {
   if (isLocalDate(values.deadline)) {
     for (let d = 1; d <= 180; d += 1) {
       const deadline = addDays(values.deadline, d);
-      if (planBack(planInput(values, today, { deadline })).shortBy === 0) {
+      if (planBack(planInput(values, today, { deadline }, busy)).shortBy === 0) {
         laterDate = deadline;
         break;
       }

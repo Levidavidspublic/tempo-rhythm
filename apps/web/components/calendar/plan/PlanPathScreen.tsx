@@ -14,11 +14,22 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import type { LocalDate } from "../../../../../packages/core/plan/calendar-math";
+import {
+  isLocalDate,
+  type LocalDate,
+  toDayNumber,
+} from "../../../../../packages/core/plan/calendar-math";
+import { localSlotToMs } from "../gridData";
 import { todayLocal } from "../MonthGrid";
 import { pt } from "../planCopy";
 import { PlanForm, PlanPreview } from "./PlanParts";
-import { buildPreview, DEFAULT_FORM, type PlanFormValues, waysOut } from "./planForm";
+import {
+  buildPreview,
+  busyByDate,
+  DEFAULT_FORM,
+  type PlanFormValues,
+  waysOut,
+} from "./planForm";
 import { SessionScheduler } from "./SessionScheduler";
 
 export function PlanPathScreen() {
@@ -39,14 +50,41 @@ export function PlanPathScreen() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const topicsRef = useRef<HTMLTextAreaElement>(null);
 
+  // What is already on the calendar from today up to the deadline (read only), so the plan only
+  // uses the time that is left on each day.
+  const planWindow =
+    signedIn === "ready" &&
+    today !== null &&
+    isLocalDate(values.deadline) &&
+    toDayNumber(values.deadline) > toDayNumber(today)
+      ? { startMs: localSlotToMs(today, 0), endMs: localSlotToMs(values.deadline, 0) }
+      : null;
+  const fixedEvents = useQuery(api.calendar_events.listInRange, planWindow ?? "skip");
+  const dueTasks = useQuery(api.tasks.listDueInRange, planWindow ?? "skip");
+  const hasWindow = planWindow !== null;
+  const busy = useMemo(
+    () =>
+      hasWindow && (fixedEvents || dueTasks)
+        ? busyByDate({
+            events: (fixedEvents ?? []).map((e) => ({
+              id: e._id,
+              title: e.title,
+              startsAtMs: e.startsAtMs,
+            })),
+            tasks: dueTasks ?? [],
+          })
+        : undefined,
+    [hasWindow, fixedEvents, dueTasks]
+  );
+
   const preview = useMemo(
-    () => (today ? buildPreview(values, today, lang) : ({ status: "empty" } as const)),
-    [values, today, lang]
+    () => (today ? buildPreview(values, today, lang, busy) : ({ status: "empty" } as const)),
+    [values, today, lang, busy]
   );
   const short = preview.status === "ok" && preview.result.shortBy > 0;
   const ways = useMemo(
-    () => (short && today ? waysOut(values, today) : null),
-    [short, values, today]
+    () => (short && today ? waysOut(values, today, busy) : null),
+    [short, values, today, busy]
   );
 
   const change = (patch: Partial<PlanFormValues>) => {
