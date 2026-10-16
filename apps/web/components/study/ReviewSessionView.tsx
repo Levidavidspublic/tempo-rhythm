@@ -139,16 +139,18 @@ function SessionRunner({
   }, [last]);
   const undoAvailable =
     last !== undefined && last.undoUntil > clock && saved.current.length === state.history.length;
-  // "Type answers" (typed recall), remembered per browser. After a grade in typed mode, the next
-  // card's answer field takes focus once the save is done (the session is locked until then).
+  // "Type answers" (typed recall), remembered per browser. After a grade, the next card's answer
+  // field (typed mode) or Show answer takes focus once the save is done (the session is locked
+  // until then), so focus never falls to the page.
   const [typed, setTyped] = useTypedAnswers();
   const answerRef = useRef<HTMLInputElement>(null);
-  const focusAnswer = useRef(false);
+  const revealRef = useRef<HTMLButtonElement>(null);
+  const focusNext = useRef(false);
   useEffect(() => {
-    if (busy || !focusAnswer.current) return;
-    focusAnswer.current = false;
-    answerRef.current?.focus();
-  }, [busy]);
+    if (busy || !focusNext.current) return;
+    focusNext.current = false;
+    (typed ? answerRef.current : revealRef.current)?.focus();
+  }, [busy, typed]);
 
   const act = (action: ReviewAction) => {
     if (busyRef.current) return;
@@ -159,7 +161,7 @@ function SessionRunner({
     if (action.type === "grade") {
       const key = state.queue[0];
       if (key === undefined || !state.revealed) return;
-      focusAnswer.current = typed;
+      focusNext.current = true;
       busyRef.current = true;
       setBusy(true);
       setNotice(null);
@@ -217,6 +219,7 @@ function SessionRunner({
           readAloud={readAloud}
           typed={typed}
           answerRef={answerRef}
+          revealRef={revealRef}
         />
       </fieldset>
       <p className="tp-small tp-muted tp-study-session__status" aria-live="polite">

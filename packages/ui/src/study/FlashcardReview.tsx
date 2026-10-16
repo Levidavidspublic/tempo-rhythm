@@ -200,14 +200,17 @@ export type FlashcardReviewViewProps = {
   typed?: boolean;
   /** Typed mode: the answer field, so the host can focus it when the next card comes up. */
   answerRef?: Ref<HTMLInputElement>;
+  /** Show answer (or Check): the host focuses it when the next card comes up outside typed mode. */
+  revealRef?: Ref<HTMLButtonElement>;
 };
 
 /**
- * Moves focus to the grade group when it appears after Check in typed mode. A stable function,
- * so React calls it only when the group mounts (turning typed mode on never moves focus).
+ * Moves focus to the grade group when it appears after Show answer or Check, so focus never falls
+ * to the page when the button that had it goes away. A stable function, so React calls it only
+ * when the group mounts (turning typed mode on never moves focus).
  */
-function focusTypedGrades(node: HTMLFieldSetElement | null) {
-  if (node?.dataset.typed === "true") node.focus();
+function focusGrades(node: HTMLFieldSetElement | null) {
+  node?.focus();
 }
 
 export function FlashcardReviewView({
@@ -221,6 +224,7 @@ export function FlashcardReviewView({
   readAloud,
   typed = false,
   answerRef,
+  revealRef,
 }: FlashcardReviewViewProps) {
   const key = state.queue[0];
   const card = key === undefined ? undefined : cards.find((item) => item.key === key);
@@ -323,10 +327,10 @@ export function FlashcardReviewView({
             className="tp-study-grades"
             aria-label={labels.gradeGroup}
             data-typed={typed ? "true" : undefined}
-            tabIndex={typed ? -1 : undefined}
-            ref={focusTypedGrades}
+            tabIndex={-1}
+            ref={focusGrades}
             onKeyDown={
-              typed && onKeyDown
+              onKeyDown
                 ? (event) => {
                     // 1 to 4 also work while the group itself has focus (right after Check).
                     if (event.target === event.currentTarget) onKeyDown(event);
@@ -362,6 +366,7 @@ export function FlashcardReviewView({
           </fieldset>
         ) : (
           <button
+            ref={revealRef}
             type="button"
             className="tp-btn tp-btn--primary"
             data-action={typed ? "review-check" : "review-reveal"}
@@ -391,18 +396,19 @@ export function FlashcardReview({
     cards.map((card) => card.key),
     initReview
   );
-  // Typed mode: after a grade, the next card's answer field takes focus.
+  // After a grade, the next card's answer field (typed mode) or Show answer takes focus.
   const answerRef = useRef<HTMLInputElement>(null);
-  const focusAnswer = useRef(false);
+  const revealRef = useRef<HTMLButtonElement>(null);
+  const focusNext = useRef(false);
   const graded = state.history.length;
   useEffect(() => {
-    if (graded === 0 || !focusAnswer.current) return;
-    focusAnswer.current = false;
-    answerRef.current?.focus();
-  }, [graded]);
+    if (graded === 0 || !focusNext.current) return;
+    focusNext.current = false;
+    (typed ? answerRef.current : revealRef.current)?.focus();
+  }, [graded, typed]);
   const act = (action: ReviewAction) => {
     notifyReview(state, action, { onGrade, onUndo });
-    if (action.type === "grade" && typed && state.revealed) focusAnswer.current = true;
+    if (action.type === "grade" && state.revealed) focusNext.current = true;
     dispatch(action);
   };
   const onKeyDown = reviewKeyDown(state.revealed, act);
@@ -418,6 +424,7 @@ export function FlashcardReview({
       readAloud={readAloud}
       typed={typed}
       answerRef={answerRef}
+      revealRef={revealRef}
     />
   );
 }

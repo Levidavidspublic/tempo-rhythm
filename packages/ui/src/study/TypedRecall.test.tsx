@@ -217,11 +217,13 @@ describe("FlashcardReview typed view", () => {
     expect(keys).toEqual(["3"]);
   });
 
-  test("the grade group is not focusable outside typed mode", () => {
+  test("outside typed mode the grade group still takes focus after Show answer, without typed marks", () => {
     const markup = renderToStaticMarkup(
       createElement(FlashcardReviewView, { cards, now, labels: reviewLabels, state: run([reveal]), onAction: () => {} })
     );
-    expect(markup).not.toContain("tabindex");
+    // Show answer goes away when the card turns over, so the group (tabindex -1) takes focus.
+    expect(markup).toContain('<fieldset class="tp-study-grades"');
+    expect(markup).toContain('tabindex="-1"');
     expect(markup).not.toContain("data-typed");
     expect(markup).not.toContain("RecallVerdict");
   });
