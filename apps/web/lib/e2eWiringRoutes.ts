@@ -20,4 +20,8 @@ export const E2E_WIRING_ROUTES = [
   "/templates",
   "/templates/(.*)",
   "/onboarding",
+  // Kitchen study run: the study area and Settings > Reminders (tests/e2e/wiring/study.spec.ts).
+  "/study",
+  "/study/(.*)",
+  "/settings/reminders",
 ] as const;
