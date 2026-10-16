@@ -460,7 +460,8 @@ export function IngestSheetView({
 }
 
 function CharCount({ text, t }: { text: string; t: IngestT }) {
-  const n = Array.from(text).length;
+  // UTF-16 length: O(1). Array.from(text) walked the whole text on every key press.
+  const n = text.length;
   if (n === 1) return <>{t("ig.count.one")}</>;
   const [before, after = ""] = t("ig.count").split("{n}");
   return (

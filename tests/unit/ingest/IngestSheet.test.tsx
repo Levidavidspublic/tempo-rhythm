@@ -95,6 +95,23 @@ describe("IngestSheet", () => {
     expect(html).toMatch(/tp-btn--primary" type="submit" form="ig-form" disabled=""/);
   });
 
+  test("the character count doesn't walk the whole text on each render", () => {
+    const big = "a".repeat(300_000);
+    const realFrom = Array.from;
+    let walked = 0;
+    Array.from = ((items: unknown, ...rest: unknown[]) => {
+      if (typeof items === "string" && items.length >= big.length) walked += 1;
+      return (realFrom as (...args: unknown[]) => unknown[])(items, ...rest);
+    }) as typeof Array.from;
+    try {
+      const html = sheet({ initialTab: "paste", initialText: big });
+      expect(html).toContain('<span class="tp-num">300,000</span> characters');
+    } finally {
+      Array.from = realFrom;
+    }
+    expect(walked).toBe(0);
+  });
+
   test("Photo without a text detector: says so plainly and offers Paste", () => {
     const html = sheet({ initialTab: "photo" });
     expect(html).toContain("Reading photos isn&#x27;t available in this browser yet.");

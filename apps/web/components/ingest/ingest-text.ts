@@ -52,6 +52,7 @@ export function fileKind(name: string, type = ""): IngestFileKind | null {
 
 /** LF line endings, no byte-order mark, no NUL characters, at most one blank line in a row. */
 export function normaliseNewlines(text: string): string {
+  // trimEnd, not `/\s+$/`: V8 backtracks that regex over every run of spaces (seconds at 80k).
   return text
     .replace(/^\uFEFF/, "")
     .split(String.fromCharCode(0))
@@ -60,7 +61,7 @@ export function normaliseNewlines(text: string): string {
     .replace(/\n[ \t]*(?=\n)/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^\n+/, "")
-    .replace(/\s+$/, "");
+    .trimEnd();
 }
 
 /**
@@ -79,6 +80,9 @@ export function textBytes(text: string): number {
 }
 
 export function isTooLarge(text: string): boolean {
+  // UTF-8 never takes fewer bytes than UTF-16 code units, so past the limit in length there's no
+  // need to encode (a pasted 5 MB text would otherwise be encoded on every key press).
+  if (text.length > INGEST_MAX_BYTES) return true;
   return textBytes(text) > INGEST_MAX_BYTES;
 }
 
@@ -94,6 +98,9 @@ function clip(title: string): string {
   return (space > TITLE_MAX / 2 ? cut.slice(0, space) : cut).trimEnd();
 }
 
+/** How much of the text the title is looked for in: it runs on every key press. */
+const TITLE_SCAN_CHARS = 4096;
+
 /** A title from the file name (without its extension), else the first line with words. */
 export function deriveTitle(text: string, fileName?: string): string {
   if (fileName) {
@@ -104,7 +111,7 @@ export function deriveTitle(text: string, fileName?: string): string {
       .trim();
     if (base) return clip(base);
   }
-  for (const raw of normaliseNewlines(text).split("\n")) {
+  for (const raw of normaliseNewlines(text.slice(0, TITLE_SCAN_CHARS)).split("\n")) {
     const line = raw
       .replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+[.)]\s+)/, "")
       .replace(/[*_`]+/g, "")

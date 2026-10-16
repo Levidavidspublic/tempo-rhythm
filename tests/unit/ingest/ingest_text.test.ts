@@ -172,6 +172,85 @@ describe("files and size", () => {
   });
 });
 
+describe("long text stays quick", () => {
+  // A long run of spaces in the middle of the text: `/\s+$/` backtracks over it once per
+  // start position in V8, which took seconds for 80k spaces (review finding, T9).
+  const runs = [
+    `x${" ".repeat(200_000)}y`,
+    `x${"\t".repeat(200_000)}y`,
+    `x${"\u00a0".repeat(200_000)}y`,
+  ];
+
+  test("a 200k whitespace run goes through every helper in well under a second", () => {
+    const start = performance.now();
+    for (const text of runs) {
+      normaliseNewlines(text);
+      deriveTitle(text);
+      toPageBody(text);
+      interpretFile("a.txt", text);
+    }
+    expect(performance.now() - start).toBeLessThan(500);
+    expect(normaliseNewlines(`a${" ".repeat(200_000)}`)).toBe("a");
+  });
+
+  // Bun runs JavaScriptCore, which doesn't backtrack on `/\s+$/`; Chrome runs V8, which does.
+  // When Node (V8) is on the machine, run the same helpers there too.
+  const node = Bun.which("node");
+  test.skipIf(!node)(
+    "and in V8 (the engine in Chrome) too",
+    async () => {
+      const source = await Bun.file(
+        `${import.meta.dir}/../../../apps/web/components/ingest/ingest-text.ts`
+      ).text();
+      const js = new Bun.Transpiler({ loader: "ts" }).transformSync(source);
+      const bench = [
+        js,
+        "const runs = ['x' + ' '.repeat(200000) + 'y', 'x' + '\\t'.repeat(200000) + 'y'];",
+        "let worst = 0;",
+        "for (const text of runs) {",
+        "  const start = performance.now();",
+        "  normaliseNewlines(text); deriveTitle(text); toPageBody(text); interpretFile('a.txt', text);",
+        "  worst = Math.max(worst, performance.now() - start);",
+        "}",
+        "console.log(JSON.stringify({ worst }));",
+      ].join("\n");
+      const run = Bun.spawnSync({
+        cmd: [node ?? "node", "--input-type=module", "-e", bench],
+        timeout: 15_000,
+      });
+      expect(run.exitCode).toBe(0);
+      const { worst } = JSON.parse(run.stdout.toString().trim()) as { worst: number };
+      expect(worst).toBeLessThan(500);
+    },
+    20_000
+  );
+
+  test("the size check never encodes text that is longer than the limit in characters", () => {
+    const Real = globalThis.TextEncoder;
+    let encoded = 0;
+    globalThis.TextEncoder = class extends Real {
+      override encode(input?: string) {
+        encoded += input?.length ?? 0;
+        return super.encode(input);
+      }
+    };
+    try {
+      expect(isTooLarge("a".repeat(5_000_000))).toBe(true);
+      expect(encoded).toBe(0);
+      // Within the character limit it still counts UTF-8 bytes: Hebrew letters take two.
+      expect(isTooLarge("א".repeat(INGEST_MAX_BYTES / 2 + 1))).toBe(true);
+      expect(isTooLarge("א".repeat(INGEST_MAX_BYTES / 2))).toBe(false);
+    } finally {
+      globalThis.TextEncoder = Real;
+    }
+  });
+
+  test("the title comes from the first 4,096 characters, so a huge paste isn't scanned each key", () => {
+    expect(deriveTitle(`Real title\n${"x ".repeat(3_000_000)}`)).toBe("Real title");
+    expect(deriveTitle(`${"\n".repeat(5000)}Too far down`)).toBe("");
+  });
+});
+
 describe("copy", () => {
   const bad = /\b(failed|failure|must|overdue|streak)\b/i;
   const emoji = /\p{Extended_Pictographic}/u;
