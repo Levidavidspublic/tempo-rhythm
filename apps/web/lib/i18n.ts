@@ -7,6 +7,7 @@
  * Hebrew copy is machine-drafted and needs native review (OVERNIGHT-RUN.md hard limits).
  */
 
+import * as coachProposalCopy from "./i18n-groups/coach-proposal";
 import * as extrasCopy from "./i18n-groups/extras";
 import * as goalsCopy from "./i18n-groups/goals";
 import * as habitsCopy from "./i18n-groups/habits";
@@ -379,6 +380,7 @@ const en = {
   ...habitsCopy.en,
   ...goalsCopy.en,
   ...youCopy.en,
+  ...coachProposalCopy.en,
   ...settingsCopy.en,
   ...extrasCopy.en,
 } as const;
@@ -729,6 +731,7 @@ const he: Record<MessageKey, string> = {
   ...habitsCopy.he,
   ...goalsCopy.he,
   ...youCopy.he,
+  ...coachProposalCopy.he,
   ...settingsCopy.he,
   ...extrasCopy.he,
 };
