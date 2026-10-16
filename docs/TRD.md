@@ -254,3 +254,8 @@ Diagrams and Graphify: Graphify 0.9.74 runs on push to `integration`.
 
 
 ---
+
+
+## Environment & deploy
+
+Every variable, where it is set, and its 1Password item are in [docs/ops/ENV-MANIFEST.md](ops/ENV-MANIFEST.md). Preview deploys use the Convex preview deploy key; production deploys happen only when an agent's prompt says "DEPLOY TO PRODUCTION".
