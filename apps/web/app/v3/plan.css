@@ -103,3 +103,10 @@
 .tp-plan__replan-preview { display: grid; gap: var(--tp-space-3); }
 .tp-plan__replan-preview > .tp-section__title { margin: 0; }
 .tp-plan__moves .tp-plan__session { align-items: baseline; }
+
+/* WeekGrid scrolls to the week's first item: the day names (and the corner over the hours) stay
+   in view on top while the hours scroll under them. */
+.tp-sched__col > .tp-week__head, .tp-sched__corner {
+  position: sticky; inset-block-start: 0; z-index: 3; background: inherit;
+}
+.tp-sched__corner { background: var(--tp-paper); }

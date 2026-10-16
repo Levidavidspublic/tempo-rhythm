@@ -5,7 +5,9 @@
  * by hour rows, laid out with `layoutWeek` from packages/core/plan/schedule.ts. Fixed items have
  * a solid edge and the word "Fixed"; flexible ones a dashed edge and "Flexible". Overlapping
  * items share the column in lanes. Items outside the visible hours are counted in words. The
- * grid scrolls inside itself, never the page.
+ * grid scrolls inside itself, never the page: when it opens and when the week changes it scrolls
+ * to the hour of that week's earliest item (or to now on this week when it has none), without
+ * moving focus, and without gliding under reduced motion. The day names stay in view.
  *
  * Every item is a button that opens a small mover under the grid: a day earlier or later,
  * 30 minutes earlier or later, or "Move to…" a day picked in a MonthGrid. Fixed items don't
@@ -15,8 +17,10 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react"
 import { TpIcon } from "@/components/tempo/TpIcon";
 import {
   daysBetween,
+  isLocalDate,
   type LocalDate,
   parseLocalDate,
+  toDayNumber,
   weekday,
 } from "../../../../packages/core/plan/calendar-math";
 import {
@@ -113,6 +117,71 @@ export function fixedClashes<T extends WeekItem>(
     .map((c) => ({ flexible: c.b, fixed: c.a, date: c.date, minutes: c.overlapMinutes }));
 }
 
+/**
+ * The clock minute the week grid scrolls to, always the top of an hour row: the hour of the
+ * earliest item in the 7 days from `weekStart`, or, on the week holding `today` with no items,
+ * the current hour. Kept inside the visible day (an item before it means the top, where it is
+ * counted in words). The day's first hour means "stay at the top". All-day items have their own
+ * row and don't count.
+ */
+export function scrollMinuteFor(
+  items: readonly ScheduleItem[],
+  weekStart: LocalDate,
+  today: LocalDate,
+  nowMinute: number | null,
+  options: GridOptions = {}
+): number {
+  const { dayStartMinute, dayEndMinute } = gridRange(options);
+  const first = toDayNumber(weekStart);
+  const inWeek = (date: LocalDate) =>
+    isLocalDate(date) && toDayNumber(date) >= first && toDayNumber(date) < first + 7;
+  let target: number | null = null;
+  for (const item of items) {
+    if (!inWeek(item.date) || !Number.isFinite(item.startMinute)) continue;
+    target = target === null ? item.startMinute : Math.min(target, item.startMinute);
+  }
+  if (target === null && nowMinute !== null && Number.isFinite(nowMinute) && inWeek(today)) {
+    target = nowMinute;
+  }
+  if (target === null) return dayStartMinute;
+  const hour = Math.floor(target / 60) * 60;
+  return Math.max(dayStartMinute, Math.min(hour, dayEndMinute - 60));
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/**
+ * Scrolls the grid's own region (never the page, never focus) so `minute`'s hour row sits just
+ * under the sticky day names. The day's first hour goes back to the very top.
+ */
+function scrollGridTo(
+  scroller: HTMLElement | null,
+  minute: number,
+  grid: { dayStartMinute: number; slotMinutes: number; slots: number },
+  smooth: boolean
+): void {
+  const body = scroller?.querySelector<HTMLElement>(".tp-sched__body");
+  if (!scroller || !body || grid.slots <= 0) return;
+  let top = 0;
+  if (minute > grid.dayStartMinute) {
+    const head = scroller.querySelector<HTMLElement>(".tp-week__head");
+    const bodyTop =
+      body.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    const slotPx = body.clientHeight / grid.slots;
+    // Half a row of room under the day names, so the hour's label isn't cut by them.
+    top =
+      bodyTop +
+      ((minute - grid.dayStartMinute) / grid.slotMinutes) * slotPx -
+      (head?.offsetHeight ?? 0) -
+      slotPx / 2;
+  }
+  scroller.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+}
+
 function timeRange(item: ScheduleItem): string {
   return `${formatClock(item.startMinute)}–${formatClock(item.startMinute + item.durationMinutes)}`;
 }
@@ -138,6 +207,31 @@ export function WeekGrid<T extends WeekItem>({
   const hours: number[] = [];
   for (let m = range.dayStartMinute; m < range.dayEndMinute; m += 60) hours.push(m);
   const slotsPerHour = 60 / range.slotMinutes;
+
+  // Bring the week's first item into view: once per week, and once more when that week's items
+  // first arrive (the previous week's stay on screen while the next one loads). A move made in
+  // the grid never scrolls it.
+  const scrollRef = useRef<HTMLElement>(null);
+  const scrolled = useRef<{ week: LocalDate; withItems: boolean; moved: boolean } | null>(null);
+  const target = scrollMinuteFor(items, weekStart, today, nowMinute, options);
+  const withItems = layout.days.some(
+    (day) => day.items.length + day.hiddenBefore + day.hiddenAfter > 0
+  );
+  const { dayStartMinute, slotMinutes } = range;
+  const { slots } = layout;
+  useEffect(() => {
+    const last = scrolled.current;
+    if (last && last.week === weekStart && (last.withItems || !withItems)) return;
+    // Another week may glide into place; the first view never does, nor anything under reduced motion.
+    const moved = last !== null && (last.week !== weekStart || last.moved);
+    scrolled.current = { week: weekStart, withItems, moved };
+    scrollGridTo(
+      scrollRef.current,
+      target,
+      { dayStartMinute, slotMinutes, slots },
+      moved && !prefersReducedMotion()
+    );
+  }, [weekStart, withItems, target, dayStartMinute, slotMinutes, slots]);
 
   return (
     <div className="tp-sched" data-component="WeekGrid">
@@ -165,6 +259,7 @@ export function WeekGrid<T extends WeekItem>({
       ) : null}
 
       <section
+        ref={scrollRef}
         className="tp-sched__scroll"
         aria-label={pt(lang, "cal.g.week", { date: shortDate(lang, weekStart) })}
       >
