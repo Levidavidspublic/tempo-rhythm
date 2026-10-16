@@ -160,15 +160,10 @@ export function BrainDumpScreen() {
     try {
       const result = await acceptPlan({ items: toAdd });
       // Now lines also go on today (lib/brain-dump-today.ts); one that fails stays in Tasks.
-      let onToday = 0;
-      for (const taskId of nowTaskIds(toAdd, result.taskIds)) {
-        try {
-          await updateTask({ taskId, dueAt: bounds.endMs - 1 });
-          onToday += 1;
-        } catch {
-          // Still added to Tasks; it just isn't on Today.
-        }
-      }
+      const moved = await Promise.allSettled(
+        nowTaskIds(toAdd, result.taskIds).map((taskId) => updateTask({ taskId, dueAt: bounds.endMs - 1 })),
+      );
+      const onToday = moved.filter((outcome) => outcome.status === "fulfilled").length;
       setDoneMessage(addedNotice(result.created, onToday, t));
       setDoneOnToday(onToday > 0);
       setDraft("");
