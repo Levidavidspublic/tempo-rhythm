@@ -55,6 +55,33 @@ Known tags: "fixed in #N (open)" = an open PR already covers it; "#964 (merged l
 - New, not covered by an open PR: 31 (rows 1–5, 7–9, 11–33). Major 11, minor 16, cosmetic 4. Rows 13 and 15 count here even though part of each is known.
 - Already covered: 10 (rows 6, 10, 34–41). Open PRs #965, #968, #983, #969, #981, #992; #964 merged later.
 
+## Fix map (16 Oct, end of wave 5)
+
+The "Known" column above is what was known during the pass. This is where each row stands now. "#N" is an open draft PR that fixes it, with its own before/after proof.
+
+| rows | fixed by |
+|---|---|
+| 1, 2 | #1023 (no scaffold pages) |
+| 3 | #1022 |
+| 4 | #1026 |
+| 5 | #1020 |
+| 6 | #965 |
+| 7, 8 | #1025 |
+| 9 | #1058 (the dump and the plan survive Back, Forward and a reload) |
+| 10 | #968 |
+| 11, 12, 14, 31 | #1024 |
+| 13 | #964 (greeting), #1002 (panel), #1022 (day plan), #1021 (energy card), #1056 (habit strip) |
+| 15 | #981 fixes the two `<main>`; the "0 habits" wording is still open |
+| 16 | #1057 fixes /plan and /templates/builder; /today's two h1s are Amit's call |
+| 18, 19 | #1039 |
+| 22, 32 | #1050 |
+| 26 | #1038, plus #1054 (/coach's "Today's plan" card) and #1055 (/plan's time-block dialog) |
+| 28 | #1056. The real cause was a long habit name pushing "Check" off the screen, not the coach cards. |
+| 29 | #1052 |
+| 34–41 | as in the table |
+
+**Still open:** rows 17, 20, 21, 23, 24, 25, 27, 30, 33, and the parts of 15 and 16 noted above. All are minor or cosmetic. Every major has a fix PR.
+
 ## Notes
 - Model calls used: 3 of 6. One each for the Today coach chat, the /coach proposal and /brain-dump "Sort it". Double Enter in the coach box sent one message, and double-clicking "Sort it" showed one plan.
 - The session stayed signed in for the whole resumed pass. Every chunk saved its state at the end.
