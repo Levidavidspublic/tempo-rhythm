@@ -16,6 +16,43 @@ export function matchesSearch(content: string, query: string): boolean {
   return needle.split(" ").every((word) => haystack.includes(word));
 }
 
+/** The most rows memory.list and memory.recall send back (MAX_LIMIT in convex/memory.ts). */
+export const SERVER_ROW_LIMIT = 200;
+
+/**
+ * The word memory.recall searches for. It matches one lower-cased substring, so it gets the
+ * longest word of the query (the rarest, usually) and the other words are checked here.
+ */
+export function recallNeedle(query: string): string {
+  return normalizeForSearch(query)
+    .split(" ")
+    .reduce((longest, word) => (word.length > longest.length ? word : longest), "");
+}
+
+/**
+ * Which memories a search finds. `recalled` is null when the loaded list is the whole set (the
+ * server isn't asked), undefined while memory.recall is still on its way, else its rows. The
+ * loaded matches come first, then the server's matches the list didn't have, each once. `more`
+ * is true when the server stopped at its limit, so there may be further matches.
+ */
+export function searchMemories<T extends { _id: string; content: string }>(
+  loaded: readonly T[],
+  recalled: readonly T[] | null | undefined,
+  query: string
+): { rows: T[]; scope: "loaded" | "searching" | "all"; more: boolean } {
+  const rows = loaded.filter((memory) => matchesSearch(memory.content, query));
+  if (recalled === null) return { rows, scope: "loaded", more: false };
+  if (recalled === undefined) return { rows, scope: "searching", more: false };
+  const seen = new Set(rows.map((memory) => memory._id));
+  for (const memory of recalled) {
+    if (!seen.has(memory._id) && matchesSearch(memory.content, query)) {
+      seen.add(memory._id);
+      rows.push(memory);
+    }
+  }
+  return { rows, scope: "all", more: recalled.length >= SERVER_ROW_LIMIT };
+}
+
 export function isLongFact(content: string): boolean {
   return content.length > LONG_FACT_CHARS;
 }

@@ -10,6 +10,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, tes
 import { act, createElement } from "../../apps/web/node_modules/react";
 import { createRoot, type Root } from "../../apps/web/node_modules/react-dom/client";
 import { type MessageKey, translate } from "../../apps/web/lib/i18n";
+import { recallNeedle, searchMemories } from "../../apps/web/components/memory/memorySearch";
 
 type Listener = (event: TestEvent) => void;
 
@@ -305,6 +306,10 @@ const NOW = Date.now();
 const LONG = `${"Mondays are slow and that is fine. ".repeat(12)}Start them small.`;
 
 let memories: Memory[] | undefined;
+/** Every live memory on the "server", for memory.recall; the list above may stop at 200. */
+let everything: Memory[] | undefined;
+let recallLoading = false;
+const recallNeedles: string[] = [];
 let profile: { greetingName: string } | null | undefined;
 let throwOnList = false;
 const calls: { name: string; args: Record<string, unknown> }[] = [];
@@ -352,6 +357,15 @@ function installModuleMocks() {
         restoreAll: mutationFor("memory:restoreAll"),
         exportAll: async () => ({ markdown: "", filename: "m.md" }),
       };
+    },
+    // Like memory.recall (convex/memory.ts): one lower-cased substring over every live memory,
+    // at most 200 rows; "skip" (an empty needle) and loading both read as undefined.
+    useMemoryRecall: (needle: string) => {
+      recallNeedles.push(needle);
+      if (!needle || recallLoading) return undefined;
+      return (everything ?? memories ?? [])
+        .filter((m) => m.content.toLowerCase().includes(needle))
+        .slice(0, 200);
     },
   }));
   mock.module(nextLink, () => ({
@@ -500,6 +514,9 @@ afterAll(() => {
 
 beforeEach(() => {
   profile = { greetingName: "Maya" };
+  everything = undefined;
+  recallLoading = false;
+  recallNeedles.length = 0;
   throwOnList = false;
   calls.length = 0;
   failing.clear();
@@ -548,6 +565,49 @@ describe("MemoryManager", () => {
     expect(view.textContent).toContain('No memories match "pizza".');
     await click(view, "Clear search");
     expect(facts(view)).toHaveLength(4);
+  });
+
+  test("with 200 or more memories, search asks the server so older ones are found too", async () => {
+    // The list stops at 200; the 250 below are all on the server.
+    everything = Array.from({ length: 250 }, (_, i) => ({
+      _id: `old${i}`,
+      content: i === 230 ? "Zebra crossings make me nervous." : `Note number ${i}`,
+      createdAt: NOW - (i + 1) * DAY,
+    }));
+    memories = everything.slice(0, 200);
+    const view = await renderUi();
+    const box = byId(view, "memory-search");
+    await type(box, "nervous zebra");
+    // memory.recall matches one substring, so it gets the longest word; the rest are checked here.
+    expect(recallNeedles.at(-1)).toBe("nervous");
+    expect(facts(view)).toEqual(["Zebra crossings make me nervous."]);
+    expect(view.textContent).toContain("1 found in all your memories");
+
+    await type(box, "zebra pizza");
+    expect(facts(view)).toEqual([]);
+    expect(view.textContent).toContain('No memories match "zebra pizza".');
+  });
+
+  test("while the server search runs, the loaded matches show and it says it is still looking", async () => {
+    everything = Array.from({ length: 220 }, (_, i) => ({
+      _id: `n${i}`,
+      content: `Note number ${i}`,
+      createdAt: NOW - (i + 1) * DAY,
+    }));
+    memories = everything.slice(0, 200);
+    recallLoading = true;
+    const view = await renderUi();
+    await type(byId(view, "memory-search"), "number 7");
+    expect(facts(view).length).toBeGreaterThan(0);
+    expect(view.textContent).toContain("Looking through all your memories");
+    expect(view.textContent).not.toContain("No memories match");
+  });
+
+  test("under 200 memories the loaded list is the whole set, so the server isn't asked", async () => {
+    const view = await renderUi();
+    await type(byId(view, "memory-search"), "dana");
+    expect(recallNeedles.every((needle) => needle === "")).toBe(true);
+    expect(view.textContent).toContain("1 of 4 shown");
   });
 
   test("the source filter shows only imported, or only your own", async () => {
@@ -796,5 +856,42 @@ describe("MemoryManager", () => {
     const view = await renderUi();
     expect(view.textContent).toContain("Loading your memories");
     expect(facts(view)).toHaveLength(0);
+  });
+});
+
+describe("memory search helpers", () => {
+  test("recallNeedle sends the longest word, folded like the search box", () => {
+    expect(recallNeedle("  Tea   MORNING ")).toBe("morning");
+    expect(recallNeedle("שָׁלוֹם עולם")).toBe("שלום");
+    expect(recallNeedle("   ")).toBe("");
+  });
+
+  test("searchMemories keeps loaded matches and adds the server's, once each", () => {
+    const loaded = [
+      { _id: "a", content: "Green tea in the morning" },
+      { _id: "b", content: "Coffee after lunch" },
+    ];
+    const recalled = [
+      { _id: "a", content: "Green tea in the morning" },
+      { _id: "c", content: "Morning tea with mint" },
+      { _id: "d", content: "Morning run" },
+    ];
+    expect(searchMemories(loaded, null, "tea morning")).toEqual({
+      rows: [loaded[0]],
+      scope: "loaded",
+      more: false,
+    });
+    expect(searchMemories(loaded, undefined, "tea morning")).toEqual({
+      rows: [loaded[0]],
+      scope: "searching",
+      more: false,
+    });
+    expect(searchMemories(loaded, recalled, "tea morning")).toEqual({
+      rows: [loaded[0], recalled[1]],
+      scope: "all",
+      more: false,
+    });
+    const many = Array.from({ length: 200 }, (_, i) => ({ _id: `m${i}`, content: `tea ${i}` }));
+    expect(searchMemories([], many, "tea").more).toBe(true);
   });
 });

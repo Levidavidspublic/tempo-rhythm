@@ -37,8 +37,8 @@ import {
 } from "@/lib/you/screenState";
 import { type MemoryEdit, MemoryItem } from "./MemoryItem";
 import { useMemoryCopy } from "./memoryCopy";
-import { checkEdit, matchesSearch } from "./memorySearch";
-import { useMemoryBackend } from "./useMemoryBackend";
+import { checkEdit, recallNeedle, SERVER_ROW_LIMIT, searchMemories } from "./memorySearch";
+import { useMemoryBackend, useMemoryRecall } from "./useMemoryBackend";
 
 /**
  * What Tempo remembers (docs/design/v3/screens/web/memory.html). Forget one (soft delete,
@@ -59,7 +59,7 @@ type Toast = { title: string; untilMs: number; onUndo?: () => Promise<unknown> }
 /** Memories forgotten one by one whose Undo window is still open (each keeps its own window). */
 type Forgotten = { id: Id<"memories">; untilMs: number };
 
-const LIST_LIMIT = 200;
+const LIST_LIMIT = SERVER_ROW_LIMIT;
 const FILTER_LABEL: Record<MemoryFilter, MessageKey> = {
   all: "mm.f.all",
   you: "mm.f.you",
@@ -141,6 +141,12 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
 
   const [filter, setFilter] = useState<MemoryFilter>("all");
   const [query, setQuery] = useState("");
+  // The list stops at LIST_LIMIT. Past that, a search also asks memory.recall, which looks
+  // through every memory on the server, so an older one is found too.
+  const capped = (memories?.length ?? 0) >= LIST_LIMIT;
+  const searching = query.trim().length > 0;
+  const needle = capped && searching ? recallNeedle(query) : "";
+  const recalled = useMemoryRecall(needle);
   const [editing, setEditing] = useState<({ id: Id<"memories"> } & MemoryEdit) | null>(null);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const [rowError, setRowError] = useState<{ id: string; text: string } | null>(null);
@@ -194,10 +200,13 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const searchBox = useRef<HTMLInputElement>(null);
 
   const all: Memory[] = (memories ?? []).filter((m) => !hidden.has(m._id));
-  const capped = (memories?.length ?? 0) >= LIST_LIMIT;
   const filtered = shownMemories(all, filter);
-  const shown = filtered.filter((memory) => matchesSearch(memory.content, query));
-  const searching = query.trim().length > 0;
+  const found = searchMemories(
+    all,
+    needle ? recalled?.filter((m) => !hidden.has(m._id)) : null,
+    query
+  );
+  const shown = shownMemories(found.rows, filter);
 
   // After Undo brings a memory back, focus returns to its Forget button; after Save or Cancel,
   // to that row's Edit button. When the search or filter hides the row, focus goes to the search
@@ -486,11 +495,17 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
               </div>
               {searching ? (
                 <p className="tp-help" id="memory-search-count" aria-live="polite">
-                  {fill(copy("mem.search.count"), { n: shown.length, total: filtered.length })}
+                  {found.scope === "loaded"
+                    ? fill(copy("mem.search.count"), { n: shown.length, total: filtered.length })
+                    : found.scope === "searching"
+                      ? copy("mem.search.looking")
+                      : fill(copy(found.more ? "mem.search.allMore" : "mem.search.all"), {
+                          n: shown.length,
+                        })}
                 </p>
               ) : null}
               {shown.length === 0 ? (
-                searching ? (
+                found.scope === "searching" ? null : searching ? (
                   <div className="mm-none">
                     <p className="tp-muted tp-small">
                       {fill(copy("mem.search.none"), { q: query.trim() })}

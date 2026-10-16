@@ -2,6 +2,7 @@
 
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { SERVER_ROW_LIMIT } from "./memorySearch";
 
 /**
  * Every Convex call "What Tempo remembers" makes, in one hook, so the screen reads as view code
@@ -33,4 +34,12 @@ export function useMemoryBackend(limit: number) {
     restoreAll,
     exportAll,
   };
+}
+
+/**
+ * memory.recall for one word, over every live memory (not just the 200 the list holds).
+ * An empty needle skips the query. Undefined while skipped or still on its way.
+ */
+export function useMemoryRecall(needle: string) {
+  return useQuery(api.memory.recall, needle ? { query: needle, limit: SERVER_ROW_LIMIT } : "skip");
 }
