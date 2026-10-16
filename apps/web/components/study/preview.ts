@@ -476,6 +476,14 @@ export function canAccept(state: ProposalState, draft: Draft): boolean {
   return (state.phase === "preview" || state.phase === "editing") && draftToData(draft) !== null;
 }
 
+/**
+ * "Ask the coach" replaces the card, so it shows only while the card is a plain preview: never
+ * over an edit list (the edits would be lost) or an accepted set (its Undo would be lost).
+ */
+export function canAskCoach(phase: ProposalPhase, hasCoachPreview: boolean): boolean {
+  return !hasCoachPreview && phase === "preview";
+}
+
 export type GenerateReason = "no_key" | "too_short" | "busy" | "failed" | "offline";
 
 /** The kind words for "the coach isn't available", per reason. */

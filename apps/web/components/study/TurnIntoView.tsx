@@ -22,6 +22,7 @@ import { countKey, KIND_ICON, KIND_KEY, type StudyT } from "./labels";
 import {
   type Created,
   canAccept,
+  canAskCoach,
   type Draft,
   type DraftItem,
   draftFrom,
@@ -31,6 +32,7 @@ import {
   type GenerateReason,
   initialProposal,
   outlinePreview,
+  type ProposalPhase,
   proposalReducer,
   reasonKey,
   type StudyPreview,
@@ -92,10 +94,13 @@ export function TurnIntoView({
   const [coach, setCoach] = useState<StudyPreview | null>(null);
   const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState<GenerateReason | null>(null);
+  // The card's phase, so "Ask the coach" never replaces an edit list or an accepted set.
+  const [phase, setPhase] = useState<ProposalPhase>("preview");
   const preview = coach ?? outline;
+  const showAsk = canAskCoach(phase, coach !== null);
 
   const ask = () => {
-    if (asking) return;
+    if (asking || !canAskCoach(phase, coach !== null)) return;
     if (!online) {
       setReason("offline");
       return;
@@ -178,7 +183,7 @@ export function TurnIntoView({
               <span className="tp-notice__text">{t(reasonKey(reason))}</span>
             </output>
           ) : null}
-          {coach ? null : (
+          {showAsk ? (
             <div className="tp-study-actions">
               <button
                 className="tp-btn tp-btn--secondary"
@@ -192,7 +197,7 @@ export function TurnIntoView({
                 <span>{asking ? t("st.pv.asking") : t("st.pv.ask")}</span>
               </button>
             </div>
-          )}
+          ) : null}
           {preview ? (
             <PreviewCard
               key={coach ? "coach" : "outline"}
@@ -201,6 +206,7 @@ export function TurnIntoView({
               t={t}
               onCreate={onCreate}
               onUndo={onUndo}
+              onPhase={setPhase}
             />
           ) : null}
         </>
@@ -231,15 +237,18 @@ function PreviewCard({
   t,
   onCreate,
   onUndo,
+  onPhase,
 }: {
   preview: StudyPreview;
   note: NotePreviewSource;
   t: StudyT;
   onCreate: TurnIntoViewProps["onCreate"];
   onUndo: TurnIntoViewProps["onUndo"];
+  onPhase: (phase: ProposalPhase) => void;
 }) {
   const [draft, edit] = useReducer(draftReducer, preview, draftFrom);
   const [state, dispatch] = useReducer(proposalReducer, initialProposal);
+  useEffect(() => onPhase(state.phase), [state.phase, onPhase]);
   const [toast, setToast] = useState<ToastState | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
   const saving = useRef(false);
@@ -438,6 +447,8 @@ function DraftEditor({
   problems: MessageKey[];
 }) {
   const [first, second] = LINE_LABELS[kind];
+  // The reducer stops at the codec's limits (100 items, 20 questions in a test section).
+  const roomToAdd = draftReducer(draft, { type: "add" }) !== draft;
   const lastAdded = useRef<string | null>(null);
   // After "Add", focus moves to the new item's first field.
   useEffect(() => {
@@ -533,6 +544,7 @@ function DraftEditor({
           className="tp-btn tp-btn--secondary"
           type="button"
           data-action="add-item"
+          disabled={!roomToAdd}
           onClick={() => {
             onEdit({ type: "add" });
             lastAdded.current = nextIdHint(draft);

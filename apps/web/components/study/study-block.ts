@@ -54,3 +54,68 @@ export function studyBlockHref(noteId: string | null | undefined, blockId: strin
 export function noteIdAround(element: Element | null): string | null {
   return element?.closest?.("[data-note-id]")?.getAttribute("data-note-id") ?? null;
 }
+
+/**
+ * A study link asks the page's host to navigate with the app router (a client-side move), so the
+ * page unmounts first and its pending autosave is sent before /study/new reads the block. A full
+ * reload would drop an edit made in the last half second.
+ */
+export const STUDY_NAVIGATE_EVENT = "tempo:study-navigate";
+
+type ClickLike = {
+  button: number;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+  defaultPrevented: boolean;
+  preventDefault: () => void;
+};
+
+/** A plain left click (no new tab or window asked for). */
+export function isPlainClick(event: ClickLike): boolean {
+  return (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+/**
+ * On a plain click, stop the browser's own navigation and send `STUDY_NAVIGATE_EVENT` up from
+ * the link. When no host takes it (nothing listening), `fallback` navigates instead.
+ */
+export function openStudyLink(
+  event: ClickLike,
+  link: EventTarget,
+  href: string,
+  fallback: (href: string) => void
+): void {
+  if (!isPlainClick(event)) return;
+  event.preventDefault();
+  const request = new CustomEvent(STUDY_NAVIGATE_EVENT, {
+    bubbles: true,
+    cancelable: true,
+    detail: { href },
+  });
+  const taken = !link.dispatchEvent(request);
+  if (!taken) fallback(href);
+}
+
+/** The host's side: navigate on each study link request under `target`. Returns the cleanup. */
+export function listenForStudyLinks(
+  target: EventTarget,
+  navigate: (href: string) => void
+): () => void {
+  const onRequest = (event: Event) => {
+    const href = (event as CustomEvent<{ href?: unknown }>).detail?.href;
+    if (typeof href !== "string" || !href.startsWith("/study")) return;
+    event.preventDefault();
+    navigate(href);
+  };
+  target.addEventListener(STUDY_NAVIGATE_EVENT, onRequest);
+  return () => target.removeEventListener(STUDY_NAVIGATE_EVENT, onRequest);
+}
