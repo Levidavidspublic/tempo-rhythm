@@ -5,7 +5,6 @@ import {
   BRAIN_DUMP_SESSION_VERSION,
   type BrainDumpSession,
   clearBrainDumpSession,
-  isFinished,
   type KeptPlan,
   loadBrainDumpSession,
   type SessionStore,
@@ -29,7 +28,29 @@ const sorted: BrainDumpSession = {
   plan,
   accepted: [0],
   rejected: [2],
+  savedPageId: null,
 };
+
+const empty: BrainDumpSession = {
+  draft: "",
+  plan: null,
+  accepted: [],
+  rejected: [],
+  savedPageId: null,
+};
+
+/** A typed dump with no plan, as it reads back. */
+function typedOnly(draft: string): BrainDumpSession {
+  return { draft, plan: null, accepted: [], rejected: [], savedPageId: null };
+}
+
+/** Put a raw kept value in the store, as an older or damaged write would have left it. */
+function putRaw(data: Map<string, string>, value: Record<string, unknown>) {
+  data.set(
+    BRAIN_DUMP_SESSION_KEY,
+    JSON.stringify({ v: BRAIN_DUMP_SESSION_VERSION, savedAt: T0, ...value })
+  );
+}
 
 /** A Map-backed store; `fail` makes the named calls throw like blocked or full storage. */
 function fakeStore(fail: Partial<Record<keyof SessionStore, boolean>> = {}) {
@@ -60,7 +81,7 @@ describe("save and load", () => {
 
   test("a dump typed but not sorted yet comes back on its own", () => {
     const { store } = fakeStore();
-    const typed = { draft: "call mom\npay rent", plan: null, accepted: [], rejected: [] };
+    const typed = typedOnly("call mom\npay rent");
     saveBrainDumpSession(store, typed, T0);
     expect(loadBrainDumpSession(store, T0)).toEqual(typed);
   });
@@ -177,12 +198,7 @@ describe("bad JSON", () => {
         rejected: [],
       })
     );
-    expect(loadBrainDumpSession(store, T0)).toEqual({
-      draft: "reply",
-      plan: null,
-      accepted: [],
-      rejected: [],
-    });
+    expect(loadBrainDumpSession(store, T0)).toEqual(typedOnly("reply"));
   });
 
   test("a draft that isn't text is dropped", () => {
@@ -212,6 +228,7 @@ describe("bad JSON", () => {
       plan,
       accepted: [0],
       rejected: [1],
+      savedPageId: null,
     });
   });
 });
@@ -228,9 +245,7 @@ describe("storage that throws", () => {
   test("a blocked remove reports false instead of throwing", () => {
     const { store } = fakeStore({ removeItem: true });
     expect(clearBrainDumpSession(store)).toBe(false);
-    expect(
-      saveBrainDumpSession(store, { draft: "", plan: null, accepted: [], rejected: [] }, T0)
-    ).toBe(false);
+    expect(saveBrainDumpSession(store, empty, T0)).toBe(false);
   });
 
   test("bad JSON with a blocked remove still reads as nothing kept", () => {
@@ -289,38 +304,79 @@ describe("clear", () => {
   test("an empty form (after Add accepted or Clear) clears what was kept", () => {
     const { store, data } = fakeStore();
     saveBrainDumpSession(store, sorted, T0);
-    saveBrainDumpSession(store, { draft: "", plan: null, accepted: [], rejected: [] }, T0 + 1000);
+    saveBrainDumpSession(store, empty, T0 + 1000);
     expect(data.size).toBe(0);
   });
 
   test("blank space alone is nothing to keep", () => {
     const { store, data } = fakeStore();
-    saveBrainDumpSession(store, { draft: "  \n ", plan: null, accepted: [], rejected: [] }, T0);
+    saveBrainDumpSession(store, typedOnly("  \n "), T0);
     expect(data.size).toBe(0);
   });
 
-  test("setting every line aside finishes the plan and clears it", () => {
-    const { store, data } = fakeStore();
-    saveBrainDumpSession(store, sorted, T0);
-    saveBrainDumpSession(store, { ...sorted, accepted: [], rejected: [2, 0, 1] }, T0 + 1000);
-    expect(data.size).toBe(0);
+  test("an emptied dump with an open plan keeps the plan", () => {
+    const { store } = fakeStore();
+    saveBrainDumpSession(store, { ...sorted, draft: "" }, T0);
+    expect(loadBrainDumpSession(store, T0)).toEqual({ ...sorted, draft: "" });
   });
 });
 
-describe("isFinished", () => {
-  test("open until every line is set aside; accepted lines aren't added until Add accepted", () => {
-    expect(isFinished(sorted)).toBe(false);
-    expect(isFinished({ ...sorted, accepted: [0, 1], rejected: [2] })).toBe(false);
-    expect(isFinished({ ...sorted, accepted: [], rejected: [0, 1, 2] })).toBe(true);
+describe("every line rejected", () => {
+  test("keeps the typed dump and drops the plan and choices", () => {
+    const { store } = fakeStore();
+    saveBrainDumpSession(store, sorted, T0);
+    saveBrainDumpSession(store, { ...sorted, accepted: [], rejected: [2, 0, 1] }, T0 + 1000);
+    expect(loadBrainDumpSession(store, T0 + 2000)).toEqual(typedOnly(sorted.draft));
+  });
+
+  test("a kept plan with every line rejected reads back as the dump alone", () => {
+    const { store, data } = fakeStore();
+    putRaw(data, { draft: "dana", plan, accepted: [], rejected: [0, 1, 2], savedPageId: null });
+    expect(loadBrainDumpSession(store, T0)).toEqual(typedOnly("dana"));
+    // With a blank dump there is nothing left to keep.
+    saveBrainDumpSession(store, { ...sorted, draft: " ", accepted: [], rejected: [0, 1, 2] }, T0);
+    expect(data.size).toBe(0);
+  });
+
+  test("lines still open, or all decided but not added yet, keep the plan", () => {
+    const { store } = fakeStore();
+    const decided = { ...sorted, accepted: [0, 1], rejected: [2] };
+    saveBrainDumpSession(store, decided, T0);
+    expect(loadBrainDumpSession(store, T0)).toEqual(decided);
     // A plan with no lines is still something to look at.
-    expect(
-      isFinished({
-        draft: "x",
-        plan: { summary: "Nothing to do", priorities: [] },
-        accepted: [],
-        rejected: [],
-      })
-    ).toBe(false);
-    expect(isFinished({ draft: "", plan: null, accepted: [], rejected: [] })).toBe(true);
+    const none = { ...typedOnly("x"), plan: { summary: "Nothing to do", priorities: [] } };
+    saveBrainDumpSession(store, none, T0);
+    expect(loadBrainDumpSession(store, T0)).toEqual(none);
+    // Then rejecting every line still drops the plan.
+    saveBrainDumpSession(store, { ...decided, accepted: [], rejected: [0, 1, 2] }, T0);
+    expect(loadBrainDumpSession(store, T0)?.plan).toBeNull();
+  });
+});
+
+describe("saved as a page", () => {
+  test("the page made from the plan comes back with it, so the plan isn't saved twice", () => {
+    const { store } = fakeStore();
+    const saved = { ...sorted, savedPageId: "note-1" };
+    saveBrainDumpSession(store, saved, T0);
+    expect(loadBrainDumpSession(store, T0)).toEqual(saved);
+  });
+
+  test("the mark goes with the plan: no plan, or every line rejected, drops it", () => {
+    const { store } = fakeStore();
+    saveBrainDumpSession(store, { ...typedOnly("dana"), savedPageId: "note-1" }, T0);
+    expect(loadBrainDumpSession(store, T0)?.savedPageId).toBeNull();
+    const allRejected = { ...sorted, savedPageId: "note-1", accepted: [], rejected: [0, 1, 2] };
+    saveBrainDumpSession(store, allRejected, T0);
+    expect(loadBrainDumpSession(store, T0)?.savedPageId).toBeNull();
+  });
+
+  test("a mark that isn't a page id reads as not saved", () => {
+    const { store, data } = fakeStore();
+    for (const savedPageId of [42, "", ["note-1"], { id: "note-1" }]) {
+      putRaw(data, { draft: "dana", plan, accepted: [], rejected: [], savedPageId });
+      expect(loadBrainDumpSession(store, T0)?.savedPageId).toBeNull();
+    }
+    putRaw(data, { draft: "dana", plan, accepted: [], rejected: [], savedPageId: "note-2" });
+    expect(loadBrainDumpSession(store, T0)?.savedPageId).toBe("note-2");
   });
 });

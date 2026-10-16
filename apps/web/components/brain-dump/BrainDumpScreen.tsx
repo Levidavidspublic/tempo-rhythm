@@ -38,8 +38,7 @@ type ResourcesCard = {
 /** A saved page can be undone in one click for 5 minutes (HARD_RULES: AI-made changes stay reversible). */
 const SAVE_UNDO_MS = 5 * 60 * 1000;
 
-/** `plan` is the plan the page was made from; null for a page restored after leaving the screen. */
-type SavedPage = { id: string; undoUntil: number; plan: Plan | null };
+type SavedPage = { id: string; undoUntil: number };
 
 /**
  * Pending saves outlive this screen for their Undo window, so opening the page and coming back
@@ -62,7 +61,7 @@ function readSavedPages(now: number): SavedPage[] {
     if (typeof row !== "object" || row === null) return [];
     const { id, undoUntil } = row as Record<string, unknown>;
     return typeof id === "string" && typeof undoUntil === "number" && undoUntil > now
-      ? [{ id, undoUntil, plan: null }]
+      ? [{ id, undoUntil }]
       : [];
   });
 }
@@ -119,14 +118,19 @@ export function BrainDumpScreen() {
     if (savedState) writeSavedPages(savedState, Date.now());
   }, [savedState]);
 
+  // The page "Save as a page" made from the plan on screen; while it stands, Save is off.
+  const [savedPlan, setSavedPlan] = useState<{ plan: Plan; id: string } | null>(null);
+  const savedPageId = savedPlan && savedPlan.plan === plan ? savedPlan.id : null;
+
   // Back then Forward, or a reload, brings back the dump, the sorted plan and the choices made.
   const restoreKept = useCallback((kept: BrainDumpSession) => {
     setDraft(kept.draft);
     setPlan(kept.plan);
     setAccepted(kept.accepted);
     setRejected(kept.rejected);
+    setSavedPlan(kept.plan && kept.savedPageId ? { plan: kept.plan, id: kept.savedPageId } : null);
   }, []);
-  useKeptBrainDump({ draft, plan, accepted, rejected }, restoreKept);
+  useKeptBrainDump({ draft, plan, accepted, rejected, savedPageId }, restoreKept);
 
   const groups = useMemo(() => (plan ? groupByUrgency(plan) : []), [plan]);
   const toAdd = useMemo(() => (plan ? acceptedItems(plan, accepted) : []), [plan, accepted]);
@@ -154,7 +158,7 @@ export function BrainDumpScreen() {
       const sorted = await prioritize({ rawText: draft });
       setPlan(sorted);
       // Kept at once, even if the person left while it was sorting, so the model call isn't wasted.
-      const kept = { draft, plan: sorted, accepted: [], rejected: [] };
+      const kept = { draft, plan: sorted, accepted: [], rejected: [], savedPageId: null };
       saveBrainDumpSession(tabSessionStore(), kept, Date.now());
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("bd.error"));
@@ -212,7 +216,8 @@ export function BrainDumpScreen() {
       const id = await createNote({ title: t("bd.pageTitle").replace("{day}", day), body });
       // Stay here with Open and Undo: the page holds AI-sorted text, so it is one click to take back.
       setDoneMessage("");
-      setSavedPages((prev) => [{ id, undoUntil: Date.now() + SAVE_UNDO_MS, plan }, ...(prev ?? [])]);
+      setSavedPages((prev) => [{ id, undoUntil: Date.now() + SAVE_UNDO_MS }, ...(prev ?? [])]);
+      setSavedPlan({ plan, id });
     } catch {
       setError(t("bd.saveError"));
     } finally {
@@ -227,6 +232,7 @@ export function BrainDumpScreen() {
       try {
         await removeNote({ noteId: id as Id<"notes"> });
         setSavedPages((prev) => (prev ?? []).filter((page) => page.id !== id));
+        setSavedPlan((prev) => (prev?.id === id ? null : prev));
         setDoneMessage(t("bd.pageRemoved"));
         setDoneOnToday(false);
       } catch {
@@ -443,7 +449,7 @@ export function BrainDumpScreen() {
                 type="button"
                 className="tp-btn tp-btn--secondary"
                 onClick={() => void handleSavePage()}
-                disabled={busy || (plan !== null && savedPages.some((page) => page.plan === plan))}
+                disabled={busy || savedPageId !== null}
               >
                 <TpIcon name="page" size="sm" />
                 <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
@@ -509,7 +515,7 @@ function SavedPageNotice({
   );
 }
 
-/** Typing is kept after this pause; a new plan or an accept/reject choice is kept at once. */
+/** Typing is kept after this pause; a new plan, a choice or a saved page is kept at once. */
 const KEEP_TYPING_MS = 400;
 
 /**
@@ -519,7 +525,7 @@ const KEEP_TYPING_MS = 400;
  * still keeps the last change.
  */
 function useKeptBrainDump(session: BrainDumpSession, restore: (kept: BrainDumpSession) => void) {
-  const { draft, plan, accepted, rejected } = session;
+  const { draft, plan, accepted, rejected, savedPageId } = session;
   const [ready, setReady] = useState(false);
   const last = useRef<BrainDumpSession | null>(null);
   const pending = useRef<BrainDumpSession | null>(null);
@@ -534,10 +540,14 @@ function useKeptBrainDump(session: BrainDumpSession, restore: (kept: BrainDumpSe
   useEffect(() => {
     if (!ready) return;
     const prev = last.current;
-    const next = { draft, plan, accepted, rejected };
+    const next = { draft, plan, accepted, rejected, savedPageId };
     last.current = next;
     const sameChoices =
-      prev !== null && prev.plan === plan && prev.accepted === accepted && prev.rejected === rejected;
+      prev !== null &&
+      prev.plan === plan &&
+      prev.accepted === accepted &&
+      prev.rejected === rejected &&
+      prev.savedPageId === savedPageId;
     // Just read back: nothing new to keep, and the 2-hour expiry doesn't restart.
     if (sameChoices && prev.draft === draft) return;
     pending.current = next;
@@ -547,7 +557,7 @@ function useKeptBrainDump(session: BrainDumpSession, restore: (kept: BrainDumpSe
     }
     const timer = window.setTimeout(() => keepPending(pending), KEEP_TYPING_MS);
     return () => window.clearTimeout(timer);
-  }, [ready, draft, plan, accepted, rejected]);
+  }, [ready, draft, plan, accepted, rejected, savedPageId]);
 
   useEffect(() => {
     const flush = () => keepPending(pending);

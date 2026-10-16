@@ -3,10 +3,10 @@
  * choices already made, so browser Back then Forward, or a reload, brings them back without a
  * second model call. Only in this tab's sessionStorage: never localStorage, never the server.
  *
- * Nothing is kept once the plan is finished: an empty form (after "Add accepted" or Clear) and a
- * plan whose every line was rejected both clear it. A kept dump expires 2 hours after its last
- * change. Storage that throws (private mode, blocked site data, a full quota) or holds bad JSON
- * reads as nothing kept; it never breaks the screen.
+ * Once every line of the plan is rejected, only the typed dump is kept, so it can be sorted again.
+ * An empty form (after "Add accepted", after Clear, or deleted by hand) clears it all. A kept dump
+ * expires 2 hours after its last change. Storage that throws (private mode, blocked site data, a
+ * full quota) or holds bad JSON reads as nothing kept; it never breaks the screen.
  */
 
 export const BRAIN_DUMP_SESSION_KEY = "tempo:brain-dump:session";
@@ -28,6 +28,8 @@ export type BrainDumpSession = {
   /** Plan line indices the person accepted, and the ones they set aside. */
   accepted: number[];
   rejected: number[];
+  /** The page "Save as a page" made from this plan, so a restored plan isn't saved twice. */
+  savedPageId: string | null;
 };
 
 /** The part of `Storage` this needs, so tests can pass a fake. */
@@ -46,30 +48,40 @@ export function tabSessionStore(): SessionStore | null {
   }
 }
 
-/** Finished, or nothing to keep: an empty form, or a plan with every line set aside. */
-export function isFinished(session: BrainDumpSession): boolean {
-  const { plan } = session;
-  if (!plan) return session.draft.trim() === "";
-  const lines = plan.priorities.length;
-  return lines > 0 && plan.priorities.every((_, index) => session.rejected.includes(index));
+/**
+ * The part worth keeping: the dump with its open plan; the dump alone once every line is rejected
+ * (the plan is done, the text can be sorted again); null for an empty form.
+ */
+export function toKeep(session: BrainDumpSession): BrainDumpSession | null {
+  const { draft, plan, rejected } = session;
+  const allRejected =
+    plan !== null &&
+    plan.priorities.length > 0 &&
+    plan.priorities.every((_, index) => rejected.includes(index));
+  if (plan && !allRejected) {
+    return {
+      draft,
+      plan,
+      accepted: [...session.accepted],
+      rejected: [...rejected],
+      savedPageId: session.savedPageId,
+    };
+  }
+  return draft.trim() === ""
+    ? null
+    : { draft, plan: null, accepted: [], rejected: [], savedPageId: null };
 }
 
-/** Keep the dump for this tab, or clear it when it is finished. False when storage refused. */
+/** Keep what `toKeep` keeps, or clear it for an empty form. False when storage refused. */
 export function saveBrainDumpSession(
   store: SessionStore | null,
   session: BrainDumpSession,
   now: number
 ): boolean {
   if (!store) return false;
-  if (isFinished(session)) return clearBrainDumpSession(store);
-  const stored: Stored = {
-    v: BRAIN_DUMP_SESSION_VERSION,
-    savedAt: now,
-    draft: session.draft,
-    plan: session.plan,
-    accepted: session.plan ? [...session.accepted] : [],
-    rejected: session.plan ? [...session.rejected] : [],
-  };
+  const kept = toKeep(session);
+  if (!kept) return clearBrainDumpSession(store);
+  const stored: Stored = { v: BRAIN_DUMP_SESSION_VERSION, savedAt: now, ...kept };
   try {
     store.setItem(BRAIN_DUMP_SESSION_KEY, JSON.stringify(stored));
     return true;
@@ -120,18 +132,19 @@ function parseStored(raw: string, now: number): BrainDumpSession | null {
   if (typeof savedAt !== "number" || !Number.isFinite(savedAt)) return null;
   if (now - savedAt >= BRAIN_DUMP_SESSION_TTL_MS) return null;
   if (typeof draft !== "string") return null;
+  // No plan yet, or a damaged one: the typed dump still comes back, without choices.
   const plan = parsePlan(value.plan);
-  if (!plan) {
-    // No plan yet, or a damaged one: the typed dump still comes back, without choices.
-    const typedOnly: BrainDumpSession = { draft, plan: null, accepted: [], rejected: [] };
-    return isFinished(typedOnly) ? null : typedOnly;
-  }
-  const rejected = indices(value.rejected, plan.priorities.length);
-  const accepted = indices(value.accepted, plan.priorities.length).filter(
-    (i) => !rejected.includes(i)
-  );
-  const session = { draft, plan, accepted, rejected };
-  return isFinished(session) ? null : session;
+  const lines = plan ? plan.priorities.length : 0;
+  const rejected = indices(value.rejected, lines);
+  const accepted = indices(value.accepted, lines).filter((i) => !rejected.includes(i));
+  const { savedPageId } = value;
+  return toKeep({
+    draft,
+    plan,
+    accepted,
+    rejected,
+    savedPageId: typeof savedPageId === "string" && savedPageId !== "" ? savedPageId : null,
+  });
 }
 
 function parsePlan(value: unknown): KeptPlan | null {
