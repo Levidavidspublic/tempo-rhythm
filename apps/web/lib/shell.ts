@@ -24,6 +24,7 @@ const CRUMBS: readonly [string, MessageKey][] = [
   ["/routines", "nav.routines"],
   ["/goals", "nav.goals"],
   ["/projects", "nav.projects"],
+  ["/study", "nav.study"],
   ["/templates", "nav.templates"],
   ["/insights", "nav.insights"],
   ["/search", "nav.search"],

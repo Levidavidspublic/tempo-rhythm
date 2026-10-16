@@ -17,6 +17,7 @@ import { type MenuItem, SlashMenu } from "@/components/editor/SlashMenu";
 import { useRegisterCoachPage } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { flashcardsInBody, ShareSheet } from "@/components/share";
+import { TurnIntoMenu } from "@/components/study/TurnIntoMenu";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import {
@@ -343,6 +344,7 @@ export function PageEditorView(props: Props) {
                       <TpIcon name="download" size="sm" />
                       {t("page.export")}
                     </button>
+                    {props.backHref === null ? null : <TurnIntoMenu noteId={noteId} onNavigate={() => setMenuOpen(false)} />}
                     <button
                       className="tp-menu__item"
                       type="button"
@@ -428,7 +430,7 @@ export function PageEditorView(props: Props) {
 
         {props.lead}
 
-        <div className="tp-page-content tp-slash-anchor" data-component="BlockList">
+        <div className="tp-page-content tp-slash-anchor" data-component="BlockList" data-note-id={noteId}>
           {mode === "edit" ? (
             <LivePreviewEditor
               ref={editor}
