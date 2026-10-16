@@ -8,16 +8,16 @@ Tags: **WALK** = seen in a browser, with proof linked · **EXTRAPOLATED** = reas
 - **Where things stand.** preview.tempoflow.dev serves `integration` at `eb0b12c`. tempoflow.dev serves `master` at `007d28a` (about 4 Oct). Neither has any of this week's B07 work yet: all of it is in open draft PRs. WALK
 - **Beta after the merges.** The beta is ready to release once you merge the PRs below in order and walk preview once.
   - Every PR has its own before/after proof and green local checks: lint, typecheck, unit tests, scans, build, Playwright, and both secret scanners.
-  - All 30 B07 branches merged together, in the order below, give a tree that passes everything (table at the end of the merge order). EXTRAPOLATED for preview itself, because nothing is merged yet.
+  - All 37 B07 code branches merged together, in the order below, give a tree that passes everything (table at the end of the merge order). EXTRAPOLATED for preview itself, because nothing is merged yet.
 - **Release, carefully.**
   - Do a **dry run** of "Release to production" first.
   - Web search and Executor ship switched **off**. They need settings that only you can make, and they stay off until you make them.
-- **Blockers only you can clear.** Nothing is blocked on code. The open items are labels, settings, two decisions and the merges, listed next.
+- **Blockers only you can clear.** Nothing is blocked on code. The open items are labels, settings, a few decisions and the merges, listed next.
 
 ## Needs Amit (AT, in this order)
 
 1. **Close #1009 and #1010.** #1018 and #1019 replace them. Their history held two test fixtures that the secret scans flag, and I can't force-push.
-2. **Apply `convex-arch`** to #988, #1018 and #1008. I never apply it.
+2. **Apply `convex-arch`** to #988, #1018 and #1008, then to #1035 once #988 and #1018 are merged. I never apply it.
 3. **Merge in the order below**, then walk preview once with the demo script.
 4. **Decide on Bugbot.** The release gate posts `@cursor review` once and waits for Bugbot (DEPLOY.md, step 6). Your brief says CodeRabbit is the only reviewer. Either accept one Bugbot run for the release, or change the gate. That's a config PR, and your call.
 5. **Check `FACTORY_BATCH_TOKEN`.** It was the one open setup step on 6 Oct (DEPLOY.md, one-time setup 1). A real run needs it; a dry run only reports it. UNKNOWN whether it's set now.
@@ -25,7 +25,11 @@ Tags: **WALK** = seen in a browser, with proof linked · **EXTRAPOLATED** = reas
    - `MISTRAL_API_KEY`: turns web search on. Mistral bills per search, so it's your call.
    - `TEMPO_EXECUTOR_ENABLED`: leave it unset for the beta, unless you've tried Executor on TEST.
    - If you turn Executor on, it also needs `TEMPO_CONNECTIONS_KEY`, `EXECUTOR_MCP_URL` and `SITE_URL`.
-7. **Words only you can confirm:**
+7. **Three small product calls** (each PR says what it costs):
+   - #1030, the habit Day Grid: on hold. The habit page already has a tappable 6-week grid, and swapping it would trade one-tap logging of a past day for two taps. The proposal is on the ticket.
+   - #1037, more room under the floating coach button on a phone: the "covers the last row" bug didn't reproduce at the bottom of any page today. It widens an 8 px gap to 32 px. Merge it or close it.
+   - #1038 changes English /plan times from 09:00 to 9:00 AM, to match /today. Keeping 24-hour is a one-line change.
+8. **Words only you can confirm:**
    - the landing letter (#987);
    - /ask-founder's "Amit builds Tempo and reads every message himself" and the address `amit@tempoflow.app` (#1023);
    - the /privacy and /terms drafts, which are marked "draft — to be reviewed" (#984);
@@ -38,27 +42,30 @@ Within a step, any order works. A later step needs the earlier ones it names.
 | step | PRs | needs |
 |---|---|---|
 | 1 | #964 demo/friend · #965 clumsy-test fixes | none |
-| 2 | #967 · #968 · #969 · #970 (walk polish) · #981 tracking in Hebrew · #985 Executor research doc · #992 top-bar crumb · #1001 long page title wraps · #1021 energy card in Hebrew · #1022 day plan wraps and reads in Hebrew · #1023 no scaffold pages · #1024 calendar and history in Hebrew · #1025 one habit per double click, new-project hint · this page's PR (closes #1003) | none |
+| 2 | #967 · #968 · #969 · #970 (walk polish) · #981 tracking in Hebrew · #985 Executor research doc · #992 top-bar crumb · #1001 long page title wraps · #1021 energy card in Hebrew · #1022 day plan wraps and reads in Hebrew · #1023 no scaffold pages · #1024 calendar and history in Hebrew · #1025 one habit per double click, new-project hint · #1037 room under the coach button on a phone · #1038 /plan timeline and /coach controls in Hebrew · this page's PR (closes #1003) | none |
+| 2b | #1036 calendar event rows (Edit, Delete, edit form, Undo) in Hebrew | #1024 |
 | 2c | #1008 sign-in email in en and he | `convex-arch` |
-| 3 | #984 /privacy and /terms drafts · #987 honest landing · #994 OpenUI cards on by default · #1002 one brain dump · #1004 sparklines read right to left · #1006 first name while waiting | #964 |
+| 3 | #984 /privacy and /terms drafts · #987 honest landing · #994 OpenUI cards on by default · #1002 one brain dump · #1004 sparklines read right to left · #1006 first name while waiting · #1040 /insights as PanelUI cards and a Day Grid · #1042 the weekly glance's Hebrew focus total | #964 |
 | 4 | #993 /tasks: Enter adds, Hebrew | #965 |
 | 5 | #1020 no default "Home reset" project | #993 |
+| 5b | #1039 /tasks: Undo after delete, Enter saves, Escape closes | #1020 |
 | 6 | #1026 brain-dump panel readable in dark mode | #1002 |
 | 7 | #988 coach web search backend and week-bounded done tasks | `convex-arch` |
 | 8 | #1000 web search switch and sources card · #995 weekly glance reads one week | #964, #988 |
 | 9 | #1018 Executor connection backend | #988, `convex-arch` |
+| 9b | #1035 the coach doesn't propose a task already open on Today | #1018, `convex-arch` |
 | 10 | #1019 Settings → Connections and "Look in my apps" | #1018 merged *and deployed to TEST* (otherwise preview logs a console error on /settings/integrations) |
 
 **Do not merge:** #975, which deploys live, as its title says. Close #1009 and #1010 (replaced).
 
-**Proof that the order works.** On 16 Oct I checked every pair of the 30 branches with `git merge-tree`: 435 pairs, 0 conflicts. I then merged all 30 into `integration`, in this order, on a local branch that was never pushed:
+**Proof that the order works.** On 16 Oct I checked every pair of the 38 B07 branches (this page's included) with `git merge-tree`: 703 pairs, 0 conflicts. I then merged all 37 code branches into `integration`, in this order, on a local branch that was never pushed:
 
 | check on the combined tree | result |
 |---|---|
 | `bun install --frozen-lockfile` | pass |
 | `bun run lint` / `bun run typecheck` | pass (5/5) / pass (5/5) |
-| `bun run test` | 2669 pass, 0 fail |
-| `bun test convex` | 1095 pass, 0 fail |
+| `bun run test` | 2687 pass, 0 fail |
+| `bun test convex` | 1112 pass, 0 fail |
 | scans (forbidden tech, RAM-only, design tokens, notices) | pass |
 | `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | pass |
 | `CI=1 bunx playwright test` | 28 passed, 89 skipped (need a signed-in preview), 0 failed |
@@ -105,9 +112,9 @@ Severity from the clumsy pass (`evidence/clumsy-table.md`; the worst in `evidenc
 |---|---|---|
 | major | /brain-dump: "Sort it", then Back, then Forward, loses both the plan and the typed dump; the model call is wasted | no fix yet. Keeping it needs the plan saved (backend) or kept in the page's history state. |
 | major | /tracking: a 99999-minute block says "did not save, try once more", which can never work | #968 |
-| minor | Hebrew still English in a few places: built-in template names (/templates), /coach "How the coach pushes", /plan's timeline, the event row's Edit/Delete and undo toast on /calendar, auto page titles ("Week 42", "Friday, 16 October"), "Modules" and "Notifications" headings, "Loading note." | no fix yet (notes on #1024 and #1021) |
+| minor | Hebrew still English in a few places: built-in template names (/templates), /coach's "Today's plan" card, Panic's action text (it comes from the server), the time-block dialog on /plan, auto page titles ("Week 42", "Friday, 16 October"), "Modules" and "Notifications" headings, "Loading note." | no fix yet (notes on #1024, #1021 and #1038) |
 | minor | Today: coach proposal cards in Today's chat make the page 15 px too wide at 390 he | no fix yet |
-| minor | /tasks: delete has no Undo; in the editor Enter doesn't save and Escape doesn't close; a typed title is lost on Back | no fix yet |
+| minor | /tasks: a typed title is lost on Back | no fix yet (#1039 adds Undo after delete, and Enter and Escape in the editor) |
 | minor | Notes: words typed in the last half-second before a reload are lost; the ⋯ menu ignores Escape; "Export .md" leaves out the title | no fix yet |
 | minor | Routines: a new routine starts empty and its run has no Done; a reload during a run restarts at step 1 | no fix yet |
 | minor | /tracking: 0 or −5 minutes gets only the browser's own bubble; "Longest among 0 habits: 0." | no fix yet (#981 fixes its two `<main>`) |
@@ -118,7 +125,9 @@ Severity from the clumsy pass (`evidence/clumsy-table.md`; the worst in `evidenc
 | infra | Component tests under `apps/web/components/**` never run in CI. Run together they fail, because mocks leak between files (`tests/unit/releaseOnboardingGate.test.tsx`). | no ticket yet. Each new component test passes on its own. |
 | infra | Typing into a server-rendered form before the page hydrates loses the text (seen in the calendar e2e) | the e2e now waits (#1024); the product race remains |
 
-**Fixed by the PRs above** (WALK before/after on each): the scaffold pages (#1023), Today's long intention and Hebrew day plan (#1022), the energy card (#1021), the dark brain-dump panel (#1026), the "Home reset" default (#1020), double habits (#1025), /calendar and /history in Hebrew with "1 saved thread" (#1024), plus everything in the B07 list above.
+**Fixed by the PRs above** (WALK before/after on each): the scaffold pages (#1023), Today's long intention and Hebrew day plan (#1022), the energy card (#1021), the dark brain-dump panel (#1026), the "Home reset" default (#1020), double habits (#1025), /calendar and /history in Hebrew with "1 saved thread" (#1024), the event row in Hebrew with plain error copy instead of raw server text (#1036), /plan and /coach controls in Hebrew (#1038), Undo after deleting a task and Enter/Escape in its editor (#1039), plus everything in the B07 list above.
+
+**Proved with static renders, not on preview** (the test account is under a week old, and weekly pages aren't on preview): /insights as PanelUI cards with the same totals as the old charts (#1040), and the weekly glance's Hebrew focus total (#1042). Both show one fixed fixture through the old and new code, styled by the real build's CSS.
 
 ## 5-minute demo script (after the merges)
 
@@ -134,9 +143,10 @@ Run it on preview at 1280, then once on a phone. EXTRAPOLATED: each step is prov
    - If `MISTRAL_API_KEY` is set and the switch is on in settings: ask something current. The reply cites sources in a small card (#988, #1000).
 6. **Tasks and pages (40 s).**
    - On /tasks, press Enter: one task, with no project (#993, #1020).
+   - Delete it, then press Undo in the toast: it comes back (#1039).
    - Open a page with a long title: it wraps (#1001).
    - The top-bar crumb names the page (#992).
-7. **Hebrew pass (30 s).** Switch to Hebrew and show Today, /calendar and /history (#1024). Show the weekly glance, whose sparklines read right to left (#1004, #995).
+7. **Hebrew pass (30 s).** Switch to Hebrew and show Today, /calendar with an event's row (#1024, #1036), /plan and /coach's dial (#1038), and /history. Show the weekly glance, whose sparklines and focus total read right to left (#1004, #995, #1042).
 8. **Settings → Integrations (15 s).** Executor shows "Not set up yet" until you turn it on (#1019). Planned connectors say "Coming later". "Ask the founder" opens a real page with a mail link (#1023).
 
 ## Release steps (exact, from `docs/DEPLOY.md`)
