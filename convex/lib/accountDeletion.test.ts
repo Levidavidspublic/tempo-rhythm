@@ -346,6 +346,12 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  coachWebSearches: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    utcDateKey: "2026-10-16",
+    createdAt: 1,
+    updatedAt: 1,
+  })),
   pageProposals: fixture("owned-table-soft-delete", (userId) => ({
     userId,
     kind: "add_task_to_today",
