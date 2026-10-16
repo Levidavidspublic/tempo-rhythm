@@ -8,6 +8,8 @@
 // Typed recall adds study-review-typed and study-review-typed-checked.
 // Edit and Share on a saved set add study-set-edit, study-set-edit-changed and study-set-share
 // (MOCKED: the sample deck below, with stand-in updateBlock answers).
+// F-07 adds plan-replan-notice (the live plan screen, two sessions missed yesterday) and
+// plan-replan-preview (the "Re-plan the rest" preview on a fixed, fictional week).
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -32,7 +34,10 @@ import { ShareSheet } from "@/components/share";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
 import { shortDate } from "@/components/calendar/planCopy";
 import { buildPreview, DEFAULT_FORM, guidedLabels, toGuidedSteps } from "@/components/calendar/plan/planForm";
+import { ReplanNotice, ReplanPreview } from "@/components/calendar/plan/ReplanPanel";
+import { type PlanTask, replanInput, replanNotice } from "@/components/calendar/plan/replanForm";
 import { addDays, parseLocalDate, startOfWeek } from "../../../../packages/core/plan/calendar-math";
+import { replanRest, replanWaysOut } from "../../../../packages/core/plan/replan";
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view") ?? "study-hub";
@@ -290,11 +295,35 @@ const planTasks = [1, 2, 3, 4, 5].map((n) => ({
   status: "todo",
   projectName: "Biology bagrut",
 }));
+// F-07: a saved plan with one session done and two missed yesterday; the rest still ahead.
+const replanNoticeView = view === "plan-replan-notice";
+const replanTitles = he
+  ? ["ללמוד: תאים", "ללמוד: מיטוזה", "חזרה: תאים", "ללמוד: פוטוסינתזה", "חזרה: מיטוזה", "תרגול בגרות"]
+  : ["Learn: cells", "Learn: mitosis", "Review: cells", "Learn: photosynthesis", "Review: mitosis", "Bagrut practice"];
+const replanTasks = [
+  [-2, 17, 0, "done"],
+  [-1, 17, 0, "todo"],
+  [-1, 17, 45, "todo"],
+  [1, 17, 0, "todo"],
+  [2, 17, 0, "todo"],
+  [3, 17, 0, "todo"],
+].map(([day, hour, minute, status], n) => ({
+  _id: `tasks:r${n + 1}`,
+  title: replanTitles[n],
+  dueAt: at(addDays(today, day as number), hour as number, minute as number),
+  timeEstimate: 45 * MIN,
+  status,
+  projectName: "Biology bagrut",
+}));
 Object.assign(queries, {
-  "plans.list": view === "plan-scheduler" ? [{ _id: "studyPlans:1", title: "Biology bagrut" }] : [],
-  "plans.get": { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 14) }, tasks: planTasks },
-  "calendar_events.listInRange": [{ _id: "calendar_events:1", title: he ? "שיעור ביולוגיה" : "Biology lesson", startsAtMs: at(addDays(weekStart, 1), 17, 30) }],
-  "tasks.listDueInRange": view === "plan-scheduler" ? planTasks : [],
+  "plans.list": view === "plan-scheduler" || replanNoticeView ? [{ _id: "studyPlans:1", title: "Biology bagrut" }] : [],
+  "plans.get": replanNoticeView
+    ? { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 10) }, tasks: replanTasks }
+    : { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 14) }, tasks: planTasks },
+  "calendar_events.listInRange": replanNoticeView
+    ? []
+    : [{ _id: "calendar_events:1", title: he ? "שיעור ביולוגיה" : "Biology lesson", startsAtMs: at(addDays(weekStart, 1), 17, 30) }],
+  "tasks.listDueInRange": view === "plan-scheduler" ? planTasks : replanNoticeView ? replanTasks : [],
   "recordings.availability":
     view === "record-consent"
       ? { live: true, reason: null, minutesLeft: 42, proposals: true }
@@ -311,6 +340,8 @@ Object.assign(queries, {
 });
 Object.assign(calls, {
   "plans.createFromPreview": { planId: "studyPlans:1", undoUntil: NOW + 5 * MIN },
+  "plans.replan": { undoUntil: NOW + 5 * MIN, moved: 2, removed: 0 },
+  "plans.undoReplan": { restored: 2 },
   "notes.create": "notes:31",
   "memory.update": { success: true },
 });
@@ -427,6 +458,66 @@ function GuidedPlanSample({ mode }: { mode: "pending" | "edit" | "accepted" }) {
   );
 }
 
+/**
+ * "Re-plan the rest" on a fixed, fictional week (so the shot doesn't depend on the clock): Tuesday
+ * 20 Oct 2026 at 18:00, the test on Friday 23 Oct, 90 minutes a day. Three sessions were missed on
+ * Monday and the Bagrut practice now overlaps swimming on Wednesday: three move, one doesn't fit.
+ */
+function ReplanSample() {
+  const [leaveOut, setLeaveOut] = useState(false);
+  const names = he
+    ? ["ללמוד: תאים", "ללמוד: מיטוזה", "חזרה: תאים", "ללמוד: גנטיקה", "תרגול בגרות", "ללמוד: פוטוסינתזה", "חזרה: מיטוזה"]
+    : ["Learn: cells", "Learn: mitosis", "Review: cells", "Learn: genetics", "Bagrut practice", "Learn: photosynthesis", "Review: mitosis"];
+  const rows: Array<[string, number, number, number, PlanTask["status"]]> = [
+    ["2026-10-18", 17, 0, 45, "done"],
+    ["2026-10-19", 17, 0, 45, "todo"],
+    ["2026-10-19", 17, 45, 45, "todo"],
+    ["2026-10-19", 18, 30, 45, "todo"],
+    ["2026-10-21", 17, 0, 90, "todo"],
+    ["2026-10-22", 17, 0, 45, "todo"],
+    ["2026-10-22", 17, 45, 45, "todo"],
+  ];
+  const tasks: PlanTask[] = rows.map(([date, hour, minute, minutes, status], n) => ({
+    _id: `tasks:s${n + 1}`,
+    title: names[n] ?? "",
+    status,
+    dueAt: at(date, hour, minute),
+    timeEstimate: minutes * MIN,
+  }));
+  const input = replanInput({
+    deadline: "2026-10-23",
+    tasks,
+    source: { events: [{ id: "e1", title: he ? "חוג שחייה" : "Swimming club", startsAtMs: at("2026-10-21", 17, 30) }], tasks: [] },
+    now: { date: "2026-10-20", minute: 18 * 60 },
+    overrides: { minutesPerDay: 90 },
+  });
+  if (!input) return null;
+  const result = replanRest(input);
+  const notice = replanNotice(result);
+  return (
+    <div className="tp-page tp-page--wide tp-plan">
+      <div className="tp-plan__replan" data-component="ReplanPanel">
+        {notice ? <ReplanNotice lang={lang} notice={notice} open onToggle={() => {}} controls="rp-sample" /> : null}
+        <div id="rp-sample">
+          <ReplanPreview
+            lang={lang}
+            result={result}
+            titles={new Map(tasks.map((t) => [t._id, t.title]))}
+            deadline={input.deadline}
+            ways={replanWaysOut(input)}
+            leaveOut={leaveOut}
+            onLeaveOut={setLeaveOut}
+            onUseDate={() => {}}
+            onUseMinutes={() => {}}
+            onAccept={() => {}}
+            onCancel={() => {}}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Main({ children }: { children: ReactNode }) {
   // The app shell gives its main area a side gutter; the gallery has no shell, so it adds 16 px.
   return (
@@ -440,6 +531,8 @@ const VIEWS: Record<string, () => ReactNode> = {
   "plan-guided": () => <GuidedPlanSample mode="pending" />,
   "plan-guided-edit": () => <GuidedPlanSample mode="edit" />,
   "plan-guided-accepted": () => <GuidedPlanSample mode="accepted" />,
+  "plan-replan-notice": () => <PlanPathScreen />,
+  "plan-replan-preview": () => <ReplanSample />,
   "study-hub": () => <ReviewHub />,
   "study-hub-empty": () => <ReviewHub />,
   "study-review": () => <ReviewSession />,
