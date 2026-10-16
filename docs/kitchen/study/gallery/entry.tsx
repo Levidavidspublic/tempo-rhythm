@@ -11,6 +11,7 @@ import { createRoot } from "react-dom/client";
 import { PageEditorView } from "@/components/notes/PageEditorView";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ReviewHub } from "@/components/study/ReviewHub";
+import { ListenScreen } from "@/components/study/recap/ListenScreen";
 import { ReviewSession } from "@/components/study/ReviewSession";
 import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
@@ -20,6 +21,11 @@ import { buildPreview, DEFAULT_FORM, guidedLabels, toGuidedSteps } from "@/compo
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view") ?? "study-hub";
+// A "-he" view is the Hebrew screen: set ?lang=he before the LocaleProvider reads it.
+if (view.endsWith("-he") && !params.get("lang")) {
+  params.set("lang", "he");
+  window.history.replaceState(null, "", `?${params.toString()}`);
+}
 const theme = params.get("theme") === "dark" ? "dark" : "light";
 const lang = params.get("lang") === "he" ? "he" : "en";
 document.documentElement.setAttribute("data-theme", theme);
@@ -47,6 +53,24 @@ Enzyme: a protein that speeds up a reaction without being used up
 2. Metaphase
 3. Anaphase
 4. Telophase
+`;
+
+// Kitchen T4 (S16): a Hebrew page for study-listen-he. Fictional.
+const PAGE_BODY_HE = `# חלוקת תאים, יחידה 2
+
+התא מתחלק בשתי דרכים. לכל דרך יש תפקיד משלה.
+
+מיטוזה: חלוקת תא שיוצרת שני תאים זהים
+מיוזה: חלוקת תא שיוצרת ארבעה תאים עם חצי מהכרומוזומים
+
+## שלבי המיטוזה
+
+1. פרופאזה
+2. מטאפאזה
+3. אנאפאזה
+4. טלופאזה
+
+נועה ביקשה לחזור על זה לפני הבוחן ביום ראשון. זה לוקח בערך 3.5 דקות.
 `;
 
 const sets = [
@@ -190,7 +214,10 @@ const queries: Record<string, unknown> = {
       : { dueCount: 12, newCount: 4, reviewedToday: 7, sets },
   "study.reviewQueue": { cards: view === "study-review-done" ? queueCards.slice(0, 1) : queueCards },
   "study.getSet": setFixture,
-  "notes.getSafe": { _id: "notes:11", _creationTime: NOW - DAY, title: "Cell biology, unit 2", body: PAGE_BODY, updatedAt: NOW - DAY },
+  "notes.getSafe":
+    view === "study-listen-he"
+      ? { _id: "notes:12", _creationTime: NOW - DAY, title: "חלוקת תאים, יחידה 2", body: PAGE_BODY_HE, updatedAt: NOW - DAY }
+      : { _id: "notes:11", _creationTime: NOW - DAY, title: "Cell biology, unit 2", body: PAGE_BODY, updatedAt: NOW - DAY },
   "notes.backlinks": [],
   "notes.list": [],
 };
@@ -296,6 +323,9 @@ const VIEWS: Record<string, () => ReactNode> = {
     );
     return <StudySetScreen setId="studySets:5" />;
   },
+  // Kitchen T4 (S16): the audio recap. The browser's own voices decide whether Play shows.
+  "study-listen": () => <ListenScreen from="notes:11" mode="recap" />,
+  "study-listen-he": () => <ListenScreen from="notes:12" mode="recap" />,
   "study-new-preview": () => <TurnIntoPreview from="notes:11" kind="flashcards" />,
   "study-new-nokey": () => {
     steps(click('[data-action="ask-coach"]'));
