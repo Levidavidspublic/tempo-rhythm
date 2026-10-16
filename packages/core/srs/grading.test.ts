@@ -41,7 +41,13 @@ const PAPER: TestData = {
           ],
           answerId: "x",
         },
-        { plugin: "short", id: "t1", prompt: "g on Earth (m/s²)?", points: 5, accepted: ["9.8", "9.81"] },
+        {
+          plugin: "short",
+          id: "t1",
+          prompt: "g on Earth (m/s²)?",
+          points: 5,
+          accepted: ["9.8", "9.81"],
+        },
       ],
     },
   ],
@@ -61,7 +67,11 @@ describe("scoreTest", () => {
     };
     expect(countedQuestionIds(PAPER.sections[0]!, responses)).toEqual(["b2", "b3"]);
 
-    const all = { b1: { parts: { a: 1 } }, b2: { parts: { a: 15, b: 10 } }, b3: { parts: { a: 15, b: 10 } } };
+    const all = {
+      b1: { parts: { a: 1 } },
+      b2: { parts: { a: 15, b: 10 } },
+      b3: { parts: { a: 15, b: 10 } },
+    };
     // All three answered: b1 and b2 count even though b3 scored higher.
     expect(countedQuestionIds(PAPER.sections[0]!, all)).toEqual(["b1", "b2"]);
     const score = scoreTest(PAPER, all);

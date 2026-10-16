@@ -62,7 +62,9 @@ export function countedQuestionIds(section: TestSection, responses: TestResponse
   const all = section.questions.map((q) => q.id);
   if (section.pick === undefined) return all;
   const answered = new Set(
-    section.questions.filter((q) => isQuestionAnswered(q, ownValue(responses, q.id))).map((q) => q.id),
+    section.questions
+      .filter((q) => isQuestionAnswered(q, ownValue(responses, q.id)))
+      .map((q) => q.id)
   );
   const chosen = all.filter((id) => answered.has(id)).slice(0, section.pick);
   const fill = all.filter((id) => !answered.has(id)).slice(0, section.pick - chosen.length);

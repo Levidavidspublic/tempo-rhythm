@@ -30,7 +30,13 @@ describe("buildReviewQueue", () => {
       { key: "new2", state: null },
       { key: "due-now", state: dueAt(T0) },
     ];
-    expect(keys(buildReviewQueue(items, T0))).toEqual(["due-old", "due-late", "due-now", "new1", "new2"]);
+    expect(keys(buildReviewQueue(items, T0))).toEqual([
+      "due-old",
+      "due-late",
+      "due-now",
+      "new1",
+      "new2",
+    ]);
   });
 
   test("equal due times keep input order", () => {
@@ -42,8 +48,14 @@ describe("buildReviewQueue", () => {
   });
 
   test("new cards are capped at newLimit (default 20); due cards are not", () => {
-    const fresh: QueueItem[] = Array.from({ length: 30 }, (_, i) => ({ key: `n${i}`, state: null }));
-    const due: QueueItem[] = Array.from({ length: 25 }, (_, i) => ({ key: `d${i}`, state: dueAt(T0 - i) }));
+    const fresh: QueueItem[] = Array.from({ length: 30 }, (_, i) => ({
+      key: `n${i}`,
+      state: null,
+    }));
+    const due: QueueItem[] = Array.from({ length: 25 }, (_, i) => ({
+      key: `d${i}`,
+      state: dueAt(T0 - i),
+    }));
     expect(buildReviewQueue([...fresh, ...due], T0)).toHaveLength(45);
     expect(buildReviewQueue(fresh, T0, { newLimit: 5 })).toHaveLength(5);
     expect(buildReviewQueue(fresh, T0, { newLimit: 0 })).toHaveLength(0);

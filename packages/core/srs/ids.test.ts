@@ -1,13 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { studyItemId } from "@tempo/utils";
-import {
-  BLOCK_ID_PATTERN,
-  encodeUlidTime,
-  isBlockId,
-  itemIds,
-  newBlockId,
-  newUlid,
-} from "./ids";
+import { BLOCK_ID_PATTERN, encodeUlidTime, isBlockId, itemIds, newBlockId, newUlid } from "./ids";
 
 const T0 = Date.UTC(2026, 9, 16, 9, 0, 0);
 

@@ -70,7 +70,7 @@ export function startLevel(questions: readonly QuizQuestion[]): QuizDifficulty {
 export function pickAdaptiveQuestion(
   questions: readonly QuizQuestion[],
   asked: ReadonlySet<string>,
-  level: QuizDifficulty,
+  level: QuizDifficulty
 ): QuizQuestion | null {
   const byDistance = [...LEVELS].sort((a, b) => Math.abs(a - level) - Math.abs(b - level) || a - b);
   for (const candidate of byDistance) {
@@ -91,7 +91,7 @@ function nextQuestionId(session: Omit<QuizSession, "currentId">): string | null 
 
 export function startQuiz(
   questions: readonly QuizQuestion[],
-  options: { mode?: QuizMode; maxQuestions?: number } = {},
+  options: { mode?: QuizMode; maxQuestions?: number } = {}
 ): QuizSession {
   const all = questions.length;
   const requested = options.maxQuestions === undefined ? all : Math.floor(options.maxQuestions);
@@ -120,7 +120,7 @@ export function isQuizOver(session: QuizSession): boolean {
 export function nextLevel(
   previous: QuizAnswer | undefined,
   streak: number,
-  answer: Pick<QuizAnswer, "correct" | "difficulty">,
+  answer: Pick<QuizAnswer, "correct" | "difficulty">
 ): { level: QuizDifficulty; streak: number } {
   if (!answer.correct) return { level: clampLevel(answer.difficulty - 1), streak: 0 };
   const sameRun = previous?.correct === true && previous.difficulty === answer.difficulty;

@@ -28,13 +28,16 @@ export type ReviewQueueOptions = { newLimit?: number };
 export function buildReviewQueue<T extends QueueItem>(
   items: readonly T[],
   now: number,
-  options: ReviewQueueOptions = {},
+  options: ReviewQueueOptions = {}
 ): T[] {
   const newLimit = Math.max(0, Math.floor(options.newLimit ?? DEFAULT_NEW_LIMIT));
   const due = items
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => item.state !== null && isDue(item.state, now))
-    .sort((a, b) => (a.item.state as Sm2State).dueAt - (b.item.state as Sm2State).dueAt || a.index - b.index)
+    .sort(
+      (a, b) =>
+        (a.item.state as Sm2State).dueAt - (b.item.state as Sm2State).dueAt || a.index - b.index
+    )
     .map(({ item }) => item);
   const fresh = items.filter((item) => item.state === null).slice(0, newLimit);
   return [...due, ...fresh];
@@ -56,7 +59,7 @@ export type SessionProgress = { done: number; left: number; again: number };
 
 export function startSession<T extends { key: string }>(
   cards: readonly T[],
-  options: { maxAgain?: number } = {},
+  options: { maxAgain?: number } = {}
 ): ReviewSession<T> {
   return {
     queue: [...cards],
@@ -83,7 +86,7 @@ export function isSessionOver<T extends { key: string }>(session: ReviewSession<
  */
 export function answerCard<T extends { key: string }>(
   session: ReviewSession<T>,
-  button: ReviewButton,
+  button: ReviewButton
 ): ReviewSession<T> {
   const [card, ...rest] = session.queue;
   if (card === undefined) return session;
@@ -100,6 +103,8 @@ export function answerCard<T extends { key: string }>(
 }
 
 /** Counts for a progress line: finished, still to show (including repeats), "Again" presses. */
-export function sessionProgress<T extends { key: string }>(session: ReviewSession<T>): SessionProgress {
+export function sessionProgress<T extends { key: string }>(
+  session: ReviewSession<T>
+): SessionProgress {
   return { done: session.done, left: session.queue.length, again: session.again };
 }

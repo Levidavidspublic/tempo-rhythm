@@ -38,7 +38,13 @@ const BAGRUT: BagrutQuestion = {
   id: "q3",
   stem: "A ball is thrown upwards.",
   parts: [
-    { id: "p1", label: "א", prompt: "Find the time to the top.", points: 10, modelAnswer: "t = v/g" },
+    {
+      id: "p1",
+      label: "א",
+      prompt: "Find the time to the top.",
+      points: 10,
+      modelAnswer: "t = v/g",
+    },
     { id: "p2", label: "ב", prompt: "Find the height.", points: 15, rubric: "5 for the formula" },
   ],
 };
@@ -56,8 +62,16 @@ describe("question plugins", () => {
 
   test("mcq: full points for the answer, 0 otherwise", () => {
     expect(mcqPlugin.maxPoints(MCQ)).toBe(4);
-    expect(mcqPlugin.grade(MCQ, { choiceId: "a" })).toEqual({ points: 4, maxPoints: 4, correct: true });
-    expect(mcqPlugin.grade(MCQ, { choiceId: "b" })).toEqual({ points: 0, maxPoints: 4, correct: false });
+    expect(mcqPlugin.grade(MCQ, { choiceId: "a" })).toEqual({
+      points: 4,
+      maxPoints: 4,
+      correct: true,
+    });
+    expect(mcqPlugin.grade(MCQ, { choiceId: "b" })).toEqual({
+      points: 0,
+      maxPoints: 4,
+      correct: false,
+    });
     expect(mcqPlugin.grade(MCQ, undefined).points).toBe(0);
     expect(mcqPlugin.isAnswered(MCQ, { choiceId: "b" })).toBe(true);
     expect(mcqPlugin.isAnswered(MCQ, { choiceId: "" })).toBe(false);
@@ -68,7 +82,11 @@ describe("question plugins", () => {
     expect(shortPlugin.grade(SHORT, { text: "  MITOCHONDRIA. " }).correct).toBe(true);
     expect(shortPlugin.grade(SHORT, { text: "The   mitochondrion!" }).correct).toBe(true);
     expect(shortPlugin.grade(SHORT, { text: "מִיטוֹכוֹנְדְרְיָה" }).points).toBe(5);
-    expect(shortPlugin.grade(SHORT, { text: "nucleus" })).toEqual({ points: 0, maxPoints: 5, correct: false });
+    expect(shortPlugin.grade(SHORT, { text: "nucleus" })).toEqual({
+      points: 0,
+      maxPoints: 5,
+      correct: false,
+    });
     expect(shortPlugin.grade(SHORT, { text: "   " }).correct).toBe(false);
     expect(shortPlugin.isAnswered(SHORT, { text: " ?! " })).toBe(false);
     expect(shortPlugin.isAnswered(SHORT, { text: "x" })).toBe(true);
@@ -82,7 +100,10 @@ describe("question plugins", () => {
       maxPoints: 25,
       parts: { p1: 8, p2: 15 },
     });
-    expect(bagrutPlugin.grade(BAGRUT, { parts: { p1: 99, p2: -4 } }).parts).toEqual({ p1: 10, p2: 0 });
+    expect(bagrutPlugin.grade(BAGRUT, { parts: { p1: 99, p2: -4 } }).parts).toEqual({
+      p1: 10,
+      p2: 0,
+    });
     expect(bagrutPlugin.grade(BAGRUT, { parts: { p1: Number.NaN, p2: "7" } }).points).toBe(0);
     expect(bagrutPlugin.grade(BAGRUT, { parts: { p1: 2.5 } }).points).toBe(2.5);
     expect(bagrutPlugin.isAnswered(BAGRUT, { parts: { p2: 0 } })).toBe(true);

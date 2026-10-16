@@ -90,7 +90,9 @@ describe("adaptive quiz", () => {
 
   test("a level that runs out takes the nearest level, easier on a tie", () => {
     expect(pickAdaptiveQuestion(BANK, new Set(["m1", "m2", "m3"]), 2)?.id).toBe("e1");
-    expect(pickAdaptiveQuestion(BANK, new Set(["e1", "e2", "e3", "m1", "m2", "m3"]), 1)?.id).toBe("h1");
+    expect(pickAdaptiveQuestion(BANK, new Set(["e1", "e2", "e3", "m1", "m2", "m3"]), 1)?.id).toBe(
+      "h1"
+    );
     expect(pickAdaptiveQuestion(BANK, new Set(BANK.map((x) => x.id)), 2)).toBeNull();
   });
 
@@ -122,7 +124,9 @@ describe("adaptive quiz", () => {
     expect(result.total).toBe(6);
     expect(result.missedIds).toEqual(["m1"]);
     expect(result.byDifficulty[1]).toEqual({ correct: 3, total: 3 });
-    expect(result.byDifficulty[1].total + result.byDifficulty[2].total + result.byDifficulty[3].total).toBe(6);
+    expect(
+      result.byDifficulty[1].total + result.byDifficulty[2].total + result.byDifficulty[3].total
+    ).toBe(6);
     expect(lastAnswer(session)?.correct).toBe(true);
   });
 
@@ -133,7 +137,11 @@ describe("adaptive quiz", () => {
     expect(quizResult(s)).toEqual({
       correct: 0,
       total: 0,
-      byDifficulty: { 1: { correct: 0, total: 0 }, 2: { correct: 0, total: 0 }, 3: { correct: 0, total: 0 } },
+      byDifficulty: {
+        1: { correct: 0, total: 0 },
+        2: { correct: 0, total: 0 },
+        3: { correct: 0, total: 0 },
+      },
       missedIds: [],
     });
   });
