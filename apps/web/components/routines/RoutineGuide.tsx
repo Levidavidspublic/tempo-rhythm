@@ -55,15 +55,124 @@ const WORD = {
   skipped: "rd.s.skipped",
   next: "rd.s.next",
 } as const;
-const NOTE = { done: "rd.donenote", skipped: "rd.skipped", reopened: "rd.reopened" } as const;
+const NOTE = {
+  done: "rd.donenote",
+  skipped: "rd.skipped",
+  reopened: "rd.reopened",
+  resumed: "rd.resumed",
+} as const;
+
+/* ---------- The run's place, kept for this tab ---------- */
+
+/** sessionStorage keys: this prefix, the format version, then the routine id. */
+export const RUN_KEY_PREFIX = "tempo:routine-run:";
+const RUN_VERSION = 1;
+/** A place older than this is dropped: this morning's run is not tonight's. */
+export const RUN_TTL_MS = 12 * 60 * 60 * 1000;
+
+export type RunStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+export function runStorageKey(routineId: string): string {
+  return `${RUN_KEY_PREFIX}v${RUN_VERSION}:${routineId}`;
+}
+
+/** This tab's sessionStorage, or null when the browser blocks it. */
+export function sessionRunStorage(): RunStorage | null {
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** A saved place, only when it is fresh and still fits the routine's steps. */
+function parseSavedRun(raw: string, stepCount: number, now: number): RoutineRun | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof value !== "object" || value === null) return null;
+  const { v, savedAt, index, statuses, paused } = value as Record<string, unknown>;
+  if (v !== RUN_VERSION || typeof savedAt !== "number" || typeof paused !== "boolean") return null;
+  const age = now - savedAt;
+  if (!(age >= 0 && age <= RUN_TTL_MS)) return null;
+  if (!Array.isArray(statuses) || statuses.length !== stepCount) return null;
+  if (typeof index !== "number" || !Number.isInteger(index) || index < 0 || index >= stepCount)
+    return null;
+  // Steps before the current one are done or skipped, the current one is Now, the rest wait.
+  const fits = statuses.every((status: unknown, k) =>
+    k < index
+      ? status === "done" || status === "skipped"
+      : status === (k === index ? "now" : "next")
+  );
+  return fits ? { index, statuses: statuses as StepStatus[], paused } : null;
+}
+
+/**
+ * The run saved for this routine in this tab, or null. A place that is too old, unreadable or
+ * from a different list of steps is dropped. Never throws: blocked storage reads as nothing saved.
+ */
+export function readSavedRun(
+  storage: RunStorage | null,
+  routineId: string,
+  stepCount: number,
+  now: number
+): RoutineRun | null {
+  if (!storage || stepCount === 0) return null;
+  const key = runStorageKey(routineId);
+  try {
+    const raw = storage.getItem(key);
+    if (raw === null) return null;
+    const run = parseSavedRun(raw, stepCount, now);
+    if (!run) storage.removeItem(key);
+    return run;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Keeps the run's place (step and statuses only, no step text). A finished run is cleared, so
+ * the next visit starts fresh. Never throws: without storage the run just doesn't survive a reload.
+ */
+export function saveRun(
+  storage: RunStorage | null,
+  routineId: string,
+  run: RoutineRun,
+  now: number
+): void {
+  if (!storage) return;
+  const key = runStorageKey(routineId);
+  try {
+    if (run.statuses.length === 0 || isRunFinished(run)) {
+      storage.removeItem(key);
+      return;
+    }
+    storage.setItem(
+      key,
+      JSON.stringify({
+        v: RUN_VERSION,
+        savedAt: now,
+        index: run.index,
+        statuses: run.statuses,
+        paused: run.paused,
+      })
+    );
+  } catch {
+    // Blocked or full: nothing to do.
+  }
+}
 
 /**
  * Routine, guided (docs/design/v3/screens/web/routine-detail.html): one step at a time, Skip
  * without guilt, Pause keeps the place, Back a step, and a calm finish. The routine is a page
  * tagged #routine (lib/routines.ts); "Edit the steps" opens that page.
  *
- * The run lives on this screen only: there is no routines backend yet to store runs, so the place
- * is kept while the screen stays open, not across visits.
+ * There is no routines backend to store runs, so the place (current step, done and skipped steps,
+ * paused) is kept in this tab's sessionStorage: a reload, or leaving and coming back, picks it up
+ * while the number of steps is the same. It is cleared when the run ends and dropped after 12 hours.
  */
 export function RoutineGuide({ routineId }: { routineId: string }) {
   return (
@@ -114,7 +223,7 @@ function GuideContent({ routineId }: { routineId: string }) {
   } else if (!note) {
     body = <StateEmpty icon="list" title={t("rd.gone")} />;
   } else {
-    body = <GuideBody note={note} online={online} />;
+    body = <GuideBody key={note._id} note={note} online={online} />;
   }
 
   return (
@@ -129,10 +238,14 @@ function GuideBody({ note, online }: { note: Doc<"notes">; online: boolean }) {
   const { t } = useLocale();
   const steps = useMemo(() => parseRoutineSteps(note.body), [note.body]);
   const minutes = totalMinutes(steps);
-  const [stored, setRun] = useState<RoutineRun | null>(null);
-  // Opening the screen starts the run. If the steps change while it is open, it starts again.
+  // Opening the screen starts the run, or picks up the place this tab saved for it.
+  const [resumed] = useState(() =>
+    readSavedRun(sessionRunStorage(), note._id, steps.length, Date.now())
+  );
+  const [stored, setRun] = useState<RoutineRun | null>(resumed);
+  // If the steps change while it is open, it starts again.
   const run = stored && stored.statuses.length === steps.length ? stored : startRun(steps.length);
-  const [said, setSaid] = useState<keyof typeof NOTE | null>(null);
+  const [said, setSaid] = useState<keyof typeof NOTE | null>(resumed ? "resumed" : null);
   const focusNext = useRef(false);
   const stepTitle = useRef<HTMLHeadingElement | null>(null);
   const finishTitle = useRef<HTMLHeadingElement | null>(null);
@@ -146,11 +259,16 @@ function GuideBody({ note, online }: { note: Doc<"notes">; online: boolean }) {
     (finished ? finishTitle : stepTitle).current?.focus();
   });
 
+  const keep = (next: RoutineRun) => {
+    setRun(next);
+    saveRun(sessionRunStorage(), note._id, next, Date.now());
+  };
+
   const move = (next: RoutineRun, kind: keyof typeof NOTE) => {
     if (next === run) return;
     focusNext.current = true;
     setSaid(kind);
-    setRun(next);
+    keep(next);
   };
 
   const header = (
@@ -304,7 +422,7 @@ function GuideBody({ note, online }: { note: Doc<"notes">; online: boolean }) {
                 aria-pressed={run.paused}
                 onClick={() => {
                   setSaid(null);
-                  setRun(togglePause(run));
+                  keep(togglePause(run));
                 }}
               >
                 <TpIcon name={run.paused ? "play" : "pause"} size="sm" />
