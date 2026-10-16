@@ -161,12 +161,12 @@ const ABBREVIATIONS = new Set([
   "ms",
   "dr",
   "prof",
-  "st",
-  "no",
   "fig",
   "approx",
   "cf",
 ]);
+/** Abbreviations only before a number ("no. 5", "st. 3"); anywhere else "no." and "st." end a sentence. */
+const NUMBER_ABBREVIATIONS = new Set(["no", "st"]);
 
 /** Sentence ends: . ? ! … and the Hebrew sof pasuq, with any closing quotes or brackets. */
 const BOUNDARY = /[.?!…׃]+["'”’»)\]]*(?=\s|$)/g;
@@ -174,7 +174,8 @@ const BOUNDARY = /[.?!…׃]+["'”’»)\]]*(?=\s|$)/g;
 /**
  * Splits text into sentences after . ? ! … or the Hebrew sof pasuq when a space (or the end)
  * follows, so numbers like 3.5 and versions like v1.2 stay whole. A few English abbreviations
- * (e.g., Dr.) do not end a sentence. Works the same for English and Hebrew.
+ * (e.g., Dr.) do not end a sentence, nor do "no." and "st." before a number. Works the same for
+ * English and Hebrew.
  */
 export function splitSentences(text: string, _lang: RecapLang = "en"): string[] {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -187,6 +188,7 @@ export function splitSentences(text: string, _lang: RecapLang = "en"): string[] 
     if (match[0].startsWith(".") && match[0].length === 1) {
       const word = clean.slice(start, at).split(" ").at(-1)?.toLowerCase() ?? "";
       if (ABBREVIATIONS.has(word) || /^[a-z]$/i.test(word)) continue;
+      if (NUMBER_ABBREVIATIONS.has(word) && /^ \d/.test(clean.slice(end))) continue;
     }
     const sentence = clean.slice(start, end).trim();
     if (sentence) out.push(sentence);

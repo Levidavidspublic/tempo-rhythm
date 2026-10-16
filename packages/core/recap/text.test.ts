@@ -16,6 +16,14 @@ describe("splitSentences", () => {
       "Dr. Levi said v1.2 works.",
     ]);
   });
+  test("no. and st. are abbreviations only before a number", () => {
+    expect(splitSentences("The answer is no. Then we go on.")).toEqual(["The answer is no.", "Then we go on."]);
+    expect(splitSentences("Turn onto the main st. Then stop.")).toEqual(["Turn onto the main st.", "Then stop."]);
+    expect(splitSentences("See no. 5 on the list. Then st. 3 below.")).toEqual([
+      "See no. 5 on the list.",
+      "Then st. 3 below.",
+    ]);
+  });
   test("splits Hebrew on . ? ! and the sof pasuq", () => {
     expect(splitSentences("התא מתחלק לשניים. מה קורה אחר כך? נוצרים שני תאים׃ זהים", "he")).toEqual([
       "התא מתחלק לשניים.",
