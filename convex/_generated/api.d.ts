@@ -72,6 +72,7 @@ import type * as notifications from "../notifications.js";
 import type * as pageCleanup from "../pageCleanup.js";
 import type * as plans from "../plans.js";
 import type * as preferences from "../preferences.js";
+import type * as reminders from "../reminders.js";
 import type * as revenuecat from "../revenuecat.js";
 import type * as schema_plans from "../schema/plans.js";
 import type * as schema_study from "../schema/study.js";
@@ -155,6 +156,7 @@ declare const fullApi: ApiFromModules<{
   pageCleanup: typeof pageCleanup;
   plans: typeof plans;
   preferences: typeof preferences;
+  reminders: typeof reminders;
   revenuecat: typeof revenuecat;
   "schema/plans": typeof schema_plans;
   "schema/study": typeof schema_study;
