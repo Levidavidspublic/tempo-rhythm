@@ -1,8 +1,15 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
-import { fromDateInputValue, toDateInputValue } from "@/lib/calendar/date-math";
+import {
+  fromDateInputValue,
+  parseDateInputValue,
+  toDateInputValue,
+} from "@/lib/calendar/date-math";
+import type { MessageKey } from "@/lib/i18n";
+import { intlLocale } from "@/lib/you/screenState";
 
 export type EventRowEvent = {
   id: string;
@@ -22,21 +29,42 @@ const dateFormat: Intl.DateTimeFormatOptions = {
   year: "numeric",
 };
 
-export function EventRow({ event, actions }: { event: EventRowEvent; actions?: EventRowActions }) {
-  const [isEditing, setIsEditing] = useState(false);
+/**
+ * Copy for a failed save. A raw error is server or parser text in English, so the row names the
+ * likely cause from what the form holds, in the app language.
+ */
+export function saveErrorKey(title: string, dateValue: string): MessageKey {
+  if (!parseDateInputValue(dateValue)) return "cal.err.date";
+  if (!title.trim()) return "cal.err.needTitle";
+  return "cal.row.err";
+}
+
+export function EventRow({
+  event,
+  actions,
+  initialEditing = false,
+}: {
+  event: EventRowEvent;
+  actions?: EventRowActions;
+  /** Opens the row in its edit form; the tests render that state without clicking Edit. */
+  initialEditing?: boolean;
+}) {
+  const { lang, t } = useLocale();
+  const [isEditing, setIsEditing] = useState(initialEditing);
   const [title, setTitle] = useState(event.title);
   const [dateValue, setDateValue] = useState(() => toDateInputValue(new Date(event.startsAtMs)));
-  const [error, setError] = useState<string | null>(null);
+  // A key, not text, so a message already on screen follows a language switch.
+  const [error, setError] = useState<MessageKey | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
-  async function run(action: () => Promise<void>, onDone?: () => void) {
+  async function run(action: () => Promise<void>, failKey: MessageKey, onDone?: () => void) {
     setIsBusy(true);
     try {
       await action();
       setError(null);
       onDone?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "That did not go through yet.");
+    } catch {
+      setError(failKey);
     } finally {
       setIsBusy(false);
     }
@@ -51,6 +79,7 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
         const startsAtMs = fromDateInputValue(dateValue).getTime();
         await onUpdate(event, { title, startsAtMs });
       },
+      saveErrorKey(title, dateValue),
       () => setIsEditing(false)
     );
   }
@@ -60,7 +89,7 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
       {isEditing ? (
         <form className="cal-event__edit" onSubmit={handleSave}>
           <label className="tp-field cal-event__title-field">
-            <span className="tp-label">Title</span>
+            <span className="tp-label">{t("cal.row.title")}</span>
             <input
               className="tp-input"
               dir="auto"
@@ -69,7 +98,7 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
             />
           </label>
           <label className="tp-field">
-            <span className="tp-label">Date</span>
+            <span className="tp-label">{t("cal.row.date")}</span>
             <input
               className="tp-input tp-num"
               onChange={(e) => setDateValue(e.target.value)}
@@ -78,7 +107,7 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
             />
           </label>
           <button className="tp-btn tp-btn--primary tp-btn--sm" disabled={isBusy} type="submit">
-            Save
+            {t("cal.row.save")}
           </button>
           <button
             className="tp-btn tp-btn--ghost tp-btn--sm"
@@ -89,7 +118,7 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
             }}
             type="button"
           >
-            Cancel
+            {t("cal.row.cancel")}
           </button>
         </form>
       ) : (
@@ -102,13 +131,13 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
               {event.title}
             </span>
             <span className="tp-list-row__meta tp-num">
-              {new Date(event.startsAtMs).toLocaleDateString(undefined, dateFormat)}
+              {new Date(event.startsAtMs).toLocaleDateString(intlLocale(lang), dateFormat)}
             </span>
           </span>
           {actions ? (
             <span className="tp-list-row__end">
               <button
-                aria-label={`Edit ${event.title}`}
+                aria-label={t("cal.row.editName").replace("{title}", event.title)}
                 className="tp-btn tp-btn--ghost tp-btn--sm"
                 onClick={() => {
                   setTitle(event.title);
@@ -117,16 +146,16 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
                 }}
                 type="button"
               >
-                Edit
+                {t("cal.row.edit")}
               </button>
               <button
-                aria-label={`Delete ${event.title}`}
+                aria-label={t("cal.row.deleteName").replace("{title}", event.title)}
                 className="tp-btn tp-btn--danger-ghost tp-btn--sm"
                 disabled={isBusy}
-                onClick={() => void run(() => actions.onDelete(event))}
+                onClick={() => void run(() => actions.onDelete(event), "cal.row.err")}
                 type="button"
               >
-                Delete
+                {t("cal.row.delete")}
               </button>
             </span>
           ) : null}
@@ -134,7 +163,7 @@ export function EventRow({ event, actions }: { event: EventRowEvent; actions?: E
       )}
       {error ? (
         <p className="tp-error-text cal-event__error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : null}
     </li>
@@ -153,7 +182,8 @@ export function UndoToast({
   onUndo: () => Promise<void>;
   onExpire: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
+  const { t } = useLocale();
+  const [error, setError] = useState<MessageKey | null>(null);
   // Ignore further clicks while a restore is in flight: a second restore would hit the already
   // restored row and report a false "can no longer be restored".
   const [isUndoing, setIsUndoing] = useState(false);
@@ -175,7 +205,7 @@ export function UndoToast({
     <div className="tp-toast-region">
       <output className="tp-toast tp-glass">
         <span className="tp-toast__text">
-          <span className="tp-toast__title">Event removed.</span>
+          <span className="tp-toast__title">{t("cal.row.removed")}</span>
         </span>
         <button
           className="tp-btn tp-btn--secondary tp-btn--sm"
@@ -188,7 +218,13 @@ export function UndoToast({
             setError(null);
             onUndo()
               .catch((err: unknown) =>
-                setError(err instanceof Error ? err.message : "Could not undo that yet.")
+                // CalendarViews throws its own "can no longer be restored" copy; any other error
+                // is raw server text in English.
+                setError(
+                  err instanceof Error && err.message === t("cal.err.undoGone")
+                    ? "cal.err.undoGone"
+                    : "cal.row.undoErr"
+                )
               )
               .finally(() => {
                 undoingRef.current = false;
@@ -197,11 +233,11 @@ export function UndoToast({
           }}
           type="button"
         >
-          Undo
+          {t("cal.row.undo")}
         </button>
         {error ? (
           <span className="tp-error-text" role="alert">
-            {error}
+            {t(error)}
           </span>
         ) : null}
       </output>
