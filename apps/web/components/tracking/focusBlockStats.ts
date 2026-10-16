@@ -34,6 +34,15 @@ export function minutesFromMs(durationMs: number): number {
   return Math.max(1, Math.round(durationMs / 60_000));
 }
 
+/** focusBlocks.create accepts a block of up to 8 hours. */
+export const MAX_BLOCK_MINUTES = 8 * 60;
+
+/** Whole minutes from the form's field, or null when the server would refuse the block. */
+export function parseBlockMinutes(raw: string): number | null {
+  const minutes = Number.parseInt(raw, 10);
+  return Number.isFinite(minutes) && minutes >= 1 && minutes <= MAX_BLOCK_MINUTES ? minutes : null;
+}
+
 /** One point per local day that has blocks, oldest first. */
 export function totalsPerLocalDay(blocks: FocusBlockLike[]): FocusDayPoint[] {
   const byDay = new Map<string, FocusDayPoint>();

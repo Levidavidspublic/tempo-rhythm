@@ -21,7 +21,9 @@ import {
   lastLocalDaysRange,
   lastSevenDaysSeries,
   localDayKey,
+  MAX_BLOCK_MINUTES,
   minutesFromMs,
+  parseBlockMinutes,
 } from "./focusBlockStats";
 
 type PendingUndo = { focusBlockId: Id<"focusBlocks">; undoUntilMs: number };
@@ -73,6 +75,8 @@ export function TrackingDashboard() {
   const [importRetry, setImportRetry] = useState(0);
   const [isUndoing, setIsUndoing] = useState(false);
   const undoingRef = useRef(false);
+  const [isLogging, setIsLogging] = useState(false);
+  const loggingRef = useRef(false);
   const userId = profile?._id;
 
   // One-time import of logs the old localStorage version saved. Each log leaves the stored list
@@ -209,11 +213,16 @@ export function TrackingDashboard() {
     );
   }
 
+  const minutes = parseBlockMinutes(durationMinutes);
+  const minutesOutOfRange = durationMinutes.trim() !== "" && minutes === null;
+
   const logSession = async () => {
-    const minutes = Number.parseInt(durationMinutes, 10);
-    if (!Number.isFinite(minutes) || minutes <= 0 || intention.trim().length === 0) {
+    // One block per press: a double click (or Enter twice) must not log it twice.
+    if (loggingRef.current || minutes === null || intention.trim().length === 0) {
       return;
     }
+    loggingRef.current = true;
+    setIsLogging(true);
     const durationMs = minutes * 60_000;
     try {
       await createBlock({
@@ -225,6 +234,9 @@ export function TrackingDashboard() {
       setMessage(null);
     } catch {
       setMessage("That block did not save. Try once more.");
+    } finally {
+      loggingRef.current = false;
+      setIsLogging(false);
     }
   };
 
@@ -351,15 +363,26 @@ export function TrackingDashboard() {
               id="session-minutes"
               type="number"
               min={1}
+              max={MAX_BLOCK_MINUTES}
               inputMode="numeric"
               value={durationMinutes}
+              aria-invalid={minutesOutOfRange || undefined}
+              aria-describedby={minutesOutOfRange ? "session-minutes-hint" : undefined}
               onChange={(event) => setDurationMinutes(event.target.value)}
             />
           </div>
-          <Button type="submit" disabled={intention.trim().length === 0}>
+          <Button
+            type="submit"
+            disabled={intention.trim().length === 0 || minutes === null || isLogging}
+          >
             Log this block
           </Button>
         </div>
+        {minutesOutOfRange ? (
+          <p id="session-minutes-hint" className="mt-3 text-sm text-muted-foreground">
+            One block is 1 to {MAX_BLOCK_MINUTES} minutes (8 hours). A longer stretch can be two blocks.
+          </p>
+        ) : null}
       </form>
 
       {blocks.length === 0 ? (
