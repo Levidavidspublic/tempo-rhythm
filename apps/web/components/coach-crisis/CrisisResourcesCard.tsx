@@ -6,23 +6,28 @@ import { api } from "@/convex/_generated/api";
 import {
   COACH_NOT_THERAPIST,
   FALLBACK_CARD,
-  formatResource,
   type CrisisCardCopy,
 } from "./crisisCopy";
 
 function CrisisCardView({ card }: { card: CrisisCardCopy }) {
+  // CrisisCard (DESIGN.md §9, coach-thread.html): fixed text written by people, no animation.
   return (
-    <section role="alert" className="rounded-2xl border border-border bg-card p-4 shadow-card">
-      <h2 className="font-heading text-xl font-semibold text-foreground">{card.title}</h2>
-      <p className="mt-2 text-sm text-foreground">{card.body}</p>
+    <section role="alert" className="tp-crisis" data-component="CrisisCard">
+      <h2 className="tp-crisis__title">{card.title}</h2>
+      <p className="tp-crisis__body">{card.body}</p>
       {card.resources.length > 0 ? (
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-foreground">
+        <ul className="tp-crisis__list">
           {card.resources.map((resource, index) => (
-            <li key={`${resource.label}-${index}`}>{formatResource(resource)}</li>
+            <li className="tp-crisis__item" key={`${resource.label}-${index}`}>
+              <span className="tp-crisis__item-text">
+                <span className="tp-crisis__name">{resource.label}</span>
+                <span className="tp-crisis__detail">{resource.detail}</span>
+              </span>
+            </li>
           ))}
         </ul>
       ) : null}
-      <p className="mt-3 text-sm text-muted-foreground">{COACH_NOT_THERAPIST}</p>
+      <p className="tp-crisis__note">{COACH_NOT_THERAPIST}</p>
     </section>
   );
 }

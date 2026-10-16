@@ -788,7 +788,8 @@ const tempoTheme = EditorView.theme({
   ".cm-tp-checkbox": {
     width: "18px",
     height: "18px",
-    margin: "0 6px 0 0",
+    margin: "0",
+    marginInlineEnd: "6px",
     verticalAlign: "-3px",
     accentColor: "var(--tp-done)",
     cursor: "pointer",

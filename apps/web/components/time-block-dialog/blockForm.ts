@@ -68,7 +68,7 @@ export function parseBlockForm(input: BlockFormInput): BlockFormResult {
 
   const { durationMinutes } = input;
   if (!Number.isInteger(durationMinutes) || durationMinutes < 5 || durationMinutes > 720) {
-    errors.durationMinutes = "Length must be a whole number of minutes from 5 to 720.";
+    errors.durationMinutes = "Pick a length from 5 to 720 minutes, in whole minutes.";
   } else if (startMinute !== null && startMinute + durationMinutes > MINUTES_PER_DAY) {
     errors.durationMinutes = "This block runs past midnight. Shorten it or start earlier.";
   }

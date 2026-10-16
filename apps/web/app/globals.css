@@ -606,7 +606,7 @@
 
 /* ---- v3 shell: a page's side column (apps/web/components/tempo/ShellSlots.tsx) ---- */
 /* /coach: the thread scrolls inside a bounded surface, so the composer stays in reach. */
-.tp-coach-page { display: flex; flex-direction: column; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
+.tp-coach-page { display: flex; flex-direction: column; padding: 0; gap: 0; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
 .tp-coach-page > * { flex: none; }
 .tp-coach-page > .tp-coach-thread { flex: 1 1 auto; min-height: 0; }
 
@@ -648,6 +648,8 @@
 .bd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
 .bd-group { display: grid; gap: var(--tp-space-2); }
 .bd-group__title { margin: 0; font-size: var(--tp-text-sm); }
+/* A plan line's reason is a sentence, not a label: tp-chip is nowrap, which pushed rows past a phone's width. */
+.bd-group .tp-import-row__bar .tp-chip { white-space: normal; max-width: 100%; padding-block: var(--tp-space-1); }
 .bd-row__actions { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-inline-start: auto; }
 .bd-saved { flex-wrap: wrap; }
 .bd-saved .tp-notice__action { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }
@@ -703,3 +705,176 @@
   .tk-row { grid-template-columns: auto minmax(0, 1fr); }
   .tk-row__actions { grid-column: 2; justify-content: flex-start; }
 }
+
+/* ==========================================================================
+   Kitchen polish pass (docs/kitchen/RUN-LOG.md). Product CSS on top of the locked tempo.css
+   copy: layout and state fixes only, every value from a --tp-* token.
+   ========================================================================== */
+
+/* Coach thread (coach-thread.html). A message keeps its own line breaks, and a long link or word
+   wraps instead of pushing a phone screen sideways. */
+.tp-msg { min-width: 0; }
+.tp-msg__text { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+.tp-msg__who { display: inline-flex; align-items: baseline; gap: var(--tp-space-2); }
+.tp-msg__time { font-weight: 400; color: var(--tp-ink-subtle); }
+/* Coach replies render Markdown: paragraphs and lists get their own rhythm, code scrolls inside. */
+.tp-msg__md { white-space: normal; display: grid; gap: var(--tp-space-2); }
+.tp-msg__md :is(ul, ol) { padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+.tp-msg__md ul { list-style: disc; }
+.tp-msg__md ol { list-style: decimal; }
+.tp-msg__md a { color: var(--tp-ink); text-decoration: underline; text-underline-offset: 2px; }
+.tp-msg__md code { font-family: var(--tp-font-mono); font-size: 0.9em; background: var(--tp-sunken); padding-inline: var(--tp-space-1); border-radius: var(--tp-radius-sm); }
+.tp-msg__md pre { overflow-x: auto; max-width: 100%; padding: var(--tp-space-3); background: var(--tp-sunken); border-radius: var(--tp-radius-md); }
+.tp-msg__md pre code { padding: 0; background: none; }
+/* Message actions stay quiet: shown on hover or focus where there is a mouse, always on touch. */
+.tp-msg__actions[data-component="MessageActions"] .tp-btn { color: var(--tp-ink-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .tp-msg__actions[data-component="MessageActions"] { opacity: 0; transition: opacity var(--tp-dur-fast) var(--tp-ease-out); }
+  .tp-msg:hover > .tp-msg__actions[data-component="MessageActions"],
+  .tp-msg:focus-within > .tp-msg__actions[data-component="MessageActions"] { opacity: 1; }
+}
+/* Loading: three quiet lines in the shape of a conversation. */
+.tp-coach-thread__loading { display: grid; gap: var(--tp-space-3); }
+.tp-coach-thread__loading .tp-skeleton:nth-child(2) { width: 70%; }
+.tp-coach-thread__loading .tp-skeleton:nth-child(3) { width: 45%; justify-self: end; }
+.tp-coach-thread__loading .tp-skeleton:nth-child(4) { width: 60%; }
+/* An empty chat: a kind line, then starters that fill the composer (they never send by themselves). */
+.tp-coach-start { display: grid; gap: var(--tp-space-4); }
+.tp-coach-start__list { display: grid; justify-items: start; gap: var(--tp-space-2); }
+.tp-coach-start__item { max-width: 100%; min-height: var(--tp-touch); padding-block: var(--tp-space-2); text-align: start; white-space: normal; }
+/* "Jump to the latest": offered when new messages arrive while you are reading further up. */
+.tp-coach-jump { display: flex; justify-content: center; padding: var(--tp-space-2) var(--tp-space-4) 0; }
+/* Composer: the unlayered focus ring above would draw a second ring inside the box's own one. */
+.tp-composer__input:focus-visible { outline: none; }
+.tp-composer .tp-offline { margin-block-end: var(--tp-space-2); }
+.tp-composer__count { font-variant-numeric: tabular-nums; }
+.tp-composer__actions { margin-inline-start: auto; display: inline-flex; align-items: center; gap: var(--tp-space-1); }
+.tp-composer__actions .tp-composer__send { margin-inline-start: 0; }
+
+/* Loading states (StateLoading): .tp-state centres its children, which shrank the skeleton list to
+   nothing, and a row without its box put the lines in the zero-width first column. Both showed a
+   blank body while a screen loaded (settings, onboarding, billing, memory). */
+.tp-state--loading > .tp-skel-list { justify-self: stretch; width: 100%; }
+.tp-skel-row > .tp-skel-row__lines:only-child { grid-column: 1 / -1; }
+
+/* Today: brain dump card (TodayBrainDumpPanel). Layout only. */
+.tbd__head { display: grid; gap: var(--tp-space-2); justify-items: start; }
+.tbd__grid { display: grid; gap: var(--tp-space-6); }
+.tbd__col { display: grid; gap: var(--tp-space-4); align-content: start; min-width: 0; }
+.tbd__crisis { display: grid; gap: var(--tp-space-4); }
+.tbd__wait { display: grid; gap: var(--tp-space-2); padding-block: var(--tp-space-6); }
+.tbd__empty { padding-block: var(--tp-space-6); }
+.tbd__lanes { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tbd__n { color: var(--tp-ink-muted); }
+.tbd .tp-import-row[data-choice="keep"] { border-color: var(--tp-line-control); background: var(--tp-ground); }
+@media (min-width: 1280px) { .tbd__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.tqa__row { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tqa__row .tp-input { flex: 1 1 calc(var(--tp-space-20) * 3); min-width: 0; }
+.tag-list { display: grid; gap: var(--tp-space-2); }
+.tag-empty { display: grid; justify-items: start; gap: var(--tp-space-3); }
+
+/* Long unbroken names and titles (a pasted link, an email handle) wrap instead of scrolling a phone
+   page sideways. */
+:is(.tp-pagehead__title, .tp-page-title, .tp-section__title, .tp-h3, .tp-card__title) { overflow-wrap: anywhere; }
+
+/* Read view of a page (ReadView .tp-prose): the same look as the editor's live preview
+   (live-preview.ts), so lists keep their bullets, quotes their rule and tables their cells after
+   Tailwind's reset. Long links and words wrap instead of pushing a phone page sideways. */
+.tp-prose { overflow-wrap: anywhere; min-width: 0; }
+.tp-prose :is(p, ul, ol, blockquote, pre, table) { margin-block: var(--tp-space-2); }
+.tp-prose :is(ul, ol) { padding-inline-start: var(--tp-space-6); }
+.tp-prose ul { list-style: disc; }
+.tp-prose ol { list-style: decimal; }
+.tp-prose li + li { margin-block-start: var(--tp-space-1); }
+.tp-prose li::marker { color: var(--tp-ink-muted); }
+.tp-prose ul.contains-task-list { list-style: none; padding-inline-start: var(--tp-space-1); }
+.tp-prose .task-list-item input { margin-inline-end: var(--tp-space-2); accent-color: var(--tp-done); }
+.tp-prose h1 { font-size: var(--tp-text-2xl); margin-block-start: var(--tp-space-4); }
+.tp-prose h2 { font-size: var(--tp-text-xl); margin-block-start: var(--tp-space-4); }
+.tp-prose h3 { font-size: var(--tp-text-lg); margin-block-start: var(--tp-space-3); }
+.tp-prose blockquote { border-inline-start: 3px solid var(--tp-line-strong); padding-inline-start: var(--tp-space-3); color: var(--tp-ink-muted); }
+.tp-prose a { color: var(--tp-ink); text-decoration: underline; text-decoration-color: var(--tp-line-strong); text-underline-offset: 2px; }
+.tp-prose pre { overflow-x: auto; max-width: 100%; padding: var(--tp-space-3); background: var(--tp-sunken); border-radius: var(--tp-radius-md); }
+.tp-prose :not(pre) > code { background: var(--tp-sunken); padding-inline: var(--tp-space-1); border-radius: var(--tp-radius-sm); }
+.tp-prose table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; font-size: var(--tp-text-sm); }
+.tp-prose :is(th, td) { border: 1px solid var(--tp-line); padding: var(--tp-space-1) var(--tp-space-2); text-align: start; }
+.tp-prose th { background: var(--tp-sunken); font-weight: 600; }
+.tp-prose hr { border: 0; border-top: 1px solid var(--tp-line); margin-block: var(--tp-space-4); }
+/* "Linked here" rows and a page list's preview line: long text wraps. */
+:is(.tp-backlink__page, .tp-backlink__ctx) { overflow-wrap: anywhere; min-width: 0; }
+/* Page title field: the title's own type, no box (PageEditorView). */
+.tp-page-title__input { width: 100%; min-width: 0; border: 0; background: transparent; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; }
+.tp-page-title__input::placeholder { color: var(--tp-ink-subtle); }
+.tp-page-meta output[data-state="error"] { color: var(--tp-danger); font-weight: 600; }
+.pe-offline { margin-block-start: var(--tp-space-4); }
+/* Notes list: a long preview wraps and stops after two lines instead of widening the row. */
+.nt-preview { min-width: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Templates: card-sized skeletons; the builder's paper fills its column instead of shrinking to
+   its text while you type. */
+.tpl-skel__card { min-height: calc(var(--tp-space-20) * 2); }
+.bld-split > .tp-paper { width: 100%; margin-inline: 0; }
+
+/* Tasks at 390 px: a long project name on a row's chip wraps instead of widening every row
+   (the page measured 447 px wide); grouped views and the view switcher keep the 16 px gutter. */
+.tk-list .tk-row .tp-chip { white-space: normal; max-width: 100%; overflow-wrap: anywhere; }
+.tk-row .tp-task-row__title { overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .tp-page > :is(.tk-groups, .tk-views) { padding-inline: var(--tp-space-4); }
+  /* The create form's extra fields sit two to a row on a phone, so the list starts sooner. */
+  .tk-create__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tk-create__more { gap: var(--tp-space-3); }
+}
+
+/* List rows (calendar events, routine steps, notes): a long title wraps instead of being cut to
+   one line with no way to read the rest. */
+.tp-list-row__title { white-space: normal; overflow-wrap: anywhere; }
+
+/* Touch: small buttons and segmented options reach the 44 px touch size on touch screens
+   (they are 36 px for a mouse). */
+@media (pointer: coarse) {
+  .tp-btn--sm { min-height: var(--tp-touch); }
+  .tp-btn--sm.tp-btn--icon { width: var(--tp-touch); }
+  .tp-segmented .tp-seg__opt { min-height: var(--tp-touch); }
+}
+/* Checklists (/tasks/checklists). Layout only. */
+.ck-cards { list-style: none; margin: 0; padding: 0; }
+.ck-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+.ck-card__head { align-items: flex-start; margin-bottom: 0; }
+.ck-card__title { flex: 1 1 auto; min-width: 0; display: grid; gap: var(--tp-space-1); }
+.ck-card__title .tp-h3 { margin: 0; }
+.ck-step { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-1) var(--tp-space-2); }
+.ck-step__check { flex: 1 1 calc(var(--tp-space-20) * 2); min-width: 0; }
+.ck-step__actions { display: inline-flex; gap: var(--tp-space-1); }
+.ck-step__edit, .ck-add { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); flex: 1 1 100%; padding-block: var(--tp-space-2); }
+:is(.ck-step__edit, .ck-add) .tp-input { flex: 1 1 calc(var(--tp-space-20) * 2.5); min-width: 0; }
+/* Priority (production /tasks/priority). Layout only. */
+.prio-grid { display: grid; gap: var(--tp-space-8); }
+@media (min-width: 1024px) { .prio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .tp-page > .prio-grid { padding-inline: var(--tp-space-4); } }
+.prio-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.prio-card { display: grid; gap: var(--tp-space-3); }
+.prio-card__head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--tp-space-2); }
+.prio-card__head .tp-task-row__title { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.prio-card__controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3); }
+.prio-card__controls .tp-field { flex: 1 1 calc(var(--tp-space-20) * 1.75); min-width: 0; }
+.prio-card__delete { margin-inline-start: auto; }
+/* Today: still open from earlier days (CarryOverStrip). Layout only. */
+.co-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-1) var(--tp-space-3); }
+.co-row__check { flex: 1 1 calc(var(--tp-space-20) * 2.5); min-width: 0; }
+.co-row__title { overflow-wrap: anywhere; }
+.co-row__error { flex: 1 1 100%; padding-block-end: var(--tp-space-2); }
+/* Today: habits (HabitCheckInStrip). The check uses aria-pressed, so its filled state is set here. */
+.hc-row .tp-check[aria-pressed="true"] .tp-check__box { background: var(--tp-done); border-color: var(--tp-done); color: var(--tp-paper); }
+/* Today's page: one column of sections with the v3 gutter; quick add and the task list side by
+   side from 1280 px. */
+.today-stack, .today-strips { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.today-strips:empty { display: none; }
+.today-pair { display: grid; gap: var(--tp-space-6); align-items: start; }
+@media (min-width: 1280px) { .today-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 767px) { .tp-page > .today-stack > .tp-pagehead { padding-inline: var(--tp-space-4); } }
+/* /coach side column: today's plan (CoachProposalCard). Layout only. */
+.cp-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+.cp-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.cp-body { display: grid; gap: var(--tp-space-3); padding: var(--tp-space-4); }
+.cp-lines { list-style: decimal; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); overflow-wrap: anywhere; }
+.cp-first { display: grid; gap: var(--tp-space-1); }

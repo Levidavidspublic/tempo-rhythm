@@ -7,6 +7,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { Segmented } from "@/components/settings/controls";
 import { StateLoading } from "@/components/settings/states";
 import { TpIcon } from "@/components/tempo/TpIcon";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 import { type BillingInterval, currentTier, isEarlyAccess, TIERS } from "@/lib/settings/billing";
 import { type CurrentPlan, PlanCard } from "./PlanCard";
@@ -23,8 +24,12 @@ export function BillingPlan() {
   const plan = useQuery(api.users.getMyPlan, {});
   const [cycle, setCycle] = useState<BillingInterval>("month");
 
-  if (!plan) {
+  if (plan === undefined) {
     return <StateLoading label="set.billing.loading" className="bl-state" />;
+  }
+  if (plan === null) {
+    // No signed-in account (for example the session ended in another tab): say how to get back in.
+    return <StateSignedOut body={t("set.billing.signedOut")} />;
   }
 
   const snapshot: CurrentPlan = plan;

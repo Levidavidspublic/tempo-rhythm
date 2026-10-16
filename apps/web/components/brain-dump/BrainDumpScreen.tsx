@@ -8,8 +8,10 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { brainDumpPageBody } from "@/lib/brain-dump-page";
+import { addedNotice, nowTaskIds } from "@/lib/brain-dump-today";
 import { dayTokens } from "@/lib/editor/markdown-model";
 import { localIsoDate } from "@/lib/period-pages";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import {
   acceptedItems,
   canSubmit,
@@ -83,6 +85,8 @@ export function BrainDumpScreen() {
   const convex = useConvex();
   const prioritize = useAction(api.brain_dump.prioritize);
   const acceptPlan = useMutation(api.brain_dump.acceptPlan);
+  const updateTask = useMutation(api.tasks.update);
+  const bounds = useLocalDayBounds();
   const createNote = useMutation(api.notes.create);
   const removeNote = useMutation(api.notes.remove);
 
@@ -93,6 +97,7 @@ export function BrainDumpScreen() {
   const [crisisCard, setCrisisCard] = useState<ResourcesCard | null>(null);
   const [error, setError] = useState("");
   const [doneMessage, setDoneMessage] = useState("");
+  const [doneOnToday, setDoneOnToday] = useState(false);
   const [isSorting, setIsSorting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -131,8 +136,9 @@ export function BrainDumpScreen() {
         return;
       }
       setPlan(await prioritize({ rawText: draft }));
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
+    } catch {
+      // Convex errors carry request ids and server wording: the screen says it kindly instead.
+      setError(t("bd.error"));
     } finally {
       setIsSorting(false);
     }
@@ -154,17 +160,24 @@ export function BrainDumpScreen() {
     setIsAdding(true);
     try {
       const result = await acceptPlan({ items: toAdd });
-      setDoneMessage(t("bd.added").replace("{n}", String(result.created)));
+      // Now lines also go on today (lib/brain-dump-today.ts); one that fails stays in Tasks.
+      const moved = await Promise.allSettled(
+        nowTaskIds(toAdd, result.taskIds).map((taskId) => updateTask({ taskId, dueAt: bounds.endMs - 1 })),
+      );
+      const onToday = moved.filter((outcome) => outcome.status === "fulfilled").length;
+      setDoneMessage(addedNotice(result.created, onToday, t));
+      setDoneOnToday(onToday > 0);
       setDraft("");
       setPlan(null);
       setAccepted([]);
       setRejected([]);
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
+    } catch {
+      // Convex errors carry request ids and server wording: the screen says it kindly instead.
+      setError(t("bd.error"));
     } finally {
       setIsAdding(false);
     }
-  }, [acceptPlan, toAdd, t]);
+  }, [acceptPlan, updateTask, bounds.endMs, toAdd, t]);
 
   const handleSavePage = useCallback(async () => {
     if (!plan || isSaving) return;
@@ -195,6 +208,7 @@ export function BrainDumpScreen() {
         await removeNote({ noteId: id as Id<"notes"> });
         setSavedPages((prev) => (prev ?? []).filter((page) => page.id !== id));
         setDoneMessage(t("bd.pageRemoved"));
+        setDoneOnToday(false);
       } catch {
         setError(t("bd.undoError"));
       } finally {
@@ -265,6 +279,11 @@ export function BrainDumpScreen() {
         {doneMessage ? (
           <output className="tp-notice" data-tone="done">
             <span className="tp-notice__text">{doneMessage}</span>
+            {doneOnToday ? (
+              <Link className="tp-btn tp-btn--ghost tp-btn--sm" href="/today">
+                {t("bd.openToday")}
+              </Link>
+            ) : null}
           </output>
         ) : null}
         {savedPages.map((page) => (
@@ -280,7 +299,8 @@ export function BrainDumpScreen() {
             type="button"
             className="tp-btn tp-btn--primary"
             onClick={() => void handleSort()}
-            disabled={busy || !canSubmit(draft)}
+            // Not disabled when empty: the press itself shows the "type something first" hint.
+            disabled={busy}
           >
             <TpIcon name="sparkle" size="sm" />
             <span>{isSorting ? t("bd.sorting") : t("bd.sort")}</span>

@@ -27,6 +27,7 @@ test.describe("activity screen", () => {
     await expect(page.getByText(taskTitle)).toBeVisible();
 
     await page.goto(url("/notes"));
+    await page.getByLabel("New note title").fill("E2E test page");
     await page.getByRole("button", { name: "New note" }).click();
     await page.getByLabel("Note title").fill(noteTitle);
     await expect(page.getByRole("status")).toHaveText("Saved");

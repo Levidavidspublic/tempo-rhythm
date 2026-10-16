@@ -4,7 +4,7 @@ import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/u
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   type EditorTrigger,
   LivePreviewEditor,
@@ -44,7 +44,7 @@ const SLASH_ICONS: Record<SlashCommandId, TpIconName> = {
   table: "calendar-grid",
 };
 
-type SaveState = "idle" | "saving" | "saved";
+type SaveState = "idle" | "saving" | "saved" | "error";
 
 type Props = {
   noteId: string;
@@ -58,6 +58,10 @@ type Props = {
   remoteBody?: { before: string; after: string; seq: number } | null;
   pinned: boolean;
   saveState: SaveState;
+  /** Saves the pending edits again after a save that didn't go through. */
+  onRetrySave?: () => void;
+  /** No connection: the page says saving waits until it is back. */
+  offline?: boolean;
   confirmingDelete: boolean;
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
@@ -100,6 +104,34 @@ export function PageEditorView(props: Props) {
   const editor = useRef<LivePreviewEditorHandle | null>(null);
   const [mode, setMode] = useState<"edit" | "read">("edit");
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  // The page menu behaves like a menu: focus goes to its first item, arrows move, Escape closes and
+  // returns to the button, and a click outside closes it.
+  useEffect(() => {
+    if (!menuOpen) return;
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    const onDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuOpen]);
+  const onPageMenuKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      items[(at + step + items.length) % items.length]?.focus();
+    } else if (event.key === "Tab") {
+      setMenuOpen(false);
+    }
+  };
   const [copied, setCopied] = useState(false);
   const [trigger, setTrigger] = useState<EditorTrigger | null>(null);
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
@@ -265,7 +297,7 @@ export function PageEditorView(props: Props) {
             <h1 className="tp-page-title" id="page-title">
               <input
                 aria-label={t("page.titleLabel")}
-                className="w-full min-w-0 border-0 bg-transparent p-0 placeholder:text-ink-subtle"
+                className="tp-page-title__input"
                 dir="auto"
                 value={title}
                 placeholder={t("page.untitled")}
@@ -279,7 +311,7 @@ export function PageEditorView(props: Props) {
               </button>
               {confirmingDelete ? (
                 <>
-                  <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={props.onConfirmDelete}>
+                  <button className="tp-btn tp-btn--danger tp-btn--sm" type="button" onClick={props.onConfirmDelete}>
                     {t("page.confirmDelete")}
                   </button>
                   <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={props.onCancelDelete}>
@@ -287,8 +319,9 @@ export function PageEditorView(props: Props) {
                   </button>
                 </>
               ) : null}
-              <div className="tp-menu" data-component="PageMenu">
+              <div className="tp-menu" data-component="PageMenu" ref={menuRef}>
                 <button
+                  ref={menuButtonRef}
                   className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon"
                   type="button"
                   aria-haspopup="menu"
@@ -299,7 +332,7 @@ export function PageEditorView(props: Props) {
                   <TpIcon name="more" size="sm" />
                 </button>
                 {menuOpen ? (
-                  <div className="tp-menu__list tp-glass" role="menu">
+                  <div className="tp-menu__list tp-glass" role="menu" onKeyDown={onPageMenuKey}>
                     <button className="tp-menu__item" type="button" role="menuitem" onClick={() => void copyMarkdown()}>
                       <TpIcon name="card" size="sm" />
                       {t("page.copy")}
@@ -352,10 +385,32 @@ export function PageEditorView(props: Props) {
               </Link>
             )}
             <output className="tp-muted" data-state={saveState}>
-              {copied ? t("page.copied") : saveState === "saving" ? t("page.saving") : saveState === "saved" ? t("page.saved") : ""}
+              {copied
+                ? t("page.copied")
+                : saveState === "saving"
+                  ? t("page.saving")
+                  : saveState === "saved"
+                    ? t("page.saved")
+                    : saveState === "error"
+                      ? t("page.notSaved")
+                      : ""}
             </output>
+            {saveState === "error" && props.onRetrySave ? (
+              <button className="tp-btn tp-btn--link" type="button" onClick={props.onRetrySave}>
+                {t("page.retrySave")}
+              </button>
+            ) : null}
           </div>
         </div>
+
+        {props.offline ? (
+          <p className="tp-notice tp-offline pe-offline" data-tone="caution" data-component="StateOffline">
+            <span className="tp-notice__icon">
+              <TpIcon name="wifi-off" size="sm" />
+            </span>
+            <span className="tp-notice__text">{t("page.offline")}</span>
+          </p>
+        ) : null}
 
         {props.lead}
 

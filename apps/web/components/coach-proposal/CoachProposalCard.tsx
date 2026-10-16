@@ -2,8 +2,8 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { TpIcon } from "@/components/tempo/TpIcon";
+import { StateLoading } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 import {
   BAD_DAY_BANNER,
@@ -16,6 +16,12 @@ import {
 
 type Outcome = { status: "accepted" | "rejected"; taskLoad: number };
 
+/**
+ * Today's plan in /coach's side column (ProposalCard, DESIGN.md §9): the coach proposes, you
+ * accept or say not today. v3 card, list and button classes; logical properties, so the list's
+ * markers sit on the right side in Hebrew. (Edit and a 5-minute Undo need a backend undo for
+ * coach.decideProposal, which doesn't exist yet.)
+ */
 export function CoachProposalCard() {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const args = isAuthenticated ? {} : "skip";
@@ -23,7 +29,7 @@ export function CoachProposalCard() {
   const badDay = useQuery(api.coach.badDay, args);
   const proposal = useQuery(api.coach.currentProposal, args);
   const tasks = useQuery(api.tasks.list, args);
-  const createProposal =useMutation(api.coach.createProposal);
+  const createProposal = useMutation(api.coach.createProposal);
   const decideProposal = useMutation(api.coach.decideProposal);
 
   const [busy, setBusy] = useState(false);
@@ -34,9 +40,8 @@ export function CoachProposalCard() {
 
   if (authLoading || (isAuthenticated && proposal === undefined)) {
     return (
-      <section aria-busy="true" aria-label="Plan my day" className="max-w-xl">
-        <div className="h-32 animate-pulse rounded-lg bg-muted" />
-        <p className="sr-only">Loading your plan.</p>
+      <section aria-busy="true" aria-label="Plan my day" className="tp-card cp-card">
+        <StateLoading label="Loading your plan." rows={2} box={false} />
       </section>
     );
   }
@@ -80,30 +85,34 @@ export function CoachProposalCard() {
   };
 
   const errorLine = error ? (
-    <p role="alert" className="text-sm text-destructive">
-      {ERROR_COPY}
+    <p role="alert" className="tp-error-text">
+      <TpIcon name="alert" size="sm" />
+      <span>{ERROR_COPY}</span>
     </p>
   ) : null;
 
   if (proposal === null) {
     return (
-      <section aria-labelledby="coach-proposal-heading" className="max-w-xl space-y-3">
-        <h2 id="coach-proposal-heading" className="font-heading text-xl font-semibold">
+      <section aria-labelledby="coach-proposal-heading" className="tp-card cp-card">
+        <h2 id="coach-proposal-heading" className="tp-section__title">
           Today&rsquo;s plan
         </h2>
         {outcome ? (
-          <output className="block space-y-1">
-            <p className="text-sm text-foreground">
-              {outcome.status === "rejected" ? REJECTED_COPY : "Plan accepted. You can start with the first one."}
-            </p>
-            <p className="text-sm text-muted-foreground">{nextLoadNote(outcome.taskLoad)}</p>
+          <output className="tp-notice" data-tone={outcome.status === "rejected" ? undefined : "done"}>
+            <span className="tp-notice__text">
+              <span>{outcome.status === "rejected" ? REJECTED_COPY : "Plan accepted. You can start with the first one."}</span>
+              <span className="tp-muted">{nextLoadNote(outcome.taskLoad)}</span>
+            </span>
           </output>
         ) : null}
-        {empty ? <p className="text-sm text-muted-foreground">{EMPTY_COPY}</p> : null}
+        {empty ? <p className="tp-help">{EMPTY_COPY}</p> : null}
         {errorLine}
-        <Button type="button" onClick={onPlan} disabled={busy}>
-          {error ? "Try again" : "Plan my day"}
-        </Button>
+        <div className="cp-actions">
+          <button className="tp-btn tp-btn--secondary" type="button" onClick={onPlan} disabled={busy}>
+            <TpIcon name={error ? "refresh" : "sparkle"} size="sm" />
+            <span>{error ? "Try again" : "Plan my day"}</span>
+          </button>
+        </div>
       </section>
     );
   }
@@ -112,49 +121,53 @@ export function CoachProposalCard() {
 
   if (proposal.tasks.length === 0) {
     return (
-      <section aria-labelledby="coach-proposal-heading" className="max-w-xl space-y-3">
-        <h2 id="coach-proposal-heading" className="font-heading text-xl font-semibold">
+      <section aria-labelledby="coach-proposal-heading" className="tp-card cp-card">
+        <h2 id="coach-proposal-heading" className="tp-section__title">
           {view.heading}
         </h2>
-        <p className="text-sm text-muted-foreground">{EMPTY_COPY}</p>
+        <p className="tp-help">{EMPTY_COPY}</p>
         {errorLine}
-        <Button type="button" variant="outline" onClick={() => onDecide("reject")} disabled={busy}>
-          Not today
-        </Button>
+        <div className="cp-actions">
+          <button className="tp-btn tp-btn--secondary" type="button" onClick={() => onDecide("reject")} disabled={busy}>
+            Not today
+          </button>
+        </div>
       </section>
     );
   }
 
   return (
-    <Card className="max-w-xl">
-      <CardHeader>
-        <CardTitle id="coach-proposal-heading" className="font-heading text-xl font-semibold">
-          {view.heading}
-        </CardTitle>
-        {badDay?.isBadDay ? <p className="text-sm text-muted-foreground">{BAD_DAY_BANNER}</p> : null}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">{view.loadNote}</p>
-        <ul className="list-disc space-y-1 pl-5 text-foreground">
+    <section className="tp-proposal cp-card" data-component="ProposalCard" aria-labelledby="coach-proposal-heading">
+      <div className="tp-proposal__head">
+        <TpIcon name="today" size="sm" />
+        <strong id="coach-proposal-heading">{view.heading}</strong>
+      </div>
+      <div className="cp-body">
+        {badDay?.isBadDay ? <p className="tp-help">{BAD_DAY_BANNER}</p> : null}
+        <p className="tp-help">{view.loadNote}</p>
+        <ol className="cp-lines">
           {view.taskLines.map((line, i) => (
-            <li key={proposal.tasks[i].taskId}>{line}</li>
+            <li key={proposal.tasks[i].taskId} dir="auto">
+              {line}
+            </li>
           ))}
-        </ul>
-        <div>
-          <p className="text-sm font-medium text-foreground">First, a 10-second action</p>
-          <p className="text-foreground">{view.tenSecondAction}</p>
+        </ol>
+        <div className="cp-first">
+          <span className="tp-label">First, a 10-second action</span>
+          <p dir="auto">{view.tenSecondAction}</p>
         </div>
-        <p className="text-sm text-muted-foreground">{view.realismNote}</p>
+        <p className="tp-help">{view.realismNote}</p>
         {errorLine}
-      </CardContent>
-      <CardFooter className="gap-2">
-        <Button type="button" onClick={() => onDecide("accept")} disabled={busy}>
-          Accept
-        </Button>
-        <Button type="button" variant="outline" onClick={() => onDecide("reject")} disabled={busy}>
+      </div>
+      <div className="tp-proposal__actions">
+        <button className="tp-btn tp-btn--primary" type="button" onClick={() => onDecide("accept")} disabled={busy}>
+          <TpIcon name="check" size="sm" />
+          <span>Accept</span>
+        </button>
+        <button className="tp-btn tp-btn--secondary" type="button" onClick={() => onDecide("reject")} disabled={busy}>
           Not today
-        </Button>
-      </CardFooter>
-    </Card>
+        </button>
+      </div>
+    </section>
   );
 }

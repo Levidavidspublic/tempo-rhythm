@@ -27,6 +27,17 @@ type Preferences = {
 
 type PreferencesPatch = Partial<Preferences>;
 
+/** The section a change belongs to, so a save that didn't go through is shown next to it. */
+type Section = "look" | "coach" | "notify";
+
+/** A save that didn't go through: where to say so, and how to send the same change again. */
+type SaveFailure = { section: Section; retry: () => void };
+
+/** Theme and language sit under "How Tempo looks"; the stored week and notice settings below. */
+function sectionFor(patch: PreferencesPatch): Section {
+  return "theme" in patch || "locale" in patch ? "look" : "notify";
+}
+
 /** The coach dial saves 400 ms after the slider stops moving (settings-prefs.html). */
 const DIAL_SAVE_DELAY_MS = 400;
 
@@ -48,7 +59,8 @@ function toWeekStart(value: string): WeekStartsOn {
 
 /**
  * Settings · Preferences (docs/design/v3/screens/web/settings-prefs.html). Every change applies
- * at once and the page header says "Saved." There is no Save button.
+ * at once and the page header says "Saved." There is no Save button. A change that didn't save
+ * says so inside its own section, with Try again (the same change sent again).
  * Theme, language and the reading font drive the shell's own state (ThemeProvider,
  * LocaleProvider); theme and language are also saved with preferences.update. Text size is
  * device-local like the reading font. The coach dial is coach.getSettings / coach.setDial.
@@ -67,7 +79,7 @@ export function PreferencesForm() {
   const [overrides, setOverrides] = useState<PreferencesPatch>({});
   const [textSize, setTextSize] = useState<TextSize>("m");
   const [dialDraft, setDialDraft] = useState<number | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<SaveFailure | null>(null);
   const dialTimer = useRef<number | null>(null);
   const dialPending = useRef<number | null>(null);
   const timeZone = overrides.timeZone ?? preferences?.timeZone ?? "UTC";
@@ -110,7 +122,7 @@ export function PreferencesForm() {
   const dial = dialDraft ?? clampDial(coach.dial);
 
   const saved = () => {
-    setFailed(false);
+    setFailure(null);
     announce(t("set.saved"));
   };
 
@@ -121,7 +133,7 @@ export function PreferencesForm() {
       onSaved?.();
       saved();
     } catch {
-      setFailed(true);
+      setFailure({ section: sectionFor(patch), retry: () => void save(patch, onSaved) });
     } finally {
       // Back to the stored value, unless a newer change to the same setting is on its way.
       setOverrides((current) => {
@@ -164,6 +176,19 @@ export function PreferencesForm() {
     saved();
   };
 
+  const sendDial = (next: number) => {
+    setDial({ dial: next })
+      .then(() => {
+        // Keep showing the draft if the slider already moved on.
+        setDialDraft((current) => (current === next ? null : current));
+        saved();
+      })
+      .catch(() => {
+        setDialDraft((current) => (current === next ? null : current));
+        setFailure({ section: "coach", retry: () => sendDial(next) });
+      });
+  };
+
   const onDial = (raw: number) => {
     const next = clampDial(raw);
     setDialDraft(next);
@@ -172,34 +197,34 @@ export function PreferencesForm() {
     dialTimer.current = window.setTimeout(() => {
       dialTimer.current = null;
       dialPending.current = null;
-      setDial({ dial: next })
-        .then(() => {
-          // Keep showing the draft if the slider already moved on.
-          setDialDraft((current) => (current === next ? null : current));
-          saved();
-        })
-        .catch(() => {
-          setDialDraft((current) => (current === next ? null : current));
-          setFailed(true);
-        });
+      sendDial(next);
     }, DIAL_SAVE_DELAY_MS);
   };
 
-  return (
-    <>
-      {failed ? (
+  /** "That change didn't save" with Try again, inside the section where the change was made. */
+  const saveProblem = (section: Section) =>
+    failure?.section === section ? (
+      <div className="tp-setting-row pr-problem" data-component="SettingRow">
         <p className="tp-error-text" role="alert">
           <TpIcon name="alert" size="sm" />
           <span>{t("set.prefs.saveError")}</span>
         </p>
-      ) : null}
+        <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={failure.retry}>
+          <TpIcon name="refresh" size="sm" />
+          <span>{t("set.prefs.tryAgain")}</span>
+        </button>
+      </div>
+    ) : null;
 
+  return (
+    <>
       <section className="tp-settings-section" aria-labelledby="look-title" data-component="SettingsSection">
         <div className="tp-settings-section__head">
           <h2 className="tp-settings-section__title" id="look-title">
             {t("set.prefs.look")}
           </h2>
         </div>
+        {saveProblem("look")}
 
         <div className="tp-setting-row tp-setting-row--stack od-row" data-component="SettingRow">
           <div className="tp-setting-row__text">
@@ -297,6 +322,7 @@ export function PreferencesForm() {
           </h2>
           <p className="tp-settings-section__desc">{t("set.prefs.coachDesc")}</p>
         </div>
+        {saveProblem("coach")}
         <div className="pr-dial">
           <DialControl id="dial" label={t("set.dial.label")} value={dial} onChange={onDial} describedBy="dial-help" />
           <p className="tp-help" id="dial-help">
@@ -316,6 +342,7 @@ export function PreferencesForm() {
             {t("set.prefs.week")}
           </h2>
         </div>
+        {saveProblem("notify")}
 
         <div className="tp-setting-row od-row" data-component="SettingRow">
           <div className="tp-setting-row__text">

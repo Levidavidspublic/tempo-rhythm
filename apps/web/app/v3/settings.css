@@ -11,6 +11,9 @@
 .pr-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
 .pr-dial { padding: var(--tp-space-3) var(--tp-space-5) var(--tp-space-5); display: grid; gap: var(--tp-space-2); }
 .pr-state { padding-block: var(--tp-space-6); }
+/* A change that didn't save: the message, then Try again, inside the section it belongs to. */
+.pr-problem { flex-wrap: wrap; justify-content: space-between; }
+.pr-problem .tp-error-text { flex: 1 1 calc(var(--tp-space-20) * 2); }
 
 /* settings-privacy.html */
 .pv-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
@@ -49,3 +52,28 @@
 .ob-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
 .ob-nav__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; }
 .ob-fieldsets { display: grid; gap: var(--tp-space-6); }
+
+/* Passkeys (/settings/passkeys): outside the app shell, so the page brings the shell main's padding. */
+.pk-main { padding: var(--tp-space-8) var(--tp-space-6) var(--tp-space-20); }
+.pk-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+@media (max-width: 767px) {
+  .pk-main { padding-inline: var(--tp-space-4); }
+  .pk-main > .tp-page > .tp-pagehead { padding-inline: 0; }
+}
+
+/* Under 768 px the shell main has no side padding and the shared rule pads only the page head, so
+   the settings cards ran edge to edge. The body takes the same 16 px gutter (as v3/you.css does),
+   and a loading or error state inside it drops its own side padding to line up with that gutter. */
+@media (max-width: 767px) {
+  :is(.sp-body, .pr-body, .pv-body, .ig-body, .bl-body) { padding-inline: var(--tp-space-4); }
+  :is(.sp-body, .pr-body, .pv-body, .ig-body, .bl-body) > .tp-state { padding-inline: 0; }
+}
+
+/* sign-in.html, sign-up.html: a long email in "Check your email" wraps instead of pushing a phone sideways. */
+.tp-auth-card__lede { overflow-wrap: anywhere; }
+
+/* approval-pending.html (the waiting screen): "What happens next" as numbered steps in the card. */
+.aw-next { display: grid; gap: var(--tp-space-3); }
+.aw-next .tp-steps { gap: var(--tp-space-3); }
+.aw-step { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--tp-space-3); }
+.aw-step .tp-step__num { font-size: var(--tp-text-xl); }

@@ -20,7 +20,7 @@ export function NotesList() {
   const rawType = params.get("type");
   const type =
     rawType === "daily" || rawType === "weekly" || rawType === "monthly" ? rawType : "all";
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const [search, setSearch] = useState("");
   const [pinnedOnly, setPinnedOnly] = useState(false);
   // notes.list calls requireUser, which throws until the user row exists. getProfile returns null
@@ -33,6 +33,7 @@ export function NotesList() {
   const remove = useMutation(api.notes.remove);
   const restore = useMutation(api.notes.restore);
   const [title, setTitle] = useState("");
+  const [titleMissing, setTitleMissing] = useState(false);
   const [periodType, setPeriodType] = useState<PeriodType>("none");
   const [removed, setRemoved] = useState<RemovedNote[]>([]);
   const [pendingDelete, setPendingDelete] = useState<Id<"notes"> | null>(null);
@@ -45,7 +46,8 @@ export function NotesList() {
   if (!userId) lastNotes.current = null;
   else if (notes !== undefined) lastNotes.current = { userId, value: notes };
   const shown = notes ?? (lastNotes.current?.userId === userId ? lastNotes.current?.value : undefined);
-  const isLoading = isAuthenticated && shown === undefined;
+  // While sign-in resolves the list is loading too, not "No notes yet".
+  const isLoading = authLoading || (isAuthenticated && shown === undefined);
   const visible = filterByPeriod(shown ?? [], type).sort(
     (a, b) => Number(b.pinned) - Number(a.pinned)
   );
@@ -98,9 +100,16 @@ export function NotesList() {
         className="tp-toolbar"
         onSubmit={(event) => {
           event.preventDefault();
+          // A page needs a title before it is made, so an empty submit asks for one instead.
+          if (!title.trim()) {
+            setTitleMissing(true);
+            document.getElementById("nt-new-title")?.focus();
+            return;
+          }
+          setTitleMissing(false);
           void perform(async () => {
             const id = await create({
-              title: title.trim() || t("notes.untitled"),
+              title: title.trim(),
               body: "",
               periodType,
             });
@@ -117,9 +126,19 @@ export function NotesList() {
             className="tp-input"
             dir="auto"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            aria-invalid={titleMissing || undefined}
+            aria-describedby={titleMissing ? "nt-new-title-hint" : undefined}
+            onChange={(event) => {
+              setTitleMissing(false);
+              setTitle(event.target.value);
+            }}
             placeholder={t("notes.untitled")}
           />
+          {titleMissing ? (
+            <output id="nt-new-title-hint" className="text-sm text-muted-foreground">
+              {t("notes.titleNeeded")}
+            </output>
+          ) : null}
         </div>
         <div className="tp-field">
           <label className="tp-label" htmlFor="nt-new-type">
@@ -236,8 +255,8 @@ export function NotesList() {
                       {label(note)}
                     </span>
                     <span className="tp-list-row__meta" dir="auto">
-                      {note.pinned ? <span className="tp-tag">{t("notes.pinned")}</span> : null}
-                      <span>{plainPreview(note.body, t("notes.noContent"))}</span>
+                      {note.pinned ? <span className="tp-badge">{t("notes.pinned")}</span> : null}
+                      <span className="nt-preview">{plainPreview(note.body, t("notes.noContent"))}</span>
                     </span>
                   </span>
                 </Link>

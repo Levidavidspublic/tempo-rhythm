@@ -3,7 +3,7 @@
 import { useConvexAuth } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { SignInForm } from "@/components/auth/SignInForm";
+import { AuthCardLoading, SignInForm } from "@/components/auth/SignInForm";
 
 function getPostAuthDestination(nextPath: string | null) {
   const trimmed = nextPath?.trim();
@@ -40,14 +40,7 @@ export default function SignInPage() {
   }, [isAuthenticated, isLoading, nextPath, router]);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
-        <div
-          className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent"
-          aria-hidden
-        />
-      </div>
-    );
+    return <AuthCardLoading />;
   }
 
   if (isAuthenticated) {

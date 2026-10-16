@@ -7,6 +7,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { StateLoading, Toast } from "@/components/settings/states";
 import { TpIcon } from "@/components/tempo/TpIcon";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 import type { Lang } from "@/lib/i18n";
 import { type ProfileError, profileErrors } from "@/lib/settings/profile";
@@ -42,8 +43,12 @@ export function ProfileForm() {
     if (summaryTick > 0) summaryRef.current?.focus();
   }, [summaryTick]);
 
-  if (!profile) {
+  if (profile === undefined) {
     return <StateLoading label="set.profile.loading" className="sp-state" />;
+  }
+  if (profile === null) {
+    // No signed-in account (for example the session ended in another tab): say how to get back in.
+    return <StateSignedOut body={t("set.profile.signedOut")} />;
   }
 
   const fullName = draftName ?? profile.fullName ?? "";
