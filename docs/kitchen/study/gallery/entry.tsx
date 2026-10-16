@@ -10,6 +10,9 @@
 // (MOCKED: the sample deck below, with stand-in updateBlock answers).
 // F-07 adds plan-replan-notice (the live plan screen, two sessions missed yesterday) and
 // plan-replan-preview (the "Re-plan the rest" preview on a fixed, fictional week).
+// "Ask about this set" adds study-set-ask (quotes from the page and the deck), study-set-ask-empty
+// (nothing found, with the page link) and study-set-ask-he (a pointed Hebrew deck answering an
+// unpointed question). MOCKED: the sample decks and pages below; the search itself is the real one.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -109,6 +112,16 @@ const deckData = {
     { id: "c2", front: "Meiosis", back: "Cell division that makes four cells with half the chromosomes" },
     { id: "c3", front: "Osmosis", back: "Water moving across a membrane toward the saltier side" },
     { id: "c4", front: "Enzyme", back: "A protein that speeds up a reaction without being used up" },
+  ],
+};
+
+// "Ask about this set" in Hebrew: a pointed deck on the Hebrew page (study-set-ask-he). Fictional.
+const deckDataHe = {
+  title: "חלוקת תאים, יחידה 2",
+  origin: "outline",
+  cards: [
+    { id: "h1", front: "מִיטוֹזָה", back: "חֲלוּקַת תָּא שֶׁיּוֹצֶרֶת שְׁנֵי תָּאִים זֵהִים" },
+    { id: "h2", front: "מֵיוֹזָה", back: "חֲלוּקַת תָּא שֶׁיּוֹצֶרֶת אַרְבָּעָה תָּאִים" },
   ],
 };
 
@@ -228,7 +241,9 @@ const setFixture =
     ? getSet("studySets:4", { type: "quiz", data: quizData }, "quiz")
     : setKind === "test"
       ? getSet("studySets:5", { type: "test", data: testData }, "test")
-      : getSet("studySets:1", { type: "flashcards", data: deckData }, "flashcards");
+      : view === "study-set-ask-he"
+        ? getSet("studySets:1", { type: "flashcards", data: deckDataHe }, "flashcards")
+        : getSet("studySets:1", { type: "flashcards", data: deckData }, "flashcards");
 
 const queries: Record<string, unknown> = {
   "users.getProfile": profile,
@@ -239,7 +254,7 @@ const queries: Record<string, unknown> = {
   "study.reviewQueue": { cards: view === "study-review-done" ? queueCards.slice(0, 1) : queueCards },
   "study.getSet": setFixture,
   "notes.getSafe":
-    view === "study-listen-he"
+    view === "study-listen-he" || view === "study-set-ask-he"
       ? { _id: "notes:12", _creationTime: NOW - DAY, title: "חלוקת תאים, יחידה 2", body: PAGE_BODY_HE, updatedAt: NOW - DAY }
       : { _id: "notes:11", _creationTime: NOW - DAY, title: "Cell biology, unit 2", body: PAGE_BODY, updatedAt: NOW - DAY },
   "notes.backlinks": [],
@@ -579,6 +594,33 @@ const VIEWS: Record<string, () => ReactNode> = {
   // Share a saved deck: the set's ShareSheet (Markdown, and Anki for flashcards).
   "study-set-share": () => {
     steps(click('[data-action="share-set"]'));
+    return <StudySetScreen setId="studySets:1" />;
+  },
+  // Ask about this set: open the panel, type a question, Find it. The page and the deck answer.
+  "study-set-ask": () => {
+    steps(
+      click('[data-action="ask-set"]'),
+      fill('[data-action="ask-set-input"]', "How does diffusion differ from osmosis?"),
+      click('[data-action="ask-set-find"]'),
+    );
+    return <StudySetScreen setId="studySets:1" />;
+  },
+  // Nothing in the page or the deck says: the answer says so, with a way to the page.
+  "study-set-ask-empty": () => {
+    steps(
+      click('[data-action="ask-set"]'),
+      fill('[data-action="ask-set-input"]', he ? "מי גילה את הפוטוסינתזה?" : "Who discovered photosynthesis?"),
+      click('[data-action="ask-set-find"]'),
+    );
+    return <StudySetScreen setId="studySets:1" />;
+  },
+  // Hebrew: a pointed card and the unpointed page both answer an unpointed question.
+  "study-set-ask-he": () => {
+    steps(
+      click('[data-action="ask-set"]'),
+      fill('[data-action="ask-set-input"]', "מה קורה במיוזה?"),
+      click('[data-action="ask-set-find"]'),
+    );
     return <StudySetScreen setId="studySets:1" />;
   },
   "study-test-score": () => {
