@@ -285,6 +285,12 @@ function convertBlock(block: unknown, options: BlockSpecOptions): TempoBlockSpec
       });
       break;
     }
+    case "flashcards":
+    case "quiz":
+    case "test":
+      // Study blocks draw through their own catalog (`../study`). This fixed catalog has no
+      // study component, so a surface that only knows it shows the calm card instead.
+      return brokenBlockSpec("unsupported_type", options);
   }
 
   // Belt and braces: never hand the renderer a spec the gate would reject.

@@ -30,6 +30,8 @@ import {
 } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { parseTempoBlocks, type TempoBlock } from "@tempo/utils";
+import { studyBlockDom } from "@/components/study/editor-widget";
+import { isStudyBlock } from "@/components/study/study-block";
 import {
   type BlockRange,
   LINE_SEPARATOR,
@@ -165,6 +167,7 @@ class TempoBlockWidget extends WidgetType {
         ]),
       ]);
     }
+    if (isStudyBlock(block)) return studyBlockDom(block);
     const done = block.data.status === "done";
     const check = el(
       "button",

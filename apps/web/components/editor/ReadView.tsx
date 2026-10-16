@@ -3,6 +3,8 @@
 import { findWikiLinks, parseTempoBlocks } from "@tempo/utils";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { StudyBlockView } from "@/components/study/StudyBlockView";
+import { isStudyBlock } from "@/components/study/study-block";
 import { TpIcon } from "@/components/tempo/TpIcon";
 
 type Props = {
@@ -123,6 +125,7 @@ export function ReadView({ body, onOpenLink, labels }: Props) {
             </div>
           );
         }
+        if (isStudyBlock(block)) return <StudyBlockView key={segment.start} block={block} />;
         const done = block.data.status === "done";
         return (
           <ul key={segment.start} className="tp-block-task" data-component="TaskBlock">
