@@ -288,8 +288,14 @@ export function TrackingDashboard() {
             {habitStreak.streakCount}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Longest among {habitStreak.habitCount}{" "}
-            {habitStreak.habitCount === 1 ? "habit" : "habits"}: {habitStreak.longestAmongHabits}.
+            {/* With no habits there is no longest streak to name, so the line is left out. */}
+            {habitStreak.habitCount > 0 ? (
+              <>
+                Longest among {habitStreak.habitCount}{" "}
+                {habitStreak.habitCount === 1 ? "habit" : "habits"}:{" "}
+                {habitStreak.longestAmongHabits}.{" "}
+              </>
+            ) : null}
             Streaks are information, not pressure.{" "}
             <Link href="/habits" className="underline underline-offset-4">
               Open habits
