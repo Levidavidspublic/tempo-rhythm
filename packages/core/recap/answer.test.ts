@@ -42,6 +42,12 @@ describe("answerFromPage", () => {
     const he = "# תאים\n\nמיטוזה היא חלוקת תא לשני תאים זהים.\nאוסמוזה היא מעבר מים דרך קרום.";
     expect(answerFromPage(he, "מה זה המיטוזה?").map((m) => m.text)).toEqual(["מיטוזה היא חלוקת תא לשני תאים זהים."]);
   });
+  test("Hebrew points fold away: a pointed page answers an unpointed question, and back", () => {
+    const pointed = "# תאים\n\nמִיטוֹזָה הִיא חֲלוּקַת תָּא לִשְׁנֵי תָּאִים זֵהִים.\nאוסמוזה היא מעבר מים דרך קרום.";
+    expect(answerFromPage(pointed, "מה זה מיטוזה?").map((m) => m.text)).toEqual(["מִיטוֹזָה הִיא חֲלוּקַת תָּא לִשְׁנֵי תָּאִים זֵהִים."]);
+    expect(answerFromPage("מיטוזה היא חלוקת תא.", "מָה זֶה מִיטוֹזָה?").map((m) => m.text)).toEqual(["מיטוזה היא חלוקת תא."]);
+    expect(terms("בֵּית־סֵפֶר")).toEqual(["בית", "ספר"]);
+  });
   test("a Hebrew page with a link and a json tempo block is read as Hebrew (its list joins with ו)", () => {
     const he = [
       "# שלבי המיטוזה",

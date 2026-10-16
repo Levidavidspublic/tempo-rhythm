@@ -31,10 +31,19 @@ const STOP_HE = new Set(
 /** Hebrew one-letter prefixes (and, the, in, to, from, that, as) that can sit on a word. */
 const HEBREW_PREFIX = /^[והבלמשכ]/;
 
+/**
+ * Hebrew points and cantillation marks (U+0591–U+05C7) fold away and a maqaf splits words, as in
+ * the short-answer checker (`normalizeAnswer` in packages/core/srs): a pointed page (מִיטוֹזָה)
+ * matches an unpointed question (מיטוזה), and the other way round.
+ */
+function foldMarks(text: string): string {
+  return text.normalize("NFKD").replace(/\u05BE/g, " ").replace(/[\u0591-\u05C7]/g, "").normalize("NFC");
+}
+
 /** Lower-case word stems for matching: light English plural and verb endings. Hebrew words stay
- * whole here; their prefix letters are handled when matching. */
+ * whole here (points folded away); their prefix letters are handled when matching. */
 export function terms(text: string): string[] {
-  const words = text.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)?/gu) ?? [];
+  const words = foldMarks(text).toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)?/gu) ?? [];
   const out: string[] = [];
   for (const raw of words) {
     const word = raw.replace(/['’]s$/, "");
