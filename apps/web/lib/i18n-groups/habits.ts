@@ -146,6 +146,8 @@ export const en = {
   "rd.loading": "Loading your routine",
   "rd.error": "Couldn't load this routine.",
   "rd.gone": "This routine isn't here any more.",
+  "rd.addSteps": "Add steps",
+  "rd.resumed": "Picked up where you left off.",
 } as const;
 
 export const he: Record<keyof typeof en, string> = {
@@ -285,4 +287,6 @@ export const he: Record<keyof typeof en, string> = {
   "rd.loading": "טוען את השגרה שלך",
   "rd.error": "לא הצלחנו לטעון את השגרה.",
   "rd.gone": "השגרה הזאת כבר לא כאן.",
+  "rd.addSteps": "להוסיף צעדים",
+  "rd.resumed": "ממשיכים מאיפה שהפסקת.",
 };
