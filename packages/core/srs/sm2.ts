@@ -78,7 +78,11 @@ export function reviewCard(state: Sm2State, grade: Sm2Grade, now: number): Sm2St
   }
   const repetitions = state.repetitions + 1;
   const intervalDays =
-    repetitions === 1 ? 1 : repetitions === 2 ? 6 : Math.max(1, Math.round(state.intervalDays * state.ease));
+    repetitions === 1
+      ? 1
+      : repetitions === 2
+        ? 6
+        : Math.max(1, Math.round(state.intervalDays * state.ease));
   return {
     ease,
     intervalDays,

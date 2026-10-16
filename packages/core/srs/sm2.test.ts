@@ -16,7 +16,13 @@ const T0 = Date.UTC(2026, 9, 16, 9, 0, 0);
 describe("SM-2", () => {
   test("a new card starts at EF 2.5 and is due at once", () => {
     const card = newCardState(T0);
-    expect(card).toEqual({ ease: INITIAL_EASE, intervalDays: 0, repetitions: 0, lapses: 0, dueAt: T0 });
+    expect(card).toEqual({
+      ease: INITIAL_EASE,
+      intervalDays: 0,
+      repetitions: 0,
+      lapses: 0,
+      dueAt: T0,
+    });
     expect(isDue(card, T0)).toBe(true);
   });
 
