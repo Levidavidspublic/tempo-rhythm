@@ -13,6 +13,11 @@
   display: grid; grid-template-columns: var(--tp-space-16) repeat(7, minmax(calc(var(--tp-space-20) + var(--tp-space-8)), 1fr));
   grid-template-rows: repeat(5, auto); column-gap: var(--tp-space-1); padding: var(--tp-space-2);
 }
+/* On a phone, two overlapping items share a day in lanes: wider days keep each lane's time and
+   title readable (about 2 days in view; the grid scrolls sideways inside itself). */
+@media (max-width: 47.99rem) {
+  .tp-sched__grid { grid-template-columns: var(--tp-space-16) repeat(7, minmax(calc(var(--tp-space-20) * 1.75), 1fr)); }
+}
 .tp-sched__gutter, .tp-sched__col { grid-row: 1 / span 5; display: grid; grid-template-rows: subgrid; row-gap: var(--tp-space-1); min-width: 0; }
 .tp-sched__col.tp-week__col { min-height: 0; gap: var(--tp-space-1); padding: var(--tp-space-1); }
 .tp-sched__allday-label { align-self: center; font-size: var(--tp-text-xs); text-align: end; padding-inline-end: var(--tp-space-3); }
@@ -23,6 +28,7 @@
 .tp-sched__body {
   position: relative; list-style: none; margin: 0; padding: 0; block-size: calc(var(--tp-sched-slot) * var(--slots));
   border-radius: var(--tp-radius-md); background-color: var(--tp-paper);
+  /* Not decoration (anti-slop R-01 purpose): a 1 px hairline per hour, the grid's time rules. */
   background-image: repeating-linear-gradient(180deg, var(--tp-line) 0 1px, transparent 1px calc(var(--tp-sched-slot) * var(--per-hour)));
 }
 .tp-sched__slot {
@@ -63,6 +69,13 @@
 
 /* Plan back from a deadline */
 .tp-plan { display: grid; gap: var(--tp-space-8); min-width: 0; }
+/* Date, time and number fields: Tab walks their inner parts (day, month, year, then the picker
+   button), and Chromium drops :focus-visible and even :focus on the field while its picker button
+   has focus, so the ring follows :focus-within here (R-32). */
+:is(.tp-plan, .cal-screen) .tp-input:is([type="date"], [type="time"], [type="number"]):is(:focus, :focus-within) {
+  outline: var(--tp-focus-w) solid var(--tp-accent);
+  outline-offset: var(--tp-focus-gap);
+}
 .tp-plan__form { display: grid; gap: var(--tp-space-4); }
 .tp-plan__row { display: grid; gap: var(--tp-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 2)), 1fr)); }
 .tp-plan__days { margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: 0 var(--tp-space-4); }
