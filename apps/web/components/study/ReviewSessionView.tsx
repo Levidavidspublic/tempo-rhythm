@@ -15,6 +15,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { ReviewButton } from "../../../../packages/core/srs/sm2";
 import { countKey, reviewLabels, type StudyT } from "./labels";
+import { useReadAloudSlot } from "./recap/useReadAloud";
 import {
   cardKey,
   type GradedStates,
@@ -117,6 +118,7 @@ function SessionRunner({
     cards.map((card) => cardKey(card.setId, card.cardId)),
     initReview
   );
+  const readAloud = useReadAloudSlot(state.queue[0]);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [notice, setNotice] = useState<"save" | "undo" | null>(null);
@@ -197,6 +199,7 @@ function SessionRunner({
           onAction={act}
           onKeyDown={reviewKeyDown(state.revealed, act)}
           undoAvailable={undoAvailable}
+          readAloud={readAloud}
         />
       </fieldset>
       <p className="tp-small tp-muted tp-study-session__status" aria-live="polite">

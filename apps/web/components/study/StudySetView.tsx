@@ -17,6 +17,8 @@ import { OfflineNotice, SignedOutState, StateEmpty, StateLoading } from "@/compo
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { reviewHref } from "./hub";
+import { listenHref } from "./recap/player";
+import { useReadAloudSlot } from "./recap/useReadAloud";
 import { deckLabels, KIND_ICON, KIND_KEY, quizLabels, type StudyT, testLabels } from "./labels";
 import {
   type AttemptAnswer,
@@ -130,6 +132,10 @@ export function StudySetView({
             <TpIcon name="page" size="sm" />
             <span>{t("st.set.openPage")}</span>
           </Link>
+          <Link className="tp-btn tp-btn--ghost" href={listenHref(note.id)} data-action="listen-page">
+            <TpIcon name="volume" size="sm" />
+            <span>{t("st.set.listen")}</span>
+          </Link>
           <button
             className="tp-btn tp-btn--ghost"
             type="button"
@@ -180,6 +186,7 @@ function DeckPanel({
 }) {
   const { due, fresh } = deckCounts(data.cards, states, now);
   const labels = useMemo(() => deckLabels(t), [t]);
+  const readAloud = useReadAloudSlot();
   return (
     <>
       <div className="tp-study-deckbar" data-component="Toolbar">
@@ -200,7 +207,7 @@ function DeckPanel({
           </Link>
         ) : null}
       </div>
-      <FlashcardDeck cards={data.cards} labels={labels} />
+      <FlashcardDeck cards={data.cards} labels={labels} readAloud={readAloud} />
     </>
   );
 }
@@ -226,6 +233,7 @@ function QuizPanel({ data, t, onRecord }: { data: QuizData; t: StudyT; onRecord:
   const labels = useMemo(() => quizLabels(t), [t]);
   const [missed, setMissed] = useState<string[] | null>(null);
   const [round, setRound] = useState(0);
+  const readAloud = useReadAloudSlot(round);
   const [saveError, setSaveError] = useState(false);
   const startedAt = useRef(Date.now());
   const log = useRef(new Map<string, boolean>()).current;
@@ -257,6 +265,7 @@ function QuizPanel({ data, t, onRecord }: { data: QuizData; t: StudyT; onRecord:
         key={`${round}`}
         engine={engine}
         labels={labels}
+        readAloud={readAloud}
         onFinish={finish}
         onReviewMissed={(ids) => {
           if (ids.length === 0) return;
@@ -285,6 +294,7 @@ function TestPanel({ data, t, onRecord }: { data: TestData; t: StudyT; onRecord:
   const labels = useMemo(() => testLabels(t), [t]);
   const [missed, setMissed] = useState<string[] | null>(null);
   const [round, setRound] = useState(0);
+  const readAloud = useReadAloudSlot(round);
   const [saveError, setSaveError] = useState(false);
   const startedAt = useRef(Date.now());
   const test = useMemo(
@@ -316,6 +326,7 @@ function TestPanel({ data, t, onRecord }: { data: TestData; t: StudyT; onRecord:
         test={test}
         scorer={coreTestScorer}
         labels={labels}
+        readAloud={readAloud}
         onComplete={complete}
         onReviewMissed={(ids) => {
           if (ids.length === 0) return;
