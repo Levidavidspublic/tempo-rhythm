@@ -99,7 +99,7 @@
 }
 /* Edit a saved set (SetEditor): the preview's edit list in a proposal frame. Layout only. */
 .tp-study-setedit .tp-proposal__head { flex-wrap: wrap; }
-.tp-study-setedit__title { flex: 1 1 0; min-width: 0; margin: 0; font-size: var(--tp-text-sm); font-weight: 600; }
+.tp-study-setedit__title { flex: 1 1 0; min-width: 0; margin: 0; font-size: var(--tp-text-md); font-weight: 560; overflow-wrap: anywhere; }
 .tp-study-setedit__notes { display: grid; gap: var(--tp-space-2); padding: var(--tp-space-3) var(--tp-space-4) 0; }
 .tp-study-setedit .tp-notice:has(.tp-notice__action) { flex-wrap: wrap; }
 .tp-study-setedit .tp-notice:has(.tp-notice__action) .tp-notice__text { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
