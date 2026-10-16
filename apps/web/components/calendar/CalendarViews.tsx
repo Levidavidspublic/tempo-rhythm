@@ -2,12 +2,12 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
   type CalendarViewMode,
-  fromDateInputValue,
   getCalendarRangeMs,
   getEventsInRange,
   parseDateInputValue,
@@ -19,11 +19,9 @@ import {
   type StoredCalendarEvent,
   saveCalendarEvents,
 } from "@/lib/calendar/event-source";
-import {
-  getAddEventAuthState,
-  SIGNED_OUT_MESSAGE,
-  toAddEventErrorMessage,
-} from "./addEventGuard";
+import type { MessageKey } from "@/lib/i18n";
+import { intlLocale } from "@/lib/you/screenState";
+import { getAddEventAuthState } from "./addEventGuard";
 import {
   EventRow,
   type EventRowActions,
@@ -32,24 +30,28 @@ import {
   type UndoToastState,
 } from "./EventRow";
 
-const viewOptions: Array<{ mode: CalendarViewMode; label: string }> = [
-  { mode: "day", label: "Day" },
-  { mode: "week", label: "Week" },
-  { mode: "month", label: "Month" },
+const viewOptions: Array<{ mode: CalendarViewMode; label: MessageKey }> = [
+  { mode: "day", label: "cal.view.day" },
+  { mode: "week", label: "cal.view.week" },
+  { mode: "month", label: "cal.view.month" },
 ];
 
-const modeTitles: Record<CalendarViewMode, string> = {
-  day: "Day events",
-  week: "Week events",
-  month: "Month events",
+const modeTitles: Record<CalendarViewMode, MessageKey> = {
+  day: "cal.events.day",
+  week: "cal.events.week",
+  month: "cal.events.month",
 };
 
-function formatRange(mode: CalendarViewMode, range: { startMs: number; endMs: number }): string {
+function formatRange(
+  mode: CalendarViewMode,
+  range: { startMs: number; endMs: number },
+  locale: string
+): string {
   const start = new Date(range.startMs);
   const endInclusive = new Date(range.endMs - 1);
 
   if (mode === "day") {
-    return start.toLocaleDateString(undefined, {
+    return start.toLocaleDateString(locale, {
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -57,10 +59,10 @@ function formatRange(mode: CalendarViewMode, range: { startMs: number; endMs: nu
     });
   }
 
-  return `${start.toLocaleDateString(undefined, {
+  return `${start.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
-  })} - ${endInclusive.toLocaleDateString(undefined, {
+  })} - ${endInclusive.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -78,14 +80,15 @@ function DueTaskList({
 }: {
   tasks: Array<{ _id: string; title: string; dueAt?: number; status: string }>;
 }) {
+  const { lang, t } = useLocale();
   return (
     <section
-      aria-label="Due tasks"
+      aria-label={t("cal.due")}
       className="tp-section"
       data-component="Section"
       data-testid="calendar-due-tasks"
     >
-      <h2 className="tp-section__title">Due tasks</h2>
+      <h2 className="tp-section__title">{t("cal.due")}</h2>
       {tasks.length > 0 ? (
         <ul className="tp-list tp-surface cal-list">
           {tasks.map((task) => (
@@ -99,23 +102,21 @@ function DueTaskList({
                 </span>
                 <span className="tp-list-row__meta">
                 {task.dueAt !== undefined
-                  ? new Date(task.dueAt).toLocaleDateString(undefined, {
+                  ? new Date(task.dueAt).toLocaleDateString(intlLocale(lang), {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
                       year: "numeric",
                     })
-                  : "No due date"}
-                {task.status === "done" ? " · Done" : ""}
+                  : t("cal.due.noDate")}
+                {task.status === "done" ? ` · ${t("cal.due.done")}` : ""}
                 </span>
               </span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="tp-empty tp-surface">
-          No tasks are due in this window. Today still holds anything without a date.
-        </p>
+        <p className="tp-empty tp-surface">{t("cal.due.empty")}</p>
       )}
     </section>
   );
@@ -130,14 +131,15 @@ function EventList({
   mode: CalendarViewMode;
   actions?: EventRowActions;
 }) {
+  const { t } = useLocale();
   return (
     <section
-      aria-label={`${mode} events`}
+      aria-label={t(modeTitles[mode])}
       className="tp-section"
       data-component="Section"
       data-testid={`${mode}-events`}
     >
-      <h2 className="tp-section__title">{modeTitles[mode]}</h2>
+      <h2 className="tp-section__title">{t(modeTitles[mode])}</h2>
       {events.length > 0 ? (
         <ul className="tp-list tp-surface cal-list">
           {events.map((event) => (
@@ -147,7 +149,7 @@ function EventList({
       ) : (
         <div className="tp-empty tp-surface" data-component="Empty">
           <TpIcon name="calendar-grid" size="lg" />
-          <p>No events in this window yet. Add one when you know where it belongs.</p>
+          <p>{t("cal.events.empty")}</p>
         </div>
       )}
     </section>
@@ -155,11 +157,13 @@ function EventList({
 }
 
 export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" | "local" }) {
+  const { lang, t } = useLocale();
   const [view, setView] = useState<CalendarViewMode>("day");
   const [selectedDateValue, setSelectedDateValue] = useState(() => toDateInputValue(new Date()));
   const [title, setTitle] = useState("");
   const [localEvents, setLocalEvents] = useState<StoredCalendarEvent[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  // A key, not text, so a message already on screen follows a language switch.
+  const [error, setError] = useState<MessageKey | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [undoToast, setUndoToast] = useState<UndoToastState | null>(null);
   const createConvexEvent = useMutation(api.calendar_events.create);
@@ -241,7 +245,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     if (!undoToast) return;
     const result = await restoreConvexEvent({ eventId: undoToast.eventId as Id<"calendarEvents"> });
     if (!result.success) {
-      throw new Error("That event can no longer be restored.");
+      throw new Error(t("cal.err.undoGone"));
     }
     setUndoToast(null);
   }
@@ -249,13 +253,18 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    try {
-      const startsAtMs = fromDateInputValue(selectedDateValue).getTime();
-      const cleanTitle = title.trim();
-      if (!cleanTitle) {
-        throw new Error("Give the event a gentle label first.");
-      }
+    if (!selectedDate) {
+      setError("cal.err.date");
+      return;
+    }
+    const startsAtMs = selectedDate.getTime();
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      setError("cal.err.needTitle");
+      return;
+    }
 
+    try {
       setIsSubmitting(true);
       if (eventSourceMode === "local") {
         const created = createLocalCalendarEvent({
@@ -270,20 +279,21 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
       } else {
         if (authState !== "ready") {
           setIsSubmitting(false);
-          if (authState === "signed-out") setError(SIGNED_OUT_MESSAGE);
+          if (authState === "signed-out") setError("cal.err.signedOut");
           return;
         }
         try {
           await createConvexEvent({ title: cleanTitle, startsAtMs });
-        } catch (createErr) {
-          setError(toAddEventErrorMessage(createErr));
+        } catch {
+          // Calm copy for a failed create; never raw Convex text (addEventGuard.ts).
+          setError("cal.err.server");
           return;
         }
       }
       setTitle("");
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "We could not add that event yet.");
+    } catch {
+      setError("cal.err.add");
     } finally {
       setIsSubmitting(false);
     }
@@ -293,30 +303,27 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
     <div className="tp-page tp-page--wide cal-screen" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
-          <p className="tp-eyebrow">Calendar</p>
-          <h1 className="tp-pagehead__title">One source for every calendar view</h1>
-          <p className="tp-pagehead__sub">
-            Add an event once, then switch between Day, Week, and Month without losing the thread.
-          </p>
+          <h1 className="tp-pagehead__title">{t("nav.calendar")}</h1>
+          <p className="tp-pagehead__sub">{t("cal.sub")}</p>
         </div>
       </header>
 
       <form className="tp-surface cal-add" data-component="Form" onSubmit={handleSubmit}>
         <div className="cal-add__row">
           <label className="tp-field cal-add__title">
-            <span className="tp-label">Event title</span>
+            <span className="tp-label">{t("cal.eventTitle")}</span>
             <input
               className="tp-input"
               dir="auto"
               name="title"
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Planning call"
+              placeholder={t("cal.eventTitlePh")}
               value={title}
             />
           </label>
 
           <label className="tp-field">
-            <span className="tp-label">Event date</span>
+            <span className="tp-label">{t("cal.eventDate")}</span>
             <input
               className="tp-input tp-num"
               name="date"
@@ -334,10 +341,10 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
             <TpIcon name="plus" size="sm" />
             <span>
               {isAuthWaiting
-                ? "Getting your calendar ready…"
+                ? t("cal.waiting")
                 : isSubmitting
-                  ? "Adding..."
-                  : "Add event"}
+                  ? t("cal.adding")
+                  : t("cal.add")}
             </span>
           </button>
         </div>
@@ -345,12 +352,12 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
         {error ? (
           <p className="tp-error-text" role="alert">
             <span>
-              {error}
-              {error === SIGNED_OUT_MESSAGE ? (
+              {t(error)}
+              {error === "cal.err.signedOut" ? (
                 <>
                   {" "}
                   <a className="tp-btn--link" href="/sign-in?redirect=/calendar">
-                    Sign in
+                    {t("cal.signIn")}
                   </a>
                 </>
               ) : null}
@@ -361,7 +368,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
 
       <div className="tp-toolbar cal-toolbar">
         <fieldset className="cal-views">
-          <legend className="tp-sr-only">Calendar views</legend>
+          <legend className="tp-sr-only">{t("cal.views")}</legend>
           <div className="tp-segmented">
             {viewOptions.map((option) => (
               <button
@@ -371,12 +378,14 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
                 onClick={() => setView(option.mode)}
                 type="button"
               >
-                {option.label}
+                {t(option.label)}
               </button>
             ))}
           </div>
         </fieldset>
-        <p className="tp-muted tp-small tp-toolbar__end">{formatRange(view, range)}</p>
+        <p className="tp-muted tp-small tp-toolbar__end">
+          {formatRange(view, range, intlLocale(lang))}
+        </p>
       </div>
 
       {isLoading ? (

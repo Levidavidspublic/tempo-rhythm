@@ -4,6 +4,7 @@ import { CoachBubble, Pill } from "@tempo/ui/primitives";
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { SoftCard } from "@/components/soft-editorial/SoftCard";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
@@ -11,14 +12,59 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
   companionNameFromTechnique,
   filterHistoryConversations,
-  formatHistoryDate,
   getConversationPreview,
   type HistoryConversation,
   type HistoryMessage,
   isLiveConversation,
 } from "@/lib/conversationHistory";
+import type { MessageKey } from "@/lib/i18n";
+import { intlLocale } from "@/lib/you/screenState";
+
+type Translate = (key: MessageKey) => string;
+type ThreadTimes = { createdAt: number; updatedAt: number };
+
+/** The title conversations.create stores when none is given (convex/conversations.ts). */
+const SERVER_DEFAULT_TITLE = "New Conversation";
+
+/**
+ * A thread is saved once it holds a message. conversations.list carries no message count, but
+ * every message write moves the thread's `updatedAt` past its `createdAt`, and the app never
+ * renames or retags a thread, so one whose times still match is an empty "New Conversation".
+ */
+export function isSavedThread(conversation: ThreadTimes): boolean {
+  return conversation.updatedAt > conversation.createdAt;
+}
+
+function countLabel(n: number, one: MessageKey, many: MessageKey, t: Translate): string {
+  return n === 1 ? t(one) : t(many).replace("{n}", String(n));
+}
+
+/** "1 saved thread" / "{n} saved threads", counting only threads that hold a message. */
+export function savedThreadsLabel(conversations: readonly ThreadTimes[], t: Translate): string {
+  return countLabel(
+    conversations.filter(isSavedThread).length,
+    "hist.count.one",
+    "hist.count.many",
+    t
+  );
+}
+
+function threadTitle(title: string, t: Translate): string {
+  return title === SERVER_DEFAULT_TITLE ? t("hist.defaultTitle") : title;
+}
+
+function companionName(technique: string | undefined, t: Translate): string {
+  return technique ? companionNameFromTechnique(technique) : t("hist.companion");
+}
+
+function previewText(messages: HistoryMessage[], t: Translate): string {
+  return messages.some((message) => message.role !== "system")
+    ? getConversationPreview(messages)
+    : t("hist.preview.empty");
+}
 
 export function HistoryScreen() {
+  const { lang, t } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const hasConvexUser = profile != null;
@@ -35,16 +81,27 @@ export function HistoryScreen() {
     () => (conversations ?? []).filter(isLiveConversation),
     [conversations]
   );
+  // An empty thread (the coach opens one before the first message) has nothing to pick up, so
+  // it stays out of the list as well as the count; the two always agree.
+  const savedConversations = useMemo(
+    () => liveConversations.filter(isSavedThread),
+    [liveConversations]
+  );
+  const dateFormat = useMemo(
+    () => new Intl.DateTimeFormat(intlLocale(lang), { dateStyle: "medium", timeStyle: "short" }),
+    [lang]
+  );
+  const formatDate = (timestamp: number) => dateFormat.format(new Date(timestamp));
 
   useEffect(() => {
     if (selectedConversationId !== null) {
       return;
     }
-    const first = liveConversations[0];
+    const first = savedConversations[0];
     if (first) {
       setSelectedConversationId(first._id);
     }
-  }, [liveConversations, selectedConversationId]);
+  }, [savedConversations, selectedConversationId]);
 
   const selectedConversation = useQuery(
     api.conversations.get,
@@ -91,7 +148,7 @@ export function HistoryScreen() {
   }, [hitsForList]);
 
   const historyConversations = useMemo((): HistoryConversation[] => {
-    return liveConversations.map((conversation) => {
+    return savedConversations.map((conversation) => {
       const isSelected = conversation._id === selectedConversationId;
       const messages: HistoryMessage[] = isSelected
         ? (selectedMessages ?? []).map((message) => ({
@@ -103,16 +160,17 @@ export function HistoryScreen() {
           }))
         : (searchByConversation.get(conversation._id) ?? []);
 
+      // Search matches what is on screen, so the titles and names are the shown ones.
       return {
         id: conversation._id,
-        title: conversation.title,
-        companionName: companionNameFromTechnique(conversation.technique),
+        title: threadTitle(conversation.title, t),
+        companionName: companionName(conversation.technique, t),
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         messages,
       };
     });
-  }, [liveConversations, searchByConversation, selectedConversationId, selectedMessages]);
+  }, [savedConversations, searchByConversation, selectedConversationId, selectedMessages, t]);
 
   const filteredConversations = useMemo(() => {
     if (searchPending && hitsForList === null) {
@@ -144,32 +202,27 @@ export function HistoryScreen() {
       <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
         <SoftCard className="mx-auto max-w-xl">
           <h1 className="font-heading text-2xl font-semibold text-foreground">
-            Conversation history
+            {t("hist.title")}
           </h1>
-          <p className="mt-3 text-muted-foreground">
-            Sign in to reopen chats you already had. Nothing here is shared.
-          </p>
+          <p className="mt-3 text-muted-foreground">{t("hist.signInBody")}</p>
           <Button asChild className="mt-6">
-            <Link href="/sign-in?next=/history">Sign in</Link>
+            <Link href="/sign-in?next=/history">{t("hist.signIn")}</Link>
           </Button>
         </SoftCard>
       </div>
     );
   }
 
-  if (liveConversations.length === 0) {
+  if (savedConversations.length === 0) {
     return (
       <div className="container mx-auto max-w-5xl px-6 py-16 text-center">
         <SoftCard className="mx-auto max-w-2xl">
           <h1 className="font-heading text-3xl font-semibold text-foreground">
-            No past conversations yet
+            {t("hist.empty.title")}
           </h1>
-          <p className="mt-3 text-muted-foreground">
-            When you chat with a companion, this page becomes a calm shelf for returning to what you
-            already explored.
-          </p>
+          <p className="mt-3 text-muted-foreground">{t("hist.empty.body")}</p>
           <Button asChild className="mt-6">
-            <Link href="/coach">Start a companion chat</Link>
+            <Link href="/coach">{t("hist.empty.cta")}</Link>
           </Button>
         </SoftCard>
       </div>
@@ -177,17 +230,18 @@ export function HistoryScreen() {
   }
 
   const locallySelected = selectedConversationId
-    ? liveConversations.find((conversation) => conversation._id === selectedConversationId)
+    ? savedConversations.find((conversation) => conversation._id === selectedConversationId)
     : undefined;
   const activeConversation =
     (selectedConversation && isLiveConversation(selectedConversation)
       ? selectedConversation
       : undefined) ??
     locallySelected ??
-    liveConversations[0];
+    savedConversations[0];
   const activeId = activeConversation._id;
+  const activeTitle = threadTitle(activeConversation.title, t);
   const activeMessages = selectedConversationId === activeId ? (selectedMessages ?? []) : [];
-  const activeCompanion = companionNameFromTechnique(activeConversation.technique);
+  const activeCompanion = companionName(activeConversation.technique, t);
   const activeHistory = filteredConversations.find((row) => row.id === activeId);
 
   return (
@@ -196,27 +250,25 @@ export function HistoryScreen() {
         <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="slate">Conversation history</Pill>
-              <Pill tone="orange">{liveConversations.length} saved threads</Pill>
+              <Pill tone="slate">{t("hist.title")}</Pill>
+              <Pill tone="orange">{savedThreadsLabel(liveConversations, t)}</Pill>
             </div>
             <h1 className="mt-4 font-heading text-3xl font-semibold text-foreground">
-              Pick up a conversation where you left it
+              {t("hist.heading")}
             </h1>
-            <p className="mt-2 max-w-2xl text-muted-foreground">
-              Browse past companion chats and reopen a thread. Nothing here changes your account.
-            </p>
+            <p className="mt-2 max-w-2xl text-muted-foreground">{t("hist.sub")}</p>
           </div>
           <label
             className="flex min-w-full flex-col gap-2 lg:min-w-[20rem]"
             htmlFor="history-search"
           >
-            <span className="text-sm font-medium text-foreground">Search conversations</span>
+            <span className="text-sm font-medium text-foreground">{t("hist.search")}</span>
             <input
               id="history-search"
               value={query}
               maxLength={200}
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Try a companion name or a thread title"
+              placeholder={t("hist.searchPh")}
               className="h-12 rounded-2xl border border-border bg-card px-4 text-base text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               type="search"
             />
@@ -226,17 +278,21 @@ export function HistoryScreen() {
         <section className="grid min-h-[28rem] gap-6 lg:grid-cols-[minmax(18rem,0.9fr)_minmax(0,1.4fr)]">
           <SoftCard className="p-0">
             <div className="border-b border-border px-6 py-4">
-              <h2 className="font-heading text-xl font-semibold text-foreground">Threads</h2>
+              <h2 className="font-heading text-xl font-semibold text-foreground">
+                {t("hist.threads")}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {searchPending
-                  ? "Searching your threads"
-                  : `${filteredConversations.length} of ${liveConversations.length} shown`}
+                  ? t("hist.searching")
+                  : t("hist.shown")
+                      .replace("{shown}", String(filteredConversations.length))
+                      .replace("{total}", String(savedConversations.length))}
               </p>
             </div>
             {filteredConversations.length > 0 ? (
               <section
                 className="max-h-[36rem] space-y-2 overflow-y-auto p-3"
-                aria-label="Conversation results"
+                aria-label={t("hist.results")}
               >
                 {filteredConversations.map((conversation) => {
                   const isSelected = activeId === conversation.id;
@@ -246,7 +302,7 @@ export function HistoryScreen() {
                       type="button"
                       aria-pressed={isSelected}
                       className={[
-                        "w-full rounded-2xl border px-4 py-3 text-left transition",
+                        "w-full rounded-2xl border px-4 py-3 text-start transition",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                         isSelected
                           ? "border-primary bg-primary/10"
@@ -263,15 +319,20 @@ export function HistoryScreen() {
                         <Pill tone="neutral">{conversation.companionName}</Pill>
                         {conversation.matchingMessageCount > 0 ? (
                           <Pill tone="moss">
-                            {conversation.matchingMessageCount} message matches
+                            {countLabel(
+                              conversation.matchingMessageCount,
+                              "hist.matches.one",
+                              "hist.matches.many",
+                              t
+                            )}
                           </Pill>
                         ) : null}
                       </span>
                       <span className="mt-3 line-clamp-2 block text-sm text-muted-foreground">
-                        {getConversationPreview(conversation.messages)}
+                        {previewText(conversation.messages, t)}
                       </span>
                       <span className="mt-3 block text-xs text-muted-foreground">
-                        Updated {formatHistoryDate(conversation.updatedAt)}
+                        {t("hist.updated").replace("{date}", formatDate(conversation.updatedAt))}
                       </span>
                     </button>
                   );
@@ -280,11 +341,9 @@ export function HistoryScreen() {
             ) : (
               <div className="p-6">
                 <p className="font-heading text-lg font-semibold text-foreground">
-                  No matching threads yet
+                  {t("hist.noMatch")}
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Try a companion name or a shorter phrase from the title.
-                </p>
+                <p className="mt-2 text-sm text-muted-foreground">{t("hist.noMatchHint")}</p>
               </div>
             )}
           </SoftCard>
@@ -293,22 +352,22 @@ export function HistoryScreen() {
             <div className="border-b border-border px-6 py-4">
               <Pill tone="slate">{activeCompanion}</Pill>
               <h2 className="mt-3 font-heading text-xl font-semibold text-foreground">
-                {activeConversation.title}
+                {activeTitle}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Updated {formatHistoryDate(activeConversation.updatedAt)}
-                {activeHistory ? ` · ${activeHistory.messages.length} messages loaded` : null}
+                {t("hist.updated").replace("{date}", formatDate(activeConversation.updatedAt))}
+                {activeHistory
+                  ? ` · ${countLabel(activeHistory.messages.length, "hist.loaded.one", "hist.loaded.many", t)}`
+                  : null}
               </p>
             </div>
             <div
               className="flex max-h-[36rem] flex-col gap-4 overflow-y-auto px-6 py-5"
               role="log"
-              aria-label={`Messages for ${activeConversation.title}`}
+              aria-label={t("hist.messagesFor").replace("{title}", activeTitle)}
             >
               {selectedConversationId !== activeId ? (
-                <p className="text-sm text-muted-foreground">
-                  Choose a thread to open the full conversation.
-                </p>
+                <p className="text-sm text-muted-foreground">{t("hist.choose")}</p>
               ) : selectedMessages === undefined ? (
                 <div className="h-32 animate-pulse rounded-2xl bg-muted" />
               ) : activeMessages.length > 0 ? (
@@ -316,15 +375,13 @@ export function HistoryScreen() {
                   <CoachBubble
                     key={message._id}
                     role={message.role === "assistant" ? "coach" : message.role}
-                    timestamp={formatHistoryDate(message.createdAt)}
+                    timestamp={formatDate(message.createdAt)}
                   >
                     {message.content}
                   </CoachBubble>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  This thread is ready. Messages will show here when they arrive.
-                </p>
+                <p className="text-sm text-muted-foreground">{t("hist.ready")}</p>
               )}
             </div>
           </SoftCard>
