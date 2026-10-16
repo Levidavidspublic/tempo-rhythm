@@ -18,7 +18,9 @@ import { MiniAppFrame } from "@/components/mini-app";
 import { PageEditorView } from "@/components/notes/PageEditorView";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { ReviewHub } from "@/components/study/ReviewHub";
+import { AudioRecapPlayer } from "@/components/study/recap/AudioRecapPlayer";
 import { ListenScreen } from "@/components/study/recap/ListenScreen";
+import type { SpeechEngine } from "@/components/study/recap/speech";
 import { ReviewSession } from "@/components/study/ReviewSession";
 import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
@@ -304,6 +306,15 @@ Object.assign(calls, {
 (window as unknown as { __gallery: unknown }).__gallery = { queries, calls };
 
 /** Click through the real component after it mounts, one step at a time. */
+/** A voice that is listed but can't speak: every reading fails at once (the "voice stopped" state). */
+const failingVoice: SpeechEngine = {
+  available: () => true,
+  speak: (_text, options) => {
+    const timer = window.setTimeout(() => options.onError?.("voice-unavailable"), 50);
+    return { cancel: () => window.clearTimeout(timer) };
+  },
+};
+
 function steps(...actions: (() => void)[]) {
   let i = 0;
   const run = () => {
@@ -457,6 +468,10 @@ const VIEWS: Record<string, () => ReactNode> = {
   // Kitchen T4 (S16): the audio recap. The browser's own voices decide whether Play shows.
   "study-listen": () => <ListenScreen from="notes:11" mode="recap" />,
   "study-listen-he": () => <ListenScreen from="notes:12" mode="recap" />,
+  "study-listen-voice-error": () => {
+    steps(click('[data-action="recap-play"]'));
+    return <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={failingVoice} />;
+  },
   "study-new-preview": () => <TurnIntoPreview from="notes:11" kind="flashcards" />,
   "study-new-nokey": () => {
     steps(click('[data-action="ask-coach"]'));
