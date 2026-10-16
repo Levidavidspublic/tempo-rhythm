@@ -11,6 +11,7 @@ import * as extrasCopy from "./i18n-groups/extras";
 import * as goalsCopy from "./i18n-groups/goals";
 import * as habitsCopy from "./i18n-groups/habits";
 import * as settingsCopy from "./i18n-groups/settings";
+import * as studyCopy from "./i18n-groups/study";
 import * as youCopy from "./i18n-groups/you";
 import * as memoryCopy from "./i18n-groups/memory";
 import * as ingestCopy from "./i18n-groups/ingest";
@@ -536,6 +537,7 @@ const en = {
   ...extrasCopy.en,
   ...t10Copy.en,
   ...recordCopy.en,
+  ...studyCopy.en,
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -1036,6 +1038,7 @@ const he: Record<MessageKey, string> = {
   ...extrasCopy.he,
   ...t10Copy.he,
   ...recordCopy.he,
+  ...studyCopy.he,
 };
 
 export const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, he };
