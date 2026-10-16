@@ -8,7 +8,7 @@ Tags: **WALK** = seen in a browser, with proof linked · **EXTRAPOLATED** = reas
 - **Where things stand.** preview.tempoflow.dev serves `integration` at `eb0b12c`. tempoflow.dev serves `master` at `007d28a` (about 4 Oct). Neither has any of this week's B07 work yet: all of it is in open draft PRs. WALK
 - **Beta after the merges.** The beta is ready to release once you merge the PRs below in order and walk preview once.
   - Every PR has its own before/after proof and green local checks: lint, typecheck, unit tests, scans, build, Playwright, and both secret scanners.
-  - All 52 B07 code branches merged together, in the order below, give a tree that passes everything (table at the end of the merge order). EXTRAPOLATED for preview itself, because nothing is merged yet.
+  - All 54 B07 code branches merged together, in the order below, give a tree that passes everything (table at the end of the merge order). EXTRAPOLATED for preview itself, because nothing is merged yet.
 - **Release, carefully.**
   - Do a **dry run** of "Release to production" first.
   - Web search and Executor ship switched **off**. They need settings that only you can make, and they stay off until you make them.
@@ -35,7 +35,7 @@ Tags: **WALK** = seen in a browser, with proof linked · **EXTRAPOLATED** = reas
    - the landing letter (#987);
    - /ask-founder's "Amit builds Tempo and reads every message himself" and the address `amit@tempoflow.app` (#1023);
    - the /privacy and /terms drafts, which are marked "draft — to be reviewed" (#984);
-   - a native Hebrew read. All new Hebrew is machine-drafted.
+   - a native Hebrew read. All new Hebrew is machine-drafted, including the week and day page outline (#1077). That outline runs Monday to Sunday, because the weekly page is an ISO week; a Sunday-first Hebrew week would be a product call.
 
 ## Merge order
 
@@ -44,8 +44,8 @@ Within a step, any order works. A later step needs the earlier ones it names.
 | step | PRs | needs |
 |---|---|---|
 | 1 | #964 demo/friend · #965 clumsy-test fixes | none |
-| 2 | #967 · #968 · #969 · #970 (walk polish) · #981 tracking in Hebrew · #985 Executor research doc · #992 top-bar crumb · #1001 long page title wraps · #1021 energy card in Hebrew · #1022 day plan wraps and reads in Hebrew · #1023 no scaffold pages · #1024 calendar and history in Hebrew · #1025 one habit per double click, new-project hint · #1037 room under the coach button on a phone · #1038 /plan timeline and /coach controls in Hebrew · #1052 Ctrl+K gives focus back on Escape · #1054 /coach's "Today's plan" card in Hebrew · #1056 Today fits a phone (habit rows), Hebrew habit strip · #1057 one h1 on /plan and the template builder · #1068 /templates cards in Hebrew · #1069 a routine with no steps says so, a run survives a reload · #1070 "New goal" asks for a name first · #1072 notes pages keep the last half-second of typing, one `<main>`, Hebrew loading text · #1073 signing out clears this tab's kept brain dump and task draft · #1076 a new device takes the account's language · this page's PR (closes #1003) | none |
-| 2b | #1036 calendar event rows (Edit, Delete, edit form, Undo) in Hebrew | #1024 |
+| 2 | #967 · #968 · #969 · #970 (walk polish) · #981 tracking in Hebrew · #985 Executor research doc · #992 top-bar crumb · #1001 long page title wraps · #1021 energy card in Hebrew · #1022 day plan wraps and reads in Hebrew · #1023 no scaffold pages · #1024 calendar and history in Hebrew · #1025 one habit per double click, new-project hint · #1037 room under the coach button on a phone · #1038 /plan timeline and /coach controls in Hebrew · #1052 Ctrl+K gives focus back on Escape · #1054 /coach's "Today's plan" card in Hebrew · #1056 Today fits a phone (habit rows), Hebrew habit strip · #1057 one h1 on /plan and the template builder · #1068 /templates cards in Hebrew · #1069 a routine with no steps says so, a run survives a reload · #1070 "New goal" asks for a name first · #1072 notes pages keep the last half-second of typing, one `<main>`, Hebrew loading text · #1073 signing out clears this tab's kept brain dump and task draft · #1076 a new device takes the account's language · #1077 a Hebrew outline in new week and day pages · this page's PR (closes #1003) | none |
+| 2b | #1036 calendar event rows (Edit, Delete, edit form, Undo) in Hebrew · #1078 /history: no false "No messages…" under a thread not opened | #1024 |
 | 2c | #1008 sign-in email in en and he | `convex-arch` |
 | 2d | #1055 /plan's time-block dialog in Hebrew | #1038 |
 | 2e | #1050 notes page menu: Escape closes it, Export .md keeps the title | #1001 |
@@ -64,13 +64,13 @@ Within a step, any order works. A later step needs the earlier ones it names.
 
 **Do not merge:** #975, which deploys live, as its title says. Close #1009 and #1010 (replaced).
 
-**Proof that the order works.** On 16 Oct (re-run after wave 6) I checked every pair of the 53 B07 branches (this page's included) with `git merge-tree`: 1,378 pairs, 0 conflicts. I then merged all 52 code branches into `integration`, in this order, on a local branch that was never pushed:
+**Proof that the order works.** On 16 Oct (re-run after wave 7) I checked every pair of the 55 B07 branches (this page's included) with `git merge-tree`: 1,485 pairs, 0 conflicts. I then merged all 54 code branches into `integration`, in this order, on a local branch that was never pushed:
 
 | check on the combined tree | result |
 |---|---|
 | `bun install --frozen-lockfile` | pass |
 | `bun run lint` / `bun run typecheck` | pass (5/5) / pass (5/5) |
-| `bun run test` | 2782 pass, 0 fail |
+| `bun run test` | 2790 pass, 0 fail |
 | `bun test convex` | 1112 pass, 0 fail |
 | scans (forbidden tech, RAM-only, design tokens, notices) | pass |
 | `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | pass |
@@ -117,9 +117,8 @@ Severity from the clumsy pass (`evidence/clumsy-table.md`; the worst in `evidenc
 | severity | what | where it's tracked |
 |---|---|---|
 | major | /tracking: a 99999-minute block says "did not save, try once more", which can never work | #968 |
-| minor | Hebrew still English in a few places: Panic's action text (it comes from the server), and the outline inside a new week or day page ("Focus", "Days", "Monday" …, from the server's starter template). The time field in /plan's time-block dialog follows the browser's own language. Week and day pages made before #1076 keep their English titles (it doesn't rename pages). | outline: #1075 in progress (web code only); the rest: no fix yet (notes on #1021, #1038 and #1055) |
+| minor | Hebrew still English in a few places: Panic's action text (it comes from the server). The time field in /plan's time-block dialog follows the browser's own language. Week and day pages made before #1076 and #1077 keep their English title and outline (neither rewrites pages). | no fix yet (notes on #1021, #1038 and #1055) |
 | minor | Headings: /today has two h1s | your call (Needs Amit, item 7); #1057 fixes /plan and /templates/builder |
-| minor | /history: "No messages have been added to this thread yet." under every thread that isn't selected (only the selected thread's messages are loaded) | #1074 in progress, on top of #1024 |
 | infra | Component tests under `apps/web/components/**` never run in CI. Run together they fail, because mocks leak between files (`tests/unit/releaseOnboardingGate.test.tsx`). | no ticket yet. Each new component test passes on its own. |
 | infra | Typing into a server-rendered form before the page hydrates loses the text (seen in the calendar e2e) | the e2e now waits (#1024); the product race remains |
 
@@ -141,6 +140,10 @@ Wave 6 (16 Oct, night) closes the rest of the clumsy pass except the rows in the
 - /tracking with no habits drops "Longest among 0 habits: 0." (#1071). 0 or −5 minutes get the same in-app hint as 99999 (#968).
 - A new device takes the account's language, so a Hebrew account's new week and day pages get Hebrew titles (#1076, product call in item 7).
 - Signing out clears this tab's kept brain dump (#1058) and task draft (#1067), so the next person on a shared computer doesn't see them (#1073).
+
+Wave 7 (16 Oct, night) adds two small ones found while proving wave 6:
+- A new week or day page made in Hebrew gets a Hebrew outline (מיקוד, ימים, יום שני …), not the English starter. English is unchanged. Only the unchanged starter template is translated; an edited template stays as written (#1077).
+- /history: a thread you haven't opened no longer says "No messages have been added to this thread yet." (before: 1 false line with two threads; after: 0) (#1078, after #1024).
 
 **Proved with static renders, not on preview** (the test account is under a week old, and weekly pages aren't on preview): /insights as PanelUI cards with the same totals as the old charts (#1040), and the weekly glance's Hebrew focus total (#1042). Both show one fixed fixture through the old and new code, styled by the real build's CSS.
 

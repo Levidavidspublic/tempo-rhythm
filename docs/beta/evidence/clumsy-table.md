@@ -69,7 +69,7 @@ The "Known" column above is what was known during the pass. This is where each r
 | 7, 8 | #1025 |
 | 9 | #1058 (the dump and the plan survive Back, Forward and a reload) |
 | 10 | #968 |
-| 11, 12, 14, 31 | #1024 |
+| 11, 12, 14, 31 | #1024, plus #1078 (/history no longer says "No messages…" under a thread not opened) |
 | 13 | #964 (greeting), #1002 (panel), #1022 (day plan), #1021 (energy card), #1056 (habit strip) |
 | 15 | #981 (the two `<main>`), #1071 (no "Longest among 0 habits: 0.") |
 | 16 | #1057 fixes /plan and /templates/builder; /today's two h1s are Amit's call |
@@ -81,7 +81,7 @@ The "Known" column above is what was known during the pass. This is where each r
 | 23, 24 | #1069 |
 | 25 | #1068 |
 | 26 | #1038, plus #1054 (/coach's "Today's plan" card) and #1055 (/plan's time-block dialog) |
-| 27 | #1076: a device with no saved language takes the account's, so new week and day pages get Hebrew titles. Pages made before keep their titles. |
+| 27 | #1076: a device with no saved language takes the account's, so new week and day pages get Hebrew titles. #1077 gives them a Hebrew outline. Pages made before keep their text. |
 | 28 | #1056. The real cause was a long habit name pushing "Check" off the screen, not the coach cards. |
 | 29 | #1052 |
 | 30 | #1070 |
