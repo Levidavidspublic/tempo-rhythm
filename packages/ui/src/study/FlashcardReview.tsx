@@ -28,6 +28,9 @@ import { RecallField, type RecallLabels, RecallVerdict, recallKeyDown } from "./
  * from `compareRecall`; focus then moves to the grade group. The person still picks the grade:
  * the button `suggestedButton` names only gets a "Suggested" marker. The typed answer lives in the
  * session state, so Undo brings it back with the card.
+ *
+ * Focus after a grade: the next card's Show answer (or answer field, in typed mode), and after the
+ * last card the done state's title (`doneRef`, tabIndex -1), so focus never falls to the page.
  */
 
 export const REVIEW_BUTTONS: readonly ReviewButton[] = ["again", "hard", "good", "easy"];
@@ -202,6 +205,8 @@ export type FlashcardReviewViewProps = {
   answerRef?: Ref<HTMLInputElement>;
   /** Show answer (or Check): the host focuses it when the next card comes up outside typed mode. */
   revealRef?: Ref<HTMLButtonElement>;
+  /** The done state's title (tabIndex -1): the host focuses it after the last card's grade. */
+  doneRef?: Ref<HTMLHeadingElement>;
 };
 
 /**
@@ -225,6 +230,7 @@ export function FlashcardReviewView({
   typed = false,
   answerRef,
   revealRef,
+  doneRef,
 }: FlashcardReviewViewProps) {
   const key = state.queue[0];
   const card = key === undefined ? undefined : cards.find((item) => item.key === key);
@@ -249,7 +255,9 @@ export function FlashcardReviewView({
       >
         <div className="tp-state tp-state--empty" data-component="StateEmpty">
           <Check className="tp-icon tp-state__icon" />
-          <h2 className="tp-state__title">{labels.doneTitle}</h2>
+          <h2 className="tp-state__title" ref={doneRef} tabIndex={-1}>
+            {labels.doneTitle}
+          </h2>
           <p className="tp-state__body">{fillNodes(labels.doneBody, { count: state.done })}</p>
           {undo ? <div className="tp-state__actions">{undo}</div> : null}
         </div>
@@ -396,16 +404,19 @@ export function FlashcardReview({
     cards.map((card) => card.key),
     initReview
   );
-  // After a grade, the next card's answer field (typed mode) or Show answer takes focus.
+  // After a grade, the next card's answer field (typed mode) or Show answer takes focus; after the
+  // last card, the done state's title.
   const answerRef = useRef<HTMLInputElement>(null);
   const revealRef = useRef<HTMLButtonElement>(null);
+  const doneRef = useRef<HTMLHeadingElement>(null);
   const focusNext = useRef(false);
   const graded = state.history.length;
+  const finished = state.queue.length === 0;
   useEffect(() => {
     if (graded === 0 || !focusNext.current) return;
     focusNext.current = false;
-    (typed ? answerRef.current : revealRef.current)?.focus();
-  }, [graded, typed]);
+    (finished ? doneRef.current : typed ? answerRef.current : revealRef.current)?.focus();
+  }, [graded, typed, finished]);
   const act = (action: ReviewAction) => {
     notifyReview(state, action, { onGrade, onUndo });
     if (action.type === "grade" && state.revealed) focusNext.current = true;
@@ -425,6 +436,7 @@ export function FlashcardReview({
       typed={typed}
       answerRef={answerRef}
       revealRef={revealRef}
+      doneRef={doneRef}
     />
   );
 }
