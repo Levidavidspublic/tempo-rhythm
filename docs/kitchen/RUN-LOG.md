@@ -30,13 +30,15 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 
 ## Now working on
 
-Setup: issue, draft PR, T3 design.
+T3 wave 1, in parallel worktrees under `/home/user/wt/`: Builder A (`packages/core/srs`), Builder B (`convex/` study backend), Builder C (`packages/ui` study components + catalog). T8 Builder E (`packages/core/plan`) started alongside. Next: Builder D (study web screens) once A–C are merged.
 
 ## Log
 
 | time (UTC) | commit | finish line | result | proof |
 |---|---|---|---|---|
 | 2026-10-16 21:20 | `5f1b3ec` | setup | Branch `kitchen/tempo-study` cut from `kitchen/polish-pass`. Bun 1.3.9, `bun install --frozen-lockfile` OK (2000 packages). Code map done by a read-only subagent | — |
+| 2026-10-16 21:24 | — | setup | Issue #1080 and draft PR #1081 (stacked on #1053); PR activity watched | https://github.com/Levidavidspublic/tempo-rhythm/pull/1081 |
+| 2026-10-16 21:50 | `a3fde65` | T3 | Contract: flashcards / quiz / test blocks in the one page codec, SM-2 in `packages/core/srs`, quiet page cards, build spec `docs/kitchen/study/T3-SPEC.md`. `bun test packages`: 755 pass, 1 fail (the catalog agreement test, fixed by Builder C) | `packages/core/srs/sm2.test.ts`, `packages/utils/src/study-blocks.test.ts` |
 
 ## Decisions
 
@@ -44,9 +46,15 @@ Setup: issue, draft PR, T3 design.
 - **`@openuidev/react-headless` is not added.** Its `package.json` (0.18.1) has `zustand` as a required peer dependency. HARD_RULES §2 forbids Zustand ("never add as a dependency"), and `scan:forbidden-tech` lists it. HARD_RULES wins over the brief. Chat cards stay on `@openuidev/react-lang` 1.0.1 (MIT, already in `apps/web` from #964) with Tempo's own Zod component library.
 - **Ticket type `component`, no hot files.** The ticket's scope leaves out `convex/`, so the `convex-arch:` commits stay red in scope-guard until Amit adds the `convex-arch` label (rules d/h). Scope-guard fails hot files even with the label (`package.json`, `bun.lock`, `tsconfig*.json`, `next.config.*`, `route.ts`), so this run adds none. That is why `packages/core/srs` is plain TypeScript imported by relative path, not a new workspace package with its own `package.json`. EXTRAPOLATED.
 
+- **Study blocks join the fixed json-render catalog.** `packages/ui/src/blocks/catalog.test.ts` asserts that every block type the codec knows draws as its own catalog component, never as a fallback. Builder C extends the catalog with `FlashcardsBlock`, `QuizBlock` and `TestBlock` and extends that test's pinned lists to match, keeping the invariant. This is the one place an existing test's expected list grows; no assertion is removed or loosened.
+- **Study schemas live inside `blocks.ts`, unexported.** Two pinned tests require the codec module to import only zod and to keep its exact export list. `study-blocks.ts` reads the schemas back off `tempoBlockSchema.options`, as `catalog.ts` already does for the id schema.
+- **Routes.** Everything new sits under `/study` (hub, review, sets, new, plan, record, ingest), so Today and the other areas don't change. EXTRAPOLATED.
+- **No PDF, Word or OCR library.** Each is a new dependency (a hot file). IngestSheet reads text files and paste, and uses the browser's own text detector for photos where it exists. EXTRAPOLATED; see Needs Amit.
+
 ## Needs Amit
 
 - `AT` Add the `convex-arch` label to the PR once the `convex-arch:` commits look right. Until then scope-guard is red on purpose.
+- `AT` Approve (or not) libraries for IngestSheet: an OCR library for photos (for example `tesseract.js`, Apache-2.0, which downloads language data at run time) and PDF / Word readers. Until then photos work only where the browser has a built-in text detector.
 
 ## UNKNOWN
 
