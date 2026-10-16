@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { BLOCK_CODEC_LIMITS, parseTempoBlocks, projectPageText, type TempoBlock } from "@tempo/utils";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action, internalMutation, mutation, query } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 import {
   MIN_LOAD,
@@ -45,6 +45,14 @@ import {
   webSearchConfigured,
   webSearchProvider,
 } from "./lib/webSearch";
+import {
+  type ConnectionDeps,
+  type ExecutorSearchOutcome,
+  connectionErrorKind,
+  defaultConnectionDeps,
+  searchExecutorFor,
+} from "./connections";
+import { lookupQuery, lookupReplyText } from "./lib/connections/lookup";
 import { requireLegacyWritableConversation } from "./messages";
 import { updateNoteForUser } from "./notes";
 import { preferencesFor } from "./preferences";
@@ -706,6 +714,183 @@ export const reply = action({
     ),
   }),
   handler: async (ctx, args) => ({ status: await runCoachReply(ctx, args) }),
+});
+
+// ---------------------------------------------------------------------------
+// "Look in my apps" through the person's Executor account (TEMPO-B07-07, #989)
+// ---------------------------------------------------------------------------
+
+/**
+ * "replied": the person's words and a templated answer were saved. "busy": a coach reply holds
+ * the turn, or another Executor refresh is running. The rest mirror `connections.status`, plus
+ * "rate_limited" (Tempo's hourly limit, or Executor's 429).
+ */
+export type ExecutorLookupStatus =
+  | "replied"
+  | "not_connected"
+  | "needs_reauth"
+  | "unavailable"
+  | "rate_limited"
+  | "busy";
+
+const lookupSummaryValidator = v.object({
+  apps: v.array(v.object({ name: v.string(), toolCount: v.number() })),
+  total: v.number(),
+});
+
+/** The newest live message of a conversation, if a coach reply holds it (its claim is live). */
+async function heldTurn(ctx: Db, conversationId: Id<"conversations">, now: number) {
+  const newest = await ctx.db
+    .query("messages")
+    .withIndex("by_conversationId_deletedAt", (q) => q.eq("conversationId", conversationId).eq("deletedAt", undefined))
+    .order("desc")
+    .first();
+  const held = newest?.role === "user" ? claimOf(newest.toolCalls) : null;
+  return { newest, busy: held !== null && held.until > now };
+}
+
+/** Before Executor is called: the caller is approved, owns the chat, and no coach reply holds it. */
+export const executorLookupPrecheck = internalQuery({
+  args: { conversationId: v.id("conversations"), now: v.number() },
+  returns: v.object({ userId: v.id("users"), busy: v.boolean() }),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const { busy } = await heldTurn(ctx, args.conversationId, args.now);
+    return { userId: user._id, busy };
+  },
+});
+
+/**
+ * Saves a lookup as two messages, so turns still alternate: the person's words, then the coach's
+ * templated answer carrying `toolCalls.executorLookup = { query, apps, total }` (no raw results).
+ * Crisis words get the fixed resources card instead, and never reached Executor. "busy" when a
+ * coach reply holds the turn (except for crisis words, which are always answered).
+ */
+export const saveExecutorLookup = internalMutation({
+  args: {
+    conversationId: v.id("conversations"),
+    text: v.string(),
+    query: v.optional(v.string()),
+    summary: v.optional(lookupSummaryValidator),
+    crisis: v.optional(v.boolean()),
+    callId: v.optional(v.id("connectionCalls")),
+  },
+  returns: v.union(v.literal("saved"), v.literal("busy")),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const clock = Date.now();
+    const { newest, busy } = await heldTurn(ctx, args.conversationId, clock);
+    if (busy && !args.crisis) {
+      return "busy" as const;
+    }
+    const now = Math.max(clock, (newest?.createdAt ?? 0) + 1);
+    await ctx.db.insert("messages", {
+      conversationId: args.conversationId,
+      role: "user",
+      content: args.text,
+      createdAt: now,
+    });
+    let reply: { content: string; modelUsed: string; toolCalls?: unknown };
+    if (args.crisis || !args.summary || args.query === undefined) {
+      reply = { content: crisisCardText(CRISIS_CARD), modelUsed: "crisis-card" };
+    } else {
+      const { locale } = await preferencesFor(ctx, user._id);
+      const executorLookup = { query: args.query, apps: args.summary.apps, total: args.summary.total };
+      reply = {
+        content: lookupReplyText(args.summary, locale),
+        modelUsed: "executor-lookup",
+        toolCalls: { executorLookup },
+      };
+    }
+    const assistantId = await ctx.db.insert("messages", {
+      conversationId: args.conversationId,
+      role: "assistant",
+      content: reply.content,
+      modelUsed: reply.modelUsed,
+      ...(reply.toolCalls ? { toolCalls: reply.toolCalls } : {}),
+      createdAt: now + 1,
+    });
+    await ctx.db.patch(args.conversationId, { updatedAt: now + 1 });
+    if (args.callId) {
+      const call = await ctx.db.get(args.callId);
+      if (call && call.userId === user._id) {
+        await ctx.db.patch(call._id, { messageId: assistantId, updatedAt: now + 1 });
+      }
+    }
+    return "saved" as const;
+  },
+});
+
+/**
+ * One "Look in my apps" lookup (research doc §4.3). Approval first (`requireApprovedForAi`, like
+ * `coach.reply`). Crisis words never leave Tempo: they get the resources card. Otherwise the
+ * person's Executor `search` runs (`connections.searchExecutorFor`: the only tool the coach may
+ * run in B07) and the answer is templated: no model is called and nothing from Executor reaches
+ * one. On any status but "replied" nothing is saved, and the chat keeps working without Executor.
+ * `deps` are the network, env and clock seams; tests pass stand-ins.
+ */
+export async function runExecutorLookup(
+  ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
+  args: { conversationId: Id<"conversations">; query: string },
+  deps: ConnectionDeps = defaultConnectionDeps(),
+): Promise<ExecutorLookupStatus> {
+  await requireApprovedForAi(ctx as ActionCtx);
+  const text = args.query.trim();
+  const query = lookupQuery(text);
+  if (!query) {
+    throw new ConvexError({ code: "invalid_query", message: "Tell me what to look for." });
+  }
+  if (text.length > MAX_MESSAGE_CHARS) {
+    throw new ConvexError({ code: "invalid_query", message: "That message is too long. Try a shorter one." });
+  }
+  const pre = await ctx.runQuery(internal.coach.executorLookupPrecheck, {
+    conversationId: args.conversationId,
+    now: deps.now(),
+  });
+  if (isCrisisText(text)) {
+    await ctx.runMutation(internal.coach.saveExecutorLookup, { conversationId: args.conversationId, text, crisis: true });
+    return "replied";
+  }
+  if (pre.busy) {
+    return "busy";
+  }
+  let outcome: ExecutorSearchOutcome;
+  try {
+    outcome = await searchExecutorFor(ctx, pre.userId, query, deps);
+  } catch (error) {
+    console.error(`coach.lookUpInExecutor: Executor could not be reached (${connectionErrorKind(error)})`);
+    return "unavailable";
+  }
+  if (outcome.status !== "ok") {
+    return outcome.status;
+  }
+  const saved = await ctx.runMutation(internal.coach.saveExecutorLookup, {
+    conversationId: args.conversationId,
+    text,
+    query,
+    summary: outcome.summary,
+    ...(outcome.callId ? { callId: outcome.callId } : {}),
+  });
+  return saved === "saved" ? "replied" : "busy";
+}
+
+export const lookUpInExecutor = action({
+  args: { conversationId: v.id("conversations"), query: v.string() },
+  returns: v.object({
+    status: v.union(
+      v.literal("replied"),
+      v.literal("not_connected"),
+      v.literal("needs_reauth"),
+      v.literal("unavailable"),
+      v.literal("rate_limited"),
+      v.literal("busy"),
+    ),
+  }),
+  handler: async (ctx, args): Promise<{ status: ExecutorLookupStatus }> => ({
+    status: await runExecutorLookup(ctx, args),
+  }),
 });
 
 /** The caller's assistant message with a proposal, in a live conversation they own. */
