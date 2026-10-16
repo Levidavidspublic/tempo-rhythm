@@ -30,7 +30,7 @@ import { listenHref } from "./recap/player";
 import { useReadAloudSlot } from "./recap/useReadAloud";
 import { deckLabels, KIND_ICON, KIND_KEY, quizLabels, type StudyT, testLabels } from "./labels";
 import type { StudyPreview } from "./preview";
-import { type AskPage, SetAsk } from "./SetAsk";
+import { type AskPage, askPageId, SetAsk } from "./SetAsk";
 import { SetEditor } from "./SetEditor";
 import { blockPreview, closedEdit, type EditResult, setEditReducer } from "./set-edit";
 import { setMarkdownWords, setShareTarget } from "./set-share";
@@ -260,7 +260,9 @@ function LoadedSet({
             <TpIcon name="page" size="sm" />
             <span>{t("st.set.openPage")}</span>
           </Link>
-          <Link className="tp-btn tp-btn--ghost" href={listenHref(note.id)} data-action="listen-page">
+          {/* The page the set was made from (as Ask reads it): a Turn-into set's own page holds
+              little more than the block, so listening to it would say almost nothing. */}
+          <Link className="tp-btn tp-btn--ghost" href={listenHref(askPageId(data))} data-action="listen-page">
             <TpIcon name="volume" size="sm" />
             <span>{t("st.set.listen")}</span>
           </Link>

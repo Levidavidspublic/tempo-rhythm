@@ -425,6 +425,26 @@ describe("entry point and copy", () => {
     expect(primaries(markup)).toBe(1);
   });
 
+  test("a set made from another page listens to that page, not the page holding the block", () => {
+    const markup = html(
+      createElement(StudySetView, {
+        data: {
+          set: { setId: "s1", noteId: "n1", kind: "flashcards", title: "Cells", itemCount: 1, sourceNoteId: "src9" },
+          note: { id: "n1", title: "Cells" },
+          block: { id: "blk", type: "flashcards", data: { title: "Cells", origin: "user", cards: [{ id: "a", front: "Mitosis", back: "Division" }] } },
+          states: {},
+          attempts: [],
+        },
+        online: true,
+        now: 0,
+        onRecord: async () => {},
+        onRemove: () => {},
+      } as never),
+    );
+    expect(markup).toContain('href="/study/listen?from=src9&amp;mode=recap"');
+    expect(markup).toContain('href="/notes/n1"');
+  });
+
   test("the new copy exists in both languages, kind and plain", () => {
     const keys = (Object.keys(en) as (keyof typeof en)[]).filter((key) => key.startsWith("st.ls.") || key.startsWith("st.ra.") || key === "st.set.listen");
     expect(keys.length).toBeGreaterThan(30);
