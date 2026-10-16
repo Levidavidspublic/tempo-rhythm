@@ -16,6 +16,8 @@
 
 .tp-guided__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-1) var(--tp-space-3); font-size: var(--tp-text-xs); color: var(--tp-ink-muted); }
 .tp-guided__when { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+/* The clock beside the date: same size as the date (.tp-mono alone is 0.9em, under 13 px at text-xs). */
+.tp-guided__when .tp-mono { font-size: inherit; }
 .tp-guided__kind, .tp-guided__status { display: inline-flex; align-items: center; gap: var(--tp-space-1); }
 .tp-guided__status { min-block-size: var(--tp-space-6); padding-inline: var(--tp-space-2); border-radius: var(--tp-radius-sm); background: var(--tp-sunken); color: var(--tp-ink-muted); font-size: var(--tp-text-xs); font-weight: 600; white-space: nowrap; }
 .tp-guided__status[data-status="doing"] { background: var(--tp-info-wash); color: var(--tp-ink); }
