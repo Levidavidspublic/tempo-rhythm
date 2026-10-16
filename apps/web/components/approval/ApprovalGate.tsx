@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import type { ReactNode } from "react";
-import { useLocale } from "@/components/providers/LocaleProvider";
+import { StateLoading } from "@/components/settings/states";
 import { api } from "@/convex/_generated/api";
 import { WaitingForApproval } from "./WaitingForApproval";
 
@@ -40,24 +40,16 @@ function ApprovalGateInner({ children }: { children: ReactNode }) {
 
 /**
  * Shown until the account's status arrives (about two seconds on a fresh sign-in, longer on a
- * slow connection). A quiet skeleton with a label, not an empty page (HARD_RULES §7.4).
+ * slow connection). The AuthCard with the brand row and quiet skeleton rows, not an empty page
+ * (HARD_RULES §7.4); screen readers hear "Opening Tempo…".
  */
 function ApprovalLoading() {
-  const { t } = useLocale();
   return (
-    <main
-      className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground"
-      aria-busy="true"
-      data-testid="approval-loading"
-    >
-      <output className="tp-state--loading block w-full max-w-md" data-component="StateLoading">
-        <span className="tp-skel-list">
-          <span className="tp-skeleton tp-skeleton--w60" />
-          <span className="tp-skeleton tp-skeleton--w100" />
-          <span className="tp-skeleton tp-skeleton--sm tp-skeleton--w80" />
-        </span>
-        <span className="mt-4 block text-center text-sm text-muted-foreground">{t("approval.loading")}</span>
-      </output>
+    <main className="tp-auth" id="main" aria-busy="true" data-testid="approval-loading">
+      <div className="tp-auth-card" data-component="AuthCard">
+        <span className="tp-auth-card__brand">Tempo</span>
+        <StateLoading label="approval.loading" rows={3} />
+      </div>
     </main>
   );
 }

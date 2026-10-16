@@ -49,3 +49,12 @@
 .ob-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
 .ob-nav__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; }
 .ob-fieldsets { display: grid; gap: var(--tp-space-6); }
+
+/* sign-in.html, sign-up.html: a long email in "Check your email" wraps instead of pushing a phone sideways. */
+.tp-auth-card__lede { overflow-wrap: anywhere; }
+
+/* approval-pending.html (the waiting screen): "What happens next" as numbered steps in the card. */
+.aw-next { display: grid; gap: var(--tp-space-3); }
+.aw-next .tp-steps { gap: var(--tp-space-3); }
+.aw-step { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; column-gap: var(--tp-space-3); }
+.aw-step .tp-step__num { font-size: var(--tp-text-xl); }

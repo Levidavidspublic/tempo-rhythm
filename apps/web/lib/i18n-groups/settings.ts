@@ -325,6 +325,19 @@ export const en = {
   "set.onb.next": "Continue",
   "set.onb.finish": "Start using Tempo",
   "set.onb.loading": "Loading your setup", // new
+
+  // Approval: paused account (new)
+  "set.approval.contact": "Open the Contact page",
+
+  // Sign in and sign up (sign-in.html, sign-up.html). These pages are English only.
+  "set.auth.errTitle": "Couldn't send the link.",
+  "set.auth.errBody": "Nothing was lost. Try again in a moment.",
+  "set.auth.tooMany": "You've tried a few times. Please pause for a moment and try again.",
+  "set.auth.sumTitle": "Please check one thing",
+  "set.auth.emailErr": "Enter your email, like name@example.com",
+  "set.auth.offTitle": "You're offline.",
+  "set.auth.offBody": "We can send your link when you're back online.",
+  "set.auth.offNote": "Sending needs a connection. This works again when you're back online.",
 } as const;
 
 export const he: Record<keyof typeof en, string> = {
@@ -631,4 +644,15 @@ export const he: Record<keyof typeof en, string> = {
   "set.onb.next": "המשך",
   "set.onb.finish": "להתחיל להשתמש ב-Tempo",
   "set.onb.loading": "טוען את ההגדרה שלך",
+
+  "set.approval.contact": "לדף יצירת הקשר",
+
+  "set.auth.errTitle": "לא הצלחנו לשלוח את הקישור.",
+  "set.auth.errBody": "שום דבר לא אבד. נסו שוב בעוד רגע.",
+  "set.auth.tooMany": "ניסיתם כמה פעמים. עצרו לרגע ונסו שוב.",
+  "set.auth.sumTitle": "כדאי לבדוק דבר אחד",
+  "set.auth.emailErr": "כתבו את המייל שלכם, למשל name@example.com",
+  "set.auth.offTitle": "אין חיבור לאינטרנט.",
+  "set.auth.offBody": "נוכל לשלוח את הקישור כשהחיבור יחזור.",
+  "set.auth.offNote": "השליחה צריכה חיבור. זה יעבוד שוב כשהחיבור יחזור.",
 };
