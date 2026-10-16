@@ -16,6 +16,7 @@ import {
   type SetEditState,
   setEditReducer,
 } from "../../../apps/web/components/study/set-edit";
+import { studyPanelKey } from "../../../apps/web/components/study/set-logic";
 import {
   mdText,
   type SetMarkdownWords,
@@ -215,5 +216,18 @@ describe("a set as Markdown and as a share target", () => {
     expect(quizTarget.cards).toBeUndefined();
     expect(quizTarget.url).toBe("/study/q1");
     expect(quizTarget.markdown).toContain("Answer: In the chloroplasts");
+  });
+});
+
+describe("after a saved edit or its Undo", () => {
+  // The deck sets its card order once and a quiz or test keeps its run, so the set screen keys
+  // each panel with studyPanelKey: a new block version (an edit saved, or taken back) remounts it.
+  test("a new block version gives the panel a new key, so it starts over on the new items", () => {
+    expect(studyPanelKey("blk", "v1-a")).not.toBe(studyPanelKey("blk", "v1-b"));
+    expect(studyPanelKey("blk", "v1-a")).not.toBe(studyPanelKey("blk2", "v1-a"));
+  });
+  test("the same version keeps the key, so studying isn't reset by anything else", () => {
+    expect(studyPanelKey("blk", "v1-a")).toBe(studyPanelKey("blk", "v1-a"));
+    expect(studyPanelKey("blk", undefined)).toBe("blk:");
   });
 });

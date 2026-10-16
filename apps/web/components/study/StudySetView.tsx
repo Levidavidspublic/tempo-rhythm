@@ -41,6 +41,7 @@ import {
   onlyQuizQuestions,
   onlyTestQuestions,
   quizAttempt,
+  studyPanelKey,
   testAttempt,
 } from "./set-logic";
 
@@ -210,6 +211,8 @@ function LoadedSet({
     if (version) dispatchEdit({ type: "reload", version });
   };
   const editing = edit.phase !== "closed";
+  // A saved edit or its Undo changes the version, and the panel starts over on the new items.
+  const panelKey = studyPanelKey(block.id, version);
 
   return (
     <div
@@ -303,11 +306,18 @@ function LoadedSet({
           onReload={reloadEdit}
         />
       ) : block.type === "flashcards" ? (
-        <DeckPanel setId={set.setId} data={block.data} states={data.states} now={now} t={t} />
+        <DeckPanel
+          key={panelKey}
+          setId={set.setId}
+          data={block.data}
+          states={data.states}
+          now={now}
+          t={t}
+        />
       ) : block.type === "quiz" ? (
-        <QuizPanel key={block.id} data={block.data} t={t} onRecord={onRecord} />
+        <QuizPanel key={panelKey} data={block.data} t={t} onRecord={onRecord} />
       ) : (
-        <TestPanel key={block.id} data={block.data} t={t} onRecord={onRecord} />
+        <TestPanel key={panelKey} data={block.data} t={t} onRecord={onRecord} />
       )}
       {sharing ? (
         <ShareSheet

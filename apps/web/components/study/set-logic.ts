@@ -81,3 +81,13 @@ export function onlyTestQuestions(test: TestData, ids: readonly string[]): TestD
   const { durationMin: _duration, ...rest } = test;
   return { ...rest, sections };
 }
+
+/**
+ * The key for a set's study panel (deck, quiz or test): the block and its content version
+ * (`getSet`'s `blockVersion`). A deck sets its card order once and a quiz or test keeps its run,
+ * so a saved edit or its Undo must start the panel over: an Undo that drops cards would otherwise
+ * leave the deck on a card that is gone, and one that brings cards back would leave them out.
+ */
+export function studyPanelKey(blockId: string, version: string | undefined): string {
+  return `${blockId}:${version ?? ""}`;
+}
