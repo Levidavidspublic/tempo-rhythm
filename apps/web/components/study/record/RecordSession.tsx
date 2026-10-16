@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { studyHref } from "@/components/ingest";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
@@ -21,6 +23,7 @@ import {
   isPinKey,
   joinTranscript,
   type Pin,
+  type RecordCopy,
   recordCopy,
   removePin,
   type ReviewRow,
@@ -362,24 +365,7 @@ export function RecordSession() {
         />
       ) : null}
 
-      {step === "saved" && saved ? (
-        <section className="tp-surface tp-rec-step" aria-labelledby="rec-saved-h" data-step="saved">
-          <h2 className="tp-section__title" id="rec-saved-h">
-            {copy("rec.saved.h")}
-          </h2>
-          <p>{copy("rec.saved.body")}</p>
-          <div className="tp-form__actions">
-            <a className="tp-btn tp-btn--primary" href={`/notes/${saved.noteId}`}>
-              <TpIcon name="page" size="sm" />
-              <span>{copy("rec.saved.open")}</span>
-            </a>
-            <button type="button" className="tp-btn tp-btn--secondary" onClick={restart}>
-              <TpIcon name="mic" size="sm" />
-              <span>{copy("rec.saved.again")}</span>
-            </button>
-          </div>
-        </section>
-      ) : null}
+      {step === "saved" && saved ? <SavedStep noteId={saved.noteId} copy={copy} onAgain={restart} /> : null}
 
       {toastOpen && saved ? (
         <UndoToast
@@ -390,5 +376,42 @@ export function RecordSession() {
         />
       ) : null}
     </div>
+  );
+}
+
+/** The saved step: open the new page, record another, or turn the page into something to study. */
+export function SavedStep({ noteId, copy, onAgain }: { noteId: string; copy: RecordCopy; onAgain: () => void }) {
+  return (
+    <section className="tp-surface tp-rec-step" aria-labelledby="rec-saved-h" data-step="saved">
+      <h2 className="tp-section__title" id="rec-saved-h">
+        {copy("rec.saved.h")}
+      </h2>
+      <p>{copy("rec.saved.body")}</p>
+      <div className="tp-form__actions">
+        <a className="tp-btn tp-btn--primary" href={`/notes/${noteId}`}>
+          <TpIcon name="page" size="sm" />
+          <span>{copy("rec.saved.open")}</span>
+        </a>
+        <button type="button" className="tp-btn tp-btn--secondary" onClick={onAgain}>
+          <TpIcon name="mic" size="sm" />
+          <span>{copy("rec.saved.again")}</span>
+        </button>
+      </div>
+      {/* Record → notes → cards → test: the saved page can go straight to a Turn-into preview. */}
+      <nav className="tp-form__actions" aria-label={copy("rec.saved.study")} data-rec-study="">
+        <Link className="tp-btn tp-btn--ghost" href={studyHref(noteId, "flashcards")}>
+          <TpIcon name="card" size="sm" />
+          <span>{copy("rec.saved.flashcards")}</span>
+        </Link>
+        <Link className="tp-btn tp-btn--ghost" href={studyHref(noteId, "quiz")}>
+          <TpIcon name="question" size="sm" />
+          <span>{copy("rec.saved.quiz")}</span>
+        </Link>
+        <Link className="tp-btn tp-btn--ghost" href={studyHref(noteId, "test")}>
+          <TpIcon name="checklist" size="sm" />
+          <span>{copy("rec.saved.test")}</span>
+        </Link>
+      </nav>
+    </section>
   );
 }

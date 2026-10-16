@@ -257,6 +257,17 @@ describe("review and save", () => {
     expect(view.textContent).toContain("Review before saving");
   });
 
+  test("after saving, the page can go straight to a flashcards, quiz or test preview", async () => {
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    const study = findAll(view, (n) => n.getAttribute("data-rec-study") !== null)[0] as TestNode;
+    expect(study.getAttribute("aria-label")).toBe("Study this page");
+    expect(findByTag(study, "A", "Flashcards").getAttribute("href")).toBe("/study/new?from=notes%3A1&kind=flashcards");
+    expect(findByTag(study, "A", "Quiz").getAttribute("href")).toBe("/study/new?from=notes%3A1&kind=quiz");
+    expect(findByTag(study, "A", "Practice test").getAttribute("href")).toBe("/study/new?from=notes%3A1&kind=test");
+  });
+
   test("an empty title says so and nothing is saved", async () => {
     const view = await render();
     await toReview(view);

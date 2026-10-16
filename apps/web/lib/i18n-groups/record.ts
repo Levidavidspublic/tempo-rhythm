@@ -95,6 +95,10 @@ export const en = {
   "rec.saved.body": "The page and the tasks you accepted are in Tempo.",
   "rec.saved.open": "Open the page",
   "rec.saved.again": "Record another",
+  "rec.saved.study": "Study this page",
+  "rec.saved.flashcards": "Flashcards",
+  "rec.saved.quiz": "Quiz",
+  "rec.saved.test": "Practice test",
   "rec.undone": "Undone. Nothing from this recording is saved, and your notes are back here.",
 } as const;
 
@@ -187,5 +191,9 @@ export const he: Record<RecordKey, string> = {
   "rec.saved.body": "הדף והמשימות שאישרתם נמצאים ב־Tempo.",
   "rec.saved.open": "פתיחת הדף",
   "rec.saved.again": "הקלטה נוספת",
+  "rec.saved.study": "ללמוד מהדף הזה",
+  "rec.saved.flashcards": "כרטיסיות",
+  "rec.saved.quiz": "בוחן",
+  "rec.saved.test": "מבחן תרגול",
   "rec.undone": "בוטל. שום דבר מההקלטה הזו לא נשמר, והרשימות חזרו לכאן.",
 };
