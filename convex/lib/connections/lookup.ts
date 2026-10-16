@@ -10,8 +10,38 @@
  *   accounts are stored or shown (doc §4.3 step 6).
  * - App names come from Executor, so they are cut to plain words (letters, digits and a few
  *   marks), one line, at most 40 characters, at most 10 apps.
- * - The reply is Tempo's own words in the person's app language; no model writes it.
+ * - The reply is Tempo's own words in the person's app language; no model writes it. Because it
+ *   names apps from Executor, model history never carries it: `modelSafeContent` swaps in a fixed
+ *   line (coach.claimTurn, messages.readLegacyHistoryForAgentContext).
  */
+
+/** `messages.modelUsed` of the coach's templated answer to a lookup. */
+export const EXECUTOR_LOOKUP_MODEL = "executor-lookup";
+
+/**
+ * What a model sees in place of a lookup answer. The answer names apps that came from Executor,
+ * and nothing from Executor may reach a model in B07 (doc §6), so model history gets this fixed
+ * line instead; the app's own screens still read `toolCalls.executorLookup`.
+ */
+export const EXECUTOR_LOOKUP_HISTORY_LINE = "(Looked in your Executor apps.)";
+
+/** True for a message the Executor lookup saved as its answer. */
+export function isExecutorLookupAnswer(message: { role: string; modelUsed?: string; toolCalls?: unknown }): boolean {
+  if (message.role !== "assistant") return false;
+  if (message.modelUsed === EXECUTOR_LOOKUP_MODEL) return true;
+  const calls = message.toolCalls;
+  return typeof calls === "object" && calls !== null && "executorLookup" in calls;
+}
+
+/** A message's text as it may be sent to a model: a lookup answer becomes the fixed line. */
+export function modelSafeContent(message: {
+  role: string;
+  content: string;
+  modelUsed?: string;
+  toolCalls?: unknown;
+}): string {
+  return isExecutorLookupAnswer(message) ? EXECUTOR_LOOKUP_HISTORY_LINE : message.content;
+}
 
 export const LOOKUP_LIMITS = {
   /** Longest query sent to Executor. */

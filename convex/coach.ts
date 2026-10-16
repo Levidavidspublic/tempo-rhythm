@@ -52,7 +52,7 @@ import {
   defaultConnectionDeps,
   searchExecutorFor,
 } from "./connections";
-import { lookupQuery, lookupReplyText } from "./lib/connections/lookup";
+import { EXECUTOR_LOOKUP_MODEL, lookupQuery, lookupReplyText, modelSafeContent } from "./lib/connections/lookup";
 import { requireLegacyWritableConversation } from "./messages";
 import { updateNoteForUser } from "./notes";
 import { preferencesFor } from "./preferences";
@@ -356,7 +356,8 @@ export const claimTurn = internalMutation({
         const card = m.role === "assistant" ? storedProposal(m.toolCalls) : null;
         return {
           role: m.role as "user" | "assistant",
-          content: card ? withCardOutcome(m.content, cardOutcome(card, card.status)) : m.content,
+          // An Executor lookup's answer names apps from Executor; the model gets a fixed line (#989).
+          content: card ? withCardOutcome(m.content, cardOutcome(card, card.status)) : modelSafeContent(m),
         };
       });
 
@@ -804,7 +805,7 @@ export const saveExecutorLookup = internalMutation({
       const executorLookup = { query: args.query, apps: args.summary.apps, total: args.summary.total };
       reply = {
         content: lookupReplyText(args.summary, locale),
-        modelUsed: "executor-lookup",
+        modelUsed: EXECUTOR_LOOKUP_MODEL,
         toolCalls: { executorLookup },
       };
     }
