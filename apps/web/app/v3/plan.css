@@ -96,3 +96,10 @@
   .tp-sched .tp-btn, .tp-plan .tp-btn { min-height: var(--tp-touch); }
   .tp-sched .tp-btn--icon, .tp-plan .tp-btn--icon { min-width: var(--tp-touch); }
 }
+
+/* Re-plan the rest (ReplanPanel): a quiet notice, then the preview of new times. */
+.tp-plan__replan { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-plan__replan-action { margin-block-start: var(--tp-space-2); }
+.tp-plan__replan-preview { display: grid; gap: var(--tp-space-3); }
+.tp-plan__replan-preview > .tp-section__title { margin: 0; }
+.tp-plan__moves .tp-plan__session { align-items: baseline; }

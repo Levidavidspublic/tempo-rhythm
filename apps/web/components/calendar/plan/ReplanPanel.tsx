@@ -1,0 +1,487 @@
+"use client";
+
+/**
+ * "Re-plan the rest" on the plan screen (PRD F-07: missed or clashing sessions move to new times,
+ * fixed items stay put, no shaming). When the saved plan has sessions still to do that were missed
+ * or now overlap something on the calendar, a quiet notice says so in words, with one secondary
+ * button. It opens a preview: what moves where, what doesn't fit and the planner's ways out (a
+ * later date, longer days, fewer sessions), with Use these times / Cancel. Nothing changes before
+ * that. Saving calls `plans.replan`; an Undo toast stays for 5:00 (`plans.undoReplan`).
+ *
+ * The new times come from `replanRest` (packages/core/plan/replan.ts): done sessions, sessions in
+ * progress and fixed events stay where they are. Data: plans.get, calendar_events.listInRange and
+ * tasks.listDueInRange from today to the plan's date. Copy: lib/i18n-groups/plan.ts.
+ */
+import { useMutation, useQuery } from "convex/react";
+import {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { TpIcon } from "@/components/tempo/TpIcon";
+import { UndoToast } from "@/components/you/UndoToast";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import {
+  isLocalDate,
+  type LocalDate,
+  toDayNumber,
+} from "../../../../../packages/core/plan/calendar-math";
+import {
+  type LocalMoment,
+  type ReplanResult,
+  type ReplanWaysOut,
+  replanRest,
+  replanWaysOut,
+} from "../../../../../packages/core/plan/replan";
+import { localDateOf, localSlotToMs } from "../gridData";
+import {
+  countKey,
+  formatClock,
+  longDate,
+  type PlanKey,
+  type PlanLang,
+  pt,
+  ptNodes,
+  shortDate,
+} from "../planCopy";
+import { type ReplanOverrides, replanInput, replanNotice, replanToastTitle } from "./replanForm";
+
+/** Local date and clock minute now, read in the browser and again every minute. */
+function useNowMoment(): LocalMoment | null {
+  const [moment, setMoment] = useState<LocalMoment | null>(null);
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setMoment({ date: localDateOf(now), minute: now.getHours() * 60 + now.getMinutes() });
+    };
+    tick();
+    const timer = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return moment;
+}
+
+export type ReplanNoticeProps = {
+  lang: PlanLang;
+  notice: { key: PlanKey; n: number };
+  open: boolean;
+  onToggle: () => void;
+  /** Id of the preview the button opens. */
+  controls: string;
+  buttonRef?: RefObject<HTMLButtonElement | null>;
+};
+
+/** The quiet notice: what needs a new time, in words, and one secondary button. */
+export function ReplanNotice({
+  lang,
+  notice,
+  open,
+  onToggle,
+  controls,
+  buttonRef,
+}: ReplanNoticeProps) {
+  return (
+    <div className="tp-notice" data-tone="info" data-component="Notice" data-testid="replan-notice">
+      <span className="tp-notice__icon">
+        <TpIcon name="refresh" size="sm" />
+      </span>
+      <div className="tp-notice__text">
+        <output className="tp-notice__title">{ptNodes(lang, notice.key, { n: notice.n })}</output>
+        <div className="tp-plan__replan-action">
+          <button
+            ref={buttonRef}
+            className="tp-btn tp-btn--secondary tp-btn--sm"
+            type="button"
+            data-action="replan-open"
+            aria-expanded={open}
+            aria-controls={controls}
+            onClick={onToggle}
+          >
+            <TpIcon name="calendar-grid" size="sm" />
+            <span>{pt(lang, "rp.open")}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export type ReplanPreviewProps = {
+  lang: PlanLang;
+  result: Pick<ReplanResult, "moves" | "unplaced">;
+  /** Session titles by task id. */
+  titles: ReadonlyMap<string, string>;
+  /** The date nothing may reach (the plan's, or the later one picked here). */
+  deadline: LocalDate;
+  /** Set when a later date was picked: the plan's date moves to it. */
+  newDate?: LocalDate | null;
+  ways?: ReplanWaysOut | null;
+  leaveOut: boolean;
+  busy?: boolean;
+  failed?: boolean;
+  /** False when the screen already has its one primary button. */
+  primary?: boolean;
+  onUseMinutes?: (minutes: number) => void;
+  onUseDate?: (date: LocalDate) => void;
+  onLeaveOut: (on: boolean) => void;
+  onAccept: () => void;
+  onCancel: () => void;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
+};
+
+/** What moves where, what doesn't fit and its ways out, then Use these times / Cancel. */
+export function ReplanPreview({
+  lang,
+  result,
+  titles,
+  deadline,
+  newDate = null,
+  ways = null,
+  leaveOut,
+  busy = false,
+  failed = false,
+  primary = true,
+  onUseMinutes,
+  onUseDate,
+  onLeaveOut,
+  onAccept,
+  onCancel,
+  headingRef,
+}: ReplanPreviewProps) {
+  const headingId = useId();
+  const unplaced = result.unplaced.length;
+  const canAccept = result.moves.length > 0 || (leaveOut && unplaced > 0);
+  const title = (id: string) => titles.get(id) ?? "";
+  const onKey = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape" && !busy) {
+      event.preventDefault();
+      onCancel();
+    }
+  };
+
+  return (
+    <section
+      className="tp-surface tp-plan__replan-preview"
+      aria-labelledby={headingId}
+      data-component="ReplanPreview"
+      aria-busy={busy || undefined}
+      onKeyDown={onKey}
+    >
+      <h2 className="tp-section__title" id={headingId} ref={headingRef} tabIndex={-1}>
+        {pt(lang, "rp.h")}
+      </h2>
+      <p className="tp-muted">{pt(lang, "rp.sub")}</p>
+      {newDate ? <p>{pt(lang, "rp.newDate", { date: longDate(lang, newDate) })}</p> : null}
+      {result.moves.length > 0 ? (
+        <ul className="tp-plan__sessions tp-plan__moves">
+          {result.moves.map((move) => (
+            <li className="tp-plan__session" data-replan="move" key={move.id}>
+              <strong dir="auto">{title(move.id)}</strong>
+              <span>
+                {ptNodes(lang, "rp.fromTo", {
+                  fromDate: shortDate(lang, move.from.date),
+                  fromTime: { time: formatClock(move.from.startMinute) },
+                  toDate: shortDate(lang, move.to.date),
+                  toTime: { time: formatClock(move.to.startMinute) },
+                })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {unplaced > 0 ? (
+        <div
+          className="tp-notice"
+          data-tone="caution"
+          data-component="Notice"
+          data-testid="replan-short"
+        >
+          <span className="tp-notice__icon">
+            <TpIcon name="info" size="sm" />
+          </span>
+          <div className="tp-notice__text">
+            <p className="tp-notice__title">
+              {ptNodes(lang, countKey(unplaced, "rp.short1", "rp.shortN"), {
+                n: unplaced,
+                date: longDate(lang, deadline),
+              })}
+            </p>
+            <ul className="tp-plan__sessions">
+              {result.unplaced.map((item) => (
+                <li className="tp-plan__session" data-replan="unplaced" key={item.id}>
+                  <span dir="auto">{title(item.id)}</span>
+                  {leaveOut ? <span className="tp-chip">{pt(lang, "rp.leftOut")}</span> : null}
+                </li>
+              ))}
+            </ul>
+            <p>{pt(lang, countKey(unplaced, "rp.short.b1", "rp.short.bN"))}</p>
+            <ul className="tp-plan__ways">
+              <li className="tp-plan__way" data-way="later">
+                <strong>{pt(lang, "rp.later")}</strong>
+                {ways?.laterDate ? (
+                  <>
+                    <span>{pt(lang, "rp.laterB", { date: longDate(lang, ways.laterDate) })}</span>
+                    {onUseDate ? (
+                      <button
+                        className="tp-btn tp-btn--secondary tp-btn--sm"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => onUseDate(ways.laterDate as LocalDate)}
+                      >
+                        {pt(lang, "rp.laterBtn", { date: shortDate(lang, ways.laterDate) })}
+                      </button>
+                    ) : null}
+                  </>
+                ) : (
+                  <span>{pt(lang, "rp.laterNone")}</span>
+                )}
+              </li>
+              <li className="tp-plan__way" data-way="longer">
+                <strong>{pt(lang, "rp.longer")}</strong>
+                {ways?.longerMinutes ? (
+                  <>
+                    <span>{ptNodes(lang, "rp.longerB", { n: ways.longerMinutes })}</span>
+                    {onUseMinutes ? (
+                      <button
+                        className="tp-btn tp-btn--secondary tp-btn--sm"
+                        type="button"
+                        disabled={busy}
+                        onClick={() => onUseMinutes(ways.longerMinutes as number)}
+                      >
+                        {ptNodes(lang, "rp.longerBtn", { n: ways.longerMinutes })}
+                      </button>
+                    ) : null}
+                  </>
+                ) : (
+                  <span>{pt(lang, "rp.longerNone")}</span>
+                )}
+              </li>
+              <li className="tp-plan__way" data-way="fewer">
+                <strong>{pt(lang, "rp.fewer")}</strong>
+                <span>{pt(lang, "rp.fewerB")}</span>
+                <button
+                  className="tp-btn tp-btn--secondary tp-btn--sm"
+                  type="button"
+                  aria-pressed={leaveOut}
+                  disabled={busy}
+                  onClick={() => onLeaveOut(!leaveOut)}
+                >
+                  {leaveOut ? <TpIcon name="check" size="sm" /> : null}
+                  <span>{pt(lang, countKey(unplaced, "rp.fewerBtn1", "rp.fewerBtnN"))}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      ) : null}
+      <div className="tp-plan__actions">
+        <button
+          className={`tp-btn ${primary ? "tp-btn--primary" : "tp-btn--secondary"}`}
+          type="button"
+          data-action="replan-accept"
+          disabled={busy || !canAccept}
+          aria-busy={busy || undefined}
+          onClick={onAccept}
+        >
+          <TpIcon name="check" size="sm" />
+          <span>{busy ? pt(lang, "rp.accepting") : pt(lang, "rp.accept")}</span>
+        </button>
+        <button
+          className="tp-btn tp-btn--ghost"
+          type="button"
+          data-action="replan-cancel"
+          disabled={busy}
+          onClick={onCancel}
+        >
+          {pt(lang, "rp.cancel")}
+        </button>
+      </div>
+      {canAccept ? null : <p className="tp-help">{pt(lang, "rp.nothing")}</p>}
+      {failed ? (
+        <p className="tp-error-text" role="alert">
+          {pt(lang, "rp.error")}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+export type ReplanPanelProps = {
+  planId: Id<"studyPlans">;
+  lang: PlanLang;
+  /** False when the screen already shows its one primary button (a plan preview to add). */
+  primary?: boolean;
+};
+
+export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) {
+  const saved = useQuery(api.plans.get, { planId });
+  const replan = useMutation(api.plans.replan);
+  const undoReplan = useMutation(api.plans.undoReplan);
+  const liveNow = useNowMoment();
+  const [open, setOpen] = useState(false);
+  // The preview holds still while it is open: now is read once, when it opens.
+  const [openedAt, setOpenedAt] = useState<LocalMoment | null>(null);
+  const [overrides, setOverrides] = useState<ReplanOverrides>({});
+  const [leaveOut, setLeaveOut] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [toast, setToast] = useState<{ title: string; untilMs: number } | null>(null);
+  const openRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const toastRef = useRef<HTMLDivElement>(null);
+  const previewId = useId();
+
+  const now = open && openedAt ? openedAt : liveNow;
+  const deadline = saved?.plan.deadline;
+  const range =
+    now && deadline && isLocalDate(deadline) && toDayNumber(deadline) > toDayNumber(now.date)
+      ? { startMs: localSlotToMs(now.date, 0), endMs: localSlotToMs(deadline, 0) }
+      : null;
+  const events = useQuery(api.calendar_events.listInRange, range ?? "skip");
+  const tasks = useQuery(api.tasks.listDueInRange, range ?? "skip");
+
+  const input = useMemo(
+    () =>
+      saved && now && events && tasks
+        ? replanInput({
+            deadline: saved.plan.deadline,
+            tasks: saved.tasks,
+            source: {
+              events: events.map((e) => ({ id: e._id, title: e.title, startsAtMs: e.startsAtMs })),
+              tasks,
+            },
+            now,
+            overrides,
+          })
+        : null,
+    [saved, now, events, tasks, overrides]
+  );
+  const result = useMemo(() => (input ? replanRest(input) : null), [input]);
+  const ways = useMemo(
+    () => (open && input && result && result.unplaced.length > 0 ? replanWaysOut(input) : null),
+    [open, input, result]
+  );
+  const titles = useMemo(
+    () => new Map((saved?.tasks ?? []).map((task) => [task._id as string, task.title])),
+    [saved]
+  );
+  const notice = result ? replanNotice(result) : null;
+
+  // Opening moves focus to the preview's heading.
+  useEffect(() => {
+    if (open) headingRef.current?.focus();
+  }, [open]);
+
+  const close = () => {
+    setOpen(false);
+    setOpenedAt(null);
+    setOverrides({});
+    setLeaveOut(false);
+    setFailed(false);
+  };
+  const toggle = () => {
+    if (open) {
+      close();
+      return;
+    }
+    setOpenedAt(liveNow);
+    setOpen(true);
+  };
+  const cancel = () => {
+    close();
+    openRef.current?.focus();
+  };
+
+  const accept = async () => {
+    if (!result || !saved || saving) return;
+    const remove = leaveOut ? result.unplaced.map((item) => item.id as Id<"tasks">) : [];
+    if (result.moves.length === 0 && remove.length === 0) return;
+    setSaving(true);
+    setFailed(false);
+    try {
+      const done = await replan({
+        planId,
+        moves: result.moves.map((move) => ({
+          taskId: move.id as Id<"tasks">,
+          date: move.to.date,
+          startMinute: move.to.startMinute,
+          // Each new start in this browser's zone for that date, so a DST change is honoured.
+          startAt: localSlotToMs(move.to.date, move.to.startMinute),
+        })),
+        ...(remove.length > 0 ? { remove } : {}),
+        ...(overrides.deadline && overrides.deadline !== saved.plan.deadline
+          ? { deadline: overrides.deadline }
+          : {}),
+        timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+      });
+      close();
+      setToast({
+        title: replanToastTitle(lang, done.moved, done.removed),
+        untilMs: done.undoUntil,
+      });
+      // The button that was pressed is gone: Undo is the one thing left to do.
+      window.setTimeout(
+        () => toastRef.current?.querySelector<HTMLButtonElement>("button")?.focus(),
+        0
+      );
+    } catch {
+      setFailed(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!notice && !open && !toast) return null;
+
+  return (
+    <div className="tp-plan__replan" data-component="ReplanPanel">
+      {notice ? (
+        <ReplanNotice
+          lang={lang}
+          notice={notice}
+          open={open}
+          onToggle={toggle}
+          controls={previewId}
+          buttonRef={openRef}
+        />
+      ) : null}
+      <div id={previewId}>
+        {open && result && input ? (
+          <ReplanPreview
+            lang={lang}
+            result={result}
+            titles={titles}
+            deadline={input.deadline}
+            newDate={overrides.deadline ?? null}
+            ways={ways}
+            leaveOut={leaveOut}
+            busy={saving}
+            failed={failed}
+            primary={primary}
+            onUseMinutes={(minutesPerDay) => setOverrides((o) => ({ ...o, minutesPerDay }))}
+            onUseDate={(date) => setOverrides((o) => ({ ...o, deadline: date }))}
+            onLeaveOut={setLeaveOut}
+            onAccept={() => void accept()}
+            onCancel={cancel}
+            headingRef={headingRef}
+          />
+        ) : null}
+      </div>
+      {toast ? (
+        <div ref={toastRef}>
+          <UndoToast
+            title={toast.title}
+            untilMs={toast.untilMs}
+            onUndo={() => undoReplan({ planId })}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}

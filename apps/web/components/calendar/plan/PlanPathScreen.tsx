@@ -9,6 +9,7 @@
  * card then shows Undo for 5 minutes (`plans.undoCreate`) and a To do / Doing / Done status per
  * session (`tasks.update`). Reject sets the preview aside until the form changes. While Undo is
  * open the accepted plan stays on the card even if the form changes, so it can't be added twice.
+ * Above the form, ReplanPanel offers to move the saved plan's missed or clashing sessions.
  */
 import { GuidedPlanCard, type GuidedStep, type GuidedStepStatus } from "@tempo/ui";
 import { useMutation, useQuery } from "convex/react";
@@ -27,6 +28,7 @@ import { localSlotToMs } from "../gridData";
 import { todayLocal } from "../MonthGrid";
 import { pt, shortDate } from "../planCopy";
 import { PlanForm, PlanPreview } from "./PlanParts";
+import { ReplanPanel } from "./ReplanPanel";
 import {
   buildPreview,
   busyByDate,
@@ -270,6 +272,16 @@ export function PlanPathScreen() {
           <p className="tp-pagehead__sub">{pt(lang, "pp.sub")}</p>
         </div>
       </header>
+
+      {signedIn === "ready" && activePlan ? (
+        <ReplanPanel
+          key={activePlan}
+          lang={lang}
+          planId={activePlan}
+          // The plan card's "Add these sessions" is the screen's one primary while it is offered.
+          primary={!(preview.status === "ok" && cardStatus === "pending")}
+        />
+      ) : null}
 
       <PlanForm
         lang={lang}
