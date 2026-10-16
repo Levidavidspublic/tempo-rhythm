@@ -12,6 +12,7 @@ import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
 import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
 import { UndoDeleteToast } from "./UndoDeleteToast";
+import { WeekGlance } from "./WeekGlance";
 
 type NoteRecord = Doc<"notes">;
 
@@ -452,7 +453,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       onConfirmDelete={() => void handleDelete()}
       onCancelDelete={() => setConfirmingDelete(false)}
       backHref={backHref}
-      lead={lead}
+      lead={lead ?? (note?.pageType === "weekly" && note.date ? <WeekGlance monday={note.date} /> : undefined)}
       canDelete={canDelete}
     />
   );
