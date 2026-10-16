@@ -39,7 +39,8 @@ export function WeekGlanceView({ glance, t, lang }: { glance: WeekGlance; t: (ke
           {t("wk.title")}
         </h2>
       </div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      {/* Phones: the two numbers side by side, the days below, so the page itself isn't pushed far down. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Kpi surface data-component="StatCard">
           <Kpi.Header>
             <Kpi.Title>{t("wk.done")}</Kpi.Title>
@@ -58,7 +59,7 @@ export function WeekGlanceView({ glance, t, lang }: { glance: WeekGlance; t: (ke
           </Kpi.Content>
           <Kpi.Chart data={glance.days.map((day) => day.focusMinutes)} color="success" filled aria-label={t("wk.focusTrend")} />
         </Kpi>
-        <Kpi surface data-component="StatCard">
+        <Kpi surface className="col-span-2 sm:col-span-1" data-component="StatCard">
           <Kpi.Header>
             <Kpi.Title>{t("wk.days")}</Kpi.Title>
           </Kpi.Header>
