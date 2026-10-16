@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { fillWith } from "./fill";
 import { KIND_KEY, type StudyT } from "./labels";
@@ -14,6 +14,11 @@ import { DraftEditor } from "./TurnIntoView";
  * Markup and the draft only: StudySetView runs the save and its 5-minute Undo. When the page's
  * block changed since the edit started, it says so in words and offers Reload instead of a save
  * that would write over newer words. The parent remounts it (a `key`) to start from a new version.
+ *
+ * Offline (`online` false), Save waits instead of sending: Convex would hold the mutation until
+ * the connection is back and the list would sit on "Saving…" with Cancel held. The button says
+ * "Saves when you're back online", Cancel stays available, and the save goes ahead by itself once
+ * the browser is back online (as IngestSheet does).
  */
 export type SetEditorProps = {
   /** The block as the edit started; the draft is made from it once, on mount. */
@@ -27,6 +32,8 @@ export type SetEditorProps = {
   onSave: (next: StudyPreview, before: StudyPreview) => void;
   onCancel: () => void;
   onReload: () => void;
+  /** The browser's online flag (`useOnline`); offline, Save waits. True when left out. */
+  online?: boolean;
 };
 
 const TITLE_ID = "st-setedit-title";
@@ -40,6 +47,7 @@ export function SetEditor({
   onSave,
   onCancel,
   onReload,
+  online = true,
 }: SetEditorProps) {
   const [draft, edit] = useReducer(draftReducer, base, draftFrom);
   const kind = draft.preview.kind;
@@ -51,16 +59,38 @@ export function SetEditor({
   // Focus moves to the edit list's heading when it opens (and after Reload, which remounts it).
   useEffect(() => heading.current?.focus(), []);
 
+  // Save was pressed offline: it waits for the connection.
+  const [held, setHeld] = useState(false);
+  // What the button says while a save waits: held here, or already sent when the connection went.
+  const waiting = (held && ready) || (saving && !online);
+
   const save = () => {
-    if (!ready) return;
+    // The early returns also end a wait: the draft may have changed while offline.
+    if (!ready) {
+      setHeld(false);
+      return;
+    }
     // Nothing changed: close without writing to the page.
     if (draftUnchanged(draft)) {
+      setHeld(false);
       onCancel();
       return;
     }
+    if (!online) {
+      setHeld(true);
+      return;
+    }
+    setHeld(false);
     const next = draftToData(draft);
     if (next) onSave(next, draft.preview);
   };
+
+  // A waiting save goes ahead by itself once the browser is back online.
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    if (online && held) saveRef.current();
+  }, [online, held]);
 
   return (
     <section
@@ -114,16 +144,18 @@ export function SetEditor({
         </p>
       ) : null}
       <footer className="tp-proposal__actions">
+        {/* A waiting Save uses aria-disabled, so it keeps focus; pressing it again changes nothing. */}
         <button
           className="tp-btn tp-btn--primary"
           type="button"
           data-action="save-edit"
           disabled={!ready}
+          aria-disabled={(held && ready) || undefined}
           aria-busy={saving}
           onClick={save}
         >
-          <TpIcon name="check" size="sm" />
-          <span>{saving ? t("st.pv.saving") : t("st.se.save")}</span>
+          <TpIcon name={waiting ? "wifi-off" : "check"} size="sm" />
+          <span>{waiting ? t("ig.waiting") : saving ? t("st.pv.saving") : t("st.se.save")}</span>
         </button>
         <button
           className="tp-btn tp-btn--ghost"
