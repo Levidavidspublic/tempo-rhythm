@@ -4,6 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
+import { replanRecordValidator } from "./schema/plans";
 import { createTaskForUser } from "./tasks";
 
 /**
@@ -13,6 +14,11 @@ import { createTaskForUser } from "./tasks";
  * preview into ordinary tasks (one per session, elastic, grouped by `projectName` = plan title)
  * plus one `studyPlans` row that remembers them. Nothing is written before the person presses
  * "Add these sessions", and `undoCreate` takes the whole plan back for 5 minutes (HARD_RULES §1).
+ *
+ * `replan` ("Re-plan the rest", PRD F-07) moves the plan's missed or clashing sessions to the new
+ * times the person accepted on the plan screen (worked out there by `replanRest` in
+ * packages/core/plan), can leave some out and can move the deadline later; `undoReplan` takes it
+ * back for 5 minutes from what `replan` kept on the plan row (`lastReplan`).
  */
 
 const MAX_SESSIONS = 300;
@@ -20,6 +26,8 @@ const MAX_TITLE = 200;
 const MAX_SESSION_MINUTES = 12 * 60;
 /** Real zones run from UTC-12 to UTC+14. */
 const MAX_OFFSET_MINUTES = 14 * 60;
+const DAY_MINUTES = 24 * 60;
+const PLAN_GONE = "This plan isn't here any more. Make a new one whenever you like.";
 
 const sessionKindValidator = v.union(
   v.literal("learn"),
@@ -52,6 +60,7 @@ const planValidator = v.object({
   deadline: v.string(),
   sourceSetId: v.optional(v.string()),
   taskIds: v.array(v.id("tasks")),
+  lastReplan: v.optional(replanRecordValidator),
   createdAt: v.number(),
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
@@ -107,6 +116,32 @@ function sessionStart(
   return fromOffset;
 }
 
+function checkOffset(offset: number): number {
+  if (!Number.isInteger(offset) || Math.abs(offset) > MAX_OFFSET_MINUTES) {
+    throw new Error("That time zone offset isn't one we know.");
+  }
+  return offset;
+}
+
+/** A session's local date and start: a real date before the deadline day, a minute in the day. */
+function checkSessionTime(
+  session: { date: string; startMinute: number },
+  deadlineDay: number,
+): void {
+  if (!isLocalDate(session.date)) throw new Error("Every session needs a YYYY-MM-DD date.");
+  // The deadline day is the exam itself; study happens before it.
+  if (toDayNumber(session.date) >= deadlineDay) {
+    throw new Error("Every session needs a date before the deadline.");
+  }
+  if (
+    !Number.isInteger(session.startMinute) ||
+    session.startMinute < 0 ||
+    session.startMinute > 1439
+  ) {
+    throw new Error("Every session needs a start time within the day.");
+  }
+}
+
 function cleanTitle(raw: string, what: string): string {
   const title = raw.trim();
   if (title === "") throw new Error(`Give the ${what} a name first.`);
@@ -137,27 +172,13 @@ export const createFromPreview = mutation({
     const user = await requireUser(ctx);
     const title = cleanTitle(args.title, "plan");
     if (!isLocalDate(args.deadline)) throw new Error("Pick the date as YYYY-MM-DD.");
-    const offset = args.timezoneOffsetMinutes;
-    if (!Number.isInteger(offset) || Math.abs(offset) > MAX_OFFSET_MINUTES) {
-      throw new Error("That time zone offset isn't one we know.");
-    }
+    const offset = checkOffset(args.timezoneOffsetMinutes);
     if (args.sessions.length === 0) throw new Error("There are no sessions to add yet.");
     if (args.sessions.length > MAX_SESSIONS) throw new Error("That plan has too many sessions.");
     const deadlineDay = toDayNumber(args.deadline);
     for (const session of args.sessions) {
       cleanTitle(session.title, "session");
-      if (!isLocalDate(session.date)) throw new Error("Every session needs a YYYY-MM-DD date.");
-      // The deadline day is the exam itself; study happens before it.
-      if (toDayNumber(session.date) >= deadlineDay) {
-        throw new Error("Every session needs a date before the deadline.");
-      }
-      if (
-        !Number.isInteger(session.startMinute) ||
-        session.startMinute < 0 ||
-        session.startMinute > 1439
-      ) {
-        throw new Error("Every session needs a start time within the day.");
-      }
+      checkSessionTime(session, deadlineDay);
       if (
         !Number.isFinite(session.minutes) ||
         session.minutes <= 0 ||
@@ -218,6 +239,214 @@ export const undoCreate = mutation({
     }
     await ctx.db.patch(args.planId, { deletedAt: now, updatedAt: now });
     return { removedTasks };
+  },
+});
+
+const replanMoveValidator = v.object({
+  taskId: v.id("tasks"),
+  /** Local `YYYY-MM-DD`. */
+  date: v.string(),
+  /** Local clock minute the session starts, 0–1439. */
+  startMinute: v.number(),
+  /** The new start as Unix ms, worked out in the browser for that date (DST), like a session's. */
+  startAt: v.optional(v.number()),
+});
+
+type ReplanMoveArgs = { taskId: Id<"tasks">; date: string; startMinute: number; startAt?: number };
+type ReplanRecord = NonNullable<Doc<"studyPlans">["lastReplan"]>;
+
+/** The same ids, each once, in any order. */
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+  const set = new Set(a);
+  return (
+    a.length === b.length &&
+    set.size === a.length &&
+    new Set(b).size === b.length &&
+    b.every((id) => set.has(id))
+  );
+}
+
+/**
+ * True when this exact re-plan is already in place (a double tap, or a retry after a lost reply):
+ * the last re-plan made the same moves and left out the same sessions, and nothing has moved since.
+ */
+async function alreadyApplied(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  last: ReplanRecord,
+  moves: readonly ReplanMoveArgs[],
+  remove: readonly Id<"tasks">[],
+  offset: number,
+): Promise<boolean> {
+  if (last.undoneAt !== undefined || !sameIds(last.removed, remove)) return false;
+  const moved = last.moves.map((move) => move.taskId);
+  if (!sameIds(moved, moves.map((move) => move.taskId))) return false;
+  const lastTo = new Map(last.moves.map((move) => [move.taskId as string, move.to]));
+  for (const move of moves) {
+    if (!isLocalDate(move.date) || !Number.isInteger(move.startMinute)) return false;
+    const to = sessionStart(move, offset);
+    if (lastTo.get(move.taskId) !== to) return false;
+    const task = await ctx.db.get(move.taskId);
+    if (!task || task.userId !== userId || task.deletedAt !== undefined || task.dueAt !== to) {
+      return false;
+    }
+  }
+  for (const taskId of remove) {
+    const task = await ctx.db.get(taskId);
+    if (!task || task.userId !== userId || task.deletedAt !== last.at) return false;
+  }
+  return true;
+}
+
+/**
+ * "Re-plan the rest": moves sessions of a live plan to the new times the person accepted, and can
+ * leave some out (soft delete) and move the deadline later (the planner's ways out). Only the
+ * plan's own live sessions that aren't done can move, each once, to a date before the deadline,
+ * ending by midnight; each start uses the browser's `startAt` within the DST bound, like
+ * `createFromPreview`. Nothing is written unless all of it is valid. What was there before is kept
+ * on the plan (`lastReplan`) so `undoReplan` can take it back for 5 minutes. The same re-plan sent
+ * twice changes nothing the second time and returns the first one's Undo window.
+ */
+export const replan = mutation({
+  args: {
+    planId: v.id("studyPlans"),
+    moves: v.array(replanMoveValidator),
+    /** Sessions to leave out of the plan ("fewer sessions"). */
+    remove: v.optional(v.array(v.id("tasks"))),
+    /** A later deadline ("a later date"). */
+    deadline: v.optional(v.string()),
+    timezoneOffsetMinutes: v.number(),
+  },
+  returns: v.object({ undoUntil: v.number(), moved: v.number(), removed: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const plan = await ownedPlan(ctx, user._id, args.planId);
+    if (!plan) throw new Error("Plan not found");
+    if (plan.deletedAt !== undefined) throw new Error(PLAN_GONE);
+    const offset = checkOffset(args.timezoneOffsetMinutes);
+    const remove = args.remove ?? [];
+
+    const last = plan.lastReplan;
+    if (
+      last &&
+      (args.deadline === undefined || args.deadline === plan.deadline) &&
+      (await alreadyApplied(ctx, user._id, last, args.moves, remove, offset))
+    ) {
+      return {
+        undoUntil: last.at + UNDO_WINDOW_MS,
+        moved: last.moves.length,
+        removed: last.removed.length,
+      };
+    }
+
+    const count = args.moves.length + remove.length;
+    if (count === 0) throw new Error("There is nothing to move yet.");
+    if (count > MAX_SESSIONS) throw new Error("That plan has too many sessions.");
+    let deadline = plan.deadline;
+    if (args.deadline !== undefined && args.deadline !== plan.deadline) {
+      if (!isLocalDate(args.deadline)) throw new Error("Pick the date as YYYY-MM-DD.");
+      if (toDayNumber(args.deadline) <= toDayNumber(plan.deadline)) {
+        throw new Error("A new date needs to be later than the plan's date.");
+      }
+      deadline = args.deadline;
+    }
+
+    const inPlan = new Set<string>(plan.taskIds);
+    const seen = new Set<string>();
+    const liveSession = async (taskId: Id<"tasks">): Promise<Doc<"tasks">> => {
+      if (!inPlan.has(taskId) || seen.has(taskId)) {
+        throw new Error("Only this plan's own sessions can move, each one once.");
+      }
+      seen.add(taskId);
+      const task = await ctx.db.get(taskId);
+      if (!task || task.userId !== user._id || task.deletedAt !== undefined) {
+        throw new Error(
+          "One of these sessions isn't here any more. Open the plan again to see it now.",
+        );
+      }
+      if (task.status === "done") throw new Error("Done sessions stay where they are.");
+      return task;
+    };
+
+    const deadlineDay = toDayNumber(deadline);
+    const planned: Array<{ task: Doc<"tasks">; to: number }> = [];
+    for (const move of args.moves) {
+      const task = await liveSession(move.taskId);
+      checkSessionTime(move, deadlineDay);
+      const minutes = task.timeEstimate !== undefined ? Math.round(task.timeEstimate / 60_000) : 0;
+      if (move.startMinute + minutes > DAY_MINUTES) {
+        throw new Error("Every session needs to end by midnight.");
+      }
+      planned.push({ task, to: sessionStart(move, offset) });
+    }
+    const leaving: Doc<"tasks">[] = [];
+    for (const taskId of remove) leaving.push(await liveSession(taskId));
+
+    const now = Date.now();
+    const moves: ReplanRecord["moves"] = [];
+    for (const { task, to } of planned) {
+      moves.push({
+        taskId: task._id,
+        ...(task.dueAt !== undefined ? { from: task.dueAt } : {}),
+        to,
+      });
+      await ctx.db.patch(task._id, { dueAt: to, updatedAt: now });
+    }
+    for (const task of leaving) await ctx.db.patch(task._id, { deletedAt: now, updatedAt: now });
+    const movedDeadline = deadline !== plan.deadline;
+    await ctx.db.patch(plan._id, {
+      ...(movedDeadline ? { deadline } : {}),
+      lastReplan: {
+        at: now,
+        moves,
+        removed: leaving.map((task) => task._id),
+        ...(movedDeadline ? { deadlineBefore: plan.deadline } : {}),
+      },
+      updatedAt: now,
+    });
+    return { undoUntil: now + UNDO_WINDOW_MS, moved: moves.length, removed: leaving.length };
+  },
+});
+
+/**
+ * Takes the last re-plan back, for 5 minutes: moved sessions go back to their old times, left-out
+ * ones come back and the deadline returns. A session moved again by hand since then keeps its new
+ * time. A second undo, or one with no re-plan to undo, changes nothing.
+ */
+export const undoReplan = mutation({
+  args: { planId: v.id("studyPlans") },
+  returns: v.object({ restored: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const plan = await ownedPlan(ctx, user._id, args.planId);
+    if (!plan) throw new Error("Plan not found");
+    if (plan.deletedAt !== undefined) throw new Error(PLAN_GONE);
+    const last = plan.lastReplan;
+    if (!last || last.undoneAt !== undefined) return { restored: 0 };
+    const now = Date.now();
+    if (now - last.at > UNDO_WINDOW_MS) {
+      throw new Error("The 5 minutes to undo this have passed. You can still move each session.");
+    }
+    let restored = 0;
+    for (const move of last.moves) {
+      const task = await ctx.db.get(move.taskId);
+      if (!task || task.userId !== user._id || task.deletedAt !== undefined) continue;
+      if (task.dueAt !== move.to) continue;
+      await ctx.db.patch(move.taskId, { dueAt: move.from, updatedAt: now });
+      restored += 1;
+    }
+    for (const taskId of last.removed) {
+      const task = await ctx.db.get(taskId);
+      if (!task || task.userId !== user._id || task.deletedAt !== last.at) continue;
+      await ctx.db.patch(taskId, { deletedAt: undefined, updatedAt: now });
+      restored += 1;
+    }
+    await ctx.db.patch(plan._id, {
+      ...(last.deadlineBefore !== undefined ? { deadline: last.deadlineBefore } : {}),
+      lastReplan: { ...last, undoneAt: now },
+      updatedAt: now,
+    });
+    return { restored };
   },
 });
 
