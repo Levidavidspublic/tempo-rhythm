@@ -1,0 +1,53 @@
+/* v3 study components (kitchen T3): FlashcardDeck, FlashcardReview, AdaptiveQuiz, TestRunner and ScoreCard from @tempo/ui. Layout only; colour, type, spacing and radius come from tokens. The card, quiz, choice and artifact styles live in tempo.css. */
+
+.tp-study-deck, .tp-study-review, .tp-study-quiz, .tp-study-test, .tp-study-score { min-width: 0; }
+.tp-study-keys, .tp-study-progress, .tp-study-hint { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-study-hint__label { font-weight: 600; }
+.tp-study-review__front { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); overflow-wrap: anywhere; }
+.tp-flashcard:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; border-radius: var(--tp-radius-md); }
+
+/* Again / Hard / Good / Easy, each with its interval */
+.tp-study-grades { border: 0; margin: 0; padding: 0; min-width: 0; flex: 1 1 auto; display: grid; gap: var(--tp-space-2); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) + var(--tp-space-4)), 1fr)); }
+.tp-study-grade { flex-direction: column; gap: 0; padding-block: var(--tp-space-1); }
+.tp-study-grade__interval { font-size: var(--tp-text-xs); font-weight: 400; color: var(--tp-ink-muted); }
+
+.tp-study-feedback__text { display: grid; gap: var(--tp-space-1); min-width: 0; }
+
+/* Practice test */
+.tp-study-timer { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; font-size: var(--tp-text-sm); }
+.tp-study-timer__left { display: inline-flex; align-items: center; gap: var(--tp-space-1); }
+.tp-study-section { display: grid; gap: var(--tp-space-3); }
+.tp-study-section + .tp-study-section { border-top: 1px solid var(--tp-line); padding-top: var(--tp-space-4); }
+.tp-study-section__title { font-family: var(--tp-font-serif); font-size: var(--tp-text-lg); margin: 0; }
+.tp-study-section__pick { font-size: var(--tp-text-sm); font-weight: 600; }
+.tp-study-questions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-5); }
+.tp-study-question { min-width: 0; }
+.tp-study-question__head { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-study-question__points { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-study-question__prompt, .tp-study-part__prompt { display: block; overflow-wrap: anywhere; }
+.tp-study-bagrut, .tp-study-mark { display: grid; gap: var(--tp-space-3); }
+.tp-study-mark + .tp-study-mark { border-top: 1px solid var(--tp-line); padding-top: var(--tp-space-4); }
+.tp-study-mark__part { display: grid; gap: var(--tp-space-2); }
+.tp-study-mark__answer, .tp-study-mark__model, .tp-study-mark__rubric { padding: var(--tp-space-3); border-radius: var(--tp-radius-md); background: var(--tp-ground); overflow-wrap: anywhere; }
+.tp-study-mark__points { max-width: calc(var(--tp-space-20) + var(--tp-space-4)); }
+.tp-study-confirm { flex: 1 1 100%; display: grid; gap: var(--tp-space-2); }
+.tp-study-confirm__list { margin: 0; padding-inline-start: var(--tp-space-5); }
+.tp-study-confirm__actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
+/* Score card */
+.tp-study-score__total { font-family: var(--tp-font-serif); font-size: var(--tp-text-xl); margin: 0; }
+.tp-study-score__percent { margin: 0; color: var(--tp-ink-muted); }
+.tp-study-score__pass { display: flex; align-items: flex-start; gap: var(--tp-space-2); margin: 0; padding: var(--tp-space-3) var(--tp-space-4); border-radius: var(--tp-radius-md); font-size: var(--tp-text-sm); }
+.tp-study-score__pass[data-result="passed"] { background: var(--tp-done-wash); }
+.tp-study-score__pass[data-result="passed"] svg { color: var(--tp-done); }
+.tp-study-score__pass[data-result="below"] { background: var(--tp-sunken); }
+.tp-study-score__sections { display: grid; gap: var(--tp-space-2); }
+.tp-study-score__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); }
+.tp-study-score__row { display: flex; justify-content: space-between; gap: var(--tp-space-3); font-size: var(--tp-text-sm); }
+
+@media (pointer: coarse) {
+  .tp-study-grade, .tp-study-confirm__actions .tp-btn { min-height: var(--tp-touch); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-study-deck .tp-flashcard__face, .tp-study-review .tp-flashcard__face { animation: none; }
+}
