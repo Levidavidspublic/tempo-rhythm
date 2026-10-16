@@ -171,6 +171,19 @@ describe("the listen screen's states", () => {
     expect(states({ from: "n1", note: null })).toContain("This page isn&#x27;t here anymore");
     expect(states({ from: "n1", note: { title: "Empty", body: "```json tempo\n{}\n```" } })).toContain("Nothing to read aloud yet");
   });
+  test("every state around the player keeps the screen's h1, Listen", () => {
+    const h1 = '<h1 class="tp-pagehead__title">Listen</h1>';
+    const all = [
+      states({ note: undefined }),
+      states({ from: "n1", signedOut: true, note: undefined }),
+      states({ from: "n1", note: undefined }),
+      states({ from: "n1", note: null }),
+      states({ from: "n1", note: { title: "Empty", body: "```json tempo\n{}\n```" } }),
+    ];
+    for (const markup of all) expect(markup.match(/<h1[ >]/g)?.length).toBe(1);
+    for (const markup of all) expect(markup).toContain(h1);
+    expect(all[1]).toContain('data-component="StateSignedOut"');
+  });
   test("a Hebrew page with a link and a json tempo block is read as Hebrew, list joiners and all", () => {
     const body = [
       "# שלבי המיטוזה",

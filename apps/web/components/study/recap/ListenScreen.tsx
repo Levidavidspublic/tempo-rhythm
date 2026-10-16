@@ -56,9 +56,16 @@ function ListenData({ from, mode }: { from?: string; mode: ListenMode }) {
   );
 }
 
+/** Every state but the player keeps the screen's h1, "Listen" (the player's h1 is the page title). */
 function Frame({ children }: { children: React.ReactNode }) {
+  const { t } = useLocale();
   return (
     <div className="tp-page tp-page--narrow tp-study-stack" data-component="PageLayout" data-screen="StudyListen">
+      <header className="tp-pagehead" data-component="PageHeader">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title">{t("st.ls.title")}</h1>
+        </div>
+      </header>
       {children}
     </div>
   );
