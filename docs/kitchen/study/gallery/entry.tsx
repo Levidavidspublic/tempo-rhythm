@@ -6,6 +6,8 @@
 // (DESIGN.md §13). Supports ?view=, ?theme=light|dark and ?lang=en|he.
 // S9 adds plan-guided, plan-guided-edit and plan-guided-accepted: the GuidedPlanCard on a sample plan.
 // Typed recall adds study-review-typed and study-review-typed-checked.
+// Edit and Share on a saved set add study-set-edit, study-set-edit-changed and study-set-share
+// (MOCKED: the sample deck below, with stand-in updateBlock answers).
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -194,6 +196,7 @@ const getSet = (id: string, block: { type: string; data: { title: string } }, ki
   set: { setId: id, noteId: "notes:11", blockId: "blk_01JABCDEFGHJKMNPQRSTVWXYZ0", kind, title: block.data.title, itemCount: 4, createdByTempo: true, createdAt: NOW - DAY, updatedAt: NOW - DAY },
   note: { id: "notes:11", title: block.data.title },
   block: { id: "blk_01JABCDEFGHJKMNPQRSTVWXYZ0", ...block },
+  blockVersion: "v1-gallery",
   states: { c1: { dueAt: NOW - MIN, intervalDays: 1, ease: 2.5, repetitions: 1, lapses: 0 }, c2: { dueAt: NOW + 3 * DAY, intervalDays: 6, ease: 2.6, repetitions: 2, lapses: 0 } },
   attempts: kind === "quiz" ? [{ attemptId: "studyAttempts:1", kind, score: 8, maxScore: 10, percent: 80, answers: [], startedAt: NOW - DAY, finishedAt: NOW - DAY }] : [],
 });
@@ -210,6 +213,9 @@ const kindFor: Record<string, "flashcards" | "quiz" | "test"> = {
   "study-quiz-feedback": "quiz",
   "study-test": "test",
   "study-test-score": "test",
+  "study-set-edit": "flashcards",
+  "study-set-edit-changed": "flashcards",
+  "study-set-share": "flashcards",
 };
 const setKind = kindFor[view] ?? "flashcards";
 const setFixture =
@@ -245,6 +251,12 @@ const calls: Record<string, unknown> = {
   "study.removeSet": { success: true, undoUntil: NOW + 5 * MIN },
   "study.restoreSet": { success: true },
   "study.registerBlock": "studySets:1",
+  // study-set-edit-changed: the page's block changed in another tab, so the save is refused.
+  "study.updateBlock":
+    view === "study-set-edit-changed"
+      ? { status: "changed", version: "v2-gallery" }
+      : { status: "saved", version: "v2-gallery", undoUntil: NOW + 5 * MIN },
+  "study.undoUpdate": { status: "saved", version: "v1-gallery", undoUntil: NOW + 5 * MIN },
 };
 
 // ---- The other screens this run built (calendar, plan, record, ingest, memory, reminders, share,
@@ -457,6 +469,25 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <StudySetScreen setId="studySets:4" />;
   },
   "study-test": () => <StudySetScreen setId="studySets:5" />,
+  // Edit a saved deck: the edit list in place of the deck, Save changes the one primary.
+  "study-set-edit": () => {
+    steps(click('[data-action="edit-set"]'));
+    return <StudySetScreen setId="studySets:1" />;
+  },
+  // A save refused because the block changed in its page meanwhile: said in words, with Reload.
+  "study-set-edit-changed": () => {
+    steps(
+      click('[data-action="edit-set"]'),
+      fill("#st-ed-c1-b", he ? "חלוקה לשני תאים זהים" : "Splitting into two identical cells"),
+      click('[data-action="save-edit"]'),
+    );
+    return <StudySetScreen setId="studySets:1" />;
+  },
+  // Share a saved deck: the set's ShareSheet (Markdown, and Anki for flashcards).
+  "study-set-share": () => {
+    steps(click('[data-action="share-set"]'));
+    return <StudySetScreen setId="studySets:1" />;
+  },
   "study-test-score": () => {
     steps(
       click('[data-component="TestRunner"] input[type="radio"]'),
