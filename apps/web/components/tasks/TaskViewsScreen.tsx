@@ -939,7 +939,7 @@ function TaskRow({
     editButtonRef.current?.focus();
   }, [editing]);
 
-  const named =(key: MessageKey) => fillSlot(t(key), "title", task.title);
+  const named = (key: MessageKey) => fillSlot(t(key), "title", task.title);
   // "{n} steps": the count stays a left-to-right number inside the sentence (DESIGN.md §10).
   const [stepsBefore, stepsAfter = ""] = t("tasks.steps").split("{n}");
 
