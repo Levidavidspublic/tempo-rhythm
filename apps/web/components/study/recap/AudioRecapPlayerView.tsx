@@ -11,6 +11,7 @@ import type { StudyT } from "../labels";
 import {
   BACK_SECONDS,
   FORWARD_SECONDS,
+  jumpTo,
   type ListenMode,
   listenHref,
   type PlayerAction,
@@ -229,7 +230,7 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
                   className="tp-recap__line"
                   data-action="recap-jump"
                   aria-current={current ? "true" : undefined}
-                  onClick={() => onAction({ type: "jump", index })}
+                  onClick={() => onAction(jumpTo(index, canPlay))}
                 >
                   {current ? <span className="tp-recap__now">{t("st.ls.now")}</span> : null}
                   <span dir="auto">{sentence.text}</span>

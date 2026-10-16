@@ -26,7 +26,8 @@ export type PlayerState = {
 export type PlayerAction =
   | { type: "play" }
   | { type: "pause" }
-  | { type: "jump"; index: number }
+  /** Move to a sentence; `play` starts reading from there (a transcript click when a voice is ready). */
+  | { type: "jump"; index: number; play?: boolean }
   | { type: "skip"; seconds: number; timeline: readonly TimelineEntry[] }
   /** The current sentence was read to the end. */
   | { type: "sentenceEnd"; count: number }
@@ -45,7 +46,13 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     case "pause":
       return state.playing ? { ...state, playing: false } : state;
     case "jump":
-      return { ...state, index: Math.max(0, Math.floor(action.index)), ended: false, speechError: false };
+      return {
+        ...state,
+        index: Math.max(0, Math.floor(action.index)),
+        playing: action.play ? true : state.playing,
+        ended: false,
+        speechError: false,
+      };
     case "skip": {
       const next = skip(action.timeline, state.index, action.seconds);
       return next < 0 ? state : { ...state, index: next, ended: false, speechError: false };
@@ -59,6 +66,11 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     case "rate":
       return { ...state, rate: action.rate };
   }
+}
+
+/** A transcript click: "Choose a sentence to play from there", so it plays when a voice is ready. */
+export function jumpTo(index: number, canPlay: boolean): PlayerAction {
+  return { type: "jump", index, play: canPlay };
 }
 
 /** Seconds into the reading: the sentence's start plus the time spent in it (never past its end). */

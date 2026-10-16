@@ -4,13 +4,19 @@
  * reducer and skip, the speed control's keys, the speech seam over a fake SpeechSynthesis, the
  * set screen's Listen link and the copy.
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 // react is only installed under apps/web (not the repo root), so import it from there.
-import { createElement, type ReactElement } from "../../../apps/web/node_modules/react";
+import { act, createElement, type ReactElement } from "../../../apps/web/node_modules/react";
+import { createRoot, type Root } from "../../../apps/web/node_modules/react-dom/client";
 import { renderToStaticMarkup } from "../../../apps/web/node_modules/react-dom/server";
 import { translate } from "../../../apps/web/lib/i18n";
 import { en, he } from "../../../apps/web/lib/i18n-groups/study";
+import type { SpeakOptions, SpeechEngine } from "../../../apps/web/components/study/recap/speech";
 import { buildRecap, estimateTimeline } from "../../../packages/core/recap";
+import { findAll, installTestDom, type TestNode, useTestDom } from "../record/testDom";
+
+// The small TestNode DOM (tests/unit/record/testDom) for the player's mounted tests below.
+const documentNode = installTestDom();
 
 const realLocale = await import("../../../apps/web/components/providers/LocaleProvider");
 mock.module("../../../apps/web/components/providers/LocaleProvider", () => ({
@@ -46,6 +52,7 @@ mock.module(goalsShared, () => {
 });
 
 const { AudioRecapPlayerView, rateForKey } = await import("../../../apps/web/components/study/recap/AudioRecapPlayerView");
+const { AudioRecapPlayer } = await import("../../../apps/web/components/study/recap/AudioRecapPlayer");
 const { ListenStates } = await import("../../../apps/web/components/study/recap/ListenScreen");
 const { StudySetView } = await import("../../../apps/web/components/study/StudySetView");
 const player = await import("../../../apps/web/components/study/recap/player");
@@ -238,6 +245,12 @@ describe("player state", () => {
     expect(state.rate).toBe(1.5);
     expect(playerReducer(state, { type: "pause" })).toBe(state);
   });
+  test("choosing a transcript sentence plays from there when a voice is ready, else only marks it", () => {
+    expect(playerReducer(initialPlayer, player.jumpTo(3, true))).toMatchObject({ index: 3, playing: true });
+    expect(playerReducer(initialPlayer, player.jumpTo(3, false))).toMatchObject({ index: 3, playing: false });
+    const ended = { ...initialPlayer, index: 4, ended: true };
+    expect(playerReducer(ended, player.jumpTo(1, true))).toMatchObject({ index: 1, playing: true, ended: false });
+  });
   test("a speech error pauses on the same sentence and says so; Play tries it again", () => {
     let state = playerReducer({ ...initialPlayer, index: 2, playing: true }, { type: "speechError" });
     expect(state).toMatchObject({ index: 2, playing: false, ended: false, speechError: true });
@@ -418,5 +431,71 @@ describe("ListenMenuItem", () => {
     expect(markup).toContain('role="menuitem"');
     expect(markup).toContain('href="/study/listen?from=n%207&amp;mode=recap"');
     expect(markup).toContain("Listen to a recap");
+  });
+});
+
+describe("the mounted player", () => {
+  let root: Root | null = null;
+  let host: TestNode | null = null;
+
+  async function mount(node: ReactElement) {
+    useTestDom(documentNode);
+    host = documentNode.createElement("div");
+    documentNode.body?.appendChild(host);
+    root = createRoot(host as unknown as HTMLElement);
+    await act(async () => {
+      root?.render(node);
+    });
+    return host;
+  }
+  async function rerender(node: ReactElement) {
+    await act(async () => {
+      root?.render(node);
+    });
+  }
+  async function click(node: TestNode | undefined) {
+    if (!node) throw new Error("nothing to click");
+    await act(async () => {
+      node.click();
+    });
+  }
+  const byAction = (view: TestNode, action: string) => findAll(view, (n) => n.getAttribute?.("data-action") === action);
+
+  afterEach(async () => {
+    await act(async () => {
+      root?.unmount();
+    });
+    if (host?.parentNode) host.parentNode.removeChild(host);
+    root = null;
+    host = null;
+  });
+
+  /** An engine that records what it was asked to say; the test ends sentences by hand. */
+  function recordingEngine() {
+    const said: { text: string; options: SpeakOptions; cancelled: boolean }[] = [];
+    const engine: SpeechEngine = {
+      available: () => true,
+      speak(text, options) {
+        const call = { text, options, cancelled: false };
+        said.push(call);
+        return {
+          cancel() {
+            call.cancelled = true;
+          },
+        };
+      },
+    };
+    return { engine, said };
+  }
+  const playerOf = (engine: SpeechEngine, body = PAGE) =>
+    createElement(AudioRecapPlayer, { noteId: "n1", title: "Cells", body, mode: "recap", engine });
+
+  test("choosing a transcript sentence plays from there", async () => {
+    const { engine, said } = recordingEngine();
+    const view = await mount(playerOf(engine));
+    expect(said).toEqual([]);
+    await click(byAction(view, "recap-jump")[2]);
+    expect(said.map((call) => call.text)).toEqual([sentences[2]?.text]);
+    expect(byAction(view, "recap-play")[0]?.getAttribute("aria-pressed")).toBe("true");
   });
 });
