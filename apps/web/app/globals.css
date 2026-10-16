@@ -872,3 +872,9 @@
 .today-pair { display: grid; gap: var(--tp-space-6); align-items: start; }
 @media (min-width: 1280px) { .today-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 767px) { .tp-page > .today-stack > .tp-pagehead { padding-inline: var(--tp-space-4); } }
+/* /coach side column: today's plan (CoachProposalCard). Layout only. */
+.cp-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+.cp-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.cp-body { display: grid; gap: var(--tp-space-3); padding: var(--tp-space-4); }
+.cp-lines { list-style: decimal; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); overflow-wrap: anywhere; }
+.cp-first { display: grid; gap: var(--tp-space-1); }
