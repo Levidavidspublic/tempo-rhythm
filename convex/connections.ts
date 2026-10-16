@@ -20,6 +20,7 @@ import {
   executorConfig,
   executorEnabled,
   isScopedMcpUrl,
+  publicHttpsUrl,
   siteOrigin,
 } from "./lib/connections/config";
 import {
@@ -27,6 +28,7 @@ import {
   decryptSecret,
   encryptSecret,
   loadConnectionsKey,
+  randomBase64Url,
   secretAad,
   sha256Hex,
 } from "./lib/connections/crypto";
@@ -49,35 +51,49 @@ import {
   revokeToken,
 } from "./lib/connections/oauth";
 import { coachMayRun, searchArgumentName } from "./lib/connections/policy";
+import { resolveUserFromIdentity } from "./lib/requireUser";
 
 /**
  * Connected accounts: a person's own Executor account (TEMPO-B07-07, #989). Design:
  * `docs/research/EXECUTOR-IN-TEMPO.md` §2–§5 (branch `t/977-executor-research`).
  *
- * Public contract (approved accounts only):
- * - `list()` and `status({ provider: "executor" })`: what the settings screen shows. Never a
- *   secret. Queries read no clock (C-26): a connect attempt counts as `connecting` while its
- *   pending row is live, and a scheduled `sweep` tombstones it when it expires.
- * - `startExecutorConnect({ returnTo? })`: discovery, client registration, PKCE; returns only
- *   the authorization URL.
- * - `disconnect({ provider: "executor" })`: revokes at Executor when it offers revocation, then
- *   scrubs every ciphertext Tempo holds, whatever the revoke said.
- * - The OAuth callback is `GET /connections/executor/callback` (connectionsHttp.ts).
+ * Public contract:
+ * - `list()` and `status({ provider: "executor" })` (approved accounts): what the settings
+ *   screen shows. Never a secret. Queries read no clock (C-26): a connect attempt, or new tokens
+ *   waiting for their owner's confirm, count as `connecting` while their row is live, and a
+ *   scheduled `sweep` retires them when they expire.
+ * - `startExecutorConnect({ returnTo? })` (approved accounts): discovery, client registration,
+ *   PKCE; returns only the authorization URL. Every attempt counts against the hourly limit
+ *   before anything is fetched.
+ * - `GET /connections/executor/callback` (connectionsHttp.ts): exchanges the code and stores the
+ *   encrypted tokens on a `pending_confirm` connection, then sends the browser to the app with
+ *   `?executor=confirm&n=<one-time nonce>`. Nothing can use those tokens yet.
+ * - `confirmExecutorConnect({ nonce })` (the signed-in person): the tokens become theirs only when
+ *   they are the person who started the connect, still approved, within 10 minutes; otherwise
+ *   the tokens are revoked at Executor and scrubbed. This ties the callback to the person: a link
+ *   someone else started can't put your Executor account on their Tempo account.
+ * - `disconnect({ provider: "executor" })` (the signed-in owner, approved or not): revokes at
+ *   Executor when it offers revocation, then scrubs every ciphertext, whatever the revoke said.
  * - The coach's "Look in my apps" lookup is `coach.lookUpInExecutor`; its Executor half is
  *   `searchExecutorFor` here.
  *
- * Tokens, codes, PKCE verifiers and client secrets are encrypted at rest
- * (lib/connections/crypto.ts), decrypted only inside actions, and never appear in a return value,
- * a query result, a log line, an error message or the redirect back to the web app. Log lines
- * name an error's class and kind only.
+ * Tokens, codes, PKCE verifiers, confirm nonces and client secrets are encrypted or hashed at
+ * rest, decrypted only inside actions, and never appear in a return value, a query result, a log
+ * line or an error message. The only secret-like value that leaves Convex is the confirm nonce,
+ * once, in the redirect to the browser that finished the OAuth step. Log lines name an error's
+ * class and kind only. Tokens Tempo stops holding (replaced, refused, dropped) are revoked at
+ * Executor first, best effort.
  *
  * When `TEMPO_EXECUTOR_ENABLED` is not `true`, or `EXECUTOR_MCP_URL`, `TEMPO_CONNECTIONS_KEY`,
- * `SITE_URL` or `CONVEX_SITE_URL` is missing or malformed, Executor is `unavailable`: nothing
- * calls out (no `fetch`). Disconnect and account deletion still scrub, without revoking.
+ * `SITE_URL` or `CONVEX_SITE_URL` is missing or malformed, Executor is `unavailable`: no connect
+ * and no lookup, and nothing fetched for them. Disconnect and account deletion still revoke (with
+ * the key and the stored revocation endpoint) and scrub.
  */
 
 /** A connect attempt lives this long (EXTRAPOLATED, doc §2.1 step 9). */
 export const PENDING_TTL_MS = 10 * 60_000;
+/** New tokens wait this long for their owner's confirm (the confirm nonce's life). */
+export const CONFIRM_TTL_MS = 10 * 60_000;
 /** Connect attempts per person per hour (EXTRAPOLATED, doc §4.6). */
 export const CONNECT_ATTEMPTS_PER_HOUR = 5;
 /** Executor calls per person per hour (EXTRAPOLATED, doc §4.6). */
@@ -87,9 +103,9 @@ export const HOUR_MS = 60 * 60_000;
 export const REFRESH_LEASE_MS = 30_000;
 /** Refresh before a call when the access token ends within this (doc §3.3). */
 export const REFRESH_EARLY_MS = 60_000;
-/** A connection still `revoking` this long after disconnect or account deletion is scrubbed by the sweep. */
+/** A connection still `revoking` this long after it was retired is scrubbed by the sweep. */
 export const REVOKE_GRACE_MS = HOUR_MS;
-/** Most rows one sweep run handles; a full batch schedules the next run at once. */
+/** Most rows one sweep run handles per kind; a full batch schedules the next run at once. */
 export const SWEEP_BATCH = 50;
 
 /** The MCP tool the coach's lookup runs (doc §4.3). */
@@ -113,12 +129,20 @@ export type PublicConnectionStatus =
   | "needs_reauth"
   | "unavailable";
 
+export type ConfirmStatus = "connected" | "expired" | "mismatch" | "error";
+
 const publicStatusValidator = v.union(
   v.literal("not_connected"),
   v.literal("connecting"),
   v.literal("connected"),
   v.literal("needs_reauth"),
   v.literal("unavailable"),
+);
+const confirmStatusValidator = v.union(
+  v.literal("connected"),
+  v.literal("expired"),
+  v.literal("mismatch"),
+  v.literal("error"),
 );
 const returnToValidator = v.union(v.literal("settings"), v.literal("coach"));
 const authMethodValidator = v.union(
@@ -192,17 +216,44 @@ export function connectionErrorKind(error: unknown): string {
   return error instanceof Error ? error.name : typeof error;
 }
 
+/**
+ * RFC 7009 revocation of tokens Tempo is about to stop holding, best effort: only when the
+ * client has a public revocation endpoint. True only when every revoke sent was confirmed.
+ */
+async function revokeAtProvider(
+  fetchImpl: FetchLike,
+  revocationEndpoint: string | undefined,
+  client: ClientCredentials,
+  tokens: Array<{ token: string | undefined; hint: "refresh_token" | "access_token" }>,
+): Promise<boolean> {
+  const endpoint = publicHttpsUrl(revocationEndpoint);
+  const held = tokens.filter((t): t is { token: string; hint: "refresh_token" | "access_token" } => Boolean(t.token));
+  if (!endpoint || held.length === 0) return false;
+  let all = true;
+  for (const { token, hint } of held) {
+    const ok = await revokeToken(fetchImpl, { revocationEndpoint: endpoint, client, token, tokenTypeHint: hint });
+    all = all && ok;
+  }
+  return all;
+}
+
 // ---------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------
 
-async function liveConnection(ctx: Reader, userId: Id<"users">): Promise<Doc<"connections"> | null> {
+/** The person's live connection rows: at most one usable, plus any waiting for a confirm. */
+async function liveConnections(ctx: Reader, userId: Id<"users">): Promise<Doc<"connections">[]> {
   return ctx.db
     .query("connections")
     .withIndex("by_userId_provider_deletedAt", (q) =>
       q.eq("userId", userId).eq("provider", EXECUTOR_PROVIDER).eq("deletedAt", undefined),
     )
-    .first();
+    .take(20);
+}
+
+/** The live connection that may be used (never one still waiting for its confirm). */
+async function activeConnection(ctx: Reader, userId: Id<"users">): Promise<Doc<"connections"> | null> {
+  return (await liveConnections(ctx, userId)).find((row) => row.status !== "pending_confirm") ?? null;
 }
 
 async function livePendingRows(ctx: Reader, userId: Id<"users">, limit: number) {
@@ -235,8 +286,11 @@ function derivedStatus(
 /** The person's Executor state as the public queries show it. `env` is for tests. */
 export async function executorView(ctx: Reader, userId: Id<"users">, env: Env = process.env) {
   const enabled = executorEnabled(env);
-  const connection = await liveConnection(ctx, userId);
-  const connecting = (await livePendingRows(ctx, userId, 1)).length > 0;
+  const rows = await liveConnections(ctx, userId);
+  const connection = rows.find((row) => row.status !== "pending_confirm") ?? null;
+  // A connect attempt in flight, or new tokens waiting for the person's confirm.
+  const connecting =
+    rows.some((row) => row.status === "pending_confirm") || (await livePendingRows(ctx, userId, 1)).length > 0;
   return {
     enabled,
     connection,
@@ -283,7 +337,8 @@ export const list = query({
 
 /**
  * The Executor connection's state. `enabled` is false when the deployment has Executor off or
- * misconfigured; the status is then `unavailable`.
+ * misconfigured; the status is then `unavailable`. Tokens waiting for the person's confirm show
+ * as `connecting`.
  */
 export const status = query({
   args: { provider: v.literal("executor") },
@@ -301,20 +356,64 @@ export const status = query({
 });
 
 // ---------------------------------------------------------------------------
+// Per-person limits
+// ---------------------------------------------------------------------------
+
+/**
+ * Counts one connect attempt or one Executor call in the person's fixed one-hour window
+ * (`connectionLimits`, one row per person). False when the window is full. The row is read even
+ * when tombstoned, so neither a reconnect nor a restored account resets the window.
+ */
+async function countInWindow(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  kind: "connect" | "call",
+  max: number,
+  now: number,
+): Promise<boolean> {
+  const row = await ctx.db
+    .query("connectionLimits")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .first();
+  const start = kind === "connect" ? row?.connectWindowStartMs : row?.callWindowStartMs;
+  const count = kind === "connect" ? row?.connectWindowCount : row?.callWindowCount;
+  const inWindow = start !== undefined && now - start < HOUR_MS;
+  const used = inWindow ? (count ?? 0) : 0;
+  if (used >= max) {
+    return false;
+  }
+  const windowStart = inWindow && start !== undefined ? start : now;
+  const fields =
+    kind === "connect"
+      ? { connectWindowStartMs: windowStart, connectWindowCount: used + 1 }
+      : { callWindowStartMs: windowStart, callWindowCount: used + 1 };
+  if (row) {
+    await ctx.db.patch(row._id, { ...fields, updatedAt: now });
+  } else {
+    await ctx.db.insert("connectionLimits", { userId, ...fields, createdAt: now, updatedAt: now });
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Connect
 // ---------------------------------------------------------------------------
 
-/** The approved caller and how many connect attempts they have left this hour. */
-export const connectContext = internalQuery({
-  args: { now: v.number() },
-  returns: v.object({ userId: v.id("users"), attemptsLeft: v.number() }),
-  handler: async (ctx, args) => {
+/**
+ * Counts one connect attempt for the approved caller before anything is fetched, so failing
+ * attempts (discovery, registration) are limited too. "rate_limited" past
+ * `CONNECT_ATTEMPTS_PER_HOUR` in the hour.
+ */
+export const reserveConnectAttempt = internalMutation({
+  args: {},
+  returns: v.union(
+    v.object({ status: v.literal("ok"), userId: v.id("users") }),
+    v.object({ status: v.literal("rate_limited") }),
+  ),
+  handler: async (ctx) => {
     const user = await requireApprovedUser(ctx);
-    const recent = await ctx.db
-      .query("oauthPending")
-      .withIndex("by_userId_createdAt", (q) => q.eq("userId", user._id).gte("createdAt", args.now - HOUR_MS))
-      .take(CONNECT_ATTEMPTS_PER_HOUR);
-    return { userId: user._id, attemptsLeft: Math.max(0, CONNECT_ATTEMPTS_PER_HOUR - recent.length) };
+    const ok = await countInWindow(ctx, user._id, "connect", CONNECT_ATTEMPTS_PER_HOUR, Date.now());
+    return ok ? { status: "ok" as const, userId: user._id } : { status: "rate_limited" as const };
   },
 });
 
@@ -327,7 +426,7 @@ const endpointsValidator = v.object({
 });
 
 /**
- * The shared OAuth client for an issuer and redirect URI. With an existing row: refreshes its
+ * The shared OAuth client for an issuer and redirect URI. With a live row: refreshes its
  * endpoints from today's metadata and returns it. Without one: inserts `registration` when given
  * (the first registration wins a race; a later one gets the stored row), else returns null.
  */
@@ -384,9 +483,24 @@ export const upsertOAuthClient = internalMutation({
 });
 
 /**
- * Saves one connect attempt (doc §2.1 step 9) and schedules the sweep for when it expires.
- * "rate_limited" when the person already started `CONNECT_ATTEMPTS_PER_HOUR` this hour.
+ * Retires a shared client the authorization server no longer knows (`invalid_client`), so the
+ * next connect registers a new one. A tombstone, not a delete; connections that used it need a
+ * reconnect.
  */
+export const retireOAuthClient = internalMutation({
+  args: { clientRowId: v.id("oauthClients") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.clientRowId);
+    if (row && row.deletedAt === undefined) {
+      const now = Date.now();
+      await ctx.db.patch(row._id, { deletedAt: now, updatedAt: now });
+    }
+    return null;
+  },
+});
+
+/** Saves one connect attempt (doc §2.1 step 9) and schedules the sweep for when it expires. */
 export const createPending = internalMutation({
   args: {
     userId: v.id("users"),
@@ -399,16 +513,9 @@ export const createPending = internalMutation({
     clientRowId: v.id("oauthClients"),
     returnTo: returnToValidator,
   },
-  returns: v.union(v.literal("created"), v.literal("rate_limited")),
+  returns: v.null(),
   handler: async (ctx, args) => {
     const now = Date.now();
-    const recent = await ctx.db
-      .query("oauthPending")
-      .withIndex("by_userId_createdAt", (q) => q.eq("userId", args.userId).gte("createdAt", now - HOUR_MS))
-      .take(CONNECT_ATTEMPTS_PER_HOUR);
-    if (recent.length >= CONNECT_ATTEMPTS_PER_HOUR) {
-      return "rate_limited" as const;
-    }
     const expiresAt = now + PENDING_TTL_MS;
     await ctx.db.insert("oauthPending", {
       userId: args.userId,
@@ -427,7 +534,7 @@ export const createPending = internalMutation({
     });
     // No cron (see `sweep`): the attempt schedules its own expiry.
     await ctx.scheduler.runAt(expiresAt + 1_000, internal.connections.sweep, {});
-    return "created" as const;
+    return null;
   },
 });
 
@@ -480,9 +587,10 @@ async function ensureClient(
 }
 
 /**
- * `startExecutorConnect` (doc §2.1 steps 3–10). Approval first, then the switch; with Executor
- * unavailable nothing is fetched. Failures throw `ConvexError` `{ code: "unavailable" |
- * "rate_limited" }` with Tempo's own words; the log line names the failed step's kind only.
+ * `startExecutorConnect` (doc §2.1 steps 3–10). Approval first, then the switch (with Executor
+ * unavailable nothing is fetched), then the attempt is counted; only then discovery. Failures
+ * throw `ConvexError` `{ code: "unavailable" | "rate_limited" }` with Tempo's own words; the log
+ * line names the failed step's kind only.
  */
 export async function startExecutorConnectFlow(
   ctx: Runner,
@@ -495,8 +603,8 @@ export async function startExecutorConnectFlow(
   if (!config || !key) {
     throw unavailableError();
   }
-  const context = await ctx.runQuery(internal.connections.connectContext, { now: deps.now() });
-  if (context.attemptsLeft <= 0) {
+  const attempt = await ctx.runMutation(internal.connections.reserveConnectAttempt, {});
+  if (attempt.status !== "ok") {
     throw rateLimitedError();
   }
   try {
@@ -513,10 +621,10 @@ export async function startExecutorConnectFlow(
     const state = createState();
     const pkce = await createPkce();
     const stateHash = await sha256Hex(state);
-    const created = await ctx.runMutation(internal.connections.createPending, {
-      userId: context.userId,
+    await ctx.runMutation(internal.connections.createPending, {
+      userId: attempt.userId,
       stateHash,
-      codeVerifierCipher: await encryptSecret(key, pkce.verifier, pendingAad(context.userId, stateHash)),
+      codeVerifierCipher: await encryptSecret(key, pkce.verifier, pendingAad(attempt.userId, stateHash)),
       keyVersion: CONNECTIONS_KEY_VERSION,
       issuer: metadata.issuer,
       resource: config.mcpUrl,
@@ -524,9 +632,6 @@ export async function startExecutorConnectFlow(
       clientRowId,
       returnTo: args.returnTo ?? "settings",
     });
-    if (created === "rate_limited") {
-      throw rateLimitedError();
-    }
     const scope = chooseScope(resource.resourceScope, metadata);
     return {
       authorizationUrl: buildAuthorizationUrl(metadata, {
@@ -553,24 +658,16 @@ export const startExecutorConnect = action({
 });
 
 // ---------------------------------------------------------------------------
-// Callback (connectionsHttp.ts)
+// Callback (connectionsHttp.ts) and confirm
 // ---------------------------------------------------------------------------
 
-/** Scrubs and tombstones a person's live connect attempts (all of them, or all but `keep`). */
-async function cancelPending(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-  now: number,
-  keep?: Id<"oauthPending">,
-): Promise<number> {
+/** Scrubs and tombstones a person's live connect attempts. */
+async function cancelPending(ctx: MutationCtx, userId: Id<"users">, now: number): Promise<number> {
   const rows = await livePendingRows(ctx, userId, 50);
-  let count = 0;
   for (const row of rows) {
-    if (row._id === keep) continue;
     await ctx.db.patch(row._id, { codeVerifierCipher: undefined, deletedAt: now, updatedAt: now });
-    count += 1;
   }
-  return count;
+  return rows.length;
 }
 
 /**
@@ -637,11 +734,13 @@ export const consumePending = internalMutation({
 });
 
 /**
- * Doc §2.4 step 7: stores the encrypted tokens and marks the connection `connected` (one live
- * row per person; a reconnect reuses it). Cancels any other open connect attempt. False when the
- * account is gone, inactive or no longer approved.
+ * Doc §2.4 step 7, made safe against a link someone else started: the encrypted tokens go on a
+ * new `pending_confirm` connection that nothing can use, with the SHA-256 of a one-time confirm
+ * nonce and a 10-minute life. The account's current connection is untouched until the confirm.
+ * Cancels any other open connect attempt and schedules the sweep for the nonce's expiry. False
+ * when the account is gone, inactive or no longer approved.
  */
-export const saveTokens = internalMutation({
+export const stageTokens = internalMutation({
   args: {
     userId: v.id("users"),
     issuer: v.string(),
@@ -652,6 +751,7 @@ export const saveTokens = internalMutation({
     refreshTokenCipher: v.optional(v.string()),
     accessTokenExpiresAt: v.optional(v.number()),
     keyVersion: v.number(),
+    confirmNonceHash: v.string(),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -660,65 +760,43 @@ export const saveTokens = internalMutation({
       return false;
     }
     const now = Date.now();
-    const existing = await liveConnection(ctx, args.userId);
-    const fields = {
-      status: "connected" as const,
+    const confirmExpiresAt = now + CONFIRM_TTL_MS;
+    const connectionId = await ctx.db.insert("connections", {
+      userId: args.userId,
+      provider: EXECUTOR_PROVIDER,
+      status: "pending_confirm",
       mcpUrl: args.mcpUrl,
       issuer: args.issuer,
       clientRowId: args.clientRowId,
       ...(args.scope ? { scope: args.scope } : {}),
       connectedAt: now,
+      confirmNonceHash: args.confirmNonceHash,
+      confirmExpiresAt,
+      createdAt: now,
       updatedAt: now,
-    };
-    let connectionId: Id<"connections">;
-    if (existing) {
-      connectionId = existing._id;
-      await ctx.db.patch(connectionId, {
-        ...fields,
-        scope: args.scope,
-        lastErrorAt: undefined,
-        refreshLeaseUntil: undefined,
-        refreshLeaseToken: undefined,
-      });
-    } else {
-      connectionId = await ctx.db.insert("connections", {
-        userId: args.userId,
-        provider: EXECUTOR_PROVIDER,
-        ...fields,
-        createdAt: now,
-      });
-    }
-    const secrets = {
+    });
+    await ctx.db.insert("connectionSecrets", {
+      userId: args.userId,
+      connectionId,
       accessTokenCipher: args.accessTokenCipher,
       ...(args.refreshTokenCipher ? { refreshTokenCipher: args.refreshTokenCipher } : {}),
       ...(args.accessTokenExpiresAt !== undefined ? { accessTokenExpiresAt: args.accessTokenExpiresAt } : {}),
       keyVersion: args.keyVersion,
+      createdAt: now,
       updatedAt: now,
-    };
-    const current = (await secretsOf(ctx, connectionId)).find((row) => row.deletedAt === undefined);
-    if (current) {
-      await ctx.db.patch(current._id, {
-        ...secrets,
-        refreshTokenCipher: args.refreshTokenCipher,
-        accessTokenExpiresAt: args.accessTokenExpiresAt,
-      });
-    } else {
-      await ctx.db.insert("connectionSecrets", {
-        userId: args.userId,
-        connectionId,
-        ...secrets,
-        createdAt: now,
-      });
-    }
+    });
     await cancelPending(ctx, args.userId, now);
+    await ctx.scheduler.runAt(confirmExpiresAt + 1_000, internal.connections.sweep, {});
     return true;
   },
 });
 
 /**
  * The callback (doc §2.4), as a plain function over a request so tests can drive it. Every
- * answer is `no-store` with no referrer, and every redirect goes to a fixed path on `SITE_URL`
- * with only `?executor=connected|denied|expired|error`: never a code, a state or a token.
+ * answer is `no-store` with no referrer, and every redirect goes to a fixed path on `SITE_URL`.
+ * Success sends `?executor=confirm&n=<nonce>`: the app then calls `confirmExecutorConnect` as the
+ * signed-in person. Failures send `?executor=denied|expired|error`. Never a code, a state or a
+ * token.
  */
 export async function handleExecutorCallback(
   ctx: Runner,
@@ -734,8 +812,11 @@ export async function handleExecutorCallback(
       headers: { ...headers, "Content-Type": "text/plain; charset=utf-8" },
     });
   }
-  const redirect = (returnTo: ReturnTo, result: "connected" | "denied" | "expired" | "error") =>
-    new Response(null, { status: 302, headers: { ...headers, Location: callbackRedirect(origin, returnTo, result) } });
+  const redirect = (returnTo: ReturnTo, result: "confirm" | "denied" | "expired" | "error", nonce?: string) =>
+    new Response(null, {
+      status: 302,
+      headers: { ...headers, Location: callbackRedirect(origin, returnTo, result, nonce) },
+    });
 
   const config = executorConfig(deps.env);
   const key = config ? await loadConnectionsKey(deps.env) : null;
@@ -754,7 +835,7 @@ export async function handleExecutorCallback(
   if (pending.status !== "ok") {
     return redirect(pending.returnTo ?? "settings", pending.status);
   }
-  const back = (result: "connected" | "denied" | "error") => redirect(pending.returnTo, result);
+  const back = (result: "denied" | "error") => redirect(pending.returnTo, result);
   // 3. `iss` (RFC 9207): plain string comparison with the recorded issuer; absent is refused
   // only when the server says it sends it.
   const iss = params.get("iss");
@@ -772,18 +853,29 @@ export async function handleExecutorCallback(
   }
   try {
     const codeVerifier = await decryptSecret(key, pending.codeVerifierCipher, pendingAad(pending.userId, pending.stateHash));
+    const client = await clientCredentials(key, pending.client);
     // 5–6. The exchange, with the verifier and `resource`; Bearer checked in readTokenResponse.
-    const tokens = await exchangeCode(deps.fetch, {
-      tokenEndpoint: pending.client.tokenEndpoint,
-      client: await clientCredentials(key, pending.client),
-      code,
-      redirectUri: pending.redirectUri,
-      codeVerifier,
-      resource: pending.resource,
-    });
-    // 7. Encrypt and save.
+    let tokens: Awaited<ReturnType<typeof exchangeCode>>;
+    try {
+      tokens = await exchangeCode(deps.fetch, {
+        tokenEndpoint: pending.client.tokenEndpoint,
+        client,
+        code,
+        redirectUri: pending.redirectUri,
+        codeVerifier,
+        resource: pending.resource,
+      });
+    } catch (error) {
+      if (error instanceof OAuthFlowError && error.kind === "invalid_client") {
+        // The server no longer knows Tempo's client: the next connect registers a new one.
+        await ctx.runMutation(internal.connections.retireOAuthClient, { clientRowId: pending.clientRowId });
+      }
+      throw error;
+    }
+    // 7. Encrypt and stage them until the person confirms.
+    const nonce = randomBase64Url(32);
     const now = deps.now();
-    const saved = await ctx.runMutation(internal.connections.saveTokens, {
+    const staged = await ctx.runMutation(internal.connections.stageTokens, {
       userId: pending.userId,
       issuer: pending.issuer,
       mcpUrl: pending.resource,
@@ -795,21 +887,136 @@ export async function handleExecutorCallback(
         : {}),
       ...(tokens.expiresIn !== undefined ? { accessTokenExpiresAt: now + tokens.expiresIn * 1000 } : {}),
       keyVersion: CONNECTIONS_KEY_VERSION,
+      confirmNonceHash: await sha256Hex(nonce),
     });
-    return back(saved ? "connected" : "error");
+    if (!staged) {
+      // Nobody may hold these tokens now: hand them back to Executor at once (best effort).
+      await revokeAtProvider(deps.fetch, pending.client.revocationEndpoint, client, [
+        { token: tokens.refreshToken, hint: "refresh_token" },
+        { token: tokens.accessToken, hint: "access_token" },
+      ]);
+      return back("error");
+    }
+    return redirect(pending.returnTo, "confirm", nonce);
   } catch (error) {
     console.error(`connections.callback: could not finish (${connectionErrorKind(error)})`);
     return back("error");
   }
 }
 
+/** The signed-in person, whatever their approval or active state; throws when signed out. */
+async function signedInPerson(ctx: MutationCtx): Promise<Doc<"users">> {
+  const identity = await ctx.auth.getUserIdentity();
+  const user = identity ? await resolveUserFromIdentity(ctx, identity) : null;
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+  return user;
+}
+
+/** Retires a connection row: `revoking`, tombstoned, nonce and lease dropped. Its revoke runs next. */
+async function retireConnection(ctx: MutationCtx, row: Doc<"connections">, now: number): Promise<void> {
+  await ctx.db.patch(row._id, {
+    status: "revoking",
+    confirmNonceHash: undefined,
+    confirmExpiresAt: undefined,
+    refreshLeaseUntil: undefined,
+    refreshLeaseToken: undefined,
+    deletedAt: row.deletedAt ?? now,
+    updatedAt: now,
+  });
+}
+
+/**
+ * The confirm (M2 of the #989 review). Finds the staged connection by the nonce's hash and spends
+ * the nonce whatever happens. "connected" only when the signed-in person started this connect,
+ * is still active and approved, and the nonce is under 10 minutes old; their previous connection
+ * (and any other staged one) is then retired for revoking. Otherwise the staged tokens are
+ * retired: "expired" (unknown, used or late nonce), "mismatch" (another person), "error" (the
+ * owner is no longer active or approved). `revoke` lists the rows the action revokes and scrubs.
+ */
+export const confirmStaged = internalMutation({
+  args: { nonceHash: v.string() },
+  returns: v.object({ status: confirmStatusValidator, revoke: v.array(v.id("connections")) }),
+  handler: async (ctx, args) => {
+    const user = await signedInPerson(ctx);
+    const row = await ctx.db
+      .query("connections")
+      .withIndex("by_confirmNonceHash", (q) => q.eq("confirmNonceHash", args.nonceHash))
+      .first();
+    if (!row || row.deletedAt !== undefined || row.status !== "pending_confirm") {
+      return { status: "expired" as const, revoke: [] };
+    }
+    const now = Date.now();
+    const refused: ConfirmStatus | null =
+      (row.confirmExpiresAt ?? 0) <= now
+        ? "expired"
+        : row.userId !== user._id
+          ? "mismatch"
+          : isInactiveAccount(user) || !isApproved(user)
+            ? "error"
+            : null;
+    if (refused) {
+      await retireConnection(ctx, row, now);
+      await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
+      return { status: refused, revoke: [row._id] };
+    }
+    const others = (await liveConnections(ctx, user._id)).filter((other) => other._id !== row._id);
+    for (const other of others) {
+      await retireConnection(ctx, other, now);
+    }
+    await ctx.db.patch(row._id, {
+      status: "connected",
+      connectedAt: now,
+      confirmNonceHash: undefined,
+      confirmExpiresAt: undefined,
+      lastErrorAt: undefined,
+      updatedAt: now,
+    });
+    if (others.length > 0) {
+      await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
+    }
+    return { status: "connected" as const, revoke: others.map((other) => other._id) };
+  },
+});
+
+/** `confirmExecutorConnect` as a plain function over its seams, for tests. */
+export async function confirmExecutorConnectFlow(
+  ctx: Runner,
+  args: { nonce: string },
+  deps: ConnectionDeps,
+): Promise<{ status: ConfirmStatus }> {
+  const nonce = args.nonce.trim();
+  if (!/^[A-Za-z0-9_-]{16,128}$/.test(nonce)) {
+    return { status: "expired" };
+  }
+  const result = await ctx.runMutation(internal.connections.confirmStaged, { nonceHash: await sha256Hex(nonce) });
+  // Refused tokens, and the connection a confirm replaced, are revoked at Executor and scrubbed.
+  for (const connectionId of result.revoke) {
+    await revokeAndScrub(ctx, connectionId, deps);
+  }
+  return { status: result.status };
+}
+
+/**
+ * The app calls this with `n` from `?executor=confirm&n=<nonce>`, as the signed-in person. Returns
+ * `{ status: "connected" | "expired" | "mismatch" | "error" }`; on anything but "connected" the
+ * new tokens are already revoked and scrubbed. Throws only when nobody is signed in.
+ */
+export const confirmExecutorConnect = action({
+  args: { nonce: v.string() },
+  returns: v.object({ status: confirmStatusValidator }),
+  handler: async (ctx, args): Promise<{ status: ConfirmStatus }> =>
+    confirmExecutorConnectFlow(ctx, args, defaultConnectionDeps()),
+});
+
 // ---------------------------------------------------------------------------
 // Calls: tokens, refresh, rate limit, audit
 // ---------------------------------------------------------------------------
 
 /**
- * What one Executor call needs (doc §5.4 `secretsForCall`): the live connection, its
- * ciphertexts (decrypted in the action) and the OAuth client. Internal only.
+ * What one Executor call needs (doc §5.4 `secretsForCall`): the usable connection (never one
+ * waiting for its confirm), its ciphertexts (decrypted in the action) and the OAuth client.
  */
 export const secretsForCall = internalQuery({
   args: { userId: v.id("users") },
@@ -827,7 +1034,7 @@ export const secretsForCall = internalQuery({
     }),
   ),
   handler: async (ctx, args) => {
-    const connection = await liveConnection(ctx, args.userId);
+    const connection = await activeConnection(ctx, args.userId);
     if (!connection || (connection.status !== "connected" && connection.status !== "unavailable")) {
       return connection?.status === "needs_reauth"
         ? { status: "needs_reauth" as const }
@@ -851,8 +1058,8 @@ export const secretsForCall = internalQuery({
 });
 
 /**
- * Counts one call against the person's `CALLS_PER_HOUR` window (on the connection row, like
- * `mcpTokens`). "gone" when the connection is no longer live and usable.
+ * Counts one call against the person's `CALLS_PER_HOUR` window (`connectionLimits`, per person,
+ * so a reconnect does not reset it). "gone" when the connection is no longer live and usable.
  */
 export const reserveCall = internalMutation({
   args: { connectionId: v.id("connections") },
@@ -862,18 +1069,8 @@ export const reserveCall = internalMutation({
     if (!row || row.deletedAt !== undefined || (row.status !== "connected" && row.status !== "unavailable")) {
       return "gone" as const;
     }
-    const now = Date.now();
-    const inWindow = row.windowStartMs !== undefined && now - row.windowStartMs < HOUR_MS;
-    const used = inWindow ? (row.windowCount ?? 0) : 0;
-    if (used >= CALLS_PER_HOUR) {
-      return "rate_limited" as const;
-    }
-    await ctx.db.patch(row._id, {
-      windowStartMs: inWindow ? row.windowStartMs : now,
-      windowCount: used + 1,
-      updatedAt: now,
-    });
-    return "ok" as const;
+    const ok = await countInWindow(ctx, row.userId, "call", CALLS_PER_HOUR, Date.now());
+    return ok ? ("ok" as const) : ("rate_limited" as const);
   },
 });
 
@@ -956,15 +1153,15 @@ export const storeRefreshed = internalMutation({
 
 /**
  * `needs_reauth` (refresh refused, a second 401, a changed MCP URL, unreadable ciphertexts) scrubs
- * the tokens: they no longer work, and reconnecting issues new ones. `unavailable` (timeout,
- * 5xx) keeps them; the next success sets `connected` again.
+ * the tokens; the caller revokes them at Executor first when it can. `unavailable` (timeout, 5xx)
+ * keeps them; the next success sets `connected` again.
  */
 export const markStatus = internalMutation({
   args: { connectionId: v.id("connections"), status: v.union(v.literal("needs_reauth"), v.literal("unavailable")) },
   returns: v.null(),
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.connectionId);
-    if (!row || row.deletedAt !== undefined || row.status === "needs_reauth") {
+    if (!row || row.deletedAt !== undefined || row.status === "needs_reauth" || row.status === "pending_confirm") {
       return null;
     }
     const now = Date.now();
@@ -1083,9 +1280,10 @@ async function runSearch(fetchImpl: FetchLike, mcpUrl: string, accessToken: stri
 /**
  * The Executor half of "Look in my apps" (doc §4.3): approval and the conversation are the
  * caller's (`coach.runExecutorLookup`). With Executor unavailable nothing is fetched. Then: the
- * live connection, the per-person limit, a refresh if the token is about to end (one at a time),
- * one `search` with a 15-second deadline, one retry on a network error, one refresh-and-retry on
- * a 401, and an audit row. Only a summary of the answer comes back: no raw results.
+ * usable connection, the per-person limit, a refresh if the token is about to end (one at a
+ * time), one `search` with a 15-second deadline, one retry on a network error, one
+ * refresh-and-retry on a 401, and an audit row. Tokens dropped for `needs_reauth` are revoked at
+ * Executor first (best effort). Only a summary of the answer comes back: no raw results.
  */
 export async function searchExecutorFor(
   ctx: Runner,
@@ -1103,19 +1301,6 @@ export async function searchExecutorFor(
     return { status: material.status };
   }
   const connectionId = material.connectionId;
-  const reauth = async (): Promise<ExecutorSearchOutcome> => {
-    await ctx.runMutation(internal.connections.markStatus, { connectionId, status: "needs_reauth" });
-    return { status: "needs_reauth" };
-  };
-  if (material.mcpUrl !== config.mcpUrl) {
-    // Tokens are bound to the URL they were issued for (doc §1.5): a new URL needs a reconnect.
-    return reauth();
-  }
-  const reserved = await ctx.runMutation(internal.connections.reserveCall, { connectionId });
-  if (reserved !== "ok") {
-    return { status: reserved === "rate_limited" ? "rate_limited" : "not_connected" };
-  }
-
   const started = deps.now();
   const inputDigest = await sha256Hex(JSON.stringify({ tool: SEARCH_TOOL, arguments: { query } }));
   const audit = (
@@ -1132,13 +1317,6 @@ export async function searchExecutorFor(
       ...(resultBytes !== undefined ? { resultBytes } : {}),
       durationMs: Math.max(0, deps.now() - started),
     });
-  const unavailable = async (outcome: "error" | "timeout", markConnection: boolean): Promise<ExecutorSearchOutcome> => {
-    if (markConnection) {
-      await ctx.runMutation(internal.connections.markStatus, { connectionId, status: "unavailable" });
-    }
-    await audit("auto", outcome);
-    return { status: "unavailable" };
-  };
 
   let accessToken: string | undefined;
   let refreshToken: string | undefined;
@@ -1152,10 +1330,37 @@ export async function searchExecutorFor(
       : undefined;
     client = await clientCredentials(key, material.client);
   } catch (error) {
-    // Unreadable ciphertexts (for example a changed key): the person reconnects.
+    // Unreadable ciphertexts (for example a changed key): nothing to revoke; the person reconnects.
     console.error(`connections.search: tokens could not be read (${connectionErrorKind(error)})`);
     await audit("auto", "unauthorized");
+    await ctx.runMutation(internal.connections.markStatus, { connectionId, status: "needs_reauth" });
+    return { status: "needs_reauth" };
+  }
+
+  /** Revoke what Tempo still holds (best effort), then drop it: the person signs in again. */
+  const reauth = async (): Promise<ExecutorSearchOutcome> => {
+    await revokeAtProvider(deps.fetch, material.client.revocationEndpoint, client, [
+      { token: refreshToken, hint: "refresh_token" },
+      { token: accessToken, hint: "access_token" },
+    ]);
+    await ctx.runMutation(internal.connections.markStatus, { connectionId, status: "needs_reauth" });
+    return { status: "needs_reauth" };
+  };
+  const unavailable = async (outcome: "error" | "timeout", markConnection: boolean): Promise<ExecutorSearchOutcome> => {
+    if (markConnection) {
+      await ctx.runMutation(internal.connections.markStatus, { connectionId, status: "unavailable" });
+    }
+    await audit("auto", outcome);
+    return { status: "unavailable" };
+  };
+
+  if (material.mcpUrl !== config.mcpUrl) {
+    // Tokens are bound to the URL they were issued for (doc §1.5): a new URL needs a reconnect.
     return reauth();
+  }
+  const reserved = await ctx.runMutation(internal.connections.reserveCall, { connectionId });
+  if (reserved !== "ok") {
+    return { status: reserved === "rate_limited" ? "rate_limited" : "not_connected" };
   }
 
   /** A fresh access token, or the outcome to stop with. */
@@ -1179,7 +1384,14 @@ export async function searchExecutorFor(
     } catch (error) {
       await ctx.runMutation(internal.connections.releaseRefresh, { connectionId, leaseToken: lease.leaseToken });
       console.error(`connections.search: the refresh failed (${connectionErrorKind(error)})`);
-      if (error instanceof OAuthFlowError && (error.kind === "invalid_grant" || error.kind === "invalid_client")) {
+      if (error instanceof OAuthFlowError && error.kind === "invalid_client") {
+        // The server no longer knows Tempo's client: retire it so the next connect registers again.
+        const clientRow = await ctx.runQuery(internal.connections.clientRowOf, { connectionId });
+        if (clientRow) await ctx.runMutation(internal.connections.retireOAuthClient, { clientRowId: clientRow });
+        await audit("auto", "unauthorized");
+        return reauth();
+      }
+      if (error instanceof OAuthFlowError && error.kind === "invalid_grant") {
         await audit("auto", "unauthorized");
         return reauth();
       }
@@ -1265,6 +1477,13 @@ export async function searchExecutorFor(
   }
 }
 
+/** The OAuth client row a connection uses. */
+export const clientRowOf = internalQuery({
+  args: { connectionId: v.id("connections") },
+  returns: v.union(v.null(), v.id("oauthClients")),
+  handler: async (ctx, args) => (await ctx.db.get(args.connectionId))?.clientRowId ?? null,
+});
+
 // ---------------------------------------------------------------------------
 // Disconnect, account deletion, sweep
 // ---------------------------------------------------------------------------
@@ -1292,6 +1511,8 @@ async function scrubConnection(
   await ctx.db.patch(connection._id, {
     status: "disconnected",
     revokedAtProvider,
+    confirmNonceHash: undefined,
+    confirmExpiresAt: undefined,
     refreshLeaseUntil: undefined,
     refreshLeaseToken: undefined,
     deletedAt: connection.deletedAt ?? now,
@@ -1311,30 +1532,27 @@ async function scrubConnection(
 }
 
 /**
- * Disconnect step 1 (doc §2.5): the live connection becomes `revoking` and is tombstoned at once
- * (the person sees "not connected"), open connect attempts are cancelled, and the sweep is
- * scheduled in case the revoke never finishes. Null when there is nothing to disconnect.
+ * Disconnect step 1 (doc §2.5), for the signed-in owner whatever their approval (a revoked or
+ * deactivated person can still take their tokens back). Every live connection row, including one
+ * waiting for its confirm, becomes `revoking` and is tombstoned at once (the person sees "not
+ * connected"); open connect attempts are cancelled; the sweep is scheduled in case a revoke never
+ * finishes. A deleted account has nothing live left (account deletion retired it).
  */
 export const beginDisconnect = internalMutation({
   args: {},
-  returns: v.union(v.null(), v.object({ connectionId: v.id("connections") })),
+  returns: v.array(v.id("connections")),
   handler: async (ctx) => {
-    const user = await requireApprovedUser(ctx);
+    const user = await signedInPerson(ctx);
     const now = Date.now();
     await cancelPending(ctx, user._id, now);
-    const connection = await liveConnection(ctx, user._id);
-    if (!connection) {
-      return null;
+    const rows = await liveConnections(ctx, user._id);
+    for (const row of rows) {
+      await retireConnection(ctx, row, now);
     }
-    await ctx.db.patch(connection._id, {
-      status: "revoking",
-      refreshLeaseUntil: undefined,
-      refreshLeaseToken: undefined,
-      deletedAt: now,
-      updatedAt: now,
-    });
-    await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
-    return { connectionId: connection._id };
+    if (rows.length > 0) {
+      await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
+    }
+    return rows.map((row) => row._id);
   },
 });
 
@@ -1368,7 +1586,7 @@ export const revokeMaterial = internalQuery({
   },
 });
 
-/** Disconnect's last step: scrub, whatever the revoke said. Only a `revoking` connection. */
+/** A revoke's last step: scrub, whatever the revoke said. Only a `revoking` connection. */
 export const finishRevoke = internalMutation({
   args: { connectionId: v.id("connections"), revokedAtProvider: v.boolean() },
   returns: v.null(),
@@ -1382,37 +1600,32 @@ export const finishRevoke = internalMutation({
 });
 
 /**
- * Revokes the refresh token, then the access token, at Executor's revocation endpoint (RFC 7009,
- * 5 s each) when Executor is available and offers one; then scrubs. True only when every revoke
- * Tempo sent was confirmed.
+ * Revokes the refresh token, then the access token, at the client's revocation endpoint (RFC
+ * 7009, 5 s each) when the key is set and Executor offers one; then scrubs. Runs even with
+ * `TEMPO_EXECUTOR_ENABLED` off: the switch stops new connects and lookups, not giving tokens back.
+ * True only when every revoke sent was confirmed.
  */
 async function revokeAndScrub(ctx: Runner, connectionId: Id<"connections">, deps: ConnectionDeps): Promise<boolean> {
   const material = await ctx.runQuery(internal.connections.revokeMaterial, { connectionId });
   let revoked = false;
-  const config = executorConfig(deps.env);
-  const key = material && config ? await loadConnectionsKey(deps.env) : null;
-  const endpoint = material?.client?.revocationEndpoint;
-  if (material?.client && key && endpoint) {
+  const key = material?.client ? await loadConnectionsKey(deps.env) : null;
+  if (material?.client && key) {
     try {
       const client = await clientCredentials(key, material.client);
-      const tokens: Array<{ token: string; hint: "refresh_token" | "access_token" }> = [];
-      if (material.refreshTokenCipher) {
-        tokens.push({
-          token: await decryptSecret(key, material.refreshTokenCipher, tokenAad(material.userId, "refreshToken")),
+      revoked = await revokeAtProvider(deps.fetch, material.client.revocationEndpoint, client, [
+        {
+          token: material.refreshTokenCipher
+            ? await decryptSecret(key, material.refreshTokenCipher, tokenAad(material.userId, "refreshToken"))
+            : undefined,
           hint: "refresh_token",
-        });
-      }
-      if (material.accessTokenCipher) {
-        tokens.push({
-          token: await decryptSecret(key, material.accessTokenCipher, tokenAad(material.userId, "accessToken")),
+        },
+        {
+          token: material.accessTokenCipher
+            ? await decryptSecret(key, material.accessTokenCipher, tokenAad(material.userId, "accessToken"))
+            : undefined,
           hint: "access_token",
-        });
-      }
-      revoked = tokens.length > 0;
-      for (const { token, hint } of tokens) {
-        const ok = await revokeToken(deps.fetch, { revocationEndpoint: endpoint, client, token, tokenTypeHint: hint });
-        revoked = revoked && ok;
-      }
+        },
+      ]);
     } catch (error) {
       console.error(`connections.revoke: could not revoke (${connectionErrorKind(error)})`);
       revoked = false;
@@ -1427,12 +1640,13 @@ export async function disconnectFlow(
   ctx: Runner,
   deps: ConnectionDeps,
 ): Promise<{ status: "disconnected"; revokedAtProvider: boolean }> {
-  await requireApprovedForAi(ctx as ActionCtx);
-  const begun = await ctx.runMutation(internal.connections.beginDisconnect, {});
-  if (!begun) {
-    return { status: "disconnected", revokedAtProvider: false };
+  const retired = await ctx.runMutation(internal.connections.beginDisconnect, {});
+  let revokedAtProvider = retired.length > 0;
+  for (const connectionId of retired) {
+    const revoked = await revokeAndScrub(ctx, connectionId, deps);
+    revokedAtProvider = revokedAtProvider && revoked;
   }
-  return { status: "disconnected", revokedAtProvider: await revokeAndScrub(ctx, begun.connectionId, deps) };
+  return { status: "disconnected", revokedAtProvider };
 }
 
 export const disconnect = action({
@@ -1442,16 +1656,26 @@ export const disconnect = action({
     disconnectFlow(ctx, defaultConnectionDeps()),
 });
 
-/** The person's connections that account deletion marked `revoking`. */
+/** One retired connection's revoke and scrub, scheduled by the sweep for expired confirms. */
+export const revokeConnection = internalAction({
+  args: { connectionId: v.id("connections") },
+  returns: v.null(),
+  handler: async (ctx, args): Promise<null> => {
+    await revokeAndScrub(ctx, args.connectionId, defaultConnectionDeps());
+    return null;
+  },
+});
+
+/** The person's connections waiting for a revoke, through `by_userId_status` (no scan limit). */
 export const revokingConnections = internalQuery({
   args: { userId: v.id("users") },
   returns: v.array(v.id("connections")),
   handler: async (ctx, args) => {
     const rows = await ctx.db
       .query("connections")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .take(50);
-    return rows.filter((row) => row.status === "revoking").map((row) => row._id);
+      .withIndex("by_userId_status", (q) => q.eq("userId", args.userId).eq("status", "revoking"))
+      .take(SWEEP_BATCH);
+    return rows.map((row) => row._id);
   },
 });
 
@@ -1483,11 +1707,11 @@ export const revokeForAccountDeletion = internalAction({
  * schedules the revoke now and the sweep for when the grace hour is over.
  */
 export async function scheduleConnectionRevokes(ctx: MutationCtx, userId: Id<"users">): Promise<boolean> {
-  const rows = await ctx.db
+  const revoking = await ctx.db
     .query("connections")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .take(50);
-  if (!rows.some((row) => row.status === "revoking")) {
+    .withIndex("by_userId_status", (q) => q.eq("userId", userId).eq("status", "revoking"))
+    .first();
+  if (!revoking) {
     return false;
   }
   await ctx.scheduler.runAfter(0, internal.connections.revokeForAccountDeletion, { userId });
@@ -1496,16 +1720,18 @@ export async function scheduleConnectionRevokes(ctx: MutationCtx, userId: Id<"us
 }
 
 /**
- * The sweep (doc §5.4): scrubs expired connect attempts and connections still `revoking` an hour
- * after disconnect or account deletion. Bounded; a full batch runs again at once. Idempotent.
+ * The sweep (doc §5.4), idempotent and bounded (a full batch runs again at once):
+ * - expired connect attempts lose their verifier and are tombstoned;
+ * - tokens whose confirm never came are retired and their revoke is scheduled;
+ * - connections still `revoking` an hour after they were retired are scrubbed without a revoke.
  *
  * Not a cron: `convex/pageCleanup.test.ts` holds the app to exactly one cron job, so each connect
- * attempt schedules the sweep for its own expiry and each disconnect or account deletion for the
- * end of its grace hour. The effect matches an hourly sweep for every row that needs one.
+ * attempt and each staged confirm schedules the sweep for its own expiry, and each retirement for
+ * the end of its grace hour. The effect matches an hourly sweep for every row that needs one.
  */
 export const sweep = internalMutation({
   args: {},
-  returns: v.object({ pendingScrubbed: v.number(), connectionsScrubbed: v.number() }),
+  returns: v.object({ pendingScrubbed: v.number(), confirmsExpired: v.number(), connectionsScrubbed: v.number() }),
   handler: async (ctx) => {
     const now = Date.now();
     const expired = await ctx.db
@@ -1515,6 +1741,19 @@ export const sweep = internalMutation({
     for (const row of expired) {
       await ctx.db.patch(row._id, { codeVerifierCipher: undefined, deletedAt: now, updatedAt: now });
     }
+    const unconfirmed = (
+      await ctx.db
+        .query("connections")
+        .withIndex("by_status_updatedAt", (q) => q.eq("status", "pending_confirm").lt("updatedAt", now - CONFIRM_TTL_MS + 1))
+        .take(SWEEP_BATCH)
+    ).filter((row) => (row.confirmExpiresAt ?? 0) <= now);
+    for (const row of unconfirmed) {
+      await retireConnection(ctx, row, now);
+      await ctx.scheduler.runAfter(0, internal.connections.revokeConnection, { connectionId: row._id });
+    }
+    if (unconfirmed.length > 0) {
+      await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
+    }
     const stuck = await ctx.db
       .query("connections")
       .withIndex("by_status_updatedAt", (q) => q.eq("status", "revoking").lt("updatedAt", now - REVOKE_GRACE_MS))
@@ -1522,9 +1761,9 @@ export const sweep = internalMutation({
     for (const connection of stuck) {
       await scrubConnection(ctx, connection, now, false);
     }
-    if (expired.length === SWEEP_BATCH || stuck.length === SWEEP_BATCH) {
+    if (expired.length === SWEEP_BATCH || unconfirmed.length === SWEEP_BATCH || stuck.length === SWEEP_BATCH) {
       await ctx.scheduler.runAfter(0, internal.connections.sweep, {});
     }
-    return { pendingScrubbed: expired.length, connectionsScrubbed: stuck.length };
+    return { pendingScrubbed: expired.length, confirmsExpired: unconfirmed.length, connectionsScrubbed: stuck.length };
   },
 });

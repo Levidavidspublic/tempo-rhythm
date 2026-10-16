@@ -943,16 +943,20 @@ export default defineSchema({
   /**
    * TEMPO-B07-07 (#989) — a person's connection to their own Executor account (research doc
    * `docs/research/EXECUTOR-IN-TEMPO.md` §5.1). No secrets here: tokens live in
-   * `connectionSecrets`, read only by internal functions. One live row per person and provider.
-   * `revoking` and `disconnected` rows are tombstoned (`deletedAt`); a `revoking` row still has
-   * ciphertexts in `connectionSecrets` until the revoke finishes or the sweep scrubs them.
-   * `windowStartMs` / `windowCount` back the per-person call limit; `refreshLease*` makes one
-   * token refresh run at a time.
+   * `connectionSecrets`, read only by internal functions. At most one live usable row per person
+   * and provider (`connected`, `needs_reauth` or `unavailable`). The OAuth callback stores new
+   * tokens on a `pending_confirm` row, which nothing can use until the signed-in owner confirms it
+   * with the one-time nonce (only its SHA-256 is stored, `confirmNonceHash`, alive until
+   * `confirmExpiresAt`); confirming retires the previous row. `revoking` and `disconnected` rows
+   * are tombstoned (`deletedAt`); a `revoking` row still has ciphertexts in `connectionSecrets`
+   * until the revoke finishes or the sweep scrubs them. `refreshLease*` makes one token refresh run
+   * at a time. The per-person limits live in `connectionLimits`, so a reconnect does not reset them.
    */
   connections: defineTable({
     userId: v.id("users"),
     provider: v.literal("executor"),
     status: v.union(
+      v.literal("pending_confirm"),
       v.literal("connected"),
       v.literal("needs_reauth"),
       v.literal("unavailable"),
@@ -969,8 +973,9 @@ export default defineSchema({
     connectedAt: v.number(),
     lastUsedAt: v.optional(v.number()),
     lastErrorAt: v.optional(v.number()),
-    windowStartMs: v.optional(v.number()),
-    windowCount: v.optional(v.number()),
+    /** `pending_confirm` only: SHA-256 hex of the one-time confirm nonce. Cleared once used. */
+    confirmNonceHash: v.optional(v.string()),
+    confirmExpiresAt: v.optional(v.number()),
     refreshLeaseUntil: v.optional(v.number()),
     refreshLeaseToken: v.optional(v.string()),
     /** Set when a disconnect or account deletion finishes: whether Executor confirmed the revoke. */
@@ -980,8 +985,26 @@ export default defineSchema({
     deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
+    .index("by_userId_status", ["userId", "status"])
     .index("by_userId_provider_deletedAt", ["userId", "provider", "deletedAt"])
-    .index("by_status_updatedAt", ["status", "updatedAt"]),
+    .index("by_status_updatedAt", ["status", "updatedAt"])
+    .index("by_confirmNonceHash", ["confirmNonceHash"]),
+
+  /**
+   * TEMPO-B07-07 (#989) — one row per person: the fixed-window counters for Executor connect
+   * attempts and lookups. Per person, not per connection, so disconnecting and reconnecting does
+   * not reset them. Read even when tombstoned, so a restored account does not get a fresh window.
+   */
+  connectionLimits: defineTable({
+    userId: v.id("users"),
+    connectWindowStartMs: v.optional(v.number()),
+    connectWindowCount: v.optional(v.number()),
+    callWindowStartMs: v.optional(v.number()),
+    callWindowCount: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  }).index("by_userId", ["userId"]),
 
   /**
    * TEMPO-B07-07 (#989) — encrypted tokens for one connection (AES-256-GCM, key from
@@ -1057,7 +1080,6 @@ export default defineSchema({
     .index("by_stateHash", ["stateHash"])
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"])
-    .index("by_userId_createdAt", ["userId", "createdAt"])
     .index("by_deletedAt_expiresAt", ["deletedAt", "expiresAt"]),
 
   /**

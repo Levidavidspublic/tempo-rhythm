@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
+import { publicHttpsUrl } from "./config";
 import { FAKE, SECRETS, fakeExecutor } from "./fakeExecutor.testkit";
 import {
   type AuthServerMetadata,
@@ -131,6 +132,69 @@ describe("discovery", () => {
   });
 });
 
+describe("m7: discovered URLs are held to public https (SSRF guard)", () => {
+  test("publicHttpsUrl refuses IP literals, localhost, private names, other ports, credentials and http", () => {
+    for (const refused of [
+      "http://auth.executor.test/x",
+      "https://127.0.0.1/x",
+      "https://0x7f000001/x",
+      "https://2130706433/x",
+      "https://169.254.169.254/latest/meta-data",
+      "https://10.0.0.5/token",
+      "https://[::1]/x",
+      "https://[fd00::1]/x",
+      "https://localhost/x",
+      "https://api.localhost/x",
+      "https://intranet-host/x",
+      "https://metadata.google.internal/x",
+      "https://printer.local/x",
+      "https://router.home.arpa/x",
+      "https://auth.executor.test:8443/x",
+      "https://user:pass@auth.executor.test/x",
+      "https://auth.executor.test/x#frag",
+      "not a url",
+    ]) {
+      expect(publicHttpsUrl(refused)).toBeNull();
+    }
+    expect(publicHttpsUrl("https://auth.executor.test/oauth2/token")).toBe("https://auth.executor.test/oauth2/token");
+    expect(publicHttpsUrl("https://mcp.executor.sh/mcp?connection=abc")).toBe("https://mcp.executor.sh/mcp?connection=abc");
+  });
+
+  test("a challenge naming a private or IP-literal metadata URL is refused, and that URL is never fetched", async () => {
+    for (const named of [
+      "https://169.254.169.254/latest/meta-data",
+      "https://localhost/.well-known/oauth-protected-resource",
+      "https://metadata.google.internal/computeMetadata",
+      "http://mcp.executor.test/.well-known/oauth-protected-resource/mcp",
+    ]) {
+      const executor = fakeExecutor({ challengeResourceMetadata: named });
+      expect((await failure(() => discoverProtectedResource(executor.fetch, FAKE.mcpUrl))).kind).toBe("discovery");
+      expect(executor.calls.map((c) => c.url)).toEqual([FAKE.mcpUrl]);
+    }
+  });
+
+  test("an authorization server or endpoint on a private address is refused before it is called", async () => {
+    const issuerOnIp = fakeExecutor({ authorizationServer: "https://127.0.0.1" });
+    expect((await failure(() => discoverProtectedResource(issuerOnIp.fetch, FAKE.mcpUrl))).kind).toBe("discovery");
+    expect((await failure(() => fetchAuthServerMetadata(issuerOnIp.fetch, "https://127.0.0.1"))).kind).toBe("discovery");
+    expect(issuerOnIp.calls.some((c) => c.url.includes("127.0.0.1"))).toBe(false);
+
+    const tokenOnLocalhost = fakeExecutor({ tokenEndpoint: "https://localhost/token" });
+    expect((await failure(() => fetchAuthServerMetadata(tokenOnLocalhost.fetch, FAKE.issuer))).kind).toBe("discovery");
+  });
+
+  test("metadata requests refuse redirects; the unauthenticated probe does not follow one", async () => {
+    const executor = fakeExecutor();
+    const found = await discoverProtectedResource(executor.fetch, FAKE.mcpUrl);
+    await fetchAuthServerMetadata(executor.fetch, found.issuer);
+    expect(executor.calls.map((c) => [c.method, c.redirect])).toEqual([
+      ["POST", "manual"],
+      ["GET", "error"],
+      ["GET", "error"],
+    ]);
+  });
+});
+
 describe("registration, PKCE and the authorization URL", () => {
   test("Dynamic Client Registration sends Tempo's details and keeps the secret it gets", async () => {
     const executor = fakeExecutor();
@@ -198,6 +262,22 @@ describe("registration, PKCE and the authorization URL", () => {
 describe("tokens", () => {
   const confidential = { clientId: FAKE.clientId, clientSecret: SECRETS.clientSecret, tokenEndpointAuthMethod: "client_secret_basic" as const };
 
+  test("n5: with basic auth the client is named in the header only, not in the body", async () => {
+    const executor = fakeExecutor();
+    await exchangeCode(executor.fetch, {
+      tokenEndpoint: FAKE.token,
+      client: confidential,
+      code: SECRETS.code,
+      redirectUri: "https://x.convex.site/cb",
+      codeVerifier: "VERIFIER",
+      resource: FAKE.mcpUrl,
+    });
+    const form = new URLSearchParams(executor.calls[0]?.body);
+    expect(form.has("client_id")).toBe(false);
+    expect(form.has("client_secret")).toBe(false);
+    expect(executor.calls[0]?.headers.authorization).toStartWith("Basic ");
+  });
+
   test("the code exchange sends the verifier, the redirect URI and the resource, with basic auth", async () => {
     const executor = fakeExecutor();
     const tokens = await exchangeCode(executor.fetch, {
@@ -222,7 +302,6 @@ describe("tokens", () => {
       redirect_uri: "https://x.convex.site/cb",
       code_verifier: "VERIFIER",
       resource: FAKE.mcpUrl,
-      client_id: FAKE.clientId,
     });
   });
 

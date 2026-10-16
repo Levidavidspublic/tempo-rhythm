@@ -90,6 +90,14 @@ export type FakeExecutorOptions = {
   mcpStatus?: number;
   /** Never answer authenticated MCP requests (until the caller aborts). */
   mcpHang?: boolean;
+  /** Answer registration with this status instead of 201. */
+  registrationStatus?: number;
+  /** The resource_metadata URL the 401 challenge names (default: the real PRM). */
+  challengeResourceMetadata?: string;
+  /** The authorization server the PRM names (default: FAKE.issuer). */
+  authorizationServer?: string;
+  /** The token endpoint the AS metadata names (default: FAKE.token). */
+  tokenEndpoint?: string;
 };
 
 export type RecordedCall = {
@@ -97,6 +105,7 @@ export type RecordedCall = {
   method: string;
   headers: Record<string, string>;
   body: string;
+  redirect: RequestRedirect | undefined;
 };
 
 function headersOf(init?: RequestInit): Record<string, string> {
@@ -124,12 +133,13 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
   let expectedChallenge: string | null = null;
   let registrations = 0;
   let refreshes = 0;
+  let exchanges = 0;
 
   const fetchImpl: FetchLike = async (url, init) => {
     const method = (init?.method ?? "GET").toUpperCase();
     const headers = headersOf(init);
     const body = typeof init?.body === "string" ? init.body : "";
-    calls.push({ url, method, headers, body });
+    calls.push({ url, method, headers, body, redirect: init?.redirect });
     if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
 
     if (url === FAKE.mcpUrl && method === "POST") {
@@ -139,7 +149,7 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
           options.challengeHeader === false
             ? {}
             : {
-                "WWW-Authenticate": `Bearer resource_metadata="${FAKE.prm}"${
+                "WWW-Authenticate": `Bearer resource_metadata="${options.challengeResourceMetadata ?? FAKE.prm}"${
                   options.scopeInChallenge ? `, scope="${options.scopeInChallenge}"` : ""
                 }`,
               };
@@ -195,7 +205,7 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
       if (url === FAKE.prmRoot && options.challengeHeader !== false) return json(404, {});
       return json(200, {
         resource: options.prmResource ?? FAKE.mcpUrl,
-        authorization_servers: [FAKE.issuer],
+        authorization_servers: [options.authorizationServer ?? FAKE.issuer],
         ...(options.scopesSupported ? { scopes_supported: options.scopesSupported } : {}),
       });
     }
@@ -204,7 +214,7 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
       return json(200, {
         issuer: options.metadataIssuer ?? FAKE.issuer,
         authorization_endpoint: FAKE.authorize,
-        token_endpoint: FAKE.token,
+        token_endpoint: options.tokenEndpoint ?? FAKE.token,
         ...(options.registration === false ? {} : { registration_endpoint: FAKE.register }),
         ...(options.revocation === false ? {} : { revocation_endpoint: FAKE.revoke }),
         code_challenge_methods_supported: options.s256 === false ? ["plain"] : ["S256"],
@@ -216,6 +226,7 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
 
     if (url === FAKE.register && method === "POST") {
       registrations += 1;
+      if (options.registrationStatus) return json(options.registrationStatus, { error: "nope" });
       const request = JSON.parse(body) as { token_endpoint_auth_method?: string };
       const method = request.token_endpoint_auth_method ?? "none";
       return json(201, {
@@ -234,12 +245,18 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
         if (form.get("code") !== SECRETS.code || (expectedChallenge !== null && challenge !== expectedChallenge)) {
           return json(400, { error: "invalid_grant" });
         }
-        validAccess.add(SECRETS.access1);
-        validRefresh.add(SECRETS.refresh1);
+        // Each exchange issues its own pair; the first is exactly SECRETS.access1 / refresh1, and
+        // later ones extend them, so a leak check on the base strings still catches them.
+        exchanges += 1;
+        const suffix = exchanges === 1 ? "" : `-${exchanges}`;
+        const access = `${SECRETS.access1}${suffix}`;
+        const refresh = `${SECRETS.refresh1}${suffix}`;
+        validAccess.add(access);
+        validRefresh.add(refresh);
         return json(200, {
-          access_token: SECRETS.access1,
+          access_token: access,
           token_type: options.tokenType ?? "Bearer",
-          refresh_token: SECRETS.refresh1,
+          refresh_token: refresh,
           ...(options.expiresIn !== undefined ? { expires_in: options.expiresIn } : { expires_in: 3600 }),
           scope: "openid offline_access",
         });
@@ -292,6 +309,10 @@ export function fakeExecutor(initial: FakeExecutorOptions = {}) {
     },
     get refreshes() {
       return refreshes;
+    },
+    /** Whether a token is still accepted (not revoked, not rotated away). */
+    isValid(token: string) {
+      return validAccess.has(token) || validRefresh.has(token);
     },
     /** Requests that reached the MCP endpoint with a bearer token. */
     mcpCalls() {

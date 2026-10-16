@@ -29,8 +29,11 @@ export const RETURN_PATHS = {
 } as const;
 export type ReturnTo = keyof typeof RETURN_PATHS;
 
-/** The result the web app reads from `?executor=` after the callback. */
-export type CallbackResult = "connected" | "denied" | "expired" | "error";
+/**
+ * The result the web app reads from `?executor=` after the callback. "confirm" comes with
+ * `&n=<nonce>`: the app passes it to `connections.confirmExecutorConnect` as the signed-in person.
+ */
+export type CallbackResult = "confirm" | "denied" | "expired" | "error";
 
 export type ExecutorConfig = {
   /** The MCP URL exactly as configured: the OAuth `resource` and the endpoint Tempo calls. */
@@ -41,9 +44,28 @@ export type ExecutorConfig = {
   redirectUri: string;
 };
 
-/** An https URL without credentials or fragment, as its normalized `href`; else null. */
-export function httpsUrl(value: string | undefined): string | null {
-  const raw = value?.trim();
+/** Host names that only mean something inside a network, never on the public internet. */
+const PRIVATE_NAME_SUFFIXES = [
+  "localhost",
+  "local",
+  "localdomain",
+  "internal",
+  "intranet",
+  "lan",
+  "home.arpa",
+  "corp",
+  "private",
+] as const;
+
+/**
+ * A URL Tempo's server may call (SSRF guard for anything discovered from Executor's metadata):
+ * https on the default port, no credentials or fragment, and a public DNS name. Refused: IP
+ * literals (v4, including the forms the URL parser turns into dotted v4, and v6), `localhost`,
+ * single-label names and private-use suffixes such as `.internal` or `.local`. A public name that
+ * resolves to a private address cannot be caught without resolving it; that stays UNKNOWN.
+ */
+export function publicHttpsUrl(value: unknown): string | null {
+  const raw = typeof value === "string" ? value.trim() : "";
   if (!raw) return null;
   let url: URL;
   try {
@@ -51,10 +73,22 @@ export function httpsUrl(value: string | undefined): string | null {
   } catch {
     return null;
   }
-  if (url.protocol !== "https:" || !url.hostname || url.username || url.password || url.hash) {
+  if (url.protocol !== "https:" || url.port !== "" || url.username || url.password || url.hash) {
+    return null;
+  }
+  const host = url.hostname.toLowerCase().replace(/\.$/, "");
+  if (!host || host.startsWith("[") || host.includes(":") || /^[0-9.]+$/.test(host) || !host.includes(".")) {
+    return null;
+  }
+  if (PRIVATE_NAME_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))) {
     return null;
   }
   return url.href;
+}
+
+/** The configured MCP URL, held to the same rule as discovered URLs; else null. */
+export function httpsUrl(value: string | undefined): string | null {
+  return publicHttpsUrl(value);
 }
 
 /** A web origin for redirects: https, or http only on localhost (local dev). Else null. */
@@ -105,7 +139,16 @@ export function isScopedMcpUrl(mcpUrl: string): boolean {
   }
 }
 
-/** The fixed page the callback redirects to. Never a URL taken from the request (doc §2.4 step 9). */
-export function callbackRedirect(origin: string, returnTo: ReturnTo, result: CallbackResult): string {
-  return `${origin}${RETURN_PATHS[returnTo]}?executor=${result}`;
+/**
+ * The fixed page the callback redirects to. Never a URL taken from the request (doc §2.4 step 9).
+ * Only "confirm" carries a value: the one-time confirm nonce, as `n`.
+ */
+export function callbackRedirect(
+  origin: string,
+  returnTo: ReturnTo,
+  result: CallbackResult,
+  nonce?: string,
+): string {
+  const page = `${origin}${RETURN_PATHS[returnTo]}?executor=${result}`;
+  return result === "confirm" && nonce ? `${page}&n=${encodeURIComponent(nonce)}` : page;
 }

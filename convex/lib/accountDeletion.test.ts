@@ -455,6 +455,13 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  connectionLimits: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    callWindowStartMs: 1,
+    callWindowCount: 3,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
   connectionCalls: fixture("owned-table-soft-delete", (userId) => ({
     userId,
     connectionId: NO_ID("connections") as Id<"connections">,
@@ -728,6 +735,7 @@ describe("account lifecycle coverage is derived from the schema", () => {
     expect(USER_OWNED_TABLES).toContain("pageProposals");
     expect(USER_OWNED_TABLES).toContain("connectionSecrets");
     expect(USER_OWNED_TABLES).toContain("connectionCalls");
+    expect(USER_OWNED_TABLES).toContain("connectionLimits");
   });
 
   test("each lifecycle's tables declare the fields and by_userId index deletion relies on", () => {

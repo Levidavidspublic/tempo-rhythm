@@ -20,6 +20,7 @@
  * Hosted Executor's real values (issuer, scopes, lifetimes, revocation) are UNKNOWN (doc §7.1
  * items 3–8): nothing here is hard-coded; it is all read from the metadata at connect time.
  */
+import { publicHttpsUrl } from "./config";
 import { randomBase64Url, sha256Base64Url } from "./crypto";
 
 /** The slice of `fetch` this module uses. Tests pass a stub. */
@@ -112,17 +113,9 @@ function strings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
-/** An https URL string (no credentials, no fragment), or undefined. */
+/** A discovered URL Tempo may use: public https only (config.ts `publicHttpsUrl`), or undefined. */
 function httpsEndpoint(value: unknown): string | undefined {
-  const raw = str(value);
-  if (!raw) return undefined;
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "https:" || url.username || url.password || url.hash) return undefined;
-    return url.href;
-  } catch {
-    return undefined;
-  }
+  return publicHttpsUrl(value) ?? undefined;
 }
 
 /**
@@ -262,6 +255,7 @@ export async function discoverProtectedResource(
   fetchImpl: FetchLike,
   mcpUrl: string,
 ): Promise<ResourceDiscovery> {
+  if (!httpsEndpoint(mcpUrl)) throw new OAuthFlowError("discovery");
   const challenge = await request(
     fetchImpl,
     mcpUrl,
@@ -280,7 +274,10 @@ export async function discoverProtectedResource(
         : null;
     },
   );
-  const fromHeader = httpsEndpoint(challenge?.resource_metadata);
+  const named = challenge?.resource_metadata;
+  const fromHeader = httpsEndpoint(named);
+  // A challenge that names a private, non-https or IP-literal address is refused, not followed.
+  if (named !== undefined && !fromHeader) throw new OAuthFlowError("discovery");
   const candidates = fromHeader ? [fromHeader] : protectedResourceMetadataUrls(mcpUrl);
   for (const url of candidates) {
     const metadata = await fetchProtectedResourceMetadata(fetchImpl, url, mcpUrl);
@@ -319,7 +316,8 @@ export async function fetchProtectedResourceMetadata(
   const json = await request(
     fetchImpl,
     url,
-    { method: "GET", headers: { Accept: "application/json" } },
+    // Metadata is read where it was asked for: a redirect is refused (SSRF guard).
+    { method: "GET", headers: { Accept: "application/json" }, redirect: "error" },
     OAUTH_LIMITS.timeoutMs,
     async (response) => {
       if (response.status !== 200) {
@@ -347,11 +345,12 @@ export async function fetchAuthServerMetadata(
   fetchImpl: FetchLike,
   issuer: string,
 ): Promise<AuthServerMetadata> {
+  if (!httpsEndpoint(issuer)) throw new OAuthFlowError("discovery");
   for (const url of authServerMetadataUrls(issuer)) {
     const json = await request(
       fetchImpl,
       url,
-      { method: "GET", headers: { Accept: "application/json" } },
+      { method: "GET", headers: { Accept: "application/json" }, redirect: "error" },
       OAUTH_LIMITS.timeoutMs,
       async (response) => {
         if (response.status !== 200) {
@@ -488,20 +487,22 @@ export function buildAuthorizationUrl(
   return url.href;
 }
 
-/** Client authentication for a token, refresh or revocation request. */
+/**
+ * Client authentication for a token, refresh or revocation request. With `client_secret_basic`
+ * the client is named in the header only; otherwise `client_id` goes in the body.
+ */
 function clientAuth(
   client: ClientCredentials,
   body: URLSearchParams,
 ): Record<string, string> {
-  body.set("client_id", client.clientId);
-  if (client.tokenEndpointAuthMethod === "client_secret_post" && client.clientSecret) {
-    body.set("client_secret", client.clientSecret);
-    return {};
-  }
   if (client.tokenEndpointAuthMethod === "client_secret_basic" && client.clientSecret) {
     // RFC 6749 §2.3.1: form-encode each part before base64.
     const pair = `${encodeURIComponent(client.clientId)}:${encodeURIComponent(client.clientSecret)}`;
     return { Authorization: `Basic ${btoa(pair)}` };
+  }
+  body.set("client_id", client.clientId);
+  if (client.tokenEndpointAuthMethod === "client_secret_post" && client.clientSecret) {
+    body.set("client_secret", client.clientSecret);
   }
   return {};
 }

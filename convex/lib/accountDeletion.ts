@@ -50,6 +50,7 @@ export const USER_OWNED_TABLES = [
   "coachWebSearches",
   "connectionSecrets",
   "connectionCalls",
+  "connectionLimits",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
@@ -210,7 +211,10 @@ async function softDeleteAdditionalRows(
   return count;
 }
 
-/** Live Executor connections become `revoking` and are tombstoned; the revoke runs later. */
+/**
+ * Live Executor connections (including one still waiting for its owner's confirm) become
+ * `revoking` and are tombstoned, and an unused confirm nonce is dropped; the revoke runs later.
+ */
 async function markConnectionsRevoking(
   ctx: MutationCtx,
   userId: Id<"users">,
@@ -223,7 +227,13 @@ async function markConnectionsRevoking(
   let count = 0;
   for (const row of rows) {
     if (row.deletedAt === undefined) {
-      await ctx.db.patch(row._id, { status: "revoking", deletedAt: now, updatedAt: now });
+      await ctx.db.patch(row._id, {
+        status: "revoking",
+        confirmNonceHash: undefined,
+        confirmExpiresAt: undefined,
+        deletedAt: now,
+        updatedAt: now,
+      });
       count += 1;
     }
   }
