@@ -39,9 +39,9 @@
 .tp-recap__now { flex: none; font-size: var(--tp-text-xs); font-weight: 600; color: var(--tp-ink-muted); }
 
 /* Ask a question: the answer quotes the page */
-.tp-recap__askform { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--tp-space-2) var(--tp-space-3); }
-.tp-recap__askform .tp-field { flex: 1 1 calc(var(--tp-space-20) * 3); }
-.tp-recap__askform .tp-btn { margin-block-start: calc(var(--tp-text-lg) + var(--tp-space-1)); }
+.tp-recap__askform { display: block; }
+.tp-recap__askrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
+.tp-recap__askrow .tp-input { flex: 1 1 calc(var(--tp-space-20) * 2); min-width: 0; }
 .tp-recap__answers { display: grid; gap: var(--tp-space-2); }
 .tp-recap__from { margin: 0; font-size: var(--tp-text-sm); font-weight: 600; }
 .tp-recap__quotes { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--tp-space-2); }

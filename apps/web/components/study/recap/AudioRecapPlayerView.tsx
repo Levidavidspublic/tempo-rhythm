@@ -287,22 +287,25 @@ function AskPanel({
           <label className="tp-recap__heading" id={`${inputId}-title`} htmlFor={inputId}>
             {t("st.ls.ask")}
           </label>
-          <input
-            id={inputId}
-            className="tp-input"
-            dir="auto"
-            value={question}
-            aria-describedby={`${inputId}-help`}
-            onChange={(event) => onQuestion(event.currentTarget.value)}
-          />
+          {/* The field and its button share a row, so a heading that wraps never misaligns them. */}
+          <div className="tp-recap__askrow">
+            <input
+              id={inputId}
+              className="tp-input"
+              dir="auto"
+              value={question}
+              aria-describedby={`${inputId}-help`}
+              onChange={(event) => onQuestion(event.currentTarget.value)}
+            />
+            <button type="submit" className="tp-btn tp-btn--secondary" data-action="recap-ask" disabled={!question.trim()}>
+              <TpIcon name="search" size="sm" />
+              <span>{t("st.ls.askButton")}</span>
+            </button>
+          </div>
           <p className="tp-help" id={`${inputId}-help`}>
             {t("st.ls.askHint")}
           </p>
         </div>
-        <button type="submit" className="tp-btn tp-btn--secondary" data-action="recap-ask" disabled={!question.trim()}>
-          <TpIcon name="search" size="sm" />
-          <span>{t("st.ls.askButton")}</span>
-        </button>
       </form>
       <div aria-live="polite">
         {answers === null ? null : answers.length > 0 ? (
