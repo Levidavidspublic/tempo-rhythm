@@ -10,6 +10,7 @@ test.describe("study wiring", () => {
     ["/study", "Study"],
     ["/study/review", "Review"],
     ["/study/new?from=x&kind=flashcards", "New flashcards"],
+    ["/study/listen?from=x", "Listen"],
   ];
   for (const [route, heading] of signedOut) {
     test(`${route} renders its screen and asks to sign in for data`, async ({ page }) => {
@@ -18,6 +19,7 @@ test.describe("study wiring", () => {
       const main = page.locator("main");
       await expect(main.getByRole("heading", { level: 1, name: heading })).toBeVisible();
       await expect(main.locator('[data-component="StateSignedOut"]')).toBeVisible();
+      await expect(main.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
     });
   }
 
