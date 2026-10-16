@@ -101,3 +101,5 @@
    words on a phone, instead of squeezing the words into a narrow column. */
 [data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) { flex-wrap: wrap; }
 [data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) .tp-notice__text { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
+/* A picker that is reading keeps focus (aria-disabled, not disabled) and looks like a disabled field. */
+[data-testid="ingest-sheet"] .tp-input[aria-disabled="true"] { background: var(--tp-sunken); color: var(--tp-ink-muted); cursor: not-allowed; }

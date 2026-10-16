@@ -124,8 +124,11 @@ export function IngestSheetView({
   const [needText, setNeedText] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const sheet = useRef<HTMLElement | null>(null);
+  const textBox = useRef<HTMLTextAreaElement | null>(null);
   const mounted = useRef(true);
   const busy = useRef(false);
+  // Set by "Paste text instead": the text box gets focus once it is on screen.
+  const focusText = useRef(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -144,6 +147,21 @@ export function IngestSheetView({
   useEffect(() => {
     if (savedId) sheet.current?.querySelector<HTMLElement>("[data-ingest-open]")?.focus();
   }, [savedId]);
+
+  // After every render: "Paste text instead" hands focus to the text box it opened. A control
+  // that had focus and is now gone (Retry, Paste text instead, a cleared text box) would drop
+  // focus to the page, where Esc and the Tab loop don't reach; the sheet takes it instead.
+  useEffect(() => {
+    const root = sheet.current;
+    if (!root) return;
+    if (focusText.current && textBox.current) {
+      focusText.current = false;
+      textBox.current.focus();
+      return;
+    }
+    const active = document.activeElement;
+    if (!active || active === document.body || !document.contains(active)) root.focus();
+  });
 
   const tooLarge = isTooLarge(text);
   const hasText = text.trim().length > 0;
@@ -203,7 +221,11 @@ export function IngestSheetView({
     const first = items[0];
     const last = items[items.length - 1];
     if (!first || !last) return;
-    if (event.shiftKey && document.activeElement === first) {
+    if (document.activeElement === root) {
+      // Focus is on the sheet itself (see the effect above): Tab goes in, never out.
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && document.activeElement === first) {
       event.preventDefault();
       last.focus();
     } else if (!event.shiftKey && document.activeElement === last) {
@@ -217,7 +239,7 @@ export function IngestSheetView({
     const file = input.files?.[0];
     // Let go of the picked file straight away; only its text is kept (RAM-only).
     input.value = "";
-    if (!file) return;
+    if (!file || fileState.status === "reading") return;
     setFileState({ status: "reading" });
     void readIngestFile(file).then((result) => {
       if (!mounted.current) return;
@@ -235,7 +257,7 @@ export function IngestSheetView({
     const image = input.files?.[0];
     // RAM-ONLY: the photo is read in memory and dropped; it is never uploaded or stored.
     input.value = "";
-    if (!image) return;
+    if (!image || photoState === "reading") return;
     setPhotoState("reading");
     void readPhotoText(image).then((result) => {
       if (!mounted.current) return;
@@ -250,6 +272,11 @@ export function IngestSheetView({
 
   const onTextChange = (next: string) => {
     takeText(next, deriveTitle(next));
+  };
+
+  const switchToPaste = () => {
+    focusText.current = true;
+    setTab("paste");
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -288,6 +315,7 @@ export function IngestSheetView({
         aria-labelledby={`${id}-title`}
         data-component="MobileSheet"
         data-testid="ingest-sheet"
+        tabIndex={-1}
         onKeyDown={onKeyDown}
       >
         <div className="tp-sheet__grabber" aria-hidden="true" />
@@ -356,7 +384,7 @@ export function IngestSheetView({
                     supported={canPhoto}
                     state={photoState}
                     onPhoto={onPhoto}
-                    onUsePaste={() => setTab("paste")}
+                    onUsePaste={switchToPaste}
                   />
                 ) : null}
 
@@ -366,6 +394,7 @@ export function IngestSheetView({
                       {tab === "paste" ? t("ig.paste.label") : t("ig.text.label")}
                     </label>
                     <textarea
+                      ref={textBox}
                       className="tp-textarea"
                       id={`${id}-text`}
                       dir="auto"
@@ -444,11 +473,14 @@ export function IngestSheetView({
               </form>
             </div>
             <div className="tp-sheet__foot">
+              {/* Saving and waiting use aria-disabled, so the button keeps focus (save() won't
+                  run twice: the busy ref). Too large can't happen while Save has focus. */}
               <button
                 className="tp-btn tp-btn--primary"
                 type="submit"
                 form={formId}
-                disabled={saving || waiting || tooLarge}
+                disabled={tooLarge}
+                aria-disabled={saving || waiting || undefined}
                 aria-busy={saving || undefined}
                 data-component="Button"
               >
@@ -492,6 +524,7 @@ function FilePanel({
   onFile: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   const problem = state.status === "problem" ? state.problem : null;
+  const reading = state.status === "reading";
   return (
     <div className="tp-field" data-component="Field">
       <label className="tp-label" htmlFor={`${id}-file`}>
@@ -504,13 +537,17 @@ function FilePanel({
         accept={INGEST_ACCEPT}
         aria-invalid={problem ? true : undefined}
         aria-describedby={problem ? `${id}-file-help ${id}-file-status` : `${id}-file-help`}
-        disabled={state.status === "reading"}
+        aria-disabled={reading || undefined}
+        onClick={(event) => {
+          // aria-disabled, not disabled, so focus stays here; no second picker while reading.
+          if (reading) event.preventDefault();
+        }}
         onChange={onFile}
       />
       <p className="tp-help" id={`${id}-file-help`}>
         {t("ig.file.help")}
       </p>
-      {state.status === "reading" ? (
+      {reading ? (
         <output className="tp-help" id={`${id}-file-status`}>
           {t("ig.file.reading")}
         </output>
@@ -583,7 +620,10 @@ function PhotoPanel({
         capture="environment"
         aria-invalid={problem || undefined}
         aria-describedby={problem ? `${id}-photo-help ${id}-photo-status` : `${id}-photo-help`}
-        disabled={state === "reading"}
+        aria-disabled={state === "reading" || undefined}
+        onClick={(event) => {
+          if (state === "reading") event.preventDefault();
+        }}
         onChange={onPhoto}
       />
       <p className="tp-help" id={`${id}-photo-help`}>
