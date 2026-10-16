@@ -15,6 +15,7 @@ import {
   parseTopics,
   waysOut,
 } from "../../../apps/web/components/calendar/plan/planForm";
+import { pt } from "../../../apps/web/components/calendar/planCopy";
 
 const TODAY = "2026-10-16"; // a Friday
 
@@ -116,6 +117,29 @@ describe("PlanPreview", () => {
     expect(html).toContain("A later date");
     expect(html).toContain(`<span class="tp-num">${ways.longerMinutes}</span> minutes a day`);
     expect(html.toLowerCase()).not.toMatch(/fail|overdue|must|behind/);
+  });
+
+  test("a way out that can't be offered says so in words instead of an empty heading", () => {
+    // A session longer than the minutes a day: no later date fits, so that way explains itself.
+    const values = form({ deadline: "2026-10-19", minutesPerDay: 30, sessionMinutes: 45 });
+    const state = buildPreview(values, TODAY, "en");
+    if (state.status !== "ok") throw new Error("expected a preview");
+    expect(state.result.shortBy).toBeGreaterThan(0);
+    const ways = waysOut(values, TODAY);
+    expect(ways.laterDate).toBeNull();
+    for (const lang of ["en", "he"] as const) {
+      const html = renderToStaticMarkup(
+        createElement(PlanPreview, { state, lang, ways, onUseDate: () => {}, onUseMinutes: () => {} })
+      );
+      expect(html).toContain(pt(lang, "pp.short.laterNone"));
+      // When no day length holds it either, that way says so too.
+      const none = renderToStaticMarkup(
+        createElement(PlanPreview, { state, lang, ways: { longerMinutes: null, laterDate: null } })
+      );
+      expect(none).toContain(pt(lang, "pp.short.longerNone"));
+      expect(none).toContain(pt(lang, "pp.short.laterNone"));
+      expect(html).toContain(pt(lang, "pp.short.laterNone"));
+    }
   });
 
   test("a day that would run past midnight is a kind form error, in English and Hebrew", () => {

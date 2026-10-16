@@ -267,7 +267,9 @@ export function PlanPreview({
                           </button>
                         ) : null}
                       </>
-                    ) : null}
+                    ) : (
+                      <span>{pt(lang, "pp.short.longerNone")}</span>
+                    )}
                   </li>
                   <li className="tp-plan__way" data-way="later">
                     <strong>{pt(lang, "pp.short.later")}</strong>
@@ -288,7 +290,9 @@ export function PlanPreview({
                           </button>
                         ) : null}
                       </>
-                    ) : null}
+                    ) : (
+                      <span>{pt(lang, "pp.short.laterNone")}</span>
+                    )}
                   </li>
                 </ul>
               </div>
