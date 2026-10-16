@@ -55,7 +55,8 @@ export function WeekGlanceView({ glance, t, lang }: { glance: WeekGlance; t: (ke
             <Kpi.Title>{t("wk.focus")}</Kpi.Title>
           </Kpi.Header>
           <Kpi.Content>
-            <Kpi.Value className="tp-num">{formatMinutes(glance.focusMinutes, minutes)}</Kpi.Value>
+            {/* Words and numbers ("1 שע׳ 15 דק׳"): tp-num's left-to-right would read it backwards in Hebrew. */}
+            <Kpi.Value className="tabular-nums">{formatMinutes(glance.focusMinutes, minutes)}</Kpi.Value>
           </Kpi.Content>
           <Kpi.Chart data={glance.days.map((day) => day.focusMinutes)} color="success" filled aria-label={t("wk.focusTrend")} />
         </Kpi>

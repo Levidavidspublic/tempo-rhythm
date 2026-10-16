@@ -93,6 +93,17 @@ describe("WeekGlanceView (PanelUI KPI and Day Grid)", () => {
     expect(html.toLowerCase()).not.toContain("streak");
   });
 
+  test("the focus total follows the page's direction, so Hebrew reads hours first", () => {
+    for (const lang of ["en", "he"] as const) {
+      const total = formatMinutes(75, { min: translate(lang, "wk.min"), hmin: translate(lang, "wk.hmin") });
+      const tag = render(lang).match(new RegExp(`<[^<>]*class="([^"]*)"[^<>]*>${total}<`));
+      expect({ lang, found: tag !== null }).toEqual({ lang, found: true });
+      // tp-num forces left to right: right for a bare number, backwards for "1 שע׳ 15 דק׳".
+      expect({ lang, tpNum: tag?.[1]?.split(" ").includes("tp-num") }).toEqual({ lang, tpNum: false });
+      expect(tag?.[1]).toContain("tabular-nums");
+    }
+  });
+
   test("Hebrew: the same cards in Hebrew", () => {
     const html = render("he");
     expect(html).toContain(translate("he", "wk.title"));
