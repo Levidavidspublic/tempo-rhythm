@@ -18,6 +18,8 @@ import { findAll, installTestDom, type TestNode, useTestDom } from "../record/te
 // The small TestNode DOM (tests/unit/record/testDom) for the player's mounted tests below.
 const documentNode = installTestDom();
 
+/** Every key the screens looked up, so a test can tell which parts drew again. */
+const looked: string[] = [];
 const realLocale = await import("../../../apps/web/components/providers/LocaleProvider");
 mock.module("../../../apps/web/components/providers/LocaleProvider", () => ({
   ...realLocale,
@@ -25,7 +27,10 @@ mock.module("../../../apps/web/components/providers/LocaleProvider", () => ({
     lang: "en",
     dir: "ltr",
     setLang: () => {},
-    t: (key: Parameters<typeof translate>[1]) => translate("en", key),
+    t: (key: Parameters<typeof translate>[1]) => {
+      looked.push(key);
+      return translate("en", key);
+    },
   }),
 }));
 
@@ -523,6 +528,19 @@ describe("the mounted player", () => {
     expect(byAction(view, "recap-play")[0]?.getAttribute("aria-pressed")).toBe("false");
     const said = findAll(view, (n) => n.getAttribute?.("aria-live") === "polite")[0]?.textContent;
     expect(said).toBe("The voice stopped on this sentence. Play tries it again.");
+  });
+
+  test("the clock's tick redraws the time, not the transcript", async () => {
+    const state = { ...player.initialPlayer, index: 1, playing: true };
+    const onAction = () => {};
+    const at = (elapsed: number) => view({ state, onAction, elapsed });
+    const mounted = await mount(at(0));
+    looked.length = 0;
+    await rerender(at(2));
+    expect(looked).toContain("st.ls.time");
+    expect(looked).not.toContain("st.ls.now");
+    expect(looked).not.toContain("st.ls.transcriptHint");
+    expect(findAll(mounted, (n) => n.getAttribute?.("aria-current") === "true")).toHaveLength(1);
   });
 
   test("an edit elsewhere in the page doesn't restart the sentence being read", async () => {

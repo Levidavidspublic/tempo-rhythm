@@ -2,7 +2,7 @@
 
 import { fillNodes, fillText } from "@tempo/ui";
 import Link from "next/link";
-import type { FormEvent, KeyboardEvent, ReactNode } from "react";
+import { type FormEvent, type KeyboardEvent, memo, type ReactNode } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { PageMatch, RecapLang, RecapSentence, TimelineEntry } from "../../../../../packages/core/recap";
@@ -215,36 +215,55 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
         </div>
       </section>
 
-      <section className="tp-recap__transcript" aria-labelledby={`${idBase}-transcript`}>
-        <h2 className="tp-recap__heading" id={`${idBase}-transcript`}>
-          {t("st.ls.transcript")}
-        </h2>
-        <p className="tp-small tp-muted">{t("st.ls.transcriptHint")}</p>
-        <ol className="tp-recap__lines">
-          {sentences.map((sentence, index) => {
-            const current = index === state.index;
-            return (
-              <li key={index} className="tp-recap__item" data-kind={sentence.kind}>
-                <button
-                  type="button"
-                  className="tp-recap__line"
-                  data-action="recap-jump"
-                  aria-current={current ? "true" : undefined}
-                  onClick={() => onAction(jumpTo(index, canPlay))}
-                >
-                  {current ? <span className="tp-recap__now">{t("st.ls.now")}</span> : null}
-                  <span dir="auto">{sentence.text}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+      <Transcript sentences={sentences} index={state.index} canPlay={canPlay} onAction={onAction} idBase={idBase} />
 
       <AskPanel {...props} t={t} />
     </div>
   );
 }
+
+type TranscriptProps = {
+  sentences: readonly RecapSentence[];
+  index: number;
+  canPlay: boolean;
+  onAction: (action: PlayerAction) => void;
+  idBase: string;
+};
+
+/**
+ * The transcript, memoized on its own props: the player's clock ticks every 250 ms while it reads,
+ * and that should redraw the time, not every sentence button (thousands on a full reading).
+ */
+const Transcript = memo(function Transcript({ sentences, index: at, canPlay, onAction, idBase }: TranscriptProps) {
+  const { t } = useLocale();
+  return (
+    <section className="tp-recap__transcript" aria-labelledby={`${idBase}-transcript`}>
+      <h2 className="tp-recap__heading" id={`${idBase}-transcript`}>
+        {t("st.ls.transcript")}
+      </h2>
+      <p className="tp-small tp-muted">{t("st.ls.transcriptHint")}</p>
+      <ol className="tp-recap__lines">
+        {sentences.map((sentence, index) => {
+          const current = index === at;
+          return (
+            <li key={index} className="tp-recap__item" data-kind={sentence.kind}>
+              <button
+                type="button"
+                className="tp-recap__line"
+                data-action="recap-jump"
+                aria-current={current ? "true" : undefined}
+                onClick={() => onAction(jumpTo(index, canPlay))}
+              >
+                {current ? <span className="tp-recap__now">{t("st.ls.now")}</span> : null}
+                <span dir="auto">{sentence.text}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+});
 
 function AskPanel({
   question,
