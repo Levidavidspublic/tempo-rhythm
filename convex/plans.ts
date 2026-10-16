@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { isLocalDate, parseLocalDate } from "../packages/core/plan/calendar-math";
+import { isLocalDate, parseLocalDate, toDayNumber } from "../packages/core/plan/calendar-math";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
@@ -84,8 +84,11 @@ export function localStartToUtcMs(
   return Date.UTC(year, month - 1, day) + (startMinute + timezoneOffsetMinutes) * 60_000;
 }
 
-/** A daylight-saving shift moves a local time by at most this much against today's offset. */
-const MAX_DST_SHIFT_MS = 2 * 60 * 60_000;
+/**
+ * A daylight-saving shift moves a local time by at most this much against today's offset. Real
+ * shifts are one hour or less; a wider bound would let a 23:30 session land on the next local day.
+ */
+const MAX_DST_SHIFT_MS = 60 * 60_000;
 
 /**
  * The session's start: the browser's own `startAt` when it is within a DST shift of the time the
@@ -140,9 +143,14 @@ export const createFromPreview = mutation({
     }
     if (args.sessions.length === 0) throw new Error("There are no sessions to add yet.");
     if (args.sessions.length > MAX_SESSIONS) throw new Error("That plan has too many sessions.");
+    const deadlineDay = toDayNumber(args.deadline);
     for (const session of args.sessions) {
       cleanTitle(session.title, "session");
       if (!isLocalDate(session.date)) throw new Error("Every session needs a YYYY-MM-DD date.");
+      // The deadline day is the exam itself; study happens before it.
+      if (toDayNumber(session.date) >= deadlineDay) {
+        throw new Error("Every session needs a date before the deadline.");
+      }
       if (
         !Number.isInteger(session.startMinute) ||
         session.startMinute < 0 ||

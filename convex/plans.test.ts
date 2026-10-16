@@ -89,6 +89,22 @@ describe("plans.createFromPreview", () => {
     expect(await ctx.db.query("tasks").collect()).toHaveLength(0);
     expect(await ctx.db.query("studyPlans").collect()).toHaveLength(0);
   });
+
+  test("refuses sessions on or after the deadline with a kind message", async () => {
+    const ctx = makeFakeCtx(A);
+    for (const date of ["2026-11-01", "2026-11-02"]) {
+      await expect(
+        run(plans.createFromPreview, ctx, preview({ sessions: [session({ date })] })),
+      ).rejects.toThrow("Every session needs a date before the deadline.");
+    }
+    expect(await ctx.db.query("tasks").collect()).toHaveLength(0);
+    const ok = await run(
+      plans.createFromPreview,
+      ctx,
+      preview({ sessions: [session({ date: "2026-10-31" })] }),
+    );
+    expect(ok.planId).toBeDefined();
+  });
 });
 
 describe("plans.createFromPreview across a daylight-saving change", () => {
@@ -118,6 +134,21 @@ describe("plans.createFromPreview across a daylight-saving change", () => {
     const plan = await ctx.db.get(result.planId);
     const task = await ctx.db.get(plan.taskIds[0]);
     expect(task.dueAt).toBe(Date.UTC(2026, 9, 20, 6, 0));
+  });
+
+  test("a startAt more than an hour off is ignored, so 23:30 can't slide into the next day", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A);
+    // 23:30 local in UTC+3 is 20:30 UTC; 90 minutes later is 01:00 local on the 21st.
+    const late = session({ startMinute: 23 * 60 + 30 });
+    const result = await run(
+      plans.createFromPreview,
+      ctx,
+      preview({ sessions: [{ ...late, startAt: Date.UTC(2026, 9, 20, 22, 0) }] }),
+    );
+    const plan = await ctx.db.get(result.planId);
+    const task = await ctx.db.get(plan.taskIds[0]);
+    expect(task.dueAt).toBe(Date.UTC(2026, 9, 20, 20, 30));
   });
 });
 
