@@ -30,7 +30,7 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 
 ## Now working on
 
-Wave after the four finish lines (BACKLOG step 2, from the ROADMAP / PRD parity map): Builder K edits a saved set and shares it (Anki, Markdown) from `/study/[setId]`; Builder L adds typed recall to flashcard review; Builder M re-plans missed or clashing plan sessions (F-07) and opens the week grid at the first item; a fix builder takes the 11 T4 / S9 review findings; a reviewer reads T9. Then: merge, one reshoot of the changed screens, the gate, one push (Vercel builds per push, so pushes are batched per finish line).
+Full reshoot (40 gallery views in en and he, the Hebrew listen view, 9 live routes) on the IIFE gallery build; then GATE.md per screen, tick T3 / T8 / T9 / T10, full E2E and build, one push. Running alongside: Builder N "Ask this set" (quote-only, on the device), reviewers on typed recall + set edit / share and on re-plan.
 
 ## Log
 
@@ -68,6 +68,8 @@ Wave after the four finish lines (BACKLOG step 2, from the ROADMAP / PRD parity 
 | 2026-10-16 23:29 | `b60730c`, `8838975` | T4 | Lead: the recap's question field and Find it share a row (the button sat beside a wrapped heading at 390 px); gallery view for the voice-stopped state | `gallery-MOCKED-study-listen-voice-error-*` |
 | 2026-10-16 23:29 | `…`→`251104f` | T9 | Fix builder: all 11 T9 findings (quadratic trim, sheet focus and Esc, the two memory Undos, search past 200 via `memory.recall`, focus fallbacks, fence titles, stuck offline Save, Windows-1255 files, a 15 MB photo cap, a silent character count, export link lifetime), each with a test | `bun test tests/unit/ingest tests/unit/memory_manager.test.tsx` |
 | 2026-10-16 23:30 | `9dfe71e`…`413bb1f` | backlog | Builder K: edit a saved set (`convex-arch:` `study.updateBlock` / `undoUpdate`, a block version guard, 5:00 Undo, an optional `studySets.editedAt`) and share a set (Markdown for every kind, Anki for flashcards). Full suite 3121 pass, 0 fail; typecheck 5/5; lint 0 errors; both scans OK | `convex/study.test.ts`, `tests/unit/study/study_set_edit*.ts*` |
+| 2026-10-16 23:40 | `339a084` | evidence | Gallery built as an IIFE: as a classic script its top-level CodeMirror `getSelection` replaced `window.getSelection`, so React's select events threw on the plan views (the "gallery-only error" the evidence run noted; the app is unaffected). tests.json refreshed: T3 627, T8 150, T9 73, T10 50, T4 76, S9 29 pass, 0 fail | `docs/kitchen/tests.json` |
+| 2026-10-16 23:45 | `d056b6a`…`2828939` | backlog, T8 | Builder M: re-plan the rest (F-07): pure `replanRest`, `convex-arch:` `plans.replan` / `undoReplan` with a 5:00 Undo (an optional `lastReplan` on the plan), a quiet notice with a preview, what doesn't fit and three ways out; the week grid opens at the week's first item; the accepted plan keeps its Undo while the form changes (T4 / S9 review finding 3). Full suite 3180 pass, 0 fail; typecheck, lint, scans OK. Reviewer started | `packages/core/plan/replan.test.ts`, `convex/plans.test.ts` |
 
 ## Decisions
 
