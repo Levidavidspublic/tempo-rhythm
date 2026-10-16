@@ -60,7 +60,15 @@ export function canReadPhotos(): boolean {
   return textDetector() !== null;
 }
 
-export type PhotoResult = { ok: true; text: string } | { ok: false; problem: "none" | "error" };
+export type PhotoResult =
+  | { ok: true; text: string }
+  | { ok: false; problem: "none" | "error" | "too_large" };
+
+/** Photos bigger than this aren't decoded at all (the sheet says "up to 15 MB"). */
+export const INGEST_MAX_PHOTO_BYTES = 15 * 1024 * 1024;
+
+/** The widest a photo is decoded: enough for printed text, and a bounded bitmap in memory. */
+export const PHOTO_DECODE_WIDTH = 2000;
 
 /**
  * RAM-ONLY: detect text in a photo on this device. The image is decoded into an in-memory
@@ -69,9 +77,13 @@ export type PhotoResult = { ok: true; text: string } | { ok: false; problem: "no
 export async function readPhotoText(image: Blob): Promise<PhotoResult> {
   const Detector = textDetector();
   if (!Detector) return { ok: false, problem: "error" };
+  if (image.size > INGEST_MAX_PHOTO_BYTES) return { ok: false, problem: "too_large" };
   let bitmap: ImageBitmap | null = null;
   try {
-    bitmap = await createImageBitmap(image);
+    bitmap = await createImageBitmap(image, {
+      resizeWidth: PHOTO_DECODE_WIDTH,
+      resizeQuality: "high",
+    });
     const found = await new Detector().detect(bitmap);
     const text = normaliseNewlines(
       found

@@ -37,13 +37,16 @@ export const en = {
     "That's more than 200 KB of text. Save a shorter part, then bring in the rest as another page.",
 
   "ig.photo.label": "Take or choose a photo",
-  "ig.photo.help": "The photo is read on this device and is never uploaded or saved.",
+  "ig.photo.help":
+    "The photo is read on this device and is never uploaded or saved. Photos up to 15 MB.",
   "ig.photo.reading": "Reading the photo…",
   "ig.photo.read":
     "Here is the text from the photo. Fix anything that came out wrong before you save.",
   "ig.photo.none":
     "No text was found in this photo. Try a sharper, brighter photo, or paste the text.",
   "ig.photo.error": "This photo couldn't be read. Try another photo, or paste the text.",
+  "ig.photo.tooLarge":
+    "This photo is larger than 15 MB. Try a smaller photo or a screenshot of the page, or paste the text.",
   "ig.photo.unsupported":
     "Reading photos isn't available in this browser yet. You can type or paste the text instead.",
   "ig.photo.usePaste": "Paste text instead",
@@ -101,11 +104,13 @@ export const he: Record<keyof typeof en, string> = {
   "ig.tooLarge": "יש כאן יותר מ־200 KB של טקסט. שמרו חלק קצר יותר, ואת השאר הוסיפו כדף נוסף.",
 
   "ig.photo.label": "צלמו או בחרו תמונה",
-  "ig.photo.help": "התמונה נקראת במכשיר הזה, ולא מועלית או נשמרת לעולם.",
+  "ig.photo.help": "התמונה נקראת במכשיר הזה, ולא מועלית או נשמרת לעולם. תמונות עד 15 MB.",
   "ig.photo.reading": "קוראים את התמונה…",
   "ig.photo.read": "זה הטקסט מהתמונה. תקנו כל מה שיצא לא נכון לפני השמירה.",
   "ig.photo.none": "לא נמצא טקסט בתמונה הזאת. נסו תמונה חדה ובהירה יותר, או הדביקו את הטקסט.",
   "ig.photo.error": "לא הצלחנו לקרוא את התמונה. נסו תמונה אחרת, או הדביקו את הטקסט.",
+  "ig.photo.tooLarge":
+    "התמונה הזאת גדולה מ־15 MB. נסו תמונה קטנה יותר או צילום מסך של הדף, או הדביקו את הטקסט.",
   "ig.photo.unsupported":
     "קריאת תמונות עוד לא זמינה בדפדפן הזה. אפשר להקליד או להדביק את הטקסט במקום.",
   "ig.photo.usePaste": "הדביקו טקסט במקום",

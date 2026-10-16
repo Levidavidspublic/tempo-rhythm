@@ -58,7 +58,13 @@ type FileState =
   | { status: "read"; name: string }
   | { status: "problem"; problem: IngestProblem };
 
-type PhotoState = "idle" | "reading" | "read" | "none" | "error";
+type PhotoState = "idle" | "reading" | "read" | "none" | "error" | "too_large";
+
+const PHOTO_PROBLEM = {
+  none: "ig.photo.none",
+  error: "ig.photo.error",
+  too_large: "ig.photo.tooLarge",
+} as const;
 
 type SaveState = "idle" | "saving" | "waiting" | "error";
 
@@ -562,7 +568,7 @@ function PhotoPanel({
       </div>
     );
   }
-  const problem = state === "none" || state === "error";
+  const problem = state === "none" || state === "error" || state === "too_large";
   return (
     <div className="tp-field" data-component="Field">
       <label className="tp-label" htmlFor={`${id}-photo`}>
@@ -600,9 +606,7 @@ function PhotoPanel({
           <span className="tp-notice__icon">
             <TpIcon name="alert" size="sm" />
           </span>
-          <span className="tp-notice__text">
-            {state === "none" ? t("ig.photo.none") : t("ig.photo.error")}
-          </span>
+          <span className="tp-notice__text">{t(PHOTO_PROBLEM[state])}</span>
           <button
             className="tp-btn tp-btn--secondary tp-notice__action"
             type="button"

@@ -125,6 +125,14 @@ describe("IngestSheet", () => {
     expect(html).toContain("never uploaded or saved");
   });
 
+  test("Photo: the size limit is said in words up front", () => {
+    const html = sheet({ initialTab: "photo", photoSupported: true });
+    expect(html).toContain("Photos up to 15 MB.");
+    const t = ingestCopy("en");
+    expect(t("ig.photo.tooLarge")).toContain("larger than 15 MB");
+    expect(ingestCopy("he")("ig.photo.tooLarge")).toContain("15 MB");
+  });
+
   test("offline: a notice with an icon and words, and the text stays", () => {
     const html = sheet({ online: false, initialTab: "paste", initialText: "Notes" });
     expect(html).toContain('data-component="StateOffline"');

@@ -4,7 +4,7 @@
  * with replacement characters unless a BOM says otherwise) is installed for these tests only.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { readIngestFile } from "../../../apps/web/components/ingest/read-sources";
+import { readIngestFile, readPhotoText } from "../../../apps/web/components/ingest/read-sources";
 
 class BrowserLikeFileReader {
   result: string | ArrayBuffer | null = null;
@@ -78,5 +78,46 @@ describe("readIngestFile encodings", () => {
       ok: false,
       problem: "unreadable",
     });
+  });
+});
+
+describe("readPhotoText", () => {
+  // The browser's text detector and bitmap decoder, stood in for: what was decoded, and how.
+  const decoded: { size: number; options: unknown }[] = [];
+  const saved: Record<string, unknown> = {};
+  const KEYS = ["window", "TextDetector", "createImageBitmap"] as const;
+
+  beforeAll(() => {
+    for (const key of KEYS) saved[key] = globals[key];
+    globals.window = globalThis;
+    globals.TextDetector = class {
+      async detect() {
+        return [{ rawValue: "Chapter 4" }, { rawValue: "Cells divide." }];
+      }
+    };
+    globals.createImageBitmap = async (image: Blob, options?: unknown) => {
+      decoded.push({ size: image.size, options });
+      return { close() {} };
+    };
+  });
+  afterAll(() => {
+    for (const key of KEYS) {
+      if (saved[key] === undefined) delete globals[key];
+      else globals[key] = saved[key];
+    }
+  });
+
+  test("a photo over 15 MB is refused before it is decoded", async () => {
+    decoded.length = 0;
+    const big = new Blob([new Uint8Array(15 * 1024 * 1024 + 1)], { type: "image/jpeg" });
+    expect(await readPhotoText(big)).toEqual({ ok: false, problem: "too_large" });
+    expect(decoded).toEqual([]);
+  });
+
+  test("a photo is decoded at most 2,000 pixels wide, then read", async () => {
+    decoded.length = 0;
+    const photo = new Blob([Uint8Array.of(1, 2, 3)], { type: "image/png" });
+    expect(await readPhotoText(photo)).toEqual({ ok: true, text: "Chapter 4\nCells divide." });
+    expect(decoded).toEqual([{ size: 3, options: { resizeWidth: 2000, resizeQuality: "high" } }]);
   });
 });
