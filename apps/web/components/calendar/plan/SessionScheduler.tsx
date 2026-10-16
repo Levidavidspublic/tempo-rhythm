@@ -11,6 +11,8 @@ import { Segmented, StateLoading } from "@/components/goals/shared";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { getMonthGridRangeMs } from "@/lib/calendar/date-math";
+import { useLastLoaded } from "@/lib/calendar/last-loaded";
 import {
   addDays,
   formatLocalDate,
@@ -19,7 +21,7 @@ import {
   startOfWeek,
 } from "../../../../../packages/core/plan/calendar-math";
 import { type GridItem, localSlotToMs, msToLocalSlot, toGridItems } from "../gridData";
-import { MonthGrid, shiftMonth, todayLocal } from "../MonthGrid";
+import { MonthGrid, todayLocal } from "../MonthGrid";
 import { formatClock, longDate, type PlanLang, pt, weekStartFor } from "../planCopy";
 import { WeekGrid } from "../WeekGrid";
 
@@ -62,14 +64,14 @@ export function SessionScheduler({ planId, lang }: { planId: Id<"studyPlans">; l
   const shown = anchor ?? today;
   const weekStart = startOfWeek(shown, { weekStartsOn: weekStartFor(lang) });
   const { year, month } = parseLocalDate(shown);
-  const rangeStart = view === "week" ? weekStart : formatLocalDate(year, month, 1);
-  const rangeEnd =
+  // Week: the 7 days shown. Month: every cell of the 6 × 7 grid, leading and trailing days too.
+  const range =
     view === "week"
-      ? addDays(weekStart, 7)
-      : formatLocalDate(shiftMonth(year, month, 1).year, shiftMonth(year, month, 1).month, 1);
-  const range = { startMs: localSlotToMs(rangeStart, 0), endMs: localSlotToMs(rangeEnd, 0) };
-  const events = useQuery(api.calendar_events.listInRange, range);
-  const tasks = useQuery(api.tasks.listDueInRange, range);
+      ? { startMs: localSlotToMs(weekStart, 0), endMs: localSlotToMs(addDays(weekStart, 7), 0) }
+      : getMonthGridRangeMs(new Date(year, month - 1, 1), weekStartFor(lang));
+  // Keep the last results while the next week or month loads, so focus stays in the grid.
+  const events = useLastLoaded(useQuery(api.calendar_events.listInRange, range));
+  const tasks = useLastLoaded(useQuery(api.tasks.listDueInRange, range));
 
   const grid = useMemo(
     () =>

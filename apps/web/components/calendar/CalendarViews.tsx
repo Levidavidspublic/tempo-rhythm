@@ -11,6 +11,7 @@ import {
   fromDateInputValue,
   getCalendarRangeMs,
   getEventsInRange,
+  getMonthGridRangeMs,
   parseDateInputValue,
   toDateInputValue,
 } from "@/lib/calendar/date-math";
@@ -20,11 +21,12 @@ import {
   type StoredCalendarEvent,
   saveCalendarEvents,
 } from "@/lib/calendar/event-source";
+import { useLastLoaded } from "@/lib/calendar/last-loaded";
 import { getAddEventAuthState, SIGNED_OUT_MESSAGE, toAddEventErrorMessage } from "./addEventGuard";
 import { startOfWeek } from "../../../../packages/core/plan/calendar-math";
 import { type GridItem, localDateOf, localSlotToMs, toGridItems } from "./gridData";
 import { MonthGrid, todayLocal } from "./MonthGrid";
-import { formatClock, pt } from "./planCopy";
+import { formatClock, pt, weekStartFor } from "./planCopy";
 import { WeekGrid } from "./WeekGrid";
 import {
   EventRow,
@@ -316,6 +318,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const updateTask = useMutation(api.tasks.update);
   const restoreConvexEvent = useMutation(api.calendar_events.restore);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const { lang } = useLocale();
 
   useEffect(() => {
     if (eventSourceMode === "local") {
@@ -327,6 +330,15 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   const range = useMemo(
     () => getCalendarRangeMs(view, selectedDate ?? new Date()),
     [selectedDate, view]
+  );
+  // The month grid draws 6 whole weeks, so fetch from its first cell to the day after its last,
+  // not just the 1st to the 1st: leading and trailing days show their items too.
+  const queryRange = useMemo(
+    () =>
+      view === "month"
+        ? getMonthGridRangeMs(selectedDate ?? new Date(), weekStartFor(lang))
+        : range,
+    [lang, range, selectedDate, view]
   );
   // listInRange / listDueInRange call requireUser, which THROWS while the backend identity or the
   // user row isn't ready (e.g. during sign-in). getProfile returns null instead, so subscribe to the
@@ -342,13 +354,21 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   });
   const isAuthWaiting = eventSourceMode === "convex" && authState === "wait";
   const hasConvexUser = eventSourceMode === "convex" && isAuthenticated && profile != null;
-  const convexEvents = useQuery(
-    api.calendar_events.listInRange,
-    hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
+  // While the next window loads, keep the last results on screen (the skeleton is for the first
+  // load only), so the grid stays put and keyboard focus stays on the day.
+  const convexEvents = useLastLoaded(
+    useQuery(
+      api.calendar_events.listInRange,
+      hasConvexUser ? { startMs: queryRange.startMs, endMs: queryRange.endMs } : "skip"
+    ),
+    hasConvexUser
   );
-  const dueTasks = useQuery(
-    api.tasks.listDueInRange,
-    hasConvexUser ? { startMs: range.startMs, endMs: range.endMs } : "skip"
+  const dueTasks = useLastLoaded(
+    useQuery(
+      api.tasks.listDueInRange,
+      hasConvexUser ? { startMs: queryRange.startMs, endMs: queryRange.endMs } : "skip"
+    ),
+    hasConvexUser
   );
   const events = useMemo<DisplayCalendarEvent[]>(() => {
     if (eventSourceMode === "local") {
@@ -361,7 +381,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
       startsAtMs: event.startsAtMs,
     }));
   }, [convexEvents, eventSourceMode, localEvents]);
-  const visibleEvents = useMemo(() => getEventsInRange(events, range), [events, range]);
+  const visibleEvents = useMemo(() => getEventsInRange(events, queryRange), [events, queryRange]);
   const grid = useMemo(
     () => toGridItems({ events: visibleEvents, tasks: hasConvexUser ? (dueTasks ?? []) : [] }),
     [visibleEvents, dueTasks, hasConvexUser]
