@@ -1,9 +1,7 @@
 import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { studyTables } from "./schema/study";
-import { planTables } from "./schema/plans";
-import { recordingTables } from "./schema/recordings";
+import { kitchenStudyTables } from "./schema/kitchenStudy";
 
 // HARD_RULES §9 — every user-owned table must carry `deletedAt: v.optional(v.number())`
 // for soft-delete. `undefined` means the row is live; a number is the epoch-ms the row was
@@ -18,9 +16,7 @@ import { recordingTables } from "./schema/recordings";
 
 export default defineSchema({
   ...authTables,
-  ...studyTables,
-  ...planTables,
-  ...recordingTables,
+  ...kitchenStudyTables,
 
   users: defineTable({
     email: v.string(),

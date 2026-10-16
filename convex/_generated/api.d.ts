@@ -75,6 +75,7 @@ import type * as preferences from "../preferences.js";
 import type * as recordings from "../recordings.js";
 import type * as reminders from "../reminders.js";
 import type * as revenuecat from "../revenuecat.js";
+import type * as schema_kitchenStudy from "../schema/kitchenStudy.js";
 import type * as schema_plans from "../schema/plans.js";
 import type * as schema_recordings from "../schema/recordings.js";
 import type * as schema_study from "../schema/study.js";
@@ -161,6 +162,7 @@ declare const fullApi: ApiFromModules<{
   recordings: typeof recordings;
   reminders: typeof reminders;
   revenuecat: typeof revenuecat;
+  "schema/kitchenStudy": typeof schema_kitchenStudy;
   "schema/plans": typeof schema_plans;
   "schema/recordings": typeof schema_recordings;
   "schema/study": typeof schema_study;
