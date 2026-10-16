@@ -64,9 +64,14 @@ Evidence builder: gallery views for every screen, live + gallery screenshots (en
 - **Routes.** Everything new sits under `/study` (hub, review, sets, new, plan, record, ingest), so Today and the other areas don't change. EXTRAPOLATED.
 - **No PDF, Word or OCR library.** Each is a new dependency (a hot file). IngestSheet reads text files and paste, and uses the browser's own text detector for photos where it exists. EXTRAPOLATED; see Needs Amit.
 
+- **Backlog: voice and BYO voice are blocked, not built.** `docs/contracts/VOICE.md` (PR #871) is "PROPOSED, NOT ADOPTED. Blocked": owner decisions 1–8 and 11 (STT/TTS eligibility, caps and spend, continuous capture, sentence TTS, the Hebrew crisis list, time bounds) block the voice tickets #859–#866, which own the reducer, transport, TTS, runtime and mount paths. T5 (English live round trip, Kokoro) would also change a provider (DEFAULTS: "Don't change AI providers"). T6 (bring your own voice) overlaps open drafts #213 and #389 and is PRD F-102 (END). Both are logged as BLOCKED_USER_CHANGES / BLOCKED_DEPENDENCY rather than built around the contract.
+- **Backlog: what this run builds instead.** S16 AudioRecapPlayer + ReadAloudButton inside the study area, on the browser's own speech engine behind a `SpeechEngine` seam (Chatterbox slots in once decision 2 is made); S9 GuidedPlanCard for the plan-back preview. Chat-area items (S8 ChatShell, OpenUI cards, S10, council) stay with the parallel run and the open coach PRs. EXTRAPOLATED.
+
 ## Needs Amit
 
 - `AT` Add the `convex-arch` label to the PR once the `convex-arch:` commits look right. Until then scope-guard is red on purpose.
+- `AT` Decide the open items in `docs/contracts/VOICE.md` §8 (PR #871). Live voice (T5), Kokoro, read-aloud through a paid TTS, and recording minutes all wait on decisions 1, 2, 4 and 7.
+- `AT` Bring your own voice (T6): pick between the open drafts #213 / #389 and a new adapter set (OpenAI-Realtime family, Gemini Live, listen → think → speak), and confirm it is in scope before Gen 1 (PRD F-102 says END).
 - `AT` Approve (or not) libraries for IngestSheet: an OCR library for photos (for example `tesseract.js`, Apache-2.0, which downloads language data at run time) and PDF / Word readers. Until then photos work only where the browser has a built-in text detector.
 
 ## UNKNOWN
