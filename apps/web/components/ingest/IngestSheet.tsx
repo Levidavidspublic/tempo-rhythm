@@ -379,7 +379,8 @@ export function IngestSheetView({
                     <p className="tp-help" id={`${id}-text-help`}>
                       {tab === "paste" ? t("ig.paste.help") : t("ig.text.help")}
                     </p>
-                    <p className="tp-help" id={`${id}-count`} aria-live="polite">
+                    {/* Read with the field (aria-describedby); a live region here spoke on every key. */}
+                    <p className="tp-help" id={`${id}-count`}>
                       <CharCount text={text} t={t} />
                     </p>
                     {tooLarge ? (

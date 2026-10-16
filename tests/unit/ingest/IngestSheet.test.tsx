@@ -88,6 +88,13 @@ describe("IngestSheet", () => {
     expect(html).toMatch(/id="ig-page-title"[^>]*dir="auto"[^>]*value="Mitosis"/);
   });
 
+  test("Paste: the count is read with the field, not announced on every key press", () => {
+    const html = sheet({ initialTab: "paste", initialText: "Mitosis\nCells split in two." });
+    expect(html).toContain('aria-describedby="ig-text-help ig-count"');
+    expect(html).toContain('<p class="tp-help" id="ig-count"><span class="tp-num">27</span>');
+    expect(count(html, /aria-live/g)).toBe(0);
+  });
+
   test("Paste: more than 200 KB says so in words and Save waits", () => {
     const html = sheet({ initialTab: "paste", initialText: "a".repeat(204801) });
     expect(html).toContain("That&#x27;s more than 200 KB of text.");
