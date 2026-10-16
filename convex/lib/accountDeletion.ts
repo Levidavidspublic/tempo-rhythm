@@ -18,6 +18,13 @@ import type { MutationCtx } from "../_generated/server";
  * A tombstone alone does not stop an endpoint from reading a row. The read side lives in
  * `pagePrivacy.ts` (#808): every page, Undo, proposal and Agent-linked chat path calls one of its
  * guards, which deny a deleted account, note or conversation and any tombstoned row immediately.
+ *
+ * Executor connections (#989) take two dedicated paths below, never a hard delete: a live
+ * `connections` row becomes `revoking` (and tombstoned), and a live `oauthPending` row has its
+ * encrypted PKCE verifier scrubbed. `connectionSecrets` keeps its ciphertexts under the tombstone
+ * only until `connections.revokeForAccountDeletion` (scheduled by `users.deleteMyAccount`, since
+ * this function never schedules) revokes them at Executor and scrubs them, or the sweep does an
+ * hour later.
  */
 export const USER_OWNED_TABLES = [
   "tasks",
@@ -40,6 +47,10 @@ export const USER_OWNED_TABLES = [
   "pageOperationPayloads",
   "pageProposals",
   "voiceSessions",
+  "coachWebSearches",
+  "connectionSecrets",
+  "connectionCalls",
+  "connectionLimits",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
@@ -121,6 +132,9 @@ export async function softDeleteUserAccount(
     deletedCount += await softDeleteAdditionalRows(ctx, table, userId, now);
   }
 
+  deletedCount += await markConnectionsRevoking(ctx, userId, now);
+  deletedCount += await scrubPendingConnects(ctx, userId, now);
+
   const tokens = await ctx.db
     .query("mcpTokens")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -191,6 +205,55 @@ async function softDeleteAdditionalRows(
         row._id,
         table === "coachProposals" ? { deletedAt: now } : { deletedAt: now, updatedAt: now },
       );
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Live Executor connections (including one still waiting for its owner's confirm) become
+ * `revoking` and are tombstoned, and an unused confirm nonce is dropped; the revoke runs later.
+ */
+async function markConnectionsRevoking(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  now: number,
+): Promise<number> {
+  const rows = await ctx.db
+    .query("connections")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+  let count = 0;
+  for (const row of rows) {
+    if (row.deletedAt === undefined) {
+      await ctx.db.patch(row._id, {
+        status: "revoking",
+        confirmNonceHash: undefined,
+        confirmExpiresAt: undefined,
+        deletedAt: now,
+        updatedAt: now,
+      });
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/** Live connect attempts lose their encrypted PKCE verifier and are tombstoned. */
+async function scrubPendingConnects(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  now: number,
+): Promise<number> {
+  const rows = await ctx.db
+    .query("oauthPending")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+  let count = 0;
+  for (const row of rows) {
+    if (row.deletedAt === undefined) {
+      await ctx.db.patch(row._id, { codeVerifierCipher: undefined, deletedAt: now, updatedAt: now });
       count += 1;
     }
   }

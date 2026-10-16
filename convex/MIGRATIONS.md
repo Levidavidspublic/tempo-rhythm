@@ -79,7 +79,9 @@ Additive only. No backfill required.
   endpoint (`https://api.deepinfra.com/v1/openai/chat/completions`) with
   `TEMPO_AI_MODEL` (default `deepseek-ai/DeepSeek-V4.1-Flash`) and `DEEPINFRA_API_KEY`.
   `memories.extractMemories` uses the same seam (no more AI_PROVIDER/AI_MODEL/AI_API_KEY
-  reads). `ai_smoke.pingMistral` → `ai_smoke.pingModel`. `MISTRAL_API_KEY` is no longer read.
+  reads). `ai_smoke.pingMistral` → `ai_smoke.pingModel`. `MISTRAL_API_KEY` is no longer read
+  for text; TEMPO-B07-01 (#976, below) reads it again, for coach web search only
+  (`lib/webSearch.ts`).
 
 Deployed to: **not deployed by this ticket**. Merge to `integration` deploys the test
 deployment `ceaseless-dog-617` via `convex-deploy-test`. Live is Amit's.
@@ -287,3 +289,22 @@ shapes and indexes; the semantic limits stay with the later helper.
 
 Deployed to: **not deployed by this authoring ticket**. The normal integration TEST deployment is
 separate; live is not touched here.
+
+## 2026-10-16 — TEMPO-B07-01 coach web search + done-tasks range index
+
+Branch `t/976-coach-web-search`, ticket #976 (Ticket 0, `convex-arch`). Additive only — one new
+table, three new optional fields, one new index. No backfill.
+
+- **New optional field `userPreferences.coachWebSearch`** — the person turned coach web search on.
+  Missing reads as `false` (`preferences.get`, `preferencesFor`).
+- **New optional field `messages.sources`** — `{ title, site, url }[]` on a coach reply that searched
+  the web, in `[1]`, `[2]` citation order. No page text or snippet is stored.
+- **New table `coachWebSearches`** — one content-free row per web search the coach actually ran
+  (`userId`, `utcDateKey`, timestamps, `deletedAt`): the per-person daily limit counts them per UTC
+  day. Indexes `by_userId`, `by_userId_utcDateKey`. Enrolled in account deletion
+  (`USER_OWNED_TABLES`); tombstoned rows still count toward their day. Booking a search
+  hard-deletes up to 10 of the caller's rows from more than 7 days ago (expired rate-limit counts,
+  HARD_RULES §5), so the table stays small.
+- **New index `tasks.by_userId_deletedAt_completedAt`** — `tasks.listDoneInRange`.
+
+Deployed to: **not deployed by this authoring ticket**.
