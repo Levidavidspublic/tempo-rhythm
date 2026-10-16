@@ -47,6 +47,7 @@ export type TodayBrainDumpPanelProps = {
  * Today's brain dump, with the same rules as /brain-dump (lib/brain-dump-today.ts): crisis words
  * get the resources card, nothing is accepted at first, nothing is added until Add accepted, and
  * then the Now lines go on today while Soon and Later are added without a date.
+ * Surfaces, text and buttons use theme tokens only, so the panel follows the light and dark themes.
  */
 export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
   const baseId = useId();
@@ -159,7 +160,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
       className="overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 shadow-[0_16px_45px_rgba(26,25,23,0.08)]"
       aria-labelledby="today-brain-dump-heading"
     >
-      <div className="border-b border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(232,168,124,0.22),transparent_40%),linear-gradient(135deg,var(--color-card),var(--color-surface-sunken))] px-6 py-6">
+      <div className="border-b border-border/70 bg-[radial-gradient(circle_at_top_left,var(--color-accent-wash),transparent_40%),linear-gradient(135deg,var(--color-card),var(--color-surface-sunken))] px-6 py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
@@ -267,7 +268,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                   type="button"
                   onClick={() => void runSort("planner")}
                   disabled={busy || !hasText}
-                  className="rounded-full bg-linear-to-r from-[#D97757] to-[#E8A87C] text-primary-foreground shadow-[0_10px_24px_rgba(217,119,87,0.24)]"
+                  className="rounded-full shadow-[0_10px_24px_rgba(217,119,87,0.24)]"
                 >
                   {sorting === "planner" ? (
                     <>
@@ -380,7 +381,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                         <Button
                           type="button"
                           size="sm"
-                          className="rounded-full bg-linear-to-r from-[#D97757] to-[#E8A87C] text-primary-foreground"
+                          className="rounded-full"
                           onClick={() => void handleAddAccepted()}
                           disabled={toAdd.length === 0 || busy}
                         >
