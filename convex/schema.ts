@@ -684,6 +684,17 @@ export default defineSchema({
     .index("by_cleanupDueAtMs", ["cleanupDueAtMs"])
     .index("by_metadataExpiresAtMs", ["metadataExpiresAtMs"]),
 
+  journalEntries: defineTable({
+    userId: v.id("users"),
+    dateKey: v.string(),
+    body: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_user_date", ["userId", "dateKey"]),
+
   habits: defineTable({
     userId: v.id("users"),
     name: v.string(),
