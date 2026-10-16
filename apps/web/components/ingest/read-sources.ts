@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  decodeFileBytes,
   fileKind,
   INGEST_MAX_FILE_BYTES,
   type IngestResult,
@@ -14,7 +15,10 @@ import {
  * the text the person keeps and saves becomes a page.
  */
 
-/** Read a picked file as text with FileReader and turn it into the import. */
+/**
+ * Read a picked file's bytes with FileReader, decode them (UTF-8, or Windows-1255 for older
+ * Hebrew files; see decodeFileBytes) and turn the text into the import.
+ */
 export function readIngestFile(file: File): Promise<IngestResult> {
   if (!fileKind(file.name, file.type)) return Promise.resolve({ ok: false, problem: "type" });
   if (file.size === 0) return Promise.resolve({ ok: false, problem: "empty" });
@@ -23,13 +27,18 @@ export function readIngestFile(file: File): Promise<IngestResult> {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const raw = typeof reader.result === "string" ? reader.result : "";
-      resolve(interpretFile(file.name, raw, file.type));
+      const bytes = reader.result instanceof ArrayBuffer ? new Uint8Array(reader.result) : null;
+      const raw = bytes ? decodeFileBytes(bytes) : null;
+      resolve(
+        raw === null
+          ? { ok: false, problem: "unreadable" }
+          : interpretFile(file.name, raw, file.type)
+      );
     };
     reader.onerror = () => resolve({ ok: false, problem: "unreadable" });
     reader.onabort = () => resolve({ ok: false, problem: "unreadable" });
     try {
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     } catch {
       resolve({ ok: false, problem: "unreadable" });
     }

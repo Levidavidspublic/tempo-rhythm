@@ -74,6 +74,28 @@ export function escapeTempoFences(text: string): string {
   return text.replace(/^([ \t]*)(`{3,}|~{3,})([ \t]*json[ \t]+tempo\b.*)$/gim, "$1\\$2$3");
 }
 
+/**
+ * A text file's bytes as text: the encoding its byte-order mark names, else UTF-8, else
+ * Windows-1255 (Hebrew saved by older Windows programs). Each decoder is strict, so a wrong
+ * guess fails instead of filling the page with replacement marks. Null when none fits.
+ */
+export function decodeFileBytes(bytes: Uint8Array): string | null {
+  const labels =
+    bytes[0] === 0xff && bytes[1] === 0xfe
+      ? ["utf-16le"]
+      : bytes[0] === 0xfe && bytes[1] === 0xff
+        ? ["utf-16be"]
+        : ["utf-8", "windows-1255"];
+  for (const label of labels) {
+    try {
+      return new TextDecoder(label, { fatal: true }).decode(bytes);
+    } catch {
+      // Not this encoding (or this browser doesn't know it): try the next one.
+    }
+  }
+  return null;
+}
+
 /** Size of the text in UTF-8 bytes. */
 export function textBytes(text: string): number {
   return new TextEncoder().encode(text).length;
