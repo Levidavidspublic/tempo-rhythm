@@ -183,6 +183,11 @@ export type PlanPreviewProps = {
    * summary). The "doesn't fit" notice with its three ways out stays above it either way.
    */
   renderSessions?: (sessions: TimedSession[]) => ReactNode;
+  /**
+   * A just-accepted plan's card while its Undo is open. It is drawn in place of the live preview,
+   * whatever the form says now, so Undo stays and the plan can't be added twice.
+   */
+  pinned?: ReactNode;
 };
 
 export function PlanPreview({
@@ -194,6 +199,7 @@ export function PlanPreview({
   onEditTopics,
   idPrefix = "pp",
   renderSessions,
+  pinned,
 }: PlanPreviewProps) {
   const headingId = `${idPrefix}-preview-h`;
   return (
@@ -205,7 +211,9 @@ export function PlanPreview({
       <h2 className="tp-section__title" id={headingId}>
         {pt(lang, "pp.preview.h")}
       </h2>
-      {state.status === "empty" ? (
+      {pinned ? (
+        pinned
+      ) : state.status === "empty" ? (
         <p className="tp-muted">{pt(lang, "pp.preview.empty")}</p>
       ) : state.status === "error" ? (
         <p className="tp-error-text" role="alert">

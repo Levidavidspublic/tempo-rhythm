@@ -7,7 +7,8 @@
  * (S9): Edit changes the sessions here only, and nothing is saved until the card's one primary
  * button, "Add these sessions", calls `plans.createFromPreview` with the edited sessions. The
  * card then shows Undo for 5 minutes (`plans.undoCreate`) and a To do / Doing / Done status per
- * session (`tasks.update`). Reject sets the preview aside until the form changes.
+ * session (`tasks.update`). Reject sets the preview aside until the form changes. While Undo is
+ * open the accepted plan stays on the card even if the form changes, so it can't be added twice.
  */
 import { GuidedPlanCard, type GuidedStep, type GuidedStepStatus } from "@tempo/ui";
 import { useMutation, useQuery } from "convex/react";
@@ -16,6 +17,7 @@ import { useSignedIn } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useCountdown } from "@/lib/useCountdown";
 import {
   isLocalDate,
   type LocalDate,
@@ -33,6 +35,7 @@ import {
   type PlanFormValues,
   previewKey,
   sessionsFromSteps,
+  shownDecision,
   toGuidedSteps,
   waysOut,
 } from "./planForm";
@@ -110,7 +113,11 @@ export function PlanPathScreen() {
 
   const okSessions = preview.status === "ok" ? preview.sessions : null;
   const key = okSessions ? previewKey(okSessions) : "";
-  const current = decision && decision.key === key ? decision : null;
+  // While Undo is open the accepted plan stays on the card, whatever the form says now.
+  const undoLeft = useCountdown(decision?.status === "accepted" ? decision.undoUntil : undefined);
+  const shown = shownDecision(decision, key, undoLeft !== null);
+  const current = shown.decision;
+  const pinned = shown.pinned ? shown.decision : null;
   const cardStatus = current?.status ?? "pending";
   const labels = useMemo(() => guidedLabels(lang), [lang]);
 
@@ -135,7 +142,8 @@ export function PlanPathScreen() {
 
   const accept = async (steps: GuidedStep[]) => {
     const sessions = sessionsFromSteps(steps);
-    if (sessions.length === 0 || saving) return;
+    // A plan whose Undo is still open is already saved: never add it (or a changed copy) twice.
+    if (sessions.length === 0 || saving || pinned) return;
     if (values.title.trim() === "") {
       // Flagged on the field, and said again next to the button that was pressed.
       setTitleError(true);
@@ -167,6 +175,8 @@ export function PlanPathScreen() {
         planId: result.planId,
         undoUntil: result.undoUntil,
         stepIds: steps.map((step) => step.id),
+        steps,
+        title: values.title.trim(),
       });
     } catch {
       setMessage("pp.error");
@@ -193,7 +203,7 @@ export function PlanPathScreen() {
 
   const reject = () => {
     setMessage(null);
-    setDecision({ key, status: "rejected", stepIds: [] });
+    setDecision({ key, status: "rejected", stepIds: [], steps: [], title: "" });
   };
 
   const setStepStatus = async (stepId: string, status: GuidedStepStatus) => {
@@ -232,6 +242,25 @@ export function PlanPathScreen() {
 
   const activePlan = planId ?? plans?.[0]?._id ?? null;
 
+  const card = (cardKey: string, title: string, steps: GuidedStep[]) => (
+    <GuidedPlanCard
+      key={cardKey}
+      title={title}
+      steps={steps}
+      labels={labels}
+      status={cardStatus}
+      busy={saving}
+      undoUntilMs={current?.undoUntil}
+      stepStatuses={stepStatuses}
+      formatDate={(date) => shortDate(lang, date as LocalDate)}
+      message={messageNode}
+      onAccept={(accepted) => void accept(accepted)}
+      onReject={reject}
+      onUndo={() => void undo()}
+      onStepStatus={saved ? (id, status) => void setStepStatus(id, status) : undefined}
+    />
+  );
+
   return (
     <div className="tp-page tp-page--wide tp-plan" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
@@ -257,24 +286,12 @@ export function PlanPathScreen() {
         onUseMinutes={(minutesPerDay) => change({ minutesPerDay })}
         state={preview}
         ways={ways}
-        renderSessions={(sessions) => (
-          <GuidedPlanCard
-            key={key}
-            title={values.title.trim() || pt(lang, "pp.preview.h")}
-            steps={toGuidedSteps(sessions, lang)}
-            labels={labels}
-            status={cardStatus}
-            busy={saving}
-            undoUntilMs={current?.undoUntil}
-            stepStatuses={stepStatuses}
-            formatDate={(date) => shortDate(lang, date as LocalDate)}
-            message={messageNode}
-            onAccept={(steps) => void accept(steps)}
-            onReject={reject}
-            onUndo={() => void undo()}
-            onStepStatus={saved ? (id, status) => void setStepStatus(id, status) : undefined}
-          />
-        )}
+        pinned={
+          pinned ? card(pinned.key, pinned.title || pt(lang, "pp.preview.h"), pinned.steps) : null
+        }
+        renderSessions={(sessions) =>
+          card(key, values.title.trim() || pt(lang, "pp.preview.h"), toGuidedSteps(sessions, lang))
+        }
       />
 
       {signedIn === "ready" && activePlan ? (
@@ -294,6 +311,9 @@ type Decision = {
   undoUntil?: number;
   /** The accepted steps' ids, in the order their tasks were made. */
   stepIds: string[];
+  /** The accepted steps and plan name, drawn while Undo is open even if the form changes. */
+  steps: GuidedStep[];
+  title: string;
 };
 
 /** Unix ms for a local `YYYY-MM-DD` date and clock minute, in this browser's time zone. */

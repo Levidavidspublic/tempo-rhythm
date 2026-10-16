@@ -284,6 +284,21 @@ export function previewKey(sessions: readonly TimedSession[]): string {
   return sessions.map((s) => `${s.date}|${s.startMinute}|${s.minutes}|${s.kind}|${s.label}`).join("~");
 }
 
+/**
+ * Which decision the plan card shows for the preview `key`. While an accepted plan's Undo is open
+ * (`undoOpen`) that plan stays on the card whatever the form says now: a typo, another date or a
+ * language switch changes the key, and a fresh card would drop Undo and offer Accept again, which
+ * would add the plan twice. Once the window closes, a new key is a new proposal.
+ */
+export function shownDecision<D extends { key: string; status: string }>(
+  decision: D | null,
+  key: string,
+  undoOpen: boolean
+): { decision: D | null; pinned: boolean } {
+  if (decision?.status === "accepted" && undoOpen) return { decision, pinned: true };
+  return { decision: decision && decision.key === key ? decision : null, pinned: false };
+}
+
 /** GuidedPlanCard's words in the person's language. Accept reuses "Add these sessions". */
 export function guidedLabels(lang: PlanLang): GuidedPlanLabels {
   return {
