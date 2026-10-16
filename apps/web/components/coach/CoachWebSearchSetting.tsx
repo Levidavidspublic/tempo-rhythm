@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { Component, type ReactNode, useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SettingsSwitch } from "@/components/settings/controls";
 import { useSettingsStatus } from "@/components/settings/status";
@@ -24,6 +24,17 @@ function useUtcDay(): string {
   return day;
 }
 
+/** The row is extra: if its read fails (say the backend isn't deployed yet), Preferences shows without it. */
+class WebSearchBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 /**
  * Settings · Preferences: the coach's web search switch (TEMPO-B07-06). Off unless the person
  * turns it on (`preferences.update({ coachWebSearch })`, #976). The note says what leaves Tempo
@@ -31,7 +42,7 @@ function useUtcDay(): string {
  * no search provider the row says "Not set up yet" and the switch can't be turned on. Saving
  * works like the rest of the page: it applies at once and the header says "Saved."
  */
-export function CoachWebSearchSetting() {
+function WebSearchRow() {
   const { t } = useLocale();
   const announce = useSettingsStatus();
   const utcDay = useUtcDay();
@@ -109,5 +120,13 @@ export function CoachWebSearchSetting() {
         </p>
       ) : null}
     </section>
+  );
+}
+
+export function CoachWebSearchSetting() {
+  return (
+    <WebSearchBoundary>
+      <WebSearchRow />
+    </WebSearchBoundary>
   );
 }
