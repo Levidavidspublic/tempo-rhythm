@@ -24,6 +24,7 @@ mock.module("../../../apps/web/components/providers/LocaleProvider", () => ({
 const { RemindersChannelList } = await import("../../../apps/web/components/settings-reminders/RemindersSettings");
 const { ShareSheet } = await import("../../../apps/web/components/share/ShareSheet");
 const { MiniAppFrame } = await import("../../../apps/web/components/mini-app/MiniAppFrame");
+const { miniAppFingerprint } = await import("../../../apps/web/components/mini-app/mini-app");
 const { en, he } = await import("../../../apps/web/lib/i18n-groups/t10");
 
 const count = (html: string, pattern: RegExp) => html.match(pattern)?.length ?? 0;
@@ -105,7 +106,7 @@ describe("MiniAppFrame", () => {
 
   test("before approval: a card that explains the widget and a Run button, no iframe", () => {
     const out = renderToStaticMarkup(
-      createElement(MiniAppFrame, { html, title: "Timer", approved: false, onApprove: () => {} }),
+      createElement(MiniAppFrame, { html, title: "Timer", approvedFingerprint: null, onApprove: () => {} }),
     );
     expect(out).not.toContain("<iframe");
     expect(out).toContain('data-state="ask"');
@@ -116,7 +117,7 @@ describe("MiniAppFrame", () => {
 
   test("after approval: a sandboxed srcdoc iframe with the CSP first", () => {
     const out = renderToStaticMarkup(
-      createElement(MiniAppFrame, { html, title: "Timer", approved: true, onApprove: () => {} }),
+      createElement(MiniAppFrame, { html, title: "Timer", approvedFingerprint: miniAppFingerprint(html), onApprove: () => {} }),
     );
     expect(out).toContain('sandbox="allow-scripts"');
     expect(out).not.toMatch(/allow-same-origin|allow-top-navigation|allow-forms|allow-popups/);
@@ -128,9 +129,25 @@ describe("MiniAppFrame", () => {
     expect(out).not.toContain("src=\"http");
   });
 
+  test("an approval is for the code it was given: changed HTML asks again", () => {
+    const approvedFingerprint = miniAppFingerprint(html);
+    const changed = `${html}<script>location.href='https://example.test/?x'</script>`;
+    const out = renderToStaticMarkup(
+      createElement(MiniAppFrame, { html: changed, title: "Timer", approvedFingerprint, onApprove: () => {} }),
+    );
+    expect(out).not.toContain("<iframe");
+    expect(out).toContain('data-state="ask"');
+    expect(out).toContain("Run this widget");
+  });
+
   test("over 64 KB never runs, even when approved", () => {
     const out = renderToStaticMarkup(
-      createElement(MiniAppFrame, { html: "a".repeat(64 * 1024 + 1), title: "Big", approved: true, onApprove: () => {} }),
+      createElement(MiniAppFrame, {
+        html: "a".repeat(64 * 1024 + 1),
+        title: "Big",
+        approvedFingerprint: miniAppFingerprint("a".repeat(64 * 1024 + 1)),
+        onApprove: () => {},
+      }),
     );
     expect(out).not.toContain("<iframe");
     expect(out).toContain('data-state="too-large"');

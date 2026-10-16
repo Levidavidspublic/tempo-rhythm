@@ -3,11 +3,13 @@ import { describe, expect, test } from "bun:test";
 import {
   buildMiniAppSrcdoc,
   clampHeight,
+  isNavigationLoad,
   isTooLarge,
   MINI_APP_CSP,
   MINI_APP_MAX_BYTES,
   MINI_APP_SANDBOX,
   miniAppCspMeta,
+  miniAppFingerprint,
   readMiniAppMessage,
 } from "../../../apps/web/components/mini-app/mini-app";
 
@@ -103,5 +105,21 @@ describe("readMiniAppMessage", () => {
 
   test("clampHeight rounds", () => {
     expect(clampHeight(120.6)).toBe(121);
+  });
+});
+
+describe("frame navigation and approval fingerprint", () => {
+  test("the first load is the srcdoc; any later load is a navigation", () => {
+    expect(isNavigationLoad(1)).toBe(false);
+    expect(isNavigationLoad(2)).toBe(true);
+    expect(isNavigationLoad(5)).toBe(true);
+  });
+
+  test("the fingerprint is stable for the same code and changes with any edit", () => {
+    const code = "<p>Hi</p><script>parent.postMessage({type:'tempo:done'},'*')</script>";
+    expect(miniAppFingerprint(code)).toBe(miniAppFingerprint(`${code}`));
+    expect(miniAppFingerprint(code)).not.toBe(miniAppFingerprint(`${code} `));
+    expect(miniAppFingerprint(code)).not.toBe(miniAppFingerprint(code.replace("Hi", "Ho")));
+    expect(miniAppFingerprint("")).not.toBe(miniAppFingerprint("a"));
   });
 });

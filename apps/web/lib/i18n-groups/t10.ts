@@ -57,6 +57,7 @@ export const en = {
   "mini.tooBig": "This widget is larger than 64 KB, so Tempo won't run it. The page itself is fine.",
   "mini.running": "Running in a sealed frame",
   "mini.done": "The widget says it's finished.",
+  "mini.stopped": "This widget tried to open another page, so Tempo stopped it. Nothing else on this page changed.",
 } as const;
 
 export type T10CopyKey = keyof typeof en;
@@ -112,4 +113,5 @@ export const he: Record<T10CopyKey, string> = {
   "mini.tooBig": "הווידג'ט גדול מ־64 KB, אז Tempo לא יפעיל אותו. העמוד עצמו בסדר.",
   "mini.running": "רץ במסגרת סגורה",
   "mini.done": "הווידג'ט סיים.",
+  "mini.stopped": "הווידג'ט ניסה לפתוח עמוד אחר, אז Tempo עצר אותו. שום דבר אחר בעמוד לא השתנה.",
 };

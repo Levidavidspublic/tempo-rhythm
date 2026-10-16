@@ -3,16 +3,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
-import { buildMiniAppSrcdoc, isTooLarge, MINI_APP_MIN_HEIGHT, MINI_APP_SANDBOX, readMiniAppMessage } from "./mini-app";
+import {
+  buildMiniAppSrcdoc,
+  isNavigationLoad,
+  isTooLarge,
+  MINI_APP_MIN_HEIGHT,
+  MINI_APP_SANDBOX,
+  miniAppFingerprint,
+  readMiniAppMessage,
+} from "./mini-app";
 
 export type MiniAppFrameProps = {
   /** The widget's own HTML, exactly as its block carries it. Nothing else is passed in. */
   html: string;
   /** The widget's name, shown on the card and as the frame's accessible name. */
   title: string;
-  /** True once the person chose to run this widget. */
-  approved: boolean;
-  onApprove: () => void;
+  /**
+   * The fingerprint (`miniAppFingerprint`) of the code the person chose to run, or null. An
+   * approval holds only for that exact HTML: when `html` changes, the widget asks again.
+   */
+  approvedFingerprint: string | null;
+  /** The person chose to run the widget; called with the fingerprint of the code they saw. */
+  onApprove: (fingerprint: string) => void;
   /** The widget sent `tempo:done`. */
   onDone?: () => void;
 };
@@ -25,17 +37,37 @@ const START_HEIGHT = 160;
  * No same-origin, so it can't reach Tempo's storage, cookies or session; no keys or user data are
  * passed in; the only way back is a size or "done" message from that frame. A building block:
  * not wired into pages yet.
+ *
+ * The approval is for a fingerprint of the code, so changed code asks again. If the widget
+ * navigates its own frame (any load after the srcdoc's first), the frame is taken down and a
+ * note says so.
+ *
+ * Residual risk (UNKNOWN, not verified in a browser): a CSP can't block `RTCPeerConnection`, so a
+ * widget could try WebRTC to reach the network. The sandbox has no `allow-same-origin` (no
+ * cookies, storage or session) and no user data is passed in, so it only has its own code to
+ * send; a navigation's request (with whatever is in its URL) has left before the load guard runs.
  */
-export function MiniAppFrame({ html, title, approved, onApprove, onDone }: MiniAppFrameProps) {
+export function MiniAppFrame({ html, title, approvedFingerprint, onApprove, onDone }: MiniAppFrameProps) {
   const { t } = useLocale();
   const frame = useRef<HTMLIFrameElement | null>(null);
   const [height, setHeight] = useState(START_HEIGHT);
   const [done, setDone] = useState(false);
+  const [stoppedFor, setStoppedFor] = useState<string | null>(null);
+  // Loads counted per srcdoc: a new srcdoc's first load starts the count again.
+  const loads = useRef<{ doc: string; count: number }>({ doc: "", count: 0 });
   const tooLarge = isTooLarge(html);
-  const run = approved && !tooLarge;
+  const fingerprint = useMemo(() => miniAppFingerprint(html), [html]);
+  const stopped = stoppedFor === fingerprint;
+  const run = approvedFingerprint === fingerprint && !tooLarge && !stopped;
   const srcDoc = useMemo(() => (run ? buildMiniAppSrcdoc(html) : ""), [run, html]);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
+
+  const onLoad = () => {
+    if (loads.current.doc !== srcDoc) loads.current = { doc: srcDoc, count: 0 };
+    loads.current.count += 1;
+    if (isNavigationLoad(loads.current.count)) setStoppedFor(fingerprint);
+  };
 
   useEffect(() => {
     if (!run) return;
@@ -51,6 +83,24 @@ export function MiniAppFrame({ html, title, approved, onApprove, onDone }: MiniA
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [run]);
+
+  if (stopped && !tooLarge) {
+    return (
+      <section className="tp-card tp-miniapp" data-component="MiniAppFrame" data-state="stopped">
+        <p className="tp-miniapp__kind">
+          <TpIcon name="module" size="sm" />
+          <span>{t("mini.kind")}</span>
+        </p>
+        <h3 className="tp-miniapp__title" dir="auto">
+          {title}
+        </h3>
+        <p className="tp-miniapp__note" role="note">
+          <TpIcon name="info" size="sm" />
+          <span>{t("mini.stopped")}</span>
+        </p>
+      </section>
+    );
+  }
 
   if (!run) {
     return (
@@ -72,7 +122,7 @@ export function MiniAppFrame({ html, title, approved, onApprove, onDone }: MiniA
             <p className="tp-miniapp__body">{t("mini.what")}</p>
             <p className="tp-help">{t("mini.ask")}</p>
             <div className="tp-miniapp__actions">
-              <button className="tp-btn tp-btn--secondary" type="button" onClick={onApprove}>
+              <button className="tp-btn tp-btn--secondary" type="button" onClick={() => onApprove(fingerprint)}>
                 <TpIcon name="play" size="sm" />
                 <span>{t("mini.run")}</span>
               </button>
@@ -96,6 +146,7 @@ export function MiniAppFrame({ html, title, approved, onApprove, onDone }: MiniA
         sandbox={MINI_APP_SANDBOX}
         referrerPolicy="no-referrer"
         srcDoc={srcDoc}
+        onLoad={onLoad}
         style={{ blockSize: `${Math.max(height, MINI_APP_MIN_HEIGHT)}px` }}
       />
       {done ? (
