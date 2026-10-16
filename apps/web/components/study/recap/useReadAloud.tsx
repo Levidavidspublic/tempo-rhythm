@@ -166,7 +166,7 @@ function SlotButton({
 export function useReadAloudSlot(resetKey?: unknown, options: { engine?: SpeechEngine } = {}): (text: string) => ReactNode {
   const { t } = useLocale();
   const reader = useReadAloud({ engine: options.engine });
-  const labels = useMemo(() => ({ read: t("st.ra.read"), stop: t("st.ra.stop") }), [t]);
+  const labels = useMemo(() => ({ read: t("st.ra.read") }), [t]);
   const { speaking, status, toggle, stop } = reader;
   const speakingNow = useRef(speaking);
   speakingNow.current = speaking;

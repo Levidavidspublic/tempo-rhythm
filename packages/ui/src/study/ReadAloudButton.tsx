@@ -2,19 +2,21 @@ import { Pause, Volume } from "../icons";
 
 /**
  * ReadAloudButton (kitchen T4, components.md §2.10): a toggle that reads a piece of text aloud.
- * `.tp-btn.tp-btn--ghost.tp-btn--sm.tp-readaloud[aria-pressed]` with `[data-label]`; the volume
- * icon swaps to pause while it reads, and the word switches "Read aloud" / "Stop reading", so the
- * state never rests on the icon alone.
+ * `.tp-btn.tp-btn--ghost.tp-btn--sm.tp-readaloud[aria-pressed]` with `[data-label]`. A toggle
+ * keeps one name: it is "Read aloud" whether pressed or not, and aria-pressed carries the state
+ * (a screen reader says "Read aloud, pressed", never "Stop reading, pressed"). On screen the
+ * volume icon swaps to pause and the pressed look shows while it reads, so the state never rests
+ * on colour alone.
  *
  * Presentational: the host owns the speech engine (see apps/web/components/study/recap) and
  * passes whether this text is the one being read, plus every word.
  */
 
 export type ReadAloudLabels = {
-  /** e.g. "Read aloud". */
+  /** The button's one name, e.g. "Read aloud". */
   read: string;
-  /** e.g. "Stop reading". */
-  stop: string;
+  /** No longer drawn: the name stays `read` while pressed. Kept so existing hosts still type-check. */
+  stop?: string;
 };
 
 export type ReadAloudButtonProps = {
@@ -27,7 +29,7 @@ export type ReadAloudButtonProps = {
 };
 
 export function ReadAloudButton({ text, pressed, onToggle, labels, disabled }: ReadAloudButtonProps) {
-  const label = pressed ? labels.stop : labels.read;
+  const label = labels.read;
   return (
     <button
       type="button"

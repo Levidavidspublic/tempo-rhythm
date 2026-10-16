@@ -28,12 +28,13 @@ describe("ReadAloudButton", () => {
     expect(markup).not.toContain("tp-btn--primary");
   });
 
-  test("on: pressed, the pause icon and the word Stop reading", () => {
+  test("on: pressed and the pause icon; the name stays Read aloud (a toggle's name never changes)", () => {
     const off = renderToStaticMarkup(button(false));
     const on = renderToStaticMarkup(button(true));
     expect(on).toContain('aria-pressed="true"');
-    expect(on).toContain('data-label="Stop reading"');
-    expect(on).toContain("<span>Stop reading</span>");
+    expect(on).toContain('data-label="Read aloud"');
+    expect(on).toContain("<span>Read aloud</span>");
+    expect(on).not.toContain("Stop reading");
     // The icon swaps too (volume to pause), so the state is in words and in shape.
     expect(on.match(/<svg[\s\S]*?<\/svg>/)?.[0]).not.toBe(off.match(/<svg[\s\S]*?<\/svg>/)?.[0]);
   });

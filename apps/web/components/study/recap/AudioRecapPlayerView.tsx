@@ -23,7 +23,8 @@ import type { SpeechStatus } from "./useReadAloud";
 
 /**
  * S16 AudioRecapPlayer, drawn from props (kitchen T4). AudioRecapPlayer.tsx owns the state and
- * the speech engine; tests draw this directly. Play is the screen's one primary. The transcript
+ * the speech engine; tests draw this directly. Play is the screen's one primary, a toggle named
+ * "Play" whether pressed or not (aria-pressed says it is reading). The transcript
  * is a list of buttons: the current sentence has aria-current and a "Now" word (never colour
  * alone), and choosing one plays from there. Works with no voice at all: the transcript and
  * "Ask a question" stay, and the player says plainly why it can't play.
@@ -144,6 +145,7 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
                   <TpIcon name="undo" size="sm" flip />
                   <span>{fillNodes(t("st.ls.back"), { seconds: BACK_SECONDS })}</span>
                 </button>
+                {/* A toggle keeps one name: "Play", pressed while it reads; the icon shows pause. */}
                 <button
                   type="button"
                   className="tp-btn tp-btn--primary tp-recap__play"
@@ -153,7 +155,7 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
                   onClick={() => onAction({ type: state.playing ? "pause" : "play" })}
                 >
                   <TpIcon name={state.playing ? "pause" : "play"} size="sm" />
-                  <span>{state.playing ? t("st.ls.pause") : t("st.ls.play")}</span>
+                  <span>{t("st.ls.play")}</span>
                 </button>
                 <button
                   type="button"

@@ -133,8 +133,10 @@ describe("AudioRecapPlayer view", () => {
     expect(markup).toContain('aria-current="true"><span class="tp-recap__now">Now</span><span dir="auto">Cells divide in two ways.</span>');
     expect(markup).toContain('data-kind="cue"');
     expect(markup).toContain("Prophase, Metaphase, Anaphase and Telophase.");
-    expect(markup).toContain("<span>Pause</span>");
-    expect(markup).toContain('aria-pressed="true"');
+    // Pressed while it reads; the name stays Play (a toggle's name never changes).
+    expect(markup).toContain('data-action="recap-play" aria-pressed="true"><svg');
+    expect(markup).toMatch(/data-action="recap-play" aria-pressed="true">[\s\S]*?<span>Play<\/span><\/button>/);
+    expect(markup).not.toContain("<span>Pause</span>");
   });
 
   test("no Hebrew voice: says so plainly, no controls, the transcript and Ask still work", () => {
