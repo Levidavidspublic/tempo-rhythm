@@ -780,6 +780,9 @@ export const saveExecutorLookup = internalMutation({
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    if (!args.crisis && (!args.summary || args.query === undefined)) {
+      throw new Error("A lookup needs its query and summary");
+    }
     const clock = Date.now();
     const { newest, busy } = await heldTurn(ctx, args.conversationId, clock);
     if (busy && !args.crisis) {
@@ -797,6 +800,7 @@ export const saveExecutorLookup = internalMutation({
       reply = { content: crisisCardText(CRISIS_CARD), modelUsed: "crisis-card" };
     } else {
       const { locale } = await preferencesFor(ctx, user._id);
+      // Names and counts only: nothing else of Executor's answer is kept (doc §4.3 step 6).
       const executorLookup = { query: args.query, apps: args.summary.apps, total: args.summary.total };
       reply = {
         content: lookupReplyText(args.summary, locale),

@@ -971,8 +971,8 @@ export const markStatus = internalMutation({
     await ctx.db.patch(row._id, {
       status: args.status,
       lastErrorAt: now,
-      refreshLeaseUntil: undefined,
-      refreshLeaseToken: undefined,
+      // An `unavailable` mark leaves a refresh another lookup may be running alone.
+      ...(args.status === "needs_reauth" ? { refreshLeaseUntil: undefined, refreshLeaseToken: undefined } : {}),
       updatedAt: now,
     });
     if (args.status === "needs_reauth") {
