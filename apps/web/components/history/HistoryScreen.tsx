@@ -57,10 +57,15 @@ function companionName(technique: string | undefined, t: Translate): string {
   return technique ? companionNameFromTechnique(technique) : t("hist.companion");
 }
 
-function previewText(messages: HistoryMessage[], t: Translate): string {
+/**
+ * The first loaded message, or null when none is loaded. Only the open thread's messages and the
+ * search hits are fetched, and every listed thread holds a message (isSavedThread), so a thread
+ * with nothing loaded shows no preview line rather than a false "no messages yet".
+ */
+function previewText(messages: HistoryMessage[]): string | null {
   return messages.some((message) => message.role !== "system")
     ? getConversationPreview(messages)
-    : t("hist.preview.empty");
+    : null;
 }
 
 export function HistoryScreen() {
@@ -296,6 +301,7 @@ export function HistoryScreen() {
               >
                 {filteredConversations.map((conversation) => {
                   const isSelected = activeId === conversation.id;
+                  const preview = previewText(conversation.messages);
                   return (
                     <button
                       key={conversation.id}
@@ -328,9 +334,11 @@ export function HistoryScreen() {
                           </Pill>
                         ) : null}
                       </span>
-                      <span className="mt-3 line-clamp-2 block text-sm text-muted-foreground">
-                        {previewText(conversation.messages, t)}
-                      </span>
+                      {preview !== null ? (
+                        <span className="mt-3 line-clamp-2 block text-sm text-muted-foreground">
+                          {preview}
+                        </span>
+                      ) : null}
                       <span className="mt-3 block text-xs text-muted-foreground">
                         {t("hist.updated").replace("{date}", formatDate(conversation.updatedAt))}
                       </span>
