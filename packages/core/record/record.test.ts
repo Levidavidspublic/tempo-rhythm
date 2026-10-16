@@ -5,25 +5,61 @@ describe("extractActions (English)", () => {
   const transcript = [
     "Thanks everyone for coming.",
     "Okay, so I'll send the deck to Dana by Friday.",
-    "We need to book the room for the demo.",
-    "Let's review the draft on Tuesday.",
+    "We need to book the room for the demo by Monday.",
+    "Let's review the draft before Tuesday.",
     "TODO: fix the login bug",
     "The budget looked fine overall.",
     "Report goes out by end of week.",
-    "we need to book the room for the demo",
+    "we need to book the room for the demo by Monday",
+    "Remember to water the plants.",
+    "Don't forget to sign the form.",
   ].join("\n");
 
   test("finds commitments, keeps the source line, and drops the lead phrase", () => {
     const found = extractActions(transcript, "en");
     expect(found.map((s) => s.title)).toEqual([
       "Send the deck to Dana by Friday",
-      "Book the room for the demo",
-      "Review the draft on Tuesday",
+      "Book the room for the demo by Monday",
+      "Review the draft before Tuesday",
       "Fix the login bug",
       "Report goes out by end of week",
+      "Water the plants",
+      "Sign the form",
     ]);
     expect(found[0]?.source).toBe("Okay, so I'll send the deck to Dana by Friday.");
     expect(found[0]?.line).toBe(1);
+  });
+
+  test("a lecture's we / you sentences are not tasks: at most one from a 7-sentence talk", () => {
+    const lecture = [
+      "Today we will look at how cells divide.",
+      "We are going to start with mitosis.",
+      "You have to remember that the cell copies its DNA first.",
+      "You need to picture the chromosomes lining up in the middle.",
+      "We should also compare it with meiosis.",
+      "Let us look at the diagram on the next slide.",
+      "Let's move on to the checkpoints.",
+    ].join(" ");
+    expect(transcriptLines(lecture)).toHaveLength(7);
+    expect(extractActions(lecture, "en").length).toBeLessThanOrEqual(1);
+  });
+
+  test("we / you forms count when the same sentence has a deadline; I'll counts on its own", () => {
+    const found = extractActions(
+      [
+        "You need to hand in the essay by Friday.",
+        "We should finish chapter four before the 12th.",
+        "You will read chapter five.",
+        "I will email the slides.",
+        "The war lasted until the 5th century.",
+      ].join("\n"),
+      "en",
+    );
+    expect(found.map((s) => s.title)).toEqual([
+      "Hand in the essay by Friday",
+      "Finish chapter four before the 12th",
+      "Email the slides",
+    ]);
   });
 
   test("plain talk gives nothing", () => {
@@ -35,7 +71,7 @@ describe("extractActions (English)", () => {
     const long = `I'll ${"write a very long and detailed plan ".repeat(10)}`;
     const [first] = extractActions(long, "en");
     expect((first?.title.length ?? 0) <= 121).toBe(true);
-    const many = Array.from({ length: 30 }, (_, i) => `We need to do thing ${i}.`).join("\n");
+    const many = Array.from({ length: 30 }, (_, i) => `We need to do thing ${i} by Friday.`).join("\n");
     expect(extractActions(many, "en")).toHaveLength(20);
   });
 });
@@ -44,15 +80,35 @@ describe("extractActions (Hebrew)", () => {
   test("צריך ל, אני אעשה, בואו, עד יום", () => {
     const transcript = [
       "תודה שבאתם.",
-      "צריך לשלוח את המצגת לדנה.",
+      "צריך לשלוח את המצגת לדנה עד יום ראשון.",
       "אני אעשה את הסיכום עד יום חמישי.",
-      "בואו נקבע פגישה נוספת.",
+      "בואו נקבע פגישה נוספת עד סוף השבוע.",
       "הדוח יוגש עד מחר",
       "היה דיון טוב.",
     ].join("\n");
     const found = extractActions(transcript, "he");
-    expect(found.map((s) => s.title)).toEqual(["לשלוח את המצגת לדנה", "הסיכום עד יום חמישי", "נקבע פגישה נוספת", "הדוח יוגש עד מחר"]);
+    expect(found.map((s) => s.title)).toEqual([
+      "לשלוח את המצגת לדנה עד יום ראשון",
+      "הסיכום עד יום חמישי",
+      "נקבע פגישה נוספת עד סוף השבוע",
+      "הדוח יוגש עד מחר",
+    ]);
     expect(found[1]?.source).toBe("אני אעשה את הסיכום עד יום חמישי.");
+  });
+
+  test("a Hebrew lecture's we / you sentences without a deadline are not tasks", () => {
+    const lecture = [
+      "היום אנחנו נלמד על חלוקת תאים.",
+      "צריך לזכור שהתא מעתיק את הדנ\"א קודם.",
+      "בואו נסתכל על התרשים.",
+      "אתם צריכים להבין את השלבים.",
+      "כדאי להשוות את זה למיוזה.",
+      "המלחמה נמשכה עד 1945.",
+      "זה קרה לפני 200 שנה.",
+      "לא לשכוח להביא מחשבון.",
+    ].join("\n");
+    const found = extractActions(lecture, "he");
+    expect(found.map((s) => s.title)).toEqual(["להביא מחשבון"]);
   });
 });
 

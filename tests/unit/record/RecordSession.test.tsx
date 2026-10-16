@@ -110,7 +110,7 @@ async function press(target: TestNode, key: string) {
   });
 }
 
-const NOTES = "We met about the launch.\nI'll send the deck to Dana by Friday.\nWe need to book the room.";
+const NOTES = "We met about the launch.\nI'll send the deck to Dana by Friday.\nWe need to book the room by Monday.";
 
 beforeAll(() => {
   installModuleMocks();
