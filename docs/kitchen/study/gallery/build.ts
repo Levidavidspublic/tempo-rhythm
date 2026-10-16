@@ -24,6 +24,9 @@ const fixed: Record<string, string> = {
 const result = await Bun.build({
   entrypoints: [path.join(here, "entry.tsx")],
   target: "browser",
+  // An IIFE keeps the bundle's top-level names off `window`: as a classic script, CodeMirror's
+  // `function getSelection` replaced window.getSelection and React's select events threw.
+  format: "iife",
   minify: false,
   define: { "process.env.NODE_ENV": JSON.stringify("production") },
   banner: "globalThis.process = globalThis.process || { env: { NODE_ENV: 'production' } };",

@@ -1,26 +1,34 @@
 {
   "run": "kitchen/tempo-study",
-  "updated": "2026-10-16T22:40Z",
+  "updated": "2026-10-16T23:35Z",
   "baseline": {
     "command": "bun run test",
-    "last_result": "2870 pass, 3 todo, 0 fail on f851e29 (was 2348 on 5f1b3ec)"
+    "last_result": "3121 pass, 3 todo, 0 fail on 413bb1f (was 2348 on 5f1b3ec)"
   },
   "finish_lines": {
     "T3": {
       "proof": "bun test packages/core/srs packages/utils/src/study-blocks.test.ts packages/ui/src/study packages/ui/src/blocks convex/study.test.ts tests/unit/study",
-      "last_result": "480 pass 0 fail Ran 480 tests across 23 files. [1218.00ms] on f851e29"
+      "last_result": "627 pass 0 fail Ran 627 tests across 31 files on fdb3cf8"
     },
     "T8": {
       "proof": "bun test packages/core/plan packages/core/record convex/plans.test.ts convex/recordings.test.ts tests/unit/plan tests/unit/record tests/unit/calendar_date_math.test.ts tests/unit/calendar_last_loaded.test.ts",
-      "last_result": "140 pass 0 fail Ran 140 tests across 14 files. [1102.00ms] on f851e29"
+      "last_result": "150 pass 0 fail Ran 150 tests across 15 files on fdb3cf8"
     },
     "T9": {
       "proof": "bun test tests/unit/ingest tests/unit/memory_manager.test.tsx convex/memoryUpdate.test.ts",
-      "last_result": "43 pass 0 fail Ran 43 tests across 4 files. [481.00ms] on f851e29"
+      "last_result": "73 pass 0 fail Ran 73 tests across 6 files on fdb3cf8"
     },
     "T10": {
       "proof": "bun test packages/core/reminders convex/reminders.test.ts tests/unit/t10",
-      "last_result": "50 pass 0 fail Ran 50 tests across 6 files. [473.00ms] on f851e29"
+      "last_result": "50 pass 0 fail Ran 50 tests across 6 files on fdb3cf8"
+    },
+    "T4 (backlog, S16)": {
+      "proof": "bun test packages/core/recap tests/unit/study/recap_player.test.tsx packages/ui/src/study/ReadAloudButton.test.tsx",
+      "last_result": "76 pass 0 fail Ran 76 tests across 6 files on fdb3cf8"
+    },
+    "T2 (backlog, S9)": {
+      "proof": "bun test packages/ui/src/plan",
+      "last_result": "29 pass 0 fail Ran 29 tests across 3 files on fdb3cf8"
     }
   },
   "e2e": {
@@ -30,5 +38,9 @@
   "build": {
     "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
     "last_result": "pass on 3e31225; /study, /study/[setId], /study/new, /study/plan, /study/record, /study/review listed"
+  },
+  "e2e_study_wiring": {
+    "command": "bunx playwright test tests/e2e/wiring/study.spec.ts --reporter=line (same browser mapping)",
+    "last_result": "7 passed on 79896a6 (adds /study/listen and the Sign in link)"
   }
 }
