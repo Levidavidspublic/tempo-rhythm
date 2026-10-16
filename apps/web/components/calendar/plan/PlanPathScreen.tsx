@@ -56,6 +56,7 @@ export function PlanPathScreen() {
   const fixedEvents = useQuery(api.calendar_events.listInRange, planWindow ?? "skip");
   const dueTasks = useQuery(api.tasks.listDueInRange, planWindow ?? "skip");
   const hasWindow = planWindow !== null;
+  const planTitle = values.title.trim();
   const busy = useMemo(
     () =>
       hasWindow && (fixedEvents || dueTasks)
@@ -65,10 +66,14 @@ export function PlanPathScreen() {
               title: e.title,
               startsAtMs: e.startsAtMs,
             })),
-            tasks: dueTasks ?? [],
+            // This plan's own sessions (saved under its title) are not busy time for itself, so
+            // the preview doesn't reflow right after "Add these sessions".
+            tasks: (dueTasks ?? []).filter(
+              (task) => !planTitle || task.projectName !== planTitle
+            ),
           })
         : undefined,
-    [hasWindow, fixedEvents, dueTasks]
+    [hasWindow, fixedEvents, dueTasks, planTitle]
   );
 
   const preview = useMemo(
