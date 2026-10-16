@@ -40,6 +40,11 @@ export const USER_OWNED_TABLES = [
   "pageOperationPayloads",
   "pageProposals",
   "voiceSessions",
+  // Study layer (kitchen T3): `studySets` is a page child; the rest hang off a set.
+  "studySets",
+  "studyCardStates",
+  "studyReviews",
+  "studyAttempts",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
