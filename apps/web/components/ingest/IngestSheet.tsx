@@ -174,11 +174,17 @@ export function IngestSheetView({
 
   const save = async () => {
     if (busy.current || savedId) return;
+    // The two early returns also end an offline wait: the text may have been cleared or grown
+    // past the limit while offline, and Save must not stay on "Saves when you're back online".
     if (!hasText) {
       setNeedText(true);
+      setSaveState("idle");
       return;
     }
-    if (tooLarge) return;
+    if (tooLarge) {
+      setSaveState("idle");
+      return;
+    }
     if (!online) {
       setSaveState("waiting");
       return;

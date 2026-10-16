@@ -1,6 +1,6 @@
 /**
  * IngestSheet (T8-T10 spec, S2) in a small DOM: where focus goes when the control that had it
- * goes away. Uses the TestNode DOM from tests/unit/record
+ * goes away, and the Save button's offline wait. Uses the TestNode DOM from tests/unit/record
  * (no happy-dom or Testing Library here); `focus()` is made to set `activeElement` for this file
  * only, and the locale is stood in for the way the record tests do it.
  */
@@ -226,5 +226,46 @@ describe("IngestSheet focus", () => {
       (reactProps(reading).onClick as (event: unknown) => void)(click);
       expect(click.defaultPrevented).toBe(true);
     }
+  });
+});
+
+describe("IngestSheet offline save", () => {
+  test("offline Save waits; if the text is then cleared, coming back online leaves Save ready", async () => {
+    const onSave = mock(async () => "n1");
+    const { view, rerender } = await render({
+      initialTab: "paste",
+      initialText: "Notes",
+      online: false,
+      onSave,
+    });
+    await submit(view);
+    expect(saveButton(view).textContent).toContain("Saves when you're back online");
+
+    await act(async () => {
+      typeInto(findById(view, "ig-text"), "");
+    });
+    await rerender({ online: true });
+    expect(onSave).not.toHaveBeenCalled();
+    expect(saveButton(view).textContent).toContain("Save as a page");
+    expect(saveButton(view).getAttribute("aria-disabled")).toBeNull();
+    expect(view.textContent).toContain("Add some text first");
+  });
+
+  test("the same when the text grew past 200 KB while waiting", async () => {
+    const onSave = mock(async () => "n1");
+    const { view, rerender } = await render({
+      initialTab: "paste",
+      initialText: "Notes",
+      online: false,
+      onSave,
+    });
+    await submit(view);
+    await act(async () => {
+      typeInto(findById(view, "ig-text"), "a".repeat(204_801));
+    });
+    await rerender({ online: true });
+    expect(onSave).not.toHaveBeenCalled();
+    expect(saveButton(view).textContent).toContain("Save as a page");
+    expect(view.textContent).toContain("more than 200 KB of text");
   });
 });
