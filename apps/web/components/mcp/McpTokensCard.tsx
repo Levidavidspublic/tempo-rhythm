@@ -26,6 +26,8 @@ export function McpTokensCard() {
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // A missing name is about the field, so it sits under the field and the field points to it.
+  const nameError = message === "set.mcp.errName";
   const endpoint = typeof window === "undefined" ? "/api/mcp" : `${window.location.origin}/api/mcp`;
   const active = (tokens ?? []).filter((token) => token.revokedAt === undefined);
   const formatDate = (ms: number | undefined) =>
@@ -112,17 +114,28 @@ export function McpTokensCard() {
               className="tp-input ig-grow"
               id="mcp-token-name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (nameError) setMessage(null);
+              }}
               maxLength={80}
               placeholder="Executor"
               dir="auto"
               autoComplete="off"
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? "mcp-token-name-error" : undefined}
             />
             <button className="tp-btn tp-btn--secondary" type="submit" disabled={busy || !isAuthenticated}>
               <TpIcon name="plus" size="sm" />
               <span>{t("set.mcp.create")}</span>
             </button>
           </div>
+          {nameError ? (
+            <p className="tp-error-text" id="mcp-token-name-error" role="alert">
+              <TpIcon name="alert" size="sm" />
+              <span>{t("set.mcp.errName")}</span>
+            </p>
+          ) : null}
         </form>
       )}
 
@@ -151,7 +164,7 @@ export function McpTokensCard() {
         </div>
       ) : null}
 
-      {message ? (
+      {message && !nameError ? (
         <div className="tp-setting-row" data-component="SettingRow">
           <p className="tp-error-text" role="alert">
             <TpIcon name="alert" size="sm" />

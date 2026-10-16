@@ -333,6 +333,9 @@ export const en = {
   "set.billing.signedOut": "Sign in to see your plan.",
   "set.trial.signedOut": "Sign in to see your trial details.",
 
+  // Preferences: a save that didn't go through, next to the change (new)
+  "set.prefs.tryAgain": "Try again",
+
   // Approval: paused account (new)
   "set.approval.contact": "Open the Contact page",
 
@@ -657,6 +660,8 @@ export const he: Record<keyof typeof en, string> = {
   "set.profile.signedOut": "צריך להתחבר כדי לראות את הפרופיל.",
   "set.billing.signedOut": "צריך להתחבר כדי לראות את המסלול.",
   "set.trial.signedOut": "צריך להתחבר כדי לראות את פרטי הניסיון.",
+
+  "set.prefs.tryAgain": "לנסות שוב",
 
   "set.approval.contact": "לדף יצירת הקשר",
 
