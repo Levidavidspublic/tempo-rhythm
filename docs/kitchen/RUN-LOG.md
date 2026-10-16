@@ -46,6 +46,7 @@ If this run restarts: continue from the first unchecked item below.
 | 2026-10-16 17:18 | `f616ba0` | Coach | Today's plan in the side column is a v3 ProposalCard | — |
 | 2026-10-16 17:19 | `c8b66f8` | Notes | The page menu works from the keyboard | — |
 | 2026-10-16 17:28 | `c8b66f8` | step 4 | Full check run (below) and 100 after JPEGs: 44 live and 56 gallery, no sideways scroll on any. The before gallery from `integration` showed Today 352 px too wide at 390 px | `docs/kitchen/polish/after/`, `compare-*.jpg` |
+| 2026-10-16 17:33 | `8a19c7d` | step 6 | PR body rewritten; RESUME comment posted (https://github.com/Levidavidspublic/tempo-rhythm/pull/1053#issuecomment-6221107238). CI on `8a19c7d`: all 19 checks green, E2E included. The preview sits behind Vercel login, so the signed-in preview walk goes to Amit | PR checks |
 
 ## Test results (cloud agent sandbox), on `c8b66f8`
 
