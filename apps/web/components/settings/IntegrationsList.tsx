@@ -5,6 +5,7 @@ import { McpTokensCard } from "@/components/mcp/McpTokensCard";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import type { MessageKey } from "@/lib/i18n";
+import { ExecutorConnection } from "./ExecutorConnection";
 
 /** Planned connectors (settings-integrations.html). Every one is "coming later" today. */
 const CONNECTORS: readonly { name: string; icon: TpIconName; what: MessageKey }[] = [
@@ -23,15 +24,18 @@ const PROMISES: readonly { icon: TpIconName; text: MessageKey }[] = [
 ];
 
 /**
- * Settings · Integrations body (docs/design/v3/screens/web/settings-integrations.html): the
- * planned connectors with a "Coming later" badge (no Connect buttons, no fake toggles), the
- * promise for when they arrive, and what works today: the one-time memory import and personal
- * MCP tokens (McpTokensCard). The list is fixed, so there is no query and no loading state.
+ * Settings · Integrations body (docs/design/v3/screens/web/settings-integrations.html): first the
+ * person's own Executor account (ExecutorConnection: connect, state, disconnect; TEMPO-B07-08),
+ * then the planned connectors with a "Coming later" badge (no Connect buttons, no fake toggles),
+ * the promise for when they arrive, and what else works today: the one-time memory import and
+ * personal MCP tokens (McpTokensCard). Only the Executor row reads data; the rest is fixed.
  */
 export function IntegrationsList() {
   const { t } = useLocale();
   return (
     <>
+      <ExecutorConnection />
+
       <section className="tp-settings-section" aria-labelledby="soon-title" data-component="SettingsSection">
         <div className="tp-settings-section__head">
           <h2 className="tp-settings-section__title" id="soon-title">
