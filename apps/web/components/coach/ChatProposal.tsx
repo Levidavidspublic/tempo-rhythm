@@ -3,14 +3,18 @@
 import { DecisionSteps, type DecisionStep } from "@tempo/ui/blocks/decision-steps";
 import { useMutation } from "convex/react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useId, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { firstLine } from "@/lib/openui/coach-program";
+import { useOpenUiFlag } from "@/lib/openui/useOpenUiFlag";
 import { localIsoDate } from "@/lib/period-pages";
+import { useCountdown } from "@/lib/useCountdown";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { useFlushCoachPage } from "./CoachPage";
+import { OpenUiProposal } from "./openui/OpenUiProposal";
 
 /** A change the coach proposes: one new task, page or template. */
 type ChangeData =
@@ -55,12 +59,6 @@ export function proposalOf(toolCalls: unknown): ChatProposalState | null {
 
 const KIND_ICON: Record<ChangeData["kind"], TpIconName> = { task: "task", note: "page", template: "template" };
 
-/** The first line of a body, as plain words. */
-function firstLine(body: string): string {
-  const line = body.split("\n").find((l) => l.trim()) ?? "";
-  return line.replace(/^\s*(#{1,6}\s|[-*+]\s(\[[ xX]\]\s)?|\d+[.)]\s|>\s?)/, "").trim().slice(0, 120);
-}
-
 /** The fields a person can change before Accept. The kind never changes. */
 type ProposalDraft = {
   title: string;
@@ -94,26 +92,23 @@ function editOf(kind: ChangeData["kind"], d: ProposalDraft) {
   return d.name.trim() && d.body.trim() ? { name: d.name, body: d.body, period: d.period } : null;
 }
 
-/** m:ss until `untilMs`, counting down each second while it lasts. */
-function useCountdown(untilMs: number | undefined): string | null {
-  const [now, setNow] = useState(() => Date.now());
-  const live = untilMs !== undefined && now < untilMs;
-  useEffect(() => {
-    if (!live) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [live]);
-  if (!live || untilMs === undefined) return null;
-  const s = Math.ceil((untilMs - now) / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
-/** The card for a coach proposal: a decision card for an order, a ProposalCard for a change. */
+/**
+ * The card for a coach proposal: a decision card for an order, a ProposalCard for a change.
+ * With the `openui` flag on (lib/openui/coach-flag.ts) the card is drawn through OpenUI; the
+ * direct card below stays as its Edit form and its fallback.
+ */
 export function ChatProposal({ messageId, proposal }: { messageId: Id<"messages">; proposal: ChatProposalState }) {
-  return proposal.kind === "decision" ? (
-    <DecisionProposal messageId={messageId} proposal={proposal} />
+  const openUi = useOpenUiFlag();
+  const direct = ({ editing, onCancelEdit }: { editing: boolean; onCancelEdit?: () => void }) =>
+    proposal.kind === "decision" ? (
+      <DecisionProposal messageId={messageId} proposal={proposal} />
+    ) : (
+      <ChangeProposal messageId={messageId} proposal={proposal} initialEditing={editing} onCancelEdit={onCancelEdit} />
+    );
+  return openUi ? (
+    <OpenUiProposal messageId={messageId} proposal={proposal} direct={direct} />
   ) : (
-    <ChangeProposal messageId={messageId} proposal={proposal} />
+    direct({ editing: false })
   );
 }
 
@@ -232,7 +227,19 @@ function DecisionProposal({ messageId, proposal }: { messageId: Id<"messages">; 
  * ProposalCard (coach-thread.html): the exact change the coach proposes. Nothing changes until
  * Accept; after Accept, Undo stays for 5 minutes (HARD_RULES §1, §6.2).
  */
-function ChangeProposal({ messageId, proposal }: { messageId: Id<"messages">; proposal: ChangeState }) {
+function ChangeProposal({
+  messageId,
+  proposal,
+  initialEditing = false,
+  onCancelEdit,
+}: {
+  messageId: Id<"messages">;
+  proposal: ChangeState;
+  /** Open with the Edit form showing (the OpenUI card's Edit hands over here). */
+  initialEditing?: boolean;
+  /** Called by "Keep it as it was", so the OpenUI card can take over again. */
+  onCancelEdit?: () => void;
+}) {
   const { t } = useLocale();
   const bounds = useLocalDayBounds();
   const accept = useMutation(api.coach.acceptProposal);
@@ -240,7 +247,7 @@ function ChangeProposal({ messageId, proposal }: { messageId: Id<"messages">; pr
   const undo = useMutation(api.coach.undoProposal);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(initialEditing);
   const [draft, setDraft] = useState<ProposalDraft>(() => draftOf(proposal));
   const [invalid, setInvalid] = useState(false);
   const formId = useId();
@@ -478,6 +485,7 @@ function ChangeProposal({ messageId, proposal }: { messageId: Id<"messages">; pr
                   setEditing(false);
                   setInvalid(false);
                   setDraft(draftOf(proposal));
+                  onCancelEdit?.();
                 }}
               >
                 <span>{t("proposal.cancelEdit")}</span>

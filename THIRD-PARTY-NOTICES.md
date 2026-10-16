@@ -121,6 +121,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://github.com/vercel-labs/json-render
 - Used by: packages/ui/package.json
 
+### @openuidev/react-lang
+
+- Version: 1.0.1
+- License: MIT
+- Source: https://github.com/thesysdev/openui
+- Used by: apps/web/package.json
+- Note: brings @openuidev/lang-core, @openuidev/observability and @openuidev/devtools (all MIT, same repository). Runtime usage reports are opt-in and off; lang-core's install report is a postinstall script, which Bun does not run for dependencies.
+
 ### @lezer/highlight
 
 - Version: 1.2.5
