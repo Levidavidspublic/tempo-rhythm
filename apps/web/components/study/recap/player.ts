@@ -33,6 +33,8 @@ export type PlayerAction =
   | { type: "sentenceEnd"; count: number }
   /** The engine couldn't read the current sentence: pause there and say so. */
   | { type: "speechError" }
+  /** The reading now has `count` sentences (the page changed): keep the place in range. */
+  | { type: "clamp"; count: number }
   | { type: "rate"; rate: Rate };
 
 export const initialPlayer: PlayerState = { index: 0, playing: false, ended: false, rate: 1, speechError: false };
@@ -59,6 +61,10 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     }
     case "speechError":
       return { ...state, playing: false, speechError: true };
+    case "clamp":
+      // Past the end: the last sentence, or a stop when nothing is left to read.
+      if (state.index < action.count) return state;
+      return action.count > 0 ? { ...state, index: action.count - 1 } : { ...state, index: 0, playing: false };
     case "sentenceEnd":
       return state.index + 1 < action.count
         ? { ...state, index: state.index + 1 }

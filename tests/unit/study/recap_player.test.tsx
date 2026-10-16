@@ -251,6 +251,12 @@ describe("player state", () => {
     const ended = { ...initialPlayer, index: 4, ended: true };
     expect(playerReducer(ended, player.jumpTo(1, true))).toMatchObject({ index: 1, playing: true, ended: false });
   });
+  test("a shorter page keeps the place in range: its last sentence, or a stop when none is left", () => {
+    const playing = { ...initialPlayer, index: 5, playing: true };
+    expect(playerReducer(playing, { type: "clamp", count: 3 })).toMatchObject({ index: 2, playing: true });
+    expect(playerReducer(playing, { type: "clamp", count: 0 })).toMatchObject({ index: 0, playing: false });
+    expect(playerReducer(playing, { type: "clamp", count: 6 })).toBe(playing);
+  });
   test("a speech error pauses on the same sentence and says so; Play tries it again", () => {
     let state = playerReducer({ ...initialPlayer, index: 2, playing: true }, { type: "speechError" });
     expect(state).toMatchObject({ index: 2, playing: false, ended: false, speechError: true });
@@ -497,5 +503,26 @@ describe("the mounted player", () => {
     await click(byAction(view, "recap-jump")[2]);
     expect(said.map((call) => call.text)).toEqual([sentences[2]?.text]);
     expect(byAction(view, "recap-play")[0]?.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  test("an edit elsewhere in the page doesn't restart the sentence being read", async () => {
+    const { engine, said } = recordingEngine();
+    const view = await mount(playerOf(engine));
+    await click(byAction(view, "recap-play")[0]);
+    await act(async () => said[0]?.options.onEnd());
+    expect(said.map((call) => call.text)).toEqual([sentences[0]?.text, sentences[1]?.text]);
+    await rerender(playerOf(engine, `${PAGE}\nA closing line was added.\n`));
+    expect(said).toHaveLength(2);
+    expect(said[1]?.cancelled).toBe(false);
+  });
+
+  test("a page that got shorter than the place reads its last sentence instead of going quiet", async () => {
+    const { engine, said } = recordingEngine();
+    const view = await mount(playerOf(engine));
+    await click(byAction(view, "recap-jump")[3]);
+    await rerender(playerOf(engine, "Only one line is left."));
+    expect(said.at(-1)).toMatchObject({ text: "Only one line is left.", cancelled: false });
+    expect(byAction(view, "recap-play")[0]?.getAttribute("aria-pressed")).toBe("true");
+    expect(findAll(view, (n) => n.getAttribute?.("aria-current") === "true")).toHaveLength(1);
   });
 });

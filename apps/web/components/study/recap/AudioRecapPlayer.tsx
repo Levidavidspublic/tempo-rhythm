@@ -50,16 +50,25 @@ export function AudioRecapPlayer({ noteId, title, body, mode, engine: override }
   const startedAt = useRef(0);
   const [within, setWithin] = useState(0);
 
+  // The page can change while it plays (an edit in another tab). Keep the place in range, and
+  // restart only when the sentence being read changed, not on every edit elsewhere in the page.
+  const count = sentences.length;
+  const latestCount = useRef(count);
+  latestCount.current = count;
   useEffect(() => {
-    if (!state.playing || status !== "ready" || !engine) return;
-    const sentence = sentences[state.index];
-    if (!sentence) return;
+    if (state.index >= count) dispatch({ type: "clamp", count });
+  }, [state.index, count]);
+  const text = sentences[state.index]?.text;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: state.index restarts a move to another sentence with the same words
+  useEffect(() => {
+    if (!state.playing || status !== "ready" || !engine || text === undefined) return;
     startedAt.current = Date.now();
     setWithin(0);
-    const handle = engine.speak(sentence.text, {
+    const handle = engine.speak(text, {
       lang,
       rate: state.rate,
-      onEnd: () => dispatch({ type: "sentenceEnd", count: sentences.length }),
+      onEnd: () => dispatch({ type: "sentenceEnd", count: latestCount.current }),
       onInterrupt: () => dispatch({ type: "pause" }),
       // An error is not "read": stop here and say so, rather than racing to the end.
       onError: () => dispatch({ type: "speechError" }),
@@ -69,7 +78,7 @@ export function AudioRecapPlayer({ noteId, title, body, mode, engine: override }
       window.clearInterval(tick);
       handle.cancel();
     };
-  }, [state.playing, state.index, state.rate, status, engine, sentences, lang]);
+  }, [state.playing, state.index, state.rate, status, engine, text, lang]);
 
   useStopWhenHidden(() => dispatch({ type: "pause" }));
 
