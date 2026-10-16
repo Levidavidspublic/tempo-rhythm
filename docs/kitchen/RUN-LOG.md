@@ -30,7 +30,7 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 
 ## Now working on
 
-T3 wave 1, in parallel worktrees under `/home/user/wt/`: Builder A (`packages/core/srs`), Builder B (`convex/` study backend), Builder C (`packages/ui` study components + catalog). T8 Builder E (`packages/core/plan`) started alongside. Next: Builder D (study web screens) once A–C are merged.
+T3 Builder D (study web screens + gallery), T8 Builder G (plan backend + week/month grids + `/study/plan`) and Builder F (RecordSession), each in its own worktree. Next: screenshots + Delivery Gate per screen, then T10.
 
 ## Log
 
@@ -39,6 +39,13 @@ T3 wave 1, in parallel worktrees under `/home/user/wt/`: Builder A (`packages/co
 | 2026-10-16 21:20 | `5f1b3ec` | setup | Branch `kitchen/tempo-study` cut from `kitchen/polish-pass`. Bun 1.3.9, `bun install --frozen-lockfile` OK (2000 packages). Code map done by a read-only subagent | — |
 | 2026-10-16 21:24 | — | setup | Issue #1080 and draft PR #1081 (stacked on #1053); PR activity watched | https://github.com/Levidavidspublic/tempo-rhythm/pull/1081 |
 | 2026-10-16 21:50 | `a3fde65` | T3 | Contract: flashcards / quiz / test blocks in the one page codec, SM-2 in `packages/core/srs`, quiet page cards, build spec `docs/kitchen/study/T3-SPEC.md`. `bun test packages`: 755 pass, 1 fail (the catalog agreement test, fixed by Builder C) | `packages/core/srs/sm2.test.ts`, `packages/utils/src/study-blocks.test.ts` |
+| 2026-10-16 22:05 | `51f8dd6` | evidence | `docs/kitchen/study/shoot.mjs` + `gate.mjs`: screenshots plus the measurable Delivery Gate checks per shot. Trial on `/sign-in` and `/today`: sign-in PASS; Today (not this run's) shows a 260 ms animation | `/tmp` trial, not committed |
+| 2026-10-16 22:10 | `1bc9e51`→cherry-picked | T8 | Builder E: `packages/core/plan` (planBack, calendar math, week layout, conflicts, month counts). 34 tests | `bun test packages/core/plan` |
+| 2026-10-16 22:20 | `3ed0990` | T3 | Builder B: study tables + functions (`convex-arch:`). 26 tests | `bun test convex/study.test.ts` |
+| 2026-10-16 22:25 | `5501fc5` | T3 | Builder A: review queue, adaptive quiz, question plugins + scoring with the pick rule, outline reader, ids. 115 tests | `bun test packages/core` |
+| 2026-10-16 22:35 | `e8dd0f7` | T3 | Reviewer on the study backend: 4 findings (double tap, undo order, source-line injection, 200-row state cap), all fixed with tests (30 pass) | `bun test convex/study.test.ts` |
+| 2026-10-16 22:45 | `36638ed` | T3 | Builder C: study blocks draw as their own catalog cards (the red catalog test is green, list extended, invariant kept); FlashcardDeck, FlashcardReview, AdaptiveQuiz, TestRunner, ScoreCard; adapters to the core engine and scorer | `bun test packages/ui/src/study` (63 pass) |
+| 2026-10-16 22:55 | `c0e199b` | T9 | Builder H IngestSheet (27 tests) and Builder I MemoryManager parity (`memory.update`, search, edit with Undo) merged. Full suite: 2670 pass, 0 fail; lint, typecheck, scans OK; pushed | `bun run test` |
 
 ## Decisions
 
