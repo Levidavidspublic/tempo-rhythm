@@ -1,0 +1,12 @@
+/**
+ * Study components (kitchen T3): presentational React views for flashcards, reviews, quizzes and
+ * practice tests. No data access; every word comes from the host's `labels`.
+ */
+export * from "./AdaptiveQuiz";
+export * from "./FlashcardDeck";
+export * from "./FlashcardReview";
+export * from "./quiz-engine";
+export * from "./ScoreCard";
+export * from "./shared";
+export * from "./TestRunner";
+export * from "./test-scorer";
