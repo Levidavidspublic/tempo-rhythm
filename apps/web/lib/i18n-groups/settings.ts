@@ -1,5 +1,6 @@
 /**
- * v3 screens: Settings (profile, preferences, privacy, integrations), billing, trial end and onboarding (docs/design/v3/screen-map.md).
+ * v3 screens: Settings (profile, preferences, privacy, integrations), billing, trial end and onboarding (docs/design/v3/screen-map.md),
+ * plus the coach controls on /coach (coachCtl.) and the day timeline on /plan (timeline.).
  * English and Hebrew; i18n.ts merges both. Hebrew needs native review (OVERNIGHT-RUN.md).
  * English comes from each screen's HTML; Hebrew from its TP_STRINGS.he. Lines marked "new" were
  * written for these React screens (no backend for the designed action, or copy the HTML lacks).
@@ -112,6 +113,41 @@ export const en = {
   "set.dial.quiet": "Quiet",
   "set.dial.steady": "Steady",
   "set.dial.push": "Push",
+
+  // Coach controls on /coach (push dial and panic; its own levels: Gentle, Steady, Firm)
+  "coachCtl.title": "How the coach pushes",
+  "coachCtl.loading": "Loading your coach settings.",
+  "coachCtl.hint": "0 is gentle. 10 is firm. Let go of the slider to save.",
+  "coachCtl.level.gentle": "Gentle",
+  "coachCtl.level.steady": "Steady",
+  "coachCtl.level.firm": "Firm",
+  "coachCtl.saved": "Saved",
+  "coachCtl.saveError": "That didn't save. Try again?",
+  "coachCtl.panic": "Panic",
+  "coachCtl.panicHint": "One small action, then the coach stays quiet until you clear it.",
+  "coachCtl.panicFallback": "Take a breath. Nothing is due right now.",
+  "coachCtl.clear": "I’m okay now",
+  "coachCtl.minutes.under": "Under a minute left",
+  "coachCtl.minutes.one": "1 minute left",
+  "coachCtl.minutes.many": "{n} minutes left",
+
+  // Day timeline on /plan ({time} and {range} are filled in the app language's clock)
+  "timeline.title": "Day timeline",
+  "timeline.signedOut": "Sign in to see this day's blocks and events.",
+  "timeline.signIn": "Sign in",
+  "timeline.badDate": "That date doesn't look right.",
+  "timeline.empty": "Nothing planned yet. Click a time to add a block.",
+  "timeline.error": "That didn't stick. You can try again.",
+  "timeline.addAt": "Add a block at {time}",
+  "timeline.now": "Now",
+  "timeline.done": "Done",
+  "timeline.letGo": "Let it go",
+  "timeline.undo": "Undo",
+  "timeline.doneAt": "Done {range}",
+  "timeline.letGoAt": "Let it go {range}",
+  "timeline.undoAt": "Undo {range}",
+  "timeline.status.done": "Done",
+  "timeline.status.letGo": "Let go",
 
   // Privacy (settings-privacy.html)
   "set.privacy.title": "Privacy",
@@ -428,6 +464,39 @@ export const he: Record<keyof typeof en, string> = {
   "set.dial.quiet": "שקט",
   "set.dial.steady": "יציב",
   "set.dial.push": "דוחף",
+
+  "coachCtl.title": "כמה המאמן דוחף",
+  "coachCtl.loading": "טוענים את הגדרות המאמן.",
+  "coachCtl.hint": "0 זה עדין. 10 זה תקיף. עוזבים את המחוון כדי לשמור.",
+  "coachCtl.level.gentle": "עדין",
+  "coachCtl.level.steady": "יציב",
+  "coachCtl.level.firm": "תקיף",
+  "coachCtl.saved": "נשמר",
+  "coachCtl.saveError": "זה לא נשמר. לנסות שוב?",
+  "coachCtl.panic": "פאניקה",
+  "coachCtl.panicHint": "פעולה קטנה אחת, ואז המאמן נשאר בשקט עד שמבטלים.",
+  "coachCtl.panicFallback": "לנשום רגע. שום דבר לא דחוף עכשיו.",
+  "coachCtl.clear": "עכשיו אני בסדר",
+  "coachCtl.minutes.under": "נשארה פחות מדקה",
+  "coachCtl.minutes.one": "נשארה דקה אחת",
+  "coachCtl.minutes.many": "נשארו {n} דקות",
+
+  "timeline.title": "ציר הזמן של היום",
+  "timeline.signedOut": "צריך להתחבר כדי לראות את בלוקי הזמן והאירועים של היום הזה.",
+  "timeline.signIn": "התחברות",
+  "timeline.badDate": "התאריך הזה לא נראה תקין.",
+  "timeline.empty": "עוד אין שום דבר מתוכנן. אפשר ללחוץ על שעה כדי להוסיף בלוק זמן.",
+  "timeline.error": "זה לא נשמר. אפשר לנסות שוב.",
+  "timeline.addAt": "להוסיף בלוק זמן בשעה {time}",
+  "timeline.now": "עכשיו",
+  "timeline.done": "בוצע",
+  "timeline.letGo": "לשחרר",
+  "timeline.undo": "ביטול",
+  "timeline.doneAt": "בוצע {range}",
+  "timeline.letGoAt": "לשחרר {range}",
+  "timeline.undoAt": "ביטול {range}",
+  "timeline.status.done": "בוצע",
+  "timeline.status.letGo": "שוחרר",
 
   "set.privacy.title": "פרטיות",
   "set.privacy.sub": "המידע שלך שייך לך. אפשר לקחת אותו איתך, או למחוק אותו.",
