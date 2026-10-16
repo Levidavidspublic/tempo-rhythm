@@ -939,4 +939,163 @@ export default defineSchema({
   })
     .index("by_tokenHash", ["tokenHash"])
     .index("by_userId", ["userId"]),
+
+  /**
+   * TEMPO-B07-07 (#989) — a person's connection to their own Executor account (research doc
+   * `docs/research/EXECUTOR-IN-TEMPO.md` §5.1). No secrets here: tokens live in
+   * `connectionSecrets`, read only by internal functions. One live row per person and provider.
+   * `revoking` and `disconnected` rows are tombstoned (`deletedAt`); a `revoking` row still has
+   * ciphertexts in `connectionSecrets` until the revoke finishes or the sweep scrubs them.
+   * `windowStartMs` / `windowCount` back the per-person call limit; `refreshLease*` makes one
+   * token refresh run at a time.
+   */
+  connections: defineTable({
+    userId: v.id("users"),
+    provider: v.literal("executor"),
+    status: v.union(
+      v.literal("connected"),
+      v.literal("needs_reauth"),
+      v.literal("unavailable"),
+      v.literal("revoking"),
+      v.literal("disconnected"),
+    ),
+    /** The MCP URL the tokens are bound to (the OAuth `resource`). */
+    mcpUrl: v.string(),
+    issuer: v.string(),
+    clientRowId: v.id("oauthClients"),
+    scope: v.optional(v.string()),
+    /** Only if Executor ever sends one (UNKNOWN, doc §7.1 item 17). Nothing sets it in B07. */
+    accountLabel: v.optional(v.string()),
+    connectedAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    lastErrorAt: v.optional(v.number()),
+    windowStartMs: v.optional(v.number()),
+    windowCount: v.optional(v.number()),
+    refreshLeaseUntil: v.optional(v.number()),
+    refreshLeaseToken: v.optional(v.string()),
+    /** Set when a disconnect or account deletion finishes: whether Executor confirmed the revoke. */
+    revokedAtProvider: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_provider_deletedAt", ["userId", "provider", "deletedAt"])
+    .index("by_status_updatedAt", ["status", "updatedAt"]),
+
+  /**
+   * TEMPO-B07-07 (#989) — encrypted tokens for one connection (AES-256-GCM, key from
+   * `TEMPO_CONNECTIONS_KEY`; lib/connections/crypto.ts). Read by internal functions only; never
+   * returned by a public function. Disconnect and the sweep scrub: the cipher fields go to
+   * undefined and `deletedAt` is stamped (no hard delete, HARD_RULES §5).
+   */
+  connectionSecrets: defineTable({
+    userId: v.id("users"),
+    connectionId: v.id("connections"),
+    accessTokenCipher: v.optional(v.string()),
+    refreshTokenCipher: v.optional(v.string()),
+    accessTokenExpiresAt: v.optional(v.number()),
+    keyVersion: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_connectionId", ["connectionId"]),
+
+  /**
+   * TEMPO-B07-07 (#989) — the OAuth client Tempo registered with an authorization server
+   * (Dynamic Client Registration), one per issuer and redirect URI, shared by every person on the
+   * deployment. Not user data: no `userId`. The client secret, if the server issued one, is
+   * encrypted like the tokens. Endpoints are refreshed from the metadata on every connect.
+   */
+  oauthClients: defineTable({
+    issuer: v.string(),
+    redirectUri: v.string(),
+    clientId: v.string(),
+    clientSecretCipher: v.optional(v.string()),
+    keyVersion: v.number(),
+    tokenEndpointAuthMethod: v.union(
+      v.literal("none"),
+      v.literal("client_secret_basic"),
+      v.literal("client_secret_post"),
+    ),
+    authorizationEndpoint: v.string(),
+    tokenEndpoint: v.string(),
+    registrationEndpoint: v.optional(v.string()),
+    revocationEndpoint: v.optional(v.string()),
+    codeChallengeS256: v.literal(true),
+    issParameterSupported: v.optional(v.boolean()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  }).index("by_issuer_redirectUri", ["issuer", "redirectUri"]),
+
+  /**
+   * TEMPO-B07-07 (#989) — one connect attempt, alive for 10 minutes. Only the SHA-256 of `state`
+   * is stored; the PKCE verifier is encrypted and scrubbed (set to undefined) when the callback
+   * uses the row, when it expires, or when the account is deleted. A used or expired row is
+   * tombstoned, so a live row (`deletedAt` undefined) means "connecting".
+   */
+  oauthPending: defineTable({
+    userId: v.id("users"),
+    provider: v.literal("executor"),
+    stateHash: v.string(),
+    codeVerifierCipher: v.optional(v.string()),
+    keyVersion: v.number(),
+    issuer: v.string(),
+    resource: v.string(),
+    redirectUri: v.string(),
+    clientRowId: v.id("oauthClients"),
+    returnTo: v.union(v.literal("settings"), v.literal("coach")),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_stateHash", ["stateHash"])
+    .index("by_userId", ["userId"])
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_deletedAt_expiresAt", ["deletedAt", "expiresAt"]),
+
+  /**
+   * TEMPO-B07-07 (#989) — audit: one row per Executor tool call the coach made or was refused,
+   * and one per disconnect (research doc §4.5). Content-free: no inputs, no results; the input
+   * is kept only as a SHA-256 digest. Soft-deleted with the account.
+   */
+  connectionCalls: defineTable({
+    userId: v.id("users"),
+    connectionId: v.id("connections"),
+    kind: v.union(v.literal("tool_call"), v.literal("disconnect")),
+    /** The MCP tool name (`search`, ...). */
+    tool: v.optional(v.string()),
+    /** The app tool path, for a later `call`. Empty in B07. */
+    path: v.optional(v.string()),
+    decision: v.optional(
+      v.union(v.literal("auto"), v.literal("approved"), v.literal("rejected"), v.literal("blocked")),
+    ),
+    outcome: v.union(
+      v.literal("ok"),
+      v.literal("error"),
+      v.literal("approval_required"),
+      v.literal("timeout"),
+      v.literal("rate_limited"),
+      v.literal("unauthorized"),
+      v.literal("revoked"),
+      v.literal("not_revoked"),
+    ),
+    inputDigest: v.optional(v.string()),
+    resultBytes: v.optional(v.number()),
+    durationMs: v.optional(v.number()),
+    /** The coach message the call answered, if any. */
+    messageId: v.optional(v.id("messages")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_connectionId_createdAt", ["connectionId", "createdAt"]),
 });
