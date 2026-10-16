@@ -370,10 +370,14 @@ export const ensurePeriodPage = mutation({
 });
 
 export const get = query({
-  args: { noteId: v.id("notes") },
+  args: { noteId: v.string() },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const note = await ctx.db.get(args.noteId);
+    const noteId = ctx.db.normalizeId("notes", args.noteId);
+    if (!noteId) {
+      return null;
+    }
+    const note = await ctx.db.get(noteId);
     if (!note || note.userId !== user._id || note.deletedAt !== undefined) {
       return null;
     }
