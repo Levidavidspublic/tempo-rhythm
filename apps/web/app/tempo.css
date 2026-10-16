@@ -1574,3 +1574,20 @@ button.tp-list-row { width: 100%; border-inline: 0; border-top: 0; text-align: s
     body, .tp-auth, :where(.tp-call), .tp-site-header { background-image: none; }
   }
 }
+
+/* ================================================================
+   COACH BUTTON CLEARANCE (phone). Under 768 px the coach button
+   floats above the tab bar in the bottom inline-end corner (bottom
+   left in Hebrew), over the end of the page. Main ends a gap above
+   the button's top edge, plus the home-indicator inset, so a list's
+   last row and its actions scroll clear of it. Block axis only, so
+   it holds in both directions. Nothing moves; desktop is unchanged.
+   ================================================================ */
+@layer components {
+  @media (max-width: 767px) {
+    /* The button's bottom offset (tab bar + space-5), its 52 px height, a space-4 gap, the inset. */
+    .tp-app__main {
+      padding-block-end: calc(var(--tp-tabbar-h) + var(--tp-space-5) + var(--tp-space-12) + var(--tp-space-1) + var(--tp-space-4) + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
