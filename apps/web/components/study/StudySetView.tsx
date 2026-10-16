@@ -30,6 +30,7 @@ import { listenHref } from "./recap/player";
 import { useReadAloudSlot } from "./recap/useReadAloud";
 import { deckLabels, KIND_ICON, KIND_KEY, quizLabels, type StudyT, testLabels } from "./labels";
 import type { StudyPreview } from "./preview";
+import { type AskPage, SetAsk } from "./SetAsk";
 import { SetEditor } from "./SetEditor";
 import { blockPreview, closedEdit, type EditResult, setEditReducer } from "./set-edit";
 import { setMarkdownWords, setShareTarget } from "./set-share";
@@ -49,6 +50,7 @@ import {
  * A set's markup (deck, quiz, test), with no data access: StudySetScreen.tsx passes data and saves.
  * Edit swaps the study panel for the edit list (SetEditor) and Share opens the ShareSheet; the
  * existing study action stays the one primary, and Save changes takes its place while editing.
+ * "Ask about this set" (SetAsk) sits under the study panel, closed until asked for.
  */
 export type SetBlock =
   | { id: string; type: "flashcards"; data: FlashcardsData }
@@ -56,7 +58,15 @@ export type SetBlock =
   | { id: string; type: "test"; data: TestData };
 
 export type SetData = {
-  set: { setId: string; noteId: string; kind: StudyBlockType; title: string; itemCount: number };
+  set: {
+    setId: string;
+    noteId: string;
+    kind: StudyBlockType;
+    title: string;
+    itemCount: number;
+    /** The page the set was made from, when there was one (Ask reads it). */
+    sourceNoteId?: string;
+  };
   note: { id: string; title: string };
   block: SetBlock;
   /** The block's content version (`getSet`): Edit sends it back so a save never writes over newer words. */
@@ -100,6 +110,12 @@ export type StudySetViewProps = {
   onUndoEdit?: UndoEdit;
   /** Open with the edit list or the share sheet showing (the gallery and static renders). */
   initialPanel?: "edit" | "share";
+  /** The page "Ask about this set" reads (`askPageId`): undefined while it loads. */
+  askPage?: AskPage;
+  /** The Ask panel opened: the screen starts reading the page. */
+  onAskOpen?: () => void;
+  /** Open Ask with this question already asked (the gallery and static renders). */
+  initialAsk?: string;
 };
 
 export function StudySetView({ data, online, signedOut, ...rest }: StudySetViewProps) {
@@ -141,6 +157,9 @@ function LoadedSet({
   onSaveEdit,
   onUndoEdit,
   initialPanel,
+  askPage,
+  onAskOpen,
+  initialAsk,
 }: Omit<StudySetViewProps, "data" | "signedOut"> & { data: SetData; t: StudyT }) {
   const { set, block, note } = data;
   const last = data.attempts[0];
@@ -318,6 +337,16 @@ function LoadedSet({
         <QuizPanel key={panelKey} data={block.data} t={t} onRecord={onRecord} />
       ) : (
         <TestPanel key={panelKey} data={block.data} t={t} onRecord={onRecord} />
+      )}
+      {editing ? null : (
+        <SetAsk
+          block={block}
+          page={askPage}
+          online={online}
+          t={t}
+          onOpen={onAskOpen}
+          initialQuestion={initialAsk}
+        />
       )}
       {sharing ? (
         <ShareSheet

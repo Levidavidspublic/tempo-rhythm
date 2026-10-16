@@ -108,3 +108,15 @@
 @media (pointer: coarse) {
   .tp-study-setedit .tp-notice__action { min-height: var(--tp-touch); }
 }
+/* Ask about this set (SetAsk): a quiet disclosure under the study panel. The question row and the quotes reuse the recap's .tp-recap__askrow and .tp-recap__quotes (recap.css). Matched words are bold on a light wash, and a line above the quotes says so, so colour is never the only sign. No motion of its own: the chevron turns at once. */
+.tp-study-ask { display: grid; gap: var(--tp-space-3); min-width: 0; padding-top: var(--tp-space-4); border-top: 1px solid var(--tp-line); }
+.tp-study-ask__heading { margin: 0; font: inherit; }
+.tp-study-ask__toggle { padding-inline: var(--tp-space-2); white-space: normal; text-align: start; }
+.tp-study-ask__toggle[aria-expanded="true"] .tp-study-ask__chevron { transform: rotate(180deg); }
+.tp-study-ask__panel { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-study-ask__results { display: grid; gap: var(--tp-space-2); justify-items: start; min-width: 0; }
+.tp-study-ask__results > p { margin: 0; }
+.tp-study-ask__results .tp-recap__quotes { justify-self: stretch; }
+.tp-study-ask .tp-recap__quotes li { display: grid; gap: var(--tp-space-1); }
+.tp-study-ask__line { margin: 0; overflow-wrap: anywhere; }
+.tp-study-ask mark { background: var(--tp-hover); color: inherit; font-weight: 600; border-radius: var(--tp-radius-sm); }

@@ -304,6 +304,22 @@ export const en = {
   "st.md.also": "Also accepted",
   "st.md.why": "Why",
   "st.md.point": "1 point",
+
+  // Ask about this set: the page's and the set's own words, found on the device. No model.
+  "st.ask.title": "Ask about this set",
+  "st.ask.label": "Your question",
+  "st.ask.find": "Find it",
+  "st.ask.help": "Answers are found in your page and this set, on this device.",
+  "st.ask.helpSet": "Answers are found in this set, on this device.",
+  "st.ask.marked": "Words from your question are in bold.",
+  "st.ask.from.page": "From the page",
+  "st.ask.from.card": "From card {n}",
+  "st.ask.from.question": "From question {n}",
+  "st.ask.from.test": "From {section}, question {n}",
+  "st.ask.empty": "The page and this set don't seem to say. Try other words.",
+  "st.ask.emptySet": "This set doesn't seem to say. Try other words.",
+  "st.ask.stillPage": "Still looking in your page.",
+  "st.ask.openPage": "Open {page}",
 } as const;
 
 export type StudyCopyKey = keyof typeof en;
@@ -595,4 +611,19 @@ export const he: Record<StudyCopyKey, string> = {
   "st.md.also": "מתקבל גם",
   "st.md.why": "הסבר",
   "st.md.point": "נקודה אחת",
+
+  "st.ask.title": "לשאול על החומר הזה",
+  "st.ask.label": "השאלה שלכם",
+  "st.ask.find": "חיפוש",
+  "st.ask.help": "התשובות נמצאות בדף שלכם ובחומר הזה, כאן במכשיר.",
+  "st.ask.helpSet": "התשובות נמצאות בחומר הזה, כאן במכשיר.",
+  "st.ask.marked": "המילים מהשאלה שלכם מודגשות.",
+  "st.ask.from.page": "מתוך הדף",
+  "st.ask.from.card": "מתוך כרטיס {n}",
+  "st.ask.from.question": "מתוך שאלה {n}",
+  "st.ask.from.test": "מתוך {section}, שאלה {n}",
+  "st.ask.empty": "נראה שהדף והחומר הזה לא מתייחסים לזה. נסו מילים אחרות.",
+  "st.ask.emptySet": "נראה שהחומר הזה לא מתייחס לזה. נסו מילים אחרות.",
+  "st.ask.stillPage": "עוד מחפשים בדף שלכם.",
+  "st.ask.openPage": "לפתוח את {page}",
 };

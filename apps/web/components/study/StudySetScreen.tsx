@@ -14,6 +14,7 @@ import {
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { type AskPage, askPageId } from "./SetAsk";
 import { BackToStudy, type RecordAttempt, type SetData, StudySetView } from "./StudySetView";
 
 /**
@@ -23,7 +24,9 @@ import { BackToStudy, type RecordAttempt, type SetData, StudySetView } from "./S
  * the page holding the block; "Remove set" takes it off the hub (the page stays) with a 5-minute
  * Undo. "Edit" opens the Turn-into edit list on the saved set and saves it back into the page
  * (`study.updateBlock`, from the block version it started at) with a 5-minute Undo
- * (`study.undoUpdate`). "Share" opens the ShareSheet for the set.
+ * (`study.undoUpdate`). "Share" opens the ShareSheet for the set. "Ask about this set" reads the
+ * set's page with the notes query (`notes.getSafe`, as /study/listen does) only once its panel
+ * opens, and searches it with the set's own items on the device.
  */
 
 export function StudySetScreen({ setId }: { setId: string }) {
@@ -55,6 +58,19 @@ function StudySetData({ setId }: { setId: string }) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [removeError, setRemoveError] = useState(false);
   const closeToast = useCallback(() => setToast(null), []);
+  const loaded = signedIn === "signedOut" ? null : (data as SetData | null | undefined);
+  const [askOpened, setAskOpened] = useState(false);
+  const pageId = loaded ? askPageId(loaded) : undefined;
+  const page = useQuery(
+    api.notes.getSafe,
+    signedIn === "ready" && askOpened && pageId ? { noteId: pageId } : "skip"
+  );
+  const askPage: AskPage =
+    !pageId || page === null
+      ? null
+      : page === undefined
+        ? undefined
+        : { id: pageId, title: page.title, body: page.body };
 
   const onRecord: RecordAttempt = (attempt) => record({ setId: id, ...attempt });
   const onRemove = () => {
@@ -67,7 +83,7 @@ function StudySetData({ setId }: { setId: string }) {
   return (
     <>
       <StudySetView
-        data={signedIn === "signedOut" ? null : (data as SetData | null | undefined)}
+        data={loaded}
         signedOut={signedIn === "signedOut"}
         online={online}
         now={Date.now()}
@@ -76,6 +92,8 @@ function StudySetData({ setId }: { setId: string }) {
         removeError={removeError}
         onSaveEdit={(next, baseVersion) => update({ setId: id, data: next.data, baseVersion })}
         onUndoEdit={(before, version) => undoUpdate({ setId: id, data: before.data, version })}
+        askPage={askPage}
+        onAskOpen={() => setAskOpened(true)}
       />
       {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
     </>
