@@ -13,11 +13,18 @@ export function formatUndoLeft(msLeft: number): string {
 
 /** `m:ss` until `untilMs`, ticking each second; null when there is no deadline or it has passed. */
 export function useUndoCountdown(untilMs: number | undefined): string | null {
-  const [now, setNow] = useState(() => Date.now());
+  const [clock, setClock] = useState(() => ({ untilMs, now: Date.now() }));
+  // A new deadline restarts the clock from now (state derived while rendering), so a card drawn
+  // long before Accept opens at 5:00, not at 5:00 plus the time it sat waiting.
+  let now = clock.now;
+  if (!Object.is(clock.untilMs, untilMs)) {
+    now = Date.now();
+    setClock({ untilMs, now });
+  }
   const live = untilMs !== undefined && now < untilMs;
   useEffect(() => {
     if (!live) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    const id = window.setInterval(() => setClock((last) => ({ ...last, now: Date.now() })), 1000);
     return () => window.clearInterval(id);
   }, [live]);
   if (!live || untilMs === undefined) return null;
