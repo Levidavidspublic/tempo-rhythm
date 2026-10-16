@@ -1,7 +1,8 @@
 // Unit tests for release-gate.mjs (Phase H release workflow; pure functions, no API).
 // Run: node scripts/factory/test-release.mjs
 import assert from "node:assert/strict";
-import { allowedMergeMethods, preflightBlockers, mergeStateVerdict, judgeHealth, isProductionDeployment, releaseCommit, renderBody, MARKER as RELEASE_MARKER } from "./release-gate.mjs";
+import { linkedTickets } from "./gh-api.mjs";
+import { allowedMergeMethods, preflightBlockers, mergeStateVerdict, judgeHealth, isProductionDeployment, releaseCommit, renderBody, quoteTitle, MARKER as RELEASE_MARKER } from "./release-gate.mjs";
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log(`ok ${n} - ${name}`); };
 
@@ -43,6 +44,11 @@ t("release: mergeable_state, health, production deployment, commit marker", () =
   assert.ok(c.message.endsWith(RELEASE_MARKER));
   const body = renderBody({ date: "2026-10-06", xSha: sha, masterSha: "m", ahead: 2, behind: 0, rows: [{ number: 5, title: "x", links: [3] }], runUrl: "u", dryRun: true });
   assert.ok(body.includes("dry run") && body.includes("#5 x (links #3)") && !/\bcloses\b/i.test(body));
+  // A title like "close #327 findings" must not become a closing reference in the release body.
+  const rb = renderBody({ date: "2026-10-07", xSha: sha, masterSha: "m", ahead: 1, behind: 0, rows: [{ number: 508, title: "fix(review): close #327 findings", links: [] }, { number: 9, title: "Fixes: #4 and see #5", links: [] }], runUrl: "u", dryRun: false });
+  assert.deepEqual(linkedTickets(rb), []);
+  assert.ok(rb.includes("- #508 fix(review): close \\#327 findings"));
+  assert.equal(quoteTitle("feat: add #12 support"), "feat: add #12 support");
 });
 
 console.log(`all ${n} passed`);

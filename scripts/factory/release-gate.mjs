@@ -102,6 +102,13 @@ export function releaseCommit({ date, number, xSha, runUrl }) {
   };
 }
 
+// PR titles can say "close #327" etc. In the release PR body that reads as a closing reference:
+// scope-guard/config-guard (linkedTickets) then treat #327 as this PR's ticket and fail, and the
+// merge into master would auto-close it. Escape "#" after a closing keyword so it stays plain text.
+export function quoteTitle(title) {
+  return String(title).replace(/(\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s+)#(\d+)/gi, "$1\\#$2");
+}
+
 export function renderBody({ date, xSha, masterSha, ahead, behind, rows, runUrl, dryRun }) {
   const lines = [
     `## Release ${date} (Asia/Jerusalem)`,
@@ -119,7 +126,7 @@ export function renderBody({ date, xSha, masterSha, ahead, behind, rows, runUrl,
     "### Pull requests in this release",
   ];
   if (!rows.length) lines.push("- None found (no pull-request numbers on these commits).");
-  for (const r of rows) lines.push(`- #${r.number} ${r.title}${r.links.length ? ` (links ${r.links.map((n) => `#${n}`).join(", ")})` : ""}`);
+  for (const r of rows) lines.push(`- #${r.number} ${quoteTitle(r.title)}${r.links.length ? ` (links ${r.links.map((n) => `#${n}`).join(", ")})` : ""}`);
   return `${lines.join("\n")}\n`;
 }
 
