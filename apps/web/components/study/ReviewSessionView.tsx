@@ -10,7 +10,8 @@ import {
 } from "@tempo/ui";
 import Link from "next/link";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { OfflineNotice, SignedOutState, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { OfflineNotice, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { ReviewButton } from "../../../../packages/core/srs/sm2";
@@ -74,7 +75,7 @@ export function ReviewSessionView({
       <SessionHeader t={t} count={cards?.length ?? null} />
       {online ? null : <OfflineNotice text={t("gx.offline")} />}
       {signedOut ? (
-        <SignedOutState />
+        <StateSignedOut />
       ) : cards === null ? (
         <StateLoading label={t("st.review.loading")} lead="block" rows={1} />
       ) : cards.length === 0 ? (

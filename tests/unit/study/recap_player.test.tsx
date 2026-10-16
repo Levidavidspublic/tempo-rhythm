@@ -317,3 +317,13 @@ describe("entry point and copy", () => {
     expect(translate("en", "st.ra.stop")).toBe("Stop reading");
   });
 });
+
+describe("ListenMenuItem", () => {
+  test("a page-menu link to this page's audio recap", async () => {
+    const { ListenMenuItem } = await import("../../../apps/web/components/study/recap/ListenMenuItem");
+    const markup = renderToStaticMarkup(createElement(ListenMenuItem, { noteId: "n 7" }));
+    expect(markup).toContain('role="menuitem"');
+    expect(markup).toContain('href="/study/listen?from=n%207&amp;mode=recap"');
+    expect(markup).toContain("Listen to a recap");
+  });
+});

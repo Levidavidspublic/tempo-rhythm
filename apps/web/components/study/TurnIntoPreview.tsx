@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   ScreenBoundary,
-  SignedOutState,
   StateError,
   StateLoading,
   useOnline,
   useSignedIn,
 } from "@/components/goals/shared";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -136,7 +136,7 @@ function OpenStudyBlock({ noteId, blockId }: { noteId: string; blockId: string }
       data-screen="OpenStudyBlock"
     >
       {signedIn === "signedOut" ? (
-        <SignedOutState />
+        <StateSignedOut />
       ) : failed ? (
         <StateError title={t("st.open.error")} action={<BackLink from={noteId} t={t} />} />
       ) : (

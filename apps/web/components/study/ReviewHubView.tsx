@@ -3,7 +3,8 @@
 import { fillNodes } from "@tempo/ui";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { OfflineNotice, SignedOutState, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { OfflineNotice, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { IngestButton } from "@/components/ingest";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -42,7 +43,7 @@ export function ReviewHubView({ hub, online, signedOut }: ReviewHubViewProps) {
       <HubHeader t={t} />
       {online ? null : <OfflineNotice text={t("gx.offline")} />}
       {signedOut ? (
-        <SignedOutState />
+        <StateSignedOut />
       ) : !hub || !focus ? (
         <StateLoading label={t("st.loading")} lead="block" />
       ) : focus.kind === "empty" ? (

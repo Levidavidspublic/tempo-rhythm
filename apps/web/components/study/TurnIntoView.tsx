@@ -7,12 +7,12 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import {
   makeToast,
   OfflineNotice,
-  SignedOutState,
   StateEmpty,
   StateLoading,
   type ToastState,
   UndoToast,
 } from "@/components/goals/shared";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { MessageKey } from "@/lib/i18n";
@@ -147,7 +147,7 @@ export function TurnIntoView({
       </header>
       {online ? null : <OfflineNotice text={t("gx.offline")} />}
       {signedOut ? (
-        <SignedOutState />
+        <StateSignedOut />
       ) : !hasFrom ? (
         <StateEmpty
           icon="page"

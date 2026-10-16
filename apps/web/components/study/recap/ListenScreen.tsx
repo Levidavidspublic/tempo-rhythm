@@ -4,13 +4,13 @@ import { useQuery } from "convex/react";
 import {
   OfflineNotice,
   ScreenBoundary,
-  SignedOutState,
   StateEmpty,
   StateError,
   StateLoading,
   useOnline,
   useSignedIn,
 } from "@/components/goals/shared";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import { detectLang, fullReading } from "../../../../../packages/core/recap";
@@ -95,7 +95,7 @@ export function ListenStates({
   if (signedOut) {
     return (
       <Frame>
-        <SignedOutState />
+        <StateSignedOut />
       </Frame>
     );
   }

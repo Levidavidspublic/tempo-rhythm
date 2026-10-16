@@ -13,7 +13,8 @@ import {
 import type { FlashcardsData, QuizData, StudyBlockType, TestData } from "@tempo/utils";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { OfflineNotice, SignedOutState, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { OfflineNotice, StateEmpty, StateLoading } from "@/components/goals/shared";
+import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { reviewHref } from "./hub";
@@ -89,7 +90,7 @@ export function StudySetView({
       >
         {online ? null : <OfflineNotice text={t("gx.offline")} />}
         {signedOut ? (
-          <SignedOutState />
+          <StateSignedOut />
         ) : data === undefined ? (
           <StateLoading label={t("st.set.loading")} lead="block" rows={1} />
         ) : (
