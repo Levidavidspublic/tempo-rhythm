@@ -15,7 +15,13 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { ReviewButton } from "../../../../packages/core/srs/sm2";
 import { countKey, reviewLabels, type StudyT } from "./labels";
-import { type QueueCard, type SavedGrade, sessionItems } from "./session";
+import {
+  cardKey,
+  type GradedStates,
+  type QueueCard,
+  type SavedGrade,
+  sessionItems,
+} from "./session";
 
 /** The review session's markup and session state, with no data access (ReviewSession.tsx saves). */
 export function SessionHeader({ t, count }: { t: StudyT; count: number | null }) {
@@ -101,11 +107,14 @@ function SessionRunner({
   onSave: ReviewSessionViewProps["onSave"];
   onUndo: ReviewSessionViewProps["onUndo"];
 }) {
-  const items = useMemo(() => sessionItems(cards), [cards]);
+  // Each card's state after its grades in this session; one snapshot per saved grade for Undo.
+  const [graded, setGraded] = useState<GradedStates>({});
+  const gradedBefore = useRef<GradedStates[]>([]);
+  const items = useMemo(() => sessionItems(cards, graded), [cards, graded]);
   const labels = useMemo(() => reviewLabels(t), [t]);
   const [state, dispatch] = useReducer(
     reviewReducer,
-    items.map((item) => item.key),
+    cards.map((card) => cardKey(card.setId, card.cardId)),
     initReview
   );
   const [busy, setBusy] = useState(false);
@@ -142,6 +151,8 @@ function SessionRunner({
       onSave(key, action.button)
         .then((grade) => {
           saved.current = [...saved.current, grade];
+          gradedBefore.current = [...gradedBefore.current, graded];
+          if (grade.state !== undefined) setGraded({ ...graded, [key]: grade.state });
           setClock(Date.now());
         })
         .catch(() => {
@@ -162,6 +173,9 @@ function SessionRunner({
     onUndo(grade)
       .then(() => {
         saved.current = saved.current.slice(0, -1);
+        const before = gradedBefore.current.at(-1);
+        gradedBefore.current = gradedBefore.current.slice(0, -1);
+        if (before) setGraded(before);
         dispatch({ type: "undo" });
       })
       .catch(() => setNotice("undo"))

@@ -7,7 +7,13 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { ReviewButton } from "../../../../packages/core/srs/sm2";
-import { type QueueCard, type SavedGrade, splitKey } from "./session";
+import {
+  nextSnapshot,
+  type QueueCard,
+  type SavedGrade,
+  type SessionSnapshot,
+  splitKey,
+} from "./session";
 import { ReviewSessionView, SessionHeader } from "./ReviewSessionView";
 
 /**
@@ -29,7 +35,8 @@ export function ReviewSession({ setId }: { setId?: string }) {
         </div>
       )}
     >
-      <ReviewSessionData setId={setId} />
+      {/* A new set is a new session: fresh query, snapshot and grades. */}
+      <ReviewSessionData key={setId ?? ""} setId={setId} />
     </ScreenBoundary>
   );
 }
@@ -39,16 +46,18 @@ function ReviewSessionData({ setId }: { setId?: string }) {
   const online = useOnline();
   const args = setId ? { setId: setId as Id<"studySets"> } : {};
   const queue = useQuery(api.study.reviewQueue, signedIn === "ready" ? args : "skip");
-  const [snapshot, setSnapshot] = useState<{ cards: QueueCard[]; now: number } | null>(null);
+  const [stored, setSnapshot] = useState<SessionSnapshot | null>(null);
   useEffect(() => {
-    if (queue && !snapshot) setSnapshot({ cards: queue.cards as QueueCard[], now: Date.now() });
-  }, [queue, snapshot]);
+    const next = nextSnapshot(stored, setId, queue?.cards as QueueCard[] | undefined, Date.now());
+    if (next !== stored) setSnapshot(next);
+  }, [queue, stored, setId]);
+  const snapshot = stored && stored.setId === setId ? stored : null;
   const review = useMutation(api.study.review);
   const undoReview = useMutation(api.study.undoReview);
   const save = async (key: string, button: ReviewButton): Promise<SavedGrade> => {
     const { setId: sid, cardId } = splitKey(key);
     const result = await review({ setId: sid as Id<"studySets">, cardId, button });
-    return { reviewId: result.reviewId, undoUntil: result.undoUntil };
+    return { reviewId: result.reviewId, undoUntil: result.undoUntil, state: result.state };
   };
   const undo = async (grade: SavedGrade) => {
     await undoReview({ reviewId: grade.reviewId as Id<"studyReviews"> });

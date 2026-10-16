@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import type { TestData } from "@tempo/utils";
 import { dayStart, groupSets, type HubData, type HubSet, hubFocus, reviewHref, setHref } from "../../../apps/web/components/study/hub";
 import { countKey } from "../../../apps/web/components/study/labels";
-import { cardKey, sessionItems, splitKey } from "../../../apps/web/components/study/session";
+import { cardKey, nextSnapshot, sessionItems, splitKey } from "../../../apps/web/components/study/session";
 import {
   deckCounts,
   onlyQuizQuestions,
@@ -91,6 +91,27 @@ describe("review session", () => {
     expect(items[0]?.hint).toBe("M");
     expect(items[1]).not.toHaveProperty("hint");
     expect(splitKey(cardKey("s2", "c1"))).toEqual({ setId: "s2", cardId: "c1" });
+  });  test("a card graded in this session shows the state the grade returned (intervals follow it)", () => {
+    const before = { ease: 2.5, intervalDays: 6, repetitions: 2, lapses: 0, dueAt: 0, lastReviewedAt: 0 };
+    const after = { ease: 2.3, intervalDays: 0, repetitions: 0, lapses: 1, dueAt: 600_000, lastReviewedAt: 0 };
+    const cards = [
+      { setId: "s1", setTitle: "Deck", cardId: "c1", front: "Mitosis", back: "Cell division", state: before },
+      { setId: "s1", setTitle: "Deck", cardId: "c2", front: "Osmosis", back: "Water moves", state: null },
+    ];
+    const items = sessionItems(cards, { [cardKey("s1", "c1")]: after });
+    expect(items[0]?.state).toEqual(after);
+    expect(items[1]?.state).toBeNull();
+    expect(sessionItems(cards)[0]?.state).toEqual(before);
+  });
+  test("moving from ?set=A to ?set=B starts a new snapshot instead of keeping A's cards", () => {
+    const card = (setId: string) => ({ setId, setTitle: setId, cardId: "c1", front: "f", back: "b", state: null });
+    const a = nextSnapshot(null, "A", [card("A")], 1);
+    expect(a?.cards.map((c) => c.setId)).toEqual(["A"]);
+    // The same set keeps its snapshot even when the live queue changes after a grade.
+    expect(nextSnapshot(a, "A", [], 2)).toBe(a);
+    // Another set: nothing until its queue loads, then its own cards.
+    expect(nextSnapshot(a, "B", undefined, 3)).toBeNull();
+    expect(nextSnapshot(a, "B", [card("B")], 3)?.cards.map((c) => c.setId)).toEqual(["B"]);
   });
 });
 
