@@ -412,6 +412,14 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  studyPlans: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    title: "plan",
+    deadline: "2026-11-01",
+    taskIds: [],
+    createdAt: 1,
+    updatedAt: 1,
+  })),
   nags: fixture("additional-soft-delete", (userId) => ({
     userId,
     label: "nag",

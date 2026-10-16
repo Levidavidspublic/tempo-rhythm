@@ -45,6 +45,7 @@ export const USER_OWNED_TABLES = [
   "studyCardStates",
   "studyReviews",
   "studyAttempts",
+  "studyPlans",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
