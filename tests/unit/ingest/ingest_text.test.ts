@@ -126,6 +126,17 @@ describe("titles", () => {
     expect(deriveTitle("   \n")).toBe("");
   });
 
+  test("a fenced code block is never the title, and neither is its info string", () => {
+    expect(deriveTitle(`${STUDY_BLOCK}\nCell notes`)).toBe("Cell notes");
+    expect(deriveTitle("```python\nprint('hi')\n```\nLoops in Python")).toBe("Loops in Python");
+    expect(deriveTitle("  ~~~\nraw text\n~~~~\n# After the code")).toBe("After the code");
+    // A shorter or different fence doesn't close the block (CommonMark).
+    expect(deriveTitle("````\n```\nstill code\n````\nOutside")).toBe("Outside");
+    expect(deriveTitle("```\nonly code, never closed")).toBe("");
+    // Inline code in a normal line still gives a title, without its backticks.
+    expect(deriveTitle("Use `map` here")).toBe("Use map here");
+  });
+
   test("long first lines are cut at a word", () => {
     const title = deriveTitle(`${"word ".repeat(40)}end`);
     expect(title.length).toBeLessThanOrEqual(80);

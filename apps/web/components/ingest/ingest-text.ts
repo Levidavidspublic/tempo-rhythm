@@ -111,13 +111,27 @@ export function deriveTitle(text: string, fileName?: string): string {
       .trim();
     if (base) return clip(base);
   }
+  // The fence of the code block we're inside (``` or ~~~, at least as long as the opener).
+  let fence: string | null = null;
   for (const raw of normaliseNewlines(text.slice(0, TITLE_SCAN_CHARS)).split("\n")) {
+    // Test for a fence before any marks are stripped: "```json tempo" would otherwise lose its
+    // backticks and become the title "json tempo". Code is never the title.
+    const [, marks = "", rest = ""] = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(raw) ?? [];
+    if (fence) {
+      // Only the same mark, at least as long and with nothing after it, closes the block.
+      if (marks[0] === fence[0] && marks.length >= fence.length && !rest.trim()) fence = null;
+      continue;
+    }
+    if (marks) {
+      fence = marks;
+      continue;
+    }
     const line = raw
       .replace(/^\s*(?:#{1,6}\s+|>\s*|[-*+]\s+|\d+[.)]\s+)/, "")
       .replace(/[*_`]+/g, "")
       .replace(/\s+/g, " ")
       .trim();
-    if (/[\p{L}\p{N}]/u.test(line) && !/^(`{3,}|~{3,})/.test(line)) return clip(line);
+    if (/[\p{L}\p{N}]/u.test(line)) return clip(line);
   }
   return "";
 }
