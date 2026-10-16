@@ -1,7 +1,9 @@
 /**
  * The pure side of "Plan back from a deadline" (S3): reading the form, the live preview from
- * `planBack`, grouping by week and the three ways out when the plan doesn't fit.
+ * `planBack`, grouping by week and the three ways out when the plan doesn't fit. Also the bridge
+ * to the S9 GuidedPlanCard: sessions to steps, steps back to sessions, and the card's labels.
  */
+import type { GuidedPlanLabels, GuidedStep } from "@tempo/ui";
 import {
   addDays,
   isLocalDate,
@@ -17,7 +19,7 @@ import {
   planBack,
 } from "../../../../../packages/core/plan/plan-path";
 import { type GridSource, toGridItems } from "../gridData";
-import { type PlanLang, parseClock, pt } from "../planCopy";
+import { type PlanLang, parseClock, pt, shortDate, weekStartFor } from "../planCopy";
 
 /** Minutes in a day: a day's study has to end by midnight. */
 const DAY_MINUTES = 1440;
@@ -224,4 +226,107 @@ export function waysOut(values: PlanFormValues, today: LocalDate, busy?: BusyMin
 /** Whole hours and the minutes left over, for "3 h 45 min". */
 export function hoursAndMinutes(total: number): { hours: number; minutes: number } {
   return { hours: Math.floor(total / 60), minutes: total % 60 };
+}
+
+/* ------------------------------------------------------------------ */
+/* GuidedPlanCard (S9)                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The preview's sessions as GuidedPlanCard steps, grouped by week (Monday first in English,
+ * Sunday first in Hebrew). Ids are positions: the card is keyed by `previewKey`, so a new preview
+ * always starts a fresh card.
+ */
+export function toGuidedSteps(sessions: readonly TimedSession[], lang: PlanLang): GuidedStep[] {
+  const weekStartsOn = weekStartFor(lang);
+  return sessions.map((session, index) => {
+    const weekStart = startOfWeek(session.date, { weekStartsOn });
+    return {
+      id: `s${index}`,
+      title: session.label,
+      minutes: session.minutes,
+      kind: session.kind,
+      date: session.date,
+      startMinute: session.startMinute,
+      groupId: weekStart,
+      groupLabel: pt(lang, "pp.week", { date: shortDate(lang, weekStart) }),
+    };
+  });
+}
+
+/** One saved session per step, in the shape `plans.createFromPreview` takes (less `startAt`). */
+export type GuidedSession = {
+  title: string;
+  date: LocalDate;
+  startMinute: number;
+  minutes: number;
+  kind: PlanSession["kind"];
+};
+
+/** Accepted steps back to sessions. Steps without a date or a plan kind are skipped. */
+export function sessionsFromSteps(steps: readonly GuidedStep[]): GuidedSession[] {
+  const out: GuidedSession[] = [];
+  for (const step of steps) {
+    if (step.date === undefined || step.startMinute === undefined || step.kind === "task") continue;
+    out.push({
+      title: step.title.trim(),
+      date: step.date,
+      startMinute: step.startMinute,
+      minutes: step.minutes,
+      kind: step.kind,
+    });
+  }
+  return out;
+}
+
+/** A stable key for a preview: the card restarts (edits cleared) only when the plan itself changes. */
+export function previewKey(sessions: readonly TimedSession[]): string {
+  return sessions.map((s) => `${s.date}|${s.startMinute}|${s.minutes}|${s.kind}|${s.label}`).join("~");
+}
+
+/** GuidedPlanCard's words in the person's language. Accept reuses "Add these sessions". */
+export function guidedLabels(lang: PlanLang): GuidedPlanLabels {
+  return {
+    kind: pt(lang, "pp.g.kind"),
+    target: pt(lang, "pp.g.target"),
+    summary: pt(lang, "pp.g.summary"),
+    list: pt(lang, "pp.g.list"),
+    minutes: pt(lang, "pp.min"),
+    kinds: {
+      learn: pt(lang, "pp.g.k.learn"),
+      review: pt(lang, "pp.g.k.review"),
+      practice: pt(lang, "pp.g.k.practice"),
+      rest: pt(lang, "pp.g.k.rest"),
+      task: pt(lang, "pp.g.k.task"),
+    },
+    statuses: {
+      todo: pt(lang, "pp.g.st.todo"),
+      doing: pt(lang, "pp.g.st.doing"),
+      done: pt(lang, "pp.g.st.done"),
+    },
+    statusGroup: pt(lang, "pp.g.statusGroup"),
+    accept: pt(lang, "pp.add"),
+    accepting: pt(lang, "pp.adding"),
+    edit: pt(lang, "pp.g.edit"),
+    doneEditing: pt(lang, "pp.g.doneEditing"),
+    reject: pt(lang, "pp.g.reject"),
+    undo: pt(lang, "pp.g.undo"),
+    undoLeft: pt(lang, "pp.g.undoLeft"),
+    accepted: pt(lang, "pp.g.accepted"),
+    kept: pt(lang, "pp.g.kept"),
+    undone: pt(lang, "pp.g.undone"),
+    rejected: pt(lang, "pp.g.rejected"),
+    editHint: pt(lang, "pp.g.editHint"),
+    nameField: pt(lang, "pp.g.nameField"),
+    minutesField: pt(lang, "pp.g.minutesField"),
+    moveUp: pt(lang, "pp.g.moveUp"),
+    moveDown: pt(lang, "pp.g.moveDown"),
+    remove: pt(lang, "pp.g.remove"),
+    errors: {
+      titleEmpty: pt(lang, "pp.g.err.titleEmpty"),
+      titleLong: pt(lang, "pp.g.err.titleLong"),
+      minutesRange: pt(lang, "pp.g.err.minutesRange"),
+    },
+    tooFew: pt(lang, "pp.g.tooFew"),
+  };
 }

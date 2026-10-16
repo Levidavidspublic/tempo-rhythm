@@ -4,6 +4,8 @@
 // under the function's name ("study.hub"). Some views click through the real components after they
 // mount (Check, Submit, Ask the coach). Not part of the app. All people and data are fictional
 // (DESIGN.md §13). Supports ?view=, ?theme=light|dark and ?lang=en|he.
+// S9 adds plan-guided, plan-guided-edit and plan-guided-accepted: the GuidedPlanCard on a sample plan.
+import { GuidedPlanCard } from "@tempo/ui";
 import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { PageEditorView } from "@/components/notes/PageEditorView";
@@ -13,6 +15,8 @@ import { ReviewSession } from "@/components/study/ReviewSession";
 import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
+import { shortDate } from "@/components/calendar/planCopy";
+import { buildPreview, DEFAULT_FORM, guidedLabels, toGuidedSteps } from "@/components/calendar/plan/planForm";
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view") ?? "study-hub";
@@ -218,6 +222,44 @@ function steps(...actions: (() => void)[]) {
 }
 const click = (selector: string) => () => (document.querySelector(selector) as HTMLElement | null)?.click();
 
+/** A fictional two-week plan for a chemistry test, the way the plan screen would preview it. */
+function GuidedPlanSample({ mode }: { mode: "pending" | "edit" | "accepted" }) {
+  const preview = buildPreview(
+    {
+      ...DEFAULT_FORM,
+      title: lang === "he" ? "מבחן בכימיה" : "Chemistry test",
+      deadline: "2026-10-30",
+      topicsText: lang === "he" ? "קשרים כימיים\nחומצות ובסיסים | 2\nסטוכיומטריה" : "Chemical bonds\nAcids and bases | 2\nStoichiometry",
+      minutesPerDay: 60,
+      sessionMinutes: 40,
+      startTime: "16:30",
+    },
+    "2026-10-19",
+    lang,
+  );
+  if (preview.status !== "ok") return null;
+  const steps = toGuidedSteps(preview.sessions, lang);
+  const statuses = mode === "accepted" ? { [steps[0]?.id ?? ""]: "done" as const, [steps[1]?.id ?? ""]: "doing" as const } : undefined;
+  return (
+    <div className="tp-page tp-page--wide tp-plan">
+      <GuidedPlanCard
+        title={lang === "he" ? "מבחן בכימיה" : "Chemistry test"}
+        steps={steps}
+        labels={guidedLabels(lang)}
+        status={mode === "accepted" ? "accepted" : "pending"}
+        undoUntilMs={mode === "accepted" ? NOW + 5 * MIN : undefined}
+        stepStatuses={statuses}
+        initialEditing={mode === "edit"}
+        formatDate={(date) => shortDate(lang, date)}
+        onAccept={() => {}}
+        onReject={() => {}}
+        onUndo={() => {}}
+        onStepStatus={() => {}}
+      />
+    </div>
+  );
+}
+
 function Main({ children }: { children: ReactNode }) {
   // The app shell gives its main area a side gutter; the gallery has no shell, so it adds 16 px.
   return (
@@ -228,6 +270,9 @@ function Main({ children }: { children: ReactNode }) {
 }
 
 const VIEWS: Record<string, () => ReactNode> = {
+  "plan-guided": () => <GuidedPlanSample mode="pending" />,
+  "plan-guided-edit": () => <GuidedPlanSample mode="edit" />,
+  "plan-guided-accepted": () => <GuidedPlanSample mode="accepted" />,
   "study-hub": () => <ReviewHub />,
   "study-hub-empty": () => <ReviewHub />,
   "study-review": () => <ReviewSession />,

@@ -4,7 +4,7 @@
  * The form and the live preview of "Plan back from a deadline" (S3). Presentational: the screen
  * (PlanPathScreen) owns the state and the save. Copy: lib/i18n-groups/plan.ts.
  */
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { LocalDate, Weekday } from "../../../../../packages/core/plan/calendar-math";
 import {
@@ -22,6 +22,7 @@ import {
   hoursAndMinutes,
   type PlanFormValues,
   type PreviewState,
+  type TimedSession,
   type WaysOut,
 } from "./planForm";
 
@@ -177,6 +178,11 @@ export type PlanPreviewProps = {
   onUseDate?: (date: LocalDate) => void;
   onEditTopics?: () => void;
   idPrefix?: string;
+  /**
+   * Draws the sessions in place of the week list (S9: the GuidedPlanCard, which carries its own
+   * summary). The "doesn't fit" notice with its three ways out stays above it either way.
+   */
+  renderSessions?: (sessions: TimedSession[]) => ReactNode;
 };
 
 export function PlanPreview({
@@ -187,6 +193,7 @@ export function PlanPreview({
   onUseDate,
   onEditTopics,
   idPrefix = "pp",
+  renderSessions,
 }: PlanPreviewProps) {
   const headingId = `${idPrefix}-preview-h`;
   return (
@@ -207,13 +214,15 @@ export function PlanPreview({
         </p>
       ) : (
         <>
-          <p data-testid="plan-totals" aria-live="polite">
-            {ptNodes(lang, "pp.totals", {
-              sessions: state.sessions.length,
-              days: state.result.daysUsed,
-              ...hoursAndMinutes(state.result.totalMinutes),
-            })}
-          </p>
+          {renderSessions ? null : (
+            <p data-testid="plan-totals" aria-live="polite">
+              {ptNodes(lang, "pp.totals", {
+                sessions: state.sessions.length,
+                days: state.result.daysUsed,
+                ...hoursAndMinutes(state.result.totalMinutes),
+              })}
+            </p>
+          )}
           {state.result.shortBy > 0 ? (
             <div
               className="tp-notice"
@@ -285,7 +294,8 @@ export function PlanPreview({
               </div>
             </div>
           ) : null}
-          {groupByWeek(state.sessions, weekStartFor(lang)).map((week) => (
+          {renderSessions ? renderSessions(state.sessions) : null}
+          {renderSessions ? null : groupByWeek(state.sessions, weekStartFor(lang)).map((week) => (
             <section className="tp-plan__week" key={week.weekStart} data-week={week.weekStart}>
               <h3 className="tp-plan__week-title">
                 {pt(lang, "pp.week", { date: shortDate(lang, week.weekStart) })}
