@@ -53,6 +53,14 @@
 .ob-nav__end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; }
 .ob-fieldsets { display: grid; gap: var(--tp-space-6); }
 
+/* Passkeys (/settings/passkeys): outside the app shell, so the page brings the shell main's padding. */
+.pk-main { padding: var(--tp-space-8) var(--tp-space-6) var(--tp-space-20); }
+.pk-body { display: grid; gap: var(--tp-space-8); min-width: 0; }
+@media (max-width: 767px) {
+  .pk-main { padding-inline: var(--tp-space-4); }
+  .pk-main > .tp-page > .tp-pagehead { padding-inline: 0; }
+}
+
 /* Under 768 px the shell main has no side padding and the shared rule pads only the page head, so
    the settings cards ran edge to edge. The body takes the same 16 px gutter (as v3/you.css does),
    and a loading or error state inside it drops its own side padding to line up with that gutter. */

@@ -348,6 +348,16 @@ export const en = {
   "set.auth.offTitle": "You're offline.",
   "set.auth.offBody": "We can send your link when you're back online.",
   "set.auth.offNote": "Sending needs a connection. This works again when you're back online.",
+
+  // Passkeys (new: no design screen; laid out like the other settings pages)
+  "set.pk.title": "Passkeys",
+  "set.pk.sub": "Sign in with your fingerprint, face or device PIN instead of an email link.",
+  "set.pk.loading": "Loading passkeys",
+  "set.pk.section": "Your passkeys",
+  "set.pk.addLabel": "Add a passkey",
+  "set.pk.addHelp": "Passkeys aren't ready yet. For now, you sign in with a link sent to your email.",
+  "set.pk.lost": "We couldn't confirm that you're signed in.",
+  "set.pk.signInAgain": "Sign in again",
 } as const;
 
 export const he: Record<keyof typeof en, string> = {
@@ -673,4 +683,13 @@ export const he: Record<keyof typeof en, string> = {
   "set.auth.offTitle": "אין חיבור לאינטרנט.",
   "set.auth.offBody": "נוכל לשלוח את הקישור כשהחיבור יחזור.",
   "set.auth.offNote": "השליחה צריכה חיבור. זה יעבוד שוב כשהחיבור יחזור.",
+
+  "set.pk.title": "מפתחות גישה",
+  "set.pk.sub": "כניסה עם טביעת אצבע, זיהוי פנים או קוד המכשיר, במקום קישור במייל.",
+  "set.pk.loading": "טוען מפתחות גישה",
+  "set.pk.section": "מפתחות הגישה שלכם",
+  "set.pk.addLabel": "הוספת מפתח גישה",
+  "set.pk.addHelp": "מפתחות גישה עוד לא מוכנים. בינתיים נכנסים עם קישור שנשלח למייל.",
+  "set.pk.lost": "לא הצלחנו לוודא שאתם מחוברים.",
+  "set.pk.signInAgain": "להתחבר שוב",
 };
