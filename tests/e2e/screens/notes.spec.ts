@@ -27,6 +27,8 @@ test.describe("notes screen", () => {
     await page.goto(url("/notes"));
     await expect(page.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();
 
+    await page.getByLabel("New note title").fill("E2E test page");
+
     await page.getByRole("button", { name: "New note" }).click();
     await expect(page).toHaveURL(/\/notes\/[^/]+$/);
 
