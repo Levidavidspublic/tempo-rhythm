@@ -606,7 +606,7 @@
 
 /* ---- v3 shell: a page's side column (apps/web/components/tempo/ShellSlots.tsx) ---- */
 /* /coach: the thread scrolls inside a bounded surface, so the composer stays in reach. */
-.tp-coach-page { display: flex; flex-direction: column; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
+.tp-coach-page { display: flex; flex-direction: column; padding: 0; gap: 0; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
 .tp-coach-page > * { flex: none; }
 .tp-coach-page > .tp-coach-thread { flex: 1 1 auto; min-height: 0; }
 
@@ -705,3 +705,48 @@
   .tk-row { grid-template-columns: auto minmax(0, 1fr); }
   .tk-row__actions { grid-column: 2; justify-content: flex-start; }
 }
+
+/* ==========================================================================
+   Kitchen polish pass (docs/kitchen/RUN-LOG.md). Product CSS on top of the locked tempo.css
+   copy: layout and state fixes only, every value from a --tp-* token.
+   ========================================================================== */
+
+/* Coach thread (coach-thread.html). A message keeps its own line breaks, and a long link or word
+   wraps instead of pushing a phone screen sideways. */
+.tp-msg { min-width: 0; }
+.tp-msg__text { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+.tp-msg__who { display: inline-flex; align-items: baseline; gap: var(--tp-space-2); }
+.tp-msg__time { font-weight: 400; color: var(--tp-ink-subtle); }
+/* Coach replies render Markdown: paragraphs and lists get their own rhythm, code scrolls inside. */
+.tp-msg__md { white-space: normal; display: grid; gap: var(--tp-space-2); }
+.tp-msg__md :is(ul, ol) { padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+.tp-msg__md ul { list-style: disc; }
+.tp-msg__md ol { list-style: decimal; }
+.tp-msg__md a { color: var(--tp-ink); text-decoration: underline; text-underline-offset: 2px; }
+.tp-msg__md code { font-family: var(--tp-font-mono); font-size: 0.9em; background: var(--tp-sunken); padding-inline: var(--tp-space-1); border-radius: var(--tp-radius-sm); }
+.tp-msg__md pre { overflow-x: auto; max-width: 100%; padding: var(--tp-space-3); background: var(--tp-sunken); border-radius: var(--tp-radius-md); }
+.tp-msg__md pre code { padding: 0; background: none; }
+/* Message actions stay quiet: shown on hover or focus where there is a mouse, always on touch. */
+.tp-msg__actions[data-component="MessageActions"] .tp-btn { color: var(--tp-ink-muted); }
+@media (hover: hover) and (pointer: fine) {
+  .tp-msg__actions[data-component="MessageActions"] { opacity: 0; transition: opacity var(--tp-dur-fast) var(--tp-ease-out); }
+  .tp-msg:hover > .tp-msg__actions[data-component="MessageActions"],
+  .tp-msg:focus-within > .tp-msg__actions[data-component="MessageActions"] { opacity: 1; }
+}
+/* Loading: three quiet lines in the shape of a conversation. */
+.tp-coach-thread__loading { display: grid; gap: var(--tp-space-3); }
+.tp-coach-thread__loading .tp-skeleton:nth-child(2) { width: 70%; }
+.tp-coach-thread__loading .tp-skeleton:nth-child(3) { width: 45%; justify-self: end; }
+.tp-coach-thread__loading .tp-skeleton:nth-child(4) { width: 60%; }
+/* An empty chat: a kind line, then starters that fill the composer (they never send by themselves). */
+.tp-coach-start { display: grid; gap: var(--tp-space-4); }
+.tp-coach-start__list { display: grid; justify-items: start; gap: var(--tp-space-2); }
+.tp-coach-start__item { max-width: 100%; min-height: var(--tp-touch); padding-block: var(--tp-space-2); text-align: start; white-space: normal; }
+/* "Jump to the latest": offered when new messages arrive while you are reading further up. */
+.tp-coach-jump { display: flex; justify-content: center; padding: var(--tp-space-2) var(--tp-space-4) 0; }
+/* Composer: the unlayered focus ring above would draw a second ring inside the box's own one. */
+.tp-composer__input:focus-visible { outline: none; }
+.tp-composer .tp-offline { margin-block-end: var(--tp-space-2); }
+.tp-composer__count { font-variant-numeric: tabular-nums; }
+.tp-composer__actions { margin-inline-start: auto; display: inline-flex; align-items: center; gap: var(--tp-space-1); }
+.tp-composer__actions .tp-composer__send { margin-inline-start: 0; }

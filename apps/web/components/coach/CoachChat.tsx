@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCard";
 import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -9,10 +9,12 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
+import { charsLeft, composerHeight, isNearBottom } from "@/lib/coach-thread";
 import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { useOnline } from "@/lib/useOnline";
 import { ChatProposal, proposalOf } from "./ChatProposal";
+import { CoachMessage } from "./CoachMessage";
 import { useFlushCoachPage } from "./CoachPage";
 import { VoiceCall } from "./voice/VoiceCall";
 import { useVoiceCall, type VoiceSendResult } from "./voice/useVoiceCall";
@@ -58,6 +60,11 @@ const creating = new Map<string, Promise<Id<"conversations">>>();
  * day, so the coach sees today's open tasks ("what order should I do these in?"). The message is
  * saved first; the reply comes from the model through `coach.reply`, with a typing state while it
  * runs (the model seam does not stream).
+ *
+ * Chat conventions (ideas shared with Open WebUI and most chat apps; no code taken from them):
+ * the thread follows new messages only while you are at the bottom, otherwise a "Jump to the
+ * latest" button appears; the composer grows with the text; an empty chat offers starters that
+ * fill the composer (they never send by themselves); each message can be copied.
  */
 export function CoachConversation({
   variant,
@@ -85,6 +92,9 @@ export function CoachConversation({
   const voiceAvailability = useQuery(api.voice.availability, isAuthenticated && profile ? {} : "skip");
 
   const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
+  // A first conversation that couldn't be made: say so and offer Try again (bumps `createTry`).
+  const [createError, setCreateError] = useState(false);
+  const [createTry, setCreateTry] = useState(0);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -92,10 +102,15 @@ export function CoachConversation({
   const [replying, setReplying] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [pageUnsaved, setPageUnsaved] = useState(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  // True while the reader is at the bottom of the thread: only then does it follow new messages.
+  const stuck = useRef(true);
+  const [newBelow, setNewBelow] = useState(false);
+  // The composer is disabled while a reply runs, which drops focus: give it back afterwards.
+  const refocus = useRef(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: createTry re-runs the create after Try again
   useEffect(() => {
     if (!isAuthenticated || conversations === undefined || conversationId) return;
     const latest = pickCoachConversation(conversations);
@@ -112,16 +127,19 @@ export function CoachConversation({
       pending.catch(() => creating.delete(profile._id));
     }
     let live = true;
+    setCreateError(false);
     void pending.then(
       (id) => {
         if (live) setConversationId(id);
       },
-      () => {},
+      () => {
+        if (live) setCreateError(true);
+      },
     );
     return () => {
       live = false;
     };
-  }, [isAuthenticated, profile, conversations, conversationId, createConversation]);
+  }, [isAuthenticated, profile, conversations, conversationId, createConversation, createTry]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -130,15 +148,19 @@ export function CoachConversation({
 
   const messages = useQuery(api.messages.list, conversationId ? { conversationId } : "skip");
 
-  useEffect(() => {
-    // Inline on Today the thread scrolls inside its own box: the page itself never jumps.
-    if (variant === "today") {
-      const thread = threadRef.current;
-      if (thread) thread.scrollTop = thread.scrollHeight;
-      return;
-    }
-    bottomRef.current?.scrollIntoView({ block: "end" });
-  });
+  // The thread scrolls inside its own box on every surface, so the page itself never jumps.
+  const toBottom = useCallback(() => {
+    const thread = threadRef.current;
+    if (thread) thread.scrollTop = thread.scrollHeight;
+    stuck.current = true;
+    setNewBelow(false);
+  }, []);
+  const onThreadScroll = () => {
+    const thread = threadRef.current;
+    if (!thread) return;
+    stuck.current = isNearBottom(thread);
+    if (stuck.current) setNewBelow(false);
+  };
 
   // A failed or missing reply never throws past here: the message is saved, and the thread says so.
   // True only when the coach wrote a reply to this turn.
@@ -208,6 +230,8 @@ export function CoachConversation({
     if (!text || !conversationId || isSending || replying || waitingForPage) return;
     setInput("");
     setIsSending(true);
+    toBottom();
+    refocus.current = document.activeElement === inputRef.current;
     try {
       const outcome = await deliverCoachMessage(text, guard, async (content) => {
         await sendMessage({ conversationId, content });
@@ -230,7 +254,7 @@ export function CoachConversation({
   };
 
   const isLoading =
-    isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
+    isAuthenticated && !createError && (conversations === undefined || !conversationId || messages === undefined);
   const inputId = variant === "page" ? "coach-message" : variant === "panel" ? "coach-panel-message" : "today-coach-message";
   const shown = variant === "today" ? messages?.slice(-TODAY_MESSAGES) : messages;
   const busy = isSending || replying || inFlightUntil !== null;
@@ -244,29 +268,100 @@ export function CoachConversation({
   // The newest message is the user's and no reply is on its way: a reply failed, or the page
   // reloaded while one was running. Either way the message is saved and can be answered again.
   const waiting = !busy && !crisisHold && messages !== undefined && messages.at(-1)?.role === "user";
+  const shownCount = shown?.length ?? 0;
+  const lastShownId = shown?.at(-1)?._id;
+
+  // Something new at the end (a message, the typing line, a crisis card or Try again): follow it
+  // when the reader is at the bottom, otherwise offer the jump instead of pulling them down.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: these values are the "something new" signals
+  useLayoutEffect(() => {
+    if (stuck.current) toBottom();
+    else setNewBelow(true);
+  }, [shownCount, lastShownId, busy, crisisHold, waiting, toBottom]);
+
+  // The composer grows with its text up to its largest height, then scrolls.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure whenever the text changes
+  useLayoutEffect(() => {
+    const box = inputRef.current;
+    if (!box) return;
+    box.style.height = "auto";
+    box.style.height = `${composerHeight(box.scrollHeight)}px`;
+  }, [input]);
+  const left = charsLeft(input.length, MAX_MESSAGE_CHARS);
+
+  useEffect(() => {
+    if (busy || !refocus.current) return;
+    refocus.current = false;
+    inputRef.current?.focus();
+  }, [busy]);
 
   return (
     <>
-      <div ref={threadRef} className="tp-coach-thread" data-component="CoachThread" data-variant={variant} aria-live="polite">
-        {isLoading ? (
-          <p className="tp-muted tp-small">{t("coachChat.loading")}</p>
+      <div
+        ref={threadRef}
+        className="tp-coach-thread"
+        data-component="CoachThread"
+        data-variant={variant}
+        role="log"
+        aria-label={t("coach.name")}
+        onScroll={onThreadScroll}
+      >
+        {createError && !conversationId ? (
+          <div className="tp-notice" data-tone="caution" role="alert" data-component="CoachCreateError">
+            <span className="tp-notice__icon">
+              <TpIcon name="alert" size="sm" />
+            </span>
+            <span className="tp-notice__text">{t("coachChat.createError")}</span>
+            <span className="tp-notice__action">
+              <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={() => setCreateTry((n) => n + 1)}>
+                <TpIcon name="refresh" size="sm" />
+                <span>{t("coachChat.retry")}</span>
+              </button>
+            </span>
+          </div>
+        ) : isLoading ? (
+          <div className="tp-coach-thread__loading" data-component="CoachLoading">
+            <span className="tp-sr-only">{t("coachChat.loading")}</span>
+            <span className="tp-skeleton" aria-hidden="true" />
+            <span className="tp-skeleton" aria-hidden="true" />
+            <span className="tp-skeleton" aria-hidden="true" />
+          </div>
         ) : shown && shown.length === 0 ? (
-          variant === "today" ? null : <p className="tp-muted">{t("coachChat.empty")}</p>
+          variant === "today" ? null : (
+            <div className="tp-coach-start" data-component="CoachEmpty">
+              <p className="tp-muted">{t("coachChat.empty")}</p>
+              {conversationId ? (
+                <div className="tp-coach-start__list">
+                  <span className="tp-small tp-muted">{t("coachChat.suggestLead")}</span>
+                  {(["coachChat.suggest1", "coachChat.suggest2", "coachChat.suggest3"] as const).map((key) => (
+                    <button
+                      key={key}
+                      className="tp-btn tp-btn--secondary tp-btn--sm tp-coach-start__item"
+                      type="button"
+                      disabled={busy || waitingForPage}
+                      onClick={() => {
+                        setInput(t(key));
+                        inputRef.current?.focus();
+                      }}
+                    >
+                      <TpIcon name="sparkle" size="sm" />
+                      <span>{t(key)}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )
         ) : (
           shown?.map((message) => {
             const proposal = message.role === "assistant" ? proposalOf(message.toolCalls) : null;
             return (
               <Fragment key={message._id}>
-                <div
-                  data-role={message.role}
-                  className={message.role === "user" ? "tp-msg tp-msg--user" : "tp-msg"}
-                  data-component="CoachMessage"
-                >
-                  <span className="tp-msg__who">{message.role === "user" ? t("coachChat.you") : t("coach.name")}</span>
-                  <p className="tp-msg__text" dir="auto">
-                    {message.content}
-                  </p>
-                </div>
+                <CoachMessage
+                  role={message.role === "user" ? "user" : "assistant"}
+                  content={message.content}
+                  createdAt={message._creationTime}
+                />
                 {proposal ? <ChatProposal messageId={message._id} proposal={proposal} /> : null}
               </Fragment>
             );
@@ -274,8 +369,13 @@ export function CoachConversation({
         )}
         {crisisHold ? <CoachCrisisReply /> : null}
         {busy ? (
-          <output aria-label={t("coachChat.typing")} className="tp-msg tp-muted" data-component="CoachTyping">
-            …
+          <output aria-label={t("coachChat.typing")} className="tp-msg tp-typing" data-component="CoachTyping">
+            <span className="tp-typing__dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span>{t("coachChat.typing")}</span>
           </output>
         ) : null}
         {waiting && conversationId ? (
@@ -291,8 +391,15 @@ export function CoachConversation({
             </div>
           </div>
         ) : null}
-        {variant === "today" ? null : <div ref={bottomRef} />}
       </div>
+      {newBelow ? (
+        <div className="tp-coach-jump">
+          <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={toBottom} data-component="JumpToLatest">
+            <TpIcon name="down" size="sm" />
+            <span>{t("coachChat.jumpLatest")}</span>
+          </button>
+        </div>
+      ) : null}
 
       <form
         className="tp-composer"
@@ -302,6 +409,14 @@ export function CoachConversation({
           void handleSend();
         }}
       >
+        {online ? null : (
+          <output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline">
+            <span className="tp-notice__icon">
+              <TpIcon name="wifi-off" size="sm" />
+            </span>
+            <span className="tp-notice__text">{t("coachChat.offline")}</span>
+          </output>
+        )}
         <div className="tp-composer__box">
           <label className="tp-sr-only" htmlFor={inputId}>
             {t("coachChat.message")}
@@ -331,33 +446,40 @@ export function CoachConversation({
           <div className="tp-composer__bar">
             {/* A keyboard hint: on phones and touch screens it only squeezes the buttons. */}
             <span className="tp-muted tp-small max-sm:hidden pointer-coarse:hidden">{t("coachChat.hint")}</span>
-            {voiceAvailability?.available ? (
-              <button
-                className="tp-btn tp-btn--ghost tp-btn--sm"
-                type="button"
-                style={{ marginInlineStart: "auto" }}
-                disabled={!conversationId || busy || waitingForPage || voice.open}
-                onClick={() => void voice.start()}
-                data-component="VoiceStart"
-              >
-                <TpIcon name="mic" size="sm" />
-                <span>{t("coachChat.talk")}</span>
-              </button>
+            {left !== null ? (
+              <span className="tp-composer__count tp-small tp-muted" aria-live="polite">
+                {t("coachChat.charsLeft").replace("{n}", String(left))}
+              </span>
             ) : null}
-            <button
-              className="tp-btn tp-btn--primary tp-btn--sm"
-              type="submit"
-              style={voiceAvailability?.available ? undefined : { marginInlineStart: "auto" }}
-              disabled={!conversationId || busy || waitingForPage || !input.trim()}
-            >
-              <TpIcon name="send" size="sm" />
-              <span>{t("coachChat.send")}</span>
-            </button>
+            <span className="tp-composer__actions">
+              {voiceAvailability?.available ? (
+                <button
+                  className="tp-btn tp-btn--ghost tp-btn--sm"
+                  type="button"
+                  disabled={!conversationId || busy || waitingForPage || voice.open}
+                  onClick={() => void voice.start()}
+                  data-component="VoiceStart"
+                >
+                  <TpIcon name="mic" size="sm" />
+                  <span>{t("coachChat.talk")}</span>
+                </button>
+              ) : null}
+              {/* Send is ink, not accent (DESIGN.md §9 Composer): the accent stays for the page's one primary action. */}
+              <button
+                className="tp-btn tp-btn--sm tp-composer__send"
+                type="submit"
+                disabled={!conversationId || busy || waitingForPage || !input.trim()}
+              >
+                <TpIcon name="send" size="sm" />
+                <span>{t("coachChat.send")}</span>
+              </button>
+            </span>
           </div>
         </div>
         {sendError ? (
-          <p role="alert" className="tp-small" style={{ color: "var(--tp-danger)" }}>
-            {sendError}
+          <p role="alert" className="tp-error-text">
+            <TpIcon name="alert" size="sm" />
+            <span>{sendError}</span>
           </p>
         ) : null}
       </form>
@@ -395,7 +517,7 @@ export function CoachChat() {
           <p className="tp-pagehead__sub">{t("coachChat.sub")}</p>
         </div>
       </header>
-      <section className="tp-surface tp-coach-page" style={{ padding: 0, gap: 0 }} aria-label={t("coach.name")}>
+      <section className="tp-surface tp-coach-page" aria-label={t("coach.name")}>
         <CoachConversation variant="page" />
       </section>
     </div>
