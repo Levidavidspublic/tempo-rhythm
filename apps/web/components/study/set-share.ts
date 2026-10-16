@@ -38,13 +38,17 @@ export function setMarkdownWords(t: StudyT): SetMarkdownWords {
 
 /**
  * One line of the person's words as Markdown: line breaks become spaces (a list item stays one
- * item) and the characters Markdown would read as formatting are escaped.
+ * item) and the characters Markdown would read as formatting are escaped. So is a start that
+ * Markdown would read as structure when the words begin a line (a test section's instructions):
+ * a heading, list, quote, table or underline mark (# + - = | >) or a number list ("1." / "1)").
  */
 export function mdText(text: string): string {
   return text
     .replace(/\s*[\r\n]+\s*/g, " ")
     .trim()
-    .replace(/[\\`*_[\]<>]/g, "\\$&");
+    .replace(/[\\`*_[\]<>]/g, "\\$&")
+    .replace(/^[#+=|-]/, "\\$&")
+    .replace(/^(\d+)([.)])/, "$1\\$2");
 }
 
 const fill = (template: string, values: Record<string, string | number>) =>

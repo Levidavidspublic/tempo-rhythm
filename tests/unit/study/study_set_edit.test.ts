@@ -207,6 +207,34 @@ describe("a set as Markdown and as a share target", () => {
     expect(mdText("Two\n  lines")).toBe("Two lines");
     expect(mdText("a*b*_c_ [x](y) <b>")).toBe("a\\*b\\*\\_c\\_ \\[x\\](y) \\<b\\>");
   });
+  test.each([
+    ["# Part A", "\\# Part A"],
+    ["- Show your work", "\\- Show your work"],
+    ["+ Add the units", "\\+ Add the units"],
+    ["=== Section", "\\=== Section"],
+    ["| a | b |", "\\| a | b |"],
+    ["> As the book says", "\\> As the book says"],
+    ["1. Use a pencil", "1\\. Use a pencil"],
+    ["12) Twelve marks", "12\\) Twelve marks"],
+    ["  - indented", "\\- indented"],
+  ])("a line can't start Markdown structure: %p", (text, escaped) => {
+    expect(mdText(text)).toBe(escaped);
+  });
+  test("only the start of the words is escaped; signs inside stay as typed", () => {
+    expect(mdText("Show your work - all of it, 2 + 2 = 4 | done #1")).toBe(
+      "Show your work - all of it, 2 + 2 = 4 | done #1",
+    );
+    expect(mdText("Year 1. Then 2)")).toBe("Year 1. Then 2)");
+  });
+  test("a test section's instructions that look like a list or a heading stay one plain paragraph", () => {
+    const listy: TestData = {
+      ...test_,
+      sections: test_.sections.map((section, index) => (index === 0 ? { ...section, instructions: "- Show your work" } : section)),
+    };
+    expect(setMarkdown({ id: "b", type: "test", data: listy }, words)).toContain(
+      "## Part A\n\n\\- Show your work\n\n1. Which organelle",
+    );
+  });
   test("share target: Markdown for every kind, Anki cards only for a deck, the set's own link", () => {
     const deckTarget = setShareTarget("studySets:7", deckBlock, words, "https://tempo.example");
     expect(deckTarget).toMatchObject({ kind: "set", title: "Cell biology", url: "https://tempo.example/study/studySets%3A7" });
