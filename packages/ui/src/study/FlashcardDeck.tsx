@@ -1,5 +1,5 @@
 import type { Flashcard } from "@tempo/utils";
-import { type KeyboardEvent, useReducer } from "react";
+import { type KeyboardEvent, type ReactNode, useReducer } from "react";
 import { ArrowRight, Layers } from "../icons";
 import {
   fillNodes,
@@ -45,6 +45,11 @@ export type FlashcardDeckProps = {
   dir?: StudyDir;
   /** Random source for Shuffle (0 <= n < 1). Defaults to Math.random. */
   random?: () => number;
+  /**
+   * Optional read-aloud control beside a piece of text (kitchen T4): the host returns a
+   * ReadAloudButton, or null where speech isn't available. Left out, nothing is drawn.
+   */
+  readAloud?: (text: string) => ReactNode;
 };
 
 export type DeckSide = "front" | "back";
@@ -114,6 +119,7 @@ export type FlashcardDeckViewProps = {
   onAction: (action: DeckAction) => void;
   onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
   random?: () => number;
+  readAloud?: (text: string) => ReactNode;
 };
 
 /** The deck drawn from a given state. `FlashcardDeck` owns the state; tests draw this directly. */
@@ -124,6 +130,7 @@ export function FlashcardDeckView({
   onAction,
   onKeyDown,
   random = Math.random,
+  readAloud,
 }: FlashcardDeckViewProps) {
   const card = cards[state.order[state.index] ?? 0];
   if (!card) return null;
@@ -147,6 +154,7 @@ export function FlashcardDeckView({
             <p className="tp-flashcard__text" dir="auto">
               {card.front}
             </p>
+            {readAloud?.(card.front)}
             {card.hint ? (
               <p className="tp-study-hint">
                 <span className="tp-study-hint__label">{labels.hint}</span>{" "}
@@ -159,6 +167,7 @@ export function FlashcardDeckView({
             <p className="tp-flashcard__text" dir="auto">
               {card.back}
             </p>
+            {readAloud?.(card.back)}
           </div>
         </div>
         <p className="tp-study-keys">{labels.keys}</p>
@@ -217,7 +226,7 @@ export function FlashcardDeckView({
   );
 }
 
-export function FlashcardDeck({ cards, labels, dir, random }: FlashcardDeckProps) {
+export function FlashcardDeck({ cards, labels, dir, random, readAloud }: FlashcardDeckProps) {
   const [state, dispatch] = useReducer(deckReducer, cards.length, initDeck);
   const onKeyDown = deckKeyDown(dir, dispatch);
   return (
@@ -228,6 +237,7 @@ export function FlashcardDeck({ cards, labels, dir, random }: FlashcardDeckProps
       onAction={dispatch}
       onKeyDown={onKeyDown}
       random={random}
+      readAloud={readAloud}
     />
   );
 }

@@ -7,6 +7,7 @@ export * from "./core-adapters";
 export * from "./FlashcardDeck";
 export * from "./FlashcardReview";
 export * from "./quiz-engine";
+export * from "./ReadAloudButton";
 export * from "./ScoreCard";
 export * from "./shared";
 export * from "./TestRunner";

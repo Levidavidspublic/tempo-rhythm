@@ -1,5 +1,5 @@
 import type { QuizQuestion } from "@tempo/utils";
-import { useId, useMemo, useReducer } from "react";
+import { type ReactNode, useId, useMemo, useReducer } from "react";
 import { Check, Info } from "../icons";
 import type { QuizEngine, QuizResult } from "./quiz-engine";
 import { ScoreCard, type ScoreCardLabels } from "./ScoreCard";
@@ -34,6 +34,11 @@ export type AdaptiveQuizProps<S> = {
   onFinish?: (result: QuizResult) => void;
   /** "Review the ones you missed": receives the missed question ids. */
   onReviewMissed?: (missedIds: string[]) => void;
+  /**
+   * Optional read-aloud control beside a piece of text (kitchen T4): the host returns a
+   * ReadAloudButton, or null where speech isn't available. Left out, nothing is drawn.
+   */
+  readAloud?: (text: string) => ReactNode;
 };
 
 export type QuizViewState<S> = {
@@ -101,6 +106,7 @@ export type AdaptiveQuizViewProps = {
   onReviewMissed?: (missedIds: string[]) => void;
   /** Radio group name; unique per quiz on the page. */
   name: string;
+  readAloud?: (text: string) => ReactNode;
 };
 
 export function AdaptiveQuizView({
@@ -111,6 +117,7 @@ export function AdaptiveQuizView({
   onAction,
   onReviewMissed,
   name,
+  readAloud,
 }: AdaptiveQuizViewProps) {
   if (!question) {
     const final = result ?? { correct: 0, total: 0, missedIds: [] };
@@ -145,6 +152,7 @@ export function AdaptiveQuizView({
           <legend className="tp-quiz__q" dir="auto">
             {question.prompt}
           </legend>
+          {readAloud?.(question.prompt)}
           {question.choices.map((choice) => (
             <label
               className="tp-choice"
@@ -225,6 +233,7 @@ export function AdaptiveQuiz<S>({
   labels,
   onFinish,
   onReviewMissed,
+  readAloud,
 }: AdaptiveQuizProps<S>) {
   const name = useId();
   const reducer = useMemo(
@@ -247,6 +256,7 @@ export function AdaptiveQuiz<S>({
       onAction={act}
       onReviewMissed={onReviewMissed}
       name={name}
+      readAloud={readAloud}
     />
   );
 }

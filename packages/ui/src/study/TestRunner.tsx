@@ -1,5 +1,5 @@
 import type { BagrutQuestion, TestData, TestQuestion } from "@tempo/utils";
-import { useEffect, useId, useMemo, useReducer } from "react";
+import { type ReactNode, useEffect, useId, useMemo, useReducer } from "react";
 import { Clock, Pause, Play } from "../icons";
 import { ScoreCard, type ScoreCardLabels } from "./ScoreCard";
 import { fillNodes, fillText } from "./shared";
@@ -72,6 +72,11 @@ export type TestRunnerProps = {
   onComplete?: (score: TestScore, responses: TestResponses) => void;
   /** "Review the ones you missed": receives the counted question ids that lost points. */
   onReviewMissed?: (missedIds: string[]) => void;
+  /**
+   * Optional read-aloud control beside a piece of text (kitchen T4): the host returns a
+   * ReadAloudButton, or null where speech isn't available. Left out, nothing is drawn.
+   */
+  readAloud?: (text: string) => ReactNode;
 };
 
 export type TimerState = { remainingMs: number; paused: boolean };
@@ -237,6 +242,7 @@ export type TestRunnerViewProps = {
   onReviewMissed?: (missedIds: string[]) => void;
   /** Base for element ids; unique per runner on the page. */
   idBase: string;
+  readAloud?: (text: string) => ReactNode;
 };
 
 export function TestRunnerView({
@@ -246,6 +252,7 @@ export function TestRunnerView({
   onAction,
   onReviewMissed,
   idBase,
+  readAloud,
 }: TestRunnerViewProps) {
   if (state.phase === "done" && state.score) {
     const score = state.score;
@@ -366,6 +373,7 @@ export function TestRunnerView({
                     labels={labels}
                     onAction={onAction}
                     idBase={`${idBase}-${question.id}`}
+                    readAloud={readAloud}
                   />
                 </li>
               ))}
@@ -442,6 +450,7 @@ type QuestionInputProps = {
   labels: TestRunnerLabels;
   onAction: (action: RunnerAction) => void;
   idBase: string;
+  readAloud?: (text: string) => ReactNode;
 };
 
 function QuestionHead({
@@ -468,6 +477,7 @@ function QuestionInput({
   labels,
   onAction,
   idBase,
+  readAloud,
 }: QuestionInputProps) {
   const max = questionMaxPoints(question);
   if (question.plugin === "mcq") {
@@ -480,6 +490,7 @@ function QuestionInput({
             {question.prompt}
           </span>
         </legend>
+        {readAloud?.(question.prompt)}
         {question.choices.map((choice) => (
           <label className="tp-choice" key={choice.id}>
             <input
@@ -514,6 +525,7 @@ function QuestionInput({
           <span dir="auto">{question.prompt}</span>
           <span className="tp-sr-only"> {labels.yourAnswer}</span>
         </label>
+        {readAloud?.(question.prompt)}
         <input
           id={idBase}
           className="tp-input"
@@ -539,6 +551,7 @@ function QuestionInput({
       <p className="tp-study-question__prompt" dir="auto">
         {question.stem}
       </p>
+      {readAloud?.(question.stem)}
       {question.parts.map((part) => (
         <div className="tp-field" key={part.id}>
           <label className="tp-label" htmlFor={`${idBase}-${part.id}`}>
@@ -550,6 +563,7 @@ function QuestionInput({
               {part.prompt}
             </span>
           </label>
+          {readAloud?.(part.prompt)}
           <textarea
             id={`${idBase}-${part.id}`}
             className="tp-textarea"
@@ -648,7 +662,14 @@ function MarkBagrut({ question, response, labels, onAction, idBase }: MarkBagrut
   );
 }
 
-export function TestRunner({ test, scorer, labels, onComplete, onReviewMissed }: TestRunnerProps) {
+export function TestRunner({
+  test,
+  scorer,
+  labels,
+  onComplete,
+  onReviewMissed,
+  readAloud,
+}: TestRunnerProps) {
   const idBase = useId();
   const reducer = useMemo(
     () => (state: RunnerState, action: RunnerAction) => runnerReducer(test, scorer, state, action),
@@ -681,6 +702,7 @@ export function TestRunner({ test, scorer, labels, onComplete, onReviewMissed }:
       onAction={act}
       onReviewMissed={onReviewMissed}
       idBase={idBase}
+      readAloud={readAloud}
     />
   );
 }

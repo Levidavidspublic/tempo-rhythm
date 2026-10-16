@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useReducer } from "react";
+import { type KeyboardEvent, type ReactNode, useReducer } from "react";
 import {
   newCardState,
   previewIntervals,
@@ -71,6 +71,11 @@ export type FlashcardReviewProps = {
   /** Called with the grade being taken back. Undo shows only while `undoAvailable` is not false. */
   onUndo?: (grade: ReviewGrade) => void;
   undoAvailable?: boolean;
+  /**
+   * Optional read-aloud control beside a piece of text (kitchen T4): the host returns a
+   * ReadAloudButton, or null where speech isn't available. Left out, nothing is drawn.
+   */
+  readAloud?: (text: string) => ReactNode;
 };
 
 export type ReviewState = {
@@ -161,6 +166,7 @@ export type FlashcardReviewViewProps = {
   onAction: (action: ReviewAction) => void;
   onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
   undoAvailable?: boolean;
+  readAloud?: (text: string) => ReactNode;
 };
 
 export function FlashcardReviewView({
@@ -171,6 +177,7 @@ export function FlashcardReviewView({
   onAction,
   onKeyDown,
   undoAvailable = true,
+  readAloud,
 }: FlashcardReviewViewProps) {
   const key = state.queue[0];
   const card = key === undefined ? undefined : cards.find((item) => item.key === key);
@@ -229,6 +236,7 @@ export function FlashcardReviewView({
             <p className="tp-flashcard__text" dir="auto">
               {card.front}
             </p>
+            {readAloud?.(card.front)}
             {card.hint ? (
               <p className="tp-study-hint">
                 <span className="tp-study-hint__label">{labels.hint}</span>{" "}
@@ -244,6 +252,7 @@ export function FlashcardReviewView({
             <p className="tp-flashcard__text" dir="auto">
               {card.back}
             </p>
+            {readAloud?.(card.back)}
           </div>
         </div>
         <p className="tp-study-keys">{labels.keys}</p>
@@ -295,6 +304,7 @@ export function FlashcardReview({
   onGrade,
   onUndo,
   undoAvailable,
+  readAloud,
 }: FlashcardReviewProps) {
   const [state, dispatch] = useReducer(
     reviewReducer,
@@ -315,6 +325,7 @@ export function FlashcardReview({
       onAction={act}
       onKeyDown={onKeyDown}
       undoAvailable={undoAvailable}
+      readAloud={readAloud}
     />
   );
 }
