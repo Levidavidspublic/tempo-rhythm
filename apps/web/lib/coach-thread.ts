@@ -33,3 +33,12 @@ export function messageTime(ms: number, lang: string): string {
     new Date(ms),
   );
 }
+
+/** The title a backend-made conversation starts with (convex/conversations.ts `create`). */
+export const DEFAULT_THREAD_TITLE = "New Conversation";
+
+/** A thread's title from its first message: the first line, spaces tidied, at most 60 characters. */
+export function threadTitle(text: string, max = 60): string {
+  const line = (text.split("\n").find((l) => l.trim()) ?? "").replace(/\s+/g, " ").trim();
+  return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
+}

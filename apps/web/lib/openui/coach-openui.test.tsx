@@ -117,6 +117,17 @@ describe("proposalProgram", () => {
     expect((result.root?.props as { steps: unknown[] }).steps).toEqual(STEPS);
   });
 
+  test("a waiting page or template carries its whole body, so it can be read before Accept", () => {
+    const body = "# Packing list\n- [ ] Passport\n- [ ] Charger\nLast line, far below the first.";
+    const pending = parser.parse(proposalProgram({ kind: "note", title: "Packing", body, status: "pending" }));
+    const pendingChange = (pending.root?.props as { change: { props: { body?: string; startsWith: string } } }).change;
+    expect(pendingChange.props.body).toBe(body);
+    expect(pendingChange.props.startsWith).toBe("Packing list");
+    const accepted = parser.parse(proposalProgram({ kind: "note", title: "Packing", body, status: "accepted" }));
+    const acceptedChange = (accepted.root?.props as { change: { props: { body?: string | null } } }).change;
+    expect(acceptedChange.props.body ?? null).toBeNull();
+  });
+
   test("hrefs and first lines match the direct card", () => {
     expect(proposalHref(CASES["task accepted"] as ProgramProposal)).toBe("/tasks");
     expect(proposalHref({ ...(CASES["task accepted"] as ProgramProposal), when: "today" } as ProgramProposal)).toBe("/today");

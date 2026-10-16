@@ -1,6 +1,7 @@
 "use client";
 
 import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCard";
 import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
@@ -9,7 +10,7 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
-import { charsLeft, composerHeight, isNearBottom } from "@/lib/coach-thread";
+import { charsLeft, composerHeight, DEFAULT_THREAD_TITLE, isNearBottom, threadTitle } from "@/lib/coach-thread";
 import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { useOnline } from "@/lib/useOnline";
@@ -69,9 +70,12 @@ const creating = new Map<string, Promise<Id<"conversations">>>();
 export function CoachConversation({
   variant,
   pageId = null,
+  preferredId = null,
 }: {
   variant: "page" | "panel" | "today";
   pageId?: string | null;
+  /** A thread asked for by the page (/coach?c=<id>, or one just started there). */
+  preferredId?: Id<"conversations"> | null;
 }) {
   const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
@@ -79,6 +83,7 @@ export function CoachConversation({
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const conversations = useQuery(api.conversations.list, isAuthenticated && profile ? {} : "skip");
   const createConversation = useMutation(api.conversations.create);
+  const updateTitle = useMutation(api.conversations.updateTitle);
   const sendMessage = useMutation(api.coach.sendMessage);
   const requestReply = useAction(api.coach.reply);
   const flushPage = useFlushCoachPage();
@@ -113,7 +118,8 @@ export function CoachConversation({
   // biome-ignore lint/correctness/useExhaustiveDependencies: createTry re-runs the create after Try again
   useEffect(() => {
     if (!isAuthenticated || conversations === undefined || conversationId) return;
-    const latest = pickCoachConversation(conversations);
+    const asked = preferredId ? conversations.find((c) => c._id === preferredId && c.chatMode !== "agent") : undefined;
+    const latest = asked ?? pickCoachConversation(conversations);
     if (latest) {
       setConversationId(latest._id);
       return;
@@ -139,7 +145,13 @@ export function CoachConversation({
     return () => {
       live = false;
     };
-  }, [isAuthenticated, profile, conversations, conversationId, createConversation, createTry]);
+  }, [isAuthenticated, profile, conversations, conversationId, createConversation, createTry, preferredId]);
+
+  // The page asked for another thread (History's link, or New conversation): open it once it is listed.
+  useEffect(() => {
+    if (!preferredId || preferredId === conversationId || conversations === undefined) return;
+    if (conversations.some((c) => c._id === preferredId && c.chatMode !== "agent")) setConversationId(preferredId);
+  }, [preferredId, conversationId, conversations]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -233,6 +245,7 @@ export function CoachConversation({
     toBottom();
     refocus.current = document.activeElement === inputRef.current;
     try {
+      const firstMessage = !(messages ?? []).some((m) => m.role === "user");
       const outcome = await deliverCoachMessage(text, guard, async (content) => {
         await sendMessage({ conversationId, content });
       });
@@ -240,6 +253,12 @@ export function CoachConversation({
         setCrisisHold(true);
         setSendError(null);
         return;
+      }
+      // A thread is named after its first message, so History can tell threads apart. A failed
+      // rename changes nothing else (the default title stays).
+      const current = conversations?.find((c) => c._id === conversationId);
+      if (firstMessage && current?.title === DEFAULT_THREAD_TITLE) {
+        void updateTitle({ conversationId, title: threadTitle(text) }).catch(() => {});
       }
       setCrisisHold(false);
       setSendError(null);
@@ -505,9 +524,38 @@ export function CoachConversation({
   );
 }
 
-/** The /coach page: the conversation on paper, with the page title the shell's main holds. */
+/**
+ * The /coach page: the conversation on paper, with the page title the shell's main holds. Like a
+ * chat app's sidebar actions: New conversation starts a fresh thread, History lists the old ones,
+ * and /coach?c=<id> opens a given thread (read once from the address, so no Suspense is needed).
+ */
 export function CoachChat() {
   const { t } = useLocale();
+  const { isAuthenticated } = useConvexAuth();
+  const createConversation = useMutation(api.conversations.create);
+  const [requested, setRequested] = useState<Id<"conversations"> | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState(false);
+
+  useEffect(() => {
+    const asked = new URLSearchParams(window.location.search).get("c");
+    if (asked) setRequested(asked as Id<"conversations">);
+  }, []);
+
+  const startNew = async () => {
+    setStarting(true);
+    setStartError(false);
+    try {
+      const id = await createConversation({});
+      setRequested(id);
+      window.history.replaceState(window.history.state, "", `/coach?c=${id}`);
+    } catch {
+      setStartError(true);
+    } finally {
+      setStarting(false);
+    }
+  };
+
   return (
     <div className="tp-page" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
@@ -516,9 +564,32 @@ export function CoachChat() {
           <h1 className="tp-pagehead__title">{t("coach.name")}</h1>
           <p className="tp-pagehead__sub">{t("coachChat.sub")}</p>
         </div>
+        <div className="tp-pagehead__actions">
+          <button
+            className="tp-btn tp-btn--secondary tp-btn--sm"
+            type="button"
+            onClick={() => void startNew()}
+            disabled={!isAuthenticated || starting}
+          >
+            <TpIcon name="plus" size="sm" />
+            <span>{t("coachChat.newChat")}</span>
+          </button>
+          <Link className="tp-btn tp-btn--ghost tp-btn--sm" href="/history">
+            <TpIcon name="history" size="sm" />
+            <span>{t("coachChat.history")}</span>
+          </Link>
+        </div>
       </header>
+      {startError ? (
+        <p className="tp-notice" data-tone="caution" role="alert">
+          <span className="tp-notice__icon">
+            <TpIcon name="alert" size="sm" />
+          </span>
+          <span className="tp-notice__text">{t("coachChat.newChatError")}</span>
+        </p>
+      ) : null}
       <section className="tp-surface tp-coach-page" aria-label={t("coach.name")}>
-        <CoachConversation variant="page" />
+        <CoachConversation variant="page" preferredId={requested} />
       </section>
     </div>
   );

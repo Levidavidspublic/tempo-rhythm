@@ -73,30 +73,48 @@ const PageChange = defineComponent({
     name: z.string(),
     startsWith: z.string(),
     period: z.enum(["daily", "weekly", "none"]).optional(),
+    /** The whole page or template, while it waits for a yes ("Show all of it", as on the direct card). */
+    body: z.string().optional(),
   }),
   component: ({ props }) => {
     const { t } = useContext(CoachCardRuntimeContext);
     return (
-      <dl className="tp-proposal__what">
-        <div className="tp-what-row">
-          <dt>{t("proposal.name")}</dt>
-          <dd>
-            <span className="tp-change__title" dir="auto">
-              {props.name}
-            </span>
-          </dd>
-        </div>
-        <div className="tp-what-row">
-          <dt>{t("proposal.startsWith")}</dt>
-          <dd dir="auto">{props.startsWith}</dd>
-        </div>
-        {props.period ? (
+      <>
+        <dl className="tp-proposal__what">
           <div className="tp-what-row">
-            <dt>{t("proposal.field.period")}</dt>
-            <dd>{t(`proposal.period.${props.period}`)}</dd>
+            <dt>{t("proposal.name")}</dt>
+            <dd>
+              <span className="tp-change__title" dir="auto">
+                {props.name}
+              </span>
+            </dd>
           </div>
+          <div className="tp-what-row">
+            <dt>{t("proposal.startsWith")}</dt>
+            <dd dir="auto">{props.startsWith}</dd>
+          </div>
+          {props.period ? (
+            <div className="tp-what-row">
+              <dt>{t("proposal.field.period")}</dt>
+              <dd>{t(`proposal.period.${props.period}`)}</dd>
+            </div>
+          ) : null}
+        </dl>
+        {props.body ? (
+          // As on the direct card: the whole page or template, before Accept.
+          <details className="tp-proposal__what">
+            <summary>{t("proposal.showAll")}</summary>
+            <textarea
+              className="tp-textarea"
+              readOnly
+              rows={8}
+              value={props.body}
+              dir="auto"
+              aria-label={t("proposal.field.body")}
+            />
+          </details>
         ) : null}
-      </dl>
+      </>
     );
   },
 });

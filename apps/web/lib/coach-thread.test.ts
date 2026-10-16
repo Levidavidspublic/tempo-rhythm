@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { charsLeft, composerHeight, isNearBottom, messageTime } from "./coach-thread";
+import { charsLeft, composerHeight, isNearBottom, messageTime, threadTitle } from "./coach-thread";
 
 describe("coach thread rules", () => {
   test("the thread follows new messages only while the reader is at the bottom", () => {
@@ -28,5 +28,13 @@ describe("coach thread rules", () => {
     const ms = new Date(2026, 9, 16, 14, 5).getTime();
     expect(messageTime(ms, "en")).toBe("14:05");
     expect(messageTime(ms, "he")).toContain("14:05");
+  });
+
+  test("a thread is named after its first message, tidied and kept short", () => {
+    expect(threadTitle("  Help me plan\nthe afternoon")).toBe("Help me plan");
+    expect(threadTitle("\n\nwhat   first?")).toBe("what first?");
+    const long = "a".repeat(80);
+    expect(threadTitle(long)).toHaveLength(60);
+    expect(threadTitle(long).endsWith("…")).toBe(true);
   });
 });
