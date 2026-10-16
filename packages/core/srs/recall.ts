@@ -5,8 +5,9 @@
  * Pure functions. Both texts go through `normalizeAnswer` (`plugins.ts`, the same folding the
  * short-answer test questions use), so case, spacing, punctuation, quotes and Hebrew niqqud never
  * count as a difference. On top of that (`foldRecall`, here only, so test scoring is unchanged):
- * a minus sign or a dash counts as a hyphen, and spaces around a sign (+ - × ÷ = < > ≤ ≥ ≠) don't
- * count, so "2x - 3" matches "2x-3". Then:
+ * a minus sign or a dash counts as a hyphen, spaces around a sign (+ - × ÷ = < > ≤ ≥ ≠) don't
+ * count, so "2x - 3" matches "2x-3", and Hebrew final letters count as their plain forms
+ * (ך ם ן ף ץ as כ מ נ פ צ), so "ארצ" matches "ארץ". Then:
  * - `empty`: nothing was typed (only spaces). Not an error: the card turns over as usual.
  * - `matches`: the folded texts are the same.
  * - `different` when either answer has a digit and their numbers and signs, read in order
@@ -86,6 +87,14 @@ export function editDistance(a: string, b: string): number {
 const DASHES = /[\u2010-\u2015\u2212]/g;
 /** A sign and the spaces around it. */
 const SPACED_SIGN = /\s*([+\-×÷=<>≤≥≠])\s*/g;
+/** Hebrew final letters and their plain forms. */
+const FINAL_LETTERS: Readonly<Record<string, string>> = {
+	ך: "כ",
+	ם: "מ",
+	ן: "נ",
+	ף: "פ",
+	ץ: "צ",
+};
 /** A number run ("1945", "3.14", "1/2", "10:30") or a sign. */
 const NUMBER_OR_SIGN = /\d+(?:[.,/:]\d+)*|[+\-×÷=<>≤≥≠]/g;
 
@@ -96,7 +105,9 @@ const NUMBER_OR_SIGN = /\d+(?:[.,/:]\d+)*|[+\-×÷=<>≤≥≠]/g;
  */
 function foldRecall(text: string): string {
 	const signs = text.replace(DASHES, "-").replace(SPACED_SIGN, "$1");
-	return normalizeAnswer(signs).replace(SPACED_SIGN, "$1");
+	return normalizeAnswer(signs)
+		.replace(SPACED_SIGN, "$1")
+		.replace(/[ךםןףץ]/g, (letter) => FINAL_LETTERS[letter] ?? letter);
 }
 
 /** A folded answer's numbers and signs in order, e.g. "2x+3=11" → "2 + 3 = 11". */

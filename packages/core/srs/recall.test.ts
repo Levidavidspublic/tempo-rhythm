@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { normalizeAnswer } from "./plugins";
 import {
 	closeAllowance,
 	compareRecall,
@@ -144,6 +145,17 @@ describe("compareRecall", () => {
 		expect(result("2x \u2212 3", "2x-3")).toBe("matches");
 		expect(result("1939\u20131945", "1939-1945")).toBe("matches");
 		expect(result("(2x)+3", "2x+3")).toBe("matches");
+	});
+
+	test("Hebrew final letters count as their plain forms, here only (test scoring is unchanged)", () => {
+		expect(result("אמ", "אם")).toBe("matches");
+		expect(result("ארצ", "ארץ")).toBe("matches");
+		expect(result("מלכ", "מלך")).toBe("matches");
+		expect(result("בנ", "בן")).toBe("matches");
+		expect(result("כפ", "כף")).toBe("matches");
+		expect(result("שלום", "שלומ")).toBe("matches");
+		expect(result("ארצ ישראל", "ארץ ישראל")).toBe("matches");
+		expect(normalizeAnswer("אמ")).not.toBe(normalizeAnswer("אם"));
 	});
 
 	test("Hebrew and English mixed in one answer", () => {
