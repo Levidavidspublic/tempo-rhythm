@@ -30,7 +30,7 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 
 ## Now working on
 
-T3 Builder D (study web screens + gallery). Fix builders for the T8 plan review and the record/T10 review. Next: merge, wiring smoke spec for `/study/*` (the dev-only E2E bypass lists routes in `apps/web/lib/e2eWiringRoutes.ts`), screenshots + Delivery Gate per screen.
+Evidence builder: gallery views for every screen, live + gallery screenshots (en, he; 390 / 1280; light / dark) and the Delivery Gate per screen. Reviewer on the T3 study web screens. Then: fixes, tick T3 / T8 / T9 / T10, and the backlog.
 
 ## Log
 
@@ -49,6 +49,9 @@ T3 Builder D (study web screens + gallery). Fix builders for the T8 plan review 
 | 2026-10-16 23:15 | `f95b9d4` | T8 | Builder G: plans backend (`convex-arch:`), real MonthGrid / WeekGrid / ItemMover, CalendarViews Week and Month on the grids, `/study/plan` (PlanPath + SessionScheduler). Lead fix: each session keeps its local time across a DST change (2 new tests). Full suite 2711 pass | `bun test convex/plans.test.ts tests/unit/plan packages/core/plan` |
 | 2026-10-16 23:30 | `7f1390f` | T10, T8 | Builder J (reminders seam + `convex-arch:` deliver that always refuses, Settings → Reminders, ShareSheet, MiniAppFrame) and Builder F (RecordSession: consent, live words via Deepgram token, pins, review rows, save + Undo; `convex-arch:` recordings) merged. Full suite 2798 pass; lint, typecheck, scans OK; pushed | `bun run test` |
 | 2026-10-16 23:40 | — | T8, T10 | Reviewers: plan (1 high, 4 medium, 4 low) and record/T10 (3 medium, 4 low). Two fix builders started with every finding | reviewer reports in this log's Decisions once fixed |
+| 2026-10-17 00:05 | `572388f` | T8 | Plan fix builder: all 9 review findings fixed with tests (Move-to picker keys only move focus; clamp never moves the wrong way; month grids load all 42 cells; focus kept on month change; no session past midnight; exam tomorrow; busy time from events and tasks; startAt bound 60 min; no session on or after the deadline). One test from this run whose expectation encoded the bug was updated (planner "exam tomorrow"). Lead: a plan's own sessions aren't busy for its preview | `bun test packages/core/plan convex/plans.test.ts tests/unit/plan` |
+| 2026-10-17 00:20 | `3e31225` | T3 | Builder D: `/study` hub (S19), `/study/review`, `/study/[setId]` (deck, adaptive quiz, test + score), `/study/new` Turn-into preview with Accept / Edit / Reject + Undo (S25), TurnIntoMenu in the page menu, Study in the rail, palette and crumbs, gallery views. Merge fix: the memory test's next/link stand-in now forwards props (process-wide mock). Build passes with all six `/study` routes | `bun run build` |
+| 2026-10-17 00:35 | `f851e29` | T3, T8, T10 | Study wiring smoke spec (`/study`, review, new, plan, record, Settings → Reminders under the dev-only bypass): 6/6. Record/T10 fix builder: 7 findings fixed (extractor, frame navigation guard, Anki quoting, recorder failure release, deliver owner check without requireUser, approval tied to the code, download URL lifetime). Full suite 2870 pass; e2e 34 passed, 89 skipped, 0 failed | `bunx playwright test`, `docs/kitchen/tests.json` |
 
 ## Decisions
 
