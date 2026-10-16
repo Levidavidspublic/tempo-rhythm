@@ -1,0 +1,73 @@
+/* memory.html (S31 parity): layout only. Search and filter row, Edit + Forget actions,
+   long facts and the edit box. Logical properties so dir="rtl" mirrors for free. */
+
+.mm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-2) var(--tp-space-3);
+  min-width: 0;
+}
+.mm-search {
+  flex: 1 1 calc(var(--tp-space-20) * 3);
+  min-width: 0;
+}
+
+.mm-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-1);
+}
+
+.mm-fact {
+  display: grid;
+  justify-items: start;
+  gap: var(--tp-space-1);
+  min-width: 0;
+}
+.mm-fact__text {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.mm-fact__text--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+.mm-fact__more {
+  font-size: var(--tp-text-sm);
+}
+
+.mm-edit {
+  padding-block: var(--tp-space-3);
+  border-block-end: 1px solid var(--tp-line);
+}
+
+.mm-none {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-2) var(--tp-space-3);
+}
+
+/* Phones (390 px): the actions drop under the fact and source instead of squeezing the text. */
+@media (max-width: 480px) {
+  .mm-list .tp-memory-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mm-list .tp-memory-row__action {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* Touch: every control on this screen is at least 44 px tall. */
+@media (pointer: coarse) {
+  :is(.mm-row-actions, .mm-none, .mm-fact) .tp-btn,
+  .mm-search .tp-input {
+    min-height: var(--tp-touch);
+  }
+}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { safeFilename, toBlobParts } from "@/components/memory-export/download";
@@ -16,9 +15,9 @@ import {
   StateOffline,
   StateSignedOut,
   useLoadingTimeout,
+  useOnline,
 } from "@/components/you/ScreenStates";
 import { UndoToast } from "@/components/you/UndoToast";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { MessageKey } from "@/lib/i18n";
 import {
@@ -35,12 +34,17 @@ import {
   localDayStart,
   UNDO_WINDOW_MS,
 } from "@/lib/you/screenState";
+import { type MemoryEdit, MemoryItem } from "./MemoryItem";
+import { useMemoryCopy } from "./memoryCopy";
+import { checkEdit, matchesSearch } from "./memorySearch";
+import { useMemoryBackend } from "./useMemoryBackend";
 
 /**
  * What Tempo remembers (docs/design/v3/screens/web/memory.html). Forget one (soft delete,
  * 5-minute Undo), forget everything (asks first, Undo too), export as Markdown, and import
  * from ChatGPT or Claude. The "settings-memory" test id, the "What Tempo remembers" heading
  * and the #memory-new field with "Remember this" are e2e contracts.
+ * S31 adds search, Edit (memory.update, 5-minute Undo back to the old words) and long-text rows.
  */
 
 type Memory = {
@@ -115,26 +119,30 @@ export function MemoryManager() {
 
 function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const { t, lang } = useLocale();
-  const convex = useConvex();
-  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
-  // memory.list calls requireUser: wait for the users row.
-  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
-  const memories = useQuery(
-    api.memory.list,
-    isAuthenticated && profile ? { limit: LIST_LIMIT } : "skip"
-  );
-  const remember = useMutation(api.memory.remember);
-  const forget = useMutation(api.memory.forget);
-  const restore = useMutation(api.memory.restore);
-  const forgetAll = useMutation(api.memory.forgetAll);
-  const restoreAll = useMutation(api.memory.restoreAll);
+  const copy = useMemoryCopy();
+  const online = useOnline();
+  const {
+    isAuthLoading,
+    isAuthenticated,
+    profile,
+    memories,
+    remember,
+    update,
+    forget,
+    restore,
+    forgetAll,
+    restoreAll,
+    exportAll,
+  } = useMemoryBackend(LIST_LIMIT);
   const input = { isAuthLoading, isAuthenticated, profile, data: memories };
   const timedOut = useLoadingTimeout(deriveScreenState({ ...input, failed: false }) === "loading");
   const state = deriveScreenState({ ...input, failed: timedOut });
 
   const [filter, setFilter] = useState<MemoryFilter>("all");
+  const [query, setQuery] = useState("");
+  const [editing, setEditing] = useState<({ id: Id<"memories"> } & MemoryEdit) | null>(null);
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
-  const [rowError, setRowError] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<{ id: string; text: string } | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   // Forgets inside the Undo window share one toast, so a second Forget never takes away the
   // first one's Undo (Codex P2 on #928). Kept in a ref too, so Undo reads the current list.
@@ -175,12 +183,16 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   const [addFailed, setAddFailed] = useState(false);
   const [adding, setAdding] = useState(false);
   const forgetButtons = useRef(new Map<string, HTMLButtonElement>());
+  const editButtons = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocus = useRef<string | null>(null);
+  const pendingEditFocus = useRef<string | null>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
 
   const all: Memory[] = (memories ?? []).filter((m) => !hidden.has(m._id));
   const capped = (memories?.length ?? 0) >= LIST_LIMIT;
-  const shown = shownMemories(all, filter);
+  const filtered = shownMemories(all, filter);
+  const shown = filtered.filter((memory) => matchesSearch(memory.content, query));
+  const searching = query.trim().length > 0;
 
   // After Undo brings a memory back, focus returns to its Forget button.
   useEffect(() => {
@@ -189,6 +201,13 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
     if (button) {
       button.focus();
       pendingFocus.current = null;
+    }
+    // After Save or Cancel, focus goes back to that row's Edit button.
+    const editId = pendingEditFocus.current;
+    const editButton = editId ? editButtons.current.get(editId) : undefined;
+    if (editButton) {
+      editButton.focus();
+      pendingEditFocus.current = null;
     }
   });
 
@@ -200,8 +219,57 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
       return next;
     });
 
+  const startEdit = (memory: Memory) => {
+    setRowError(null);
+    setEditing({ id: memory._id, draft: memory.content, error: null, saving: false });
+  };
+
+  const cancelEdit = () => {
+    if (editing) pendingEditFocus.current = editing.id;
+    setEditing(null);
+  };
+
+  const onSaveEdit = async (memory: Memory) => {
+    if (!editing || editing.saving) return;
+    // Edits may run to the server's 2,000 characters: a long memory the coach saved stays editable.
+    const check = checkEdit(editing.draft);
+    if (!check.ok) {
+      setEditing({
+        ...editing,
+        error: check.problem === "empty" ? t("mm.add.empty") : copy("mem.edit.long"),
+      });
+      return;
+    }
+    if (check.text === memory.content) {
+      cancelEdit();
+      return;
+    }
+    setEditing({ ...editing, error: null, saving: true });
+    try {
+      const result = await update({ memoryId: memory._id, content: check.text });
+      pendingEditFocus.current = memory._id;
+      setEditing(null);
+      setLive(copy("mem.edited"));
+      setToast({
+        title: copy("mem.edited"),
+        untilMs: Date.now() + UNDO_WINDOW_MS,
+        onUndo: async () => {
+          await update({ memoryId: memory._id, content: result.previous });
+          pendingEditFocus.current = memory._id;
+        },
+      });
+    } catch {
+      setEditing((current) =>
+        current && current.id === memory._id
+          ? { ...current, saving: false, error: copy("mem.edit.error") }
+          : current
+      );
+    }
+  };
+
   const onForget = async (memory: Memory, nextId: string | undefined) => {
     setRowError(null);
+    if (editing?.id === memory._id) setEditing(null);
     setHiddenId(memory._id, true);
     const nextButton = nextId ? forgetButtons.current.get(nextId) : undefined;
     if (nextButton) nextButton.focus();
@@ -217,7 +285,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
       ]);
     } catch {
       setHiddenId(memory._id, false);
-      setRowError(memory._id);
+      setRowError({ id: memory._id, text: t("mm.forgetError") });
     }
   };
 
@@ -254,9 +322,10 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
   };
 
   const onExport = async () => {
+    if (!online) return;
     setExporting({ status: "working" });
     try {
-      const result = await convex.query(api.memory.exportAll, {});
+      const result = await exportAll();
       const { parts, type } = toBlobParts(result.markdown);
       const file = safeFilename(result.filename);
       const url = URL.createObjectURL(new Blob(parts, { type }));
@@ -314,7 +383,9 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
         ? fill(t("mm.ex.ready"), { file: exporting.file ?? "" })
         : exporting.status === "error"
           ? t("mm.ex.error")
-          : t("mm.ex.note");
+          : online
+            ? t("mm.ex.note")
+            : copy("mem.ex.offline");
 
   return (
     <div
@@ -373,18 +444,61 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
                   <span className="tp-num">{capped ? `${all.length}+` : all.length}</span> {t("mm.count")}
                 </span>
               </div>
-              <Segmented
-                label={t("mm.filter")}
-                value={filter}
-                onChange={setFilter}
-                options={MEMORY_FILTERS.map((value) => ({ value, label: t(FILTER_LABEL[value]) }))}
-              />
+              <div className="mm-tools">
+                <div className="tp-search mm-search" data-component="SearchInput">
+                  <label className="tp-label tp-sr-only" htmlFor="memory-search">
+                    {copy("mem.search.label")}
+                  </label>
+                  <div className="tp-search__box">
+                    <span className="tp-search__icon">
+                      <TpIcon name="search" size="sm" />
+                    </span>
+                    <input
+                      className="tp-input"
+                      id="memory-search"
+                      type="search"
+                      dir="auto"
+                      autoComplete="off"
+                      placeholder={copy("mem.search.placeholder")}
+                      value={query}
+                      aria-describedby={searching ? "memory-search-count" : undefined}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </div>
+                </div>
+                <Segmented
+                  label={t("mm.filter")}
+                  value={filter}
+                  onChange={setFilter}
+                  options={MEMORY_FILTERS.map((value) => ({ value, label: t(FILTER_LABEL[value]) }))}
+                />
+              </div>
+              {searching ? (
+                <p className="tp-help" id="memory-search-count" aria-live="polite">
+                  {fill(copy("mem.search.count"), { n: shown.length, total: filtered.length })}
+                </p>
+              ) : null}
               {shown.length === 0 ? (
-                <p className="tp-muted tp-small">{t("mm.none.filter")}</p>
+                searching ? (
+                  <div className="mm-none">
+                    <p className="tp-muted tp-small">
+                      {fill(copy("mem.search.none"), { q: query.trim() })}
+                    </p>
+                    <button
+                      className="tp-btn tp-btn--secondary tp-btn--sm"
+                      type="button"
+                      onClick={() => setQuery("")}
+                    >
+                      <TpIcon name="x" size="sm" />
+                      <span>{copy("mem.search.clear")}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <p className="tp-muted tp-small">{t("mm.none.filter")}</p>
+                )
               ) : (
                 <ul className="tp-memory-list mm-list" data-component="MemoryItem">
                   {shown.map((memory, index) => {
-                    const factId = `mm-${memory._id}`;
                     const nextId = (shown[index + 1] ?? shown[index - 1])?._id;
                     const source = memory.importedFrom
                       ? t(SOURCE_LABEL[memory.importedFrom])
@@ -393,38 +507,35 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
                       localDayStart(memory.createdAt) === today
                         ? t("you.today")
                         : dateFormat.format(memory.createdAt);
+                    const edit = editing?.id === memory._id ? editing : null;
                     return (
-                      <li key={memory._id}>
-                        <div className="tp-memory-row">
-                          <span className="tp-memory-row__fact" dir="auto" id={factId}>
-                            {memory.content}
-                          </span>
-                          <span className="tp-memory-row__source">
-                            <TpIcon name={memory.importedFrom ? "download" : "memory"} size="sm" />
-                            <span>{source}</span> · <span>{when}</span>
-                          </span>
-                          <span className="tp-memory-row__action">
-                            <button
-                              ref={(el) => {
-                                if (el) forgetButtons.current.set(memory._id, el);
-                                else forgetButtons.current.delete(memory._id);
-                              }}
-                              className="tp-btn tp-btn--danger-ghost tp-btn--sm"
-                              type="button"
-                              aria-describedby={factId}
-                              onClick={() => void onForget(memory, nextId)}
-                            >
-                              <TpIcon name="x" size="sm" />
-                              <span>{t("mm.forget")}</span>
-                            </button>
-                          </span>
-                        </div>
-                        {rowError === memory._id ? (
-                          <p className="tp-error-text" role="alert">
-                            {t("mm.forgetError")}
-                          </p>
-                        ) : null}
-                      </li>
+                      <MemoryItem
+                        key={memory._id}
+                        id={memory._id}
+                        content={memory.content}
+                        imported={memory.importedFrom !== undefined}
+                        sourceLabel={source}
+                        when={when}
+                        edit={edit}
+                        rowError={rowError?.id === memory._id ? rowError.text : null}
+                        forgetRef={(el) => {
+                          if (el) forgetButtons.current.set(memory._id, el);
+                          else forgetButtons.current.delete(memory._id);
+                        }}
+                        editRef={(el) => {
+                          if (el) editButtons.current.set(memory._id, el);
+                          else editButtons.current.delete(memory._id);
+                        }}
+                        onEdit={() => startEdit(memory)}
+                        onDraft={(draft) =>
+                          setEditing((current) =>
+                            current ? { ...current, draft, error: null } : current
+                          )
+                        }
+                        onSave={() => void onSaveEdit(memory)}
+                        onCancel={cancelEdit}
+                        onForget={() => void onForget(memory, nextId)}
+                      />
                     );
                   })}
                 </ul>
@@ -494,7 +605,7 @@ function MemoryContent({ onRetry }: { onRetry: () => void }) {
                 <button
                   className="tp-btn tp-btn--secondary"
                   type="button"
-                  disabled={exporting.status === "working"}
+                  disabled={exporting.status === "working" || !online}
                   onClick={() => void onExport()}
                 >
                   <TpIcon name="download" size="sm" />
