@@ -1,0 +1,43 @@
+/* Study: record a meeting or lecture (kitchen T8, S7 RecordSession). Layout only; colour, type, spacing and radius come from tokens. */
+
+.tp-rec-step { gap: var(--tp-space-5); }
+.tp-rec-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); max-width: var(--tp-measure); }
+.tp-rec-facts li { display: flex; align-items: flex-start; gap: var(--tp-space-2); }
+.tp-rec-facts svg.tp-icon { flex: none; margin-block-start: 3px; color: var(--tp-ink-muted); }
+
+.tp-rec-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-5); }
+.tp-rec-status__state { display: inline-flex; align-items: center; gap: var(--tp-space-2); margin: 0; font-family: var(--tp-font-serif); font-size: var(--tp-text-xl); font-weight: 500; }
+.tp-rec-status__time { margin: 0; font-size: var(--tp-text-xl); }
+.tp-rec-level { height: var(--tp-space-8); }
+/* Static under reduced motion: the state word carries the meaning. */
+@media (prefers-reduced-motion: reduce) {
+  .tp-rec-level .tp-level__bar { transition: none; transform: scaleY(0.15); }
+}
+
+.tp-rec-transcript { width: 100%; max-height: 40vh; }
+.tp-rec-notes { min-height: calc(var(--tp-space-20) * 2.5); }
+
+.tp-rec-pins { display: grid; gap: var(--tp-space-3); }
+.tp-rec-pinlist { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-2); }
+.tp-rec-pin { display: flex; align-items: center; gap: var(--tp-space-2); min-height: var(--tp-touch); }
+.tp-rec-pin__time { flex: none; min-width: 6ch; font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-rec-pin .tp-input { flex: 1 1 auto; min-width: 0; }
+
+.tp-rec-dock { align-items: center; padding-block-start: var(--tp-space-2); border-block-start: 1px solid var(--tp-line); }
+
+.tp-rec-review { display: grid; gap: var(--tp-space-6); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.tp-rec-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.tp-rec-row .tp-proposal__head { flex-wrap: wrap; }
+.tp-rec-row .tp-proposal__note q { overflow-wrap: anywhere; }
+.tp-rec-row__edit { flex: 1 1 100%; display: grid; gap: var(--tp-space-3); grid-template-columns: minmax(0, 1fr) minmax(0, 7rem); }
+/* Decided rows keep a "Change" button in the note row (tempo.css hides their actions). */
+.tp-rec-row[data-status="rejected"] .tp-proposal__head strong { color: var(--tp-ink-muted); text-decoration: line-through; }
+
+@media (max-width: 1023px) {
+  .tp-rec-review { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
+  .tp-rec-step { padding: var(--tp-space-4); }
+  .tp-rec-row__edit { grid-template-columns: minmax(0, 1fr); }
+  .tp-rec-dock .tp-btn { flex: 1 1 auto; }
+}
