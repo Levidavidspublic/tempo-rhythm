@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import { reminderRegistry, reminderText } from "../packages/core/reminders";
 import { internal } from "./_generated/api";
 import { internalAction, internalQuery, query } from "./_generated/server";
-import { requireUser } from "./lib/requireUser";
 
 /**
  * S14 reminders through a messaging channel (PRD F-61). The channel is UNKNOWN (Needs Amit), so
@@ -36,17 +35,20 @@ const phraseValidator = v.object({
 	),
 });
 
-/** The signed-in person's own live nag, or null (someone else's, deleted or missing). */
+/**
+ * `userId`'s own live nag, or null (someone else's, deleted or missing). Internal and called from
+ * `deliver`, which runs from the scheduler with no signed-in person, so the owner is the
+ * `userId` the caller passes, checked against the nag.
+ */
 export const nagForDelivery = internalQuery({
-	args: { nagId: v.id("nags") },
+	args: { userId: v.id("users"), nagId: v.id("nags") },
 	returns: v.union(
 		v.null(),
 		v.object({ enabled: v.boolean(), phrases: v.array(phraseValidator) }),
 	),
 	handler: async (ctx, args) => {
-		const user = await requireUser(ctx);
 		const nag = await ctx.db.get(args.nagId);
-		if (!nag || nag.userId !== user._id || nag.deletedAt !== undefined) {
+		if (!nag || nag.userId !== args.userId || nag.deletedAt !== undefined) {
 			return null;
 		}
 		return { enabled: nag.enabled, phrases: nag.phrases };
@@ -74,12 +76,20 @@ export type DeliverResult = {
 /**
  * Would send one of a nag's own accepted phrases (F-60) through `channelId`. Today every path
  * refuses: no channel is connected, so the last check answers `no_channel` and nothing is sent.
+ * Internal (scheduler / server only): `userId` is the nag's owner; another person's nag is
+ * `not_found`.
  */
 export const deliver = internalAction({
-	args: { nagId: v.id("nags"), phraseId: v.string(), channelId: v.string() },
+	args: {
+		userId: v.id("users"),
+		nagId: v.id("nags"),
+		phraseId: v.string(),
+		channelId: v.string(),
+	},
 	returns: v.object({ ok: v.literal(false), reason: refusal }),
 	handler: async (ctx, args): Promise<DeliverResult> => {
 		const nag = await ctx.runQuery(internal.reminders.nagForDelivery, {
+			userId: args.userId,
 			nagId: args.nagId,
 		});
 		if (!nag) return { ok: false, reason: "not_found" };

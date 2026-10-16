@@ -82,9 +82,8 @@ describe("reminders.deliver", () => {
 		const t = setup();
 		const userId = await addUser(t, "a@example.test");
 		const nagId = await addNag(t, userId);
-		const result = await t
-			.withIdentity({ subject: userId })
-			.action(internal.reminders.deliver, {
+		const result = await t.action(internal.reminders.deliver, {
+				userId,
 				nagId,
 				phraseId: "mine",
 				channelId: "whatsapp",
@@ -96,10 +95,10 @@ describe("reminders.deliver", () => {
 		const t = setup();
 		const userId = await addUser(t, "a@example.test");
 		const nagId = await addNag(t, userId);
-		const as = t.withIdentity({ subject: userId });
 		for (const phraseId of ["maybe", "no", "missing"]) {
 			expect(
-				await as.action(internal.reminders.deliver, {
+				await t.action(internal.reminders.deliver, {
+					userId,
 					nagId,
 					phraseId,
 					channelId: "sms",
@@ -118,18 +117,16 @@ describe("reminders.deliver", () => {
 		const nagId = await addNag(t, owner);
 		const gone = await addNag(t, owner, { deletedAt: NOW });
 		expect(
-			await t
-				.withIdentity({ subject: other })
-				.action(internal.reminders.deliver, {
+			await t.action(internal.reminders.deliver, {
+					userId: other,
 					nagId,
 					phraseId: "mine",
 					channelId: "sms",
 				}),
 		).toEqual({ ok: false, reason: "not_found" });
 		expect(
-			await t
-				.withIdentity({ subject: owner })
-				.action(internal.reminders.deliver, {
+			await t.action(internal.reminders.deliver, {
+					userId: owner,
 					nagId: gone,
 					phraseId: "mine",
 					channelId: "sms",
@@ -142,16 +139,17 @@ describe("reminders.deliver", () => {
 		const userId = await addUser(t, "a@example.test");
 		const on = await addNag(t, userId);
 		const off = await addNag(t, userId, { enabled: false });
-		const as = t.withIdentity({ subject: userId });
 		expect(
-			await as.action(internal.reminders.deliver, {
+			await t.action(internal.reminders.deliver, {
+				userId,
 				nagId: on,
 				phraseId: "mine",
 				channelId: "pigeon",
 			}),
 		).toEqual({ ok: false, reason: "unknown_channel" });
 		expect(
-			await as.action(internal.reminders.deliver, {
+			await t.action(internal.reminders.deliver, {
+				userId,
 				nagId: off,
 				phraseId: "mine",
 				channelId: "telegram",
@@ -159,17 +157,36 @@ describe("reminders.deliver", () => {
 		).toEqual({ ok: false, reason: "nag_off" });
 	});
 
-	test("needs a signed-in person", async () => {
+	test("runs from the scheduler with no signed-in person: the owner is the userId passed in", async () => {
 		const t = setup();
 		const userId = await addUser(t, "a@example.test");
 		const nagId = await addNag(t, userId);
-		await expect(
-			t.action(internal.reminders.deliver, {
+		expect(
+			await t.action(internal.reminders.deliver, {
+				userId,
 				nagId,
 				phraseId: "mine",
 				channelId: "sms",
 			}),
-		).rejects.toThrow();
+		).toEqual({ ok: false, reason: "no_channel" });
+		expect(
+			await t.query(internal.reminders.nagForDelivery, { userId, nagId }),
+		).toEqual({
+			enabled: true,
+			phrases: expect.any(Array),
+		});
+	});
+
+	test("nagForDelivery returns null for someone else's nag, even when they are signed in", async () => {
+		const t = setup();
+		const owner = await addUser(t, "a@example.test");
+		const other = await addUser(t, "b@example.test");
+		const nagId = await addNag(t, owner);
+		expect(
+			await t
+				.withIdentity({ subject: owner })
+				.query(internal.reminders.nagForDelivery, { userId: other, nagId }),
+		).toBeNull();
 	});
 
 	test("never calls the network", async () => {
@@ -183,13 +200,12 @@ describe("reminders.deliver", () => {
 			throw new Error("no network in reminders");
 		}) as unknown as typeof fetch;
 		try {
-			await t
-				.withIdentity({ subject: userId })
-				.action(internal.reminders.deliver, {
-					nagId,
-					phraseId: "mine",
-					channelId: "whatsapp",
-				});
+			await t.action(internal.reminders.deliver, {
+				userId,
+				nagId,
+				phraseId: "mine",
+				channelId: "whatsapp",
+			});
 		} finally {
 			globalThis.fetch = realFetch;
 		}
