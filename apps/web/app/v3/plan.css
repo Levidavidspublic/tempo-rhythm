@@ -1,0 +1,85 @@
+/* Kitchen T8: the week grid (WeekGrid, ItemMover) and "Plan back from a deadline". Layout only;
+   colour, type, spacing and radius come from tokens. Placement is data: --top, --height,
+   --lane and --lanes on each item, in grid rows (see packages/core/plan/schedule.ts). */
+
+/* WeekGrid */
+.tp-sched { --tp-sched-slot: var(--tp-space-8); display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-sched__scroll {
+  overflow: auto; overscroll-behavior: contain; max-block-size: min(70vh, calc(var(--tp-space-20) * 8));
+  border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); background: var(--tp-paper);
+}
+.tp-sched__scroll:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; }
+.tp-sched__grid {
+  display: grid; grid-template-columns: var(--tp-space-16) repeat(7, minmax(calc(var(--tp-space-20) + var(--tp-space-8)), 1fr));
+  grid-template-rows: repeat(5, auto); column-gap: var(--tp-space-1); padding: var(--tp-space-2);
+}
+.tp-sched__gutter, .tp-sched__col { grid-row: 1 / span 5; display: grid; grid-template-rows: subgrid; row-gap: var(--tp-space-1); min-width: 0; }
+.tp-sched__col.tp-week__col { min-height: 0; gap: var(--tp-space-1); padding: var(--tp-space-1); }
+.tp-sched__allday-label { align-self: center; font-size: var(--tp-text-xs); text-align: end; padding-inline-end: var(--tp-space-3); }
+.tp-sched__hours { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-rows: calc(var(--tp-sched-slot) * var(--per-hour)); }
+.tp-sched__allday { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); align-content: start; }
+.tp-sched__allday-item { padding: var(--tp-space-1) var(--tp-space-2); }
+.tp-sched__hidden { margin: 0; min-block-size: var(--tp-space-4); font-size: var(--tp-text-xs); }
+.tp-sched__body {
+  position: relative; list-style: none; margin: 0; padding: 0; block-size: calc(var(--tp-sched-slot) * var(--slots));
+  border-radius: var(--tp-radius-md); background-color: var(--tp-paper);
+  background-image: repeating-linear-gradient(180deg, var(--tp-line) 0 1px, transparent 1px calc(var(--tp-sched-slot) * var(--per-hour)));
+}
+.tp-sched__slot {
+  position: absolute; padding: 1px;
+  inset-block-start: calc(var(--top) * var(--tp-sched-slot)); block-size: calc(var(--height) * var(--tp-sched-slot));
+  inset-inline-start: calc(var(--lane) * 100% / var(--lanes)); inline-size: calc(100% / var(--lanes));
+}
+.tp-sched__item {
+  inline-size: 100%; block-size: 100%; min-block-size: var(--tp-space-6); overflow: hidden; align-content: start;
+  padding: var(--tp-space-1) var(--tp-space-2); border-block: 0; border-inline-end: 0;
+  font: inherit; color: var(--tp-ink); text-align: start; cursor: pointer;
+}
+.tp-sched__item[aria-expanded="true"] { box-shadow: inset 0 0 0 2px var(--tp-ink); }
+.tp-sched__item:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 1px; position: relative; z-index: 2; }
+@media (hover: hover) { .tp-sched__item:hover { background: var(--tp-hover); } }
+@media (pointer: coarse) {
+  .tp-sched { --tp-sched-slot: var(--tp-touch); }
+  .tp-sched__item { min-block-size: var(--tp-touch); }
+}
+.tp-sched__now {
+  position: absolute; inset-inline: 0; inset-block-start: calc(var(--top) * var(--tp-sched-slot)); z-index: 1;
+  border-top: 2px solid var(--tp-ink); pointer-events: none; font-size: var(--tp-text-xs); font-weight: 600;
+}
+.tp-sched__now > span {
+  position: absolute; inset-inline-start: 0; inset-block-start: calc(-1 * var(--tp-space-3));
+  padding: 0 var(--tp-space-1); border-radius: var(--tp-radius-sm); background: var(--tp-ink); color: var(--tp-paper);
+}
+.tp-sched__clashes { margin: 0; padding-inline-start: var(--tp-space-4); display: grid; gap: var(--tp-space-1); }
+
+/* ItemMover */
+.tp-sched__mover { display: grid; gap: var(--tp-space-3); }
+.tp-sched__mover-head { display: flex; align-items: center; gap: var(--tp-space-2); }
+.tp-sched__mover-title { flex: 1 1 auto; min-width: 0; margin: 0; font-size: var(--tp-text-lg); overflow-wrap: anywhere; }
+.tp-sched__mover-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tp-sched__pick { display: grid; gap: var(--tp-space-2); max-inline-size: calc(var(--tp-space-20) * 6); }
+.tp-sched__agenda { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-2); }
+.tp-sched__agenda-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); font-size: var(--tp-text-sm); }
+
+/* Plan back from a deadline */
+.tp-plan { display: grid; gap: var(--tp-space-8); min-width: 0; }
+.tp-plan__form { display: grid; gap: var(--tp-space-4); }
+.tp-plan__row { display: grid; gap: var(--tp-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 2)), 1fr)); }
+.tp-plan__days { margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: 0 var(--tp-space-4); }
+.tp-plan__days legend { padding: 0; margin-block-end: var(--tp-space-1); }
+.tp-plan__preview { display: grid; gap: var(--tp-space-4); }
+.tp-plan__week { display: grid; gap: var(--tp-space-2); }
+.tp-plan__week-title { margin: 0; font-size: var(--tp-text-md); font-weight: 600; }
+.tp-plan__day { display: grid; gap: var(--tp-space-1); }
+.tp-plan__day-title { margin: 0; font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-plan__sessions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); }
+.tp-plan__session { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); font-size: var(--tp-text-sm); }
+.tp-plan__ways { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.tp-plan__way { display: grid; gap: var(--tp-space-1); justify-items: start; }
+.tp-plan__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
+
+/* 44 px touch targets on touch screens. */
+@media (pointer: coarse) {
+  .tp-sched .tp-btn, .tp-plan .tp-btn { min-height: var(--tp-touch); }
+  .tp-sched .tp-btn--icon, .tp-plan .tp-btn--icon { min-width: var(--tp-touch); }
+}
