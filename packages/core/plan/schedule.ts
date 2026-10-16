@@ -250,7 +250,8 @@ export type MoveBy = { days?: number; minutes?: number };
 
 /**
  * Moves an item by whole days and/or minutes. A minute move is clamped so the item stays inside
- * the visible day (`options`, default 07:00–22:00); it never rolls over to another day. A
+ * the visible day (`options`, default 07:00–22:00); it never rolls over to another day, and it
+ * never goes the opposite way to the one asked (then the start stays as it was). A
  * day-only move keeps the start time. Returns a new item; the input is not changed.
  */
 export function moveItem<T extends ScheduleItem>(
@@ -267,7 +268,10 @@ export function moveItem<T extends ScheduleItem>(
   if (minutes !== 0) {
     const { dayStartMinute, dayEndMinute } = gridRange(options);
     const latest = Math.max(dayStartMinute, dayEndMinute - Math.max(0, item.durationMinutes));
-    startMinute = Math.min(latest, Math.max(dayStartMinute, item.startMinute + minutes));
+    const clamped = Math.min(latest, Math.max(dayStartMinute, item.startMinute + minutes));
+    // Clamping never moves an item the other way ("earlier" on a 06:30 item would give 07:00).
+    const wrongWay = minutes < 0 ? clamped > item.startMinute : clamped < item.startMinute;
+    startMinute = wrongWay ? item.startMinute : clamped;
   }
   return { ...item, date, startMinute };
 }

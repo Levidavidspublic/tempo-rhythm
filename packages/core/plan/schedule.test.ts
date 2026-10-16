@@ -153,6 +153,18 @@ describe("moveItem", () => {
     expect(() => moveItem(study, { days: 0.5 })).toThrow(RangeError);
   });
 
+  test("a minute move never goes the other way: outside the visible day it stays put", () => {
+    const early = item("e", "2026-10-20", "06:30", 45);
+    expect(moveItem(early, { minutes: -30 }).startMinute).toBe(390);
+    // Moving later from before the visible day still brings it into view.
+    expect(moveItem(early, { minutes: 30 }).startMinute).toBe(420);
+    const late = item("l", "2026-10-20", "21:00", 120);
+    expect(moveItem(late, { minutes: 30 }).startMinute).toBe(1260);
+    expect(moveItem(late, { minutes: -30 }).startMinute).toBe(1200);
+    // A partial move in the asked direction still clamps to the edge.
+    expect(moveItem(item("p", "2026-10-20", "07:10", 30), { minutes: -30 }).startMinute).toBe(420);
+  });
+
   test("keeps extra fields", () => {
     const withTitle = { ...study, title: "Review: תאים", taskId: "t1" };
     expect(moveItem(withTitle, { days: 1 })).toMatchObject({ title: "Review: תאים", taskId: "t1" });

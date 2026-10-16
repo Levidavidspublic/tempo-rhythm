@@ -157,4 +157,15 @@ describe("ItemMover", () => {
     expect(moves.find((m) => m.key === "prevDay")?.to).toEqual({ date: "2026-10-19", startMinute: 420 });
     expect(moves.find((m) => m.key === "nextDay")?.to.date).toBe("2026-10-21");
   });
+
+  test("a move the clamp would turn the other way is disabled, not saved backwards", () => {
+    const early = moverMoves(item({ id: "e", startMinute: 6 * 60 + 30, durationMinutes: 45 }));
+    expect(early.find((m) => m.key === "earlier")?.disabled).toBe(true);
+    const late = moverMoves(item({ id: "l", startMinute: 21 * 60, durationMinutes: 120 }));
+    expect(late.find((m) => m.key === "later")?.disabled).toBe(true);
+    expect(late.find((m) => m.key === "earlier")).toMatchObject({
+      to: { startMinute: 20 * 60 },
+      disabled: false,
+    });
+  });
 });
