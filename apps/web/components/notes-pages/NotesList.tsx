@@ -20,7 +20,7 @@ export function NotesList() {
   const rawType = params.get("type");
   const type =
     rawType === "daily" || rawType === "weekly" || rawType === "monthly" ? rawType : "all";
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const [search, setSearch] = useState("");
   const [pinnedOnly, setPinnedOnly] = useState(false);
   // notes.list calls requireUser, which throws until the user row exists. getProfile returns null
@@ -46,7 +46,8 @@ export function NotesList() {
   if (!userId) lastNotes.current = null;
   else if (notes !== undefined) lastNotes.current = { userId, value: notes };
   const shown = notes ?? (lastNotes.current?.userId === userId ? lastNotes.current?.value : undefined);
-  const isLoading = isAuthenticated && shown === undefined;
+  // While sign-in resolves the list is loading too, not "No notes yet".
+  const isLoading = authLoading || (isAuthenticated && shown === undefined);
   const visible = filterByPeriod(shown ?? [], type).sort(
     (a, b) => Number(b.pinned) - Number(a.pinned)
   );
@@ -254,8 +255,8 @@ export function NotesList() {
                       {label(note)}
                     </span>
                     <span className="tp-list-row__meta" dir="auto">
-                      {note.pinned ? <span className="tp-tag">{t("notes.pinned")}</span> : null}
-                      <span>{plainPreview(note.body, t("notes.noContent"))}</span>
+                      {note.pinned ? <span className="tp-badge">{t("notes.pinned")}</span> : null}
+                      <span className="nt-preview">{plainPreview(note.body, t("notes.noContent"))}</span>
                     </span>
                   </span>
                 </Link>

@@ -160,9 +160,9 @@ export function TemplatesLibrary() {
         <div aria-busy="true" className="tp-section">
           <output className="tp-sr-only">{t("tpl.loading")}</output>
           <div className="tpl-skel">
-            <div className="tp-skeleton" style={{ minHeight: 160 }} />
-            <div className="tp-skeleton" style={{ minHeight: 160 }} />
-            <div className="tp-skeleton" style={{ minHeight: 160 }} />
+            <div className="tp-skeleton tpl-skel__card" />
+            <div className="tp-skeleton tpl-skel__card" />
+            <div className="tp-skeleton tpl-skel__card" />
           </div>
         </div>
       ) : (

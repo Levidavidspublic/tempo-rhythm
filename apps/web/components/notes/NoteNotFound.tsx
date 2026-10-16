@@ -1,19 +1,28 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { TpIcon } from "@/components/tempo/TpIcon";
+
+/** A page that is gone (deleted, or a stale link): the shared empty state with a way back. */
 export function NoteNotFound() {
+  const { t } = useLocale();
   return (
-    <main className="container mx-auto max-w-3xl px-6 py-12">
-      <section className="rounded-3xl border border-border bg-card p-8 shadow-card">
-        <h1 className="font-heading text-2xl font-semibold text-foreground">
-          We couldn&apos;t find that note
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          It may have been removed, or the link may no longer be available.
-        </p>
-        <Link href="/notes" className="mt-6 inline-block text-sm font-medium text-primary">
-          Back to notes
-        </Link>
-      </section>
-    </main>
+    <div className="tp-paper" data-component="PageEditor">
+      <div className="tp-page__body">
+        <div className="tp-state tp-state--empty" data-component="StateEmpty">
+          <span className="tp-state__icon">
+            <TpIcon name="page" size="lg" />
+          </span>
+          <h1 className="tp-state__title">{t("page.notFound")}</h1>
+          <p className="tp-state__body">{t("page.notFoundBody")}</p>
+          <div className="tp-state__actions">
+            <Link href="/notes" className="tp-btn tp-btn--secondary">
+              {t("page.backToNotes")}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

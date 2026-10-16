@@ -2,6 +2,8 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import type { ReactNode } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { StateLoading, StateSignedOut } from "@/components/you/ScreenStates";
 import { api } from "@/convex/_generated/api";
 
 // Dev-only Playwright harness: proxy.ts lets these routes open signed out, and
@@ -19,28 +21,21 @@ export function ProfileReady({
   fallback,
 }: {
   children: ReactNode;
-  /** Shown while waiting or signed out. Defaults to a short status line. */
+  /** Shown while waiting or signed out. Defaults to the shared skeleton, or a sign-in link. */
   fallback?: ReactNode;
 }) {
+  const { t } = useLocale();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
 
   if (E2E_HARNESS && !isAuthenticated) return <>{children}</>;
   if (isLoading || (isAuthenticated && profile === undefined)) {
     if (fallback !== undefined) return <>{fallback}</>;
-    return (
-      <output className="block text-sm text-muted-foreground">
-        Loading…
-      </output>
-    );
+    return <StateLoading label={t("screen.loading")} rows={3} box={false} />;
   }
   if (!isAuthenticated || !profile) {
     if (fallback !== undefined) return <>{fallback}</>;
-    return (
-      <output className="block text-sm text-muted-foreground">
-        Sign in to see this page.
-      </output>
-    );
+    return <StateSignedOut />;
   }
   return <>{children}</>;
 }

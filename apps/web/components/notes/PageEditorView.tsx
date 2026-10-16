@@ -44,7 +44,7 @@ const SLASH_ICONS: Record<SlashCommandId, TpIconName> = {
   table: "calendar-grid",
 };
 
-type SaveState = "idle" | "saving" | "saved";
+type SaveState = "idle" | "saving" | "saved" | "error";
 
 type Props = {
   noteId: string;
@@ -58,6 +58,10 @@ type Props = {
   remoteBody?: { before: string; after: string; seq: number } | null;
   pinned: boolean;
   saveState: SaveState;
+  /** Saves the pending edits again after a save that didn't go through. */
+  onRetrySave?: () => void;
+  /** No connection: the page says saving waits until it is back. */
+  offline?: boolean;
   confirmingDelete: boolean;
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
@@ -265,7 +269,7 @@ export function PageEditorView(props: Props) {
             <h1 className="tp-page-title" id="page-title">
               <input
                 aria-label={t("page.titleLabel")}
-                className="w-full min-w-0 border-0 bg-transparent p-0 placeholder:text-ink-subtle"
+                className="tp-page-title__input"
                 dir="auto"
                 value={title}
                 placeholder={t("page.untitled")}
@@ -279,7 +283,7 @@ export function PageEditorView(props: Props) {
               </button>
               {confirmingDelete ? (
                 <>
-                  <button className="tp-btn tp-btn--secondary tp-btn--sm" type="button" onClick={props.onConfirmDelete}>
+                  <button className="tp-btn tp-btn--danger tp-btn--sm" type="button" onClick={props.onConfirmDelete}>
                     {t("page.confirmDelete")}
                   </button>
                   <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={props.onCancelDelete}>
@@ -352,10 +356,32 @@ export function PageEditorView(props: Props) {
               </Link>
             )}
             <output className="tp-muted" data-state={saveState}>
-              {copied ? t("page.copied") : saveState === "saving" ? t("page.saving") : saveState === "saved" ? t("page.saved") : ""}
+              {copied
+                ? t("page.copied")
+                : saveState === "saving"
+                  ? t("page.saving")
+                  : saveState === "saved"
+                    ? t("page.saved")
+                    : saveState === "error"
+                      ? t("page.notSaved")
+                      : ""}
             </output>
+            {saveState === "error" && props.onRetrySave ? (
+              <button className="tp-btn tp-btn--link" type="button" onClick={props.onRetrySave}>
+                {t("page.retrySave")}
+              </button>
+            ) : null}
           </div>
         </div>
+
+        {props.offline ? (
+          <p className="tp-notice tp-offline pe-offline" data-tone="caution" data-component="StateOffline">
+            <span className="tp-notice__icon">
+              <TpIcon name="wifi-off" size="sm" />
+            </span>
+            <span className="tp-notice__text">{t("page.offline")}</span>
+          </p>
+        ) : null}
 
         {props.lead}
 
