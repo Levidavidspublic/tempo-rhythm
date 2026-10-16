@@ -10,16 +10,16 @@ Five read-only audits, one subagent per area. They ran on 2026-10-16 against `ki
 
 | # | P | Finding | Status |
 |---|---|---|---|
-| T1 | P1 | `TodayBrainDumpPanel` calls `brain_dump.prioritize` with no crisis check. `BrainDumpScreen` checks first, and the server action does not check. | open |
-| T2 | P1 | The old orange gradient (`#D97757→#E8A87C`, which DESIGN §12.4 forbids) appears on the greeting name, the brain-dump panel and the task list. Contrast is 1.76–3.12:1 in light mode. | open |
-| T3 | P1 | No error boundary on `/today`, `/brain-dump` or `/plan`. Only `calendar/error.tsx` exists, so a throwing query takes the route down. | open |
-| T4 | P1 | Failed writes say nothing: task toggle (`TodayTaskList`), energy pick, carry-over. | open |
-| T5 | P1 | Long unbroken titles scroll the page sideways at 390 px (habit strip, task list, day plan, agenda, energy list, brain-dump panel). | open |
-| T6 | P1 | Day timeline action buttons are 16–24 px tall with 12 px text. "Undo" is cut off when two blocks overlap at 390. | open |
-| T7 | P1 | Raw `err.message` is shown in brain dump (Convex request ids reach the screen). | open |
-| T8 | P2 | Hand-rolled cards, inputs and badges; shadcn accent `Button`s; text under 13 px; physical left/right in `DayTimeline`, `DayPlanSummary`, `TimeBlockDialog`. | open |
-| T9 | P2 | Loading is bare pulse blocks with no text or timeout; no offline state; hard-coded English in most non-v3 sections. | open |
-| T10 | P2 | Copy: "must" (`blockForm.ts`); developer words in `TodayBrainDumpPanel` ("server planner", "Raw dump", "Prioritized output"). | open |
+| T1 | P1 | `TodayBrainDumpPanel` calls `brain_dump.prioritize` with no crisis check. `BrainDumpScreen` checks first, and the server action does not check. | fixed (carries open PR #1026's panel; redrawn on v3) |
+| T2 | P1 | The old orange gradient (`#D97757→#E8A87C`, which DESIGN §12.4 forbids) appears on the greeting name, the brain-dump panel and the task list. Contrast is 1.76–3.12:1 in light mode. | fixed |
+| T3 | P1 | No error boundary on `/today`, `/brain-dump` or `/plan`. Only `calendar/error.tsx` exists, so a throwing query takes the route down. | fixed (`app/(tempo)/error.tsx` covers every shell screen) |
+| T4 | P1 | Failed writes say nothing: task toggle (`TodayTaskList`), energy pick, carry-over. | partial: task list and carry-over fixed; energy picks are left to open PR #1021 |
+| T5 | P1 | Long unbroken titles scroll the page sideways at 390 px (habit strip, task list, day plan, agenda, energy list, brain-dump panel). | partial: task list, agenda, carry-over, habits and brain dump fixed; day plan is left to #1022 and energy to #1021 |
+| T6 | P1 | Day timeline action buttons are 16–24 px tall with 12 px text. "Undo" is cut off when two blocks overlap at 390. | open: `DayTimeline` is in open PR #1038 |
+| T7 | P1 | Raw `err.message` is shown in brain dump (Convex request ids reach the screen). | fixed |
+| T8 | P2 | Hand-rolled cards, inputs and badges; shadcn accent `Button`s; text under 13 px; physical left/right in `DayTimeline`, `DayPlanSummary`, `TimeBlockDialog`. | partial: Today's sections fixed; `DayTimeline` (#1038), `DayPlan*` (#1022), energy (#1021) and `TimeBlockDialog` are open |
+| T9 | P2 | Loading is bare pulse blocks with no text or timeout; no offline state; hard-coded English in most non-v3 sections. | partial: Today page and strip loading fixed; no offline notice on Today yet |
+| T10 | P2 | Copy: "must" (`blockForm.ts`); developer words in `TodayBrainDumpPanel` ("server planner", "Raw dump", "Prioritized output"). | partial: brain dump copy fixed; "must" fixed |
 
 ## Chat / Coach (`/coach`, panel, `/history`)
 
@@ -29,13 +29,13 @@ Five read-only audits, one subagent per area. They ran on 2026-10-16 against `ki
 | C2 | P1 | The thread snaps to the bottom on every render, even while you read further up. | fixed |
 | C3 | P1 | If the first conversation can't be created, it loads forever with no retry. | fixed |
 | C4 | P1 | Focus is lost after every send. | fixed |
-| C5 | P1 | `/history`: every row says "No messages…" and "New Conversation"; there's no way to reopen an older thread; no error state. | open |
+| C5 | P1 | `/history`: every row says "No messages…" and "New Conversation"; there's no way to reopen an older thread; no error state. | partial: threads get titles, `/coach?c=<id>` reopens a thread, New conversation added; `HistoryScreen` itself is left to open PRs #1024 and #1036 |
 | C6 | P1 | The side-column proposal card has no Edit and no Undo. | blocked: no backend undo for `coach.decideProposal` |
-| C7 | P1 | OpenUI page/template cards show only the first line before Accept (the direct card has "Show all of it"). | open |
+| C7 | P1 | OpenUI page/template cards show only the first line before Accept (the direct card has "Show all of it"). | fixed |
 | C8 | P2 | Send is accent (DESIGN §9: ink); inline styles; double focus ring in the composer. | fixed |
 | C9 | P2 | Composer doesn't grow; typing is a bare "…"; no offline notice; empty chat is one line. | fixed |
-| C10 | P2 | `HistoryScreen` is entirely legacy (SoftCard, orange `Pill`, 12 px text, English only). | open |
-| C11 | P2 | `CoachControls`, `CoachProposalCard` and `CrisisResourcesCard` use shadcn/Tailwind instead of `tp-dial`, `tp-proposal` and `tp-crisis`. | open |
+| C10 | P2 | `HistoryScreen` is entirely legacy (SoftCard, orange `Pill`, 12 px text, English only). | open: `HistoryScreen` is in open PRs #1024 and #1036 |
+| C11 | P2 | `CoachControls`, `CoachProposalCard` and `CrisisResourcesCard` use shadcn/Tailwind instead of `tp-dial`, `tp-proposal` and `tp-crisis`. | partial: CrisisCard and the proposal card fixed; `CoachControls` is in open PR #1038 |
 | C12 | P2 | Copy: "can't reach its model" (developer word). | fixed |
 
 **Open WebUI patterns** (behaviour only, no code):
@@ -56,38 +56,38 @@ Five read-only audits, one subagent per area. They ran on 2026-10-16 against `ki
 | Thumbs up/down | not built: no backend |
 | Edit and resend | not built |
 | Model picker | not built: AI providers and models are out of scope |
-| History grouped by date, rename, delete | open, see C5/C10 |
+| History grouped by date, rename, delete | partial: threads named from the first message, New conversation, reopen by link; grouping, rename and delete are open (see C10) |
 
 ## Notes / Pages (`/notes`, `/journal`, `/templates`, `/week`)
 
 | # | P | Finding | Status |
 |---|---|---|---|
-| N1 | P1 | The read view has no prose styles: lists lose their bullets, tables their borders, and quotes their style. | open |
-| N2 | P1 | Long unbroken strings scroll the page sideways (preview title, read view, "Linked here", list preview). | open |
-| N3 | P1 | A failed note save shows "Saving…" forever, with no error, retry or offline notice. | open |
-| N4 | P1 | Deleting from inside a page swaps in the legacy notes list. Its toast covers the tab bar at 390 px. | open |
-| N5 | P1 | No error boundaries for notes, journal, templates or week. | open |
-| N6 | P1 | False empty states while auth loads: "No notes yet", and an editable empty "Untitled" editor. | open |
+| N1 | P1 | The read view has no prose styles: lists lose their bullets, tables their borders, and quotes their style. | fixed |
+| N2 | P1 | Long unbroken strings scroll the page sideways (preview title, read view, "Linked here", list preview). | fixed |
+| N3 | P1 | A failed note save shows "Saving…" forever, with no error, retry or offline notice. | fixed |
+| N4 | P1 | Deleting from inside a page swaps in the legacy notes list. Its toast covers the tab bar at 390 px. | fixed |
+| N5 | P1 | No error boundaries for notes, journal, templates or week. | fixed (shell-wide error.tsx) |
+| N6 | P1 | False empty states while auth loads: "No notes yet", and an editable empty "Untitled" editor. | fixed |
 | N7 | P1 | `/daily-note` shows a developer scaffold. | open, and already handled by the open PR https://github.com/Levidavidspublic/tempo-rhythm/pull/1023 |
-| N8 | P2 | `NoteNotFound` and note loading are Tailwind with English-only text. The PanelUI week glance maps to legacy `moss`/`amber` and accent charts. `ProfileReady` is English only. | open |
-| N9 | P2 | Builder paper width jumps while typing; the slash menu is positioned with physical `left`; the page menu has no Esc. | open |
+| N8 | P2 | `NoteNotFound` and note loading are Tailwind with English-only text. The PanelUI week glance maps to legacy `moss`/`amber` and accent charts. `ProfileReady` is English only. | partial: not-found, loading and ProfileReady fixed; `WeekGlanceView` is in open PR #1042 |
+| N9 | P2 | Builder paper width jumps while typing; the slash menu is positioned with physical `left`; the page menu has no Esc. | partial: builder paper and page menu keys fixed; slash menu RTL position open |
 
 ## Calendar / Tasks (`/calendar`, `/tasks*`, `/projects`, `/habits`, `/routines`)
 
 | # | P | Finding | Status |
 |---|---|---|---|
-| K1 | P1 | Every Tasks view scrolls sideways at 390 px (447 px wide), because a long project chip is `nowrap`. | open |
-| K2 | P1 | The Tasks add form is 576 px tall at 390, so the first task is below the fold. It is not a `<form>`, so Enter does nothing. | open |
-| K3 | P1 | Failed create, toggle, edit and delete on Tasks say nothing. A failed repeat setup leaves the draft, so a retry makes a duplicate. | open |
-| K4 | P1 | Loading shows "This view is clear." next to the loading text. | open |
-| K5 | P1 | `/tasks` subscribes before the profile exists and has no error boundary (a crash during the sign-in race). | open |
-| K6 | P1 | `/tasks/checklists` renders blank when signed out or with no profile. | open |
-| K7 | P2 | Long event titles are clipped to one line with no way to read them. | open |
+| K1 | P1 | Every Tasks view scrolls sideways at 390 px (447 px wide), because a long project chip is `nowrap`. | fixed (CSS) |
+| K2 | P1 | The Tasks add form is 576 px tall at 390, so the first task is below the fold. It is not a `<form>`, so Enter does nothing. | partial: fields sit two to a row on phones (CSS); the form element / Enter fix is open because `TaskViewsScreen` is rewritten by open PRs #1020 and #1039 |
+| K3 | P1 | Failed create, toggle, edit and delete on Tasks say nothing. A failed repeat setup leaves the draft, so a retry makes a duplicate. | open: same file (#1020, #1039) |
+| K4 | P1 | Loading shows "This view is clear." next to the loading text. | open: same file |
+| K5 | P1 | `/tasks` subscribes before the profile exists and has no error boundary (a crash during the sign-in race). | partial: a crash now lands on the shell error state; the subscription race is open |
+| K6 | P1 | `/tasks/checklists` renders blank when signed out or with no profile. | fixed |
+| K7 | P2 | Long event titles are clipped to one line with no way to read them. | fixed (CSS, every list row) |
 | K8 | P2 | Week and Month are lists, not grids; `tp-week` and `tp-month` are unused. | open (feature-sized) |
 | K9 | P2 | No Undo toast on Tasks. | open, and handled by the open PR https://github.com/Levidavidspublic/tempo-rhythm/pull/1039 |
-| K10 | P2 | Touch targets of 36 px (`tp-btn--sm`, `tp-seg__opt`) on phones. | open |
-| K11 | P2 | `PriorityBoard`, `ChecklistBoard` and `calendar/error.tsx` are pre-v3 Tailwind; five separate Undo toasts. | open |
-| K12 | P2 | Raw `err.message` in `EventRow` and `ChecklistBoard`; "Length must be…" in `blockForm.ts`. | open |
+| K10 | P2 | Touch targets of 36 px (`tp-btn--sm`, `tp-seg__opt`) on phones. | fixed (touch screens) |
+| K11 | P2 | `PriorityBoard`, `ChecklistBoard` and `calendar/error.tsx` are pre-v3 Tailwind; five separate Undo toasts. | partial: Checklists, Priority and calendar/error fixed; EventRow's toast is in #1036 |
+| K12 | P2 | Raw `err.message` in `EventRow` and `ChecklistBoard`; "Length must be…" in `blockForm.ts`. | partial: `blockForm` and `ChecklistBoard` fixed; `EventRow` is in #1036 |
 | K13 | P2 | Every new task lands in "Home reset". | open, and handled by the open PR https://github.com/Levidavidspublic/tempo-rhythm/pull/1020 |
 
 ## Settings / Onboarding
@@ -95,15 +95,15 @@ Five read-only audits, one subagent per area. They ran on 2026-10-16 against `ki
 | # | P | Finding | Status |
 |---|---|---|---|
 | S1 | P1 | The body is blank while loading on every settings page, onboarding, billing and memory: skeleton bars measure 0 px wide. | fixed |
-| S2 | P1 | Sign-out on the approval screen has no error path. | open (subagent) |
-| S3 | P1 | A long email scrolls the "Check your email" card sideways at 390. | open (subagent) |
-| S4 | P2 | Approval screen, approval loading and sign-in/up spinners are Tailwind or shadcn rather than `tp-auth`. | open (subagent) |
-| S5 | P2 | Sign-in validation is the browser's own bubble, with no inline error or `aria-invalid`; no offline notice. | open (subagent) |
-| S6 | P2 | Settings cards run edge to edge at 390 px. | open (subagent) |
-| S7 | P2 | Preferences save error has no retry and sits far from the change; the MCP token name error isn't linked to its field. | open (subagent) |
-| S8 | P2 | The passkeys page is outside the shell and uses an emoji and `alert()`. | open (subagent) |
-| S9 | P2 | Copy: the sign-in error; "reply to your sign-in email"; contradictory analytics line; Hebrew mixes feminine and plural address. | open (subagent) |
-| S10 | P3 | Dead legacy files: `(auth)/layout.tsx`, the SignInForm modal branch, `settings-profile/*`, `NagPhraseEditor`, `NagList`, and others. | open (listed only, not deleted) |
+| S2 | P1 | Sign-out on the approval screen has no error path. | fixed |
+| S3 | P1 | A long email scrolls the "Check your email" card sideways at 390. | fixed |
+| S4 | P2 | Approval screen, approval loading and sign-in/up spinners are Tailwind or shadcn rather than `tp-auth`. | fixed |
+| S5 | P2 | Sign-in validation is the browser's own bubble, with no inline error or `aria-invalid`; no offline notice. | fixed |
+| S6 | P2 | Settings cards run edge to edge at 390 px. | fixed |
+| S7 | P2 | Preferences save error has no retry and sits far from the change; the MCP token name error isn't linked to its field. | fixed |
+| S8 | P2 | The passkeys page is outside the shell and uses an emoji and `alert()`. | fixed |
+| S9 | P2 | Copy: the sign-in error; "reply to your sign-in email"; contradictory analytics line; Hebrew mixes feminine and plural address. | fixed |
+| S10 | P3 | Dead legacy files: `(auth)/layout.tsx`, the SignInForm modal branch, `settings-profile/*`, `NagPhraseEditor`, `NagList`, and others. | open (listed in the PR, not deleted) |
 
 ## Notes for ticket sync (doc errors found)
 

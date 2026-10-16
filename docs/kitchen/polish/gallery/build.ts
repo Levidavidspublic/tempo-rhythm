@@ -17,6 +17,7 @@ const fixed: Record<string, string> = {
   "@/convex/_generated/api": stand("api.ts"),
   "next/link": stand("next-link.tsx"),
   "next/navigation": stand("next-navigation.ts"),
+  "@convex-dev/auth/react": stand("convex-auth-react.ts"),
   "@tempo/utils": path.join(repo, "packages/utils/src/index.ts"),
 };
 
