@@ -281,7 +281,7 @@ export function TrackingDashboard() {
             <Flame className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground rtl:tracking-normal">
               {t("track.eyebrow")}
             </p>
             <h1 className="font-heading text-4xl font-semibold text-foreground">
@@ -294,7 +294,7 @@ export function TrackingDashboard() {
 
       <section className="grid gap-4 sm:grid-cols-2">
         <SoftCard>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground rtl:tracking-normal">
             {t("track.streak")}
           </p>
           <p className="mt-3 font-heading text-3xl font-semibold text-foreground">
@@ -312,7 +312,7 @@ export function TrackingDashboard() {
           </p>
         </SoftCard>
         <SoftCard>
-          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground rtl:tracking-normal">
             {t("track.today")}
           </p>
           <p className="mt-3 font-heading text-3xl font-semibold text-foreground">
