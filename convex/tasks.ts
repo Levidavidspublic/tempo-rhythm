@@ -145,7 +145,8 @@ export const MAX_DONE_IN_RANGE = 1000;
  * #976): what a week's look back counts as done. Read through `by_userId_deletedAt_completedAt`,
  * so deleted tasks and tasks with no completion time are never read. `completedAt` is set when a
  * task becomes done and cleared when it leaves done; only rows still done are returned. At most
- * `MAX_DONE_IN_RANGE`. The range must end after it starts and be at most 31 days.
+ * `MAX_DONE_IN_RANGE`: past that, the newest are kept. The range must end after it starts and be
+ * at most 31 days.
  */
 export const listDoneInRange = query({
   args: {
@@ -167,8 +168,10 @@ export const listDoneInRange = query({
       .withIndex("by_userId_deletedAt_completedAt", (q) =>
         q.eq("userId", user._id).eq("deletedAt", undefined).gte("completedAt", startMs).lt("completedAt", endMs)
       )
+      // Newest first, so a range with more than the cap keeps its latest days; then oldest first.
+      .order("desc")
       .take(MAX_DONE_IN_RANGE);
-    return rows.filter((t) => t.status === "done");
+    return rows.reverse().filter((t) => t.status === "done");
   },
 });
 
@@ -214,11 +217,14 @@ export async function createTaskForUser(
   args: TaskCreateArgs
 ): Promise<Id<"tasks">> {
   const now = Date.now();
+  const status = args.status ?? "todo";
   return ctx.db.insert("tasks", {
     userId,
     title: args.title.trim(),
     description: args.description?.trim(),
-    status: args.status ?? "todo",
+    status,
+    // A task made as done was finished now, as `toggleCompletion` stamps it.
+    ...(status === "done" ? { completedAt: now } : {}),
     priority: args.priority ?? "medium",
     energy: args.energy ?? "medium",
     ...(args.flexibility !== undefined ? { flexibility: args.flexibility } : {}),

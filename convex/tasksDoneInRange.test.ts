@@ -69,6 +69,33 @@ describe("tasks.listDoneInRange (TEMPO-B07-01)", () => {
 		).rejects.toThrow("The range can be at most 31 days.");
 	});
 
+	test("more done than the cap: the newest are kept, still oldest first", async () => {
+		const ctx = makeFakeCtx(A);
+		const extra = 5;
+		for (let i = 0; i < tasks.MAX_DONE_IN_RANGE + extra; i += 1) {
+			await seedTask(ctx, A, `t${i}`, { completedAt: WEEK_START + i * 1000 });
+		}
+		const done = await run(tasks.listDoneInRange, ctx, { startMs: WEEK_START, endMs: WEEK_END });
+		expect(done).toHaveLength(tasks.MAX_DONE_IN_RANGE);
+		expect(done[0].title).toBe(`t${extra}`);
+		expect(done.at(-1).title).toBe(`t${tasks.MAX_DONE_IN_RANGE + extra - 1}`);
+	});
+
+	test("a task created as done is stamped done now, so it counts in its range", async () => {
+		const ctx = makeFakeCtx(A);
+		const before = Date.now();
+		const doneId = await run(tasks.create, ctx, { title: "Already did it", status: "done" });
+		const todoId = await run(tasks.create, ctx, { title: "Still to do" });
+		const after = Date.now();
+		const done = await ctx.db.get(doneId);
+		expect(done.completedAt).toBeGreaterThanOrEqual(before);
+		expect(done.completedAt).toBeLessThanOrEqual(after);
+		expect(done.completedAt).toBe(done.createdAt);
+		expect((await ctx.db.get(todoId)).completedAt).toBeUndefined();
+		const inRange = await run(tasks.listDoneInRange, ctx, { startMs: before, endMs: after + 1 });
+		expect(inRange.map((t: { title: string }) => t.title)).toEqual(["Already did it"]);
+	});
+
 	test("no one signed in is refused", async () => {
 		const ctx = makeFakeCtx(A);
 		ctx.auth.getUserIdentity = async () => null;
