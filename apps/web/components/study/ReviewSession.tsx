@@ -12,6 +12,7 @@ import {
   type QueueCard,
   type SavedGrade,
   type SessionSnapshot,
+  sessionView,
   splitKey,
 } from "./session";
 import { ReviewSessionView, SessionHeader } from "./ReviewSessionView";
@@ -66,13 +67,19 @@ function ReviewSessionData({ setId }: { setId?: string }) {
   const undo = async (grade: SavedGrade) => {
     await undoReview({ reviewId: grade.reviewId as Id<"studyReviews"> });
   };
+  const shown = sessionView({
+    signedOut: signedIn === "signedOut",
+    setId,
+    named,
+    cards: snapshot?.cards ?? null,
+  });
   return (
     <ReviewSessionView
-      cards={signedIn === "signedOut" ? [] : (snapshot?.cards ?? null)}
+      cards={shown.cards}
       now={snapshot?.now ?? 0}
       online={online}
       signedOut={signedIn === "signedOut"}
-      setGone={Boolean(setId) && named === null}
+      setGone={shown.setGone}
       onSave={save}
       onUndo={undo}
     />

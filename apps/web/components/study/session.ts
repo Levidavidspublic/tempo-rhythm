@@ -65,3 +65,21 @@ export function nextSnapshot(
   if (!queue) return null;
   return { setId, cards: [...queue], now };
 }
+
+/**
+ * What the review session shows from its reads. With `?set=`, the cards wait for `study.getSet`
+ * too: a set that is gone answers null there (the gone state), and until it answers the screen
+ * stays loading, so "Nothing to review right now" never flashes before "isn't here anymore".
+ */
+export function sessionView(input: {
+  signedOut: boolean;
+  setId: string | undefined;
+  /** `study.getSet` for `setId`: undefined while loading (or without `setId`), null when gone. */
+  named: unknown;
+  cards: QueueCard[] | null;
+}): { cards: QueueCard[] | null; setGone: boolean } {
+  if (input.signedOut) return { cards: [], setGone: false };
+  if (input.setId && input.named === null) return { cards: null, setGone: true };
+  if (input.setId && input.named === undefined) return { cards: null, setGone: false };
+  return { cards: input.cards, setGone: false };
+}
