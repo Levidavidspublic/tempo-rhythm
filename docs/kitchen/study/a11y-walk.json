@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-17T02:01:35.683Z",
+ "generated": "2026-10-17T02:06:30.636Z",
  "runs": 200,
  "views": 51,
  "totals": {
@@ -9,14 +9,14 @@
    "runs": 0
   },
   "noIndicator": {
-   "findings": 8,
-   "unique": 6,
-   "runs": 8
+   "findings": 4,
+   "unique": 2,
+   "runs": 4
   },
   "hidden": {
-   "findings": 14,
-   "unique": 14,
-   "runs": 10
+   "findings": 0,
+   "unique": 0,
+   "runs": 0
   },
   "trap": {
    "findings": 0,
@@ -32,29 +32,10 @@
  "unique": {
   "unreached": [],
   "noIndicator": [
-   "calendar-mover button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Practice testFlexible\": outline 49% shown, clipped by section.tp-sched__scroll \"Week of Mon, 12 Oct, scrolls ins\"",
-   "calendar-mover button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45תרגול בגרותגמיש\": outline 49% shown, clipped by section.tp-sched__scroll \"השבוע של יום א׳, 11 באוק׳, נגלל \"",
-   "calendar-week button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Practice testFlexible\": outline 49% shown, clipped by section.tp-sched__scroll \"Week of Mon, 12 Oct, scrolls ins\"",
-   "calendar-week button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45תרגול בגרותגמיש\": outline 49% shown, clipped by section.tp-sched__scroll \"השבוע של יום א׳, 11 באוק׳, נגלל \"",
    "page-menu-turn-into div.cm-content.cm-lineWrapping[role=textbox] \"Note body\"",
    "page-menu-turn-into div.cm-content.cm-lineWrapping[role=textbox] \"גוף הפתק\""
   ],
-  "hidden": [
-   "calendar-mover button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00Cards: osmosisFlexibl\": partly out of view (78% shown)",
-   "calendar-mover button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00כרטיסיות: אוסמוזהגמיש\": partly out of view (78% shown)",
-   "calendar-week button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00Cards: osmosisFlexibl\": partly out of view (78% shown)",
-   "calendar-week button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00כרטיסיות: אוסמוזהגמיש\": partly out of view (78% shown)",
-   "plan-replan-notice button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Learn: mitosisFlexibl\": partly out of view (65% shown)",
-   "plan-replan-notice button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45ללמוד: מיטוזהגמיש\": partly out of view (65% shown)",
-   "plan-replan-notice button.tp-week__item.tp-sched__item[type=button] \"17:45–18:30Review: cellsFlexible\": partly out of view (65% shown)",
-   "plan-replan-notice button.tp-week__item.tp-sched__item[type=button] \"17:45–18:30חזרה: תאיםגמיש\": partly out of view (65% shown)",
-   "plan-scheduler button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Learn: photosynthesis\": partly out of view (65% shown)",
-   "plan-scheduler button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45ללמוד: פוטוסינתזהגמיש\": partly out of view (65% shown)",
-   "plan-scheduler button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30Biology lessonFixed\": partly out of view (52% shown)",
-   "plan-scheduler button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30שיעור ביולוגיהקבוע\": partly out of view (51% shown)",
-   "plan-undo-kept button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30Biology lessonFixed\": partly out of view (76% shown)",
-   "plan-undo-kept button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30שיעור ביולוגיהקבוע\": partly out of view (76% shown)"
-  ],
+  "hidden": [],
   "trap": [],
   "reducedMotion": []
  },
@@ -228,10 +209,7 @@
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Learn: mitosisFlexibl\": partly out of view (65% shown)",
-      "button.tp-week__item.tp-sched__item[type=button] \"17:45–18:30Review: cellsFlexible\": partly out of view (65% shown)"
-     ],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -243,10 +221,7 @@
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45ללמוד: מיטוזהגמיש\": partly out of view (65% shown)",
-      "button.tp-week__item.tp-sched__item[type=button] \"17:45–18:30חזרה: תאיםגמיש\": partly out of view (65% shown)"
-     ],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1643,12 +1618,8 @@
      "stops": 6,
      "end": "wrapped",
      "unreached": [],
-     "noIndicator": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Practice testFlexible\": outline 49% shown, clipped by section.tp-sched__scroll \"Week of Mon, 12 Oct, scrolls ins\""
-     ],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00Cards: osmosisFlexibl\": partly out of view (78% shown)"
-     ],
+     "noIndicator": [],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1659,12 +1630,8 @@
      "stops": 6,
      "end": "wrapped",
      "unreached": [],
-     "noIndicator": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45תרגול בגרותגמיש\": outline 49% shown, clipped by section.tp-sched__scroll \"השבוע של יום א׳, 11 באוק׳, נגלל \""
-     ],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00כרטיסיות: אוסמוזהגמיש\": partly out of view (78% shown)"
-     ],
+     "noIndicator": [],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1705,12 +1672,8 @@
      "stops": 15,
      "end": "cycle",
      "unreached": [],
-     "noIndicator": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Practice testFlexible\": outline 49% shown, clipped by section.tp-sched__scroll \"Week of Mon, 12 Oct, scrolls ins\""
-     ],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00Cards: osmosisFlexibl\": partly out of view (78% shown)"
-     ],
+     "noIndicator": [],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1721,12 +1684,8 @@
      "stops": 15,
      "end": "cycle",
      "unreached": [],
-     "noIndicator": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45תרגול בגרותגמיש\": outline 49% shown, clipped by section.tp-sched__scroll \"השבוע של יום א׳, 11 באוק׳, נגלל \""
-     ],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"16:30–17:00כרטיסיות: אוסמוזהגמיש\": partly out of view (78% shown)"
-     ],
+     "noIndicator": [],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1876,10 +1835,7 @@
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30Biology lessonFixed\": partly out of view (52% shown)",
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45Learn: photosynthesis\": partly out of view (65% shown)"
-     ],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1891,10 +1847,7 @@
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30שיעור ביולוגיהקבוע\": partly out of view (51% shown)",
-      "button.tp-week__item.tp-sched__item[type=button] \"17:00–17:45ללמוד: פוטוסינתזהגמיש\": partly out of view (65% shown)"
-     ],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1936,9 +1889,7 @@
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30Biology lessonFixed\": partly out of view (76% shown)"
-     ],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],
@@ -1950,9 +1901,7 @@
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
-     "hidden": [
-      "button.tp-week__item.tp-sched__item[type=button] \"17:30–18:30שיעור ביולוגיהקבוע\": partly out of view (76% shown)"
-     ],
+     "hidden": [],
      "trap": [],
      "reducedMotion": [],
      "errors": [],

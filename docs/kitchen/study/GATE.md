@@ -106,6 +106,32 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 | miniapp-approve | PASS, 8 shots (en/he) | asks before running; R-36 "walled off" matches the sandbox + CSP code, not network-verified (UNKNOWN) | none | focal: "Run this widget" | ok | PASS |
 | miniapp-stopped | PASS, 8 shots (en/he) | stopped state explains what happened | none | focal: the note | ok | PASS |
 
+### Keyboard walk and reduced motion
+
+`docs/kitchen/study/a11y-walk.mjs` opens every gallery view (51) at 390 and 1280 px, in English and Hebrew (the two `-he` views in Hebrew only), light theme: 200 runs, 2,368 Tab stops. Each run's findings are in `a11y-walk.json`.
+
+- **Keyboard walk.** Tab until focus comes back round, or 200 presses. (i) **Unreached**: a visible, enabled control Tab never reaches. A radio group or a roving-tabindex group (the month grid's days, Segmented) counts as reached when its Tab stop is reached and an arrow key from that stop is seen to move within the group (48 groups checked so); controls behind an open modal or in a closed panel don't count. (ii) **No focus sign**: outline, box-shadow and border compared focused and blurred, on the stop, its two parents and its siblings (the blurred styles are read once Tab has moved on); the stop's own outline doesn't count when the boxes around it clip off more than half of it. (iii) **Hidden focus**: after the browser scrolled to it, the stop (or the label it stands for) is not visible, is off screen or clipped, shows under 90% of itself although it would fit (text fields aside: the browser brings their caret into view, not the whole box), or is entirely covered. (iv) **Trap**: focus stays put for 3 presses (10 for date, time and media fields, which have parts inside) or loops without coming back, outside an aria-modal dialog.
+- **Reduced motion.** A `reducedMotion: "reduce"` context, the view's scripted steps, then every element and `::before` / `::after` whose transition or animation still lasts over 10 ms (with a property or name that isn't `none`), any script animation still running, and any `behavior: "smooth"` scroll call.
+- Each check was seen to fire on faults injected into a copy of the gallery (an outline removed, buttons set to `tabindex="-1"`, Tab swallowed, a button pushed off screen, an inline 300 ms transition and a script animation, a clipping box, a smooth scroll).
+
+| check | before (runs / distinct) | after (runs / distinct) |
+|---|---|---|
+| (i) unreached | 0 / 0 | 0 / 0 |
+| (ii) no focus sign | 8 / 6 | 4 / 2 |
+| (iii) hidden focus | 14 / 14 | 0 / 0 |
+| (iv) trap | 0 / 0 | 0 / 0 |
+| reduced motion | 0 / 0 | 0 / 0 |
+
+Distinct means view + element; an English and a Hebrew name count separately.
+
+Fixed. The week grid at 390 px: an item that Tab scrolled in flush with the region's bottom edge showed 49% of its ring (calendar-week, calendar-mover); the region now keeps `space-2` scroll padding on every side, not only under the day names (`plan.css`, `e72e923`). Items at the region's far side stayed 51–78% shown after Tab, because Chromium doesn't scroll a partly shown item sideways (calendar-week, calendar-mover, plan-scheduler, plan-replan-notice, plan-undo-kept); a focused item now calls `scrollIntoView({ block: "nearest", inline: "nearest" })`, with no glide (`WeekGrid.tsx`, `895d703`). Gallery only: calendar-month held a fixed chosen day, so its arrow keys had nothing to move to; it now keeps the day in state as CalendarViews does (`c8d2b1a`).
+
+Left, outside this run:
+- page-menu-turn-into: the notes editor's page body has no focus sign (`apps/web/components/editor/live-preview.ts:739`, `"&.cm-focused": { outline: "none" }`), the same R-32 item as above. 4 runs, en and he.
+- Under the half-clipped bar, so not counted: the month grid clips about 30% of an edge day's ring (`apps/web/app/tempo.css:898`, `.tp-month__grid { overflow: hidden }`), and at 390 px the ingest sheet's title field shows 55% of its ring when Tab scrolls it to the sheet body's bottom edge (`apps/web/app/tempo.css:1428`, `.tp-sheet__body` has no scroll padding). Both are shared tempo.css components.
+
+Reduced motion finds nothing because `globals.css:543` and `tempo.css:480` already cut every duration to 0.01 ms under `prefers-reduced-motion: reduce`, and the run's one smooth scroll (the week grid gliding to another week, `WeekGrid.tsx:238`) checks the media query itself; the gallery never changes week, so the walk didn't exercise that one. Not covered: the app shell (the gallery has none, so its sticky top bar can't cover a stop here), the dark theme, screen readers.
+
 Notes.
 
 1. The gallery is built as an IIFE: as a classic script its top-level CodeMirror `getSelection` replaced `window.getSelection` and React's select events threw on the plan views. That was the gallery-only page error the first evidence run recorded; it is gone, and the app (Turbopack) was never affected.
