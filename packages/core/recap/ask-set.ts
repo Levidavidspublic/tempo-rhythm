@@ -1,6 +1,6 @@
 import type { FlashcardsData, QuizData, TestData, TestQuestion } from "@tempo/utils";
 import { type AnswerOptions, scoreTexts, terms } from "./answer";
-import { fullReading } from "./recap";
+import { fullReading, type RecapSentence } from "./recap";
 import { pageLang } from "./text";
 
 /**
@@ -66,9 +66,23 @@ export function setPassages(block: AskSetBlock): AskPassage[] {
   );
 }
 
+/** A page's sentences as Ask reads them (`readAskPage`). */
+export type AskPageReading = readonly RecapSentence[];
+
+/**
+ * The page's full reading, in the page's language unless `lang` says otherwise. Read a page once and
+ * pass the reading to `answerFromSet` as `page`, so a long page isn't read again for every question.
+ */
+export function readAskPage(markdown: string, options: Pick<AnswerOptions, "lang"> = {}): AskPageReading {
+  return fullReading(markdown, { lang: options.lang ?? pageLang(markdown) });
+}
+
 export type AskSetInput = {
-  /** The page's markdown; null or undefined when only the set is searched. */
-  page?: string | null;
+  /**
+   * The page: its markdown, or its reading from `readAskPage` (then `options.lang` is not used);
+   * null or undefined when only the set is searched.
+   */
+  page?: string | AskPageReading | null;
   /** The set's items (`setPassages`). */
   items: readonly AskPassage[];
 };
@@ -89,7 +103,7 @@ type Entry = AskPassage & { set: boolean; order: number; quotable: boolean; word
 export function answerFromSet({ page, items }: AskSetInput, question: string, options: AnswerOptions = {}): SetMatch[] {
   if (terms(question).length === 0) return [];
   const limit = Math.max(1, Math.floor(options.limit ?? 3));
-  const sentences = page ? fullReading(page, { lang: options.lang ?? pageLang(page) }) : [];
+  const sentences = !page ? [] : typeof page === "string" ? readAskPage(page, options) : page;
   const pool: Entry[] = [
     ...sentences.map((sentence, order) => ({
       from: { kind: "page", sentence: order } as const,

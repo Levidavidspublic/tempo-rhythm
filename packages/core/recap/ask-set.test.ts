@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { markQuote } from "./answer";
-import { type AskPassage, answerFromSet, setPassages } from "./ask-set";
+import { type AskPassage, answerFromSet, readAskPage, setPassages } from "./ask-set";
 
 // Fictional study notes and sets.
 const PAGE = `# Cell biology
@@ -184,6 +184,16 @@ describe("answerFromSet", () => {
     const items = setPassages({ type: "flashcards", data: { cards: [{ id: "a", front: "Prophase", back: "Chromosomes condense" }] } });
     expect(where(answerFromSet({ page, items }, "When do chromosomes condense?"))).toEqual(["card 1"]);
     expect(where(answerFromSet({ page, items }, "מה קורה במטאפאזה?"))).toEqual(["page 2"]);
+  });
+  test("a page read once (`readAskPage`) answers as its markdown does, question after question", () => {
+    const reading = readAskPage(PAGE);
+    for (const question of ["mitosis", "cells chromosomes enzymes", "Does diffusion go from high to low, and what is osmosis?"]) {
+      expect(answerFromSet({ page: reading, items: deck }, question)).toEqual(answerFromSet({ page: PAGE, items: deck }, question));
+    }
+    // A Hebrew page is read in Hebrew, as the markdown would be.
+    const he = "# שלבי המיטוזה\n\nפרופאזה היא השלב הראשון.\nבמטאפאזה הכרומוזומים מסתדרים באמצע.";
+    expect(readAskPage(he)).toEqual(readAskPage(he, { lang: "he" }));
+    expect(where(answerFromSet({ page: readAskPage(he), items: [] }, "מה קורה במטאפאזה?"))).toEqual(["page 2"]);
   });
   test("the same input gives the same answer", () => {
     const ask = () => answerFromSet({ page: PAGE, items: deck }, "cells membrane diffusion");

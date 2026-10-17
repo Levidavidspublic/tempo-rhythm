@@ -18,6 +18,7 @@ import {
   type AskFrom,
   answerFromSet,
   markQuote,
+  readAskPage,
   type SetMatch,
   setPassages,
 } from "../../../../packages/core/recap";
@@ -74,6 +75,12 @@ export function askReducer(state: AskState, question: string): AskState {
 
 export type SetAskProps = {
   block: SetBlock;
+  /**
+   * The block's content version (`blockVersion` from getSet). getSet hands back a new block object
+   * after every review or attempt; the set's items are read again only when this changes (without
+   * it, whenever `block` does).
+   */
+  version?: string;
   page: AskPage;
   online: boolean;
   t: StudyT;
@@ -83,7 +90,7 @@ export type SetAskProps = {
   initialQuestion?: string;
 };
 
-export function SetAsk({ block, page, online, t, onOpen, initialQuestion }: SetAskProps) {
+export function SetAsk({ block, version, page, online, t, onOpen, initialQuestion }: SetAskProps) {
   const id = useId();
   const panelId = `${id}-panel`;
   const inputId = `${id}-question`;
@@ -96,14 +103,17 @@ export function SetAsk({ block, page, online, t, onOpen, initialQuestion }: SetA
   const asked = ask.question;
   const input = useRef<HTMLInputElement>(null);
   const focusField = useRef(false);
-  const items = useMemo(() => setPassages(block), [block]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the version stands for the block's words
+  const items = useMemo(() => setPassages(block), [version ?? block]);
   // The page answers once its words are here; while they load the set's items answer first, and
   // offline (or with no page) only the set is searched, and the words say so.
   const where = page ? "page" : page === undefined && online ? "loading" : "set";
   const body = page ? page.body : null;
+  // Read once per page body, not once per question or per new `page` object.
+  const reading = useMemo(() => (body ? readAskPage(body) : null), [body]);
   const matches = useMemo(
-    () => (asked ? answerFromSet({ page: body, items }, asked) : null),
-    [asked, body, items]
+    () => (asked ? answerFromSet({ page: reading, items }, asked) : null),
+    [asked, reading, items]
   );
 
   useEffect(() => {

@@ -344,6 +344,7 @@ function LoadedSet({
       {editing ? null : (
         <SetAsk
           block={block}
+          version={version}
           page={askPage}
           online={online}
           t={t}
