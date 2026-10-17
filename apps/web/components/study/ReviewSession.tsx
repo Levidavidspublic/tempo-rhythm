@@ -44,7 +44,8 @@ export function ReviewSession({ setId }: { setId?: string }) {
 function ReviewSessionData({ setId }: { setId?: string }) {
   const signedIn = useSignedIn();
   const online = useOnline();
-  const args = setId ? { setId: setId as Id<"studySets"> } : {};
+  // `?set=` goes to the query as it is: one that names no set has no cards (the empty state).
+  const args = setId ? { setId } : {};
   const queue = useQuery(api.study.reviewQueue, signedIn === "ready" ? args : "skip");
   const [stored, setSnapshot] = useState<SessionSnapshot | null>(null);
   useEffect(() => {

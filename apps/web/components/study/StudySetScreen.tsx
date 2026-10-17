@@ -48,8 +48,9 @@ function StudySetData({ setId }: { setId: string }) {
   const { t } = useLocale();
   const signedIn = useSignedIn();
   const online = useOnline();
-  const id = setId as Id<"studySets">;
-  const data = useQuery(api.study.getSet, signedIn === "ready" ? { setId: id } : "skip");
+  // The URL string goes to the read as it is: the server checks it and answers null for one that
+  // names no set. Writes only happen on a loaded set, so they name the set the server read back.
+  const data = useQuery(api.study.getSet, signedIn === "ready" ? { setId } : "skip");
   const record = useMutation(api.study.recordAttempt);
   const remove = useMutation(api.study.removeSet);
   const restore = useMutation(api.study.restoreSet);
@@ -59,6 +60,7 @@ function StudySetData({ setId }: { setId: string }) {
   const [removeError, setRemoveError] = useState(false);
   const closeToast = useCallback(() => setToast(null), []);
   const loaded = signedIn === "signedOut" ? null : (data as SetData | null | undefined);
+  const id = (loaded ? loaded.set.setId : setId) as Id<"studySets">;
   const [askOpened, setAskOpened] = useState(false);
   const pageId = loaded ? askPageId(loaded) : undefined;
   const page = useQuery(
