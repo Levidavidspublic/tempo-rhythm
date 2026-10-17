@@ -74,12 +74,14 @@ describe("ReplanPreview offline", () => {
     expect(result.moves.length).toBeGreaterThan(0);
     const html = preview();
     expect(html).not.toMatch(/data-action="replan-accept" disabled/);
+    expect(html).not.toContain('aria-disabled="true"');
     expect(html).not.toContain("You&#x27;re offline");
   });
 
-  test("offline, Use these times is off and a line says why", () => {
+  test("offline, Use these times is off (aria-disabled, so it keeps focus) and a line says why", () => {
     const html = preview(true);
-    expect(html).toMatch(/data-action="replan-accept" disabled=""/);
+    expect(html).toMatch(/data-action="replan-accept" aria-disabled="true"/);
+    expect(html).not.toMatch(/data-action="replan-accept" disabled/);
     expect(html).toContain("You&#x27;re offline. Moving sessions needs a connection");
   });
 });

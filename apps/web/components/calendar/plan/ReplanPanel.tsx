@@ -313,10 +313,15 @@ export function ReplanPreview({
           className={`tp-btn ${primary ? "tp-btn--primary" : "tp-btn--secondary"}`}
           type="button"
           data-action="replan-accept"
-          disabled={busy || !canAccept || offline}
+          disabled={busy || !canAccept}
+          // Offline it is aria-disabled, not disabled, so the keyboard stays on it when the
+          // connection goes; pressing it then sends nothing (here and in ReplanPanel.accept).
+          aria-disabled={offline || undefined}
           aria-busy={busy || undefined}
           aria-describedby={offline ? `${headingId}-offline` : undefined}
-          onClick={onAccept}
+          onClick={() => {
+            if (!offline) onAccept();
+          }}
         >
           <TpIcon name="check" size="sm" />
           <span>{busy ? pt(lang, "rp.accepting") : pt(lang, "rp.accept")}</span>
