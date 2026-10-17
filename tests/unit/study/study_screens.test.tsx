@@ -108,6 +108,15 @@ describe("ReviewHub", () => {
     expect(markup).toContain("No reviews yet today.");
     expect(primaries(markup)).toBe(0);
   });
+  test("a hub cut short by its read budget says it shows the most recent sets", () => {
+    const hub = { dueCount: 1, newCount: 0, reviewedToday: 0, sets: [set] };
+    const cut = html(createElement(ReviewHubView, { hub: { ...hub, truncated: true }, online: true }));
+    expect(cut).toContain("Showing your most recent sets.");
+    expect(cut).toContain('dir="auto">Cell biology');
+    expect(cut).not.toMatch(BANNED);
+    const whole = html(createElement(ReviewHubView, { hub, online: true }));
+    expect(whole).not.toContain("Showing your most recent sets.");
+  });
   test("offline keeps the content and says so", () => {
     const markup = html(createElement(ReviewHubView, { hub: { dueCount: 1, newCount: 0, reviewedToday: 0, sets: [set] }, online: false }));
     expect(markup).toContain('data-component="StateOffline"');

@@ -23,6 +23,8 @@ export type HubData = {
   newCount: number;
   reviewedToday: number;
   sets: readonly HubSet[];
+  /** The read stopped at its budget (a very full study area): the sets are the most recent ones. */
+  truncated?: boolean;
 };
 
 /**

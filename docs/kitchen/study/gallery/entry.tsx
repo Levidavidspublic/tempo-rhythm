@@ -13,6 +13,8 @@
 // "Ask about this set" adds study-set-ask (quotes from the page and the deck), study-set-ask-empty
 // (nothing found, with the page link) and study-set-ask-he (a pointed Hebrew deck answering an
 // unpointed question). MOCKED: the sample decks and pages below; the search itself is the real one.
+// The whole-run review adds study-hub-truncated (a hub past its read budget says it shows the most
+// recent sets). MOCKED: the sample sets below.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -250,7 +252,9 @@ const queries: Record<string, unknown> = {
   "study.hub":
     view === "study-hub-empty"
       ? { dueCount: 0, newCount: 0, reviewedToday: 0, sets: [] }
-      : { dueCount: 12, newCount: 4, reviewedToday: 7, sets },
+      : view === "study-hub-truncated"
+        ? { dueCount: 12, newCount: 4, reviewedToday: 7, sets, truncated: true }
+        : { dueCount: 12, newCount: 4, reviewedToday: 7, sets },
   "study.reviewQueue": { cards: view === "study-review-done" ? queueCards.slice(0, 1) : queueCards },
   "study.getSet": setFixture,
   "notes.getSafe":
@@ -550,6 +554,7 @@ const VIEWS: Record<string, () => ReactNode> = {
   "plan-replan-preview": () => <ReplanSample />,
   "study-hub": () => <ReviewHub />,
   "study-hub-empty": () => <ReviewHub />,
+  "study-hub-truncated": () => <ReviewHub />,
   "study-review": () => <ReviewSession />,
   "study-review-done": () => {
     steps(click('[data-action="review-reveal"]'), click('[data-action="review-grade"][data-grade="good"]'));

@@ -61,7 +61,7 @@ export function ReviewHubView({ hub, online, signedOut }: ReviewHubViewProps) {
       ) : (
         <>
           <FocusCard hub={hub} t={t} />
-          <SetGroups sets={hub.sets} t={t} />
+          <SetGroups sets={hub.sets} truncated={hub.truncated === true} t={t} />
         </>
       )}
       {signedOut ? null : <MoreWays t={t} />}
@@ -120,7 +120,16 @@ const GROUP_KEY: Record<HubSet["kind"], MessageKey> = {
   test: "st.group.test",
 };
 
-function SetGroups({ sets, t }: { sets: readonly HubSet[]; t: StudyT }) {
+function SetGroups({
+  sets,
+  truncated,
+  t,
+}: {
+  sets: readonly HubSet[];
+  /** Past the hub's read budget: say the list holds the most recent sets, not all of them. */
+  truncated: boolean;
+  t: StudyT;
+}) {
   return (
     <section className="tp-section" data-component="Section" aria-labelledby="st-sets-title">
       <div className="tp-section__head">
@@ -128,6 +137,11 @@ function SetGroups({ sets, t }: { sets: readonly HubSet[]; t: StudyT }) {
           {t("st.sets")}
         </h2>
       </div>
+      {truncated ? (
+        <p className="tp-muted" data-truncated="">
+          {t("st.truncated")}
+        </p>
+      ) : null}
       {groupSets(sets).map((group) => (
         <div className="tp-study-group" key={group.kind} data-kind={group.kind}>
           <h3 className="tp-h3 tp-study-group__title" id={`tp-study-group-${group.kind}`}>
