@@ -53,7 +53,7 @@ import { RecordScreen } from "@/components/study/record/RecordScreen";
 import { RemindersChannelList } from "@/components/settings-reminders/RemindersSettings";
 import { ShareSheet } from "@/components/share";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
-import { shortDate } from "@/components/calendar/planCopy";
+import { pt, shortDate } from "@/components/calendar/planCopy";
 import { buildPreview, DEFAULT_FORM, guidedLabels, toGuidedSteps } from "@/components/calendar/plan/planForm";
 import { ReplanNotice, ReplanPreview } from "@/components/calendar/plan/ReplanPanel";
 import { type PlanTask, replanInput, replanNotice } from "@/components/calendar/plan/replanForm";
@@ -473,6 +473,21 @@ function MiniApp({ html, approved }: { html: string; approved: boolean }) {
   );
 }
 
+/**
+ * The headings the app puts around a view that the gallery shows on its own (the plan page's h1 and
+ * its "Your plan" h2, a notes page's title and a section, the calendar's week h2), visually hidden so the shot doesn't change. Without
+ * them axe flags a page with no h1, or an h3 straight after the h1, that the app never shows.
+ */
+function AppHeadings({ h1, h2, children }: { h1?: string; h2?: string; children: ReactNode }) {
+  return (
+    <>
+      {h1 ? <h1 className="tp-sr-only">{h1}</h1> : null}
+      {h2 ? <h2 className="tp-sr-only">{h2}</h2> : null}
+      {children}
+    </>
+  );
+}
+
 function Page({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="tp-page">
@@ -615,11 +630,27 @@ function UnknownView({ name }: { name: string }) {
 }
 
 const VIEWS: Record<string, () => ReactNode> = {
-  "plan-guided": () => <GuidedPlanSample mode="pending" />,
-  "plan-guided-edit": () => <GuidedPlanSample mode="edit" />,
-  "plan-guided-accepted": () => <GuidedPlanSample mode="accepted" />,
+  "plan-guided": () => (
+    <AppHeadings h1={pt(lang, "pp.title")} h2={pt(lang, "pp.preview.h")}>
+      <GuidedPlanSample mode="pending" />
+    </AppHeadings>
+  ),
+  "plan-guided-edit": () => (
+    <AppHeadings h1={pt(lang, "pp.title")} h2={pt(lang, "pp.preview.h")}>
+      <GuidedPlanSample mode="edit" />
+    </AppHeadings>
+  ),
+  "plan-guided-accepted": () => (
+    <AppHeadings h1={pt(lang, "pp.title")} h2={pt(lang, "pp.preview.h")}>
+      <GuidedPlanSample mode="accepted" />
+    </AppHeadings>
+  ),
   "plan-replan-notice": () => <PlanPathScreen />,
-  "plan-replan-preview": () => <ReplanSample />,
+  "plan-replan-preview": () => (
+    <AppHeadings h1={pt(lang, "pp.title")}>
+      <ReplanSample />
+    </AppHeadings>
+  ),
   "study-hub": () => <ReviewHub />,
   "study-hub-empty": () => <ReviewHub />,
   "study-hub-truncated": () => <ReviewHub />,
@@ -744,7 +775,9 @@ const VIEWS: Record<string, () => ReactNode> = {
     steps(click('[data-component="WeekGrid"] button[data-item-id="t1"]'), click('[data-component="ItemMover"] [data-move="to"]'));
     return (
       <Page title={he ? "לוח שנה" : "Calendar"}>
-        <WeekGrid weekStart={weekStart} items={weekItems} today={today} nowMinute={16 * 60} lang={lang} onMove={() => {}} />
+        <AppHeadings h2={he ? "שבוע" : "Week"}>
+          <WeekGrid weekStart={weekStart} items={weekItems} today={today} nowMinute={16 * 60} lang={lang} onMove={() => {}} />
+        </AppHeadings>
       </Page>
     );
   },
@@ -841,17 +874,21 @@ const VIEWS: Record<string, () => ReactNode> = {
     />
   ),
   "miniapp-approve": () => (
-    <div className="tp-paper">
-      <MiniApp html={WIDGET} approved={false} />
-    </div>
+    <AppHeadings h1="Cell biology, unit 2" h2={he ? "לנסות בעצמך" : "Try it yourself"}>
+      <div className="tp-paper">
+        <MiniApp html={WIDGET} approved={false} />
+      </div>
+    </AppHeadings>
   ),
   "miniapp-stopped": () => {
     steps(click('[data-component="MiniAppFrame"] .tp-btn--secondary'));
     // This widget reloads its own frame, which counts as navigating it: the frame is taken down.
     return (
-      <div className="tp-paper">
-        <MiniApp html={`<p>Loading</p><script>setTimeout(()=>location.reload(),50)</script>`} approved />
-      </div>
+      <AppHeadings h1="Cell biology, unit 2" h2={he ? "לנסות בעצמך" : "Try it yourself"}>
+        <div className="tp-paper">
+          <MiniApp html={`<p>Loading</p><script>setTimeout(()=>location.reload(),50)</script>`} approved />
+        </div>
+      </AppHeadings>
     );
   },
   "page-menu-turn-into": () => {

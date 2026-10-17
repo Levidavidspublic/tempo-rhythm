@@ -58,5 +58,9 @@
   "click_through": {
     "command": "CHROMIUM_PATH=<installed chromium> bun docs/kitchen/study/click-through.mjs <gallery build dir>",
     "last_result": "260 runs over 66 views, 2,440 controls pressed, each from a fresh page: 0 failures (page errors, console errors, unhandled rejections, error states, blank page, bad link targets); seen to catch five injected faults"
+  },
+  "axe_audit": {
+    "command": "CHROMIUM_PATH=<installed chromium> [AXE_PATH=<local axe.min.js>] bun docs/kitchen/study/axe-audit.mjs <gallery build dir>",
+    "last_result": "520 runs over 66 views (390/1280, en/he, light/dark), axe-core 4.10.2 wcag2a/aa, wcag21a/aa, wcag22aa, best-practice: 0 violations; 3,222 colour-contrast nodes left for review (text over the paper texture)"
   }
 }

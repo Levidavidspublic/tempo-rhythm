@@ -61,6 +61,6 @@ const css = [...new Set(html.match(/\/_next\/static\/[^"]+\.css/g) ?? [])].map((
 const htmlClass = html.match(/<html[^>]*class="([^"]*)"/)?.[1] ?? "";
 await writeFile(
   path.join(out, "index.html"),
-  `<!doctype html><html lang="en" class="${htmlClass}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${css.join("")}<style>.gallery-main{padding-block:var(--tp-space-6)}</style></head><body><div id="root"></div><script src="gallery.js"></script></body></html>`,
+  `<!doctype html><html lang="en" class="${htmlClass}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tempo study gallery (MOCKED)</title>${css.join("")}<style>.gallery-main{padding-block:var(--tp-space-6)}</style></head><body><div id="root"></div><script src="gallery.js"></script></body></html>`,
 );
 console.log(`gallery: ${out}/index.html (${css.length} stylesheet(s) from ${base})`);

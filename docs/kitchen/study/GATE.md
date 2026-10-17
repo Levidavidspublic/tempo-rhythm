@@ -147,6 +147,15 @@ Left, outside this run:
 
 Reduced motion finds nothing because `globals.css:543` and `tempo.css:480` already cut every duration to 0.01 ms under `prefers-reduced-motion: reduce`, and the run's one smooth scroll (the week grid gliding to another week, `WeekGrid.tsx:238`) checks the media query itself; the gallery never changes week, so the walk didn't exercise that one. Dark theme: the same walk with `THEME=dark` (`a11y-walk-dark.json`, rerun on `e9a761f`): 260 runs, unreached 0, no focus sign 4 (the same notes-editor stop), hidden focus 0, traps 0, reduced motion 0. Not covered: the app shell (the gallery has none, so its sticky top bar can't cover a stop here), screen readers.
 
+**axe-core audit** (`docs/kitchen/study/axe-audit.mjs`, results in `axe-audit.json`). axe-core 4.10.2 (MPL-2.0) is fetched from cdnjs at run time, never vendored or shipped. It runs on every gallery view at 390 and 1280 px, in English and Hebrew, light and dark: 520 runs, with the WCAG 2.0 / 2.1 / 2.2 A and AA rules plus best-practice. Result: **0 violations**.
+
+The first run flagged only things the gallery page itself caused:
+- no `<title>` on its index page;
+- no h1 on six views that the app places under the plan page's or a notes page's h1;
+- an h3 straight after the h1 where the calendar puts a week h2.
+
+The gallery now adds those headings, visually hidden, so the shots don't change. axe left 3,222 colour-contrast nodes as "needs review", mostly text over the paper texture's background image. Gate check R-25 measures those against the nearest opaque background (PASS on every shot), but contrast over the texture itself is not measured: **UNKNOWN**.
+
 Notes.
 
 1. The gallery is built as an IIFE: as a classic script its top-level CodeMirror `getSelection` replaced `window.getSelection` and React's select events threw on the plan views. That was the gallery-only page error the first evidence run recorded; it is gone, and the app (Turbopack) was never affected.
