@@ -28,6 +28,8 @@ const MAX_SESSION_MINUTES = 12 * 60;
 const MAX_OFFSET_MINUTES = 14 * 60;
 const DAY_MINUTES = 24 * 60;
 const PLAN_GONE = "This plan isn't here any more. Make a new one whenever you like.";
+/** How far in the past a re-planned start may be (clock drift between browser and server). */
+const PAST_START_GRACE_MS = 60_000;
 
 const sessionKindValidator = v.union(
   v.literal("learn"),
@@ -306,6 +308,10 @@ async function alreadyApplied(
  * `createFromPreview`. Nothing is written unless all of it is valid. What was there before is kept
  * on the plan (`lastReplan`) so `undoReplan` can take it back for 5 minutes. The same re-plan sent
  * twice changes nothing the second time and returns the first one's Undo window.
+ *
+ * A move to a start that has already gone by (more than a minute ago, for clock drift) is not an
+ * error but a typed answer, `{ refused: "timePassed" }`, with nothing written: the preview was
+ * worked out a while ago, and the screen works out new times and shows them again.
  */
 export const replan = mutation({
   args: {
@@ -317,7 +323,10 @@ export const replan = mutation({
     deadline: v.optional(v.string()),
     timezoneOffsetMinutes: v.number(),
   },
-  returns: v.object({ undoUntil: v.number(), moved: v.number(), removed: v.number() }),
+  returns: v.union(
+    v.object({ undoUntil: v.number(), moved: v.number(), removed: v.number() }),
+    v.object({ refused: v.literal("timePassed") }),
+  ),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const plan = await ownedPlan(ctx, user._id, args.planId);
@@ -383,6 +392,9 @@ export const replan = mutation({
     for (const taskId of remove) leaving.push(await liveSession(taskId));
 
     const now = Date.now();
+    if (planned.some(({ to }) => to < now - PAST_START_GRACE_MS)) {
+      return { refused: "timePassed" as const };
+    }
     const moves: ReplanRecord["moves"] = [];
     for (const { task, to } of planned) {
       moves.push({

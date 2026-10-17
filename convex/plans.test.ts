@@ -519,3 +519,43 @@ describe("plans.undoReplan names the re-plan it takes back", () => {
     });
   });
 });
+
+describe("plans.replan and times that have gone by", () => {
+  async function plan(ctx: any) {
+    setSystemTime(T0);
+    const { planId } = await run(plans.createFromPreview, ctx, preview());
+    return { planId, taskIds: (await ctx.db.get(planId)).taskIds as string[] };
+  }
+
+  test("a move to a start that has passed is refused with a typed answer and writes nothing", async () => {
+    const ctx = makeFakeCtx(A);
+    const { planId, taskIds } = await plan(ctx);
+    // 20 Oct 2026, 10:00 local (UTC+3) is 07:00 UTC; it is now 07:05 UTC.
+    setSystemTime(Date.UTC(2026, 9, 20, 7, 5));
+    const before = (await ctx.db.get(taskIds[0])).dueAt;
+    const result = await run(plans.replan, ctx, {
+      planId,
+      moves: [
+        { taskId: taskIds[0], date: "2026-10-20", startMinute: 10 * 60 },
+        { taskId: taskIds[1], date: "2026-10-23", startMinute: 10 * 60 },
+      ],
+      timezoneOffsetMinutes: -180,
+    });
+    expect(result).toEqual({ refused: "timePassed" });
+    expect((await ctx.db.get(taskIds[0])).dueAt).toBe(before);
+    expect((await ctx.db.get(planId)).lastReplan).toBeUndefined();
+  });
+
+  test("a start within the last minute still goes through (clock drift)", async () => {
+    const ctx = makeFakeCtx(A);
+    const { planId, taskIds } = await plan(ctx);
+    setSystemTime(Date.UTC(2026, 9, 20, 7, 0, 45));
+    const result = await run(plans.replan, ctx, {
+      planId,
+      moves: [{ taskId: taskIds[0], date: "2026-10-20", startMinute: 10 * 60 }],
+      timezoneOffsetMinutes: -180,
+    });
+    expect(result).toMatchObject({ moved: 1, removed: 0 });
+    expect((await ctx.db.get(taskIds[0])).dueAt).toBe(Date.UTC(2026, 9, 20, 7, 0));
+  });
+});
