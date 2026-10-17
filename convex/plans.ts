@@ -412,17 +412,26 @@ export const replan = mutation({
  * Takes the last re-plan back, for 5 minutes: moved sessions go back to their old times, left-out
  * ones come back and the deadline returns. A session moved again by hand since then keeps its new
  * time. A second undo, or one with no re-plan to undo, changes nothing.
+ *
+ * `undoUntil` (optional; the Undo window `replan` answered with) names the re-plan this Undo is
+ * for. When a newer re-plan has been made since, from another tab for example, nothing changes
+ * and the answer says so (`superseded`), so an old toast can't take back a re-plan it doesn't
+ * describe.
  */
 export const undoReplan = mutation({
-  args: { planId: v.id("studyPlans") },
-  returns: v.object({ restored: v.number() }),
+  args: { planId: v.id("studyPlans"), undoUntil: v.optional(v.number()) },
+  returns: v.object({ restored: v.number(), superseded: v.optional(v.literal(true)) }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const plan = await ownedPlan(ctx, user._id, args.planId);
     if (!plan) throw new Error("Plan not found");
     if (plan.deletedAt !== undefined) throw new Error(PLAN_GONE);
     const last = plan.lastReplan;
-    if (!last || last.undoneAt !== undefined) return { restored: 0 };
+    if (!last) return { restored: 0 };
+    if (args.undoUntil !== undefined && last.at + UNDO_WINDOW_MS !== args.undoUntil) {
+      return { restored: 0, superseded: true as const };
+    }
+    if (last.undoneAt !== undefined) return { restored: 0 };
     const now = Date.now();
     if (now - last.at > UNDO_WINDOW_MS) {
       throw new Error("The 5 minutes to undo this have passed. You can still move each session.");

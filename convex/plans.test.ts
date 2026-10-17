@@ -463,3 +463,59 @@ describe("plans.undoReplan", () => {
     expect((await ctx.db.get(planId)).lastReplan).toBeUndefined();
   });
 });
+
+describe("plans.undoReplan names the re-plan it takes back", () => {
+  /** A plan of two sessions, re-planned once at T0 + 1000 and once more at T0 + 2000. */
+  async function twice(ctx: any) {
+    setSystemTime(T0);
+    const { planId } = await run(plans.createFromPreview, ctx, preview());
+    const plan = await ctx.db.get(planId);
+    const taskIds = plan.taskIds as string[];
+    setSystemTime(T0 + 1000);
+    const first = await run(plans.replan, ctx, {
+      planId,
+      moves: [{ taskId: taskIds[0], date: "2026-10-23", startMinute: 600 }],
+      timezoneOffsetMinutes: -180,
+    });
+    setSystemTime(T0 + 2000);
+    const second = await run(plans.replan, ctx, {
+      planId,
+      moves: [{ taskId: taskIds[1], date: "2026-10-24", startMinute: 600 }],
+      timezoneOffsetMinutes: -180,
+    });
+    return { planId, taskIds, first, second };
+  }
+
+  test("an Undo for an older re-plan changes nothing and says a newer one was made", async () => {
+    const ctx = makeFakeCtx(A);
+    const { planId, taskIds, first } = await twice(ctx);
+    const before = [(await ctx.db.get(taskIds[0])).dueAt, (await ctx.db.get(taskIds[1])).dueAt];
+    expect(await run(plans.undoReplan, ctx, { planId, undoUntil: first.undoUntil })).toEqual({
+      restored: 0,
+      superseded: true,
+    });
+    expect([(await ctx.db.get(taskIds[0])).dueAt, (await ctx.db.get(taskIds[1])).dueAt]).toEqual(before);
+    expect((await ctx.db.get(planId)).lastReplan.undoneAt).toBeUndefined();
+  });
+
+  test("the Undo for the latest re-plan takes that one back", async () => {
+    const ctx = makeFakeCtx(A);
+    const { planId, taskIds, second } = await twice(ctx);
+    expect(second.undoUntil).toBe(T0 + 2000 + UNDO_WINDOW_MS);
+    expect(await run(plans.undoReplan, ctx, { planId, undoUntil: second.undoUntil })).toEqual({ restored: 1 });
+    // 09:00 in UTC+3, where the session was before the second re-plan.
+    expect((await ctx.db.get(taskIds[1])).dueAt).toBe(Date.UTC(2026, 9, 21, 14, 30));
+    // Sent again once it's undone: nothing more, and no "newer" either.
+    expect(await run(plans.undoReplan, ctx, { planId, undoUntil: second.undoUntil })).toEqual({ restored: 0 });
+  });
+
+  test("an older toast after the newer re-plan was undone still says so", async () => {
+    const ctx = makeFakeCtx(A);
+    const { planId, first } = await twice(ctx);
+    await run(plans.undoReplan, ctx, { planId });
+    expect(await run(plans.undoReplan, ctx, { planId, undoUntil: first.undoUntil })).toEqual({
+      restored: 0,
+      superseded: true,
+    });
+  });
+});
