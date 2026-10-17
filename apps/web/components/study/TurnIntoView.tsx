@@ -287,12 +287,18 @@ function PreviewCard({
   onlineRef.current = online;
   // Undo was pressed offline: the card says so (the toast's own error line is the shared one).
   const [undoOffline, setUndoOffline] = useState(false);
+  // Accept was pressed offline: nothing was sent, and the card says so until the connection is back.
+  const [acceptOffline, setAcceptOffline] = useState(false);
   useEffect(() => {
-    if (online) setUndoOffline(false);
+    if (online) {
+      setUndoOffline(false);
+      setAcceptOffline(false);
+    }
   }, [online]);
 
-  // The save's Undo toast. Its window runs from when the set was made (`created.undoUntil`), so
-  // after Bring it back (`again`) it is offered only for what is left of it, if anything.
+  // The save's Undo toast. Its window runs from when the set was made (`created.undoUntil`, the
+  // server's clock, not this device's), so after Bring it back (`again`) it is offered only for
+  // what is left of it, if anything.
   const offerUndo = (created: Created, again = false) => {
     if (again && Date.now() >= created.undoUntil) return;
     const next = makeToast(t("st.pv.toast"), async () => {
@@ -308,12 +314,18 @@ function PreviewCard({
         setBringBack({ created, until: outcome.redoUntil ?? Date.now() + UNDO_WINDOW_MS });
       }
     });
-    setToast(again ? { ...next, undoUntilMs: created.undoUntil } : next);
+    setToast({ ...next, undoUntilMs: created.undoUntil });
   };
 
   const accept = () => {
     const data = draftToData(draft);
     if (!data || !ready || saving.current) return;
+    // Offline nothing is sent (Convex would hold the create and the card would sit on "Saving"):
+    // the card says so, and Accept works again once the connection is back.
+    if (!online) {
+      setAcceptOffline(true);
+      return;
+    }
     saving.current = true;
     // A new save is the card's set now: the one an earlier Undo took stays gone.
     setBringBack(null);
@@ -445,6 +457,12 @@ function PreviewCard({
             <span>{t("st.pv.undone")}</span>
           </output>
         ) : null}
+        {acceptOffline && open ? (
+          <p className="tp-proposal__note" role="alert" data-reason="offline-accept">
+            <TpIcon name="wifi-off" size="sm" />
+            <span>{t("st.pv.offline.accept")}</span>
+          </p>
+        ) : null}
         {state.error === "save" ? (
           <p className="tp-proposal__note" role="alert">
             <TpIcon name="alert" size="sm" />
@@ -458,6 +476,8 @@ function PreviewCard({
               type="button"
               data-action="accept"
               disabled={!ready}
+              // Offline it stays focusable (aria-disabled, not disabled): a press says why instead.
+              aria-disabled={(ready && !online) || undefined}
               aria-busy={state.phase === "saving"}
               onClick={accept}
             >

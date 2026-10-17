@@ -49,12 +49,16 @@ function installModuleMocks() {
       OfflineNotice: ({ text }: { text: string }) => h("output", null, text),
       StateLoading: ({ label }: { label: string }) => h("output", null, label),
       StateEmpty: ({ title }: { title: string }) => h("div", null, title),
-      makeToast: (title: string, onUndo: () => Promise<void>) => ({ id: 1, title, onUndo }),
+      // As the real one does, the window is this device's clock plus 5 minutes.
+      makeToast: (title: string, onUndo: () => Promise<void>) => ({ id: 1, title, onUndo, undoUntilMs: Date.now() + 300_000 }),
       // As the real toast does, a successful Undo closes it (onClose); a thrown one keeps it open.
-      UndoToast: ({ toast, onClose }: { toast: { title: string; onUndo: () => Promise<void> }; onClose: () => void }) =>
+      UndoToast: ({
+        toast,
+        onClose,
+      }: { toast: { title: string; onUndo: () => Promise<void>; undoUntilMs: number }; onClose: () => void }) =>
         h(
           "output",
-          { "data-component": "UndoToast" },
+          { "data-component": "UndoToast", "data-until": String(toast.undoUntilMs) },
           h("span", null, toast.title),
           h("button", { type: "button", onClick: () => void toast.onUndo().then(onClose, () => {}) }, "Undo"),
         ),
@@ -351,5 +355,54 @@ describe("Turn into: Undo and Bring it back offline", () => {
     await click(findByTag(view, "BUTTON", "Bring it back"));
     expect(redone).toEqual([]);
     expect(view.textContent).toContain("You're offline, so nothing came back.");
+  });
+});
+
+describe("Turn into: Accept offline, and the Undo window", () => {
+  const base = {
+    note: { id: "n1", title: "Cell biology", body: PAGE },
+    hasFrom: true,
+    kind: "flashcards",
+    onGenerate: async () => ({ status: "unavailable", reason: "busy" }),
+    onUndo: async () => {},
+  };
+
+  test("offline, Accept sends nothing, stays focusable and the card says why; back online it saves", async () => {
+    const created: string[] = [];
+    const onCreate = async () => {
+      created.push("s2");
+      return { noteId: "n2", setId: "s2", undoUntil: Date.now() + 300_000 };
+    };
+    const view = await render(createElement(TurnIntoView, { ...base, online: false, onCreate } as never));
+    const accept = byAction(view, "accept") as TestNode;
+    expect(accept.disabled).toBe(false);
+    expect(accept.getAttribute("aria-disabled")).toBe("true");
+    await click(accept);
+    expect(created).toEqual([]);
+    expect(findAll(view, (n) => n.getAttribute?.("data-status") === "preview")).toHaveLength(1);
+    expect(view.textContent).toContain(translate("en", "st.pv.offline.accept"));
+    expect(view.textContent).not.toContain(translate("en", "st.pv.saving"));
+    await act(async () => {
+      root?.render(createElement(TurnIntoView, { ...base, online: true, onCreate } as never));
+    });
+    expect(view.textContent).not.toContain(translate("en", "st.pv.offline.accept"));
+    expect((byAction(view, "accept") as TestNode).getAttribute("aria-disabled")).toBeNull();
+    await click(byAction(view, "accept") as TestNode);
+    expect(created).toEqual(["s2"]);
+    expect(findAll(view, (n) => n.getAttribute?.("data-status") === "accepted")).toHaveLength(1);
+  });
+
+  test("the first Undo toast runs to the server's undoUntil, not this device's clock", async () => {
+    const until = Date.now() + 123_000;
+    const view = await render(
+      createElement(TurnIntoView, {
+        ...base,
+        online: true,
+        onCreate: async () => ({ noteId: "n2", setId: "s2", undoUntil: until }),
+      } as never),
+    );
+    await click(byAction(view, "accept") as TestNode);
+    const toast = findAll(view, (n) => n.getAttribute?.("data-component") === "UndoToast")[0] as TestNode;
+    expect(toast.getAttribute("data-until")).toBe(String(until));
   });
 });
