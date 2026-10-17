@@ -308,6 +308,18 @@ export async function readStudySets(
   } = {},
 ): Promise<{ sets: StudySetRead[]; truncated: boolean; dead: Id<"studySets">[] }> {
   const budget = options.budget ?? STUDY_READ_BUDGET;
+  const meter: ReadMeter = options.meter ?? { lookups: 0, pageBytes: 0 };
+  // The owner check and the row read cost two lookups. A second read that can't afford them
+  // stops here, as the per-row checks do: it answers what the first read found, cut short.
+  if (meter.lookups + 2 > budget.lookups) {
+    const sets: StudySetRead[] = [];
+    for (const entry of options.known?.values() ?? []) {
+      if (!entry || (options.kind !== undefined && entry.set.kind !== options.kind)) continue;
+      if (sets.length === STUDY_SET_SCAN_LIMIT) break;
+      sets.push(entry);
+    }
+    return { sets, truncated: true, dead: [] };
+  }
   try {
     await requireActiveOwner(ctx, userId);
   } catch (error) {
@@ -320,7 +332,6 @@ export async function readStudySets(
     .withIndex("by_userId_updated", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
     .order("desc")
     .take(STUDY_SET_ROW_LIMIT + 1);
-  const meter: ReadMeter = options.meter ?? { lookups: 0, pageBytes: 0 };
   meter.lookups += 2;
   const sets: StudySetRead[] = [];
   const dead: Id<"studySets">[] = [];

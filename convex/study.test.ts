@@ -1143,6 +1143,35 @@ describe("hub and queue reads for a heavy user (whole-run review)", () => {
     expect(read.firstStates).toEqual(["k099"]);
     expect(read.spent).toBeLessThanOrEqual(lookups);
   });
+
+  test("a second read that can't afford its row read stops inside the budget, keeping what the first found", async () => {
+    const { t, a } = await twoUsers();
+    const live = await rawSet(t, a, { updatedAt: NOW + 1, data: bigDeck });
+    const budget = { lookups: 200, pageBytes: STUDY_READ_BUDGET.pageBytes };
+    const out = await t.run(async (ctx) => {
+      const counted = countingCtx(ctx.db);
+      const meter = { lookups: 0, pageBytes: 0 };
+      const decks = await readStudySets(counted.ctx, a, { kind: "flashcards", meter, budget });
+      const known = new Map([
+        ...decks.sets.map((entry) => [entry.set._id, entry] as const),
+        ...decks.dead.map((setId) => [setId, null] as const),
+      ]);
+      // The first read left one lookup: not enough for the owner check and the row read.
+      meter.lookups = budget.lookups - 1;
+      const before = counted.counts.gets + counted.counts.ranges;
+      const all = await readStudySets(counted.ctx, a, { lastAttempt: true, meter, known, budget });
+      return {
+        sets: all.sets.map((entry) => entry.set._id),
+        truncated: all.truncated,
+        lookups: meter.lookups,
+        spent: counted.counts.gets + counted.counts.ranges - before,
+      };
+    });
+    expect(out.lookups).toBeLessThanOrEqual(budget.lookups);
+    expect(out.spent).toBe(0);
+    expect(out.truncated).toBe(true);
+    expect(out.sets).toEqual([live]);
+  });
 });
 
 describe("set ids from a URL (whole-run review)", () => {
