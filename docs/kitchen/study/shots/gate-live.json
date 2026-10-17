@@ -867,7 +867,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -935,7 +935,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -1003,7 +1003,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -1071,7 +1071,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -1344,6 +1344,278 @@
         "rule": "at most one primary button",
         "pass": true,
         "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": false,
+        "detail": "max=260ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen",
+    "lang": "en",
+    "width": 390,
+    "theme": "light",
+    "file": "study-listen-390-light.jpg",
+    "finalPath": "/study/listen",
+    "status": "ok",
+    "errors": [
+      "Error: [CONVEX FATAL ERROR] Couldn't parse deployment name example"
+    ],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": false,
+        "detail": "max=260ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen",
+    "lang": "en",
+    "width": 390,
+    "theme": "dark",
+    "file": "study-listen-390-dark.jpg",
+    "finalPath": "/study/listen",
+    "status": "ok",
+    "errors": [
+      "Error: [CONVEX FATAL ERROR] Couldn't parse deployment name example"
+    ],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": false,
+        "detail": "max=260ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen",
+    "lang": "en",
+    "width": 1280,
+    "theme": "light",
+    "file": "study-listen-1280-light.jpg",
+    "finalPath": "/study/listen",
+    "status": "ok",
+    "errors": [
+      "Error: [CONVEX FATAL ERROR] Couldn't parse deployment name example"
+    ],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": false,
+        "detail": "max=260ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen",
+    "lang": "en",
+    "width": 1280,
+    "theme": "dark",
+    "file": "study-listen-1280-dark.jpg",
+    "finalPath": "/study/listen",
+    "status": "ok",
+    "errors": [
+      "Error: [CONVEX FATAL ERROR] Couldn't parse deployment name example"
+    ],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",

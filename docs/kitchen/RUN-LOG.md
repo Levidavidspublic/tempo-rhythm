@@ -11,26 +11,26 @@ Code model: the lead session plus Opus subagents at medium effort (one builder p
 
 Order from the second brief (this run owns study, recording, planning, uploads, memory and the stretch items):
 
-- [ ] `AWAY` T3 Study layer: S18 FlashcardDeck · S20 AdaptiveQuiz · S19 ReviewHub + SM-2 scheduler in `packages/core/srs` · S21 TestRunner + Bagrut-style question plugin · S25 TurnIntoMenu on notes and pages. Saved as json-render blocks. Study is its own area; Today does not change.
-- [ ] `AWAY` T8 S7 RecordSession (consent, live Deepgram transcript, pinned notes → notes + tasks, audio never stored) · S3 PlanPath + S4 SessionScheduler with real week and month grids.
-- [ ] `AWAY` T9 S2 IngestSheet (file, paste, photo → OCR) · S31 MemoryManager parity.
-- [ ] `AWAY` T10 Stretch: S14 reminders through a messaging channel (adapter only; channel UNKNOWN) · S26 ShareSheet · S24 MiniAppFrame.
+- [x] `AWAY` T3 Study layer: S18 FlashcardDeck · S20 AdaptiveQuiz · S19 ReviewHub + SM-2 scheduler in `packages/core/srs` · S21 TestRunner + Bagrut-style question plugin · S25 TurnIntoMenu on notes and pages. Saved as json-render blocks. Study is its own area; Today does not change.
+- [x] `AWAY` T8 S7 RecordSession (consent, live Deepgram transcript, pinned notes → notes + tasks, audio never stored) · S3 PlanPath + S4 SessionScheduler with real week and month grids.
+- [x] `AWAY` T9 S2 IngestSheet (file, paste, photo → OCR) · S31 MemoryManager parity.
+- [x] `AWAY` T10 Stretch: S14 reminders through a messaging channel (adapter only; channel UNKNOWN) · S26 ShareSheet · S24 MiniAppFrame.
 
 Backlog, after the four lines above (the first brief's lines and the SHARED KIT). Before each one, check whether the parallel run already claims it on its branch; if it does, log it and skip it:
 
-- [ ] `AWAY` T1 Chat kit: S8 ChatShell (history grouped Today / Yesterday / 7 days, auto-title, rename, search, delete, edit, regenerate, stop, follow-ups, attachments, 390 px) and "turn this into a task" with Accept / Undo.
-- [ ] `AWAY` T2 Cards in chat: OpenUI cards + templates; S9 GuidedPlanCard grown from the decision card.
-- [ ] `AWAY` T4 S16 AudioRecapPlayer + ReadAloudButton on every message (Hebrew via Chatterbox Multilingual).
-- [ ] `AWAY` T5 English live voice round trip (Deepgram Flux → runtime model → Kokoro), barge-in, voice-gated streaming; Hebrew call = text in + read-aloud out.
-- [ ] `AWAY` T6 Bring your own voice: Settings screen + adapters.
-- [ ] `AWAY` T7 Coach dial + Council view with a Scribe seat.
-- [ ] `AWAY` Remaining SHARED KIT pieces (S10, S13, S22, S28, S32, S35), then ROADMAP items, then quality passes.
-- [ ] `AWAY` Last step: fresh-context correctness review, fixes, RESUME comment.
+- [ ] `SKIPPED` (chat area: the parallel run and the open coach PRs) T1 Chat kit: S8 ChatShell (history grouped Today / Yesterday / 7 days, auto-title, rename, search, delete, edit, regenerate, stop, follow-ups, attachments, 390 px) and "turn this into a task" with Accept / Undo.
+- [ ] `PARTLY` T2 Cards in chat: S9 GuidedPlanCard grown from the decision card is done (the plan preview uses it); OpenUI chat cards + templates are the chat area's.
+- [x] `AWAY` T4 S16 AudioRecapPlayer + ReadAloudButton, **partly**: built for the study area (study screens, `/study/listen`, the page menu) on the device's own voices behind a `SpeechEngine` seam. Read-aloud on chat messages is the chat area's; Chatterbox Multilingual waits on VOICE.md decision 2 (Needs Amit).
+- [ ] `BLOCKED` T5 English live voice round trip (Deepgram Flux → runtime model → Kokoro), barge-in, voice-gated streaming; Hebrew call = text in + read-aloud out.
+- [ ] `BLOCKED` T6 Bring your own voice: Settings screen + adapters.
+- [ ] `SKIPPED` (coach area: open coach PRs such as `t/1034-coach-dial-timeline-hebrew`) T7 Coach dial + Council view with a Scribe seat.
+- [ ] `AWAY` Remaining SHARED KIT pieces (logged as not this run's or blocked: Decisions), ROADMAP / parity items (done: recording → cards, share / Anki from a set, re-plan the rest, edit after saving, typed recall, ask this set), then quality passes (in progress).
+- [ ] `AWAY` Last step: fresh-context correctness review (done once, 5 of 6 fixed, 1 to Amit), fixes, RESUME comment.
 - [ ] `AT` Amit reviews and decides. The agent never merges.
 
 ## Now working on
 
-Final reshoot of every gallery view (44 in en and he, plus the two Hebrew-only views) and the 9 live routes; then GATE.md per screen, tick T3 / T8 / T9 / T10, full E2E and build, one push, PR body. Next wave: a fresh-context correctness review of the whole run.
+T3, T8, T9 and T10 are done (built, reviewed, fixed, shot at 390 / 1280 in light and dark, gate per screen in `docs/kitchen/study/GATE.md`), and so are the study-side backlog pieces (S16, S9, typed recall, edit / share / ask a set, re-plan, recording → cards). Next: BACKLOG step 3, quality passes in this run's areas (empty / loading / error states with a real-browser walk, keyboard paths, reduced motion), then the RESUME comment. Blocked items wait on Amit (Needs Amit).
 
 ## Log
 
@@ -82,6 +82,7 @@ Final reshoot of every gallery view (44 in en and he, plus the two Hebrew-only v
 | 2026-10-17 00:40 | `ac79dd2` | all | Container restart: the repo, the worktree and the screenshots survived; the cross-cutting fix builder was restarted from its one finished commit. Checks on Bun 1.3.9: lint 0 errors, typecheck 5/5, `bun run test` 3287 pass 0 fail, forbidden-tech / ram-only-audit / design-tokens / notices OK, `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` passes with all seven `/study` routes. Pushed | build log |
 | 2026-10-17 00:45 | `01e2dd4` | all | Full E2E: 35 passed, 89 skipped, 0 failed (study wiring 7/7). A docs-only push after it was skipped by Vercel ("Ignored"), so docs pushes cost no preview build | `docs/kitchen/tests.json` |
 | 2026-10-17 01:00 | `51a08ad`…`fdaab44` | all | Fresh-context review of the whole run: no path from one person's data to another's. Fixes (5 of 6; the per-person model-call cap is in Needs Amit): read-aloud and the recap use only voices on the device (a cloud voice would have sent page text to Microsoft or Google); the hub and Review keep inside a read budget and say "Showing your most recent sets." past it; a set id from the URL is read as a string, so a bad one shows "not available"; Undo removes only what that save made and keeps a page or plan that was built on since; a plan keeps its source set id only when it names the caller's live set. Full suite 3308 pass, 0 fail; lint, typecheck, all four scans OK | `convex/study.test.ts`, `convex/plans.test.ts`, `convex/recordings.test.ts` |
+| 2026-10-17 01:35 | — | T3, T8, T9, T10 | Final reshoot on `156b5c7`: 436 shots (51 gallery views in en and he, 9 live routes; 390 / 1280, light / dark). Gallery: 45 PASS, 5 PASS with the R-01 hour-rule purpose written, 1 pre-existing FAIL (R-32 on the notes editor). Live: only the pre-existing R-19. One gallery stand-in (`plans.get` without `taskIds`) threw on `plan-undo-kept`; fixed and reshot. Finish lines T3, T8, T9, T10 ticked | `docs/kitchen/study/GATE.md`, `docs/kitchen/study/shots/` |
 
 ## Decisions
 
