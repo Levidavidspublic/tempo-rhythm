@@ -475,3 +475,61 @@ describe("states: Undo and Bring it back offline", () => {
     expect(view.textContent).toContain("You're offline, so nothing came back.");
   });
 });
+
+// Review: once the recorder was ready, a session that reads "loading" again or signed out must
+// not unmount it (the notes and live words can't be recovered).
+const { RecordKeeper } = await import("../../../apps/web/components/study/record/RecordSession?record-test");
+
+async function renderKeeper(signedIn: "loading" | "ready" | "signedOut", online = true) {
+  useTestDom(documentNode);
+  if (!host) {
+    host = documentNode.createElement("div");
+    documentNode.body?.appendChild(host);
+    root = createRoot(host as unknown as HTMLElement);
+  }
+  await act(async () => {
+    root?.render(
+      createElement(RecordKeeper, {
+        signedIn,
+        online,
+        before: (state: string) => createElement("p", { "data-before": state }, `before:${state}`),
+      }),
+    );
+  });
+  return host as TestNode;
+}
+
+describe("RecordKeeper", () => {
+  test("before the first ready it draws the gate's own states", async () => {
+    let view = await renderKeeper("loading");
+    expect(view.textContent).toContain("before:loading");
+    view = await renderKeeper("signedOut");
+    expect(view.textContent).toContain("before:signedOut");
+    expect(view.textContent).not.toContain("Before you start");
+  });
+
+  test("ready → loading → ready keeps the session and its notes", async () => {
+    let view = await renderKeeper("ready");
+    await clickButton(view, "Type or paste notes");
+    await type(findById(view, "rec-typed"), NOTES);
+    view = await renderKeeper("loading");
+    expect(view.textContent).not.toContain("before:");
+    expect(reactProps(findById(view, "rec-typed")).value).toBe(NOTES);
+    view = await renderKeeper("ready");
+    expect(reactProps(findById(view, "rec-typed")).value).toBe(NOTES);
+  });
+
+  test("ready → signed out keeps the notes, says so, and Save waits for the sign-in", async () => {
+    let view = await renderKeeper("ready");
+    await toReview(view);
+    view = await renderKeeper("signedOut");
+    expect(view.textContent).toContain("You're signed out. Your notes stay on this screen");
+    expect(findByTag(view, "A", "Sign in in a new tab").getAttribute("target")).toBe("_blank");
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    expect(findByTag(view, "BUTTON", "Saves once you sign in again").getAttribute("aria-disabled")).toBe("true");
+    view = await renderKeeper("ready");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+    expect(view.textContent).not.toContain("You're signed out.");
+  });
+});

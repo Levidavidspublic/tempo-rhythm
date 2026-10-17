@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { studyHref } from "@/components/ingest";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -73,7 +73,17 @@ const nextId = (prefix: string) => {
  * online (as SetEditor and IngestSheet do). RecordScreen (the route's component) passes `online`
  * and handles signed out; this component assumes a signed-in person.
  */
-export function RecordSession({ online = true }: { online?: boolean } = {}) {
+export function RecordSession({
+  online = true,
+  signedOut = false,
+}: {
+  online?: boolean;
+  /**
+   * The session dropped after the screen was ready (RecordKeeper keeps this screen mounted): a
+   * notice says so, and Save waits for the sign-in the way it waits for the connection.
+   */
+  signedOut?: boolean;
+} = {}) {
   const { lang: uiLang } = useLocale();
   const copy = recordCopy(uiLang);
   const [talkLang, setTalkLang] = useState<RecordLang>(uiLang);
@@ -250,7 +260,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
       setTitleMissing(true);
       return;
     }
-    if (!online) {
+    if (!online || signedOut) {
       setHeld(true);
       return;
     }
@@ -283,14 +293,15 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
     }
   };
 
-  // A waiting save goes ahead by itself once the browser is back online, while review is open.
+  // A waiting save goes ahead by itself once the browser is back online (and signed in), while
+  // review is open.
   const saveRef = useRef(save);
   saveRef.current = save;
   useEffect(() => {
     if (!held) return;
     if (step !== "review") setHeld(false);
-    else if (online) void saveRef.current();
-  }, [online, held, step]);
+    else if (online && !signedOut) void saveRef.current();
+  }, [online, signedOut, held, step]);
 
   // Offline, Undo and Bring it back send nothing (Convex would hold them and the toast would stay
   // busy): the throw keeps the toast open with its error line, which says so in words.
@@ -353,6 +364,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
     <div className="tp-page tp-rec" data-component="RecordSession" ref={rootRef}>
       <RecordHead copy={copy} />
       {online ? null : <RecordOffline copy={copy} />}
+      {signedOut ? <RecordSignedOut copy={copy} /> : null}
 
       {undone ? (
         <output className="tp-notice" data-tone="done" data-component="Notice">
@@ -424,6 +436,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
           saving={saving}
           saveError={saveError}
           waiting={held || (saving && !online)}
+          waitingFor={signedOut ? "signIn" : "online"}
           titleMissing={titleMissing}
           onSave={() => void save()}
           onBack={() => {
@@ -496,6 +509,45 @@ export function RecordHead({ copy }: { copy: RecordCopy }) {
         <p className="tp-pagehead__sub">{copy("rec.sub")}</p>
       </div>
     </header>
+  );
+}
+
+/**
+ * Keeps RecordSession mounted once the person was signed in. Before that it draws `before`
+ * (RecordScreen's skeletons or sign-in state). After it, a session that reads "loading" again (the
+ * profile read resubscribing) is still ready, and one that reads signed out (a token refresh that
+ * failed) keeps the screen, with a notice: unmounting it would lose the live words, typed notes,
+ * chosen rows and any waiting save, and none of that can be recovered (audio is never stored).
+ */
+export function RecordKeeper({
+  signedIn,
+  online,
+  before,
+}: {
+  signedIn: "loading" | "ready" | "signedOut";
+  online: boolean;
+  before: (state: "loading" | "signedOut") => ReactNode;
+}) {
+  const [started, setStarted] = useState(signedIn === "ready");
+  if (signedIn === "ready" && !started) setStarted(true);
+  if (!started && signedIn !== "ready") return <>{before(signedIn)}</>;
+  return <RecordSession online={online} signedOut={signedIn === "signedOut"} />;
+}
+
+/** Signed out after the screen was ready: the notes stay, and signing in opens in a new tab. */
+export function RecordSignedOut({ copy }: { copy: RecordCopy }) {
+  return (
+    <output className="tp-notice" data-tone="caution" data-component="Notice" data-rec-signedout="">
+      <span className="tp-notice__icon">
+        <TpIcon name="lock" size="sm" />
+      </span>
+      <span className="tp-notice__text">
+        <span>{copy("rec.signedOut")}</span>
+        <a className="tp-btn--link" href="/sign-in" target="_blank" rel="noopener">
+          {copy("rec.signedOut.link")}
+        </a>
+      </span>
+    </output>
   );
 }
 

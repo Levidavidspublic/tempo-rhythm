@@ -13,7 +13,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { StateSignedOut } from "@/components/you/ScreenStates";
 import { recordCopy } from "./recordFlow";
-import { RecordHead, RecordSession } from "./RecordSession";
+import { RecordHead, RecordKeeper } from "./RecordSession";
 
 /**
  * /study/record: RecordSession behind the same gates as the other study screens. Signed out, the
@@ -54,17 +54,23 @@ export function RecordGateView({
 }) {
   const { lang, t } = useLocale();
   const copy = recordCopy(lang);
-  if (signedIn === "ready") return <RecordSession online={online} />;
+  // Once ready, RecordKeeper keeps the session mounted through a later "loading" or sign-out.
   return (
-    <div className="tp-page tp-rec" data-component="RecordSession" data-state={signedIn}>
-      <RecordHead copy={copy} />
-      {online ? null : <OfflineNotice text={t("gx.offline")} />}
-      {signedIn === "signedOut" ? (
-        <StateSignedOut />
-      ) : (
-        <StateLoading label={copy("rec.loading")} lead="block" rows={1} />
+    <RecordKeeper
+      signedIn={signedIn}
+      online={online}
+      before={(state) => (
+        <div className="tp-page tp-rec" data-component="RecordSession" data-state={state}>
+          <RecordHead copy={copy} />
+          {online ? null : <OfflineNotice text={t("gx.offline")} />}
+          {state === "signedOut" ? (
+            <StateSignedOut />
+          ) : (
+            <StateLoading label={copy("rec.loading")} lead="block" rows={1} />
+          )}
+        </div>
       )}
-    </div>
+    />
   );
 }
 

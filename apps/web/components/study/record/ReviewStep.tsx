@@ -119,6 +119,7 @@ export function ReviewStep({
   saving,
   saveError,
   waiting = false,
+  waitingFor = "online",
   titleMissing = false,
   onSave,
   onBack,
@@ -139,6 +140,8 @@ export function ReviewStep({
   saveError: boolean;
   /** Save was pressed offline (or the connection went while saving): it waits for the connection. */
   waiting?: boolean;
+  /** What a waiting Save waits for: the connection, or signing in again. */
+  waitingFor?: "online" | "signIn";
   /** The screen found no title when a waiting save went: flagged as a Save here would flag it. */
   titleMissing?: boolean;
   onSave: () => void;
@@ -281,8 +284,14 @@ export function ReviewStep({
           aria-busy={saving || undefined}
           aria-describedby="rec-save-note"
         >
-          <TpIcon name={waiting ? "wifi-off" : "check"} size="sm" />
-          <span>{waiting ? copy("rec.rev.waiting") : saving ? copy("rec.rev.saving") : copy("rec.rev.save")}</span>
+          <TpIcon name={waiting ? (waitingFor === "signIn" ? "lock" : "wifi-off") : "check"} size="sm" />
+          <span>
+            {waiting
+              ? copy(waitingFor === "signIn" ? "rec.rev.waitingSignIn" : "rec.rev.waiting")
+              : saving
+                ? copy("rec.rev.saving")
+                : copy("rec.rev.save")}
+          </span>
         </button>
         <span className="tp-help" id="rec-save-note">
           {copy("rec.rev.saveNote", { n: count })}
