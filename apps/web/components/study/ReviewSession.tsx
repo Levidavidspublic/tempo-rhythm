@@ -47,7 +47,8 @@ function ReviewSessionData({ setId }: { setId?: string }) {
   const online = useOnline();
   // `?set=` goes to the queries as it is. One that names no set (or someone else's, or a removed
   // one) has no cards; `study.getSet` answers null for it, so the screen says the set is gone
-  // instead of "Nothing to review right now".
+  // instead of "Nothing to review right now". A quiz or practice test says Review is for
+  // flashcards, with a link to that set.
   const args = setId ? { setId } : {};
   const queue = useQuery(api.study.reviewQueue, signedIn === "ready" ? args : "skip");
   const named = useQuery(api.study.getSet, signedIn === "ready" && setId ? { setId } : "skip");
@@ -80,6 +81,7 @@ function ReviewSessionData({ setId }: { setId?: string }) {
       online={online}
       signedOut={signedIn === "signedOut"}
       setGone={shown.setGone}
+      otherKind={shown.otherKind}
       onSave={save}
       onUndo={undo}
     />

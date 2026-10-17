@@ -66,10 +66,28 @@ export function nextSnapshot(
   return { setId, cards: [...queue], now };
 }
 
+/** A live set that Review can't run: a quiz or a practice test (Review takes flashcard decks). */
+export type OtherKindSet = { setId: string; kind: "quiz" | "test"; title: string };
+
+/**
+ * The quiz or practice test `study.getSet` answered for `?set=`, or null when it is a deck (or
+ * not loaded, or gone). Reads the answer loosely: the query's shape is the server's.
+ */
+export function otherKindSet(named: unknown): OtherKindSet | null {
+  if (!named || typeof named !== "object") return null;
+  const set = (named as { set?: unknown }).set;
+  if (!set || typeof set !== "object") return null;
+  const { setId, kind, title } = set as { setId?: unknown; kind?: unknown; title?: unknown };
+  if ((kind !== "quiz" && kind !== "test") || typeof setId !== "string") return null;
+  return { setId, kind, title: typeof title === "string" ? title : "" };
+}
+
 /**
  * What the review session shows from its reads. With `?set=`, the cards wait for `study.getSet`
  * too: a set that is gone answers null there (the gone state), and until it answers the screen
- * stays loading, so "Nothing to review right now" never flashes before "isn't here anymore".
+ * stays loading, so "Nothing to review right now" never flashes before "isn't here anymore". A
+ * live quiz or practice test has no cards to review, so it gets `otherKind` (Review is for
+ * flashcards, with a way to open that set) instead of the empty state.
  */
 export function sessionView(input: {
   signedOut: boolean;
@@ -77,9 +95,11 @@ export function sessionView(input: {
   /** `study.getSet` for `setId`: undefined while loading (or without `setId`), null when gone. */
   named: unknown;
   cards: QueueCard[] | null;
-}): { cards: QueueCard[] | null; setGone: boolean } {
+}): { cards: QueueCard[] | null; setGone: boolean; otherKind?: OtherKindSet } {
   if (input.signedOut) return { cards: [], setGone: false };
   if (input.setId && input.named === null) return { cards: null, setGone: true };
   if (input.setId && input.named === undefined) return { cards: null, setGone: false };
+  const otherKind = input.setId ? otherKindSet(input.named) : null;
+  if (otherKind) return { cards: null, setGone: false, otherKind };
   return { cards: input.cards, setGone: false };
 }

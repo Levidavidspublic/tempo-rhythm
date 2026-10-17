@@ -15,11 +15,13 @@ import { StateSignedOut } from "@/components/you/ScreenStates";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { ReviewButton } from "../../../../packages/core/srs/sm2";
+import { setHref } from "./hub";
 import { countKey, reviewLabels, type StudyT } from "./labels";
 import { useReadAloudSlot } from "./recap/useReadAloud";
 import {
   cardKey,
   type GradedStates,
+  type OtherKindSet,
   type QueueCard,
   type SavedGrade,
   sessionItems,
@@ -57,6 +59,8 @@ export type ReviewSessionViewProps = {
   signedOut?: boolean;
   /** `?set=` names no set this person can open (made up, someone else's, or removed). */
   setGone?: boolean;
+  /** `?set=` names a live quiz or practice test: Review is for flashcards, so it links there. */
+  otherKind?: OtherKindSet;
   onSave: (key: string, button: ReviewButton) => Promise<SavedGrade>;
   onUndo: (grade: SavedGrade) => Promise<void>;
 };
@@ -67,6 +71,7 @@ export function ReviewSessionView({
   online,
   signedOut,
   setGone = false,
+  otherKind,
   onSave,
   onUndo,
 }: ReviewSessionViewProps) {
@@ -77,7 +82,7 @@ export function ReviewSessionView({
       data-component="PageLayout"
       data-screen="ReviewSession"
     >
-      <SessionHeader t={t} count={setGone ? null : (cards?.length ?? null)} />
+      <SessionHeader t={t} count={setGone || otherKind ? null : (cards?.length ?? null)} />
       {online ? null : <OfflineNotice text={t("gx.offline")} />}
       {signedOut ? (
         <StateSignedOut />
@@ -90,6 +95,22 @@ export function ReviewSessionView({
             <Link className="tp-btn tp-btn--secondary" href="/study">
               <span>{t("st.review.back")}</span>
             </Link>
+          }
+        />
+      ) : otherKind ? (
+        <StateEmpty
+          icon="card"
+          title={t("st.review.otherKind.title")}
+          body={t(`st.review.otherKind.${otherKind.kind}`)}
+          action={
+            <div className="tp-study-actions">
+              <Link className="tp-btn tp-btn--primary" href={setHref(otherKind.setId)}>
+                <span>{t(`st.review.otherKind.open.${otherKind.kind}`)}</span>
+              </Link>
+              <Link className="tp-btn tp-btn--secondary" href="/study">
+                <span>{t("st.review.back")}</span>
+              </Link>
+            </div>
           }
         />
       ) : cards === null ? (

@@ -304,6 +304,30 @@ describe("states", () => {
     expect(markup).not.toContain('data-component="StateLoading"');
   });
 
+  test("review with a ?set= that is a quiz or practice test says Review is for flashcards, with a link to it", () => {
+    for (const kind of ["quiz", "test"] as const) {
+      const markup = html(
+        createElement(ReviewSessionView, {
+          cards: null,
+          now: 0,
+          online: true,
+          otherKind: { setId: "studySets:4", kind, title: "Photosynthesis check" },
+          onSave: noopSave,
+          onUndo: noop,
+        }),
+      );
+      expect(markup).toContain("Review is for flashcards");
+      expect(markup).toContain(kind === "quiz" ? "This one is a quiz" : "This one is a practice test");
+      expect(markup).toContain(kind === "quiz" ? "Open the quiz" : "Open the practice test");
+      expect(markup).toContain('href="/study/studySets%3A4"');
+      expect(markup).toContain('href="/study"');
+      expect(markup).not.toContain("Nothing to review right now");
+      expect(markup).not.toContain('data-component="StateLoading"');
+      expect(primaries(markup)).toBe(1);
+      expect(markup).not.toMatch(BANNED);
+    }
+  });
+
   test("a set keeps a page heading while it loads, when it is gone and when signed out", () => {
     const base = { online: true, now: 0, onRecord: async () => ({}), onRemove: noop };
     for (const props of [{ data: undefined }, { data: null }, { data: undefined, signedOut: true }]) {

@@ -29,6 +29,8 @@
 // loading), plan-signedout and plan-offline (each after pressing Add these sessions), memory-loading
 // and memory-error. MOCKED: the same sample data as above. An unknown ?view= renders a plain
 // "Unknown gallery view" heading, so a stale shot list is caught.
+// study-review-quizset: /study/review?set= naming a live quiz says Review is for flashcards, with
+// a link to open the quiz (MOCKED: the sample quiz above; its queue is empty, as the server's is).
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -268,6 +270,7 @@ const kindFor: Record<string, "flashcards" | "quiz" | "test"> = {
   "study-set-edit": "flashcards",
   "study-set-edit-changed": "flashcards",
   "study-set-share": "flashcards",
+  "study-review-quizset": "quiz",
 };
 const setKind = kindFor[view] ?? "flashcards";
 const setFixture =
@@ -288,7 +291,7 @@ const queries: Record<string, unknown> = {
         ? { dueCount: 12, newCount: 4, reviewedToday: 7, sets, truncated: true }
         : { dueCount: 12, newCount: 4, reviewedToday: 7, sets },
   "study.reviewQueue": {
-    cards: view === "study-review-done" ? queueCards.slice(0, 1) : view === "study-review-badset" ? [] : queueCards,
+    cards: view === "study-review-done" ? queueCards.slice(0, 1) : view === "study-review-badset" || view === "study-review-quizset" ? [] : queueCards,
   },
   // A ?set= that names no set of yours, and a set that is gone: the server answers null.
   "study.getSet": view === "study-review-badset" || view === "study-set-notfound" ? null : setFixture,
@@ -624,6 +627,7 @@ const VIEWS: Record<string, () => ReactNode> = {
   "study-hub-signedout": () => <ReviewHub />,
   "study-hub-offline": () => <ReviewHub />,
   "study-review-badset": () => <ReviewSession setId="studySets:404" />,
+  "study-review-quizset": () => <ReviewSession setId="studySets:4" />,
   "study-set-loading": () => <StudySetScreen setId="studySets:1" />,
   "study-set-notfound": () => <StudySetScreen setId="studySets:404" />,
   "study-new-nofrom": () => <TurnIntoPreview kind="flashcards" />,

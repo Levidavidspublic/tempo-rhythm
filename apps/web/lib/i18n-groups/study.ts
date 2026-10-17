@@ -64,6 +64,11 @@ export const en = {
   "st.review.saving": "Saving your answer…",
   "st.review.saveError": "That answer didn't save. Try it again.",
   "st.review.undoError": "That didn't undo. Try again in a moment.",
+  "st.review.otherKind.title": "Review is for flashcards",
+  "st.review.otherKind.quiz": "This one is a quiz, so it has no cards to bring back here. You can take it from its own page.",
+  "st.review.otherKind.test": "This one is a practice test, so it has no cards to bring back here. You can take it from its own page.",
+  "st.review.otherKind.open.quiz": "Open the quiz",
+  "st.review.otherKind.open.test": "Open the practice test",
 
   // FlashcardReview labels
   "st.rv.card": "Card to review",
@@ -392,6 +397,11 @@ export const he: Record<StudyCopyKey, string> = {
   "st.review.saving": "שומרים את התשובה…",
   "st.review.saveError": "התשובה לא נשמרה. נסו שוב.",
   "st.review.undoError": "הביטול לא עבר. נסו שוב בעוד רגע.",
+  "st.review.otherKind.title": "החזרה היא על כרטיסיות",
+  "st.review.otherKind.quiz": "זה בוחן, ולכן אין בו כרטיסים לחזור עליהם כאן. אפשר לפתור אותו מהעמוד שלו.",
+  "st.review.otherKind.test": "זה מבחן תרגול, ולכן אין בו כרטיסים לחזור עליהם כאן. אפשר לפתור אותו מהעמוד שלו.",
+  "st.review.otherKind.open.quiz": "פתיחת הבוחן",
+  "st.review.otherKind.open.test": "פתיחת מבחן התרגול",
 
   "st.rv.card": "כרטיס לחזרה",
   "st.rv.front": "צד קדמי",
