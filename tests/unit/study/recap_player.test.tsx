@@ -325,6 +325,30 @@ describe("the speech seam", () => {
     expect(engine.available("en")).toBe(false);
   });
 
+  test("with no voice of its own for the language, speak never speaks: it reports no-voice", async () => {
+    const network = [{ lang: "en-US", name: "Microsoft Aria Online (Natural)", localService: false, default: true }];
+    const spoken: unknown[] = [];
+    const engine = speech.createSynthEngine(
+      { getVoices: () => network, speak: (u: unknown) => void spoken.push(u), cancel: () => {} },
+      (text) => ({ text, lang: "", rate: 1, voice: null, onend: null, onerror: null, onboundary: null }) as never,
+    );
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 5));
+    const seen: string[] = [];
+    engine.speak("Hello", { lang: "en", rate: 1, onEnd: () => seen.push("end"), onError: (reason) => seen.push(`error:${reason}`) });
+    // Not even with the browser's default voice, which may send the text away.
+    expect(spoken).toEqual([]);
+    // Reported a moment later, once the caller holds its handle; once.
+    expect(seen).toEqual([]);
+    await tick();
+    expect(seen).toEqual([`error:${speech.NO_VOICE}`]);
+    // A reading cancelled before that hears nothing; without onError it falls back to onEnd.
+    engine.speak("Hi", { lang: "en", rate: 1, onEnd: () => seen.push("end"), onError: () => seen.push("error") }).cancel();
+    engine.speak("Bye", { lang: "en", rate: 1, onEnd: () => seen.push("end") });
+    await tick();
+    expect(seen).toEqual([`error:${speech.NO_VOICE}`, "end"]);
+    expect(spoken).toEqual([]);
+  });
+
   function fakeSynth(list = voices) {
     const spoken: {
       text: string;

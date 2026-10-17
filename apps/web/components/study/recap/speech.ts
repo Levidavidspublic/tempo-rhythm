@@ -9,7 +9,8 @@
  *
  * Chatterbox (Hebrew-capable) plugs in here as another `SpeechEngine` once the owner decides
  * docs/contracts/VOICE.md decision 2 (TTS eligibility). Until then, a language with no voice on
- * the device reports `available(lang) === false` and the screens say so plainly.
+ * the device reports `available(lang) === false` and the screens say so plainly, and `speak` in
+ * that language reports the error `no-voice` instead of letting the browser pick a voice.
  */
 
 export type SpeakOptions = {
@@ -84,6 +85,9 @@ export function pickVoice<V extends VoiceLike>(voices: readonly V[], lang: strin
   return local.find((voice) => voice.default) ?? local[0] ?? null;
 }
 
+/** The error `speak` reports when the device has no voice of its own for the language. */
+export const NO_VOICE = "no-voice";
+
 /** An engine that never speaks: for the server render and for browsers without speech. */
 export const silentEngine: SpeechEngine = {
   available: () => false,
@@ -138,8 +142,22 @@ export function createSynthEngine(synth: SynthLike, makeUtterance: UtteranceFact
       active = self;
       before?.interrupt();
       synth.cancel();
-      utterance.lang = voice?.lang ?? lang;
-      if (voice) utterance.voice = voice;
+      if (!voice) {
+        // No voice for this language on the device. Never speak anyway: the browser would read
+        // with its default voice, which may be a network one that sends the text away. Say so as
+        // an error instead, a moment later (as the device would), so the caller has its handle.
+        const timer = setTimeout(() => fail({ error: NO_VOICE }), 0);
+        return {
+          cancel() {
+            if (done) return;
+            clearTimeout(timer);
+            detach();
+            if (active === self) active = null;
+          },
+        };
+      }
+      utterance.lang = voice.lang;
+      utterance.voice = voice;
       utterance.rate = rate;
       utterance.onend = finish;
       utterance.onerror = fail;
