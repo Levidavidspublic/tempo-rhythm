@@ -157,8 +157,9 @@ function SlotButton({
 
 /**
  * The `readAloud` slot for the @tempo/ui study components: a ReadAloudButton beside each text the
- * device can read, a plain note for Hebrew text when there is no Hebrew voice, and nothing while
- * checking or where the browser can't speak at all. Reading stops once the text being read is no
+ * device can read, a plain note for text in a language the device has no voice of its own for
+ * (Hebrew or English: network voices are never used), and nothing while checking or where the
+ * browser can't speak at all. Reading stops once the text being read is no
  * longer drawn (its card or question changed, even inside a component that keeps its own place),
  * so a voice never runs on with no pressed button left to stop it. Pass `resetKey` to also stop
  * when it changes.
@@ -196,8 +197,9 @@ export function useReadAloudSlot(resetKey?: unknown, options: { engine?: SpeechE
     (text: string) => {
       const lang = detectLang(text);
       const state = status(lang);
-      if (state === "noVoice" && lang === "he") {
-        return <p className="tp-readaloud-note">{t("st.ra.noHebrew")}</p>;
+      if (state === "noVoice") {
+        const note = lang === "he" ? "st.ra.noHebrew" : "st.ra.noEnglish";
+        return <p className="tp-readaloud-note">{t(note)}</p>;
       }
       if (state !== "ready") return null;
       return <SlotButton text={text} pressed={speaking === text} onToggle={toggle} labels={labels} drawn={drawn} />;

@@ -641,6 +641,27 @@ describe("the mounted player", () => {
     expect(said).toHaveLength(1);
   });
 
+  test("a text the device has no voice of its own for gets a quiet note, in English as in Hebrew", async () => {
+    // Only network voices on this device: nothing can be read aloud here, in either language.
+    const engine: SpeechEngine = {
+      available: () => false,
+      speak: () => ({ cancel() {} }),
+      subscribe: (listener) => {
+        listener();
+        return () => {};
+      },
+    };
+    function Host() {
+      const slot = useReadAloudSlot(undefined, { engine });
+      return createElement("div", null, slot("Mitosis makes two cells."), slot("מיטוזה יוצרת שני תאים."));
+    }
+    const view = await mount(createElement(Host));
+    expect(view.textContent).toContain(translate("en", "st.ra.noEnglish"));
+    expect(view.textContent).toContain(translate("en", "st.ra.noHebrew"));
+    expect(findAll(view, (n) => n.getAttribute?.("data-component") === "ReadAloudButton")).toHaveLength(0);
+    expect(he["st.ra.noEnglish"]).toContain("באנגלית");
+  });
+
   test("an edit elsewhere in the page doesn't restart the sentence being read", async () => {
     const { engine, said } = recordingEngine();
     const view = await mount(playerOf(engine));
