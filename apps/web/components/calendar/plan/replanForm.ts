@@ -130,6 +130,32 @@ export function replanInput({
   };
 }
 
+/** The same local date and clock minute. */
+export function sameMoment(a: LocalMoment, b: LocalMoment): boolean {
+  return a.date === b.date && a.minute === b.minute;
+}
+
+/** Whether two re-plans would make the same change: the same moves to the same slots, the same left over. */
+export function sameReplan(
+  a: Pick<ReplanResult, "moves" | "unplaced">,
+  b: Pick<ReplanResult, "moves" | "unplaced">
+): boolean {
+  return (
+    a.moves.length === b.moves.length &&
+    a.unplaced.length === b.unplaced.length &&
+    a.moves.every((move, i) => {
+      const other = b.moves[i];
+      return (
+        other !== undefined &&
+        other.id === move.id &&
+        other.to.date === move.to.date &&
+        other.to.startMinute === move.to.startMinute
+      );
+    }) &&
+    a.unplaced.every((item, i) => b.unplaced[i]?.id === item.id)
+  );
+}
+
 /** The notice's words: what needs a new time and why, or null when nothing does. */
 export function replanNotice(
   result: Pick<ReplanResult, "missed" | "clashing">

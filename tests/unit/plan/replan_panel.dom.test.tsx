@@ -10,6 +10,7 @@ import { createRoot, type Root } from "../../../apps/web/node_modules/react-dom/
 import { localSlotToMs } from "../../../apps/web/components/calendar/gridData";
 import type { BusyWindows } from "../../../apps/web/components/calendar/plan/busyWindows";
 import { LocaleProvider } from "../../../apps/web/components/providers/LocaleProvider";
+import { sameReplan } from "../../../apps/web/components/calendar/plan/replanForm";
 import { findAll, findByTag, installTestDom, type TestNode, useTestDom } from "../record/testDom";
 
 const documentNode = installTestDom();
@@ -315,5 +316,87 @@ describe("ReplanPanel, mounted", () => {
         focus.restore();
       }
     });
+  });
+
+  describe("a preview whose times have passed by the time it's accepted", () => {
+    // Missed yesterday at 17:00; it is 17:59, so the next free start near 17:00 is 18:00 today.
+    const plan = (): Saved => ({
+      plan: { _id: "studyPlans:1", title: "Biology", deadline: "2026-10-30", taskIds: ["tasks:2"] },
+      tasks: [task("tasks:2", "Learn: Mitosis", "2026-10-19", 17)],
+    });
+    const sentStart = () =>
+      (calls.replan.mock.calls.at(-1)?.[0] as { moves: Array<{ startMinute: number }> }).moves[0]?.startMinute;
+
+    test("is worked out again from now and shown, not sent; the next Accept sends the new times", async () => {
+      const focus = trackFocus();
+      try {
+        setSystemTime(new Date(2026, 9, 20, 17, 59));
+        saved = plan();
+        const view = await mount({ planId: "studyPlans:1" });
+        await press(byAction(view, "replan-open"));
+        expect(view.textContent).toMatch(/to Tue,? 20 Oct, 18:00/);
+
+        setSystemTime(new Date(2026, 9, 20, 18, 20));
+        await press(byAction(view, "replan-accept"));
+        expect(calls.replan).not.toHaveBeenCalled();
+        expect(view.textContent).toMatch(/to Tue,? 20 Oct, 18:30/);
+        const note = findAll(view, (n) => n.getAttribute("data-testid") === "replan-refreshed")[0];
+        expect(note?.textContent).toBe("Some of these times have passed, so here are new ones. Nothing has changed yet.");
+        expect(focus.active).toBe(note as TestNode);
+
+        await press(byAction(view, "replan-accept"));
+        expect(calls.replan).toHaveBeenCalledTimes(1);
+        expect(sentStart()).toBe(18 * 60 + 30);
+      } finally {
+        focus.restore();
+      }
+    });
+
+    test("a minute later with the same times is sent as it is", async () => {
+      setSystemTime(new Date(2026, 9, 20, 17, 59));
+      saved = plan();
+      const view = await mount({ planId: "studyPlans:1" });
+      await click(byAction(view, "replan-open"));
+      setSystemTime(new Date(2026, 9, 20, 18, 0, 30));
+      await click(byAction(view, "replan-accept"));
+      expect(calls.replan).toHaveBeenCalledTimes(1);
+      expect(sentStart()).toBe(18 * 60);
+    });
+
+    test("when the server says a time has passed, nothing is saved and new times are shown", async () => {
+      setSystemTime(new Date(2026, 9, 20, 17, 59));
+      saved = plan();
+      calls.replan.mockImplementationOnce(async () => {
+        setSystemTime(new Date(2026, 9, 20, 18, 20));
+        return { refused: "timePassed" };
+      });
+      const view = await mount({ planId: "studyPlans:1" });
+      await click(byAction(view, "replan-open"));
+      await click(byAction(view, "replan-accept"));
+      expect(view.textContent).not.toContain("has a new time.");
+      expect(view.textContent).toContain("Some of these times have passed");
+      expect(view.textContent).toMatch(/to Tue,? 20 Oct, 18:30/);
+      expect(byAction(view, "replan-accept")?.disabled).toBe(false);
+    });
+  });
+});
+
+describe("sameReplan", () => {
+  const move = (id: string, date: string, startMinute: number) => ({
+    id,
+    reason: "missed" as const,
+    minutes: 45,
+    from: { date: "2026-10-19", startMinute: 1020 },
+    to: { date, startMinute },
+  });
+  const left = (id: string) => ({ id, reason: "clash" as const, minutes: 45, from: { date: "2026-10-21", startMinute: 1020 } });
+
+  test("the same moves to the same slots and the same left over", () => {
+    const a = { moves: [move("a", "2026-10-20", 1080)], unplaced: [left("b")] };
+    expect(sameReplan(a, { moves: [move("a", "2026-10-20", 1080)], unplaced: [left("b")] })).toBe(true);
+    expect(sameReplan(a, { moves: [move("a", "2026-10-20", 1110)], unplaced: [left("b")] })).toBe(false);
+    expect(sameReplan(a, { moves: [move("a", "2026-10-21", 1080)], unplaced: [left("b")] })).toBe(false);
+    expect(sameReplan(a, { moves: [move("a", "2026-10-20", 1080)], unplaced: [] })).toBe(false);
+    expect(sameReplan(a, { moves: [], unplaced: [left("a"), left("b")] })).toBe(false);
   });
 });

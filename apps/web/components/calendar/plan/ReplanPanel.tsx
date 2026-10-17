@@ -47,16 +47,25 @@ import {
 } from "../planCopy";
 import { busyWindows } from "./busyWindows";
 import { useBusyTime, usePlan, useReplanActions } from "./planApi";
-import { type ReplanOverrides, replanInput, replanNotice, replanToastTitle } from "./replanForm";
+import {
+  type ReplanOverrides,
+  replanInput,
+  replanNotice,
+  replanToastTitle,
+  sameMoment,
+  sameReplan,
+} from "./replanForm";
+
+/** The local date and clock minute now. */
+function nowMoment(now: Date = new Date()): LocalMoment {
+  return { date: localDateOf(now), minute: now.getHours() * 60 + now.getMinutes() };
+}
 
 /** Local date and clock minute now, read in the browser and again every minute. */
 function useNowMoment(): LocalMoment | null {
   const [moment, setMoment] = useState<LocalMoment | null>(null);
   useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      setMoment({ date: localDateOf(now), minute: now.getHours() * 60 + now.getMinutes() });
-    };
+    const tick = () => setMoment(nowMoment());
     tick();
     const timer = window.setInterval(tick, 60_000);
     return () => window.clearInterval(timer);
@@ -124,6 +133,10 @@ export type ReplanPreviewProps = {
   leaveOut: boolean;
   busy?: boolean;
   failed?: boolean;
+  /** Set when the times were worked out again because some had passed: said in words. */
+  refreshed?: boolean;
+  /** The "worked out again" note, which takes the keyboard when it appears. */
+  refreshedRef?: RefObject<HTMLParagraphElement | null>;
   /** False when the screen already has its one primary button. */
   primary?: boolean;
   onUseMinutes?: (minutes: number) => void;
@@ -146,6 +159,8 @@ export function ReplanPreview({
   leaveOut,
   busy = false,
   failed = false,
+  refreshed = false,
+  refreshedRef,
   primary = true,
   onUseMinutes,
   onUseDate,
@@ -179,6 +194,11 @@ export function ReplanPreview({
       <p className="tp-muted">{pt(lang, "rp.sub")}</p>
       {checkedUntil ? (
         <p className="tp-help">{pt(lang, "pp.busyCap", { date: longDate(lang, checkedUntil) })}</p>
+      ) : null}
+      {refreshed ? (
+        <p className="tp-help" data-testid="replan-refreshed" tabIndex={-1} ref={refreshedRef}>
+          {pt(lang, "rp.refreshed")}
+        </p>
       ) : null}
       {newDate ? <p>{pt(lang, "rp.newDate", { date: longDate(lang, newDate) })}</p> : null}
       {result.moves.length > 0 ? (
@@ -346,6 +366,9 @@ export function ReplanPanel({
   const [leaveOut, setLeaveOut] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  // How many times the preview was worked out again on Accept because the clock moved on.
+  const [refreshed, setRefreshed] = useState(0);
+  const refreshedRef = useRef<HTMLParagraphElement>(null);
   const ownRef = useRef<HTMLButtonElement>(null);
   const openRef = buttonRef ?? ownRef;
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -388,6 +411,10 @@ export function ReplanPanel({
   useEffect(() => {
     if (open) headingRef.current?.focus();
   }, [open]);
+  // New times after a late Accept: the note that says so takes the keyboard.
+  useEffect(() => {
+    if (refreshed > 0) refreshedRef.current?.focus();
+  }, [refreshed]);
 
   const close = () => {
     setOpen(false);
@@ -395,6 +422,7 @@ export function ReplanPanel({
     setOverrides({});
     setLeaveOut(false);
     setFailed(false);
+    setRefreshed(0);
   };
   const toggle = () => {
     if (open) {
@@ -409,8 +437,20 @@ export function ReplanPanel({
     openRef.current?.focus();
   };
 
+  // The preview holds the time it opened at. Some of its times may have passed since: then it is
+  // worked out again from now and, when that changes anything, shown instead of being sent.
+  const showFresh = () => {
+    setOpenedAt(nowMoment());
+    setRefreshed((n) => n + 1);
+  };
+
   const accept = async () => {
-    if (!result || !saved || saving) return;
+    if (!result || !input || !saved || saving) return;
+    const current = nowMoment();
+    if (!sameMoment(current, input.now) && !sameReplan(replanRest({ ...input, now: current }), result)) {
+      showFresh();
+      return;
+    }
     const remove = leaveOut ? result.unplaced.map((item) => item.id as Id<"tasks">) : [];
     if (result.moves.length === 0 && remove.length === 0) return;
     setSaving(true);
@@ -431,6 +471,11 @@ export function ReplanPanel({
           : {}),
         timezoneOffsetMinutes: new Date().getTimezoneOffset(),
       });
+      if ("refused" in done) {
+        // The server's clock says a start has passed (nothing was saved): new times, in words.
+        showFresh();
+        return;
+      }
       close();
       onReplanned({
         planId,
@@ -471,6 +516,8 @@ export function ReplanPanel({
             leaveOut={leaveOut}
             busy={saving}
             failed={failed}
+            refreshed={refreshed > 0}
+            refreshedRef={refreshedRef}
             primary={primary}
             onUseMinutes={(minutesPerDay) => setOverrides((o) => ({ ...o, minutesPerDay }))}
             onUseDate={(date) => setOverrides((o) => ({ ...o, deadline: date }))}
