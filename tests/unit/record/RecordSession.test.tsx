@@ -533,3 +533,41 @@ describe("RecordKeeper", () => {
     expect(view.textContent).not.toContain("You're signed out.");
   });
 });
+
+describe("Bring it back offers the save's own Undo again", () => {
+  test("after Bring it back, Undo is there while the save's window is open", async () => {
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    calls.undoSave.mockImplementationOnce(async () => ({
+      success: true,
+      removedTasks: 1,
+      removedEdits: true,
+      redoUntil: Date.now() + 5 * 60_000,
+    }));
+    await clickButton(view, "Undo");
+    await clickButton(view, "Bring it back");
+    expect(calls.redoUndo).toHaveBeenCalledTimes(1);
+    await clickButton(view, "Undo");
+    expect(calls.undoSave).toHaveBeenCalledTimes(2);
+  });
+
+  test("not once the save's window has ended", async () => {
+    calls.saveSession.mockImplementationOnce(async () => ({ noteId: "notes:1", taskIds: [], undoUntil: Date.now() + 50 }));
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    calls.undoSave.mockImplementationOnce(async () => ({
+      success: true,
+      removedTasks: 0,
+      removedEdits: true,
+      redoUntil: Date.now() + 5 * 60_000,
+    }));
+    await clickButton(view, "Undo");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    });
+    await clickButton(view, "Bring it back");
+    expect(queryByTag(view, "BUTTON", "Undo")).toBeNull();
+  });
+});

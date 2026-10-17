@@ -328,6 +328,8 @@ export function RecordSession({
     setUndone(false);
     setRestored(true);
     setStep("saved");
+    // The save's own Undo runs from when it was made: offer it again while that window is open.
+    setToastOpen(Date.now() < bringBack.saved.undoUntil);
     // The toast's button goes with it: the keyboard moves to "Open the page" on the saved step.
     window.setTimeout(
       () => rootRef.current?.querySelector<HTMLElement>('[data-step="saved"] a')?.focus(),
