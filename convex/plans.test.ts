@@ -624,6 +624,41 @@ describe("plans: bounds from the whole-run review", () => {
     expect(listed[0].title).toBe("Plan 119");
     expect(listed[99].title).toBe("Plan 20");
   });
+
+  test("removed plans changed later never push a live plan out of the 100", async () => {
+    const t = convexTest(appSchema, {
+      "./_generated/api.js": () => import("./_generated/api.js"),
+      "./_generated/server.js": () => import("./_generated/server.js"),
+      "./plans.ts": () => import("./plans"),
+    });
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", { email: "a@example.com", approvalStatus: "approved", createdAt: T0, updatedAt: T0 }),
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.insert("studyPlans", {
+        userId,
+        title: "Live plan",
+        deadline: "2026-11-01",
+        taskIds: [],
+        createdAt: T0,
+        updatedAt: T0,
+      });
+      // Undone (or undone and made again) since: each Undo stamps updatedAt as it removes.
+      for (let i = 1; i <= 100; i++) {
+        await ctx.db.insert("studyPlans", {
+          userId,
+          title: `Undone ${i}`,
+          deadline: "2026-11-01",
+          taskIds: [],
+          createdAt: T0 + i,
+          updatedAt: T0 + 1_000 + i,
+          deletedAt: T0 + 1_000 + i,
+        });
+      }
+    });
+    const listed = await t.withIdentity({ subject: userId }).query(api.plans.list, {});
+    expect(listed.map((plan: { title: string }) => plan.title)).toEqual(["Live plan"]);
+  });
 });
 
 describe("plans.undoCreate always takes the plan back, and Bring it back returns it (HARD_RULES §1)", () => {

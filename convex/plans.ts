@@ -543,20 +543,23 @@ export const undoReplan = mutation({
 });
 
 /**
- * The caller's live plans, most recently changed first: read from the `PLAN_LIST_LIMIT` (100)
- * most recently changed plans, so a long history never makes one read too large.
+ * The caller's live plans, most recently changed first: the `PLAN_LIST_LIMIT` (100) most recently
+ * changed live ones, so a long history never makes one read too large. Removed plans are left out
+ * by the index, before the limit: Undo stamps `updatedAt`, so read by time alone they would fill
+ * the window and push a live plan out.
  */
 export const list = query({
   args: {},
   returns: v.array(planValidator),
   handler: async (ctx) => {
     const user = await requireUser(ctx);
-    const rows = await ctx.db
+    return ctx.db
       .query("studyPlans")
-      .withIndex("by_userId_updated", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId_deletedAt_updated", (q) =>
+        q.eq("userId", user._id).eq("deletedAt", undefined),
+      )
       .order("desc")
       .take(PLAN_LIST_LIMIT);
-    return rows.filter((row) => row.deletedAt === undefined);
   },
 });
 

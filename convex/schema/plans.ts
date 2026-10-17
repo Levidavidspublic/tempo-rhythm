@@ -21,7 +21,8 @@ export const replanRecordValidator = v.object({
  * listed later. The sessions themselves are ordinary tasks (elastic, `projectName` = plan title).
  *
  * HARD_RULES §5: soft delete through `deletedAt`, `updatedAt` on every write, a `by_userId`
- * index (account deletion streams it) and `by_userId_updated` for the list.
+ * index (account deletion streams it) and `by_userId_deletedAt_updated` for the list (live plans
+ * only, most recently changed first). `by_userId_updated` is the list's first index, kept.
  */
 export const planTables = {
   studyPlans: defineTable({
@@ -39,5 +40,6 @@ export const planTables = {
     deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_updated", ["userId", "updatedAt"]),
+    .index("by_userId_updated", ["userId", "updatedAt"])
+    .index("by_userId_deletedAt_updated", ["userId", "deletedAt", "updatedAt"]),
 };
