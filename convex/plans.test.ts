@@ -30,6 +30,22 @@ const preview = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+/** A live study set on a live page of `userId`'s, written straight to the fake tables. */
+async function liveSet(ctx: any, userId: string): Promise<string> {
+  const noteId = await ctx.db.insert("notes", { userId, title: "Deck", body: "", createdAt: 0, updatedAt: 0 });
+  return ctx.db.insert("studySets", {
+    userId,
+    noteId,
+    blockId: "blk_1",
+    kind: "flashcards",
+    title: "Deck",
+    itemCount: 1,
+    createdByTempo: true,
+    createdAt: 0,
+    updatedAt: 0,
+  });
+}
+
 /** A second caller on the same database. */
 function as(ctx: any, userId: string) {
   return { ...ctx, auth: { getUserIdentity: async () => ({ subject: userId }) } };
@@ -68,10 +84,22 @@ describe("plans.createFromPreview", () => {
     expect(second.timeEstimate).toBe(15 * 60_000);
   });
 
-  test("keeps the source set id when one is given", async () => {
+  test("keeps the source set id when it names the caller's live set", async () => {
     const ctx = makeFakeCtx(A);
-    const { planId } = await run(plans.createFromPreview, ctx, preview({ sourceSetId: "set_1" }));
-    expect((await ctx.db.get(planId)).sourceSetId).toBe("set_1");
+    const setId = await liveSet(ctx, A);
+    const { planId } = await run(plans.createFromPreview, ctx, preview({ sourceSetId: setId }));
+    expect((await ctx.db.get(planId)).sourceSetId).toBe(setId);
+  });
+
+  test("drops a source set id that is made up, someone else's, or removed", async () => {
+    const ctx = makeFakeCtx(A, [B]);
+    const theirs = await liveSet(ctx, B);
+    const removed = await liveSet(ctx, A);
+    await ctx.db.patch(removed, { deletedAt: 1 });
+    for (const sourceSetId of ["set_1", theirs, removed]) {
+      const { planId } = await run(plans.createFromPreview, ctx, preview({ sourceSetId }));
+      expect((await ctx.db.get(planId)).sourceSetId).toBeUndefined();
+    }
   });
 
   test("refuses a bad preview and writes nothing", async () => {

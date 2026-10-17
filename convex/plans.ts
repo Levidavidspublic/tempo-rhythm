@@ -4,6 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { requireUser } from "./lib/requireUser";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
+import { readLiveSet } from "./lib/study";
 import { replanRecordValidator } from "./schema/plans";
 import { createTaskForUser } from "./tasks";
 
@@ -209,11 +210,13 @@ export const createFromPreview = mutation({
       );
     }
 
-    // The set the topics came from is a hint, never an error: one too long to be an id is dropped.
-    const sourceSetId =
-      args.sourceSetId !== undefined && args.sourceSetId.length <= SOURCE_SET_ID_MAX
-        ? args.sourceSetId
-        : undefined;
+    // The set the topics came from is a hint, never an error: kept only when it names a live set
+    // of the caller's on a live page; anything else (too long, not an id, someone else's) is dropped.
+    let sourceSetId: Id<"studySets"> | undefined;
+    if (args.sourceSetId !== undefined && args.sourceSetId.length <= SOURCE_SET_ID_MAX) {
+      const setId = ctx.db.normalizeId("studySets", args.sourceSetId);
+      if (setId !== null && (await readLiveSet(ctx, user._id, setId)) !== null) sourceSetId = setId;
+    }
     const now = Date.now();
     const planId = await ctx.db.insert("studyPlans", {
       userId: user._id,
