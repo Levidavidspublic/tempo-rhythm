@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-17T02:15:27.531Z",
+ "generated": "2026-10-17T03:34:26.929Z",
  "runs": 200,
  "views": 51,
  "totals": {
@@ -1450,10 +1450,10 @@
     }
    }
   },
-  "study-new-undo-kept": {
+  "study-new-undo-edited": {
    "390": {
     "en": {
-     "stops": 3,
+     "stops": 7,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1465,7 +1465,7 @@
      "arrowGroups": 0
     },
     "he": {
-     "stops": 3,
+     "stops": 7,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1479,7 +1479,7 @@
    },
    "1280": {
     "en": {
-     "stops": 3,
+     "stops": 7,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1491,7 +1491,7 @@
      "arrowGroups": 0
     },
     "he": {
-     "stops": 3,
+     "stops": 7,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1882,10 +1882,10 @@
     }
    }
   },
-  "plan-undo-kept": {
+  "plan-undo-edited": {
    "390": {
     "en": {
-     "stops": 82,
+     "stops": 15,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1894,10 +1894,10 @@
      "reducedMotion": [],
      "errors": [],
      "start": null,
-     "arrowGroups": 1
+     "arrowGroups": 0
     },
     "he": {
-     "stops": 82,
+     "stops": 15,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1906,12 +1906,12 @@
      "reducedMotion": [],
      "errors": [],
      "start": null,
-     "arrowGroups": 1
+     "arrowGroups": 0
     }
    },
    "1280": {
     "en": {
-     "stops": 82,
+     "stops": 15,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1920,10 +1920,10 @@
      "reducedMotion": [],
      "errors": [],
      "start": null,
-     "arrowGroups": 1
+     "arrowGroups": 0
     },
     "he": {
-     "stops": 82,
+     "stops": 15,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1932,7 +1932,7 @@
      "reducedMotion": [],
      "errors": [],
      "start": null,
-     "arrowGroups": 1
+     "arrowGroups": 0
     }
    }
   },
@@ -2098,10 +2098,10 @@
     }
    }
   },
-  "record-undo-kept": {
+  "record-undo-edited": {
    "390": {
     "en": {
-     "stops": 5,
+     "stops": 12,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -2113,7 +2113,7 @@
      "arrowGroups": 0
     },
     "he": {
-     "stops": 5,
+     "stops": 6,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -2127,7 +2127,7 @@
    },
    "1280": {
     "en": {
-     "stops": 5,
+     "stops": 12,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -2139,7 +2139,7 @@
      "arrowGroups": 0
     },
     "he": {
-     "stops": 5,
+     "stops": 6,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],

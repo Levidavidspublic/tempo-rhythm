@@ -12144,534 +12144,6 @@
     ]
   },
   {
-    "name": "record-undo-kept",
-    "lang": "en",
-    "width": 390,
-    "theme": "light",
-    "file": "gallery-MOCKED-record-undo-kept-390-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "en",
-    "width": 390,
-    "theme": "dark",
-    "file": "gallery-MOCKED-record-undo-kept-390-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "en",
-    "width": 1280,
-    "theme": "light",
-    "file": "gallery-MOCKED-record-undo-kept-1280-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "en",
-    "width": 1280,
-    "theme": "dark",
-    "file": "gallery-MOCKED-record-undo-kept-1280-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "he",
-    "width": 390,
-    "theme": "light",
-    "file": "gallery-MOCKED-record-undo-kept-he-390-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "he",
-    "width": 390,
-    "theme": "dark",
-    "file": "gallery-MOCKED-record-undo-kept-he-390-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "he",
-    "width": 1280,
-    "theme": "light",
-    "file": "gallery-MOCKED-record-undo-kept-he-1280-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "record-undo-kept",
-    "lang": "he",
-    "width": 1280,
-    "theme": "dark",
-    "file": "gallery-MOCKED-record-undo-kept-he-1280-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
     "name": "reminders",
     "lang": "en",
     "width": 390,
@@ -17936,534 +17408,6 @@
         "rule": "at most one primary button",
         "pass": true,
         "detail": "primaries=1"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "en",
-    "width": 390,
-    "theme": "light",
-    "file": "gallery-MOCKED-study-new-undo-kept-390-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "en",
-    "width": 390,
-    "theme": "dark",
-    "file": "gallery-MOCKED-study-new-undo-kept-390-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "en",
-    "width": 1280,
-    "theme": "light",
-    "file": "gallery-MOCKED-study-new-undo-kept-1280-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "en",
-    "width": 1280,
-    "theme": "dark",
-    "file": "gallery-MOCKED-study-new-undo-kept-1280-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "he",
-    "width": 390,
-    "theme": "light",
-    "file": "gallery-MOCKED-study-new-undo-kept-he-390-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "he",
-    "width": 390,
-    "theme": "dark",
-    "file": "gallery-MOCKED-study-new-undo-kept-he-390-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "he",
-    "width": 1280,
-    "theme": "light",
-    "file": "gallery-MOCKED-study-new-undo-kept-he-1280-light.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
-      },
-      {
-        "id": "R-01",
-        "rule": "no decorative gradients",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-19",
-        "rule": "motion \u2264 250 ms",
-        "pass": true,
-        "detail": "max=120ms"
-      }
-    ]
-  },
-  {
-    "name": "study-new-undo-kept",
-    "lang": "he",
-    "width": 1280,
-    "theme": "dark",
-    "file": "gallery-MOCKED-study-new-undo-kept-he-1280-dark.jpg",
-    "finalPath": "/",
-    "status": "ok",
-    "errors": [],
-    "gate": [
-      {
-        "id": "R-02",
-        "rule": "no em dash in UI text",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-03",
-        "rule": "no horizontal overflow",
-        "pass": true,
-        "detail": "overflowX=0"
-      },
-      {
-        "id": "R-25",
-        "rule": "text contrast \u2265 WCAG AA",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-26",
-        "rule": "no unnamed or dead controls",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "R-32",
-        "rule": "visible focus ring on Tab",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-text",
-        "rule": "no text under 13 px",
-        "pass": true,
-        "detail": ""
-      },
-      {
-        "id": "DESIGN-accent",
-        "rule": "at most one primary button",
-        "pass": true,
-        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -25344,11 +24288,11 @@
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "en",
     "width": 390,
     "theme": "light",
-    "file": "gallery-MOCKED-plan-undo-kept-390-light.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-390-light.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25393,28 +24337,28 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "en",
     "width": 390,
     "theme": "dark",
-    "file": "gallery-MOCKED-plan-undo-kept-390-dark.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-390-dark.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25459,28 +24403,28 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "en",
     "width": 1280,
     "theme": "light",
-    "file": "gallery-MOCKED-plan-undo-kept-1280-light.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-1280-light.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25525,28 +24469,28 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "en",
     "width": 1280,
     "theme": "dark",
-    "file": "gallery-MOCKED-plan-undo-kept-1280-dark.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-1280-dark.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25591,28 +24535,28 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "he",
     "width": 390,
     "theme": "light",
-    "file": "gallery-MOCKED-plan-undo-kept-he-390-light.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-he-390-light.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25657,28 +24601,28 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "he",
     "width": 390,
     "theme": "dark",
-    "file": "gallery-MOCKED-plan-undo-kept-he-390-dark.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-he-390-dark.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25723,28 +24667,28 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "he",
     "width": 1280,
     "theme": "light",
-    "file": "gallery-MOCKED-plan-undo-kept-he-1280-light.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-he-1280-light.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25789,28 +24733,94 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=0"
+        "detail": "primaries=1"
       },
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
       }
     ]
   },
   {
-    "name": "plan-undo-kept",
+    "name": "study-new-undo-edited",
     "lang": "he",
     "width": 1280,
     "theme": "dark",
-    "file": "gallery-MOCKED-plan-undo-kept-he-1280-dark.jpg",
+    "file": "gallery-MOCKED-study-new-undo-edited-he-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "en",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-plan-undo-edited-390-light.jpg",
     "finalPath": "/",
     "status": "ok",
     "errors": [],
@@ -25860,14 +24870,1004 @@
       {
         "id": "R-01",
         "rule": "no decorative gradients",
-        "pass": false,
-        "detail": "ul.tp-sched__body; ul.tp-sched__body; ul.tp-sched__body"
+        "pass": true,
+        "detail": ""
       },
       {
         "id": "R-19",
         "rule": "motion \u2264 250 ms",
         "pass": true,
-        "detail": "max=120ms"
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "en",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-plan-undo-edited-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "en",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-plan-undo-edited-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "en",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-plan-undo-edited-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "he",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-plan-undo-edited-he-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "he",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-plan-undo-edited-he-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "he",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-plan-undo-edited-he-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "plan-undo-edited",
+    "lang": "he",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-plan-undo-edited-he-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "en",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-record-undo-edited-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "en",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-record-undo-edited-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "en",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-record-undo-edited-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "en",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-record-undo-edited-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "he",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-record-undo-edited-he-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "he",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-record-undo-edited-he-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "he",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-record-undo-edited-he-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
+      }
+    ]
+  },
+  {
+    "name": "record-undo-edited",
+    "lang": "he",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-record-undo-edited-he-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=240ms"
       }
     ]
   }

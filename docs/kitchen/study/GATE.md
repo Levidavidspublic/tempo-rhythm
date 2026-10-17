@@ -15,7 +15,7 @@ Gate source: `antislop.md` → "Delivery Gate (Mandatory)" in github.com/miqdadb
 
 ## Per-screen results
 
-Shot 2026-10-17 on `156b5c7` from the main checkout against its own dev server (placeholder Convex URL, the dev-only E2E bypass), gallery built as an IIFE (`docs/kitchen/study/gallery/build.ts`). Files in `docs/kitchen/study/shots/`: the live routes in English and every gallery view in English and Hebrew, each at 390 / 1280 px, light and dark; gallery files are named `gallery-MOCKED-*` (real components, fictional data, stand-in Convex hooks). Measured results: `gate-live.json`, `gate-gallery.json`, `gate-gallery-he.json`.
+Shot 2026-10-17 on `156b5c7`, the three Undo toast views (`*-undo-edited`) reshot on `ec5e045`, from the main checkout against its own dev server (placeholder Convex URL, the dev-only E2E bypass), gallery built as an IIFE (`docs/kitchen/study/gallery/build.ts`). Files in `docs/kitchen/study/shots/`: the live routes in English and every gallery view in English and Hebrew, each at 390 / 1280 px, light and dark; gallery files are named `gallery-MOCKED-*` (real components, fictional data, stand-in Convex hooks). Measured results: `gate-live.json`, `gate-gallery.json`, `gate-gallery-he.json`.
 
 How to read the tables. **B1 measured** comes straight from `gate.mjs` on every shot of that screen (R-02, R-03, R-25, R-26, R-32, text ≥ 13 px, one primary, R-01, R-19). **B1 read** is what was checked by looking. Unless a row says otherwise: no stats, testimonials, FAQ or invented assets (R-17 / 18 / 23 / 28 PASS); fixes in source (R-33 PASS); light and dark both shot with no break seen (R-34 PASS); design read above (R-37 PASS); sample data is fictional and every gallery file says MOCKED (R-38 PASS). **R-35** is PARTIAL everywhere: each screen was run and its scripted steps made, but no full click-through of every control was recorded. **R-36**: on-screen privacy sentences ("Audio is never stored", "on this device", "walled off") match the code and its tests; not verified at the network level, so **UNKNOWN**.
 
@@ -53,7 +53,7 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 | study-test-score | PASS, 8 shots (en/he) | ok | none | focal: the score | ok | PASS |
 | study-new-preview | PASS, 8 shots (en/he) | answers are two-line fields | none | focal: the preview cards + one primary | fixed: one-line answer fields cut sentences | PASS |
 | study-new-nokey | PASS, 8 shots (en/he) | R-27 no-key state, kind words | none | focal: the notice | ok | PASS |
-| study-new-undo-kept | PASS, 8 shots (en/he) | an Undo the server turns down says why in words (the page was written in since) | none | focal: the note | ok | PASS |
+| study-new-undo-edited | PASS, 8 shots (en/he) | Undo takes the set back in one click; when changes made since went with it the toast says so and offers Bring it back for 5:00 | none | focal: the toast | fixed: Undo used to refuse (HARD_RULES §1); the page leaves room under its last control for the toast (`ec5e045`) | PASS |
 | study-set-edit | PASS, 8 shots (en/he) | Save changes is the one primary; Edit, Share and Remove step aside; focus on the heading | none | focal: the edit list | fixed: "keep keep" copy; heading ring ran across the card | PASS |
 | study-set-edit-changed | PASS, 8 shots (en/he) | a newer block is named in words with Reload the newest version; nothing is overwritten | none | focal: the notice | ok | PASS |
 | study-set-share | PASS, 8 shots (en/he) | every row does something real; Anki only for flashcards | glass sheet (owner override) | focal: first row (focused) | ok | PASS |
@@ -78,7 +78,7 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 | plan-guided | PASS, 8 shots (en/he) | GuidedPlanCard: steps as task rows, kind and status in words + icon | none | focal: the card; one primary Accept | fixed: the step time was under 13 px | PASS |
 | plan-guided-edit | PASS, 8 shots (en/he) | rename, length, move with buttons or Alt+arrows, remove; focus stays on the step | none | focal: the edit list | ok | PASS |
 | plan-guided-accepted | PASS, 8 shots (en/he) | 5:00 Undo outside the live region (read once); To do / Doing / Done | none | focal: the note and Undo | ok | PASS |
-| plan-undo-kept | R-01 flagged on `ul.tp-sched__body` (`repeating-linear-gradient`): it draws the 1 px hour rules; purpose written in plan.css (Block 2). 8 shots (en/he) | an Undo the server turns down (a session already done) says why | R-01 purpose (the week grid below) | focal: the note | ok | PASS (R-01 purpose stated) |
+| plan-undo-edited | PASS, 8 shots (en/he) | Undo takes the plan back in one click; done sessions that went with it are named, with Bring it back | R-01 purpose (the week grid below) | focal: the note | fixed: the page leaves room under its last control for the toast (`ec5e045`) | PASS |
 | plan-replan-notice | R-01 flagged on `ul.tp-sched__body` (`repeating-linear-gradient`): it draws the 1 px hour rules; purpose written in plan.css (Block 2). 8 shots (en/he) | "n sessions were missed or now overlap" without guilt words; secondary Re-plan the rest | R-01 purpose (the week grid below) | focal: the notice | ok | PASS (R-01 purpose stated) |
 | plan-replan-preview | PASS, 8 shots (en/he) | what moves where ("Moves from … to …"), what doesn't fit, three ways out | none | focal: the new times; one primary | fixed: "From … to …" read as a span of time | PASS |
 
@@ -89,7 +89,7 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 | record-consent | PASS, 8 shots (en/he) | consent box gates the mic; Start disabled until ticked, with the reason in words | none | focal: "Before you start" | ok | PASS |
 | record-typing | PASS, 8 shots (en/he) | no-key path: typed notes, pins | none | focal: notes box; one primary "Stop and review" | fixed: the pin placeholder was cut at 390 px | PASS |
 | record-review | PASS, 8 shots (en/he) | proposed rows with Accept / Edit / Reject, source line quoted | none | focal: suggested tasks | ok | PASS |
-| record-undo-kept | PASS, 8 shots (en/he) | an Undo the server turns down says why (page changed or a task done) | none | focal: the note | ok | PASS |
+| record-undo-edited | PASS, 8 shots (en/he) | Undo takes the page and its tasks back; the toast names what went with them and offers Bring it back | none | focal: the toast | fixed: Undo used to refuse (HARD_RULES §1); the page leaves room under its last control for the toast (`ec5e045`) | PASS |
 
 ### Ingest, memory, reminders, share, mini-app (T9, T10)
 
@@ -130,12 +130,12 @@ Left, outside this run:
 - page-menu-turn-into: the notes editor's page body has no focus sign (`apps/web/components/editor/live-preview.ts:739`, `"&.cm-focused": { outline: "none" }`), the same R-32 item as above. 4 runs, en and he.
 - Under the half-clipped bar, so not counted: the month grid clips about 30% of an edge day's ring (`apps/web/app/tempo.css:898`, `.tp-month__grid { overflow: hidden }`), and at 390 px the ingest sheet's title field shows 55% of its ring when Tab scrolls it to the sheet body's bottom edge (`apps/web/app/tempo.css:1428`, `.tp-sheet__body` has no scroll padding). Both are shared tempo.css components.
 
-Reduced motion finds nothing because `globals.css:543` and `tempo.css:480` already cut every duration to 0.01 ms under `prefers-reduced-motion: reduce`, and the run's one smooth scroll (the week grid gliding to another week, `WeekGrid.tsx:238`) checks the media query itself; the gallery never changes week, so the walk didn't exercise that one. Dark theme: the same walk with `THEME=dark` (`a11y-walk-dark.json`, run after the fixes): 200 runs, unreached 0, no focus sign 4 (the same notes-editor stop), hidden focus 0, traps 0, reduced motion 0. Not covered: the app shell (the gallery has none, so its sticky top bar can't cover a stop here), screen readers.
+Reduced motion finds nothing because `globals.css:543` and `tempo.css:480` already cut every duration to 0.01 ms under `prefers-reduced-motion: reduce`, and the run's one smooth scroll (the week grid gliding to another week, `WeekGrid.tsx:238`) checks the media query itself; the gallery never changes week, so the walk didn't exercise that one. Dark theme: the same walk with `THEME=dark` (`a11y-walk-dark.json`, rerun on `ec5e045`): 200 runs, unreached 0, no focus sign 4 (the same notes-editor stop), hidden focus 0, traps 0, reduced motion 0. Not covered: the app shell (the gallery has none, so its sticky top bar can't cover a stop here), screen readers.
 
 Notes.
 
 1. The gallery is built as an IIFE: as a classic script its top-level CodeMirror `getSelection` replaced `window.getSelection` and React's select events threw on the plan views. That was the gallery-only page error the first evidence run recorded; it is gone, and the app (Turbopack) was never affected.
 2. Hebrew: every gallery view was shot with `?lang=he` and `dir="rtl"`. The Hebrew copy is machine-written and was not proofread by a native speaker: **UNKNOWN**.
-3. Not checked: live data states (no real Convex deployment, by design: no keys), screen readers, real phones, `prefers-reduced-motion` runs, real speech voices. **UNKNOWN**.
+3. Not checked: live data states (no real Convex deployment, by design: no keys), screen readers, real phones, real speech voices. **UNKNOWN**.
 
-Summary: 436 shots. Gallery, 51 views: 45 PASS, 5 PASS with the R-01 hour-rule purpose written down, 1 FAIL (page-menu-turn-into; pre-existing, outside this run). Live, 9 routes: PASS apart from R-19 on the shell `aside` (and the settings skeleton), both pre-existing.
+Summary: 436 shots. Gallery, 51 views: 46 PASS, 4 PASS with the R-01 hour-rule purpose written down, 1 FAIL (page-menu-turn-into; pre-existing, outside this run). Live, 9 routes: PASS apart from R-19 on the shell `aside` (and the settings skeleton), both pre-existing.
