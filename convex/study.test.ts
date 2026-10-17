@@ -1159,19 +1159,75 @@ describe("set ids from a URL (whole-run review)", () => {
   });
 });
 
-describe("undoCreate keeps a page changed after it was made (whole-run review)", () => {
-  test("an edit after the first seconds keeps the page and the set, and the answer says so", async () => {
+describe("undoCreate always takes the set back in one click, and Bring it back returns it (HARD_RULES §1)", () => {
+  test("an edit after the first seconds goes with the page and the set, and the answer says so", async () => {
     const { t, asA } = await twoUsers();
     const out = await deckSet(asA);
     setSystemTime(new Date(NOW + 2 * MIN));
     await t.run((ctx) => ctx.db.patch(out.noteId, { body: "My own words now.", updatedAt: NOW + MIN }));
     expect(await asA.mutation(api.study.undoCreate, { setId: out.setId })).toEqual({
-      success: false,
-      pageRemoved: false,
-      kept: "pageChanged",
+      success: true,
+      pageRemoved: true,
+      removedEdits: true,
+      redoUntil: NOW + 2 * MIN + UNDO_WINDOW_MS,
     });
     const [note, set] = await t.run(async (ctx) => [await ctx.db.get(out.noteId), await ctx.db.get(out.setId)]);
-    expect(note?.deletedAt).toBeUndefined();
+    expect(note?.deletedAt).toBe(NOW + 2 * MIN);
+    expect(set?.deletedAt).toBe(NOW + 2 * MIN);
+    expect(await asA.query(api.study.getSet, { setId: out.setId })).toBeNull();
+  });
+
+  test("a set studied since it was made is a change too", async () => {
+    const { asA } = await twoUsers();
+    const out = await deckSet(asA);
+    setSystemTime(new Date(NOW + MIN));
+    await asA.mutation(api.study.review, { setId: out.setId, cardId: "c1", button: "good" });
+    expect(await asA.mutation(api.study.undoCreate, { setId: out.setId })).toMatchObject({
+      success: true,
+      pageRemoved: true,
+      removedEdits: true,
+    });
+  });
+
+  test("redoCreate brings back the set and its page as they were, with the changes, once", async () => {
+    const { t, asA } = await twoUsers();
+    const out = await deckSet(asA);
+    setSystemTime(new Date(NOW + MIN));
+    await asA.mutation(api.study.review, { setId: out.setId, cardId: "c1", button: "good" });
+    await t.run((ctx) => ctx.db.patch(out.noteId, { title: "My deck", updatedAt: NOW + MIN }));
+    await asA.mutation(api.study.undoCreate, { setId: out.setId });
+    setSystemTime(new Date(NOW + MIN + UNDO_WINDOW_MS));
+    expect(await asA.mutation(api.study.redoCreate, { setId: out.setId })).toEqual({ success: true, pageRestored: true });
+    const view = await asA.query(api.study.getSet, { setId: out.setId });
+    expect(view?.note).toEqual({ id: out.noteId, title: "My deck" });
+    expect(Object.keys(view?.states ?? {})).toEqual(["c1"]);
+    // Already back: a second tap changes nothing.
+    expect(await asA.mutation(api.study.redoCreate, { setId: out.setId })).toEqual({ success: true, pageRestored: false });
+  });
+
+  test("redoCreate is refused after 5 minutes and for someone else, and leaves things as they are", async () => {
+    const { t, asA, asB } = await twoUsers();
+    const out = await deckSet(asA);
+    await asA.mutation(api.study.undoCreate, { setId: out.setId });
+    await expect(asB.mutation(api.study.redoCreate, { setId: out.setId })).rejects.toThrow(
+      "This study set isn't available.",
+    );
+    setSystemTime(new Date(NOW + UNDO_WINDOW_MS + 1));
+    await expect(asA.mutation(api.study.redoCreate, { setId: out.setId })).rejects.toThrow("5 minutes");
+    const [note, set] = await t.run(async (ctx) => [await ctx.db.get(out.noteId), await ctx.db.get(out.setId)]);
+    expect(note?.deletedAt).toBe(NOW);
+    expect(set?.deletedAt).toBe(NOW);
+  });
+
+  test("redoCreate returns only what that Undo removed: a page deleted before it stays deleted", async () => {
+    const { t, asA } = await twoUsers();
+    const out = await deckSet(asA);
+    await t.run((ctx) => ctx.db.patch(out.noteId, { deletedAt: NOW, updatedAt: NOW }));
+    setSystemTime(new Date(NOW + MIN));
+    expect(await asA.mutation(api.study.undoCreate, { setId: out.setId })).toEqual({ success: true, pageRemoved: false });
+    expect(await asA.mutation(api.study.redoCreate, { setId: out.setId })).toEqual({ success: true, pageRestored: false });
+    const [note, set] = await t.run(async (ctx) => [await ctx.db.get(out.noteId), await ctx.db.get(out.setId)]);
+    expect(note?.deletedAt).toBe(NOW);
     expect(set?.deletedAt).toBeUndefined();
   });
 

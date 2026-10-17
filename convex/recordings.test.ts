@@ -426,19 +426,66 @@ describe("Undo removes only what that save made (whole-run review)", () => {
     await expect(run(recordings.undoSave, world.as(A), saved)).rejects.toThrow("no longer here");
   });
 
-  test("a page changed after the save, or a task already done, keeps everything and says why", async () => {
+  test("Undo always takes the save back in one click, and says when that took changes made since (HARD_RULES §1)", async () => {
     const world = makeWorld();
     const edited = await run(recordings.saveSession, world.as(A), { title: "Edited", body: "x", tasks: [{ title: "One" }] });
     const note = world.row(edited.noteId) as Row & { createdAt: number };
     await world.db.patch(edited.noteId, { body: "x and more", updatedAt: note.createdAt + 60_000 });
-    expect(await run(recordings.undoSave, world.as(A), edited)).toEqual({ success: false, removedTasks: 0, kept: "pageChanged" });
-    expect(world.row(edited.noteId)?.deletedAt).toBeUndefined();
-    expect(world.row(edited.taskIds[0])?.deletedAt).toBeUndefined();
+    const first = await run(recordings.undoSave, world.as(A), edited);
+    expect(first).toMatchObject({ success: true, removedTasks: 1, removedEdits: true });
+    expect(first.redoUntil - Date.now()).toBeLessThanOrEqual(UNDO_WINDOW_MS);
+    expect(first.removedDone).toBeUndefined();
+    expect(world.row(edited.noteId)?.deletedAt).toBeNumber();
+    expect(world.row(edited.taskIds[0])?.deletedAt).toBeNumber();
 
-    const done = await run(recordings.saveSession, world.as(A), { title: "Done", body: "x", tasks: [{ title: "Two" }] });
+    const done = await run(recordings.saveSession, world.as(A), { title: "Done", body: "x", tasks: [{ title: "Two" }, { title: "Three" }] });
     await world.db.patch(done.taskIds[0], { status: "done" });
-    expect(await run(recordings.undoSave, world.as(A), done)).toEqual({ success: false, removedTasks: 0, kept: "taskDone" });
-    expect(world.row(done.noteId)?.deletedAt).toBeUndefined();
-    expect(world.row(done.taskIds[0])?.deletedAt).toBeUndefined();
+    const second = await run(recordings.undoSave, world.as(A), done);
+    expect(second).toMatchObject({ success: true, removedTasks: 2, removedDone: 1 });
+    expect(second.removedEdits).toBeUndefined();
+    expect(second.redoUntil).toBeNumber();
+    expect(world.row(done.noteId)?.deletedAt).toBeNumber();
+    for (const id of done.taskIds) expect(world.row(id)?.deletedAt).toBeNumber();
+
+    // A task renamed after the first seconds is a change too.
+    const renamed = await run(recordings.saveSession, world.as(A), { title: "Renamed", body: "x", tasks: [{ title: "Four" }] });
+    const task = world.row(renamed.taskIds[0]) as Row & { createdAt: number };
+    await world.db.patch(renamed.taskIds[0], { title: "Four, by Friday", updatedAt: task.createdAt + 30_000 });
+    expect(await run(recordings.undoSave, world.as(A), renamed)).toMatchObject({ success: true, removedEdits: true });
+  });
+
+  test("Bring it back returns exactly what the Undo removed, as it was, and the save's Undo works again", async () => {
+    const world = makeWorld();
+    const saved = await run(recordings.saveSession, world.as(A), { title: "Lecture", body: "x", tasks: [{ title: "One" }, { title: "Two" }] });
+    await world.db.patch(saved.taskIds[0], { status: "done" });
+    // A task left out of the Undo (the toast named only the first) is not the Undo's to bring back.
+    await run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: [saved.taskIds[0]] });
+    await world.db.patch(saved.taskIds[1], { deletedAt: Date.now() - 1 });
+    await expect(run(recordings.redoUndo, world.as(B), { noteId: saved.noteId })).rejects.toThrow("nothing here to bring back");
+    expect(await run(recordings.redoUndo, world.as(A), { noteId: saved.noteId })).toEqual({ success: true, restoredTasks: 1 });
+    expect(world.row(saved.noteId)?.deletedAt).toBeUndefined();
+    expect(world.row(saved.taskIds[0])).toMatchObject({ status: "done", deletedAt: undefined });
+    expect(world.row(saved.taskIds[1])?.deletedAt).toBeNumber();
+    // Already back: nothing changes. The save's own Undo finds its record again.
+    expect(await run(recordings.redoUndo, world.as(A), { noteId: saved.noteId })).toEqual({ success: true, restoredTasks: 0 });
+    expect(await run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: [saved.taskIds[0]] })).toMatchObject({
+      success: true,
+      removedTasks: 1,
+    });
+  });
+
+  test("Bring it back after 5 minutes, or with no Undo to take back, says so and changes nothing", async () => {
+    const world = makeWorld();
+    const saved = await run(recordings.saveSession, world.as(A), { title: "Lecture", body: "x", tasks: [{ title: "One" }] });
+    await expect(run(recordings.redoUndo, world.as(A), { noteId: saved.noteId })).resolves.toEqual({ success: true, restoredTasks: 0 });
+    const page = await world.db.insert("notes", { userId: A, title: "Mine", body: "x", createdAt: Date.now(), updatedAt: Date.now() });
+    await expect(run(recordings.redoUndo, world.as(A), { noteId: page })).rejects.toThrow("nothing here to bring back");
+    await run(recordings.undoSave, world.as(A), saved);
+    const receipt = world.rows("recordingSessions").find((row) => row.savedNoteId === saved.noteId) as Row;
+    const long = Date.now() - UNDO_WINDOW_MS - 1_000;
+    for (const id of [receipt._id, saved.noteId, saved.taskIds[0]]) await world.db.patch(id, { deletedAt: long });
+    await expect(run(recordings.redoUndo, world.as(A), { noteId: saved.noteId })).rejects.toThrow("5 minutes");
+    expect(world.row(saved.noteId)?.deletedAt).toBe(long);
+    expect(world.row(saved.taskIds[0])?.deletedAt).toBe(long);
   });
 });

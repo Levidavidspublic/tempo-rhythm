@@ -33,8 +33,8 @@ import { createTaskForUser } from "./tasks";
  *   start returns `{ ok: false, reason: "language" }` and the screen offers typing instead.
  * - `proposeFromTranscript` asks the runtime model for a title, a summary and up to 10 tasks. It
  *   only proposes: nothing is saved until the person accepts on the review screen and presses
- *   Save, which calls `saveSession`. That can be undone for 5 minutes (HARD_RULES §1, §6.2), and
- *   the Undo removes only what that save made, as long as the person hasn't built on it since.
+ *   Save, which calls `saveSession`. That can be undone in one click for 5 minutes (HARD_RULES §1,
+ *   §6.2); the Undo removes only what that save made, and `redoUndo` brings it back for 5 minutes.
  * - The transcript is never stored by any function here, except inside the page body the person
  *   explicitly saves. No audio, transcript, token or provider body is ever logged.
  *
@@ -532,13 +532,15 @@ const SAVE_ERRORS = {
   minutes: "Minutes are a whole number from 1 to 600.",
   undoGone: "The 5 minutes to undo this have passed.",
   undoMissing: "This page is no longer here to undo.",
+  redoGone: "The 5 minutes to bring this back have passed.",
+  redoMissing: "There is nothing here to bring back.",
 } as const;
 
 /**
- * A write to the page this soon after the save is part of making it, not an edit. Later than this,
- * Undo keeps the page (the person has added to it).
+ * A write to the page or a task this soon after the save is part of making it, not an edit. A
+ * later write is the person's own change, and Undo says it took that away too.
  */
-const PAGE_EDIT_GRACE_MS = 5_000;
+const EDIT_GRACE_MS = 5_000;
 
 function saveError(code: keyof typeof SAVE_ERRORS) {
   return new ConvexError({ code, message: SAVE_ERRORS[code] });
@@ -606,21 +608,25 @@ export const saveSession = mutation({
 });
 
 /**
- * Undo `saveSession` within 5 minutes: soft-deletes the page and the tasks that save made, found
- * through the save's own record, never anything else. `taskIds` (what the screen's toast stands
- * for) can only narrow it: a task the save didn't make is left alone. Owner-checked: another
- * person's ids look like missing ones and nothing of theirs is touched.
+ * Undo `saveSession` within 5 minutes, in one click (HARD_RULES §1): soft-deletes the page and the
+ * tasks that save made, found through the save's own record, never anything else, whatever
+ * happened to them since. `taskIds` (what the screen's toast stands for) can only narrow it: a
+ * task the save didn't make is left alone. Owner-checked: another person's ids look like missing
+ * ones and nothing of theirs is touched.
  *
- * When the person has built on the save since, nothing is removed and the answer says why, so
- * the screen can say it in words: the page changed after the first few seconds (`pageChanged`),
- * or one of its tasks is already done (`taskDone`).
+ * When that also takes away the person's own changes, the answer says so, so the screen can say it
+ * in words and offer to bring it all back (`redoUndo`, until `redoUntil`): the page or a task
+ * changed after the first few seconds (`removedEdits: true`), or tasks already marked done
+ * (`removedDone`, how many).
  */
 export const undoSave = mutation({
   args: { noteId: v.id("notes"), taskIds: v.array(v.id("tasks")) },
   returns: v.object({
     success: v.boolean(),
     removedTasks: v.number(),
-    kept: v.optional(v.union(v.literal("pageChanged"), v.literal("taskDone"))),
+    removedEdits: v.optional(v.literal(true)),
+    removedDone: v.optional(v.number()),
+    redoUntil: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -636,21 +642,69 @@ export const undoSave = mutation({
     }
     const now = Date.now();
     if (now - note.createdAt > UNDO_WINDOW_MS) throw saveError("undoGone");
-    if (note.updatedAt - note.createdAt > PAGE_EDIT_GRACE_MS) {
-      return { success: false, removedTasks: 0, kept: "pageChanged" as const };
-    }
+    let edited = note.updatedAt - note.createdAt > EDIT_GRACE_MS;
+    let done = 0;
     const named = new Set<string>(args.taskIds);
     const tasks: Doc<"tasks">[] = [];
     for (const taskId of receipt.savedTaskIds ?? []) {
       if (!named.has(taskId)) continue;
       const task = await ctx.db.get(taskId);
       if (!task || task.userId !== user._id || task.deletedAt !== undefined) continue;
-      if (task.status === "done") return { success: false, removedTasks: 0, kept: "taskDone" as const };
+      if (task.status === "done") done += 1;
+      else if (task.updatedAt - task.createdAt > EDIT_GRACE_MS) edited = true;
       tasks.push(task);
     }
     await ctx.db.patch(note._id, { deletedAt: now, updatedAt: now });
     for (const task of tasks) await ctx.db.patch(task._id, { deletedAt: now, updatedAt: now });
     await ctx.db.patch(receipt._id, { deletedAt: now, updatedAt: now });
-    return { success: true, removedTasks: tasks.length };
+    return {
+      success: true,
+      removedTasks: tasks.length,
+      ...(edited ? { removedEdits: true as const } : {}),
+      ...(done > 0 ? { removedDone: done } : {}),
+      ...(edited || done > 0 ? { redoUntil: now + UNDO_WINDOW_MS } : {}),
+    };
+  },
+});
+
+/**
+ * Bring it back: takes `undoSave` back for 5 minutes after it. The page and the tasks that Undo
+ * removed return as they were, found through the save's own record and only those soft-deleted
+ * in that same write, and so does the record, so the save's own Undo works again while its window
+ * lasts. Owner-checked: another person's page reads as missing. A save that is already back
+ * changes nothing.
+ */
+export const redoUndo = mutation({
+  args: { noteId: v.id("notes") },
+  returns: v.object({ success: v.boolean(), restoredTasks: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const receipts = await ctx.db
+      .query("recordingSessions")
+      .withIndex("by_userId_savedNoteId", (q) => q.eq("userId", user._id).eq("savedNoteId", args.noteId))
+      .take(2);
+    if (receipts.some((row) => row.deletedAt === undefined)) {
+      return { success: true, restoredTasks: 0 };
+    }
+    const receipt = receipts.find((row) => row.deletedAt !== undefined);
+    const undoneAt = receipt?.deletedAt;
+    if (!receipt || undoneAt === undefined) throw saveError("redoMissing");
+    const now = Date.now();
+    if (now - undoneAt > UNDO_WINDOW_MS) throw saveError("redoGone");
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== user._id) throw saveError("redoMissing");
+    // Only what that Undo removed: anything deleted at another time stays as it is.
+    if (note.deletedAt === undoneAt) {
+      await ctx.db.patch(note._id, { deletedAt: undefined, updatedAt: now });
+    }
+    let restoredTasks = 0;
+    for (const taskId of receipt.savedTaskIds ?? []) {
+      const task = await ctx.db.get(taskId);
+      if (!task || task.userId !== user._id || task.deletedAt !== undoneAt) continue;
+      await ctx.db.patch(task._id, { deletedAt: undefined, updatedAt: now });
+      restoredTasks += 1;
+    }
+    await ctx.db.patch(receipt._id, { deletedAt: undefined, updatedAt: now });
+    return { success: true, restoredTasks };
   },
 });

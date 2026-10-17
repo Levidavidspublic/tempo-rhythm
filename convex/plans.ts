@@ -14,7 +14,8 @@ import { createTaskForUser } from "./tasks";
  * `createFromPreview` turns the sessions the person saw in the "Plan back from a deadline"
  * preview into ordinary tasks (one per session, elastic, grouped by `projectName` = plan title)
  * plus one `studyPlans` row that remembers them. Nothing is written before the person presses
- * "Add these sessions", and `undoCreate` takes the whole plan back for 5 minutes (HARD_RULES §1).
+ * "Add these sessions", `undoCreate` takes the whole plan back in one click for 5 minutes
+ * (HARD_RULES §1), and `redoUndo` brings that back for 5 minutes after the Undo.
  *
  * `replan` ("Re-plan the rest", PRD F-07) moves the plan's missed or clashing sessions to the new
  * times the person accepted on the plan screen (worked out there by `replanRest` in
@@ -232,13 +233,27 @@ export const createFromPreview = mutation({
 });
 
 /**
- * Takes a just-made plan back: the plan and its tasks are soft-deleted. Only for 5 minutes. When
- * one of its sessions is already marked done, that is the person's own progress: nothing is
- * removed and the answer says so (`kept: "sessionDone"`), so the screen can say it in words.
+ * A write to a plan or one of its sessions this soon after it was made is part of making it, not
+ * an edit. A later write is the person's own change, and `undoCreate` says it took that away too.
+ */
+const EDIT_GRACE_MS = 5_000;
+
+/**
+ * Takes a just-made plan back in one click, for 5 minutes (HARD_RULES §1): the plan and its live
+ * sessions are soft-deleted, whatever was done with them since. When that also takes away the
+ * person's own progress, the answer says so, so the screen can say it in words and offer to bring
+ * it all back (`redoUndo`, until `redoUntil`): sessions already marked done (`removedDone`, how
+ * many), or a session or the plan changed after its first few seconds, such as a move, a re-plan
+ * or a session marked as doing (`removedEdits: true`).
  */
 export const undoCreate = mutation({
   args: { planId: v.id("studyPlans") },
-  returns: v.object({ removedTasks: v.number(), kept: v.optional(v.literal("sessionDone")) }),
+  returns: v.object({
+    removedTasks: v.number(),
+    removedDone: v.optional(v.number()),
+    removedEdits: v.optional(v.literal(true)),
+    redoUntil: v.optional(v.number()),
+  }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const plan = await ownedPlan(ctx, user._id, args.planId);
@@ -249,15 +264,54 @@ export const undoCreate = mutation({
       throw new Error("The 5 minutes to undo this plan have passed. You can still edit each session.");
     }
     const live: Doc<"tasks">[] = [];
+    let done = 0;
+    let edited = plan.updatedAt - plan.createdAt > EDIT_GRACE_MS;
     for (const taskId of plan.taskIds) {
       const task = await ctx.db.get(taskId);
       if (!task || task.userId !== user._id || task.deletedAt !== undefined) continue;
-      if (task.status === "done") return { removedTasks: 0, kept: "sessionDone" as const };
+      if (task.status === "done") done += 1;
+      else if (task.updatedAt - task.createdAt > EDIT_GRACE_MS) edited = true;
       live.push(task);
     }
     for (const task of live) await ctx.db.patch(task._id, { deletedAt: now, updatedAt: now });
     await ctx.db.patch(args.planId, { deletedAt: now, updatedAt: now });
-    return { removedTasks: live.length };
+    return {
+      removedTasks: live.length,
+      ...(done > 0 ? { removedDone: done } : {}),
+      ...(edited ? { removedEdits: true as const } : {}),
+      ...(done > 0 || edited ? { redoUntil: now + UNDO_WINDOW_MS } : {}),
+    };
+  },
+});
+
+/**
+ * Bring it back: takes `undoCreate` back for 5 minutes after it. The plan returns with exactly the
+ * sessions that Undo removed (soft-deleted in that same write), as they were, done marks and all;
+ * sessions a re-plan left out earlier stay out. Owner-checked; a plan that is already back changes
+ * nothing.
+ */
+export const redoUndo = mutation({
+  args: { planId: v.id("studyPlans") },
+  returns: v.object({ restoredTasks: v.number() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const plan = await ownedPlan(ctx, user._id, args.planId);
+    if (!plan) throw new Error("Plan not found");
+    const undoneAt = plan.deletedAt;
+    if (undoneAt === undefined) return { restoredTasks: 0 };
+    const now = Date.now();
+    if (now - undoneAt > UNDO_WINDOW_MS) {
+      throw new Error("The 5 minutes to bring this plan back have passed. You can make it again.");
+    }
+    let restoredTasks = 0;
+    for (const taskId of plan.taskIds) {
+      const task = await ctx.db.get(taskId);
+      if (!task || task.userId !== user._id || task.deletedAt !== undoneAt) continue;
+      await ctx.db.patch(taskId, { deletedAt: undefined, updatedAt: now });
+      restoredTasks += 1;
+    }
+    await ctx.db.patch(plan._id, { deletedAt: undefined, updatedAt: now });
+    return { restoredTasks };
   },
 });
 

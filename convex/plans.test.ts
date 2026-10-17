@@ -626,21 +626,69 @@ describe("plans: bounds from the whole-run review", () => {
   });
 });
 
-describe("plans.undoCreate keeps the person's progress (whole-run review)", () => {
-  test("a plan with a session already done is kept, and the answer says so", async () => {
+describe("plans.undoCreate always takes the plan back, and Bring it back returns it (HARD_RULES §1)", () => {
+  test("a plan with a session already done goes too, in one click, and the answer says so", async () => {
     setSystemTime(T0);
     const ctx = makeFakeCtx(A);
     const { planId } = await run(plans.createFromPreview, ctx, preview());
     const plan = await ctx.db.get(planId);
-    await ctx.db.patch(plan.taskIds[0], { status: "done" });
+    await ctx.db.patch(plan.taskIds[0], { status: "done", updatedAt: T0 + 30_000 });
     setSystemTime(T0 + 60_000);
-    expect(await run(plans.undoCreate, ctx, { planId })).toEqual({ removedTasks: 0, kept: "sessionDone" });
-    expect((await ctx.db.get(planId)).deletedAt).toBeUndefined();
-    for (const id of plan.taskIds) expect((await ctx.db.get(id)).deletedAt).toBeUndefined();
-    // A session in progress is not done: that plan still goes.
-    const other = await run(plans.createFromPreview, ctx, preview({ title: "Other" }));
-    const otherPlan = await ctx.db.get(other.planId);
-    await ctx.db.patch(otherPlan.taskIds[0], { status: "in_progress" });
-    expect(await run(plans.undoCreate, ctx, { planId: other.planId })).toEqual({ removedTasks: 2 });
+    expect(await run(plans.undoCreate, ctx, { planId })).toEqual({
+      removedTasks: 2,
+      removedDone: 1,
+      redoUntil: T0 + 60_000 + UNDO_WINDOW_MS,
+    });
+    expect((await ctx.db.get(planId)).deletedAt).toBe(T0 + 60_000);
+    for (const id of plan.taskIds) expect((await ctx.db.get(id)).deletedAt).toBe(T0 + 60_000);
+  });
+
+  test("a session moved or marked doing after the first seconds is a change too", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A);
+    const { planId } = await run(plans.createFromPreview, ctx, preview());
+    const plan = await ctx.db.get(planId);
+    await ctx.db.patch(plan.taskIds[1], { status: "in_progress", updatedAt: T0 + 30_000 });
+    setSystemTime(T0 + 60_000);
+    expect(await run(plans.undoCreate, ctx, { planId })).toEqual({
+      removedTasks: 2,
+      removedEdits: true,
+      redoUntil: T0 + 60_000 + UNDO_WINDOW_MS,
+    });
+  });
+
+  test("redoUndo brings back the plan with exactly the sessions that Undo removed, done marks and all", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A);
+    const { planId } = await run(plans.createFromPreview, ctx, preview());
+    const plan = await ctx.db.get(planId);
+    await ctx.db.patch(plan.taskIds[0], { status: "done", updatedAt: T0 + 30_000 });
+    // A session a re-plan left out earlier was deleted at another time: it stays out.
+    await ctx.db.patch(plan.taskIds[1], { deletedAt: T0 + 40_000, updatedAt: T0 + 40_000 });
+    setSystemTime(T0 + 60_000);
+    expect(await run(plans.undoCreate, ctx, { planId })).toMatchObject({ removedTasks: 1, removedDone: 1 });
+    setSystemTime(T0 + 60_000 + UNDO_WINDOW_MS);
+    expect(await run(plans.redoUndo, ctx, { planId })).toEqual({ restoredTasks: 1 });
+    const back = await run(plans.get, ctx, { planId });
+    expect(back.tasks.map((task: { _id: string; status: string }) => [task._id, task.status])).toEqual([
+      [plan.taskIds[0], "done"],
+    ]);
+    expect((await ctx.db.get(plan.taskIds[1])).deletedAt).toBe(T0 + 40_000);
+    expect(await run(plans.list, ctx, {})).toHaveLength(1);
+    // Already back: a second tap changes nothing.
+    expect(await run(plans.redoUndo, ctx, { planId })).toEqual({ restoredTasks: 0 });
+  });
+
+  test("redoUndo is refused after 5 minutes and for someone else, and changes nothing", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A, [B]);
+    const { planId } = await run(plans.createFromPreview, ctx, preview());
+    await run(plans.undoCreate, ctx, { planId });
+    await expect(run(plans.redoUndo, as(ctx, B), { planId })).rejects.toThrow("Plan not found");
+    setSystemTime(T0 + UNDO_WINDOW_MS + 1);
+    await expect(run(plans.redoUndo, ctx, { planId })).rejects.toThrow(/5 minutes/);
+    const plan = await ctx.db.get(planId);
+    expect(plan.deletedAt).toBe(T0);
+    for (const id of plan.taskIds) expect((await ctx.db.get(id)).deletedAt).toBe(T0);
   });
 });

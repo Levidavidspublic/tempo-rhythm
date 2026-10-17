@@ -57,8 +57,9 @@ import {
  * schedule state, the review log (for Undo) and quiz/test scores. Every function is owner-checked
  * (`requireUser`), and every set read goes through the page guard (`requireLivePage`), so a set on
  * a deleted page or account is unreachable. AI only proposes (`generate` never saves); the person
- * accepts with `createFromPreview`, which can be undone for 5 minutes (HARD_RULES §1, §6.2). A
- * saved set can be edited later (`updateBlock`, written back into its page), with the same Undo.
+ * accepts with `createFromPreview`, which can be undone for 5 minutes (HARD_RULES §1, §6.2), and
+ * an Undo can be brought back for 5 minutes (`redoCreate`). A saved set can be edited later
+ * (`updateBlock`, written back into its page), with the same Undo.
  */
 
 const kindValidator = v.union(v.literal("flashcards"), v.literal("quiz"), v.literal("test"));
@@ -371,20 +372,30 @@ export const createFromPreview = mutation({
 });
 
 /**
- * A write to a made page this soon after it was made is part of making it, not an edit. Later
- * than this, `undoCreate` keeps the page (the person has added to it).
+ * A write to a made page this soon after it was made is part of making it, not an edit. A later
+ * write is the person's own change, and `undoCreate` says it took that away too.
  */
 const PAGE_EDIT_GRACE_MS = 5_000;
-
-/** What `undoCreate` did: took the set (and the page it made) back, or kept both, and why. */
-export type UndoCreateResult =
-  | { success: true; pageRemoved: boolean }
-  | { success: false; pageRemoved: false; kept: "pageChanged" };
+const REDO_GONE = "The 5 minutes to bring this back have passed.";
 
 /**
- * Undo `createFromPreview` within 5 minutes: removes the set and the page it made. When that page
- * changed after its first few seconds, the person has added to it: nothing is removed and the
- * answer says so (`kept: "pageChanged"`), so the screen can say it in words.
+ * What `undoCreate` did: it took the set (and the page it made) back. When that also took away
+ * what the person did since (`removedEdits`), `redoUntil` is when `redoCreate` stops bringing it
+ * back.
+ */
+export type UndoCreateResult = {
+  success: true;
+  pageRemoved: boolean;
+  removedEdits?: true;
+  redoUntil?: number;
+};
+
+/**
+ * Undo `createFromPreview` within 5 minutes, in one click (HARD_RULES §1): removes the set and the
+ * page it made (soft deletes), whatever happened to them since. When that also takes away the
+ * person's own changes (the page changed after its first few seconds, or the set was studied),
+ * the answer says so (`removedEdits: true`, with `redoUntil`), so the screen can say it in words
+ * and offer to bring it all back (`redoCreate`).
  */
 export const undoCreate = mutation({
   args: { setId: v.id("studySets") },
@@ -400,12 +411,42 @@ export const undoCreate = mutation({
     }
     const note = set.createdByTempo ? await ctx.db.get(set.noteId) : null;
     const page = note && note.userId === user._id && note.deletedAt === undefined ? note : null;
-    if (page && page.updatedAt - set.createdAt > PAGE_EDIT_GRACE_MS) {
-      return { success: false, pageRemoved: false, kept: "pageChanged" };
-    }
+    const removedEdits =
+      (page !== null && page.updatedAt - set.createdAt > PAGE_EDIT_GRACE_MS) ||
+      set.lastStudiedAt !== undefined;
     await ctx.db.patch(set._id, { deletedAt: now, updatedAt: now });
     if (page) await ctx.db.patch(page._id, { deletedAt: now, updatedAt: now });
-    return { success: true, pageRemoved: page !== null };
+    return {
+      success: true,
+      pageRemoved: page !== null,
+      ...(removedEdits ? { removedEdits: true as const, redoUntil: now + UNDO_WINDOW_MS } : {}),
+    };
+  },
+});
+
+/**
+ * Bring it back: takes `undoCreate` back for 5 minutes after it. The set returns, and so does the
+ * page when that Undo removed it (both were soft-deleted in that one write), as they were, with
+ * every change made before the Undo. Owner-checked; a set that is already back changes nothing.
+ */
+export const redoCreate = mutation({
+  args: { setId: v.id("studySets") },
+  handler: async (ctx, args): Promise<{ success: true; pageRestored: boolean }> => {
+    const user = await requireUser(ctx);
+    const set = await ctx.db.get(args.setId);
+    if (!set || set.userId !== user._id || !set.createdByTempo) {
+      throw new Error(SET_UNAVAILABLE);
+    }
+    const undoneAt = set.deletedAt;
+    if (undoneAt === undefined) return { success: true, pageRestored: false };
+    const now = Date.now();
+    if (now - undoneAt > UNDO_WINDOW_MS) throw new Error(REDO_GONE);
+    const note = await ctx.db.get(set.noteId);
+    // Only what that Undo removed: a page deleted at another time (or someone else's) stays as it is.
+    const page = note && note.userId === user._id && note.deletedAt === undoneAt ? note : null;
+    await ctx.db.patch(set._id, { deletedAt: undefined, updatedAt: now });
+    if (page) await ctx.db.patch(page._id, { deletedAt: undefined, updatedAt: now });
+    return { success: true, pageRestored: page !== null };
   },
 });
 
