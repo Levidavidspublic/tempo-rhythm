@@ -39,6 +39,8 @@ import { useLiveWords } from "./useLiveWords";
 
 type Step = "consent" | "capture" | "review" | "saved";
 type Saved = { noteId: Id<"notes">; taskIds: Id<"tasks">[]; undoUntil: number; count: number };
+/** Why the server kept a save on Undo: the page changed since, or one of its tasks is done. */
+type KeptReason = "pageChanged" | "taskDone";
 
 function prefersReducedMotion(): boolean {
   try {
@@ -59,6 +61,8 @@ const nextId = (prefix: string) => {
 /**
  * RecordSession (kitchen T8, S7): record a meeting or lecture. Consent → live words (or typed
  * notes) with pins → review → one page and the tasks the person accepted, with a 5-minute Undo.
+ * Undo takes back only what that save made; when the person has built on it since (the page
+ * changed, or a task is done) the server keeps it and the saved step says why.
  * Audio is never stored; the transcript lives only in this screen until the person saves.
  */
 export function RecordSession() {
@@ -91,6 +95,7 @@ export function RecordSession() {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [undone, setUndone] = useState(false);
+  const [kept, setKept] = useState<KeptReason | null>(null);
   const titleTouched = useRef(false);
   const reviewRun = useRef(0);
   const rowsRef = useRef(rows);
@@ -144,6 +149,7 @@ export function RecordSession() {
     const at = Date.now();
     if (startedAt.current === 0) startedAt.current = at;
     setUndone(false);
+    setKept(null);
     setMode(nextMode);
     setStep("capture");
     setNow(at);
@@ -232,8 +238,9 @@ export function RecordSession() {
         lang: talkLang,
         summary,
       });
-      const result = await saveSession({ title: title.trim(), body, tasks });
+      const result = await saveSession({ title: title.trim(), body, tasks, lang: talkLang });
       reviewRun.current += 1;
+      setKept(null);
       setProposing(false);
       setSaved({ ...result, count: tasks.length });
       setToastOpen(true);
@@ -247,7 +254,12 @@ export function RecordSession() {
 
   const undo = async () => {
     if (!saved) return;
-    await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds });
+    const result = await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds });
+    if (result.kept) {
+      // Nothing was removed: the save stays on the saved step, with the reason in words.
+      setKept(result.kept);
+      return;
+    }
     setSaved(null);
     setUndone(true);
     setStep("review");
@@ -268,6 +280,7 @@ export function RecordSession() {
     setSaved(null);
     setToastOpen(false);
     setUndone(false);
+    setKept(null);
     setConsent(false);
     live.clearIssue();
     setStep("consent");
@@ -363,6 +376,17 @@ export function RecordSession() {
             setClock((current) => clockPause(current, Date.now()));
           }}
         />
+      ) : null}
+
+      {step === "saved" && saved && kept ? (
+        <output className="tp-notice" data-tone="info" data-component="Notice" data-rec-kept={kept}>
+          <span className="tp-notice__icon">
+            <TpIcon name="info" />
+          </span>
+          <span className="tp-notice__text">
+            {copy(kept === "taskDone" ? "rec.undoKept.taskDone" : "rec.undoKept.pageChanged")}
+          </span>
+        </output>
       ) : null}
 
       {step === "saved" && saved ? <SavedStep noteId={saved.noteId} copy={copy} onAgain={restart} /> : null}

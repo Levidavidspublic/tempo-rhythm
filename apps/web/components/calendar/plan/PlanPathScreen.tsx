@@ -7,7 +7,8 @@
  * (S9): Edit changes the sessions here only, and nothing is saved until the card's one primary
  * button, "Add these sessions", calls `plans.createFromPreview` with the edited sessions. The
  * card then shows Undo for 5 minutes (`plans.undoCreate`) and a To do / Doing / Done status per
- * session (`tasks.update`). Reject sets the preview aside until the form changes. While Undo is
+ * session (`tasks.update`); an Undo the server turns down because a session is already done keeps
+ * the plan and says why. Reject sets the preview aside until the form changes. While Undo is
  * open the accepted plan stays on the card even if the form changes, so it can't be added twice.
  * Above the form, ReplanPanel offers to move the saved plan's missed or clashing sessions.
  */
@@ -37,6 +38,7 @@ import {
   sessionsFromSteps,
   shownDecision,
   toGuidedSteps,
+  undoNotice,
   waysOut,
 } from "./planForm";
 import { SessionScheduler } from "./SessionScheduler";
@@ -195,7 +197,12 @@ export function PlanPathScreen() {
     setSaving(true);
     setMessage(null);
     try {
-      await undoCreate({ planId: taken });
+      const notice = undoNotice(await undoCreate({ planId: taken }));
+      if (notice) {
+        // Kept (a session is already done): the plan stays on the card and the screen says why.
+        setMessage(notice);
+        return;
+      }
       setPlanId((id) => (id === taken ? null : id));
       setDecision({ ...current, status: "undone" });
     } catch {
@@ -231,7 +238,12 @@ export function PlanPathScreen() {
   };
 
   const messageNode = message ? (
-    <p className={message === "pp.signIn" ? "tp-help" : "tp-error-text"} role="alert">
+    <p
+      className={
+        message === "pp.signIn" || message === "pp.g.undoKept" ? "tp-help" : "tp-error-text"
+      }
+      role="alert"
+    >
       <span>{pt(lang, message)}</span>
       {message === "pp.signIn" ? (
         <>
@@ -328,7 +340,13 @@ function readClock(now: Date = new Date()): Clock {
   };
 }
 
-type Message = "pp.signIn" | "pp.error" | "pp.err.title" | "pp.g.undoError" | "pp.g.statusError";
+type Message =
+  | "pp.signIn"
+  | "pp.error"
+  | "pp.err.title"
+  | "pp.g.undoError"
+  | "pp.g.undoKept"
+  | "pp.g.statusError";
 
 type Decision = {
   /** The preview this decision belongs to (`previewKey`). */

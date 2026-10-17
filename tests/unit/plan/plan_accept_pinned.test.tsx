@@ -17,7 +17,9 @@ import {
   previewKey,
   shownDecision,
   toGuidedSteps,
+  undoNotice,
 } from "../../../apps/web/components/calendar/plan/planForm";
+import { pt } from "../../../apps/web/components/calendar/planCopy";
 
 const TODAY = "2026-10-16";
 
@@ -121,5 +123,17 @@ describe("PlanPreview with a pinned accepted card", () => {
     );
     expect(html).toContain('data-action="guided-accept"');
     expect(html).toContain('data-state="pending"');
+  });
+});
+
+describe("Undo the server turns down", () => {
+  test("a plan kept because a session is done is said in words, in both languages", () => {
+    expect(undoNotice({ removedTasks: 2 })).toBeNull();
+    const key = undoNotice({ removedTasks: 0, kept: "sessionDone" });
+    expect(key).toBe("pp.g.undoKept");
+    if (!key) throw new Error("expected a notice");
+    expect(pt("en", key)).toBe("A session of this plan is already done, so the plan was kept.");
+    expect(pt("he", key)).not.toBe(pt("en", key));
+    expect(pt("he", key)).not.toContain("—");
   });
 });

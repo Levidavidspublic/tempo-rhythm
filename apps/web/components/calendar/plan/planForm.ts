@@ -352,6 +352,17 @@ export function shownDecision<D extends { key: string; status: string }>(
   return { decision: decision && decision.key === key ? decision : null, pinned: false };
 }
 
+/**
+ * What the plan screen says after Undo (`plans.undoCreate`): nothing when the plan was taken back,
+ * or why it was kept (a session of it is already done), as a copy key.
+ */
+export function undoNotice(answer: {
+  removedTasks: number;
+  kept?: "sessionDone";
+}): "pp.g.undoKept" | null {
+  return answer.kept === "sessionDone" ? "pp.g.undoKept" : null;
+}
+
 /** GuidedPlanCard's words in the person's language. Accept reuses "Add these sessions". */
 export function guidedLabels(lang: PlanLang): GuidedPlanLabels {
   return {

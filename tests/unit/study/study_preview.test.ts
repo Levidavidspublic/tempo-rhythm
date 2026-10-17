@@ -182,6 +182,15 @@ describe("Accept / Edit / Reject", () => {
     expect(state.undone).toBe(true);
     expect(state.created).toBeNull();
   });
+  test("Undo on a page changed since keeps the set accepted and says so", () => {
+    const state = run({ type: "accept" }, { type: "saved", created }, { type: "kept" });
+    expect(state.phase).toBe("accepted");
+    expect(state.kept).toBe(true);
+    expect(state.undone).toBe(false);
+    expect(state.created).toEqual(created);
+    // Only an accepted set can be kept; a fresh preview ignores it.
+    expect(proposalReducer(initialProposal, { type: "kept" })).toBe(initialProposal);
+  });
 });
 
 describe("edit limits the codec sets", () => {

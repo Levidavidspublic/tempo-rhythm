@@ -67,8 +67,12 @@ export type TurnIntoViewProps = {
   online: boolean;
   onGenerate: () => Promise<GenerateResult>;
   onCreate: (preview: StudyPreview, title: string) => Promise<Created>;
-  onUndo: (setId: string) => Promise<void>;
+  /** "kept" when the server kept the set because its page changed after it was made. */
+  onUndo: (setId: string) => Promise<UndoOutcome>;
 };
+
+/** What Undo did: took the set back, or kept it (the page changed after it was made). */
+export type UndoOutcome = "undone" | "kept";
 
 const TITLE_KEY: Record<StudyBlockType, MessageKey> = {
   flashcards: "st.pv.title.flashcards",
@@ -267,8 +271,8 @@ function PreviewCard({
         dispatch({ type: "saved", created });
         setToast(
           makeToast(t("st.pv.toast"), async () => {
-            await onUndo(created.setId);
-            dispatch({ type: "undone" });
+            const outcome = await onUndo(created.setId);
+            dispatch({ type: outcome === "kept" ? "kept" : "undone" });
           })
         );
       })
@@ -371,6 +375,12 @@ function PreviewCard({
           <output className="tp-proposal__note">
             <TpIcon name="undo" size="sm" />
             <span>{t("st.pv.undone")}</span>
+          </output>
+        ) : null}
+        {state.kept ? (
+          <output className="tp-proposal__note" data-kept="pageChanged">
+            <TpIcon name="info" size="sm" />
+            <span>{t("st.pv.kept")}</span>
           </output>
         ) : null}
         {state.error === "save" ? (

@@ -108,7 +108,8 @@ function TurnIntoData({ from, kind }: { from?: string; kind: StudyBlockType }) {
         return { noteId: created.noteId, setId: created.setId, undoUntil: created.undoUntil };
       }}
       onUndo={async (setId) => {
-        await undoCreate({ setId: setId as Id<"studySets"> });
+        const result = await undoCreate({ setId: setId as Id<"studySets"> });
+        return result.success ? "undone" : "kept";
       }}
     />
   );

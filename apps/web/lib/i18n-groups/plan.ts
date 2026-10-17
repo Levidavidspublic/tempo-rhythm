@@ -124,6 +124,7 @@ export const en = {
   "pp.g.tooFew": "Keep at least one session.",
   "pp.g.statusError": "That didn't save. Try again in a moment.",
   "pp.g.undoError": "That didn't undo. Try again in a moment.",
+  "pp.g.undoKept": "A session of this plan is already done, so the plan was kept.",
 
   // Re-plan the rest (PRD F-07): missed or overlapping sessions move to new times
   "rp.n.missed1": "1 session was missed. Move it to a new time?",
@@ -300,6 +301,7 @@ export const he: Record<keyof typeof en, string> = {
   "pp.g.tooFew": "השאירו לפחות מפגש אחד.",
   "pp.g.statusError": "זה לא נשמר. אפשר לנסות שוב בעוד רגע.",
   "pp.g.undoError": "הביטול לא עבר. אפשר לנסות שוב בעוד רגע.",
+  "pp.g.undoKept": "אחד המפגשים בתוכנית כבר בוצע, ולכן התוכנית נשארה.",
 
   "rp.n.missed1": "מפגש אחד התפספס. להעביר אותו לזמן חדש?",
   "rp.n.missedN": "{n} מפגשים התפספסו. להעביר אותם לזמנים חדשים?",

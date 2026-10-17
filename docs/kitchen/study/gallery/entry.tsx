@@ -14,7 +14,10 @@
 // (nothing found, with the page link) and study-set-ask-he (a pointed Hebrew deck answering an
 // unpointed question). MOCKED: the sample decks and pages below; the search itself is the real one.
 // The whole-run review adds study-hub-truncated (a hub past its read budget says it shows the most
-// recent sets). MOCKED: the sample sets below.
+// recent sets), and three Undo answers the server turns down, each said in words: study-new-undo-kept
+// (the page changed after it was made), plan-undo-kept (a session is already done) and
+// record-undo-kept (the saved page changed). MOCKED: the sample sets, plan and notes below, with
+// stand-in "kept" answers.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -270,7 +273,10 @@ const calls: Record<string, unknown> = {
   "study.undoReview": { success: true, state: null },
   "study.generate": { status: "unavailable", reason: "no_key" },
   "study.createFromPreview": { noteId: "notes:21", setId: "studySets:21", undoUntil: NOW + 5 * MIN },
-  "study.undoCreate": { success: true, pageRemoved: true },
+  "study.undoCreate":
+    view === "study-new-undo-kept"
+      ? { success: false, pageRemoved: false, kept: "pageChanged" }
+      : { success: true, pageRemoved: true },
   "study.recordAttempt": { attemptId: "studyAttempts:2", percent: 33 },
   "study.removeSet": { success: true, undoUntil: NOW + 5 * MIN },
   "study.restoreSet": { success: true },
@@ -361,6 +367,12 @@ Object.assign(calls, {
   "plans.createFromPreview": { planId: "studyPlans:1", undoUntil: NOW + 5 * MIN },
   "plans.replan": { undoUntil: NOW + 5 * MIN, moved: 2, removed: 0 },
   "plans.undoReplan": { restored: 2 },
+  "plans.undoCreate": view === "plan-undo-kept" ? { removedTasks: 0, kept: "sessionDone" } : { removedTasks: 4 },
+  "recordings.saveSession": { noteId: "notes:41", taskIds: ["tasks:41"], undoUntil: NOW + 5 * MIN },
+  "recordings.undoSave":
+    view === "record-undo-kept"
+      ? { success: false, removedTasks: 0, kept: "pageChanged" }
+      : { success: true, removedTasks: 1 },
   "notes.create": "notes:31",
   "memory.update": { success: true },
 });
@@ -644,6 +656,11 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={failingVoice} />;
   },
   "study-new-preview": () => <TurnIntoPreview from="notes:11" kind="flashcards" />,
+  // Accept, then Undo after the page changed: the set stays and the card says why.
+  "study-new-undo-kept": () => {
+    steps(click('[data-action="accept"]'), click('[data-component="UndoToast"] .tp-btn--secondary'));
+    return <TurnIntoPreview from="notes:11" kind="flashcards" />;
+  },
   "study-new-nokey": () => {
     steps(click('[data-action="ask-coach"]'));
     return <TurnIntoPreview from="notes:11" kind="quiz" />;
@@ -678,6 +695,18 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <PlanPathScreen />;
   },
   "plan-scheduler": () => <PlanPathScreen />,
+  // Add the sessions, then Undo after one is done: the plan stays and the screen says why.
+  "plan-undo-kept": () => {
+    steps(
+      fill('input[name="title"]', he ? "בגרות בביולוגיה" : "Biology bagrut"),
+      fill('input[name="deadline"]', addDays(today, 21)),
+      fill('textarea[name="topics"]', PLAN_TOPICS),
+      fill('input[name="minutesPerDay"]', "90"),
+      click('[data-action="guided-accept"]'),
+      click('[data-action="guided-undo"]'),
+    );
+    return <PlanPathScreen />;
+  },
   "record-consent": () => <RecordSession />,
   "record-typing": () => {
     steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-pins .tp-btn--secondary"));
@@ -685,6 +714,17 @@ const VIEWS: Record<string, () => ReactNode> = {
   },
   "record-review": () => {
     steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-dock .tp-btn--primary"));
+    return <RecordSession />;
+  },
+  // Save typed notes, then Undo after the page changed: the save stays and the screen says why.
+  "record-undo-kept": () => {
+    steps(
+      click(".tp-form__actions .tp-btn--primary"),
+      fill("#rec-typed", RECORD_NOTES),
+      click(".tp-rec-dock .tp-btn--primary"),
+      click('[aria-describedby="rec-save-note"]'),
+      click('[data-component="UndoToast"] .tp-btn--secondary'),
+    );
     return <RecordSession />;
   },
   "ingest-paste": () => <IngestSheetView initialTab="paste" initialText={INGEST_TEXT} onClose={() => {}} onSave={async () => "notes:31"} online photoSupported />,

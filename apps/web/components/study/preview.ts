@@ -426,6 +426,8 @@ export type ProposalState = {
   error: "save" | null;
   /** The person took an accepted preview back with Undo. */
   undone: boolean;
+  /** Undo was turned down because the page changed after it was made: the set stays. */
+  kept: boolean;
   created: Created | null;
 };
 
@@ -437,16 +439,21 @@ export type ProposalAction =
   | { type: "saveError" }
   | { type: "reject" }
   | { type: "reopen" }
-  | { type: "undone" };
+  | { type: "undone" }
+  | { type: "kept" };
 
 export const initialProposal: ProposalState = {
   phase: "preview",
   error: null,
   undone: false,
+  kept: false,
   created: null,
 };
 
-/** The flow: preview ⇄ editing → saving → accepted (→ Undo back to preview), or → rejected. */
+/**
+ * The flow: preview ⇄ editing → saving → accepted (→ Undo back to preview, or kept when the page
+ * changed since), or → rejected.
+ */
 export function proposalReducer(state: ProposalState, action: ProposalAction): ProposalState {
   switch (action.type) {
     case "edit":
@@ -473,6 +480,8 @@ export function proposalReducer(state: ProposalState, action: ProposalAction): P
       return state.phase === "rejected" ? { ...initialProposal } : state;
     case "undone":
       return state.phase === "accepted" ? { ...initialProposal, undone: true } : state;
+    case "kept":
+      return state.phase === "accepted" ? { ...state, kept: true } : state;
   }
 }
 

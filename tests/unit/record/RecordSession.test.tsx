@@ -257,6 +257,29 @@ describe("review and save", () => {
     expect(view.textContent).toContain("Review before saving");
   });
 
+  test("Undo that the server turns down keeps the save, says why, and stays on the saved step", async () => {
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession.mock.calls[0]?.[0]).toMatchObject({ lang: "en" });
+    calls.undoSave.mockImplementationOnce(async () => ({ success: false, removedTasks: 0, kept: "pageChanged" }));
+    await clickButton(view, "Undo");
+    expect(view.textContent).toContain("This page changed after it was made, so it was kept.");
+    expect(view.textContent).not.toContain("Undone. Nothing from this recording is saved");
+    expect(findByTag(view, "A", "Open the page").getAttribute("href")).toBe("/notes/notes:1");
+    expect(findAll(view, (n) => n.getAttribute("data-rec-kept") === "pageChanged")).toHaveLength(1);
+  });
+
+  test("Undo after a task from the save is done keeps everything and says so", async () => {
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    calls.undoSave.mockImplementationOnce(async () => ({ success: false, removedTasks: 0, kept: "taskDone" }));
+    await clickButton(view, "Undo");
+    expect(view.textContent).toContain("A task from this save is already done, so the page and its tasks were kept.");
+    expect(view.textContent).toContain("Saved");
+  });
+
   test("after saving, the page can go straight to a flashcards, quiz or test preview", async () => {
     const view = await render();
     await toReview(view);
