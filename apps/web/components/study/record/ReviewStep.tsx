@@ -119,6 +119,7 @@ export function ReviewStep({
   saving,
   saveError,
   waiting = false,
+  titleMissing = false,
   onSave,
   onBack,
 }: {
@@ -138,10 +139,13 @@ export function ReviewStep({
   saveError: boolean;
   /** Save was pressed offline (or the connection went while saving): it waits for the connection. */
   waiting?: boolean;
+  /** The screen found no title when a waiting save went: flagged as a Save here would flag it. */
+  titleMissing?: boolean;
   onSave: () => void;
   onBack: () => void;
 }) {
-  const [titleError, setTitleError] = useState(false);
+  const [ownTitleError, setTitleError] = useState(false);
+  const titleError = ownTitleError || titleMissing;
   const count = acceptedTasks(rows).length;
   const save = () => {
     if (title.trim().length === 0) {

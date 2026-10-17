@@ -101,6 +101,8 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
   const [saveError, setSaveError] = useState(false);
   // Save was pressed offline: it waits for the connection.
   const [held, setHeld] = useState(false);
+  // A save found no title (a waiting save whose title was cleared): the field says so.
+  const [titleMissing, setTitleMissing] = useState(false);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [undone, setUndone] = useState(false);
@@ -210,6 +212,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
     setRows(rowsFromSuggestions(extractActions(text, talkLang)));
     setRowSource("local");
     setSaveError(false);
+    setTitleMissing(false);
     setStep("review");
     const run = ++reviewRun.current;
     if (availability?.proposals && text.trim().length > 0) {
@@ -239,6 +242,13 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
 
   const save = async () => {
     if (saving) return;
+    // ReviewStep checks the title before a Save; a waiting save checks it again when it goes, so a
+    // title cleared while offline is flagged on the field instead of saving an untitled page.
+    if (title.trim().length === 0) {
+      setHeld(false);
+      setTitleMissing(true);
+      return;
+    }
     if (!online) {
       setHeld(true);
       return;
@@ -394,6 +404,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
           title={title}
           onTitle={(value) => {
             titleTouched.current = true;
+            setTitleMissing(false);
             setTitle(value);
           }}
           summary={summary}
@@ -408,6 +419,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
           saving={saving}
           saveError={saveError}
           waiting={held || (saving && !online)}
+          titleMissing={titleMissing}
           onSave={() => void save()}
           onBack={() => {
             // Back to the notes: the reviewed transcript becomes the typed notes.

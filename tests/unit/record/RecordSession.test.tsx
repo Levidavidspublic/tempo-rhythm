@@ -422,3 +422,23 @@ describe("states", () => {
     expect(findById(view, "rec-typed").tagName).toBe("TEXTAREA");
   });
 });
+
+describe("states: a waiting save checks the title again", () => {
+  test("a title cleared while the save waits: nothing is sent, and the field says so", async () => {
+    let view = await renderWith({ online: false });
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    await type(findById(view, "rec-title"), "");
+    view = await renderWith({ online: true });
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("Give the page a title.");
+    expect(findById(view, "rec-title").getAttribute("aria-invalid")).toBe("true");
+    // The wait is over: Save is a plain Save again.
+    expect(findByTag(view, "BUTTON", "Save page and tasks")).toBeTruthy();
+    // Typing a title clears the mark, and Save works.
+    await type(findById(view, "rec-title"), "Launch sync");
+    expect(view.textContent).not.toContain("Give the page a title.");
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+  });
+});
