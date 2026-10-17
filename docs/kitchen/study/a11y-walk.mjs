@@ -506,6 +506,6 @@ await writeFile(
   outFile,
   `${JSON.stringify({ generated: new Date().toISOString(), runs: jobs.length, views: views.length, totals, unique: Object.fromEntries(CHECKS.map((c) => [c, [...summary[c].unique].sort()])), byView }, null, 1)}\n`,
 );
-console.log(`\n${jobs.length} runs over ${views.length} views (390 / 1280 px, en / he, light). Findings (all runs / unique per view / runs with any):`);
+console.log(`\n${jobs.length} runs over ${views.length} views (390 / 1280 px, en / he, ${theme}). Findings (all runs / unique per view / runs with any):`);
 for (const c of CHECKS) console.log(`  ${c.padEnd(14)} ${String(totals[c].findings).padStart(4)} / ${String(totals[c].unique).padStart(3)} / ${totals[c].runs}`);
 console.log(`Wrote ${outFile}`);
