@@ -21,6 +21,14 @@
 // notes below, with stand-in Undo answers.
 // The keyboard walk (a11y-walk.mjs) has calendar-month hold its chosen day in state, as CalendarViews
 // does: with a fixed day the grid's arrow keys had nothing to move to.
+// The states pass adds a gallery-wide mode per view (MODES below; mocks/convex-react.ts says what
+// each does): loading, signed out, error (the screen's own error state) and offline. Its views:
+// study-hub-loading, study-hub-signedout, study-hub-offline, study-review-badset (?set= names no
+// set of yours), study-set-loading, study-set-notfound, study-new-nofrom (no ?from), record-signedout,
+// record-offline (Save waits for the connection), record-checking (live words' availability still
+// loading), plan-signedout and plan-offline (each after pressing Add these sessions), memory-loading
+// and memory-error. MOCKED: the same sample data as above. An unknown ?view= renders a plain
+// "Unknown gallery view" heading, so a stale shot list is caught.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -39,7 +47,7 @@ import type { SpeechEngine } from "@/components/study/recap/speech";
 import { ReviewSession } from "@/components/study/ReviewSession";
 import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
-import { RecordSession } from "@/components/study/record/RecordSession";
+import { RecordScreen } from "@/components/study/record/RecordScreen";
 import { RemindersChannelList } from "@/components/settings-reminders/RemindersSettings";
 import { ShareSheet } from "@/components/share";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
@@ -52,6 +60,24 @@ import { replanRest, replanWaysOut } from "../../../../packages/core/plan/replan
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view") ?? "study-hub";
+
+/** The gallery-wide mode for a view (mocks/convex-react.ts); views not listed get none. */
+const MODES: Record<string, "loading" | "signedOut" | "error" | "offline"> = {
+  "study-hub-loading": "loading",
+  "study-hub-signedout": "signedOut",
+  "study-hub-offline": "offline",
+  "study-set-loading": "loading",
+  "record-signedout": "signedOut",
+  "record-offline": "offline",
+  "plan-signedout": "signedOut",
+  "plan-offline": "offline",
+  "memory-loading": "loading",
+  "memory-error": "error",
+};
+const mode = MODES[view];
+// The screens read the browser's flag (useOnline: navigator.onLine and its online / offline
+// events), so offline views report it as false before anything mounts.
+if (mode === "offline") Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false });
 // A "-he" view is the Hebrew screen: set ?lang=he before the LocaleProvider reads it.
 if (view.endsWith("-he") && !params.get("lang")) {
   params.set("lang", "he");
@@ -261,8 +287,11 @@ const queries: Record<string, unknown> = {
       : view === "study-hub-truncated"
         ? { dueCount: 12, newCount: 4, reviewedToday: 7, sets, truncated: true }
         : { dueCount: 12, newCount: 4, reviewedToday: 7, sets },
-  "study.reviewQueue": { cards: view === "study-review-done" ? queueCards.slice(0, 1) : queueCards },
-  "study.getSet": setFixture,
+  "study.reviewQueue": {
+    cards: view === "study-review-done" ? queueCards.slice(0, 1) : view === "study-review-badset" ? [] : queueCards,
+  },
+  // A ?set= that names no set of yours, and a set that is gone: the server answers null.
+  "study.getSet": view === "study-review-badset" || view === "study-set-notfound" ? null : setFixture,
   "notes.getSafe":
     view === "study-listen-he" || view === "study-set-ask-he"
       ? { _id: "notes:12", _creationTime: NOW - DAY, title: "חלוקת תאים, יחידה 2", body: PAGE_BODY_HE, updatedAt: NOW - DAY }
@@ -356,7 +385,9 @@ Object.assign(queries, {
   "recordings.availability":
     view === "record-consent"
       ? { live: true, reason: null, minutesLeft: 42, proposals: true }
-      : { live: false, reason: "no_key", minutesLeft: 0, proposals: false },
+      : view === "record-checking"
+        ? undefined
+        : { live: false, reason: "no_key", minutesLeft: 0, proposals: false },
   "memory.list":
     view === "memory-empty"
       ? []
@@ -386,7 +417,7 @@ Object.assign(calls, {
   "memory.update": { success: true },
 });
 
-(window as unknown as { __gallery: unknown }).__gallery = { queries, calls };
+(window as unknown as { __gallery: unknown }).__gallery = { queries, calls, mode };
 
 /** Click through the real component after it mounts, one step at a time. */
 /** A voice that is listed but can't speak: every reading fails at once (the "voice stopped" state). */
@@ -452,12 +483,13 @@ function Page({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-const planSteps = (deadlineDays: number, minutes: string) =>
+const planSteps = (deadlineDays: number, minutes: string, ...then: (() => void)[]) =>
   steps(
     fill('input[name="title"]', he ? "בגרות בביולוגיה" : "Biology bagrut"),
     fill('input[name="deadline"]', addDays(today, deadlineDays)),
     fill('textarea[name="topics"]', PLAN_TOPICS),
     fill('input[name="minutesPerDay"]', minutes),
+    ...then,
   );
 
 /** A fictional two-week plan for a chemistry test, the way the plan screen would preview it. */
@@ -574,6 +606,11 @@ function Main({ children }: { children: ReactNode }) {
   );
 }
 
+/** A ?view= the gallery doesn't have: said plainly, so a stale shot list is caught. */
+function UnknownView({ name }: { name: string }) {
+  return <h1 data-gallery-unknown="">Unknown gallery view: {name}</h1>;
+}
+
 const VIEWS: Record<string, () => ReactNode> = {
   "plan-guided": () => <GuidedPlanSample mode="pending" />,
   "plan-guided-edit": () => <GuidedPlanSample mode="edit" />,
@@ -583,6 +620,13 @@ const VIEWS: Record<string, () => ReactNode> = {
   "study-hub": () => <ReviewHub />,
   "study-hub-empty": () => <ReviewHub />,
   "study-hub-truncated": () => <ReviewHub />,
+  "study-hub-loading": () => <ReviewHub />,
+  "study-hub-signedout": () => <ReviewHub />,
+  "study-hub-offline": () => <ReviewHub />,
+  "study-review-badset": () => <ReviewSession setId="studySets:404" />,
+  "study-set-loading": () => <StudySetScreen setId="studySets:1" />,
+  "study-set-notfound": () => <StudySetScreen setId="studySets:404" />,
+  "study-new-nofrom": () => <TurnIntoPreview kind="flashcards" />,
   "study-review": () => <ReviewSession />,
   "study-review-done": () => {
     steps(click('[data-action="review-reveal"]'), click('[data-action="review-grade"][data-grade="good"]'));
@@ -709,6 +753,16 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <PlanPathScreen />;
   },
   "plan-scheduler": () => <PlanPathScreen />,
+  // Signed out and offline: the form still plans on the device; Add these sessions says why it
+  // sent nothing.
+  "plan-signedout": () => {
+    planSteps(21, "90", click('[data-action="guided-accept"]'));
+    return <PlanPathScreen />;
+  },
+  "plan-offline": () => {
+    planSteps(21, "90", click('[data-action="guided-accept"]'));
+    return <PlanPathScreen />;
+  },
   // Add the sessions, then Undo after one is done: the plan goes, and a toast says so with Bring
   // it back.
   "plan-undo-edited": () => {
@@ -722,14 +776,21 @@ const VIEWS: Record<string, () => ReactNode> = {
     );
     return <PlanPathScreen />;
   },
-  "record-consent": () => <RecordSession />,
+  "record-consent": () => <RecordScreen />,
+  "record-signedout": () => <RecordScreen />,
+  "record-checking": () => <RecordScreen />,
+  // Offline: typed notes reach review, and Save says it waits for the connection.
+  "record-offline": () => {
+    steps(click(".tp-form__actions .tp-btn--primary"), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-dock .tp-btn--primary"), click('[aria-describedby="rec-save-note"]'));
+    return <RecordScreen />;
+  },
   "record-typing": () => {
     steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-pins .tp-btn--secondary"));
-    return <RecordSession />;
+    return <RecordScreen />;
   },
   "record-review": () => {
     steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-dock .tp-btn--primary"));
-    return <RecordSession />;
+    return <RecordScreen />;
   },
   // Save typed notes, then Undo after the page changed: the save goes, and a toast says so with
   // Bring it back.
@@ -741,7 +802,7 @@ const VIEWS: Record<string, () => ReactNode> = {
       click('[aria-describedby="rec-save-note"]'),
       click('[data-component="UndoToast"] .tp-btn--secondary'),
     );
-    return <RecordSession />;
+    return <RecordScreen />;
   },
   "ingest-paste": () => <IngestSheetView initialTab="paste" initialText={INGEST_TEXT} onClose={() => {}} onSave={async () => "notes:31"} online photoSupported />,
   "ingest-photo-unsupported": () => <IngestSheetView initialTab="photo" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported={false} />,
@@ -755,6 +816,8 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <MemoryManager />;
   },
   "memory-empty": () => <MemoryManager />,
+  "memory-loading": () => <MemoryManager />,
+  "memory-error": () => <MemoryManager />,
   reminders: () => (
     <Page title={he ? "תזכורות" : "Reminders"}>
       <RemindersChannelList
@@ -812,12 +875,13 @@ const VIEWS: Record<string, () => ReactNode> = {
   },
 };
 
+const renderView = VIEWS[view];
 const root = document.getElementById("root");
 if (root) {
   createRoot(root).render(
     <LocaleProvider>
       <TpIconSprite />
-      <Main>{(VIEWS[view] ?? VIEWS["study-hub"])()}</Main>
+      <Main>{renderView ? renderView() : <UnknownView name={view} />}</Main>
     </LocaleProvider>,
   );
 }
