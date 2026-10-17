@@ -30,7 +30,7 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 
 ## Now working on
 
-Full reshoot (40 gallery views in en and he, the Hebrew listen view, 9 live routes) on the IIFE gallery build; then GATE.md per screen, tick T3 / T8 / T9 / T10, full E2E and build, one push. Running alongside: Builder N "Ask this set" (quote-only, on the device), reviewers on typed recall + set edit / share and on re-plan.
+Final reshoot of every gallery view (44 in en and he, plus the two Hebrew-only views) and the 9 live routes; then GATE.md per screen, tick T3 / T8 / T9 / T10, full E2E and build, one push, PR body. Next wave: a fresh-context correctness review of the whole run.
 
 ## Log
 
@@ -75,6 +75,10 @@ Full reshoot (40 gallery views in en and he, the Hebrew listen view, 9 live rout
 | 2026-10-16 23:51 | `2985e41`…`8ab5096` | backlog | Builder N: "Ask about this set", quote-only and on the device, over the set's source page and its own items; pointed Hebrew now matches in "Ask a question" too; a set's panels restart after an edit or its Undo (review finding) | `packages/core/recap/ask-set.test.ts`, `tests/unit/study/study_set_ask.test.tsx` |
 | 2026-10-16 23:53 | `654b988` | T4 | "Listen to the page this came from" on a set reads the source page, not the page holding the block | `recap_player.test.tsx` |
 | 2026-10-16 23:58 | `7722d84`…`009d349` | backlog | Fix builder on the typed recall + set edit review (6 of 8; 1 went to Builder N, 1 is a doc-sync note): numbers and signs must match for "Almost" (was "Close"), Hebrew final letters, Markdown escaping in shared files, focus after the last card, offline set edits wait, Safari IME Enter. Full suite 3243 pass, 0 fail | `bun run test` |
+| 2026-10-17 00:01 | `144ddd4` | backlog | Set editor heading hugs its words (its focus ring ran across the card) | — |
+| 2026-10-17 00:12 | `…`→`5f9ff90` | backlog, T8 | Fix builder on the re-plan review (10 findings, 1 high): busy time is read in ≤ 31-day windows (the calendar query refuses longer ranges, which took the whole plan screen down for a far deadline; the planner had it too), to the later date picked; today's sessions never start before now; a session is missed only once it has ended (the pinned test from this run changed on purpose); the Undo toast outlives a change of plan; `convex-arch:` `undoReplan` names the re-plan it undoes and `replan` refuses a passed start with a typed answer; a late Accept shows fresh times; an unplaced clash keeps its time; focus returns after the toast; the week grid's focus never hides under the day names. Full suite 3277 pass | `tests/unit/plan`, `convex/plans.test.ts` |
+| 2026-10-17 00:13 | `…`→`74ff895` | backlog | Fix builder on the Ask review (5 of 6; Hebrew prefix matching is a doc-sync note): a page sentence a card repeats is quoted once, Hebrew paseq / sof pasuq / nun hafukha split words, a repeated search is read out again, no search on redraws, a long question can't freeze the screen. Full suite 3286 pass | `packages/core/recap/ask-set.test.ts` |
+| 2026-10-17 00:14 | `8a6201d` | T4 | The recap's question field takes at most 300 characters too | `recap_player.test.tsx` |
 
 ## Decisions
 
