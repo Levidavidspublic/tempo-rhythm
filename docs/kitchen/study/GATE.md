@@ -15,7 +15,7 @@ Gate source: `antislop.md` → "Delivery Gate (Mandatory)" in github.com/miqdadb
 
 ## Per-screen results
 
-Shot 2026-10-17 on `156b5c7`, the three Undo toast views (`*-undo-edited`) reshot on `ec5e045`, from the main checkout against its own dev server (placeholder Convex URL, the dev-only E2E bypass), gallery built as an IIFE (`docs/kitchen/study/gallery/build.ts`). Files in `docs/kitchen/study/shots/`: the live routes in English and every gallery view in English and Hebrew, each at 390 / 1280 px, light and dark; gallery files are named `gallery-MOCKED-*` (real components, fictional data, stand-in Convex hooks). Measured results: `gate-live.json`, `gate-gallery.json`, `gate-gallery-he.json`.
+Shot 2026-10-17 on `3111214`, the record and Turn into views (`record-*`, `study-new-*`) reshot on `3dceade`, from the main checkout against its own dev server (placeholder Convex URL, the dev-only E2E bypass), gallery built as an IIFE (`docs/kitchen/study/gallery/build.ts`). Files in `docs/kitchen/study/shots/`: the live routes in English and every gallery view in English and Hebrew, each at 390 / 1280 px, light and dark; gallery files are named `gallery-MOCKED-*` (real components, fictional data, stand-in Convex hooks). Measured results: `gate-live.json`, `gate-gallery.json`, `gate-gallery-he.json`.
 
 How to read the tables. **B1 measured** comes straight from `gate.mjs` on every shot of that screen (R-02, R-03, R-25, R-26, R-32, text ≥ 13 px, one primary, R-01, R-19). **B1 read** is what was checked by looking. Unless a row says otherwise: no stats, testimonials, FAQ or invented assets (R-17 / 18 / 23 / 28 PASS); fixes in source (R-33 PASS); light and dark both shot with no break seen (R-34 PASS); design read above (R-37 PASS); sample data is fictional and every gallery file says MOCKED (R-38 PASS). **R-35** is PARTIAL everywhere: each screen was run and its scripted steps made, but no full click-through of every control was recorded. **R-36**: on-screen privacy sentences ("Audio is never stored", "on this device", "walled off") match the code and its tests; not verified at the network level, so **UNKNOWN**.
 
@@ -39,6 +39,13 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 
 | screen | B1 measured | B1 read | B2 purpose | B3 liveliness | B4 | verdict |
 |---|---|---|---|---|---|---|
+| study-review-badset | PASS, 8 shots (en/he) | a review link to a set that's gone says so, with Back to Study (it used to say "Nothing to review right now") | none | focal: the note | fixed (states audit) | PASS |
+| study-hub-loading | R-19 only: the shared loading skeleton's 1400 ms shimmer (`tempo.css:465` `.tp-skeleton`, before this run; it stops under reduced motion). 8 shots (en/he) | R-27 loading: skeleton rows with a screen-reader label; the heading, More ways to study and Bring in material stay usable | none | focal: the heading | added (states audit) | PASS (pre-existing R-19) |
+| study-hub-signedout | PASS, 8 shots (en/he) | R-27 signed out: "Sign in to see this page." with Sign in | none | focal: Sign in | added (states audit) | PASS |
+| study-hub-offline | PASS, 8 shots (en/he) | offline notice in words with an icon; the due card still works, and its writes wait for the connection | none | focal: "12 cards due · Start review" | added (states audit) | PASS |
+| study-set-loading | R-19 only: the shared loading skeleton's 1400 ms shimmer (`tempo.css:465` `.tp-skeleton`, before this run; it stops under reduced motion). 8 shots (en/he) | the h1 "Study set" stays while it loads | none | focal: the heading | fixed: the loading state had no heading | PASS (pre-existing R-19) |
+| study-set-notfound | PASS, 8 shots (en/he) | R-27 gone: says what may have happened, that other sets are safe, and Back to Study | none | focal: the note | added (states audit) | PASS |
+| study-new-nofrom | PASS, 8 shots (en/he) | R-27 no page picked: says how to start, with Open your pages | none | focal: the note | added (states audit) | PASS |
 | study-hub | PASS, 8 shots (en/he) | R-27 empty and truncated states shot separately | none | focal: "12 cards due · Start review"; one accent primary; motif: paper cards | ok | PASS |
 | study-hub-empty | PASS, 8 shots (en/he) | R-27 empty state with a way forward | none | focal: empty-state action | ok | PASS |
 | study-hub-truncated | PASS, 8 shots (en/he) | past the read budget the hub says "Showing your most recent sets." in words | none | focal: the due line; the note is quiet | ok | PASS |
@@ -69,6 +76,8 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 
 | screen | B1 measured | B1 read | B2 purpose | B3 liveliness | B4 | verdict |
 |---|---|---|---|---|---|---|
+| plan-offline | PASS, 8 shots (en/he) | offline notice in words: the plan can be tried, adding it needs a connection; Add these sessions and Undo send nothing and say why | none | focal: the notice, then the form | added (states audit) | PASS |
+| plan-signedout | PASS, 8 shots (en/he) | the form and the preview work signed out; "Sign in to add these sessions to your calendar." with Sign in | none | focal: the form | added (states audit) | PASS |
 | calendar-month | PASS, 8 shots (en/he) | dots + "n items" in words; today and the chosen day not by colour alone | none | focal: today | ok | PASS |
 | calendar-week | R-01 flagged on `ul.tp-sched__body` (`repeating-linear-gradient`): it draws the 1 px hour rules; purpose written in plan.css (Block 2). 8 shots (en/he) | overlaps named in words; the grid opens at the week's first item; focus never hides under the day names | R-01 purpose: hour rules | focal: the overlap notice + items | fixed earlier: phone day columns 140 px | PASS (R-01 purpose stated) |
 | calendar-mover | R-01 flagged on `ul.tp-sched__body` (`repeating-linear-gradient`): it draws the 1 px hour rules; purpose written in plan.css (Block 2). 8 shots (en/he) | mover heading takes focus; moves say what they do | R-01 purpose | focal: "Move Review: mitosis" | ok | PASS (R-01 purpose stated) |
@@ -86,6 +95,9 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 
 | screen | B1 measured | B1 read | B2 purpose | B3 liveliness | B4 | verdict |
 |---|---|---|---|---|---|---|
+| record-signedout | PASS, 8 shots (en/he) | R-27 signed out: "Sign in to see this page." with Sign in (it used to end on the generic error page) | none | focal: Sign in | fixed (states audit) | PASS |
+| record-checking | PASS, 8 shots (en/he) | while live words are being looked up, a line says so; Type or paste notes works meanwhile | none | focal: "Type or paste notes" | fixed: it looked like live words were off, with no reason | PASS |
+| record-offline | PASS, 8 shots (en/he) | offline notice: "Your notes stay here, and saving waits until you're back"; Save waits and goes by itself; the screen stays if sign-in blinks | none | focal: the review card | added (states audit) | PASS |
 | record-consent | PASS, 8 shots (en/he) | consent box gates the mic; Start disabled until ticked, with the reason in words | none | focal: "Before you start" | ok | PASS |
 | record-typing | PASS, 8 shots (en/he) | no-key path: typed notes, pins | none | focal: notes box; one primary "Stop and review" | fixed: the pin placeholder was cut at 390 px | PASS |
 | record-review | PASS, 8 shots (en/he) | proposed rows with Accept / Edit / Reject, source line quoted | none | focal: suggested tasks | ok | PASS |
@@ -95,6 +107,8 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 
 | screen | B1 measured | B1 read | B2 purpose | B3 liveliness | B4 | verdict |
 |---|---|---|---|---|---|---|
+| memory-loading | R-19 only: the shared loading skeleton's 1400 ms shimmer (`tempo.css:465` `.tp-skeleton`, before this run; it stops under reduced motion). 8 shots (en/he) | R-27 loading under the heading; Import stays usable | none | focal: the heading | added (states audit) | PASS (pre-existing R-19) |
+| memory-error | PASS, 8 shots (en/he) | R-27 error: "Nothing was forgotten", with Retry | none | focal: Retry | added (states audit) | PASS |
 | ingest-paste | PASS, 8 shots (en/he) | ok; Esc and the Tab loop stay in the sheet | glass on the sheet (owner override, floating chrome) | focal: the text box; one primary | ok | PASS |
 | ingest-photo-unsupported | PASS, 8 shots (en/he) | R-27 unsupported state with a way out | glass sheet | focal: the notice | fixed earlier: the button drops below the words on a phone | PASS |
 | ingest-done | PASS, 8 shots (en/he) | R-27 done state; Open the page, or turn it into something to study | glass sheet | focal: "Open the page" | ok | PASS |
@@ -104,11 +118,11 @@ With the placeholder Convex URL the client stops (`[CONVEX FATAL ERROR] Couldn't
 | reminders | PASS, 8 shots (en/he) | "Not connected yet" badge with icon and words; no Connect button that does nothing | none | focal: channel list | ok | PASS |
 | share-sheet | PASS, 8 shots (en/he) | every row does something real (share, copy, two downloads) | glass sheet | focal: first row (focused) | ok | PASS |
 | miniapp-approve | PASS, 8 shots (en/he) | asks before running; R-36 "walled off" matches the sandbox + CSP code, not network-verified (UNKNOWN) | none | focal: "Run this widget" | ok | PASS |
-| miniapp-stopped | PASS, 8 shots (en/he) | stopped state explains what happened | none | focal: the note | ok | PASS |
+| miniapp-stopped | PASS, 8 shots (en/he) | stopped state explains what happened; Run it again runs the same approved code, or asks first | none | focal: the note | fixed: the stopped card had no way out | PASS |
 
 ### Keyboard walk and reduced motion
 
-`docs/kitchen/study/a11y-walk.mjs` opens every gallery view (51) at 390 and 1280 px, in English and Hebrew (the two `-he` views in Hebrew only), light theme: 200 runs, 2,132 Tab stops (rerun on `ec5e045`). Each run's findings are in `a11y-walk.json`.
+`docs/kitchen/study/a11y-walk.mjs` opens every gallery view (65, including the loading, signed-out, error and offline views added by the states audit) at 390 and 1280 px, in English and Hebrew (the two `-he` views in Hebrew only), light theme: 256 runs, 2,392 Tab stops (rerun on `3dceade`). Each run's findings are in `a11y-walk.json`.
 
 - **Keyboard walk.** Tab until focus comes back round, or 200 presses. (i) **Unreached**: a visible, enabled control Tab never reaches. A radio group or a roving-tabindex group (the month grid's days, Segmented) counts as reached when its Tab stop is reached and an arrow key from that stop is seen to move within the group (44 groups checked so); controls behind an open modal or in a closed panel don't count. (ii) **No focus sign**: outline, box-shadow and border compared focused and blurred, on the stop, its two parents and its siblings (the blurred styles are read once Tab has moved on); the stop's own outline doesn't count when the boxes around it clip off more than half of it. (iii) **Hidden focus**: after the browser scrolled to it, the stop (or the label it stands for) is not visible, is off screen or clipped, shows under 90% of itself although it would fit (text fields aside: the browser brings their caret into view, not the whole box), or is entirely covered. (iv) **Trap**: focus stays put for 3 presses (10 for date, time and media fields, which have parts inside) or loops without coming back, outside an aria-modal dialog.
 - **Reduced motion.** A `reducedMotion: "reduce"` context, the view's scripted steps, then every element and `::before` / `::after` whose transition or animation still lasts over 10 ms (with a property or name that isn't `none`), any script animation still running, and any `behavior: "smooth"` scroll call.
@@ -130,7 +144,7 @@ Left, outside this run:
 - page-menu-turn-into: the notes editor's page body has no focus sign (`apps/web/components/editor/live-preview.ts:739`, `"&.cm-focused": { outline: "none" }`), the same R-32 item as above. 4 runs, en and he.
 - Under the half-clipped bar, so not counted: the month grid clips about 30% of an edge day's ring (`apps/web/app/tempo.css:898`, `.tp-month__grid { overflow: hidden }`), and at 390 px the ingest sheet's title field shows 55% of its ring when Tab scrolls it to the sheet body's bottom edge (`apps/web/app/tempo.css:1428`, `.tp-sheet__body` has no scroll padding). Both are shared tempo.css components.
 
-Reduced motion finds nothing because `globals.css:543` and `tempo.css:480` already cut every duration to 0.01 ms under `prefers-reduced-motion: reduce`, and the run's one smooth scroll (the week grid gliding to another week, `WeekGrid.tsx:238`) checks the media query itself; the gallery never changes week, so the walk didn't exercise that one. Dark theme: the same walk with `THEME=dark` (`a11y-walk-dark.json`, rerun on `ec5e045`): 200 runs, unreached 0, no focus sign 4 (the same notes-editor stop), hidden focus 0, traps 0, reduced motion 0. Not covered: the app shell (the gallery has none, so its sticky top bar can't cover a stop here), screen readers.
+Reduced motion finds nothing because `globals.css:543` and `tempo.css:480` already cut every duration to 0.01 ms under `prefers-reduced-motion: reduce`, and the run's one smooth scroll (the week grid gliding to another week, `WeekGrid.tsx:238`) checks the media query itself; the gallery never changes week, so the walk didn't exercise that one. Dark theme: the same walk with `THEME=dark` (`a11y-walk-dark.json`, rerun on `3dceade`): 256 runs, unreached 0, no focus sign 4 (the same notes-editor stop), hidden focus 0, traps 0, reduced motion 0. Not covered: the app shell (the gallery has none, so its sticky top bar can't cover a stop here), screen readers.
 
 Notes.
 
@@ -138,4 +152,4 @@ Notes.
 2. Hebrew: every gallery view was shot with `?lang=he` and `dir="rtl"`. The Hebrew copy is machine-written and was not proofread by a native speaker: **UNKNOWN**.
 3. Not checked: live data states (no real Convex deployment, by design: no keys), screen readers, real phones, real speech voices. **UNKNOWN**.
 
-Summary: 436 shots. Gallery, 51 views: 46 PASS, 4 PASS with the R-01 hour-rule purpose written down, 1 FAIL (page-menu-turn-into; pre-existing, outside this run). Live, 9 routes: PASS apart from R-19 on the shell `aside` (and the settings skeleton), both pre-existing.
+Summary: 548 shots. Gallery, 65 views: 57 PASS, 4 PASS with the R-01 hour-rule purpose written down, 3 PASS apart from the shared loading skeleton's R-19 (pre-existing), 1 FAIL (page-menu-turn-into; pre-existing, outside this run). Live, 9 routes: PASS apart from R-19 on the shell `aside` (and the settings skeleton), both pre-existing.

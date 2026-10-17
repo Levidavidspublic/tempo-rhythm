@@ -1139,7 +1139,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -1207,7 +1207,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -1275,7 +1275,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",
@@ -1343,7 +1343,7 @@
         "id": "DESIGN-accent",
         "rule": "at most one primary button",
         "pass": true,
-        "detail": "primaries=1"
+        "detail": "primaries=0"
       },
       {
         "id": "R-01",

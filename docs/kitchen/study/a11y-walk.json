@@ -1,7 +1,7 @@
 {
- "generated": "2026-10-17T03:30:05.376Z",
- "runs": 200,
- "views": 51,
+ "generated": "2026-10-17T04:18:02.372Z",
+ "runs": 256,
+ "views": 65,
  "totals": {
   "unreached": {
    "findings": 0,
@@ -460,6 +460,384 @@
     },
     "he": {
      "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-loading": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-signedout": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-offline": {
+   "390": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-badset": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-loading": {
+   "390": {
+    "en": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-notfound": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-new-nofrom": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1882,6 +2260,114 @@
     }
    }
   },
+  "plan-signedout": {
+   "390": {
+    "en": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-offline": {
+   "390": {
+    "en": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
   "plan-undo-edited": {
    "390": {
     "en": {
@@ -1966,6 +2452,168 @@
    "1280": {
     "en": {
      "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-signedout": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-checking": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-offline": {
+   "390": {
+    "en": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 10,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -2476,6 +3124,114 @@
     }
    }
   },
+  "memory-loading": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "memory-error": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
   "reminders": {
    "390": {
     "en": {
@@ -2641,8 +3397,8 @@
   "miniapp-stopped": {
    "390": {
     "en": {
-     "stops": 0,
-     "end": "no stops",
+     "stops": 1,
+     "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
      "hidden": [],
@@ -2653,8 +3409,8 @@
      "arrowGroups": 0
     },
     "he": {
-     "stops": 0,
-     "end": "no stops",
+     "stops": 1,
+     "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
      "hidden": [],
@@ -2667,8 +3423,8 @@
    },
    "1280": {
     "en": {
-     "stops": 0,
-     "end": "no stops",
+     "stops": 1,
+     "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
      "hidden": [],
@@ -2679,8 +3435,8 @@
      "arrowGroups": 0
     },
     "he": {
-     "stops": 0,
-     "end": "no stops",
+     "stops": 1,
+     "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
      "hidden": [],

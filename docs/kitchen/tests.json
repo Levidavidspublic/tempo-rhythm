@@ -1,58 +1,58 @@
 {
   "run": "kitchen/tempo-study",
-  "updated": "2026-10-17T03:55Z",
+  "updated": "2026-10-17T04:30Z",
   "baseline": {
     "command": "bun run test",
-    "last_result": "3338 pass, 3 todo, 0 fail on ec5e045 (Bun 1.3.9; was 2348 on 5f1b3ec)"
+    "last_result": "3373 pass, 3 todo, 0 fail on 3dceade (Bun 1.3.9; was 2348 on 5f1b3ec)"
   },
   "finish_lines": {
     "T3": {
       "proof": "bun test packages/core/srs packages/utils/src/study-blocks.test.ts packages/ui/src/study packages/ui/src/blocks convex/study.test.ts tests/unit/study",
-      "last_result": "705 pass 0 fail Ran 705 tests across 36 files on ec5e045"
+      "last_result": "719 pass 0 fail Ran 719 tests across 37 files on e4ae6b6"
     },
     "T8": {
       "proof": "bun test packages/core/plan packages/core/record convex/plans.test.ts convex/recordings.test.ts tests/unit/plan tests/unit/record tests/unit/calendar_date_math.test.ts tests/unit/calendar_last_loaded.test.ts",
-      "last_result": "270 pass 0 fail Ran 270 tests across 24 files on ec5e045"
+      "last_result": "289 pass 0 fail Ran 289 tests across 25 files on e4ae6b6"
     },
     "T9": {
       "proof": "bun test tests/unit/ingest tests/unit/memory_manager.test.tsx convex/memoryUpdate.test.ts",
-      "last_result": "73 pass 0 fail Ran 73 tests across 6 files on ec5e045"
+      "last_result": "73 pass 0 fail Ran 73 tests across 6 files on e4ae6b6"
     },
     "T10": {
       "proof": "bun test packages/core/reminders convex/reminders.test.ts tests/unit/t10",
-      "last_result": "50 pass 0 fail Ran 50 tests across 6 files on ec5e045"
+      "last_result": "52 pass 0 fail Ran 52 tests across 6 files on e4ae6b6"
     },
     "T4 (backlog, S16)": {
       "proof": "bun test packages/core/recap tests/unit/study/recap_player.test.tsx packages/ui/src/study/ReadAloudButton.test.tsx",
-      "last_result": "103 pass 0 fail Ran 103 tests across 7 files on ec5e045"
+      "last_result": "103 pass 0 fail Ran 103 tests across 7 files on e4ae6b6"
     },
     "T2 (backlog, S9)": {
       "proof": "bun test packages/ui/src/plan",
-      "last_result": "29 pass 0 fail Ran 29 tests across 3 files on ec5e045"
+      "last_result": "29 pass 0 fail Ran 29 tests across 3 files on e4ae6b6"
     }
   },
   "e2e": {
     "command": "PLAYWRIGHT_BROWSERS_PATH=<scratch dir mapping /opt/pw-browsers chromium 1194 to the expected 1234 path> bunx playwright test --reporter=line (CI unset, so it reused the running local dev server with the same mock env as playwright.config.ts; no config change)",
-    "last_result": "35 passed, 89 skipped, 0 failed on ec5e045 (includes tests/e2e/wiring/study.spec.ts 7/7)"
+    "last_result": "35 passed, 89 skipped, 0 failed on e4ae6b6 (includes tests/e2e/wiring/study.spec.ts 7/7; /study/record now in its signed-out list)"
   },
   "build": {
     "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
-    "last_result": "local pass on ec5e045 (all seven /study routes); Vercel preview of ec5e045 built and Ready"
+    "last_result": "local pass on 3dceade (all seven /study routes); Vercel preview of 3dceade built and Ready"
   },
   "e2e_study_wiring": {
     "command": "bunx playwright test tests/e2e/wiring/study.spec.ts --reporter=line (same browser mapping)",
-    "last_result": "7 passed on 79896a6 (adds /study/listen and the Sign in link)"
+    "last_result": "7 passed on e4ae6b6"
   },
   "scans": {
     "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
-    "last_result": "all OK on ec5e045"
+    "last_result": "all OK on 3dceade"
   },
   "gate": {
     "command": "bun docs/kitchen/study/shoot.mjs gallery|live … (see docs/kitchen/study/GATE.md)",
-    "last_result": "436 shots on 156b5c7, the three *-undo-edited views reshot on ec5e045: gallery 46 PASS, 4 PASS (R-01 purpose), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
+    "last_result": "548 shots (65 gallery views en+he, 9 live routes) on 3111214, record-* and study-new-* reshot on 3dceade: gallery 57 PASS, 4 PASS (R-01 purpose), 3 PASS apart from the shared skeleton R-19 (pre-existing), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
   },
   "a11y_walk": {
     "command": "bun docs/kitchen/study/a11y-walk.mjs <gallery build dir> (THEME=dark for the dark run; CHROMIUM_PATH set to the installed Chromium)",
-    "last_result": "on ec5e045, light and dark: 200 runs each over 51 views, 2,132 Tab stops; unreached 0, no focus sign 4 runs (notes editor, pre-existing), hidden focus 0, traps 0, reduced motion 0"
+    "last_result": "on 3dceade, light and dark: 256 runs each over 65 views, 2,392 Tab stops; unreached 0, no focus sign 4 runs (notes editor, pre-existing), hidden focus 0, traps 0, reduced motion 0"
   }
 }
