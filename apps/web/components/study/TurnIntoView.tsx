@@ -279,6 +279,20 @@ function PreviewCard({
   const ready = canAccept(state, draft);
   const titleId = "st-proposal-title";
 
+  // The save's Undo toast. Its window runs from when the set was made (`created.undoUntil`), so
+  // after Bring it back (`again`) it is offered only for what is left of it, if anything.
+  const offerUndo = (created: Created, again = false) => {
+    if (again && Date.now() >= created.undoUntil) return;
+    const next = makeToast(t("st.pv.toast"), async () => {
+      const outcome = await onUndo(created.setId);
+      dispatch({ type: "undone" });
+      if (outcome?.removedEdits && onRedo) {
+        setBringBack({ created, until: outcome.redoUntil ?? Date.now() + UNDO_WINDOW_MS });
+      }
+    });
+    setToast(again ? { ...next, undoUntilMs: created.undoUntil } : next);
+  };
+
   const accept = () => {
     const data = draftToData(draft);
     if (!data || !ready || saving.current) return;
@@ -289,15 +303,7 @@ function PreviewCard({
     onCreate(data, draft.title.trim())
       .then((created) => {
         dispatch({ type: "saved", created });
-        setToast(
-          makeToast(t("st.pv.toast"), async () => {
-            const outcome = await onUndo(created.setId);
-            dispatch({ type: "undone" });
-            if (outcome?.removedEdits && onRedo) {
-              setBringBack({ created, until: outcome.redoUntil ?? Date.now() + UNDO_WINDOW_MS });
-            }
-          })
-        );
+        offerUndo(created);
       })
       .catch(() => dispatch({ type: "saveError" }))
       .finally(() => {
@@ -309,6 +315,7 @@ function PreviewCard({
     if (!bringBack || !onRedo) return;
     await onRedo(bringBack.created.setId);
     dispatch({ type: "restored", created: bringBack.created });
+    offerUndo(bringBack.created, true);
     // The toast's button goes with it: the keyboard moves to "Study it now" on the card.
     window.setTimeout(
       () => card.current?.querySelector<HTMLElement>(".tp-proposal__note a")?.focus(),

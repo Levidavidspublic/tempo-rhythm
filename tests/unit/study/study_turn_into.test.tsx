@@ -50,8 +50,14 @@ function installModuleMocks() {
       StateLoading: ({ label }: { label: string }) => h("output", null, label),
       StateEmpty: ({ title }: { title: string }) => h("div", null, title),
       makeToast: (title: string, onUndo: () => Promise<void>) => ({ id: 1, title, onUndo }),
-      UndoToast: ({ toast }: { toast: { title: string; onUndo: () => Promise<void> } }) =>
-        h("output", { "data-component": "UndoToast" }, h("span", null, toast.title), h("button", { type: "button", onClick: () => void toast.onUndo() }, "Undo")),
+      // As the real toast does, a successful Undo closes it (onClose); a thrown one keeps it open.
+      UndoToast: ({ toast, onClose }: { toast: { title: string; onUndo: () => Promise<void> }; onClose: () => void }) =>
+        h(
+          "output",
+          { "data-component": "UndoToast" },
+          h("span", null, toast.title),
+          h("button", { type: "button", onClick: () => void toast.onUndo().then(onClose, () => {}) }, "Undo"),
+        ),
     };
   });
 }
@@ -248,5 +254,52 @@ describe("Study links open /study client-side", () => {
     const link = findByTag(view, "A", "Study");
     expect(link.getAttribute("data-next-link")).toBe("");
     expect(link.getAttribute("href")).toBe("/study");
+  });
+});
+
+describe("Turn into: Bring it back offers the save's own Undo again", () => {
+  const props = (over: Record<string, unknown>) => ({
+    note: { id: "n1", title: "Cell biology", body: PAGE },
+    hasFrom: true,
+    kind: "flashcards",
+    online: true,
+    onGenerate: async () => ({ status: "unavailable", reason: "busy" }),
+    onUndo: async () => ({ removedEdits: true, redoUntil: Date.now() + 300_000 }),
+    onRedo: async () => {},
+    ...over,
+  });
+
+  test("while the save's window is open, Undo is there again after Bring it back", async () => {
+    const undone: string[] = [];
+    const view = await render(
+      createElement(
+        TurnIntoView,
+        props({
+          onCreate: async () => ({ noteId: "n2", setId: "s2", undoUntil: Date.now() + 300_000 }),
+          onUndo: async (setId: string) => {
+            undone.push(setId);
+            return { removedEdits: true, redoUntil: Date.now() + 300_000 };
+          },
+        }) as never,
+      ),
+    );
+    await click(byAction(view, "accept") as TestNode);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    await click(findByTag(view, "BUTTON", "Bring it back"));
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(undone).toEqual(["s2", "s2"]);
+  });
+
+  test("not once the save's window has ended", async () => {
+    const view = await render(
+      createElement(
+        TurnIntoView,
+        props({ onCreate: async () => ({ noteId: "n2", setId: "s2", undoUntil: Date.now() - 1 }) }) as never,
+      ),
+    );
+    await click(byAction(view, "accept") as TestNode);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    await click(findByTag(view, "BUTTON", "Bring it back"));
+    expect(queryByTag(view, "BUTTON", "Undo")).toBeNull();
   });
 });
