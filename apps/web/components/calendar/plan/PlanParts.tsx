@@ -279,7 +279,8 @@ export function PlanPreview({
                             type="button"
                             onClick={() => onUseMinutes(ways.longerMinutes as number)}
                           >
-                            {ptNodes(lang, "pp.short.longerBtn", { n: ways.longerMinutes })}
+                            {/* One child: the button is a flex row, so loose text and the number would get gaps. */}
+                            <span>{ptNodes(lang, "pp.short.longerBtn", { n: ways.longerMinutes })}</span>
                           </button>
                         ) : null}
                       </>

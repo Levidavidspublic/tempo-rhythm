@@ -218,7 +218,7 @@ describe("ReplanPreview", () => {
     const html = preview();
     expect(count(html, 'data-replan="move"')).toBe(2);
     expect(html).toMatch(
-      /Learn: Mitosis<\/strong><span>From Mon,? 19 Oct, <span class="tp-num tp-mono tp-ltr">17:00<\/span> to Tue,? 20 Oct, <span class="tp-num tp-mono tp-ltr">18:00<\/span><\/span>/
+      /Learn: Mitosis<\/strong><span>Moves from Mon,? 19 Oct, <span class="tp-num tp-mono tp-ltr">17:00<\/span> to Tue,? 20 Oct, <span class="tp-num tp-mono tp-ltr">18:00<\/span><\/span>/
     );
     expect(html).toContain("Done sessions and fixed events stay where they are.");
     expect(html).toMatch(/class="tp-btn tp-btn--primary" type="button" data-action="replan-accept"/);
@@ -273,7 +273,7 @@ describe("ReplanPreview", () => {
     const short = { moves: [], unplaced: [{ id: "t2", reason: "missed" as const, minutes: 45, from: { date: "2026-10-19", startMinute: 1020 } }] };
     const html = preview({ result: short, ways: { longerMinutes: 120, laterDate: null }, onUseMinutes: () => {} });
     expect(html).toMatch(/About <span class="tp-num">120<\/span> minutes a day would make room\./);
-    expect(html).toMatch(/<button class="tp-btn tp-btn--secondary tp-btn--sm" type="button">Use <span class="tp-num">120<\/span> minutes a day<\/button>/);
+    expect(html).toMatch(/<button class="tp-btn tp-btn--secondary tp-btn--sm" type="button"><span>Use <span class="tp-num">120<\/span> minutes a day<\/span><\/button>/);
     expect(html).toContain("No date in the next 6 months makes room at this pace.");
   });
 

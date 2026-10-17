@@ -277,7 +277,8 @@ export function ReplanPreview({
                         disabled={busy}
                         onClick={() => onUseMinutes(ways.longerMinutes as number)}
                       >
-                        {ptNodes(lang, "rp.longerBtn", { n: ways.longerMinutes })}
+                        {/* One child: the button is a flex row, so loose text and the number would get gaps. */}
+                            <span>{ptNodes(lang, "rp.longerBtn", { n: ways.longerMinutes })}</span>
                       </button>
                     ) : null}
                   </>

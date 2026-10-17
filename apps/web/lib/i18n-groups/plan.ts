@@ -135,7 +135,7 @@ export const en = {
   "rp.h": "New times",
   "rp.sub":
     "Done sessions and fixed events stay where they are. Nothing changes until you use these times.",
-  "rp.fromTo": "From {fromDate}, {fromTime} to {toDate}, {toTime}",
+  "rp.fromTo": "Moves from {fromDate}, {fromTime} to {toDate}, {toTime}",
   "rp.newDate": "The plan's date moves to {date}.",
   "rp.short1": "1 session doesn't fit before {date}.",
   "rp.shortN": "{n} sessions don't fit before {date}.",
