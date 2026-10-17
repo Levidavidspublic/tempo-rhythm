@@ -58,6 +58,7 @@ export const en = {
   "mini.running": "Running in a sealed frame",
   "mini.done": "The widget says it's finished.",
   "mini.stopped": "This widget tried to open another page, so Tempo stopped it. Nothing else on this page changed.",
+  "mini.runAgain": "Run it again",
 } as const;
 
 export type T10CopyKey = keyof typeof en;
@@ -114,4 +115,5 @@ export const he: Record<T10CopyKey, string> = {
   "mini.running": "רץ במסגרת סגורה",
   "mini.done": "הווידג'ט סיים.",
   "mini.stopped": "הווידג'ט ניסה לפתוח עמוד אחר, אז Tempo עצר אותו. שום דבר אחר בעמוד לא השתנה.",
+  "mini.runAgain": "להפעיל שוב",
 };

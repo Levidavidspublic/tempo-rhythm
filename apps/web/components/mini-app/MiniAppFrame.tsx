@@ -40,7 +40,10 @@ const START_HEIGHT = 160;
  *
  * The approval is for a fingerprint of the code, so changed code asks again. If the widget
  * navigates its own frame (any load after the srcdoc's first), the frame is taken down and a
- * note says so.
+ * note says so, with "Run it again": only the person's press starts it again, and only while their
+ * approval still holds for this exact code (otherwise the card asks first, as before).
+ * A widget larger than 64 KB has no way out on this card: only editing the page's code can change
+ * that, and the card says the page itself is fine.
  *
  * Residual risk (UNKNOWN, not verified in a browser): a CSP can't block `RTCPeerConnection`, so a
  * widget could try WebRTC to reach the network. The sandbox has no `allow-same-origin` (no
@@ -84,6 +87,23 @@ export function MiniAppFrame({ html, title, approvedFingerprint, onApprove, onDo
     return () => window.removeEventListener("message", onMessage);
   }, [run]);
 
+  // After "Run it again" the button is gone: the keyboard goes to the frame it started.
+  const focusFrame = useRef(false);
+  useEffect(() => {
+    if (!run || !focusFrame.current) return;
+    focusFrame.current = false;
+    frame.current?.focus();
+  }, [run]);
+
+  const runAgain = () => {
+    // A fresh frame: its first load is the srcdoc's own again, and it starts at its first size.
+    loads.current = { doc: "", count: 0 };
+    setHeight(START_HEIGHT);
+    setDone(false);
+    setStoppedFor(null);
+    focusFrame.current = true;
+  };
+
   if (stopped && !tooLarge) {
     return (
       <section className="tp-card tp-miniapp" data-component="MiniAppFrame" data-state="stopped">
@@ -98,6 +118,12 @@ export function MiniAppFrame({ html, title, approvedFingerprint, onApprove, onDo
           <TpIcon name="info" size="sm" />
           <span>{t("mini.stopped")}</span>
         </p>
+        <div className="tp-miniapp__actions">
+          <button className="tp-btn tp-btn--secondary" type="button" data-action="miniapp-run-again" onClick={runAgain}>
+            <TpIcon name="play" size="sm" />
+            <span>{t("mini.runAgain")}</span>
+          </button>
+        </div>
       </section>
     );
   }

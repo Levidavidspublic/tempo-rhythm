@@ -98,3 +98,31 @@ describe("MiniAppFrame approval", () => {
     expect(view.textContent).toContain("Run this widget");
   });
 });
+
+describe("MiniAppFrame stopped: Run it again", () => {
+  test("a stopped widget offers Run it again, which starts a fresh frame its own load doesn't stop", async () => {
+    const approved = miniAppFingerprint(HTML);
+    let view = await render({ html: HTML, approvedFingerprint: approved });
+    await frameLoad(view);
+    await frameLoad(view);
+    expect(state(view)).toBe("stopped");
+    await act(async () => {
+      findByTag(view, "BUTTON", "Run it again").click();
+    });
+    expect(state(view)).toBe("running");
+    // The new frame's first load is the srcdoc's own: it keeps running.
+    await frameLoad(view);
+    expect(state(view)).toBe("running");
+    // Navigating again takes it down again.
+    await frameLoad(view);
+    expect(state(view)).toBe("stopped");
+
+    // Without the approval for this code, Run it again asks first instead of running.
+    view = await render({ html: HTML, approvedFingerprint: null });
+    await act(async () => {
+      findByTag(view, "BUTTON", "Run it again").click();
+    });
+    expect(state(view)).toBe("ask");
+    expect(queryByTag(view, "IFRAME")).toBeNull();
+  });
+});
