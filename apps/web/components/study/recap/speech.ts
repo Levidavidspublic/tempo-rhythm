@@ -2,9 +2,10 @@
  * The speech seam for read-aloud and the audio recap (kitchen T4, S16). Everything that speaks
  * goes through a `SpeechEngine`, so the voice can change without touching the screens.
  *
- * Today the only engine is the browser's own (window.speechSynthesis): free, on the device, no
- * network and no provider. docs/contracts/VOICE.md is proposed, not adopted, so no paid TTS is
- * called from here.
+ * Today the only engine is the browser's own (window.speechSynthesis), limited to the voices the
+ * browser marks as on the device (`pickVoice`): free, no network and no provider. Browsers also
+ * list network voices that send the text away; those are never used. docs/contracts/VOICE.md is
+ * proposed, not adopted, so no paid TTS is called from here.
  *
  * Chatterbox (Hebrew-capable) plugs in here as another `SpeechEngine` once the owner decides
  * docs/contracts/VOICE.md decision 2 (TTS eligibility). Until then, a language with no voice on
@@ -69,20 +70,18 @@ export function langBase(lang: string): string {
 }
 
 /**
- * The voice to use for `lang`: one whose language starts with it, preferring a voice on the
- * device, then the browser's default. Null when there is none.
+ * The voice to use for `lang`: a voice on the device whose language starts with it, the
+ * browser's default first. Null when there is none, so the screens say there is no voice for that
+ * language on this device.
+ *
+ * Only `localService === true` counts as on the device. A network voice (Edge's "… Online
+ * (Natural)", Chrome's "Google …") sends the text to its maker's servers, so it is never used,
+ * and a voice whose engine doesn't say (`localService` missing) is treated the same way.
  */
 export function pickVoice<V extends VoiceLike>(voices: readonly V[], lang: string): V | null {
   const want = langBase(lang);
-  const matching = voices.filter((voice) => langBase(voice.lang) === want);
-  if (matching.length === 0) return null;
-  return (
-    matching.find((voice) => voice.localService && voice.default) ??
-    matching.find((voice) => voice.localService) ??
-    matching.find((voice) => voice.default) ??
-    matching[0] ??
-    null
-  );
+  const local = voices.filter((voice) => voice.localService === true && langBase(voice.lang) === want);
+  return local.find((voice) => voice.default) ?? local[0] ?? null;
 }
 
 /** An engine that never speaks: for the server render and for browsers without speech. */

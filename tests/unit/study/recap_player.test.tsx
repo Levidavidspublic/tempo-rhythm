@@ -307,6 +307,24 @@ describe("the speech seam", () => {
     expect(speech.pickVoice(voices.slice(0, 2), "he")).toBeNull();
   });
 
+  test("a network voice is never used: the text would leave the device", () => {
+    // Edge's "Online (Natural)" voices and Chrome's "Google" voices say localService: false; an
+    // engine that doesn't say counts as not local either.
+    const network = [
+      { lang: "en-US", name: "Microsoft Aria Online (Natural)", localService: false, default: true },
+      { lang: "en-GB", name: "Google UK English Female", localService: false },
+      { lang: "en-AU", name: "Unknown engine" },
+    ];
+    expect(speech.pickVoice(network, "en")).toBeNull();
+    expect(speech.pickVoice([...network, { lang: "en-IE", name: "Moira", localService: true }], "en")?.name).toBe("Moira");
+    const engine = speech.createSynthEngine(
+      { getVoices: () => network, speak: () => {}, cancel: () => {} },
+      (text) => ({ text, lang: "", rate: 1, voice: null, onend: null, onerror: null, onboundary: null }) as never,
+    );
+    // So the screens say "No English voice on this device" instead of reading through a server.
+    expect(engine.available("en")).toBe(false);
+  });
+
   function fakeSynth(list = voices) {
     const spoken: {
       text: string;
