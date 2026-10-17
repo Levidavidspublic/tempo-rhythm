@@ -303,3 +303,53 @@ describe("Turn into: Bring it back offers the save's own Undo again", () => {
     expect(queryByTag(view, "BUTTON", "Undo")).toBeNull();
   });
 });
+
+describe("Turn into: Undo and Bring it back offline", () => {
+  const base = {
+    note: { id: "n1", title: "Cell biology", body: PAGE },
+    hasFrom: true,
+    kind: "flashcards",
+    onGenerate: async () => ({ status: "unavailable", reason: "busy" }),
+    onCreate: async () => ({ noteId: "n2", setId: "s2", undoUntil: Date.now() + 300_000 }),
+  };
+
+  test("offline, Undo sends nothing and the card says so; back online, one click undoes", async () => {
+    const undone: string[] = [];
+    const onUndo = async (setId: string) => {
+      undone.push(setId);
+    };
+    const view = await render(createElement(TurnIntoView, { ...base, online: true, onUndo } as never));
+    await click(byAction(view, "accept") as TestNode);
+    await act(async () => {
+      root?.render(createElement(TurnIntoView, { ...base, online: false, onUndo } as never));
+    });
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(undone).toEqual([]);
+    expect(view.textContent).toContain("You're offline, so nothing was undone.");
+    expect(findAll(view, (n) => n.getAttribute?.("data-status") === "accepted")).toHaveLength(1);
+    await act(async () => {
+      root?.render(createElement(TurnIntoView, { ...base, online: true, onUndo } as never));
+    });
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(undone).toEqual(["s2"]);
+  });
+
+  test("offline, Bring it back sends nothing and its toast says so", async () => {
+    const redone: string[] = [];
+    const more = {
+      onUndo: async () => ({ removedEdits: true, redoUntil: Date.now() + 300_000 }),
+      onRedo: async (setId: string) => {
+        redone.push(setId);
+      },
+    };
+    const view = await render(createElement(TurnIntoView, { ...base, ...more, online: true } as never));
+    await click(byAction(view, "accept") as TestNode);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    await act(async () => {
+      root?.render(createElement(TurnIntoView, { ...base, ...more, online: false } as never));
+    });
+    await click(findByTag(view, "BUTTON", "Bring it back"));
+    expect(redone).toEqual([]);
+    expect(view.textContent).toContain("You're offline, so nothing came back.");
+  });
+});

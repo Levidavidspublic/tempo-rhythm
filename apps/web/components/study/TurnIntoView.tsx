@@ -222,6 +222,7 @@ export function TurnIntoView({
               onUndo={onUndo}
               onRedo={onRedo}
               onPhase={setPhase}
+              online={online}
             />
           ) : null}
         </>
@@ -254,6 +255,7 @@ function PreviewCard({
   onUndo,
   onRedo,
   onPhase,
+  online,
 }: {
   preview: StudyPreview;
   note: NotePreviewSource;
@@ -262,6 +264,8 @@ function PreviewCard({
   onUndo: TurnIntoViewProps["onUndo"];
   onRedo: TurnIntoViewProps["onRedo"];
   onPhase: (phase: ProposalPhase) => void;
+  /** Offline, Undo and Bring it back send nothing and say so (Convex would hold them). */
+  online: boolean;
 }) {
   const [draft, edit] = useReducer(draftReducer, preview, draftFrom);
   const [state, dispatch] = useReducer(proposalReducer, initialProposal);
@@ -278,12 +282,26 @@ function PreviewCard({
   const problems = draftProblems(draft);
   const ready = canAccept(state, draft);
   const titleId = "st-proposal-title";
+  // The Undo toast's handler is made at Accept, so it reads the connection through a ref.
+  const onlineRef = useRef(online);
+  onlineRef.current = online;
+  // Undo was pressed offline: the card says so (the toast's own error line is the shared one).
+  const [undoOffline, setUndoOffline] = useState(false);
+  useEffect(() => {
+    if (online) setUndoOffline(false);
+  }, [online]);
 
   // The save's Undo toast. Its window runs from when the set was made (`created.undoUntil`), so
   // after Bring it back (`again`) it is offered only for what is left of it, if anything.
   const offerUndo = (created: Created, again = false) => {
     if (again && Date.now() >= created.undoUntil) return;
     const next = makeToast(t("st.pv.toast"), async () => {
+      // Offline nothing is sent; the throw keeps the toast (and its Undo) open.
+      if (!onlineRef.current) {
+        setUndoOffline(true);
+        throw new Error("offline");
+      }
+      setUndoOffline(false);
       const outcome = await onUndo(created.setId);
       dispatch({ type: "undone" });
       if (outcome?.removedEdits && onRedo) {
@@ -313,6 +331,8 @@ function PreviewCard({
 
   const bringItBack = async () => {
     if (!bringBack || !onRedo) return;
+    // Offline nothing is sent: the throw keeps the toast open, and its error line says why.
+    if (!online) throw new Error("offline");
     await onRedo(bringBack.created.setId);
     dispatch({ type: "restored", created: bringBack.created });
     offerUndo(bringBack.created, true);
@@ -397,6 +417,12 @@ function PreviewCard({
             </Link>
           </output>
         ) : null}
+        {undoOffline && state.phase === "accepted" ? (
+          <p className="tp-proposal__note" role="alert" data-reason="offline-undo">
+            <TpIcon name="wifi-off" size="sm" />
+            <span>{t("st.pv.offline.undo")}</span>
+          </p>
+        ) : null}
         {state.phase === "rejected" ? (
           <output className="tp-proposal__note">
             <TpIcon name="x" size="sm" />
@@ -473,7 +499,7 @@ function PreviewCard({
           labels={{
             action: t("st.pv.bringBack"),
             sub: t("st.pv.bringBackSub"),
-            error: t("st.pv.bringBackError"),
+            error: t(online ? "st.pv.bringBackError" : "st.pv.offline.bringBack"),
           }}
         />
       ) : null}
