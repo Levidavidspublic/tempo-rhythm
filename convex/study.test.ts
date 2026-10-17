@@ -1143,3 +1143,18 @@ describe("hub and queue reads for a heavy user (whole-run review)", () => {
     expect(read.spent).toBeLessThanOrEqual(lookups);
   });
 });
+
+describe("set ids from a URL (whole-run review)", () => {
+  test("a malformed or wrong-table set id reads as not available, never as an error", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { setId, noteId } = await deckSet(asA);
+    const other = await addPage(t, a, "Plain page", "Just prose.");
+    for (const bad of ["not-a-set", "", "%2E%2E", String(noteId), String(other)]) {
+      expect(await asA.query(api.study.getSet, { setId: bad })).toBeNull();
+      expect(await asA.query(api.study.reviewQueue, { setId: bad })).toEqual({ cards: [] });
+    }
+    // A real id as a plain string still works, from the URL as from anywhere else.
+    expect((await asA.query(api.study.getSet, { setId: String(setId) }))?.set.setId).toBe(setId);
+    expect((await asA.query(api.study.reviewQueue, { setId: String(setId) })).cards).toHaveLength(3);
+  });
+});

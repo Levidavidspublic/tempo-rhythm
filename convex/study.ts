@@ -167,12 +167,17 @@ export const hub = query({
   },
 });
 
-/** One set with its block (read from the page), card states and the last 5 attempts; or null. */
+/**
+ * One set with its block (read from the page), card states and the last 5 attempts; or null.
+ * `setId` comes from the URL, so it is any string: one that names no set reads as not available.
+ */
 export const getSet = query({
-  args: { setId: v.id("studySets") },
+  args: { setId: v.string() },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const live = await readLiveSetWithBlock(ctx, user._id, args.setId);
+    const setId = ctx.db.normalizeId("studySets", args.setId);
+    if (setId === null) return null;
+    const live = await readLiveSetWithBlock(ctx, user._id, setId);
     if (!live) return null;
     const { set, note, block } = live;
     const states: Record<string, StateView> = {};
@@ -217,9 +222,10 @@ export const getSet = query({
  * Cards to review: due first (oldest due first), then new cards up to `newLimit` (default 20).
  * Across every deck the read stays inside `STUDY_READ_BUDGET`, like the hub, and says
  * `truncated: true` past it; one set's queue (`setId`) reads one page and is never cut short.
+ * `setId` comes from the URL (`?set=`), so it is any string: one that names no set has no cards.
  */
 export const reviewQueue = query({
-  args: { setId: v.optional(v.id("studySets")), newLimit: v.optional(v.number()) },
+  args: { setId: v.optional(v.string()), newLimit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
@@ -228,7 +234,8 @@ export const reviewQueue = query({
     let sets: QueueSet[] = [];
     let truncated = false;
     if (args.setId !== undefined) {
-      const one = await readLiveSetWithBlock(ctx, user._id, args.setId);
+      const setId = ctx.db.normalizeId("studySets", args.setId);
+      const one = setId === null ? null : await readLiveSetWithBlock(ctx, user._id, setId);
       if (one && one.block.type === "flashcards") {
         const cardIds = one.block.data.cards.map((card) => card.id);
         sets = [{ ...one, states: await liveStates(ctx, user._id, one.set._id, cardIds) }];
