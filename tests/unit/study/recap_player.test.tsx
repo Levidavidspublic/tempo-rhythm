@@ -181,6 +181,12 @@ describe("AudioRecapPlayer view", () => {
   });
 });
 
+describe("the recap's question field", () => {
+  test("takes at most 300 characters, like Ask about this set", () => {
+    expect(html(view())).toMatch(/<input [^>]*maxLength="300"[^>]*value=""/);
+  });
+});
+
 describe("the listen screen's states", () => {
   const states = (props: Record<string, unknown>) => html(createElement(ListenStates, { mode: "recap", online: true, ...props } as never));
   test("no page id explains where to start", () => {

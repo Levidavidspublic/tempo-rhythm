@@ -293,6 +293,7 @@ function AskPanel({
               id={inputId}
               className="tp-input"
               dir="auto"
+              maxLength={300}
               value={question}
               aria-describedby={`${inputId}-help`}
               onChange={(event) => onQuestion(event.currentTarget.value)}
