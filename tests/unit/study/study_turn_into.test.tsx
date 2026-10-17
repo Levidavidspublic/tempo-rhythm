@@ -152,6 +152,57 @@ describe("Turn into: the coach never replaces a card in use", () => {
     expect(byAction(view, "ask-coach")).not.toBeNull();
   });
 
+  test("Undo that took changes made since says so, and Bring it back shows the set again (HARD_RULES §1)", async () => {
+    const redone: string[] = [];
+    const view = await render(
+      createElement(TurnIntoView, {
+        note: { id: "n1", title: "Cell biology", body: PAGE },
+        hasFrom: true,
+        kind: "flashcards",
+        online: true,
+        onGenerate: async () => ({ status: "unavailable", reason: "busy" }),
+        onCreate: async () => ({ noteId: "n2", setId: "s2", undoUntil: Date.now() + 300_000 }),
+        onUndo: async () => ({ removedEdits: true, redoUntil: Date.now() + 300_000 }),
+        onRedo: async (setId: string) => {
+          redone.push(setId);
+        },
+      }),
+    );
+    await click(byAction(view, "accept") as TestNode);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    // The set is taken back, always; the toast says what went with it and offers it back.
+    expect(findAll(view, (n) => n.getAttribute?.("data-status") === "preview")).toHaveLength(1);
+    expect(view.textContent).toContain(translate("en", "st.pv.undone"));
+    expect(view.textContent).toContain("Removed, with its page and the changes made since.");
+    expect(view.textContent).toContain("You can bring it back for");
+    await click(findByTag(view, "BUTTON", "Bring it back"));
+    expect(redone).toEqual(["s2"]);
+    expect(findAll(view, (n) => n.getAttribute?.("data-status") === "accepted")).toHaveLength(1);
+    expect(view.textContent).toContain("Brought back as it was, changes and all.");
+    expect(findByTag(view, "A", translate("en", "st.pv.studyNow")).getAttribute("href")).toContain("s2");
+    expect(queryByTag(view, "BUTTON", "Bring it back")).toBeNull();
+    expect(byAction(view, "ask-coach")).toBeNull();
+  });
+
+  test("a plain Undo offers nothing to bring back", async () => {
+    const view = await render(
+      createElement(TurnIntoView, {
+        note: { id: "n1", title: "Cell biology", body: PAGE },
+        hasFrom: true,
+        kind: "flashcards",
+        online: true,
+        onGenerate: async () => ({ status: "unavailable", reason: "busy" }),
+        onCreate: async () => ({ noteId: "n2", setId: "s2", undoUntil: Date.now() + 300_000 }),
+        onUndo: async () => ({ removedEdits: false }),
+        onRedo: async () => {},
+      }),
+    );
+    await click(byAction(view, "accept") as TestNode);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(view.textContent).toContain(translate("en", "st.pv.undone"));
+    expect(queryByTag(view, "BUTTON", "Bring it back")).toBeNull();
+  });
+
   test("canAskCoach: only a plain preview, and only before the coach answered", () => {
     expect(canAskCoach("preview", false)).toBe(true);
     for (const phase of ["editing", "saving", "accepted", "rejected"] as const) expect(canAskCoach(phase, false)).toBe(false);

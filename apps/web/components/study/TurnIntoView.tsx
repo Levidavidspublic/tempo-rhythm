@@ -10,9 +10,11 @@ import {
   StateEmpty,
   StateLoading,
   type ToastState,
+  UNDO_WINDOW_MS,
   UndoToast,
 } from "@/components/goals/shared";
 import { StateSignedOut } from "@/components/you/ScreenStates";
+import { UndoToast as BringBackToast } from "@/components/you/UndoToast";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import type { MessageKey } from "@/lib/i18n";
@@ -67,12 +69,18 @@ export type TurnIntoViewProps = {
   online: boolean;
   onGenerate: () => Promise<GenerateResult>;
   onCreate: (preview: StudyPreview, title: string) => Promise<Created>;
-  /** "kept" when the server kept the set because its page changed after it was made. */
-  onUndo: (setId: string) => Promise<UndoOutcome>;
+  /** Takes the set back (`study.undoCreate`), always; says when that took changes made since. */
+  onUndo: (setId: string) => Promise<UndoOutcome | undefined>;
+  /** Brings back a set that Undo took with changes made since (`study.redoCreate`). */
+  onRedo?: (setId: string) => Promise<unknown>;
 };
 
-/** What Undo did: took the set back, or kept it (the page changed after it was made). */
-export type UndoOutcome = "undone" | "kept";
+/**
+ * What Undo did besides taking the set back (HARD_RULES §1: it always does): `removedEdits` when
+ * that also took the page's changes or the studying since, with `redoUntil`, when Bring it back
+ * closes.
+ */
+export type UndoOutcome = { removedEdits: boolean; redoUntil?: number };
 
 const TITLE_KEY: Record<StudyBlockType, MessageKey> = {
   flashcards: "st.pv.title.flashcards",
@@ -89,6 +97,7 @@ export function TurnIntoView({
   onGenerate,
   onCreate,
   onUndo,
+  onRedo,
 }: TurnIntoViewProps) {
   const { t } = useLocale();
   const outline = useMemo(
@@ -210,6 +219,7 @@ export function TurnIntoView({
               t={t}
               onCreate={onCreate}
               onUndo={onUndo}
+              onRedo={onRedo}
               onPhase={setPhase}
             />
           ) : null}
@@ -241,6 +251,7 @@ function PreviewCard({
   t,
   onCreate,
   onUndo,
+  onRedo,
   onPhase,
 }: {
   preview: StudyPreview;
@@ -248,6 +259,7 @@ function PreviewCard({
   t: StudyT;
   onCreate: TurnIntoViewProps["onCreate"];
   onUndo: TurnIntoViewProps["onUndo"];
+  onRedo: TurnIntoViewProps["onRedo"];
   onPhase: (phase: ProposalPhase) => void;
 }) {
   const [draft, edit] = useReducer(draftReducer, preview, draftFrom);
@@ -255,7 +267,11 @@ function PreviewCard({
   useEffect(() => onPhase(state.phase), [state.phase, onPhase]);
   const [toast, setToast] = useState<ToastState | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
+  // After an Undo that took changes made since: the set it took, until Bring it back closes.
+  const [bringBack, setBringBack] = useState<{ created: Created; until: number } | null>(null);
+  const closeBringBack = useCallback(() => setBringBack(null), []);
   const saving = useRef(false);
+  const card = useRef<HTMLElement>(null);
   const kind = preview.kind;
   const problems = draftProblems(draft);
   const ready = canAccept(state, draft);
@@ -265,6 +281,8 @@ function PreviewCard({
     const data = draftToData(draft);
     if (!data || !ready || saving.current) return;
     saving.current = true;
+    // A new save is the card's set now: the one an earlier Undo took stays gone.
+    setBringBack(null);
     dispatch({ type: "accept" });
     onCreate(data, draft.title.trim())
       .then((created) => {
@@ -272,7 +290,10 @@ function PreviewCard({
         setToast(
           makeToast(t("st.pv.toast"), async () => {
             const outcome = await onUndo(created.setId);
-            dispatch({ type: outcome === "kept" ? "kept" : "undone" });
+            dispatch({ type: "undone" });
+            if (outcome?.removedEdits && onRedo) {
+              setBringBack({ created, until: outcome.redoUntil ?? Date.now() + UNDO_WINDOW_MS });
+            }
           })
         );
       })
@@ -280,6 +301,17 @@ function PreviewCard({
       .finally(() => {
         saving.current = false;
       });
+  };
+
+  const bringItBack = async () => {
+    if (!bringBack || !onRedo) return;
+    await onRedo(bringBack.created.setId);
+    dispatch({ type: "restored", created: bringBack.created });
+    // The toast's button goes with it: the keyboard moves to "Study it now" on the card.
+    window.setTimeout(
+      () => card.current?.querySelector<HTMLElement>(".tp-proposal__note a")?.focus(),
+      0
+    );
   };
 
   const count = draft.items.length;
@@ -293,6 +325,7 @@ function PreviewCard({
   return (
     <>
       <article
+        ref={card}
         className="tp-proposal st-proposal"
         data-component="ProposalCard"
         data-kind={kind}
@@ -343,7 +376,7 @@ function PreviewCard({
         {state.phase === "accepted" && state.created ? (
           <output className="tp-proposal__note">
             <TpIcon name="check" size="sm" />
-            <span>{t("st.pv.accepted")}</span>
+            <span>{t(state.restored ? "st.pv.restored" : "st.pv.accepted")}</span>
             <Link className="tp-btn tp-btn--link" href={setHref(state.created.setId)}>
               {t("st.pv.studyNow")}
             </Link>
@@ -375,12 +408,6 @@ function PreviewCard({
           <output className="tp-proposal__note">
             <TpIcon name="undo" size="sm" />
             <span>{t("st.pv.undone")}</span>
-          </output>
-        ) : null}
-        {state.kept ? (
-          <output className="tp-proposal__note" data-kept="pageChanged">
-            <TpIcon name="info" size="sm" />
-            <span>{t("st.pv.kept")}</span>
           </output>
         ) : null}
         {state.error === "save" ? (
@@ -427,6 +454,20 @@ function PreviewCard({
         ) : null}
       </article>
       {toast ? <UndoToast key={toast.id} toast={toast} onClose={closeToast} /> : null}
+      {bringBack ? (
+        <BringBackToast
+          key={bringBack.created.setId}
+          title={t("st.pv.undoneEdited")}
+          untilMs={bringBack.until}
+          onUndo={bringItBack}
+          onClose={closeBringBack}
+          labels={{
+            action: t("st.pv.bringBack"),
+            sub: t("st.pv.bringBackSub"),
+            error: t("st.pv.bringBackError"),
+          }}
+        />
+      ) : null}
     </>
   );
 }

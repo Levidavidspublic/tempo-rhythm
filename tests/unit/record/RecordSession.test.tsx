@@ -45,14 +45,20 @@ const calls = {
     taskIds: ["tasks:1"],
     undoUntil: Date.now() + 5 * 60_000,
   })),
-  undoSave: mock(async (_args: unknown) => ({ success: true, removedTasks: 1 })),
+  undoSave: mock(async (_args: unknown): Promise<Record<string, unknown>> => ({ success: true, removedTasks: 1 })),
+  redoUndo: mock(async (_args: unknown) => ({ success: true, restoredTasks: 1 })),
   propose: mock(async (_args: unknown): Promise<Record<string, unknown>> => ({ status: "unavailable", reason: "no_key" })),
 };
 
 function installModuleMocks() {
   mock.module(recordApi, () => ({
     useRecordingAvailability: () => availability,
-    useRecordingSave: () => ({ propose: calls.propose, saveSession: calls.saveSession, undoSave: calls.undoSave }),
+    useRecordingSave: () => ({
+      propose: calls.propose,
+      saveSession: calls.saveSession,
+      undoSave: calls.undoSave,
+      redoUndo: calls.redoUndo,
+    }),
     useRecordingLease: () => ({ startLease: calls.start, renewLease: calls.renew, stopLease: calls.stop, grant: calls.grant }),
   }));
   mock.module(localeProvider, () => ({
@@ -257,27 +263,66 @@ describe("review and save", () => {
     expect(view.textContent).toContain("Review before saving");
   });
 
-  test("Undo that the server turns down keeps the save, says why, and stays on the saved step", async () => {
+  test("Undo that also took changes made since says so and offers Bring it back (HARD_RULES §1)", async () => {
     const view = await render();
     await toReview(view);
+    await click(findByTag(findAll(view, (n) => n.getAttribute("data-row") === "l0")[0] as TestNode, "BUTTON", "Accept"));
     await clickButton(view, "Save page and tasks");
     expect(calls.saveSession.mock.calls[0]?.[0]).toMatchObject({ lang: "en" });
-    calls.undoSave.mockImplementationOnce(async () => ({ success: false, removedTasks: 0, kept: "pageChanged" }));
+    calls.undoSave.mockImplementationOnce(async () => ({
+      success: true,
+      removedTasks: 1,
+      removedDone: 1,
+      redoUntil: Date.now() + 5 * 60_000,
+    }));
     await clickButton(view, "Undo");
-    expect(view.textContent).toContain("This page changed after it was made, so it was kept.");
-    expect(view.textContent).not.toContain("Undone. Nothing from this recording is saved");
+    // Undo always takes the save back, in one click.
+    expect(view.textContent).toContain("Undone. Nothing from this recording is saved");
+    expect(view.textContent).toContain("Review before saving");
+    expect(view.textContent).toContain("Removed the page and its tasks, with the changes made since.");
+    expect(view.textContent).toContain("You can bring it back for");
+    expect(view.textContent).toContain("5:00");
+    await clickButton(view, "Bring it back");
+    expect(calls.redoUndo).toHaveBeenCalledWith({ noteId: "notes:1" });
+    expect(view.textContent).toContain("Brought back: the page and its tasks, with the changes made since.");
+    expect(findAll(view, (n) => n.getAttribute("data-rec-restored") !== null)).toHaveLength(1);
     expect(findByTag(view, "A", "Open the page").getAttribute("href")).toBe("/notes/notes:1");
-    expect(findAll(view, (n) => n.getAttribute("data-rec-kept") === "pageChanged")).toHaveLength(1);
+    expect(view.textContent).not.toContain("Undone. Nothing from this recording is saved");
+    expect(queryByTag(view, "BUTTON", "Bring it back")).toBeNull();
   });
 
-  test("Undo after a task from the save is done keeps everything and says so", async () => {
+  test("a save with no tasks names only the page", async () => {
     const view = await render();
     await toReview(view);
     await clickButton(view, "Save page and tasks");
-    calls.undoSave.mockImplementationOnce(async () => ({ success: false, removedTasks: 0, kept: "taskDone" }));
+    calls.undoSave.mockImplementationOnce(async () => ({ success: true, removedTasks: 0, removedEdits: true }));
     await clickButton(view, "Undo");
-    expect(view.textContent).toContain("A task from this save is already done, so the page and its tasks were kept.");
-    expect(view.textContent).toContain("Saved");
+    expect(view.textContent).toContain("Removed the page, with the changes made since.");
+    expect(view.textContent).not.toContain("its tasks");
+  });
+
+  test("a plain Undo offers nothing to bring back", async () => {
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    await clickButton(view, "Undo");
+    expect(view.textContent).toContain("Undone. Nothing from this recording is saved");
+    expect(queryByTag(view, "BUTTON", "Bring it back")).toBeNull();
+  });
+
+  test("Bring it back that doesn't go through says so and stays on offer", async () => {
+    const view = await render();
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    calls.undoSave.mockImplementationOnce(async () => ({ success: true, removedTasks: 0, removedEdits: true }));
+    calls.redoUndo.mockImplementationOnce(async () => {
+      throw new Error("The 5 minutes to bring this back have passed.");
+    });
+    await clickButton(view, "Undo");
+    await clickButton(view, "Bring it back");
+    expect(view.textContent).toContain("That didn't come back. Try again in a moment.");
+    expect(queryByTag(view, "BUTTON", "Bring it back")).not.toBeNull();
+    expect(view.textContent).toContain("Review before saving");
   });
 
   test("after saving, the page can go straight to a flashcards, quiz or test preview", async () => {

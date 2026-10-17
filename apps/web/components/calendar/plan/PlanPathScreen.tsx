@@ -7,9 +7,11 @@
  * (S9): Edit changes the sessions here only, and nothing is saved until the card's one primary
  * button, "Add these sessions", calls `plans.createFromPreview` with the edited sessions. The
  * card then shows Undo for 5 minutes (`plans.undoCreate`) and a To do / Doing / Done status per
- * session (`tasks.update`); an Undo the server turns down because a session is already done keeps
- * the plan and says why. Reject sets the preview aside until the form changes. While Undo is
- * open the accepted plan stays on the card even if the form changes, so it can't be added twice.
+ * session (`tasks.update`). Undo always takes the plan back in one click (HARD_RULES §1); when
+ * that also took changes made since (sessions marked done or moved), a toast says so in words and
+ * offers Bring it back for 5 minutes (`plans.redoUndo`). Reject sets the preview aside until the
+ * form changes. While Undo is open the accepted plan stays on the card even if the form changes,
+ * so it can't be added twice.
  * Above the form, ReplanPanel offers to move the saved plan's missed or clashing sessions.
  */
 import { GuidedPlanCard, type GuidedStep, type GuidedStepStatus } from "@tempo/ui";
@@ -17,6 +19,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSignedIn } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useCountdown } from "@/lib/useCountdown";
@@ -28,6 +31,7 @@ import { PlanForm, PlanPreview } from "./PlanParts";
 import { useBusyTime } from "./planApi";
 import { ReplanArea } from "./ReplanPanel";
 import {
+  bringBackOffer,
   buildPreview,
   busyByDate,
   DEFAULT_FORM,
@@ -38,7 +42,6 @@ import {
   sessionsFromSteps,
   shownDecision,
   toGuidedSteps,
-  undoNotice,
   waysOut,
 } from "./planForm";
 import { SessionScheduler } from "./SessionScheduler";
@@ -48,6 +51,7 @@ export function PlanPathScreen() {
   const signedIn = useSignedIn();
   const create = useMutation(api.plans.createFromPreview);
   const undoCreate = useMutation(api.plans.undoCreate);
+  const redoUndo = useMutation(api.plans.redoUndo);
   const updateTask = useMutation(api.tasks.update);
   const plans = useQuery(api.plans.list, signedIn === "ready" ? {} : "skip");
 
@@ -68,6 +72,9 @@ export function PlanPathScreen() {
   const [tapped, setTapped] = useState<Record<string, GuidedStepStatus>>({});
   const topicsRef = useRef<HTMLTextAreaElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // After an Undo that took changes made since: that plan, until Bring it back closes.
+  const [bringBack, setBringBack] = useState<{ decision: Decision; until: number } | null>(null);
+  const bringBackRef = useRef<HTMLDivElement>(null);
 
   // What is already on the calendar from today up to the deadline (read only), so the plan only
   // uses the time that is left on each day. Events come in windows of at most 31 days, which
@@ -162,6 +169,8 @@ export function PlanPathScreen() {
     }
     setSaving(true);
     setMessage(null);
+    // A new plan is the card's now: the one an earlier Undo took stays gone.
+    setBringBack(null);
     try {
       const result = await create({
         title: values.title.trim(),
@@ -197,19 +206,34 @@ export function PlanPathScreen() {
     setSaving(true);
     setMessage(null);
     try {
-      const notice = undoNotice(await undoCreate({ planId: taken }));
-      if (notice) {
-        // Kept (a session is already done): the plan stays on the card and the screen says why.
-        setMessage(notice);
-        return;
-      }
+      const answer = await undoCreate({ planId: taken });
       setPlanId((id) => (id === taken ? null : id));
       setDecision({ ...current, status: "undone" });
+      setBringBack(bringBackOffer(answer, current, Date.now()));
     } catch {
       setMessage("pp.g.undoError");
     } finally {
       setSaving(false);
     }
+  };
+
+  // Bring it back: the plan and the sessions the Undo took return, and the card shows it again.
+  const bringItBack = async () => {
+    const back = bringBack?.decision;
+    const backId = back?.planId;
+    if (!back || !backId) return;
+    await redoUndo({ planId: backId });
+    setPlanId(backId);
+    setTapped({});
+    setDecision({ ...back, status: "accepted" });
+  };
+  // When the toast closes with the keyboard in it, the keyboard goes to the page heading.
+  const closeBringBack = () => {
+    const active = document.activeElement;
+    if (!active || active === document.body || bringBackRef.current?.contains(active)) {
+      window.setTimeout(() => headingRef.current?.focus(), 0);
+    }
+    setBringBack(null);
   };
 
   const reject = () => {
@@ -238,12 +262,7 @@ export function PlanPathScreen() {
   };
 
   const messageNode = message ? (
-    <p
-      className={
-        message === "pp.signIn" || message === "pp.g.undoKept" ? "tp-help" : "tp-error-text"
-      }
-      role="alert"
-    >
+    <p className={message === "pp.signIn" ? "tp-help" : "tp-error-text"} role="alert">
       <span>{pt(lang, message)}</span>
       {message === "pp.signIn" ? (
         <>
@@ -326,6 +345,23 @@ export function PlanPathScreen() {
       {signedIn === "ready" && activePlan ? (
         <SessionScheduler key={activePlan} lang={lang} planId={activePlan} />
       ) : null}
+
+      {bringBack ? (
+        <div className="tp-plan__toast" ref={bringBackRef}>
+          <UndoToast
+            key={bringBack.decision.planId}
+            title={pt(lang, "pp.g.undoneEdited")}
+            untilMs={bringBack.until}
+            onUndo={bringItBack}
+            onClose={closeBringBack}
+            labels={{
+              action: pt(lang, "pp.g.bringBack"),
+              sub: pt(lang, "pp.g.bringBackSub"),
+              error: pt(lang, "pp.g.bringBackError"),
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -345,7 +381,6 @@ type Message =
   | "pp.error"
   | "pp.err.title"
   | "pp.g.undoError"
-  | "pp.g.undoKept"
   | "pp.g.statusError";
 
 type Decision = {

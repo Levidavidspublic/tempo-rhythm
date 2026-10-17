@@ -39,8 +39,8 @@ import { useLiveWords } from "./useLiveWords";
 
 type Step = "consent" | "capture" | "review" | "saved";
 type Saved = { noteId: Id<"notes">; taskIds: Id<"tasks">[]; undoUntil: number; count: number };
-/** Why the server kept a save on Undo: the page changed since, or one of its tasks is done. */
-type KeptReason = "pageChanged" | "taskDone";
+/** Bring it back lasts 5 minutes from the Undo; the server's `redoUntil` says exactly when. */
+const BRING_BACK_MS = 5 * 60_000;
 
 function prefersReducedMotion(): boolean {
   try {
@@ -61,8 +61,9 @@ const nextId = (prefix: string) => {
 /**
  * RecordSession (kitchen T8, S7): record a meeting or lecture. Consent → live words (or typed
  * notes) with pins → review → one page and the tasks the person accepted, with a 5-minute Undo.
- * Undo takes back only what that save made; when the person has built on it since (the page
- * changed, or a task is done) the server keeps it and the saved step says why.
+ * Undo always takes back what that save made, in one click (HARD_RULES §1), and only that; when
+ * that also took changes made since (the page or a task changed, or a task is done), a toast says
+ * so in words and offers Bring it back for 5 minutes.
  * Audio is never stored; the transcript lives only in this screen until the person saves.
  */
 export function RecordSession() {
@@ -70,7 +71,7 @@ export function RecordSession() {
   const copy = recordCopy(uiLang);
   const [talkLang, setTalkLang] = useState<RecordLang>(uiLang);
   const availability = useRecordingAvailability(talkLang);
-  const { propose, saveSession, undoSave } = useRecordingSave();
+  const { propose, saveSession, undoSave, redoUndo } = useRecordingSave();
 
   const [step, setStep] = useState<Step>("consent");
   const [consent, setConsent] = useState(false);
@@ -95,7 +96,10 @@ export function RecordSession() {
   const [saved, setSaved] = useState<Saved | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [undone, setUndone] = useState(false);
-  const [kept, setKept] = useState<KeptReason | null>(null);
+  // After an Undo that took changes made since: that save, until Bring it back closes.
+  const [bringBack, setBringBack] = useState<{ saved: Saved; until: number } | null>(null);
+  const [restored, setRestored] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const titleTouched = useRef(false);
   const reviewRun = useRef(0);
   const rowsRef = useRef(rows);
@@ -149,7 +153,7 @@ export function RecordSession() {
     const at = Date.now();
     if (startedAt.current === 0) startedAt.current = at;
     setUndone(false);
-    setKept(null);
+    setRestored(false);
     setMode(nextMode);
     setStep("capture");
     setNow(at);
@@ -240,7 +244,9 @@ export function RecordSession() {
       });
       const result = await saveSession({ title: title.trim(), body, tasks, lang: talkLang });
       reviewRun.current += 1;
-      setKept(null);
+      // A new save is the screen's now: the one an earlier Undo took stays gone.
+      setBringBack(null);
+      setRestored(false);
       setProposing(false);
       setSaved({ ...result, count: tasks.length });
       setToastOpen(true);
@@ -255,14 +261,29 @@ export function RecordSession() {
   const undo = async () => {
     if (!saved) return;
     const result = await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds });
-    if (result.kept) {
-      // Nothing was removed: the save stays on the saved step, with the reason in words.
-      setKept(result.kept);
-      return;
-    }
     setSaved(null);
     setUndone(true);
+    setRestored(false);
     setStep("review");
+    if (result.removedEdits || (result.removedDone ?? 0) > 0) {
+      setBringBack({ saved, until: result.redoUntil ?? Date.now() + BRING_BACK_MS });
+    }
+  };
+
+  const bringItBack = async () => {
+    if (!bringBack) return;
+    await redoUndo({ noteId: bringBack.saved.noteId });
+    reviewRun.current += 1;
+    setProposing(false);
+    setSaved(bringBack.saved);
+    setUndone(false);
+    setRestored(true);
+    setStep("saved");
+    // The toast's button goes with it: the keyboard moves to "Open the page" on the saved step.
+    window.setTimeout(
+      () => rootRef.current?.querySelector<HTMLElement>('[data-step="saved"] a')?.focus(),
+      0,
+    );
   };
 
   const restart = () => {
@@ -280,7 +301,8 @@ export function RecordSession() {
     setSaved(null);
     setToastOpen(false);
     setUndone(false);
-    setKept(null);
+    setBringBack(null);
+    setRestored(false);
     setConsent(false);
     live.clearIssue();
     setStep("consent");
@@ -290,7 +312,7 @@ export function RecordSession() {
   const liveReady = Boolean(availability?.live);
 
   return (
-    <div className="tp-page tp-rec" data-component="RecordSession">
+    <div className="tp-page tp-rec" data-component="RecordSession" ref={rootRef}>
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
           <h1 className="tp-pagehead__title" id="rec-h1">
@@ -378,13 +400,13 @@ export function RecordSession() {
         />
       ) : null}
 
-      {step === "saved" && saved && kept ? (
-        <output className="tp-notice" data-tone="info" data-component="Notice" data-rec-kept={kept}>
+      {step === "saved" && saved && restored ? (
+        <output className="tp-notice" data-tone="done" data-component="Notice" data-rec-restored="">
           <span className="tp-notice__icon">
-            <TpIcon name="info" />
+            <TpIcon name="check" />
           </span>
           <span className="tp-notice__text">
-            {copy(kept === "taskDone" ? "rec.undoKept.taskDone" : "rec.undoKept.pageChanged")}
+            {copy(saved.count > 0 ? "rec.restored" : "rec.restored.page")}
           </span>
         </output>
       ) : null}
@@ -397,6 +419,21 @@ export function RecordSession() {
           untilMs={saved.undoUntil}
           onUndo={undo}
           onClose={() => setToastOpen(false)}
+        />
+      ) : null}
+
+      {bringBack ? (
+        <UndoToast
+          key={bringBack.saved.noteId}
+          title={copy(bringBack.saved.count > 0 ? "rec.undoEdited" : "rec.undoEdited.page")}
+          untilMs={bringBack.until}
+          onUndo={bringItBack}
+          onClose={() => setBringBack(null)}
+          labels={{
+            action: copy("rec.bringBack"),
+            sub: copy("rec.bringBackSub"),
+            error: copy("rec.bringBackError"),
+          }}
         />
       ) : null}
     </div>

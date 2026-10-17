@@ -18,6 +18,7 @@ export function useRecordingSave() {
     propose: convexReact.useAction(api.recordings.proposeFromTranscript),
     saveSession: convexReact.useMutation(api.recordings.saveSession),
     undoSave: convexReact.useMutation(api.recordings.undoSave),
+    redoUndo: convexReact.useMutation(api.recordings.redoUndo),
   };
 }
 

@@ -100,8 +100,13 @@ export const en = {
   "rec.saved.quiz": "Quiz",
   "rec.saved.test": "Practice test",
   "rec.undone": "Undone. Nothing from this recording is saved, and your notes are back here.",
-  "rec.undoKept.pageChanged": "This page changed after it was made, so it was kept.",
-  "rec.undoKept.taskDone": "A task from this save is already done, so the page and its tasks were kept.",
+  "rec.undoEdited": "Removed the page and its tasks, with the changes made since.",
+  "rec.undoEdited.page": "Removed the page, with the changes made since.",
+  "rec.restored": "Brought back: the page and its tasks, with the changes made since.",
+  "rec.restored.page": "Brought back: the page, with the changes made since.",
+  "rec.bringBack": "Bring it back",
+  "rec.bringBackSub": "You can bring it back for",
+  "rec.bringBackError": "That didn't come back. Try again in a moment.",
 } as const;
 
 export type RecordKey = keyof typeof en;
@@ -198,6 +203,11 @@ export const he: Record<RecordKey, string> = {
   "rec.saved.quiz": "בוחן",
   "rec.saved.test": "מבחן תרגול",
   "rec.undone": "בוטל. שום דבר מההקלטה הזו לא נשמר, והרשימות חזרו לכאן.",
-  "rec.undoKept.pageChanged": "הדף השתנה אחרי שנוצר, ולכן הוא נשאר.",
-  "rec.undoKept.taskDone": "אחת המשימות מהשמירה הזו כבר בוצעה, ולכן הדף והמשימות שלו נשארו.",
+  "rec.undoEdited": "הדף והמשימות שלו הוסרו, יחד עם השינויים שנעשו מאז.",
+  "rec.undoEdited.page": "הדף הוסר, יחד עם השינויים שנעשו מאז.",
+  "rec.restored": "הדף והמשימות שלו שוחזרו, יחד עם השינויים שנעשו מאז.",
+  "rec.restored.page": "הדף שוחזר, יחד עם השינויים שנעשו מאז.",
+  "rec.bringBack": "שחזור",
+  "rec.bringBackSub": "אפשר לשחזר במשך",
+  "rec.bringBackError": "השחזור לא הצליח. אפשר לנסות שוב בעוד רגע.",
 };

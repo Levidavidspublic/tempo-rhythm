@@ -14,10 +14,11 @@
 // (nothing found, with the page link) and study-set-ask-he (a pointed Hebrew deck answering an
 // unpointed question). MOCKED: the sample decks and pages below; the search itself is the real one.
 // The whole-run review adds study-hub-truncated (a hub past its read budget says it shows the most
-// recent sets), and three Undo answers the server turns down, each said in words: study-new-undo-kept
-// (the page changed after it was made), plan-undo-kept (a session is already done) and
-// record-undo-kept (the saved page changed). MOCKED: the sample sets, plan and notes below, with
-// stand-in "kept" answers.
+// recent sets). HARD_RULES §1 (Undo always takes back what the AI-made save made) adds three Undos
+// that also took the changes made since, each said in words in a toast with Bring it back:
+// study-new-undo-edited (the page changed after it was made), plan-undo-edited (a session is
+// already done) and record-undo-edited (the saved page changed). MOCKED: the sample sets, plan and
+// notes below, with stand-in Undo answers.
 // The keyboard walk (a11y-walk.mjs) has calendar-month hold its chosen day in state, as CalendarViews
 // does: with a fixed day the grid's arrow keys had nothing to move to.
 import { GuidedPlanCard } from "@tempo/ui";
@@ -276,9 +277,10 @@ const calls: Record<string, unknown> = {
   "study.generate": { status: "unavailable", reason: "no_key" },
   "study.createFromPreview": { noteId: "notes:21", setId: "studySets:21", undoUntil: NOW + 5 * MIN },
   "study.undoCreate":
-    view === "study-new-undo-kept"
-      ? { success: false, pageRemoved: false, kept: "pageChanged" }
+    view === "study-new-undo-edited"
+      ? { success: true, pageRemoved: true, removedEdits: true, redoUntil: NOW + 5 * MIN }
       : { success: true, pageRemoved: true },
+  "study.redoCreate": { success: true, pageRestored: true },
   "study.recordAttempt": { attemptId: "studyAttempts:2", percent: 33 },
   "study.removeSet": { success: true, undoUntil: NOW + 5 * MIN },
   "study.restoreSet": { success: true },
@@ -369,12 +371,17 @@ Object.assign(calls, {
   "plans.createFromPreview": { planId: "studyPlans:1", undoUntil: NOW + 5 * MIN },
   "plans.replan": { undoUntil: NOW + 5 * MIN, moved: 2, removed: 0 },
   "plans.undoReplan": { restored: 2 },
-  "plans.undoCreate": view === "plan-undo-kept" ? { removedTasks: 0, kept: "sessionDone" } : { removedTasks: 4 },
+  "plans.undoCreate":
+    view === "plan-undo-edited"
+      ? { removedTasks: 4, removedDone: 1, redoUntil: NOW + 5 * MIN }
+      : { removedTasks: 4 },
+  "plans.redoUndo": { restoredTasks: 4 },
   "recordings.saveSession": { noteId: "notes:41", taskIds: ["tasks:41"], undoUntil: NOW + 5 * MIN },
   "recordings.undoSave":
-    view === "record-undo-kept"
-      ? { success: false, removedTasks: 0, kept: "pageChanged" }
+    view === "record-undo-edited"
+      ? { success: true, removedTasks: 0, removedEdits: true, redoUntil: NOW + 5 * MIN }
       : { success: true, removedTasks: 1 },
+  "recordings.redoUndo": { success: true, restoredTasks: 0 },
   "notes.create": "notes:31",
   "memory.update": { success: true },
 });
@@ -665,8 +672,9 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={failingVoice} />;
   },
   "study-new-preview": () => <TurnIntoPreview from="notes:11" kind="flashcards" />,
-  // Accept, then Undo after the page changed: the set stays and the card says why.
-  "study-new-undo-kept": () => {
+  // Accept, then Undo after the page changed: the set and its page go, and a toast says so with
+  // Bring it back.
+  "study-new-undo-edited": () => {
     steps(click('[data-action="accept"]'), click('[data-component="UndoToast"] .tp-btn--secondary'));
     return <TurnIntoPreview from="notes:11" kind="flashcards" />;
   },
@@ -701,8 +709,9 @@ const VIEWS: Record<string, () => ReactNode> = {
     return <PlanPathScreen />;
   },
   "plan-scheduler": () => <PlanPathScreen />,
-  // Add the sessions, then Undo after one is done: the plan stays and the screen says why.
-  "plan-undo-kept": () => {
+  // Add the sessions, then Undo after one is done: the plan goes, and a toast says so with Bring
+  // it back.
+  "plan-undo-edited": () => {
     steps(
       fill('input[name="title"]', he ? "בגרות בביולוגיה" : "Biology bagrut"),
       fill('input[name="deadline"]', addDays(today, 21)),
@@ -722,8 +731,9 @@ const VIEWS: Record<string, () => ReactNode> = {
     steps(click('.tp-form__actions .tp-btn--primary'), fill("#rec-typed", RECORD_NOTES), click(".tp-rec-dock .tp-btn--primary"));
     return <RecordSession />;
   },
-  // Save typed notes, then Undo after the page changed: the save stays and the screen says why.
-  "record-undo-kept": () => {
+  // Save typed notes, then Undo after the page changed: the save goes, and a toast says so with
+  // Bring it back.
+  "record-undo-edited": () => {
     steps(
       click(".tp-form__actions .tp-btn--primary"),
       fill("#rec-typed", RECORD_NOTES),

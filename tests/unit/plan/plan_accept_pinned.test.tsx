@@ -10,6 +10,8 @@ import { createElement } from "../../../apps/web/node_modules/react";
 import { renderToStaticMarkup } from "../../../apps/web/node_modules/react-dom/server";
 import { PlanPreview } from "../../../apps/web/components/calendar/plan/PlanParts";
 import {
+  BRING_BACK_MS,
+  bringBackOffer,
   buildPreview,
   DEFAULT_FORM,
   guidedLabels,
@@ -126,14 +128,29 @@ describe("PlanPreview with a pinned accepted card", () => {
   });
 });
 
-describe("Undo the server turns down", () => {
-  test("a plan kept because a session is done is said in words, in both languages", () => {
+describe("Undo that also took the changes made since (HARD_RULES §1)", () => {
+  test("is said in words, in both languages, so Bring it back can be offered", () => {
     expect(undoNotice({ removedTasks: 2 })).toBeNull();
-    const key = undoNotice({ removedTasks: 0, kept: "sessionDone" });
-    expect(key).toBe("pp.g.undoKept");
+    expect(undoNotice({ removedTasks: 2, removedDone: 0 })).toBeNull();
+    expect(undoNotice({ removedTasks: 2, removedEdits: true })).toBe("pp.g.undoneEdited");
+    const key = undoNotice({ removedTasks: 2, removedDone: 1 });
+    expect(key).toBe("pp.g.undoneEdited");
     if (!key) throw new Error("expected a notice");
-    expect(pt("en", key)).toBe("A session of this plan is already done, so the plan was kept.");
-    expect(pt("he", key)).not.toBe(pt("en", key));
-    expect(pt("he", key)).not.toContain("—");
+    expect(pt("en", key)).toBe("Removed the plan and its sessions, with the changes made since.");
+    expect(pt("en", "pp.g.bringBack")).toBe("Bring it back");
+    for (const k of [key, "pp.g.bringBack", "pp.g.bringBackSub", "pp.g.bringBackError"] as const) {
+      expect(pt("he", k)).not.toBe(pt("en", k));
+      expect(pt("he", k)).not.toContain("—");
+    }
+  });
+
+  test("Bring it back is offered for the plan the Undo took, until the server says", () => {
+    const taken = { ...accepted("k1"), planId: "studyPlans:1" };
+    expect(bringBackOffer({ removedTasks: 2 }, taken, 1_000)).toBeNull();
+    expect(bringBackOffer({ removedTasks: 2, removedDone: 1, redoUntil: 9_000 }, taken, 1_000)).toEqual({
+      decision: taken,
+      until: 9_000,
+    });
+    expect(bringBackOffer({ removedTasks: 2, removedEdits: true }, taken, 1_000)?.until).toBe(1_000 + BRING_BACK_MS);
   });
 });

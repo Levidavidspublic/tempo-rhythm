@@ -426,8 +426,8 @@ export type ProposalState = {
   error: "save" | null;
   /** The person took an accepted preview back with Undo. */
   undone: boolean;
-  /** Undo was turned down because the page changed after it was made: the set stays. */
-  kept: boolean;
+  /** The person brought a set back after its Undo (Bring it back): it is accepted again. */
+  restored: boolean;
   created: Created | null;
 };
 
@@ -440,19 +440,19 @@ export type ProposalAction =
   | { type: "reject" }
   | { type: "reopen" }
   | { type: "undone" }
-  | { type: "kept" };
+  | { type: "restored"; created: Created };
 
 export const initialProposal: ProposalState = {
   phase: "preview",
   error: null,
   undone: false,
-  kept: false,
+  restored: false,
   created: null,
 };
 
 /**
- * The flow: preview ⇄ editing → saving → accepted (→ Undo back to preview, or kept when the page
- * changed since), or → rejected.
+ * The flow: preview ⇄ editing → saving → accepted (→ Undo back to preview, → Bring it back to
+ * accepted again), or → rejected.
  */
 export function proposalReducer(state: ProposalState, action: ProposalAction): ProposalState {
   switch (action.type) {
@@ -480,8 +480,11 @@ export function proposalReducer(state: ProposalState, action: ProposalAction): P
       return state.phase === "rejected" ? { ...initialProposal } : state;
     case "undone":
       return state.phase === "accepted" ? { ...initialProposal, undone: true } : state;
-    case "kept":
-      return state.phase === "accepted" ? { ...state, kept: true } : state;
+    case "restored":
+      // Never over a set saved since the Undo (or one being saved): that one is the card's now.
+      return state.phase === "saving" || state.phase === "accepted"
+        ? state
+        : { ...initialProposal, phase: "accepted", restored: true, created: action.created };
   }
 }
 

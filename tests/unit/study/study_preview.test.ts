@@ -182,14 +182,21 @@ describe("Accept / Edit / Reject", () => {
     expect(state.undone).toBe(true);
     expect(state.created).toBeNull();
   });
-  test("Undo on a page changed since keeps the set accepted and says so", () => {
-    const state = run({ type: "accept" }, { type: "saved", created }, { type: "kept" });
+  test("Bring it back after Undo (HARD_RULES §1) shows the set accepted again, and says so", () => {
+    const undone = run({ type: "accept" }, { type: "saved", created }, { type: "undone" });
+    const state = proposalReducer(undone, { type: "restored", created });
     expect(state.phase).toBe("accepted");
-    expect(state.kept).toBe(true);
+    expect(state.restored).toBe(true);
     expect(state.undone).toBe(false);
     expect(state.created).toEqual(created);
-    // Only an accepted set can be kept; a fresh preview ignores it.
-    expect(proposalReducer(initialProposal, { type: "kept" })).toBe(initialProposal);
+    // It works from the edit list or a set-aside preview too, and a later Undo clears it.
+    expect(proposalReducer(proposalReducer(undone, { type: "edit" }), { type: "restored", created }).phase).toBe("accepted");
+    expect(proposalReducer(state, { type: "undone" }).restored).toBe(false);
+    // Never over a set saved since the Undo, or one being saved.
+    const again = proposalReducer(proposalReducer(undone, { type: "accept" }), { type: "saved", created: { ...created, setId: "s9" } });
+    expect(proposalReducer(again, { type: "restored", created })).toBe(again);
+    const saving = proposalReducer(undone, { type: "accept" });
+    expect(proposalReducer(saving, { type: "restored", created })).toBe(saving);
   });
 });
 

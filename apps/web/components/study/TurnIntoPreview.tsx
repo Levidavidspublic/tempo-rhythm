@@ -30,7 +30,9 @@ import {
  * for one instead. The preview is a ProposalCard: what it will add in words, every card or
  * question listed, and Accept / Edit (change, add, remove items) / Reject. Accept is the only path
  * that saves (`study.createFromPreview`), followed by a glass Undo toast with a 5:00 countdown
- * (`study.undoCreate`). When the coach isn't available (no key, page too short, busy) it says so
+ * (`study.undoCreate`), which always takes the set back (HARD_RULES §1). When that also took the
+ * page's changes or the studying since, a second toast says so and offers Bring it back for 5:00
+ * (`study.redoCreate`). When the coach isn't available (no key, page too short, busy) it says so
  * kindly and the outline reader's preview stays.
  *
  * With `block=<blockId>` instead of `kind`, it opens a study block that's already in the page:
@@ -79,6 +81,7 @@ function TurnIntoData({ from, kind }: { from?: string; kind: StudyBlockType }) {
   const generate = useAction(api.study.generate);
   const create = useMutation(api.study.createFromPreview);
   const undoCreate = useMutation(api.study.undoCreate);
+  const redoCreate = useMutation(api.study.redoCreate);
   const source: NotePreviewSource | null | undefined =
     !from || signedIn === "signedOut"
       ? null
@@ -109,8 +112,12 @@ function TurnIntoData({ from, kind }: { from?: string; kind: StudyBlockType }) {
       }}
       onUndo={async (setId) => {
         const result = await undoCreate({ setId: setId as Id<"studySets"> });
-        return result.success ? "undone" : "kept";
+        return {
+          removedEdits: result.removedEdits === true,
+          ...(result.redoUntil !== undefined ? { redoUntil: result.redoUntil } : {}),
+        };
       }}
+      onRedo={(setId) => redoCreate({ setId: setId as Id<"studySets"> })}
     />
   );
 }

@@ -353,14 +353,38 @@ export function shownDecision<D extends { key: string; status: string }>(
 }
 
 /**
- * What the plan screen says after Undo (`plans.undoCreate`): nothing when the plan was taken back,
- * or why it was kept (a session of it is already done), as a copy key.
+ * What the plan screen says after Undo (`plans.undoCreate`), which always takes the plan back in
+ * one click (HARD_RULES §1): nothing more when only the plan went, or, as a copy key, that the
+ * changes made since went with it (sessions marked done, moved or re-planned), so the screen says
+ * it in words and offers Bring it back.
  */
-export function undoNotice(answer: {
+export function undoNotice(answer: UndoAnswer): "pp.g.undoneEdited" | null {
+  return (answer.removedDone ?? 0) > 0 || answer.removedEdits === true ? "pp.g.undoneEdited" : null;
+}
+
+/** What `plans.undoCreate` answers. */
+export type UndoAnswer = {
   removedTasks: number;
-  kept?: "sessionDone";
-}): "pp.g.undoKept" | null {
-  return answer.kept === "sessionDone" ? "pp.g.undoKept" : null;
+  removedDone?: number;
+  removedEdits?: boolean;
+  redoUntil?: number;
+};
+
+/** Bring it back lasts 5 minutes from the Undo; the server's `redoUntil` says exactly when. */
+export const BRING_BACK_MS = 5 * 60_000;
+
+/**
+ * What Bring it back offers after an Undo: the plan the Undo took (`taken`, the card's decision),
+ * until the server's `redoUntil`, when the Undo also took changes made since; otherwise nothing,
+ * since a plain Undo leaves the preview to add again.
+ */
+export function bringBackOffer<D>(
+  answer: UndoAnswer,
+  taken: D,
+  now: number
+): { decision: D; until: number } | null {
+  if (!undoNotice(answer)) return null;
+  return { decision: taken, until: answer.redoUntil ?? now + BRING_BACK_MS };
 }
 
 /** GuidedPlanCard's words in the person's language. Accept reuses "Add these sessions". */
