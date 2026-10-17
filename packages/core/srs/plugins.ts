@@ -50,12 +50,14 @@ const KEEP_BETWEEN_DIGITS = new Set([".", ",", "/", ":"]);
 /**
  * Folds a short answer for comparison: Unicode compatibility forms, Hebrew niqqud and cantillation
  * (U+0591–U+05C7) removed, lower case, quotes and gershayim dropped, other punctuation turned into
- * spaces, spaces collapsed. Number punctuation survives: "3.5", "1/2", "-4" keep their marks.
+ * spaces, spaces collapsed. Number punctuation survives: "3.5", "1/2", "-4" keep their marks. The
+ * Hebrew punctuation inside U+0591–U+05C7 (maqaf, paseq, sof pasuq, nun hafukha) splits words
+ * rather than folding away, so "הָאָרֶץ׃וְהָאָרֶץ" stays two words.
  */
 export function normalizeAnswer(text: string): string {
   const folded = text
     .normalize("NFKD")
-    .replace(/־/g, " ")
+    .replace(/[\u05BE\u05C0\u05C3\u05C6]/g, " ")
     .replace(/[֑-ׇ]/g, "")
     .normalize("NFC")
     .toLowerCase()

@@ -147,4 +147,10 @@ describe("normalizeAnswer", () => {
   ])("%p → %p", (input, expected) => {
     expect(normalizeAnswer(input)).toBe(expected);
   });
+  test("Hebrew paseq, sof pasuq and nun hafukha split words, as a maqaf does", () => {
+    expect(normalizeAnswer("הָאָרֶץ׃וְהָאָרֶץ")).toBe("הארץ והארץ");
+    expect(normalizeAnswer("מים׀אש")).toBe("מים אש");
+    expect(normalizeAnswer("שלום׆עולם")).toBe("שלום עולם");
+    expect(normalizeAnswer("הָאָרֶץ׃")).toBe("הארץ");
+  });
 });

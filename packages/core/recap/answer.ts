@@ -32,12 +32,16 @@ const STOP_HE = new Set(
 const HEBREW_PREFIX = /^[והבלמשכ]/;
 
 /**
- * Hebrew points and cantillation marks (U+0591–U+05C7) fold away and a maqaf splits words, as in
- * the short-answer checker (`normalizeAnswer` in packages/core/srs): a pointed page (מִיטוֹזָה)
- * matches an unpointed question (מיטוזה), and the other way round.
+ * Hebrew points and cantillation marks (U+0591–U+05C7) fold away, as in the short-answer checker
+ * (`normalizeAnswer` in packages/core/srs): a pointed page (מִיטוֹזָה) matches an unpointed question
+ * (מיטוזה), and the other way round. The punctuation in that range splits words instead: maqaf
+ * (U+05BE), paseq (U+05C0), sof pasuq (U+05C3) and nun hafukha (U+05C6), so "הָאָרֶץ׃וְהָאָרֶץ" is two
+ * words here as in `markQuote`.
  */
+const HEBREW_SPLIT = /[\u05BE\u05C0\u05C3\u05C6]/g;
+
 function foldMarks(text: string): string {
-  return text.normalize("NFKD").replace(/\u05BE/g, " ").replace(/[\u0591-\u05C7]/g, "").normalize("NFC");
+  return text.normalize("NFKD").replace(HEBREW_SPLIT, " ").replace(/[\u0591-\u05C7]/g, "").normalize("NFC");
 }
 
 /** Lower-case word stems for matching: light English plural and verb endings. Hebrew words stay

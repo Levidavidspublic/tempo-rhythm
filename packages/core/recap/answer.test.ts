@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { answerFromPage, terms } from "./answer";
+import { answerFromPage, markQuote, terms } from "./answer";
 
 const PAGE = `# Cell biology
 
@@ -16,6 +16,16 @@ describe("terms", () => {
   test("drops question words and light-stems the rest", () => {
     expect(terms("What does an enzyme do to reactions?")).toEqual(["enzyme", "reaction"]);
     expect(terms("מה זה המיטוזה?")).toEqual(["המיטוזה"]);
+  });
+  test("Hebrew paseq, sof pasuq and nun hafukha split words, as a maqaf does", () => {
+    expect(terms("הָאָרֶץ׃וְהָאָרֶץ")).toEqual(["הארץ", "והארץ"]);
+    expect(terms("מים׀אש")).toEqual(["מים", "אש"]);
+    expect(terms("שלום׆עולם")).toEqual(["שלום", "עולם"]);
+  });
+  test("so scoring and markQuote split a verse the same way", () => {
+    const verse = "וְהָאָרֶץ הָיְתָה תֹהוּ וָבֹהוּ וְחֹשֶׁךְ עַל־פְּנֵי תְהוֹם׃וְרוּחַ אֱלֹהִים מְרַחֶפֶת עַל־פְּנֵי הַמָּיִם׃";
+    expect(answerFromPage(verse, "מה זה תהום?").map((m) => m.text)).toEqual([verse]);
+    expect(markQuote(verse, "מה זה תהום?").filter((run) => run.match).map((run) => run.text)).toEqual(["תְהוֹם"]);
   });
 });
 
