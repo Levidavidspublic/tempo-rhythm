@@ -21,6 +21,7 @@ export function ConsentStep({
   onConsent,
   liveReady,
   offReason,
+  checking = false,
   onStart,
   onType,
 }: {
@@ -32,6 +33,8 @@ export function ConsentStep({
   /** Live words can start (keys, language and minutes all fine). */
   liveReady: boolean;
   offReason: OffReason;
+  /** Live words' availability is still being read: said in words, so it never looks like "off". */
+  checking?: boolean;
   onStart: () => void;
   onType: () => void;
 }) {
@@ -80,6 +83,12 @@ export function ConsentStep({
           ))}
         </div>
       </div>
+
+      {checking ? (
+        <output className="tp-help" data-rec-checking="">
+          {copy("rec.checking")}
+        </output>
+      ) : null}
 
       {offReason ? (
         <output className="tp-notice" data-tone="info" data-component="Notice">

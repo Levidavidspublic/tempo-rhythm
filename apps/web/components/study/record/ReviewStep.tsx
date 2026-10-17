@@ -118,6 +118,7 @@ export function ReviewStep({
   onRowEdit,
   saving,
   saveError,
+  waiting = false,
   onSave,
   onBack,
 }: {
@@ -135,6 +136,8 @@ export function ReviewStep({
   onRowEdit: (id: string, patch: { title?: string; minutes?: number | null }) => void;
   saving: boolean;
   saveError: boolean;
+  /** Save was pressed offline (or the connection went while saving): it waits for the connection. */
+  waiting?: boolean;
   onSave: () => void;
   onBack: () => void;
 }) {
@@ -264,9 +267,18 @@ export function ReviewStep({
           <TpIcon name="chevron" size="sm" className="tp-icon--back" />
           <span>{copy("rec.rev.back")}</span>
         </button>
-        <button type="button" className="tp-btn tp-btn--primary" onClick={save} disabled={saving} aria-describedby="rec-save-note">
-          <TpIcon name="check" size="sm" />
-          <span>{saving ? copy("rec.rev.saving") : copy("rec.rev.save")}</span>
+        {/* A waiting Save uses aria-disabled, so it keeps focus; pressing it again changes nothing. */}
+        <button
+          type="button"
+          className="tp-btn tp-btn--primary"
+          onClick={save}
+          disabled={saving && !waiting}
+          aria-disabled={waiting || undefined}
+          aria-busy={saving || undefined}
+          aria-describedby="rec-save-note"
+        >
+          <TpIcon name={waiting ? "wifi-off" : "check"} size="sm" />
+          <span>{waiting ? copy("rec.rev.waiting") : saving ? copy("rec.rev.saving") : copy("rec.rev.save")}</span>
         </button>
         <span className="tp-help" id="rec-save-note">
           {copy("rec.rev.saveNote", { n: count })}

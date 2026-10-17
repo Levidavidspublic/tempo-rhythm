@@ -281,6 +281,7 @@ describe("Type answers (typed recall)", () => {
 });
 
 // Kitchen states pass: the non-happy states of the review session, a set and the recorder.
+const { RecordGateView } = await import("../../../apps/web/components/study/record/RecordScreen");
 const noopSave = async () => ({ reviewId: "r", undoUntil: 0 });
 
 describe("states", () => {
@@ -309,5 +310,20 @@ describe("states", () => {
       const markup = html(createElement(StudySetView, { ...base, ...props }));
       expect(markup).toMatch(/<h1[^>]*>Study set<\/h1>/);
     }
+  });
+
+  test("the recorder signed out shows its heading and the sign-in state, not the consent step", () => {
+    const markup = html(createElement(RecordGateView, { signedIn: "signedOut", online: true }));
+    expect(markup).toContain("Record a meeting or lecture");
+    expect(markup).toContain('data-component="StateSignedOut"');
+    expect(markup).not.toContain('data-step="consent"');
+  });
+
+  test("the recorder shows skeletons while the session is checked, and the offline notice", () => {
+    const markup = html(createElement(RecordGateView, { signedIn: "loading", online: false }));
+    expect(markup).toContain('data-component="StateLoading"');
+    expect(markup).toContain("Getting the recorder ready");
+    expect(markup).toContain('data-component="StateOffline"');
+    expect(markup).not.toContain('data-step="consent"');
   });
 });

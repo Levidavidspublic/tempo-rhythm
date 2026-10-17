@@ -66,8 +66,13 @@ const nextId = (prefix: string) => {
  * that also took changes made since (the page or a task changed, or a task is done), a toast says
  * so in words and offers Bring it back for 5 minutes.
  * Audio is never stored; the transcript lives only in this screen until the person saves.
+ *
+ * Offline (`online` false), the screen says so and Save waits instead of sending: the button says
+ * "Saves when you're back online" and the save goes ahead by itself once the browser is back
+ * online (as SetEditor and IngestSheet do). RecordScreen (the route's component) passes `online`
+ * and handles signed out; this component assumes a signed-in person.
  */
-export function RecordSession() {
+export function RecordSession({ online = true }: { online?: boolean } = {}) {
   const { lang: uiLang } = useLocale();
   const copy = recordCopy(uiLang);
   const [talkLang, setTalkLang] = useState<RecordLang>(uiLang);
@@ -94,6 +99,8 @@ export function RecordSession() {
   const [proposing, setProposing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // Save was pressed offline: it waits for the connection.
+  const [held, setHeld] = useState(false);
   const [saved, setSaved] = useState<Saved | null>(null);
   const [toastOpen, setToastOpen] = useState(false);
   const [undone, setUndone] = useState(false);
@@ -232,6 +239,11 @@ export function RecordSession() {
 
   const save = async () => {
     if (saving) return;
+    if (!online) {
+      setHeld(true);
+      return;
+    }
+    setHeld(false);
     setSaving(true);
     setSaveError(false);
     const tasks = acceptedTasks(rows);
@@ -259,6 +271,15 @@ export function RecordSession() {
       setSaving(false);
     }
   };
+
+  // A waiting save goes ahead by itself once the browser is back online, while review is open.
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    if (!held) return;
+    if (step !== "review") setHeld(false);
+    else if (online) void saveRef.current();
+  }, [online, held, step]);
 
   const undo = async () => {
     if (!saved) return;
@@ -315,14 +336,8 @@ export function RecordSession() {
 
   return (
     <div className="tp-page tp-rec" data-component="RecordSession" ref={rootRef}>
-      <header className="tp-pagehead" data-component="PageHeader">
-        <div className="tp-pagehead__text">
-          <h1 className="tp-pagehead__title" id="rec-h1">
-            {copy("rec.title")}
-          </h1>
-          <p className="tp-pagehead__sub">{copy("rec.sub")}</p>
-        </div>
-      </header>
+      <RecordHead copy={copy} />
+      {online ? null : <RecordOffline copy={copy} />}
 
       {undone ? (
         <output className="tp-notice" data-tone="done" data-component="Notice">
@@ -342,6 +357,7 @@ export function RecordSession() {
           onConsent={setConsent}
           liveReady={liveReady}
           offReason={availabilityReason}
+          checking={availability === undefined}
           onStart={startLive}
           onType={startTyping}
         />
@@ -391,6 +407,7 @@ export function RecordSession() {
           onRowEdit={(id, patch) => setRows((current) => editRow(current, id, patch))}
           saving={saving}
           saveError={saveError}
+          waiting={held || (saving && !online)}
           onSave={() => void save()}
           onBack={() => {
             // Back to the notes: the reviewed transcript becomes the typed notes.
@@ -439,6 +456,38 @@ export function RecordSession() {
         />
       ) : null}
     </div>
+  );
+}
+
+/** The screen's heading, shared with RecordScreen's signed-out, loading and error states. */
+export function RecordHead({ copy }: { copy: RecordCopy }) {
+  return (
+    <header className="tp-pagehead" data-component="PageHeader">
+      <div className="tp-pagehead__text">
+        <h1 className="tp-pagehead__title" id="rec-h1">
+          {copy("rec.title")}
+        </h1>
+        <p className="tp-pagehead__sub">{copy("rec.sub")}</p>
+      </div>
+    </header>
+  );
+}
+
+/**
+ * The offline notice, in the markup of OfflineNotice (components/goals/shared). It is drawn here
+ * rather than imported: goals/shared links convex/react's named hooks, and this component's tests
+ * replace only recordApi.ts (see the note there).
+ */
+export function RecordOffline({ copy }: { copy: RecordCopy }) {
+  return (
+    <output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline">
+      <span className="tp-notice__icon">
+        <TpIcon name="wifi-off" size="sm" />
+      </span>
+      <span className="tp-notice__text">
+        <span>{copy("rec.offline")}</span>
+      </span>
+    </output>
   );
 }
 

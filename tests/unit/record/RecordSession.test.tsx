@@ -362,3 +362,63 @@ describe("review and save", () => {
     expect(reactProps(findById(view, "rec-title")).value).toBe("Launch sync");
   });
 });
+
+// Kitchen states pass: offline and "still checking" said in words, and an offline Save that waits
+// for the connection instead of spinning.
+async function renderWith(props: { online: boolean }) {
+  useTestDom(documentNode);
+  if (!host) {
+    host = documentNode.createElement("div");
+    documentNode.body?.appendChild(host);
+    root = createRoot(host as unknown as HTMLElement);
+  }
+  await act(async () => {
+    root?.render(createElement(RecordSession, props));
+  });
+  return host as TestNode;
+}
+
+describe("states", () => {
+  test("while live words' availability is still loading, the screen says it is checking", async () => {
+    availability = undefined;
+    const view = await render();
+    expect(view.textContent).toContain("Checking whether live words are available.");
+    expect(view.textContent).not.toContain("Live words aren't available");
+    // Typing works while it checks.
+    expect(findByTag(view, "BUTTON", "Type or paste notes").disabled).toBe(false);
+  });
+
+  test("once it is known, the checking line goes", async () => {
+    const view = await render();
+    expect(view.textContent).not.toContain("Checking whether live words are available.");
+  });
+
+  test("offline: a notice says so, Save waits in words, and saves by itself once back online", async () => {
+    let view = await renderWith({ online: false });
+    expect(view.textContent).toContain("You're offline. Your notes stay here, and saving waits until you're back.");
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    const waiting = findByTag(view, "BUTTON", "Saves when you're back online");
+    expect(waiting.disabled).toBe(false);
+    expect(waiting.getAttribute("aria-disabled")).toBe("true");
+    // Pressing it again changes nothing.
+    await click(waiting);
+    expect(calls.saveSession).not.toHaveBeenCalled();
+
+    view = await renderWith({ online: true });
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+    expect(view.textContent).not.toContain("You're offline.");
+    expect(view.textContent).toContain("Saved");
+  });
+
+  test("offline: going back to the notes drops the waiting save", async () => {
+    let view = await renderWith({ online: false });
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    await clickButton(view, "Back to notes");
+    view = await renderWith({ online: true });
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    expect(findById(view, "rec-typed").tagName).toBe("TEXTAREA");
+  });
+});

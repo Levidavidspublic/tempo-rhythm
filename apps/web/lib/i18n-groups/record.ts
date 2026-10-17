@@ -87,6 +87,11 @@ export const en = {
   "rec.rev.saveNote": "Saves 1 page. Accepted tasks: {n}.",
   "rec.rev.saving": "Saving",
   "rec.rev.saveError": "Couldn't save just now. Your notes are still here, so you can try again.",
+  "rec.rev.waiting": "Saves when you're back online",
+  "rec.offline": "You're offline. Your notes stay here, and saving waits until you're back.",
+  "rec.checking": "Checking whether live words are available.",
+  "rec.loading": "Getting the recorder ready",
+  "rec.error": "Couldn't open the recorder just now.",
   "rec.rev.back": "Back to notes",
 
   // Saved
@@ -191,6 +196,11 @@ export const he: Record<RecordKey, string> = {
   "rec.rev.saveNote": "יישמר דף אחד. משימות שאושרו: {n}.",
   "rec.rev.saving": "שומרים",
   "rec.rev.saveError": "לא הצלחנו לשמור כרגע. הרשימות עדיין כאן, אפשר לנסות שוב.",
+  "rec.rev.waiting": "יישמר כשהחיבור יחזור",
+  "rec.offline": "אין חיבור כרגע. הרשימות נשארות כאן, והשמירה תחכה עד שהחיבור יחזור.",
+  "rec.checking": "בודקים אם מילים חיות זמינות.",
+  "rec.loading": "מכינים את ההקלטה",
+  "rec.error": "לא הצלחנו לפתוח את ההקלטה כרגע.",
   "rec.rev.back": "חזרה לרשימות",
 
   "rec.saved.toast": "הדף נשמר. משימות שנוספו: {n}.",
