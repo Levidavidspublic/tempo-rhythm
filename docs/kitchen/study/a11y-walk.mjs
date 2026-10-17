@@ -2,7 +2,7 @@
 //   bun docs/kitchen/study/a11y-walk.mjs <galleryDir> [view,view,...]
 // The gallery is built by gallery/build.ts (real components, fictional data, stand-in Convex hooks).
 // Every view in entry.tsx (or the listed ones) is opened at 390 and 1280 px, in English and Hebrew
-// ("-he" views in Hebrew only), light theme:
+// ("-he" views in Hebrew only), light theme (THEME=dark for the dark one):
 //   a. Keyboard walk: Tab until focus comes back round (or 200 presses), and flag
 //      (i)   unreached: a visible, enabled control Tab never reaches. A radio group's unchecked radios
 //            and the rest of a roving-tabindex group count as reached when the group has a Tab stop
@@ -30,7 +30,8 @@ if (!galleryDir) {
   console.error("usage: a11y-walk.mjs <galleryDir> [view,view,...]");
   process.exit(2);
 }
-const outFile = process.env.OUT ?? path.join(here, "a11y-walk.json");
+const theme = process.env.THEME === "dark" ? "dark" : "light";
+const outFile = process.env.OUT ?? path.join(here, theme === "dark" ? "a11y-walk-dark.json" : "a11y-walk.json");
 const workers = Number(process.env.WORKERS ?? 4);
 const WIDTHS = [390, 1280];
 const MAX_PRESSES = 200;
@@ -423,7 +424,7 @@ function recordSmoothScrolls() {
 async function open(browser, base, job, reducedMotion) {
   const ctx = await browser.newContext({
     viewport: { width: job.width, height: job.width === 390 ? 844 : 900 },
-    colorScheme: "light",
+    colorScheme: theme,
     locale: job.lang === "he" ? "he-IL" : "en-US",
     reducedMotion,
   });
@@ -432,7 +433,7 @@ async function open(browser, base, job, reducedMotion) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e).slice(0, 200)));
-  await page.goto(`${base}/?view=${encodeURIComponent(job.view)}&lang=${job.lang}&theme=light`, { waitUntil: "networkidle", timeout: 60_000 });
+  await page.goto(`${base}/?view=${encodeURIComponent(job.view)}&lang=${job.lang}&theme=${theme}`, { waitUntil: "networkidle", timeout: 60_000 });
   await page.waitForTimeout(SETTLE_MS);
   return { ctx, page, errors };
 }
