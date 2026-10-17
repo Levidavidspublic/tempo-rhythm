@@ -54,6 +54,12 @@ function prefersReducedMotion(): boolean {
   }
 }
 
+/** The server refused because another account is signed in now (`recordings.ts` "accountChanged"). */
+function isAccountChanged(error: unknown): boolean {
+  const data = (error as { data?: unknown } | null)?.data;
+  return typeof data === "object" && data !== null && (data as { code?: unknown }).code === "accountChanged";
+}
+
 let idCounter = 0;
 const nextId = (prefix: string) => {
   idCounter += 1;
@@ -76,7 +82,8 @@ const nextId = (prefix: string) => {
 export function RecordSession({
   online = true,
   signedOut = false,
-  canSend = !signedOut,
+  canSend: canSendNow = !signedOut,
+  accountId = null,
 }: {
   online?: boolean;
   /**
@@ -90,6 +97,11 @@ export function RecordSession({
    * nothing and say so, so nothing is written before the account is known to be the same one.
    */
   canSend?: boolean;
+  /**
+   * The account this screen was opened for (RecordKeeper). Every write names it (`forUser`), so the
+   * server writes nothing if another account's token is in use by the time the call runs.
+   */
+  accountId?: string | null;
 } = {}) {
   const { lang: uiLang } = useLocale();
   const copy = recordCopy(uiLang);
@@ -128,6 +140,11 @@ export function RecordSession({
   const [bringBack, setBringBack] = useState<{ saved: Saved; until: number } | null>(null);
   useToastRoom(bringBack ?? (toastOpen ? saved : null));
   const [restored, setRestored] = useState(false);
+  // The server said another account is signed in now: nothing is sent from this screen again, and
+  // a line says the recording stays with the account it started under. No retry.
+  const [accountChanged, setAccountChanged] = useState(false);
+  const canSend = canSendNow && !accountChanged;
+  const forUser = accountId ? { forUser: accountId as Id<"users"> } : {};
   const rootRef = useRef<HTMLDivElement>(null);
   const titleTouched = useRef(false);
   const reviewRun = useRef(0);
@@ -259,7 +276,7 @@ export function RecordSession({
   };
 
   const save = async () => {
-    if (saving) return;
+    if (saving || accountChanged) return;
     // ReviewStep checks the title before a Save; a waiting save checks it again when it goes, so a
     // title cleared while offline is flagged on the field instead of saving an untitled page.
     if (title.trim().length === 0) {
@@ -284,7 +301,7 @@ export function RecordSession({
         lang: talkLang,
         summary,
       });
-      const result = await saveSession({ title: title.trim(), body, tasks, lang: talkLang });
+      const result = await saveSession({ title: title.trim(), body, tasks, lang: talkLang, ...forUser });
       reviewRun.current += 1;
       // A new save is the screen's now: the one an earlier Undo took stays gone.
       setBringBack(null);
@@ -293,8 +310,9 @@ export function RecordSession({
       setSaved({ ...result, count: tasks.length });
       setToastOpen(true);
       setStep("saved");
-    } catch {
-      setSaveError(true);
+    } catch (error) {
+      if (isAccountChanged(error)) setAccountChanged(true);
+      else setSaveError(true);
     } finally {
       setSaving(false);
     }
@@ -317,7 +335,10 @@ export function RecordSession({
     if (!saved) return;
     if (!online) throw new Error("offline");
     if (!canSend) throw new Error("signedOut");
-    const result = await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds });
+    const result = await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds, ...forUser }).catch((error) => {
+      if (isAccountChanged(error)) setAccountChanged(true);
+      throw error;
+    });
     setSaved(null);
     setUndone(true);
     setRestored(false);
@@ -331,7 +352,10 @@ export function RecordSession({
     if (!bringBack) return;
     if (!online) throw new Error("offline");
     if (!canSend) throw new Error("signedOut");
-    await redoUndo({ noteId: bringBack.saved.noteId });
+    await redoUndo({ noteId: bringBack.saved.noteId, ...forUser }).catch((error) => {
+      if (isAccountChanged(error)) setAccountChanged(true);
+      throw error;
+    });
     reviewRun.current += 1;
     setProposing(false);
     setSaved(bringBack.saved);
@@ -377,6 +401,14 @@ export function RecordSession({
       <RecordHead copy={copy} />
       {online ? null : <RecordOffline copy={copy} />}
       {signedOut ? <RecordSignedOut copy={copy} /> : null}
+      {accountChanged ? (
+        <output className="tp-notice" data-tone="caution" data-component="Notice" data-rec-account="">
+          <span className="tp-notice__icon">
+            <TpIcon name="lock" size="sm" />
+          </span>
+          <span className="tp-notice__text">{copy("rec.accountChanged")}</span>
+        </output>
+      ) : null}
 
       {undone ? (
         <output className="tp-notice" data-tone="done" data-component="Notice">
@@ -486,7 +518,7 @@ export function RecordSession({
               : {
                   action: translate(uiLang, "you.toast.undo"),
                   sub: translate(uiLang, "you.toast.sub"),
-                  error: copy(online ? "rec.signedOut.undo" : "rec.offline.undo"),
+                  error: copy(!online ? "rec.offline.undo" : accountChanged ? "rec.accountChanged" : "rec.signedOut.undo"),
                 }
           }
         />
@@ -502,7 +534,15 @@ export function RecordSession({
           labels={{
             action: copy("rec.bringBack"),
             sub: copy("rec.bringBackSub"),
-            error: copy(!online ? "rec.offline.bringBack" : canSend ? "rec.bringBackError" : "rec.signedOut.bringBack"),
+            error: copy(
+              !online
+                ? "rec.offline.bringBack"
+                : accountChanged
+                  ? "rec.accountChanged"
+                  : canSend
+                    ? "rec.bringBackError"
+                    : "rec.signedOut.bringBack",
+            ),
           }}
         />
       ) : null}
@@ -564,6 +604,7 @@ export function RecordKeeper({
       online={online}
       signedOut={signedIn === "signedOut"}
       canSend={canSend}
+      accountId={current.id ?? null}
     />
   );
 }

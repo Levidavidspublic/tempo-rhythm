@@ -673,3 +673,38 @@ describe("RecordKeeper: Undo and Bring it back while signed out", () => {
     expect(view.textContent).toContain("You're not signed in right now, so nothing came back.");
   });
 });
+
+describe("RecordKeeper: every write names the account (forUser)", () => {
+  test("save, Undo and Bring it back carry the remembered account id", async () => {
+    const view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    expect((calls.saveSession.mock.calls[0]?.[0] as { forUser?: string }).forUser).toBe("users:a");
+    calls.undoSave.mockImplementationOnce(async () => ({
+      success: true,
+      removedTasks: 1,
+      removedEdits: true,
+      redoUntil: Date.now() + 5 * 60_000,
+    }));
+    await clickButton(view, "Undo");
+    expect(calls.undoSave.mock.calls[0]?.[0]).toMatchObject({ noteId: "notes:1", forUser: "users:a" });
+    await clickButton(view, "Bring it back");
+    expect(calls.redoUndo.mock.calls[0]?.[0]).toEqual({ noteId: "notes:1", forUser: "users:a" });
+  });
+
+  test("the server says another account is signed in: no retry, and the screen says so", async () => {
+    calls.saveSession.mockImplementationOnce(async () => {
+      throw Object.assign(new Error("accountChanged"), { data: { code: "accountChanged" } });
+    });
+    let view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+    expect(view.textContent).toContain("This recording belongs to the account that was signed in when it started");
+    expect(view.textContent).not.toContain("Couldn't save just now");
+    await clickButton(view, "Save page and tasks");
+    view = await renderKeeperAs("loading", null);
+    view = await renderKeeperAs("ready", "users:a");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+  });
+});
