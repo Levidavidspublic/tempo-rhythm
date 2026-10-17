@@ -78,8 +78,10 @@ type Entry = AskPassage & { set: boolean; order: number; quotable: boolean; word
 /**
  * The passages of the page and the set that best match the question, at most `limit` (default 3).
  * Picked best first by score; on a tie the set's own items come before the page, then each source
- * keeps its order. A passage with the same words as one already picked is left out: a set made
- * from a page often repeats its sentences, and the tie rule keeps the card or question. Shown
+ * keeps its order. A passage with the same words as one already picked is left out, and so is a
+ * page sentence with the same words as one line of a picked card or question (a card's back, an
+ * explanation): a set made from a page often repeats its sentences, and an item holding a
+ * sentence scores at least as high as it, so the tie rule keeps the card or question. Shown
  * source by source: the source holding the best match first, and within a source in its own
  * order, as `answerFromPage` keeps page order. Headings alone are never answers. An empty list
  * means neither seems to say.
@@ -112,10 +114,18 @@ export function answerFromSet({ page, items }: AskSetInput, question: string, op
     .sort((a, b) => b.score - a.score || Number(b.set) - Number(a.set) || a.order - b.order);
   const picked: typeof ranked = [];
   const seen = new Set<string>();
+  // The words of each line of a picked item: a page sentence may repeat just one of them.
+  const itemLines = new Set<string>();
   for (const entry of ranked) {
     if (picked.length >= limit) break;
-    if (seen.has(entry.words)) continue;
+    if (seen.has(entry.words) || (!entry.set && itemLines.has(entry.words))) continue;
     seen.add(entry.words);
+    if (entry.set) {
+      for (const line of entry.lines) {
+        const key = terms(line).join(" ");
+        if (key) itemLines.add(key);
+      }
+    }
     picked.push(entry);
   }
   const setFirst = picked[0]?.set ?? true;

@@ -110,6 +110,34 @@ describe("answerFromSet", () => {
     const found = answerFromSet({ page: PAGE, items: deck }, "mitosis");
     expect(where(found)).toEqual(["card 1"]);
   });
+  test("a page sentence a card's back or a quiz explanation repeats is quoted once, from the set", () => {
+    const page = "# Cells\n\nMitosis makes two identical cells.\nChloroplasts hold the chlorophyll.\nMitosis happens in body cells.";
+    const cards = setPassages({
+      type: "flashcards",
+      data: { cards: [{ id: "a", front: "What does mitosis make?", back: "Mitosis makes two identical cells." }] },
+    });
+    // The page's other mitosis sentence only shares some words with the card, so it stays.
+    expect(where(answerFromSet({ page, items: cards }, "mitosis"))).toEqual(["card 1", "page 3"]);
+    const quiz = setPassages({
+      type: "quiz",
+      data: {
+        questions: [
+          {
+            id: "q1",
+            prompt: "Where does photosynthesis happen?",
+            choices: [
+              { id: "a", text: "In the nucleus" },
+              { id: "b", text: "In the chloroplasts" },
+            ],
+            answerId: "b",
+            explanation: "Chloroplasts hold the chlorophyll.",
+            difficulty: 1,
+          },
+        ],
+      },
+    });
+    expect(where(answerFromSet({ page, items: quiz }, "chlorophyll"))).toEqual(["question 1"]);
+  });
   test("within a source, its own order; the source with the best match first", () => {
     const found = answerFromSet({ page: PAGE, items: deck }, "cells chromosomes enzymes");
     // Meiosis (card 3) holds the rarest word; card 1 shares "cells"; the page adds enzymes.
