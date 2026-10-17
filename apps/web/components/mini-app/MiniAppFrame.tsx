@@ -87,13 +87,16 @@ export function MiniAppFrame({ html, title, approvedFingerprint, onApprove, onDo
     return () => window.removeEventListener("message", onMessage);
   }, [run]);
 
-  // After "Run it again" the button is gone: the keyboard goes to the frame it started.
+  // After "Run it again" the button is gone: the keyboard goes to the frame it started, or, when
+  // the approval no longer holds for this code, to the ask card's Run button.
   const focusFrame = useRef(false);
+  const runButton = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
-    if (!run || !focusFrame.current) return;
+    if (stopped || !focusFrame.current) return;
     focusFrame.current = false;
-    frame.current?.focus();
-  }, [run]);
+    if (run) frame.current?.focus();
+    else runButton.current?.focus();
+  }, [run, stopped]);
 
   const runAgain = () => {
     // A fresh frame: its first load is the srcdoc's own again, and it starts at its first size.
@@ -148,7 +151,12 @@ export function MiniAppFrame({ html, title, approvedFingerprint, onApprove, onDo
             <p className="tp-miniapp__body">{t("mini.what")}</p>
             <p className="tp-help">{t("mini.ask")}</p>
             <div className="tp-miniapp__actions">
-              <button className="tp-btn tp-btn--secondary" type="button" onClick={() => onApprove(fingerprint)}>
+              <button
+                ref={runButton}
+                className="tp-btn tp-btn--secondary"
+                type="button"
+                onClick={() => onApprove(fingerprint)}
+              >
                 <TpIcon name="play" size="sm" />
                 <span>{t("mini.run")}</span>
               </button>

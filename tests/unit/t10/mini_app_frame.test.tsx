@@ -126,3 +126,35 @@ describe("MiniAppFrame stopped: Run it again", () => {
     expect(queryByTag(view, "IFRAME")).toBeNull();
   });
 });
+
+describe("MiniAppFrame Run it again: focus", () => {
+  test("the keyboard goes to the new frame, or to Run this widget when the approval no longer holds", async () => {
+    const focused: string[] = [];
+    const proto = Object.getPrototypeOf(documentNode) as { focus: (this: TestNode) => void };
+    const plain = proto.focus;
+    proto.focus = function (this: TestNode) {
+      focused.push(this.tagName === "BUTTON" ? `BUTTON:${this.textContent}` : this.tagName);
+    };
+    try {
+      const approved = miniAppFingerprint(HTML);
+      let view = await render({ html: HTML, approvedFingerprint: approved });
+      await frameLoad(view);
+      await frameLoad(view);
+      await act(async () => {
+        findByTag(view, "BUTTON", "Run it again").click();
+      });
+      expect(focused.at(-1)).toBe("IFRAME");
+
+      await frameLoad(view);
+      await frameLoad(view);
+      view = await render({ html: HTML, approvedFingerprint: null });
+      await act(async () => {
+        findByTag(view, "BUTTON", "Run it again").click();
+      });
+      expect(state(view)).toBe("ask");
+      expect(focused.at(-1)).toBe("BUTTON:Run this widget");
+    } finally {
+      proto.focus = plain;
+    }
+  });
+});
