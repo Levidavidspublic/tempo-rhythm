@@ -460,7 +460,10 @@ describe("Undo removes only what that save made (whole-run review)", () => {
     await world.db.patch(saved.taskIds[0], { status: "done" });
     // A task left out of the Undo (the toast named only the first) is not the Undo's to bring back.
     await run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: [saved.taskIds[0]] });
-    await world.db.patch(saved.taskIds[1], { deletedAt: Date.now() - 1 });
+    // Deleted on purpose a second after the Undo. (A stamp near Date.now() could equal the Undo's own
+    // to the millisecond, and Bring it back takes back rows by that stamp.)
+    const undoneAt = (world.rows("recordingSessions").find((row) => row.savedNoteId === saved.noteId) as Row).deletedAt as number;
+    await world.db.patch(saved.taskIds[1], { deletedAt: undoneAt + 1_000 });
     await expect(run(recordings.redoUndo, world.as(B), { noteId: saved.noteId })).rejects.toThrow("nothing here to bring back");
     expect(await run(recordings.redoUndo, world.as(A), { noteId: saved.noteId })).toEqual({ success: true, restoredTasks: 1 });
     expect(world.row(saved.noteId)?.deletedAt).toBeUndefined();
