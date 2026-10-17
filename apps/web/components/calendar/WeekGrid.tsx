@@ -182,6 +182,16 @@ function scrollGridTo(
   scroller.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
 }
 
+/**
+ * A focused item comes all the way into view. On a phone the region shows about two days, and Tab
+ * left an item at its far side partly outside it (Chromium doesn't scroll a partly shown item
+ * sideways). "nearest" moves only as far as needed, keeps the region's scroll padding as room for
+ * the ring and passes no `behavior`, so nothing glides.
+ */
+export function revealItem(item: Pick<HTMLElement, "scrollIntoView">): void {
+  item.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+}
+
 function timeRange(item: ScheduleItem): string {
   return `${formatClock(item.startMinute)}–${formatClock(item.startMinute + item.durationMinutes)}`;
 }
@@ -360,6 +370,7 @@ export function WeekGrid<T extends WeekItem>({
                           aria-expanded={openId === item.id}
                           aria-controls={`${idPrefix}-mover`}
                           onClick={() => setOpenId(openId === item.id ? null : item.id)}
+                          onFocus={(event) => revealItem(event.currentTarget)}
                         >
                           <span className="tp-week__time tp-num tp-mono tp-ltr">
                             {timeRange(item)}
