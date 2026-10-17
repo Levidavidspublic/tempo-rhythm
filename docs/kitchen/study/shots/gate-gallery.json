@@ -33262,5 +33262,533 @@
         "detail": "max=240ms"
       }
     ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "en",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-review-quizset-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "en",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-review-quizset-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "en",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-review-quizset-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "en",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-review-quizset-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "he",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-review-quizset-he-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "he",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-review-quizset-he-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "he",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-review-quizset-he-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-review-quizset",
+    "lang": "he",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-review-quizset-he-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast \u2265 WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion \u2264 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
   }
 ]

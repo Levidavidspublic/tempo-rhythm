@@ -1,7 +1,7 @@
 {
- "generated": "2026-10-17T04:23:31.193Z",
- "runs": 256,
- "views": 65,
+ "generated": "2026-10-17T05:27:18.141Z",
+ "runs": 260,
+ "views": 66,
  "totals": {
   "unreached": {
    "findings": 0,
@@ -676,6 +676,60 @@
     },
     "he": {
      "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-quizset": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
