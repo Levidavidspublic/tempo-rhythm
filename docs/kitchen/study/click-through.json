@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-17T05:14:06.231Z",
+ "generated": "2026-10-17T06:53:22.417Z",
  "runs": 260,
  "views": 66,
  "totals": {
@@ -950,13 +950,13 @@
     "a.tp-btn.tp-btn--secondary \"Open the page\"": "/notes/notes%3A11",
     "a.tp-btn.tp-btn--ghost[data-action=listen-page] \"Listen to the page this came from\"": "/study/listen?from=notes%3A11&mode=recap",
     "a.tp-btn.tp-btn--secondary[data-action=review-due] \"Review due cards\"": "/study/review?set=studySets%3A1",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:35569/79aa1ff6-2310-43fa-a375-f067b83b7ce0",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:35569/ca8aee41-3cf3-4105-ba2f-6b766a172ea2",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:37199/c94474f6-b671-49cd-a630-ba1e75c857e6",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:37199/5d0ec156-544b-428d-bd25-7204e5437e0c",
     "a.tp-btn.tp-btn--secondary \"לפתוח את הדף\"": "/notes/notes%3A11",
     "a.tp-btn.tp-btn--ghost[data-action=listen-page] \"להאזין לדף שממנו זה הגיע\"": "/study/listen?from=notes%3A11&mode=recap",
     "a.tp-btn.tp-btn--secondary[data-action=review-due] \"לחזור על הכרטיסים שהגיע זמנם\"": "/study/review?set=studySets%3A1",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:35569/8cd79c89-d13d-4f65-be05-43bb5a6f6bd9",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:35569/61fc6a33-524c-4545-bb45-a9337c44677d"
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:37199/b61a280f-9c47-4615-86ff-6fb0fb49ee51",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:37199/47b490bd-9db9-48d1-a19e-9fe6afce30ff"
    },
    "dom": [
     "a.tp-btn.tp-btn--secondary \"Open the page\"",
@@ -2106,7 +2106,7 @@
    "dom": [],
    "skipped": [],
    "loadErrors": [
-    "Error: Gallery error mode: users.getProfile at read (<gallery>:32900:13) at useQuery (<gallery>:32908:12) at useMemoryBackend (<gallery>:42847:21) at MemoryContent (<gallery>:42969:9) at renderWithHooks ("
+    "Error: Gallery error mode: users.getProfile at read (<gallery>:32900:13) at useQuery (<gallery>:32908:12) at useMemoryBackend (<gallery>:42855:21) at MemoryContent (<gallery>:42977:9) at renderWithHooks ("
    ],
    "runs": {
     "en-390": {
@@ -2170,10 +2170,10 @@
    "pressed": 24,
    "failures": [],
    "links": {
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:35569/29f3a50c-503d-444a-bc5e-f624e5209027",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:35569/7a662d15-9c08-49d4-b554-bbc88d564bc2",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:35569/fd72c49a-4d04-4c2d-aeec-7804aa0095ee",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:35569/9007d33e-e52e-445d-8fbf-6fcb92ea9e5a"
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:37199/969bbd6c-21cc-412f-8501-47f113f1aa93",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:37199/ebadf7bd-4338-4548-9e8a-4d4c24753fde",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:37199/84826ccb-c3c7-4f85-ac2c-97dd58905d84",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:37199/5fe909d0-481d-4fdd-b8a6-c204d746e9ad"
    },
    "dom": [
     "button.tp-sheet-scrim[type=button] \"Close\"",

@@ -1,9 +1,9 @@
 {
   "run": "kitchen/tempo-study",
-  "updated": "2026-10-17T05:25Z",
+  "updated": "2026-10-17T06:35Z",
   "baseline": {
     "command": "bun run test",
-    "last_result": "3395 pass, 3 todo, 0 fail on e9a761f (Bun 1.3.9; was 2348 on 5f1b3ec)"
+    "last_result": "3407 pass, 3 todo, 0 fail on 1a23e46 (Bun 1.3.9; was 2348 on 5f1b3ec)"
   },
   "finish_lines": {
     "T3": {
@@ -33,34 +33,34 @@
   },
   "e2e": {
     "command": "PLAYWRIGHT_BROWSERS_PATH=<scratch dir mapping /opt/pw-browsers chromium 1194 to the expected 1234 path> bunx playwright test --reporter=line (CI unset, so it reused the running local dev server with the same mock env as playwright.config.ts; no config change)",
-    "last_result": "35 passed, 89 skipped, 0 failed on e9a761f (includes tests/e2e/wiring/study.spec.ts 7/7)"
+    "last_result": "35 passed, 89 skipped, 0 failed on 1a23e46 (includes tests/e2e/wiring/study.spec.ts 7/7)"
   },
   "build": {
     "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
-    "last_result": "local pass on e9a761f (all seven /study routes); Vercel preview of e9a761f built and Ready"
+    "last_result": "local pass on 1a23e46 (all seven /study routes); Vercel preview of 1a23e46 built and Ready"
   },
   "e2e_study_wiring": {
     "command": "bunx playwright test tests/e2e/wiring/study.spec.ts --reporter=line (same browser mapping)",
-    "last_result": "7 passed on e9a761f"
+    "last_result": "7 passed on 1a23e46"
   },
   "scans": {
     "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
-    "last_result": "all OK on e9a761f"
+    "last_result": "all OK on 1a23e46"
   },
   "gate": {
     "command": "bun docs/kitchen/study/shoot.mjs gallery|live … (see docs/kitchen/study/GATE.md)",
-    "last_result": "556 shots (66 gallery views en+he, 9 live routes): gallery 58 PASS, 4 PASS (R-01 purpose), 3 PASS apart from the shared skeleton R-19 (pre-existing), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
+    "last_result": "556 shots (66 gallery views en+he, 9 live routes); record-* and study-new-* reshot on 1a23e46: gallery 58 PASS, 4 PASS (R-01 purpose), 3 PASS apart from the shared skeleton R-19 (pre-existing), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
   },
   "a11y_walk": {
     "command": "bun docs/kitchen/study/a11y-walk.mjs <gallery build dir> (THEME=dark for the dark run; CHROMIUM_PATH set to the installed Chromium)",
-    "last_result": "on e9a761f, light and dark: 260 runs each over 66 views, 2,404 Tab stops; unreached 0, no focus sign 4 runs (notes editor, pre-existing), hidden focus 0, traps 0, reduced motion 0"
+    "last_result": "on 1a23e46, light and dark: 260 runs each over 66 views, 2,404 Tab stops; unreached 0, no focus sign 4 runs (notes editor, pre-existing), hidden focus 0, traps 0, reduced motion 0"
   },
   "click_through": {
     "command": "CHROMIUM_PATH=<installed chromium> bun docs/kitchen/study/click-through.mjs <gallery build dir>",
-    "last_result": "260 runs over 66 views, 2,440 controls pressed, each from a fresh page: 0 failures (page errors, console errors, unhandled rejections, error states, blank page, bad link targets); seen to catch five injected faults"
+    "last_result": "on 1a23e46: 260 runs over 66 views, 2,440 controls pressed, each from a fresh page: 0 failures; seen to catch five injected faults"
   },
   "axe_audit": {
     "command": "CHROMIUM_PATH=<installed chromium> [AXE_PATH=<local axe.min.js>] bun docs/kitchen/study/axe-audit.mjs <gallery build dir>",
-    "last_result": "520 runs over 66 views (390/1280, en/he, light/dark), axe-core 4.10.2 wcag2a/aa, wcag21a/aa, wcag22aa, best-practice: 0 violations; 3,222 colour-contrast nodes left for review (text over the paper texture)"
+    "last_result": "on 1a23e46: 520 runs over 66 views (390/1280, en/he, light/dark), axe-core 4.10.2 WCAG 2.0/2.1/2.2 A+AA and best-practice: 0 violations; 3,222 colour-contrast nodes left for review (text over the paper texture)"
   }
 }
