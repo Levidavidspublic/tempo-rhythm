@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import { convexTest } from "convex-test";
+import { api } from "./_generated/api";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
 import { makeFakeCtx, run } from "./lib/testFakeCtx";
 import * as plans from "./plans";
+import appSchema from "./schema";
 
 const A = "users:a";
 const B = "users:b";
@@ -557,5 +560,40 @@ describe("plans.replan and times that have gone by", () => {
     });
     expect(result).toMatchObject({ moved: 1, removed: 0 });
     expect((await ctx.db.get(taskIds[0])).dueAt).toBe(Date.UTC(2026, 9, 20, 7, 0));
+  });
+});
+
+describe("plans: bounds from the whole-run review", () => {
+  test("a source set id longer than any id is dropped, never stored", async () => {
+    const ctx = makeFakeCtx(A);
+    const { planId } = await run(plans.createFromPreview, ctx, preview({ sourceSetId: "x".repeat(10_000) }));
+    expect((await ctx.db.get(planId)).sourceSetId).toBeUndefined();
+  });
+
+  test("list reads the 100 most recently changed plans, not every plan", async () => {
+    const t = convexTest(appSchema, {
+      "./_generated/api.js": () => import("./_generated/api.js"),
+      "./_generated/server.js": () => import("./_generated/server.js"),
+      "./plans.ts": () => import("./plans"),
+    });
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", { email: "a@example.com", approvalStatus: "approved", createdAt: T0, updatedAt: T0 }),
+    );
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 120; i++) {
+        await ctx.db.insert("studyPlans", {
+          userId,
+          title: `Plan ${i}`,
+          deadline: "2026-11-01",
+          taskIds: [],
+          createdAt: T0,
+          updatedAt: T0 + i,
+        });
+      }
+    });
+    const listed = await t.withIdentity({ subject: userId }).query(api.plans.list, {});
+    expect(listed).toHaveLength(100);
+    expect(listed[0].title).toBe("Plan 119");
+    expect(listed[99].title).toBe("Plan 20");
   });
 });

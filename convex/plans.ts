@@ -30,6 +30,10 @@ const DAY_MINUTES = 24 * 60;
 const PLAN_GONE = "This plan isn't here any more. Make a new one whenever you like.";
 /** How far in the past a re-planned start may be (clock drift between browser and server). */
 const PAST_START_GRACE_MS = 60_000;
+/** A Convex id is about 32 characters: a longer `sourceSetId` names no set and is dropped. */
+const SOURCE_SET_ID_MAX = 64;
+/** `list` reads the person's most recently changed plans, at most this many. */
+const PLAN_LIST_LIMIT = 100;
 
 const sessionKindValidator = v.union(
   v.literal("learn"),
@@ -205,12 +209,17 @@ export const createFromPreview = mutation({
       );
     }
 
+    // The set the topics came from is a hint, never an error: one too long to be an id is dropped.
+    const sourceSetId =
+      args.sourceSetId !== undefined && args.sourceSetId.length <= SOURCE_SET_ID_MAX
+        ? args.sourceSetId
+        : undefined;
     const now = Date.now();
     const planId = await ctx.db.insert("studyPlans", {
       userId: user._id,
       title,
       deadline: args.deadline,
-      ...(args.sourceSetId !== undefined ? { sourceSetId: args.sourceSetId } : {}),
+      ...(sourceSetId !== undefined ? { sourceSetId } : {}),
       taskIds,
       createdAt: now,
       updatedAt: now,
@@ -471,7 +480,10 @@ export const undoReplan = mutation({
   },
 });
 
-/** The caller's live plans, most recently changed first. */
+/**
+ * The caller's live plans, most recently changed first: read from the `PLAN_LIST_LIMIT` (100)
+ * most recently changed plans, so a long history never makes one read too large.
+ */
 export const list = query({
   args: {},
   returns: v.array(planValidator),
@@ -481,7 +493,7 @@ export const list = query({
       .query("studyPlans")
       .withIndex("by_userId_updated", (q) => q.eq("userId", user._id))
       .order("desc")
-      .collect();
+      .take(PLAN_LIST_LIMIT);
     return rows.filter((row) => row.deletedAt === undefined);
   },
 });

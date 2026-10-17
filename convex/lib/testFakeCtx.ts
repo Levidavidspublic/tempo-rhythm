@@ -48,6 +48,7 @@ export function makeFakeCtx(userId: string, extraUsers: string[] = []) {
 				}
 				return out;
 			},
+			take: async (n: number) => (await builder(rows, sortField, desc).collect()).slice(0, n),
 		};
 	}
 
