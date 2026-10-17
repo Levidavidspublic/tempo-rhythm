@@ -1,9 +1,9 @@
 {
   "run": "kitchen/tempo-study",
-  "updated": "2026-10-17T00:45Z",
+  "updated": "2026-10-17T01:25Z",
   "baseline": {
     "command": "bun run test",
-    "last_result": "3287 pass, 3 todo, 0 fail on ac79dd2 (Bun 1.3.9; was 2348 on 5f1b3ec)"
+    "last_result": "3308 pass, 3 todo, 0 fail on fdaab44 (Bun 1.3.9; was 2348 on 5f1b3ec)"
   },
   "finish_lines": {
     "T3": {
@@ -33,11 +33,11 @@
   },
   "e2e": {
     "command": "PLAYWRIGHT_BROWSERS_PATH=<scratch dir mapping /opt/pw-browsers chromium 1194 to the expected 1234 path> bunx playwright test --reporter=line (CI unset, so it reused the running local dev server with the same mock env as playwright.config.ts; no config change)",
-    "last_result": "35 passed, 89 skipped, 0 failed on 01e2dd4 (includes tests/e2e/wiring/study.spec.ts 7/7)"
+    "last_result": "35 passed, 89 skipped, 0 failed on a905885 (includes tests/e2e/wiring/study.spec.ts 7/7)"
   },
   "build": {
     "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
-    "last_result": "pass on ac79dd2; /study, /study/[setId], /study/listen, /study/new, /study/plan, /study/record, /study/review listed"
+    "last_result": "local pass on ac79dd2 (all seven /study routes); Vercel preview of 156b5c7 built and Ready"
   },
   "e2e_study_wiring": {
     "command": "bunx playwright test tests/e2e/wiring/study.spec.ts --reporter=line (same browser mapping)",
@@ -45,6 +45,10 @@
   },
   "scans": {
     "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
-    "last_result": "all OK on ac79dd2"
+    "last_result": "all OK on fdaab44"
+  },
+  "gate": {
+    "command": "bun docs/kitchen/study/shoot.mjs gallery|live … (see docs/kitchen/study/GATE.md)",
+    "last_result": "436 shots on 156b5c7: gallery 45 PASS, 5 PASS (R-01 purpose), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
   }
 }
