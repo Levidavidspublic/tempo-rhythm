@@ -18,6 +18,8 @@
 // (the page changed after it was made), plan-undo-kept (a session is already done) and
 // record-undo-kept (the saved page changed). MOCKED: the sample sets, plan and notes below, with
 // stand-in "kept" answers.
+// The keyboard walk (a11y-walk.mjs) has calendar-month hold its chosen day in state, as CalendarViews
+// does: with a fixed day the grid's arrow keys had nothing to move to.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -549,6 +551,13 @@ function ReplanSample() {
   );
 }
 
+/** The month grid as CalendarViews holds it: the chosen day is state, so arrow keys move the choice. */
+function MonthSample() {
+  const { year, month } = parseLocalDate(today);
+  const [selected, setSelected] = useState(today);
+  return <MonthGrid year={year} month={month} items={monthItems} today={today} selected={selected} lang={lang} onSelectDay={setSelected} onMonthChange={() => {}} />;
+}
+
 function Main({ children }: { children: ReactNode }) {
   // The app shell gives its main area a side gutter; the gallery has no shell, so it adds 16 px.
   return (
@@ -665,14 +674,11 @@ const VIEWS: Record<string, () => ReactNode> = {
     steps(click('[data-action="ask-coach"]'));
     return <TurnIntoPreview from="notes:11" kind="quiz" />;
   },
-  "calendar-month": () => {
-    const { year, month } = parseLocalDate(today);
-    return (
-      <Page title={he ? "לוח שנה" : "Calendar"}>
-        <MonthGrid year={year} month={month} items={monthItems} today={today} selected={today} lang={lang} onSelectDay={() => {}} onMonthChange={() => {}} />
-      </Page>
-    );
-  },
+  "calendar-month": () => (
+    <Page title={he ? "לוח שנה" : "Calendar"}>
+      <MonthSample />
+    </Page>
+  ),
   "calendar-week": () => (
     <Page title={he ? "לוח שנה" : "Calendar"}>
       <WeekGrid weekStart={weekStart} items={weekItems} today={today} nowMinute={16 * 60} lang={lang} onMove={() => {}} />
