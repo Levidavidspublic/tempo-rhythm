@@ -500,7 +500,9 @@ export type ReplanAreaProps = {
  */
 export function ReplanArea({ planId, lang, primary = true }: ReplanAreaProps) {
   const { undoReplan } = useReplanActions();
-  const [toast, setToast] = useState<ReplanDone | null>(null);
+  // `superseded`: Undo found a newer re-plan (another tab), so it changed nothing.
+  const [toast, setToast] = useState<(ReplanDone & { superseded?: boolean }) | null>(null);
+  const supersededRef = useRef(false);
   const openRef = useRef<HTMLButtonElement>(null);
   const toastRef = useRef<HTMLDivElement>(null);
 
@@ -511,6 +513,23 @@ export function ReplanArea({ planId, lang, primary = true }: ReplanAreaProps) {
       () => toastRef.current?.querySelector<HTMLButtonElement>("button")?.focus(),
       0
     );
+  };
+
+  // Undo names its re-plan by the window `replan` answered with, so it never takes back a newer
+  // one it doesn't describe.
+  const undo = async () => {
+    if (!toast) return;
+    const answer = await undoReplan({ planId: toast.planId, undoUntil: toast.undoUntil });
+    supersededRef.current = answer.superseded === true;
+  };
+  const closeToast = () => {
+    if (supersededRef.current) {
+      // Nothing was taken back: the toast stays and says why, until its window ends.
+      supersededRef.current = false;
+      setToast((current) => (current ? { ...current, superseded: true } : current));
+      return;
+    }
+    setToast(null);
   };
 
   return (
@@ -528,10 +547,10 @@ export function ReplanArea({ planId, lang, primary = true }: ReplanAreaProps) {
       {toast ? (
         <div className="tp-plan__toast" ref={toastRef}>
           <UndoToast
-            title={toast.title}
+            title={toast.superseded ? pt(lang, "rp.undo.newer") : toast.title}
             untilMs={toast.undoUntil}
-            onUndo={() => undoReplan({ planId: toast.planId })}
-            onClose={() => setToast(null)}
+            onUndo={toast.superseded ? undefined : undo}
+            onClose={closeToast}
           />
         </div>
       ) : null}

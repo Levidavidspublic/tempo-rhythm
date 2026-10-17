@@ -168,4 +168,27 @@ describe("ReplanPanel, mounted", () => {
     expect(calls.undoReplan.mock.calls[0]?.[0]).toMatchObject({ planId: "studyPlans:1" });
     expect(view.textContent).not.toContain("1 session has a new time.");
   });
+
+  test("Undo names its re-plan; when a newer one was made since, nothing changes and it says so", async () => {
+    setSystemTime(new Date(2026, 9, 20, 18, 0));
+    saved = {
+      plan: { _id: "studyPlans:1", title: "Biology", deadline: "2026-10-30", taskIds: ["tasks:2"] },
+      tasks: [task("tasks:2", "Learn: Mitosis", "2026-10-19", 17)],
+    };
+    const undoUntil = Date.now() + 5 * MIN;
+    calls.replan.mockImplementationOnce(async () => ({ undoUntil, moved: 1, removed: 0 }));
+    // Another tab re-planned again after this one.
+    calls.undoReplan.mockImplementationOnce(async () => ({ restored: 0, superseded: true }));
+    const view = await mount({ planId: "studyPlans:1" });
+    await click(byAction(view, "replan-open"));
+    await click(byAction(view, "replan-accept"));
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(calls.undoReplan.mock.calls[0]?.[0]).toEqual({ planId: "studyPlans:1", undoUntil });
+    // The toast stays, in words, with nothing left to undo; Dismiss closes it.
+    expect(view.textContent).toContain("Nothing changed. These sessions were re-planned again after this");
+    expect(view.textContent).not.toContain("1 session has a new time.");
+    expect(findAll(view, (n) => n.tagName === "BUTTON" && n.textContent === "Undo")).toHaveLength(0);
+    await click(findAll(view, (n) => n.tagName === "BUTTON" && n.getAttribute("aria-label") === "Dismiss")[0]);
+    expect(view.textContent).not.toContain("Nothing changed.");
+  });
 });

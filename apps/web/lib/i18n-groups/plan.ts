@@ -163,6 +163,8 @@ export const en = {
   "rp.toastN": "{n} sessions have new times.",
   "rp.toastOut1": "1 session left out.",
   "rp.toastOutN": "{n} sessions left out.",
+  "rp.undo.newer":
+    "Nothing changed. These sessions were re-planned again after this, so this Undo no longer applies.",
 
   // SessionScheduler
   "sch.h": "Fit the sessions around your week",
@@ -334,6 +336,7 @@ export const he: Record<keyof typeof en, string> = {
   "rp.toastN": "ל־{n} מפגשים יש זמנים חדשים.",
   "rp.toastOut1": "מפגש אחד נשאר בחוץ.",
   "rp.toastOutN": "{n} מפגשים נשארו בחוץ.",
+  "rp.undo.newer": "שום דבר לא השתנה. המפגשים תוכננו מחדש שוב אחרי זה, אז הביטול הזה כבר לא חל.",
 
   "sch.h": "התאמת המפגשים לשבוע שלכם",
   "sch.sub": "אירועים קבועים נשארים במקומם. אפשר להזיז מפגש עם הכפתורים שלו.",
