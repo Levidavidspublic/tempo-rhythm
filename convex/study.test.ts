@@ -5,7 +5,16 @@ import type { Id } from "./_generated/dataModel";
 import { softDeleteUserAccount } from "./lib/accountDeletion";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
 import { parseTempoBlocks } from "./lib/blocks";
-import { findStudyBlock, newStudyBlockId, studyBlockFence } from "./lib/study";
+import {
+  findStudyBlock,
+  liveStates,
+  newStudyBlockId,
+  readStudySets,
+  STATE_SCAN_LIMIT,
+  STUDY_READ_BUDGET,
+  STUDY_SET_SCAN_LIMIT,
+  studyBlockFence,
+} from "./lib/study";
 import appSchema from "./schema";
 import { runGenerate } from "./study";
 
@@ -962,5 +971,175 @@ describe("updateBlock and undoUpdate (edit a saved set)", () => {
     const after = await t.run((ctx) => ctx.db.get(noteId));
     expect(after?.body.endsWith("Closing words\n\nA new paragraph.")).toBe(true);
     expect(parseTempoBlocks(after?.body ?? "").filter((s) => s.kind === "valid")).toHaveLength(1);
+  });
+});
+
+describe("hub and queue reads for a heavy user (whole-run review)", () => {
+  /** `ctx.db` with every get and index range counted, as Convex counts them against its caps. */
+  function countingCtx(db: object) {
+    const counts = { gets: 0, ranges: 0 };
+    const counted = new Proxy(db, {
+      get(target, prop) {
+        const value = Reflect.get(target, prop);
+        if (typeof value !== "function") return value;
+        if (prop === "get") return (...args: unknown[]) => ((counts.gets += 1), value.apply(target, args));
+        if (prop === "query") return (...args: unknown[]) => ((counts.ranges += 1), value.apply(target, args));
+        return value.bind(target);
+      },
+    });
+    return { ctx: { db: counted } as unknown as Parameters<typeof liveStates>[0], counts };
+  }
+
+  const bigDeck = {
+    ...deck,
+    title: "Big deck",
+    cards: Array.from({ length: 100 }, (_, i) => ({ id: `k${String(i).padStart(3, "0")}`, front: `F${i}`, back: `B${i}` })),
+  };
+
+  /** A set row on its own page, written straight to the tables (fixtures for many sets). */
+  async function rawSet(
+    t: T,
+    userId: Id<"users">,
+    options: { updatedAt: number; data?: object; prose?: string; pageDeleted?: boolean; noBlock?: boolean },
+  ) {
+    return t.run(async (ctx) => {
+      const blockId = newStudyBlockId(options.updatedAt);
+      const fence = studyBlockFence(blockId, "flashcards", options.data ?? deck);
+      const noteId = await ctx.db.insert("notes", {
+        userId,
+        title: "Deck page",
+        body: options.noBlock ? "The block was cut out." : `${options.prose ?? ""}${fence}`,
+        pinned: false,
+        periodType: "none",
+        createdAt: NOW,
+        updatedAt: NOW,
+        ...(options.pageDeleted ? { deletedAt: NOW } : {}),
+      });
+      return ctx.db.insert("studySets", {
+        userId,
+        noteId,
+        blockId,
+        kind: "flashcards",
+        title: "Deck",
+        itemCount: 3,
+        createdByTempo: false,
+        createdAt: NOW,
+        updatedAt: options.updatedAt,
+      });
+    });
+  }
+
+  /** `count` soft-deleted state rows whose card ids sort before every card in the deck. */
+  async function staleStates(t: T, userId: Id<"users">, setId: Id<"studySets">, count: number) {
+    await t.run(async (ctx) => {
+      for (let i = 0; i < count; i++) {
+        await ctx.db.insert("studyCardStates", {
+          userId,
+          setId,
+          cardId: `a${String(i).padStart(3, "0")}`,
+          ease: 2.5,
+          intervalDays: 0,
+          repetitions: 0,
+          lapses: 0,
+          dueAt: NOW,
+          createdAt: NOW,
+          updatedAt: NOW,
+          deletedAt: NOW,
+        });
+      }
+    });
+  }
+
+  test("a full deck's states are one index range, not one lookup per card", async () => {
+    const { t, a, asA } = await twoUsers();
+    const { setId } = await asA.mutation(api.study.createFromPreview, { kind: "flashcards", title: "Big", data: bigDeck });
+    for (const cardId of ["k000", "k050", "k099"]) {
+      await asA.mutation(api.study.review, { setId, cardId, button: "good" });
+    }
+    const { states, counts } = await t.run(async (ctx) => {
+      const counted = countingCtx(ctx.db);
+      const states = await liveStates(counted.ctx, a, setId, bigDeck.cards.map((card) => card.id));
+      return { states: [...states.keys()].sort(), counts: counted.counts };
+    });
+    expect(states).toEqual(["k000", "k050", "k099"]);
+    expect(counts).toEqual({ gets: 0, ranges: 1 });
+  });
+
+  test("sets whose page is gone or whose block no longer parses are skipped, not counted", async () => {
+    const { t, a, asA } = await twoUsers();
+    const live = await deckSet(asA);
+    // The newest STUDY_SET_SCAN_LIMIT sets are all dead: half on removed pages, half lost their block.
+    for (let i = 0; i < STUDY_SET_SCAN_LIMIT; i++) {
+      await rawSet(t, a, { updatedAt: NOW + MIN + i, ...(i % 2 ? { pageDeleted: true } : { noBlock: true }) });
+    }
+    const hub = await asA.query(api.study.hub, { dayStartMs: NOW });
+    expect(hub.sets.map((set) => set.setId)).toEqual([live.setId]);
+    expect(hub.newCount).toBe(3);
+    expect("truncated" in hub).toBe(false);
+    const queue = await asA.query(api.study.reviewQueue, {});
+    expect(queue.cards.map((card) => card.cardId)).toEqual(["c1", "c2", "c3"]);
+    expect("truncated" in queue).toBe(false);
+  });
+
+  test("past the page-bytes budget the hub and queue show the most recent sets and say so", async () => {
+    const { t, a, asA } = await twoUsers();
+    // Ten pages of about 984 KB each: together more than the read budget allows.
+    const prose = `${"Long notes. ".repeat(82_000)}\n\n`;
+    const ids: Id<"studySets">[] = [];
+    for (let i = 0; i < 10; i++) ids.push(await rawSet(t, a, { updatedAt: NOW + i, prose }));
+    const hub = await asA.query(api.study.hub, { dayStartMs: NOW });
+    expect(hub.truncated).toBe(true);
+    expect(hub.sets.length).toBeGreaterThan(0);
+    expect(hub.sets.length).toBeLessThan(10);
+    const newestFirst = [...ids].reverse();
+    expect(hub.sets.map((set) => set.setId)).toEqual(newestFirst.slice(0, hub.sets.length));
+    const queue = await asA.query(api.study.reviewQueue, {});
+    expect(queue.truncated).toBe(true);
+    // One set's queue reads one page and is never cut short.
+    const one = await asA.query(api.study.reviewQueue, { setId: ids[0] });
+    expect(one.cards).toHaveLength(3);
+    expect("truncated" in one).toBe(false);
+  });
+
+  test("a read never spends more lookups than its budget; a full state range falls back per card", async () => {
+    const { t, a } = await twoUsers();
+    const ids: Id<"studySets">[] = [];
+    for (let i = 0; i < 3; i++) {
+      const setId = await rawSet(t, a, { updatedAt: NOW + i, data: bigDeck });
+      await staleStates(t, a, setId, STATE_SCAN_LIMIT);
+      ids.push(setId);
+    }
+    // A live state past the full range: only the per-card fallback can find it.
+    await t.run((ctx) =>
+      ctx.db.insert("studyCardStates", {
+        userId: a,
+        setId: ids[2],
+        cardId: "k099",
+        ease: 2.5,
+        intervalDays: 1,
+        repetitions: 1,
+        lapses: 0,
+        dueAt: NOW - MIN,
+        createdAt: NOW,
+        updatedAt: NOW,
+      }),
+    );
+    const lookups = 250;
+    const read = await t.run(async (ctx) => {
+      const counted = countingCtx(ctx.db);
+      const out = await readStudySets(counted.ctx, a, {
+        budget: { lookups, pageBytes: STUDY_READ_BUDGET.pageBytes },
+      });
+      return {
+        truncated: out.truncated,
+        setIds: out.sets.map((entry) => entry.set._id),
+        firstStates: [...(out.sets[0]?.states.keys() ?? [])],
+        spent: counted.counts.gets + counted.counts.ranges,
+      };
+    });
+    expect(read.truncated).toBe(true);
+    expect(read.setIds).toEqual([ids[2], ids[1]]);
+    expect(read.firstStates).toEqual(["k099"]);
+    expect(read.spent).toBeLessThanOrEqual(lookups);
   });
 });

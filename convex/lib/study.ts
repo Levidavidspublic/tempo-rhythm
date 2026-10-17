@@ -10,12 +10,13 @@ import {
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import type { Sm2State } from "../../packages/core/srs/sm2";
-import { PagePrivacyError, requireLivePage } from "./pagePrivacy";
+import { PagePrivacyError, requireActiveOwner, requireLivePage } from "./pagePrivacy";
 
 /**
  * Study layer helpers (kitchen T3). The page is the source of truth for a set's content: every
  * read parses the page body with the codec and joins schedule state by item id. Every set read
- * goes through `requireLivePage`, so a deleted page or account hides its sets on the next read.
+ * goes through the page guard (`requireLivePage`; the hub's list read checks the owner once and
+ * each page by the same rule), so a deleted page or account hides its sets on the next read.
  */
 
 type DbCtx = Pick<QueryCtx, "db">;
@@ -26,10 +27,34 @@ export type StudyBlock = Extract<TempoBlock, { type: StudyKind }>;
 /** Calm copy for a set that is missing, someone else's, removed, or on a removed page. */
 export const SET_UNAVAILABLE = "This study set isn't available.";
 
-/** Upper bound on sets one hub or queue read walks. */
+/** Upper bound on live sets one hub or queue read shows. */
 export const STUDY_SET_SCAN_LIMIT = 100;
-/** States per set: a deck holds at most 100 cards; extra room for stale ids. */
+/**
+ * Set rows one hub or queue read looks at, live or not. A set whose page is gone or whose block
+ * no longer parses is skipped and not counted, so older live sets still show behind it.
+ */
+export const STUDY_SET_ROW_LIMIT = 400;
+/** State rows one range reads per set: a deck holds at most 100 cards; extra room for stale ids. */
 export const STATE_SCAN_LIMIT = 200;
+/** A deck's card cap in the codec: the most per-card lookups one set can need. */
+const MAX_DECK_CARDS = 100;
+/** A Convex document, so a page and its body, is at most 1 MiB. */
+const PAGE_BYTES_MAX = 1024 * 1024;
+
+/**
+ * What one hub or review-queue read may spend, well inside Convex's per-transaction caps (4,096
+ * index ranges and gets, 16 MiB read), so the screens keep working for a heavy user.
+ *
+ * - `lookups`: the gets and index ranges spent on the sets. The owner and the set rows (2), then
+ *   per set its page (1), its card states (1 range, plus 1 per card when the range comes back
+ *   full) and, on the hub, its last score (1). The hub's one read of today's reviews comes on top.
+ * - `pageBytes`: the page bodies read, in UTF-8 bytes (a page is at most 1 MiB).
+ *
+ * A set is read only while its worst case still fits, so a read never goes over. Past the budget
+ * the answer carries `truncated: true` and holds the most recent sets read so far.
+ */
+export const STUDY_READ_BUDGET = { lookups: 2_000, pageBytes: 8 * 1024 * 1024 } as const;
+export type StudyReadBudget = { lookups: number; pageBytes: number };
 /** Reviews counted for "reviewed today". */
 export const REVIEW_COUNT_LIMIT = 1000;
 export const DEFAULT_NEW_LIMIT = 20;
@@ -210,37 +235,145 @@ export async function readLiveSetWithBlock(
   return { ...live, block };
 }
 
-/** The caller's live sets on live pages, newest first, at most `STUDY_SET_SCAN_LIMIT`. */
-export async function listLiveSetsWithBlocks(
+/** UTF-8 length of a string: what a page body weighs against the read budget. */
+export function utf8Bytes(text: string): number {
+  let bytes = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 0x80) bytes += 1;
+    else if (code < 0x800) bytes += 2;
+    else if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length) {
+      // A surrogate pair is one 4-byte character.
+      bytes += 4;
+      i += 1;
+    } else bytes += 3;
+  }
+  return bytes;
+}
+
+/** Gets and index ranges spent so far, and page bytes read: counted against `StudyReadBudget`. */
+export type ReadMeter = { lookups: number; pageBytes: number };
+
+/** The caller's last quiz or test scores on a set, newest first. */
+export async function recentAttempts(
   ctx: DbCtx,
   userId: Id<"users">,
-): Promise<(LiveSet & { block: StudyBlock })[]> {
-  const sets = await ctx.db
+  setId: Id<"studySets">,
+  limit: number,
+): Promise<Doc<"studyAttempts">[]> {
+  const rows = await ctx.db
+    .query("studyAttempts")
+    .withIndex("by_set", (q) => q.eq("setId", setId).eq("deletedAt", undefined))
+    .order("desc")
+    .take(limit);
+  return rows.filter((row) => row.userId === userId);
+}
+
+export type StudySetRead = LiveSet & {
+  block: StudyBlock;
+  /** Live card states by card id (flashcards only; empty for quizzes and tests). */
+  states: Map<string, Doc<"studyCardStates">>;
+  /** The last score (quizzes and tests, when asked for). */
+  lastAttempt?: Doc<"studyAttempts">;
+};
+
+/**
+ * The caller's live sets on live pages, newest first, with their card states: at most
+ * `STUDY_SET_SCAN_LIMIT` of them, inside the read budget (`STUDY_READ_BUDGET`). A set whose page is
+ * gone or whose block no longer parses is skipped, not counted. `truncated` says the read stopped
+ * before it had looked at every set (the budget or the limits ran out), so the answer holds only
+ * the most recent ones. `kind` skips other kinds before their pages are read.
+ *
+ * The owner is checked once with the page guard (`requireActiveOwner`). Each page is read once,
+ * so its bytes are counted, and admitted by the page guard's own rule: the caller's page, not
+ * deleted (`requireLivePage`). A removed account reads as no sets.
+ */
+export async function readStudySets(
+  ctx: DbCtx,
+  userId: Id<"users">,
+  options: { kind?: StudyKind; lastAttempt?: boolean; budget?: StudyReadBudget } = {},
+): Promise<{ sets: StudySetRead[]; truncated: boolean }> {
+  const budget = options.budget ?? STUDY_READ_BUDGET;
+  try {
+    await requireActiveOwner(ctx, userId);
+  } catch (error) {
+    if (error instanceof PagePrivacyError) return { sets: [], truncated: false };
+    throw error;
+  }
+  const rows = await ctx.db
     .query("studySets")
     .withIndex("by_userId_updated", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
     .order("desc")
-    .take(STUDY_SET_SCAN_LIMIT);
-  const out: (LiveSet & { block: StudyBlock })[] = [];
-  for (const set of sets) {
-    const live = await readLiveSetWithBlock(ctx, userId, set._id);
-    if (live) out.push(live);
+    .take(STUDY_SET_ROW_LIMIT);
+  const meter: ReadMeter = { lookups: 2, pageBytes: 0 };
+  const sets: StudySetRead[] = [];
+  // A full take may have left older rows unread.
+  let truncated = rows.length === STUDY_SET_ROW_LIMIT;
+  for (let index = 0; index < rows.length; index++) {
+    const set = rows[index];
+    if (options.kind !== undefined && set.kind !== options.kind) continue;
+    if (sets.length === STUDY_SET_SCAN_LIMIT) {
+      truncated = true;
+      break;
+    }
+    const worst =
+      1 +
+      (set.kind === "flashcards" ? 1 + MAX_DECK_CARDS : 0) +
+      (options.lastAttempt && set.kind !== "flashcards" ? 1 : 0);
+    if (meter.lookups + worst > budget.lookups || meter.pageBytes + PAGE_BYTES_MAX > budget.pageBytes) {
+      truncated = true;
+      break;
+    }
+    const note = await ctx.db.get(set.noteId);
+    meter.lookups += 1;
+    if (note) meter.pageBytes += utf8Bytes(note.body);
+    if (!note || note.userId !== userId || note.deletedAt !== undefined) continue;
+    const block = findStudyBlock(note.body, set.blockId);
+    if (!block || block.type !== set.kind) continue;
+    const states =
+      block.type === "flashcards"
+        ? await liveStates(ctx, userId, set._id, block.data.cards.map((card) => card.id), meter)
+        : new Map<string, Doc<"studyCardStates">>();
+    let lastAttempt: Doc<"studyAttempts"> | undefined;
+    if (options.lastAttempt && block.type !== "flashcards") {
+      [lastAttempt] = await recentAttempts(ctx, userId, set._id, 1);
+      meter.lookups += 1;
+    }
+    sets.push({ set, note, block, states, ...(lastAttempt ? { lastAttempt } : {}) });
   }
-  return out;
+  return { sets, truncated };
 }
 
 /**
- * Live card states of a set for the given cards, keyed by card id. One indexed lookup per card
- * (a deck holds at most 100), so old or orphaned state rows can never crowd a live one out.
+ * Live card states of a set for the given cards, keyed by card id. One index range over the set's
+ * state rows (at most `STATE_SCAN_LIMIT`). When that range comes back full, rows past it may hold
+ * a card's state, so each card it didn't find is looked up on its own: old or orphaned state rows
+ * can never crowd a live one out. `meter`, when given, counts the lookups spent.
  */
 export async function liveStates(
   ctx: DbCtx,
   userId: Id<"users">,
   setId: Id<"studySets">,
   cardIds: readonly string[],
+  meter?: ReadMeter,
 ): Promise<Map<string, Doc<"studyCardStates">>> {
+  const wanted = new Set(cardIds);
   const out = new Map<string, Doc<"studyCardStates">>();
-  for (const cardId of new Set(cardIds)) {
+  const rows = await ctx.db
+    .query("studyCardStates")
+    .withIndex("by_set_card", (q) => q.eq("setId", setId))
+    .take(STATE_SCAN_LIMIT);
+  if (meter) meter.lookups += 1;
+  for (const row of rows) {
+    if (row.userId === userId && row.deletedAt === undefined && wanted.has(row.cardId)) {
+      out.set(row.cardId, row);
+    }
+  }
+  if (rows.length < STATE_SCAN_LIMIT) return out;
+  for (const cardId of wanted) {
+    if (out.has(cardId)) continue;
     const row = await stateRow(ctx, userId, setId, cardId);
+    if (meter) meter.lookups += 1;
     if (row && row.deletedAt === undefined) out.set(cardId, row);
   }
   return out;

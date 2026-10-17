@@ -7,7 +7,6 @@ import {
   internalQuery,
   type MutationCtx,
   mutation,
-  type QueryCtx,
   query,
 } from "./_generated/server";
 import { createNoteForUser, updateNoteForUser } from "./notes";
@@ -31,19 +30,21 @@ import {
   DEFAULT_NEW_LIMIT,
   dataSchemaFor,
   findStudyBlock,
-  listLiveSetsWithBlocks,
   liveStates,
   newStudyBlockId,
   pageProse,
   parseModelJson,
   passMarkFor,
   readLiveSetWithBlock,
+  readStudySets,
+  recentAttempts,
   REVIEW_COUNT_LIMIT,
   replaceStudyBlock,
   requireLiveSet,
   SET_UNAVAILABLE,
   type StudyBlock,
   type StudyKind,
+  type StudySetRead,
   stateRow,
   studyBlockFence,
   toSm2State,
@@ -106,45 +107,30 @@ function attemptView(row: Doc<"studyAttempts">) {
   };
 }
 
-async function recentAttempts(
-  ctx: Pick<QueryCtx, "db">,
-  userId: Id<"users">,
-  setId: Id<"studySets">,
-  limit: number,
-) {
-  const rows = await ctx.db
-    .query("studyAttempts")
-    .withIndex("by_set", (q) => q.eq("setId", setId).eq("deletedAt", undefined))
-    .order("desc")
-    .take(limit);
-  return rows.filter((row) => row.userId === userId);
-}
-
 // ---------------------------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------------------------
 
-/** The review hub: totals for today and one row per live set. */
+/**
+ * The review hub: totals for today and one row per live set, newest first. The read stays inside
+ * `STUDY_READ_BUDGET` (lib/study.ts); past it, or past 100 sets, `truncated: true` says the hub
+ * holds only the most recent sets.
+ */
 export const hub = query({
   args: { dayStartMs: v.number() },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
-    const sets = await listLiveSetsWithBlocks(ctx, user._id);
+    const { sets, truncated } = await readStudySets(ctx, user._id, { lastAttempt: true });
     let dueCount = 0;
     let newCount = 0;
     const rows = [];
-    for (const { set, block } of sets) {
-      const states =
-        block.type === "flashcards"
-          ? await liveStates(ctx, user._id, set._id, block.data.cards.map((card) => card.id))
-          : new Map();
+    for (const { set, block, states, lastAttempt: last } of sets) {
       const counts = cardCounts(block, states, now);
       // A session takes at most DEFAULT_NEW_LIMIT new cards (reviewQueue), so the hub says the same.
       const setNew = Math.min(counts.newCount, DEFAULT_NEW_LIMIT);
       dueCount += counts.dueCount;
       newCount += setNew;
-      const [last] = block.type === "flashcards" ? [] : await recentAttempts(ctx, user._id, set._id, 1);
       rows.push({
         setId: set._id,
         noteId: set.noteId,
@@ -171,7 +157,13 @@ export const hub = query({
       .withIndex("by_user_reviewed", (q) => q.eq("userId", user._id).gte("reviewedAt", dayStartMs))
       .take(REVIEW_COUNT_LIMIT);
     const reviewedToday = reviews.filter((row) => row.deletedAt === undefined).length;
-    return { dueCount, newCount: Math.min(newCount, DEFAULT_NEW_LIMIT), reviewedToday, sets: rows };
+    return {
+      dueCount,
+      newCount: Math.min(newCount, DEFAULT_NEW_LIMIT),
+      reviewedToday,
+      sets: rows,
+      ...(truncated ? { truncated: true as const } : {}),
+    };
   },
 });
 
@@ -221,19 +213,28 @@ export const getSet = query({
   },
 });
 
-/** Cards to review: due first (oldest due first), then new cards up to `newLimit` (default 20). */
+/**
+ * Cards to review: due first (oldest due first), then new cards up to `newLimit` (default 20).
+ * Across every deck the read stays inside `STUDY_READ_BUDGET`, like the hub, and says
+ * `truncated: true` past it; one set's queue (`setId`) reads one page and is never cut short.
+ */
 export const reviewQueue = query({
   args: { setId: v.optional(v.id("studySets")), newLimit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
     const newLimit = Math.max(0, Math.floor(Number.isFinite(args.newLimit) ? (args.newLimit as number) : DEFAULT_NEW_LIMIT));
-    let sets: (Awaited<ReturnType<typeof listLiveSetsWithBlocks>>[number])[];
+    type QueueSet = Pick<StudySetRead, "set" | "block" | "states">;
+    let sets: QueueSet[] = [];
+    let truncated = false;
     if (args.setId !== undefined) {
       const one = await readLiveSetWithBlock(ctx, user._id, args.setId);
-      sets = one ? [one] : [];
+      if (one && one.block.type === "flashcards") {
+        const cardIds = one.block.data.cards.map((card) => card.id);
+        sets = [{ ...one, states: await liveStates(ctx, user._id, one.set._id, cardIds) }];
+      }
     } else {
-      sets = await listLiveSetsWithBlocks(ctx, user._id);
+      ({ sets, truncated } = await readStudySets(ctx, user._id, { kind: "flashcards" }));
     }
     type QueueCard = {
       setId: Id<"studySets">;
@@ -246,14 +247,8 @@ export const reviewQueue = query({
     };
     const due: QueueCard[] = [];
     const fresh: QueueCard[] = [];
-    for (const { set, block } of sets) {
+    for (const { set, block, states } of sets) {
       if (block.type !== "flashcards") continue;
-      const states = await liveStates(
-        ctx,
-        user._id,
-        set._id,
-        block.data.cards.map((card) => card.id),
-      );
       for (const card of block.data.cards) {
         const row = states.get(card.id);
         const base = {
@@ -269,7 +264,7 @@ export const reviewQueue = query({
       }
     }
     due.sort((a, b) => (a.state as StateView).dueAt - (b.state as StateView).dueAt);
-    return { cards: [...due, ...fresh.slice(0, newLimit)] };
+    return { cards: [...due, ...fresh.slice(0, newLimit)], ...(truncated ? { truncated: true as const } : {}) };
   },
 });
 
