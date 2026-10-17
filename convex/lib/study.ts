@@ -280,9 +280,17 @@ export type StudySetRead = LiveSet & {
 /**
  * The caller's live sets on live pages, newest first, with their card states: at most
  * `STUDY_SET_SCAN_LIMIT` of them, inside the read budget (`STUDY_READ_BUDGET`). A set whose page is
- * gone or whose block no longer parses is skipped, not counted. `truncated` says the read stopped
- * before it had looked at every set (the budget or the limits ran out), so the answer holds only
- * the most recent ones. `kind` skips other kinds before their pages are read.
+ * gone or whose block no longer parses is skipped, not counted. `truncated` says a live set the
+ * answer doesn't hold may remain, so the answer holds only the most recent ones: a set past the
+ * limit was read and is live, the budget ran out before a set could be read, or rows lie past the
+ * `STUDY_SET_ROW_LIMIT` looked at. A set past the limit is read only to learn whether it is live
+ * (its page alone), so a dead one there never says "truncated". `kind` skips other kinds before
+ * their pages are read.
+ *
+ * `meter` lets two reads in one query share one budget: the second goes on from what the first
+ * spent. `known` hands it what the first one found, so nothing is read twice: its sets (decks,
+ * which carry no last score) are taken as they are, and the sets it found dead (`dead`; null in
+ * `known`) are skipped.
  *
  * The owner is checked once with the page guard (`requireActiveOwner`). Each page is read once,
  * so its bytes are counted, and admitted by the page guard's own rule: the caller's page, not
@@ -291,35 +299,51 @@ export type StudySetRead = LiveSet & {
 export async function readStudySets(
   ctx: DbCtx,
   userId: Id<"users">,
-  options: { kind?: StudyKind; lastAttempt?: boolean; budget?: StudyReadBudget } = {},
-): Promise<{ sets: StudySetRead[]; truncated: boolean }> {
+  options: {
+    kind?: StudyKind;
+    lastAttempt?: boolean;
+    budget?: StudyReadBudget;
+    meter?: ReadMeter;
+    known?: ReadonlyMap<Id<"studySets">, StudySetRead | null>;
+  } = {},
+): Promise<{ sets: StudySetRead[]; truncated: boolean; dead: Id<"studySets">[] }> {
   const budget = options.budget ?? STUDY_READ_BUDGET;
   try {
     await requireActiveOwner(ctx, userId);
   } catch (error) {
-    if (error instanceof PagePrivacyError) return { sets: [], truncated: false };
+    if (error instanceof PagePrivacyError) return { sets: [], truncated: false, dead: [] };
     throw error;
   }
+  // One row more than is looked at, to know whether any lie past the limit.
   const rows = await ctx.db
     .query("studySets")
     .withIndex("by_userId_updated", (q) => q.eq("userId", userId).eq("deletedAt", undefined))
     .order("desc")
-    .take(STUDY_SET_ROW_LIMIT);
-  const meter: ReadMeter = { lookups: 2, pageBytes: 0 };
+    .take(STUDY_SET_ROW_LIMIT + 1);
+  const meter: ReadMeter = options.meter ?? { lookups: 0, pageBytes: 0 };
+  meter.lookups += 2;
   const sets: StudySetRead[] = [];
-  // A full take may have left older rows unread.
-  let truncated = rows.length === STUDY_SET_ROW_LIMIT;
-  for (let index = 0; index < rows.length; index++) {
-    const set = rows[index];
+  const dead: Id<"studySets">[] = [];
+  let truncated = false;
+  for (const set of rows.slice(0, STUDY_SET_ROW_LIMIT)) {
     if (options.kind !== undefined && set.kind !== options.kind) continue;
-    if (sets.length === STUDY_SET_SCAN_LIMIT) {
-      truncated = true;
-      break;
+    // Past the limit a set is only checked: a live one there means the answer is cut short.
+    const full = sets.length === STUDY_SET_SCAN_LIMIT;
+    const known = options.known?.get(set._id);
+    if (known === null) continue;
+    if (known) {
+      if (full) {
+        truncated = true;
+        break;
+      }
+      sets.push(known);
+      continue;
     }
-    const worst =
-      1 +
-      (set.kind === "flashcards" ? 1 + MAX_DECK_CARDS : 0) +
-      (options.lastAttempt && set.kind !== "flashcards" ? 1 : 0);
+    const worst = full
+      ? 1
+      : 1 +
+        (set.kind === "flashcards" ? 1 + MAX_DECK_CARDS : 0) +
+        (options.lastAttempt && set.kind !== "flashcards" ? 1 : 0);
     if (meter.lookups + worst > budget.lookups || meter.pageBytes + PAGE_BYTES_MAX > budget.pageBytes) {
       truncated = true;
       break;
@@ -327,9 +351,18 @@ export async function readStudySets(
     const note = await ctx.db.get(set.noteId);
     meter.lookups += 1;
     if (note) meter.pageBytes += utf8Bytes(note.body);
-    if (!note || note.userId !== userId || note.deletedAt !== undefined) continue;
-    const block = findStudyBlock(note.body, set.blockId);
-    if (!block || block.type !== set.kind) continue;
+    const block =
+      note && note.userId === userId && note.deletedAt === undefined
+        ? findStudyBlock(note.body, set.blockId)
+        : null;
+    if (!note || !block || block.type !== set.kind) {
+      dead.push(set._id);
+      continue;
+    }
+    if (full) {
+      truncated = true;
+      break;
+    }
     const states =
       block.type === "flashcards"
         ? await liveStates(ctx, userId, set._id, block.data.cards.map((card) => card.id), meter)
@@ -341,7 +374,8 @@ export async function readStudySets(
     }
     sets.push({ set, note, block, states, ...(lastAttempt ? { lastAttempt } : {}) });
   }
-  return { sets, truncated };
+  // Every row looked at, but more lie past the limit: unread, so they may hold live sets.
+  return { sets, truncated: truncated || rows.length > STUDY_SET_ROW_LIMIT, dead };
 }
 
 /**

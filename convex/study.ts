@@ -36,6 +36,7 @@ import {
   parseModelJson,
   passMarkFor,
   readLiveSetWithBlock,
+  type ReadMeter,
   readStudySets,
   recentAttempts,
   REVIEW_COUNT_LIMIT,
@@ -113,25 +114,36 @@ function attemptView(row: Doc<"studyAttempts">) {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * The review hub: totals for today and one row per live set, newest first. The read stays inside
- * `STUDY_READ_BUDGET` (lib/study.ts); past it, or past 100 sets, `truncated: true` says the hub
- * holds only the most recent sets.
+ * The review hub: totals for today and one row per live set, newest first. The due and new totals
+ * come from the very read Review uses (`reviewQueue`: the decks alone), so the hub never says
+ * nothing is due while Review has cards; the rows are read after it, inside what is left of the
+ * same `STUDY_READ_BUDGET` (lib/study.ts), and take the decks it read as they are. When either
+ * read may have left a live set out, `truncated: true` says the hub holds only the most recent.
  */
 export const hub = query({
   args: { dayStartMs: v.number() },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const now = Date.now();
-    const { sets, truncated } = await readStudySets(ctx, user._id, { lastAttempt: true });
+    const meter: ReadMeter = { lookups: 0, pageBytes: 0 };
+    const decks = await readStudySets(ctx, user._id, { kind: "flashcards", meter });
     let dueCount = 0;
     let newCount = 0;
+    for (const { block, states } of decks.sets) {
+      const counts = cardCounts(block, states, now);
+      dueCount += counts.dueCount;
+      newCount += counts.newCount;
+    }
+    const known = new Map<Id<"studySets">, StudySetRead | null>([
+      ...decks.sets.map((entry) => [entry.set._id, entry] as const),
+      ...decks.dead.map((setId) => [setId, null] as const),
+    ]);
+    const { sets, truncated } = await readStudySets(ctx, user._id, { lastAttempt: true, meter, known });
     const rows = [];
     for (const { set, block, states, lastAttempt: last } of sets) {
       const counts = cardCounts(block, states, now);
       // A session takes at most DEFAULT_NEW_LIMIT new cards (reviewQueue), so the hub says the same.
       const setNew = Math.min(counts.newCount, DEFAULT_NEW_LIMIT);
-      dueCount += counts.dueCount;
-      newCount += setNew;
       rows.push({
         setId: set._id,
         noteId: set.noteId,
@@ -163,7 +175,7 @@ export const hub = query({
       newCount: Math.min(newCount, DEFAULT_NEW_LIMIT),
       reviewedToday,
       sets: rows,
-      ...(truncated ? { truncated: true as const } : {}),
+      ...(truncated || decks.truncated ? { truncated: true as const } : {}),
     };
   },
 });

@@ -12,6 +12,7 @@ import {
   readStudySets,
   STATE_SCAN_LIMIT,
   STUDY_READ_BUDGET,
+  STUDY_SET_ROW_LIMIT,
   STUDY_SET_SCAN_LIMIT,
   studyBlockFence,
 } from "./lib/study";
@@ -1237,5 +1238,129 @@ describe("undoCreate always takes the set back in one click, and Bring it back r
     await t.run((ctx) => ctx.db.patch(out.noteId, { updatedAt: NOW + 2_000 }));
     setSystemTime(new Date(NOW + MIN));
     expect(await asA.mutation(api.study.undoCreate, { setId: out.setId })).toEqual({ success: true, pageRemoved: true });
+  });
+});
+
+describe("the hub's totals and truncated (whole-run review, more than 100 sets)", () => {
+  /** A set of `kind` on its own page, written straight to the tables; `dead` puts it on a removed page. */
+  async function plainSet(t: T, userId: Id<"users">, kind: "flashcards" | "quiz", updatedAt: number, dead = false) {
+    return t.run(async (ctx) => {
+      const blockId = newStudyBlockId(updatedAt);
+      const noteId = await ctx.db.insert("notes", {
+        userId,
+        title: kind === "quiz" ? "Quiz page" : "Deck page",
+        body: studyBlockFence(blockId, kind, kind === "quiz" ? quiz : deck),
+        pinned: false,
+        periodType: "none",
+        createdAt: NOW,
+        updatedAt: NOW,
+        ...(dead ? { deletedAt: NOW } : {}),
+      });
+      return ctx.db.insert("studySets", {
+        userId,
+        noteId,
+        blockId,
+        kind,
+        title: kind === "quiz" ? "Quiz" : "Deck",
+        itemCount: kind === "quiz" ? 1 : 3,
+        createdByTempo: false,
+        createdAt: NOW,
+        updatedAt,
+      });
+    });
+  }
+
+  test("due and new come from the same deck read as Review, past 100 newer quizzes", async () => {
+    const { t, a, asA } = await twoUsers();
+    const deckId = await plainSet(t, a, "flashcards", NOW);
+    await t.run((ctx) =>
+      ctx.db.insert("studyCardStates", {
+        userId: a,
+        setId: deckId,
+        cardId: "c1",
+        ease: 2.5,
+        intervalDays: 1,
+        repetitions: 1,
+        lapses: 0,
+        dueAt: NOW - MIN,
+        createdAt: NOW,
+        updatedAt: NOW,
+      }),
+    );
+    for (let i = 1; i <= STUDY_SET_SCAN_LIMIT; i++) await plainSet(t, a, "quiz", NOW + i);
+    const queue = await asA.query(api.study.reviewQueue, {});
+    expect(queue.cards.map((card) => [card.cardId, card.state === null ? "new" : "due"])).toEqual([
+      ["c1", "due"],
+      ["c2", "new"],
+      ["c3", "new"],
+    ]);
+    const hub = await asA.query(api.study.hub, { dayStartMs: NOW });
+    expect({ dueCount: hub.dueCount, newCount: hub.newCount }).toEqual({ dueCount: 1, newCount: 2 });
+    // The list itself holds the 100 newest sets and says there is more.
+    expect(hub.sets).toHaveLength(STUDY_SET_SCAN_LIMIT);
+    expect(hub.truncated).toBe(true);
+  });
+
+  test("a dead set past the 100 shown is not 'more': truncated stays off", async () => {
+    const { t, a, asA } = await twoUsers();
+    await plainSet(t, a, "flashcards", NOW, true);
+    for (let i = 1; i <= STUDY_SET_SCAN_LIMIT; i++) await plainSet(t, a, "flashcards", NOW + i);
+    const hub = await asA.query(api.study.hub, { dayStartMs: NOW });
+    expect(hub.sets).toHaveLength(STUDY_SET_SCAN_LIMIT);
+    expect("truncated" in hub).toBe(false);
+    expect("truncated" in (await asA.query(api.study.reviewQueue, {}))).toBe(false);
+    // A live one there is: the hub says it shows the most recent.
+    await plainSet(t, a, "flashcards", NOW - 1);
+    expect((await asA.query(api.study.hub, { dayStartMs: NOW })).truncated).toBe(true);
+    expect((await asA.query(api.study.reviewQueue, {})).truncated).toBe(true);
+  });
+
+  test("the hub's second read takes what the first found, live or dead, without reading it again", async () => {
+    const { t, a } = await twoUsers();
+    const live = await plainSet(t, a, "flashcards", NOW + 1);
+    const gone = await plainSet(t, a, "flashcards", NOW + 2, true);
+    const quizId = await plainSet(t, a, "quiz", NOW + 3);
+    const out = await t.run(async (ctx) => {
+      const fetched: string[] = [];
+      const db = new Proxy(ctx.db, {
+        get(target, prop) {
+          const value = Reflect.get(target, prop);
+          if (prop === "get") return (id: string) => (fetched.push(id), value.call(target, id));
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const counted = { db } as unknown as Parameters<typeof readStudySets>[0];
+      const meter = { lookups: 0, pageBytes: 0 };
+      const decks = await readStudySets(counted, a, { kind: "flashcards", meter });
+      const known = new Map([
+        ...decks.sets.map((entry) => [entry.set._id, entry] as const),
+        ...decks.dead.map((setId) => [setId, null] as const),
+      ]);
+      const first = fetched.length;
+      const all = await readStudySets(counted, a, { lastAttempt: true, meter, known });
+      const notes = await Promise.all([live, gone, quizId].map((id) => ctx.db.get(id)));
+      return {
+        dead: decks.dead,
+        sets: all.sets.map((entry) => entry.set._id),
+        again: fetched.slice(first).filter((id) => notes.some((set) => set?.noteId === id)),
+        quizNote: notes[2]?.noteId,
+      };
+    });
+    expect(out.dead).toEqual([gone]);
+    expect(out.sets).toEqual([quizId, live]);
+    // Only the quiz's page is read the second time.
+    expect(out.again).toEqual([out.quizNote]);
+  });
+
+  test("exactly the rows looked at, all read, is not 'more'; one row past them is", async () => {
+    const { t, a, asA } = await twoUsers();
+    await plainSet(t, a, "flashcards", NOW + STUDY_SET_ROW_LIMIT);
+    for (let i = 1; i < STUDY_SET_ROW_LIMIT; i++) await plainSet(t, a, "flashcards", NOW + i, true);
+    const hub = await asA.query(api.study.hub, { dayStartMs: NOW });
+    expect(hub.sets).toHaveLength(1);
+    expect("truncated" in hub).toBe(false);
+    expect("truncated" in (await asA.query(api.study.reviewQueue, {}))).toBe(false);
+    await plainSet(t, a, "flashcards", NOW);
+    expect((await asA.query(api.study.hub, { dayStartMs: NOW })).truncated).toBe(true);
   });
 });
