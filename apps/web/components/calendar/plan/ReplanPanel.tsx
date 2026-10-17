@@ -490,6 +490,8 @@ export type ReplanAreaProps = {
   planId: Id<"studyPlans"> | null;
   lang: PlanLang;
   primary?: boolean;
+  /** Takes the keyboard when the toast closes and "Re-plan the rest" isn't there (the page's h1). */
+  headingRef?: RefObject<HTMLElement | null>;
 };
 
 /**
@@ -498,7 +500,7 @@ export type ReplanAreaProps = {
  * these sessions" makes another plan the shown one, and the Undo for the re-plan made a moment ago
  * stays for its 5:00 and still takes back that plan's re-plan.
  */
-export function ReplanArea({ planId, lang, primary = true }: ReplanAreaProps) {
+export function ReplanArea({ planId, lang, primary = true, headingRef }: ReplanAreaProps) {
   const { undoReplan } = useReplanActions();
   // `superseded`: Undo found a newer re-plan (another tab), so it changed nothing.
   const [toast, setToast] = useState<(ReplanDone & { superseded?: boolean }) | null>(null);
@@ -522,7 +524,18 @@ export function ReplanArea({ planId, lang, primary = true }: ReplanAreaProps) {
     const answer = await undoReplan({ planId: toast.planId, undoUntil: toast.undoUntil });
     supersededRef.current = answer.superseded === true;
   };
+  // When the toast closes (Undo, Dismiss or the end of its 5:00) with the keyboard in it, the
+  // keyboard goes back to "Re-plan the rest" (after Undo the notice comes back), or to the page
+  // heading when there is nothing to re-plan. Typing somewhere else on the page is left alone.
+  const handBackFocus = () => {
+    const active = document.activeElement;
+    const inToast =
+      !active || active === document.body || (toastRef.current?.contains(active) ?? false);
+    if (!inToast) return;
+    window.setTimeout(() => (openRef.current ?? headingRef?.current)?.focus(), 0);
+  };
   const closeToast = () => {
+    handBackFocus();
     if (supersededRef.current) {
       // Nothing was taken back: the toast stays and says why, until its window ends.
       supersededRef.current = false;

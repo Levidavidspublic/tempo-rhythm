@@ -65,6 +65,7 @@ export function PlanPathScreen() {
   // Statuses tapped on this screen, shown at once while the saved ones catch up.
   const [tapped, setTapped] = useState<Record<string, GuidedStepStatus>>({});
   const topicsRef = useRef<HTMLTextAreaElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   // What is already on the calendar from today up to the deadline (read only), so the plan only
   // uses the time that is left on each day. Events come in windows of at most 31 days, which
@@ -269,7 +270,9 @@ export function PlanPathScreen() {
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
           <p className="tp-eyebrow">{pt(lang, "pp.eyebrow")}</p>
-          <h1 className="tp-pagehead__title">{pt(lang, "pp.title")}</h1>
+          <h1 className="tp-pagehead__title" ref={headingRef} tabIndex={-1}>
+            {pt(lang, "pp.title")}
+          </h1>
           <p className="tp-pagehead__sub">{pt(lang, "pp.sub")}</p>
         </div>
       </header>
@@ -278,6 +281,7 @@ export function PlanPathScreen() {
         <ReplanArea
           lang={lang}
           planId={activePlan}
+          headingRef={headingRef}
           // The plan card's "Add these sessions" is the screen's one primary while it is offered.
           primary={!(preview.status === "ok" && cardStatus === "pending")}
         />

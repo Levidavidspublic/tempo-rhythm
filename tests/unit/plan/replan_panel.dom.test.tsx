@@ -5,7 +5,7 @@
  * (planApi.ts); it is mocked here, faithfully, and put back after this file.
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
-import { act, createElement } from "../../../apps/web/node_modules/react";
+import { act, createElement, createRef } from "../../../apps/web/node_modules/react";
 import { createRoot, type Root } from "../../../apps/web/node_modules/react-dom/client";
 import { localSlotToMs } from "../../../apps/web/components/calendar/gridData";
 import type { BusyWindows } from "../../../apps/web/components/calendar/plan/busyWindows";
@@ -79,9 +79,15 @@ let root: Root | null = null;
 let host: TestNode | null = null;
 
 type PanelProps = { planId: string | null; lang?: "en" | "he" };
-/** The re-plan area as the plan screen draws it: the panel for the shown plan, and its toast. */
+const headingRef = createRef<HTMLHeadingElement>();
+/** The re-plan area as the plan screen draws it, under the page's heading. */
 const panel = ({ planId, lang = "en" }: PanelProps) =>
-  createElement(LocaleProvider, null, createElement(ReplanArea, { planId: planId as never, lang }));
+  createElement(
+    LocaleProvider,
+    null,
+    createElement("h1", { ref: headingRef, tabIndex: -1 }, "Plan back from a deadline"),
+    createElement(ReplanArea, { planId: planId as never, lang, headingRef })
+  );
 
 async function mount(props: PanelProps) {
   useTestDom(documentNode);
@@ -105,6 +111,49 @@ async function click(node: TestNode | undefined) {
   await act(async () => {
     node.click();
   });
+}
+
+/** Lets the timers the component set for after this render run (focus is handed back in one). */
+async function settle() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
+/**
+ * Focus in the TestNode DOM (as in GuidedPlanCard.dom.test.tsx): `focus()` records the node, and
+ * `document.activeElement` falls back to the body once that node leaves the document.
+ */
+function trackFocus() {
+  const proto = Object.getPrototypeOf(documentNode) as { focus: (this: TestNode) => void };
+  const plainFocus = proto.focus;
+  let focused: TestNode | null = null;
+  proto.focus = function (this: TestNode) {
+    focused = this;
+  };
+  Object.defineProperty(documentNode, "activeElement", {
+    configurable: true,
+    get: () => (focused && documentNode.contains(focused) ? focused : documentNode.body),
+  });
+  return {
+    get active() {
+      return documentNode.activeElement;
+    },
+    restore() {
+      proto.focus = plainFocus;
+      Object.defineProperty(documentNode, "activeElement", {
+        configurable: true,
+        writable: true,
+        value: documentNode.body,
+      });
+    },
+  };
+}
+
+async function press(node: TestNode | undefined) {
+  if (!node) throw new Error("nothing to press");
+  node.focus();
+  await click(node);
 }
 
 const byAction = (view: TestNode, action: string) => findAll(view, (n) => n.getAttribute("data-action") === action)[0];
@@ -190,5 +239,81 @@ describe("ReplanPanel, mounted", () => {
     expect(findAll(view, (n) => n.tagName === "BUTTON" && n.textContent === "Undo")).toHaveLength(0);
     await click(findAll(view, (n) => n.tagName === "BUTTON" && n.getAttribute("aria-label") === "Dismiss")[0]);
     expect(view.textContent).not.toContain("Nothing changed.");
+  });
+
+  describe("where the keyboard goes when the toast closes", () => {
+    const missedPlan = (): Saved => ({
+      plan: { _id: "studyPlans:1", title: "Biology", deadline: "2026-10-30", taskIds: ["tasks:2"] },
+      tasks: [task("tasks:2", "Learn: Mitosis", "2026-10-19", 17)],
+    });
+    const movedPlan = (): Saved => ({
+      plan: { _id: "studyPlans:1", title: "Biology", deadline: "2026-10-30", taskIds: ["tasks:2"] },
+      tasks: [task("tasks:2", "Learn: Mitosis", "2026-10-20", 18)],
+    });
+
+    async function replanned() {
+      setSystemTime(new Date(2026, 9, 20, 18, 0));
+      saved = missedPlan();
+      calls.replan.mockImplementationOnce(async () => {
+        saved = movedPlan();
+        return { undoUntil: Date.now() + 5 * MIN, moved: 1, removed: 0 };
+      });
+      const view = await mount({ planId: "studyPlans:1" });
+      await press(byAction(view, "replan-open"));
+      await press(byAction(view, "replan-accept"));
+      await settle();
+      // Saved: the notice has gone and the toast offers Undo.
+      expect(byAction(view, "replan-open")).toBeUndefined();
+      return view;
+    }
+
+    test("after Undo, back to Re-plan the rest, which is there again", async () => {
+      const focus = trackFocus();
+      try {
+        const view = await replanned();
+        calls.undoReplan.mockImplementationOnce(async () => {
+          saved = missedPlan();
+          return { restored: 1 };
+        });
+        await press(findByTag(view, "BUTTON", "Undo"));
+        await settle();
+        expect(focus.active).toBe(byAction(view, "replan-open") as TestNode);
+        expect(focus.active?.textContent).toBe("Re-plan the rest");
+      } finally {
+        focus.restore();
+      }
+    });
+
+    test("after Dismiss, with nothing left to re-plan, to the page heading", async () => {
+      const focus = trackFocus();
+      try {
+        const view = await replanned();
+        await press(findAll(view, (n) => n.tagName === "BUTTON" && n.getAttribute("aria-label") === "Dismiss")[0]);
+        await settle();
+        expect(focus.active?.tagName).toBe("H1");
+      } finally {
+        focus.restore();
+      }
+    });
+
+    test("the end of the 5:00 doesn't take the keyboard from a field elsewhere", async () => {
+      const focus = trackFocus();
+      try {
+        const view = await replanned();
+        const elsewhere = documentNode.createElement("input");
+        documentNode.body?.appendChild(elsewhere);
+        elsewhere.focus();
+        setSystemTime(new Date(Date.now() + 5 * MIN + 1000));
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 1100));
+        });
+        await settle();
+        expect(view.textContent).not.toContain("1 session has a new time.");
+        expect(focus.active).toBe(elsewhere);
+        documentNode.body?.removeChild(elsewhere);
+      } finally {
+        focus.restore();
+      }
+    });
   });
 });
