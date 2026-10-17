@@ -410,3 +410,52 @@ describe("sameReplan", () => {
     expect(sameReplan(a, { moves: [], unplaced: [left("a"), left("b")] })).toBe(false);
   });
 });
+
+describe("the re-plan toast's Undo, online and offline", () => {
+  /** The re-plan area with the browser's online flag, as PlanPathScreen passes it. */
+  const area = (online: boolean) =>
+    createElement(
+      "div",
+      null,
+      createElement("h1", { ref: headingRef, tabIndex: -1 }, "Plan back from a deadline"),
+      createElement(ReplanArea, { planId: "studyPlans:1" as never, lang: "en", headingRef, online })
+    );
+
+  /** Re-plans online, so the Undo toast is open, then renders the area with `online`. */
+  async function replannedThen(online: boolean) {
+    setSystemTime(new Date(2026, 9, 20, 18, 0));
+    saved = {
+      plan: { _id: "studyPlans:1", title: "Biology", deadline: "2026-10-30", taskIds: ["tasks:2"] },
+      tasks: [task("tasks:2", "Learn: Mitosis", "2026-10-19", 17)],
+    };
+    const view = await mount({ planId: "studyPlans:1" });
+    await click(byAction(view, "replan-open"));
+    await click(byAction(view, "replan-accept"));
+    expect(calls.replan).toHaveBeenCalledTimes(1);
+    expect(view.textContent).toContain("1 session has a new time.");
+    await act(async () => {
+      root?.render(area(online));
+    });
+    return view;
+  }
+
+  test("offline, Undo sends nothing; the toast stays and its error line says why", async () => {
+    const view = await replannedThen(false);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(calls.undoReplan).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("1 session has a new time.");
+    const error = findAll(view, (n) => n.getAttribute("role") === "alert" && n.className === "tp-error-text")[0];
+    expect(error?.textContent).toBe(translate("en", "rp.offline.undo"));
+    // Undo is still there to press once the connection is back.
+    expect(findByTag(view, "BUTTON", "Undo").disabled).toBe(false);
+  });
+
+  test("online, Undo calls undoReplan once and the toast closes", async () => {
+    const view = await replannedThen(true);
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(calls.undoReplan).toHaveBeenCalledTimes(1);
+    expect(calls.undoReplan.mock.calls[0]?.[0]).toMatchObject({ planId: "studyPlans:1" });
+    expect(view.textContent).not.toContain("1 session has a new time.");
+    expect(view.textContent).not.toContain(translate("en", "rp.offline.undo"));
+  });
+});
