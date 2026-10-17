@@ -1158,3 +1158,28 @@ describe("set ids from a URL (whole-run review)", () => {
     expect((await asA.query(api.study.reviewQueue, { setId: String(setId) })).cards).toHaveLength(3);
   });
 });
+
+describe("undoCreate keeps a page changed after it was made (whole-run review)", () => {
+  test("an edit after the first seconds keeps the page and the set, and the answer says so", async () => {
+    const { t, asA } = await twoUsers();
+    const out = await deckSet(asA);
+    setSystemTime(new Date(NOW + 2 * MIN));
+    await t.run((ctx) => ctx.db.patch(out.noteId, { body: "My own words now.", updatedAt: NOW + MIN }));
+    expect(await asA.mutation(api.study.undoCreate, { setId: out.setId })).toEqual({
+      success: false,
+      pageRemoved: false,
+      kept: "pageChanged",
+    });
+    const [note, set] = await t.run(async (ctx) => [await ctx.db.get(out.noteId), await ctx.db.get(out.setId)]);
+    expect(note?.deletedAt).toBeUndefined();
+    expect(set?.deletedAt).toBeUndefined();
+  });
+
+  test("a write in the first seconds after making it is not an edit: Undo still takes it back", async () => {
+    const { t, asA } = await twoUsers();
+    const out = await deckSet(asA);
+    await t.run((ctx) => ctx.db.patch(out.noteId, { updatedAt: NOW + 2_000 }));
+    setSystemTime(new Date(NOW + MIN));
+    expect(await asA.mutation(api.study.undoCreate, { setId: out.setId })).toEqual({ success: true, pageRemoved: true });
+  });
+});

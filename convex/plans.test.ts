@@ -597,3 +597,22 @@ describe("plans: bounds from the whole-run review", () => {
     expect(listed[99].title).toBe("Plan 20");
   });
 });
+
+describe("plans.undoCreate keeps the person's progress (whole-run review)", () => {
+  test("a plan with a session already done is kept, and the answer says so", async () => {
+    setSystemTime(T0);
+    const ctx = makeFakeCtx(A);
+    const { planId } = await run(plans.createFromPreview, ctx, preview());
+    const plan = await ctx.db.get(planId);
+    await ctx.db.patch(plan.taskIds[0], { status: "done" });
+    setSystemTime(T0 + 60_000);
+    expect(await run(plans.undoCreate, ctx, { planId })).toEqual({ removedTasks: 0, kept: "sessionDone" });
+    expect((await ctx.db.get(planId)).deletedAt).toBeUndefined();
+    for (const id of plan.taskIds) expect((await ctx.db.get(id)).deletedAt).toBeUndefined();
+    // A session in progress is not done: that plan still goes.
+    const other = await run(plans.createFromPreview, ctx, preview({ title: "Other" }));
+    const otherPlan = await ctx.db.get(other.planId);
+    await ctx.db.patch(otherPlan.taskIds[0], { status: "in_progress" });
+    expect(await run(plans.undoCreate, ctx, { planId: other.planId })).toEqual({ removedTasks: 2 });
+  });
+});

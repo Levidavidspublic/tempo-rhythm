@@ -375,3 +375,70 @@ describe("save and undo", () => {
     expect(world.row(theirs.taskIds[0])?.deletedAt).toBeUndefined();
   });
 });
+
+describe("Undo removes only what that save made (whole-run review)", () => {
+  test("each save keeps a record of its page and tasks on a row that counts against no day", async () => {
+    const world = makeWorld();
+    const saved = await run(recordings.saveSession, world.as(A), {
+      title: "Lecture",
+      body: "x",
+      tasks: [{ title: "Read chapter 3" }],
+      lang: "he",
+    });
+    const receipts = world.rows("recordingSessions");
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0]).toMatchObject({
+      userId: A,
+      status: "ended",
+      lang: "he",
+      durationMs: 0,
+      grants: 0,
+      dateKey: "",
+      utcDateKey: "",
+      savedNoteId: saved.noteId,
+      savedTaskIds: saved.taskIds,
+    });
+    // Typed saves never use up the day's recordings: after 40 of them a recording still starts.
+    for (let i = 0; i < VOICE_LIMITS.sessionsPerUserPerDay; i++) {
+      await run(recordings.saveSession, world.as(A), { title: `Notes ${i}`, body: "x", tasks: [] });
+    }
+    expect(await run(recordings.start, world.as(A), { lang: "en" })).toMatchObject({ ok: true });
+  });
+
+  test("a page made another way in the same minutes is not a save, so Undo leaves it", async () => {
+    const world = makeWorld();
+    const now = Date.now();
+    const page = await world.db.insert("notes", { userId: A, title: "My own page", body: "x", createdAt: now, updatedAt: now });
+    await expect(run(recordings.undoSave, world.as(A), { noteId: page, taskIds: [] })).rejects.toThrow("no longer here");
+    expect(world.row(page)?.deletedAt).toBeUndefined();
+  });
+
+  test("only the save's own tasks go, even when the person's other tasks are passed", async () => {
+    const world = makeWorld();
+    const now = Date.now();
+    const other = await world.db.insert("tasks", { userId: A, title: "Made by hand", status: "todo", createdAt: now, updatedAt: now });
+    const saved = await run(recordings.saveSession, world.as(A), { title: "Standup", body: "x", tasks: [{ title: "Send the deck" }] });
+    const result = await run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: [...saved.taskIds, other] });
+    expect(result).toEqual({ success: true, removedTasks: 1 });
+    expect(world.row(saved.taskIds[0])?.deletedAt).toBeNumber();
+    expect(world.row(other)?.deletedAt).toBeUndefined();
+    // Undone once: a second Undo finds nothing to take back.
+    await expect(run(recordings.undoSave, world.as(A), saved)).rejects.toThrow("no longer here");
+  });
+
+  test("a page changed after the save, or a task already done, keeps everything and says why", async () => {
+    const world = makeWorld();
+    const edited = await run(recordings.saveSession, world.as(A), { title: "Edited", body: "x", tasks: [{ title: "One" }] });
+    const note = world.row(edited.noteId) as Row & { createdAt: number };
+    await world.db.patch(edited.noteId, { body: "x and more", updatedAt: note.createdAt + 60_000 });
+    expect(await run(recordings.undoSave, world.as(A), edited)).toEqual({ success: false, removedTasks: 0, kept: "pageChanged" });
+    expect(world.row(edited.noteId)?.deletedAt).toBeUndefined();
+    expect(world.row(edited.taskIds[0])?.deletedAt).toBeUndefined();
+
+    const done = await run(recordings.saveSession, world.as(A), { title: "Done", body: "x", tasks: [{ title: "Two" }] });
+    await world.db.patch(done.taskIds[0], { status: "done" });
+    expect(await run(recordings.undoSave, world.as(A), done)).toEqual({ success: false, removedTasks: 0, kept: "taskDone" });
+    expect(world.row(done.noteId)?.deletedAt).toBeUndefined();
+    expect(world.row(done.taskIds[0])?.deletedAt).toBeUndefined();
+  });
+});

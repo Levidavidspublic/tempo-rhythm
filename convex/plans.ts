@@ -228,10 +228,14 @@ export const createFromPreview = mutation({
   },
 });
 
-/** Takes a just-made plan back: the plan and its tasks are soft-deleted. Only for 5 minutes. */
+/**
+ * Takes a just-made plan back: the plan and its tasks are soft-deleted. Only for 5 minutes. When
+ * one of its sessions is already marked done, that is the person's own progress: nothing is
+ * removed and the answer says so (`kept: "sessionDone"`), so the screen can say it in words.
+ */
 export const undoCreate = mutation({
   args: { planId: v.id("studyPlans") },
-  returns: v.object({ removedTasks: v.number() }),
+  returns: v.object({ removedTasks: v.number(), kept: v.optional(v.literal("sessionDone")) }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const plan = await ownedPlan(ctx, user._id, args.planId);
@@ -241,15 +245,16 @@ export const undoCreate = mutation({
     if (now - plan.createdAt > UNDO_WINDOW_MS) {
       throw new Error("The 5 minutes to undo this plan have passed. You can still edit each session.");
     }
-    let removedTasks = 0;
+    const live: Doc<"tasks">[] = [];
     for (const taskId of plan.taskIds) {
       const task = await ctx.db.get(taskId);
       if (!task || task.userId !== user._id || task.deletedAt !== undefined) continue;
-      await ctx.db.patch(taskId, { deletedAt: now, updatedAt: now });
-      removedTasks += 1;
+      if (task.status === "done") return { removedTasks: 0, kept: "sessionDone" as const };
+      live.push(task);
     }
+    for (const task of live) await ctx.db.patch(task._id, { deletedAt: now, updatedAt: now });
     await ctx.db.patch(args.planId, { deletedAt: now, updatedAt: now });
-    return { removedTasks };
+    return { removedTasks: live.length };
   },
 });
 

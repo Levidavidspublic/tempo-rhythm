@@ -33,7 +33,8 @@ import { createTaskForUser } from "./tasks";
  *   start returns `{ ok: false, reason: "language" }` and the screen offers typing instead.
  * - `proposeFromTranscript` asks the runtime model for a title, a summary and up to 10 tasks. It
  *   only proposes: nothing is saved until the person accepts on the review screen and presses
- *   Save, which calls `saveSession`. That can be undone for 5 minutes (HARD_RULES §1, §6.2).
+ *   Save, which calls `saveSession`. That can be undone for 5 minutes (HARD_RULES §1, §6.2), and
+ *   the Undo removes only what that save made, as long as the person hasn't built on it since.
  * - The transcript is never stored by any function here, except inside the page body the person
  *   explicitly saves. No audio, transcript, token or provider body is ever logged.
  *
@@ -533,19 +534,29 @@ const SAVE_ERRORS = {
   undoMissing: "This page is no longer here to undo.",
 } as const;
 
+/**
+ * A write to the page this soon after the save is part of making it, not an edit. Later than this,
+ * Undo keeps the page (the person has added to it).
+ */
+const PAGE_EDIT_GRACE_MS = 5_000;
+
 function saveError(code: keyof typeof SAVE_ERRORS) {
   return new ConvexError({ code, message: SAVE_ERRORS[code] });
 }
 
 /**
  * Saves the reviewed recording: one page (the body the person saw and edited) and the tasks they
- * accepted. Undo with `undoSave` for 5 minutes.
+ * accepted. The save is recorded on a row of its own (`recordingSessions`, ended, zero length,
+ * empty day keys: it never counts against minutes or sessions) with the page and task ids, so
+ * `undoSave` can take back exactly these for 5 minutes. `lang` is the talk's language (default
+ * English).
  */
 export const saveSession = mutation({
   args: {
     title: v.string(),
     body: v.string(),
     tasks: v.array(v.object({ title: v.string(), minutes: v.optional(v.number()) })),
+    lang: v.optional(langValidator),
   },
   returns: v.object({ noteId: v.id("notes"), taskIds: v.array(v.id("tasks")), undoUntil: v.number() }),
   handler: async (ctx, args) => {
@@ -573,34 +584,73 @@ export const saveSession = mutation({
         }),
       );
     }
+    await ctx.db.insert("recordingSessions", {
+      userId: user._id,
+      status: "ended",
+      lang: args.lang ?? "en",
+      startedAt: now,
+      lastRenewalAt: now,
+      endedAt: now,
+      durationMs: 0,
+      // No day: a save is not a recording, so the minute and session counts never see it.
+      dateKey: "",
+      utcDateKey: "",
+      grants: 0,
+      savedNoteId: noteId,
+      savedTaskIds: taskIds,
+      createdAt: now,
+      updatedAt: now,
+    });
     return { noteId, taskIds, undoUntil: now + UNDO_WINDOW_MS };
   },
 });
 
 /**
- * Undo `saveSession` within 5 minutes: soft-deletes the page and the tasks it made. Owner-checked:
- * another person's ids look like missing ones and nothing of theirs is touched.
+ * Undo `saveSession` within 5 minutes: soft-deletes the page and the tasks that save made, found
+ * through the save's own record, never anything else. `taskIds` (what the screen's toast stands
+ * for) can only narrow it: a task the save didn't make is left alone. Owner-checked: another
+ * person's ids look like missing ones and nothing of theirs is touched.
+ *
+ * When the person has built on the save since, nothing is removed and the answer says why, so
+ * the screen can say it in words: the page changed after the first few seconds (`pageChanged`),
+ * or one of its tasks is already done (`taskDone`).
  */
 export const undoSave = mutation({
   args: { noteId: v.id("notes"), taskIds: v.array(v.id("tasks")) },
-  returns: v.object({ success: v.boolean(), removedTasks: v.number() }),
+  returns: v.object({
+    success: v.boolean(),
+    removedTasks: v.number(),
+    kept: v.optional(v.union(v.literal("pageChanged"), v.literal("taskDone"))),
+  }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     if (args.taskIds.length > SAVE_MAX_TASKS) throw saveError("tasks");
-    const note = await ctx.db.get(args.noteId);
-    if (!note || note.userId !== user._id || note.deletedAt !== undefined) throw saveError("undoMissing");
+    const receipts = await ctx.db
+      .query("recordingSessions")
+      .withIndex("by_userId_savedNoteId", (q) => q.eq("userId", user._id).eq("savedNoteId", args.noteId))
+      .take(2);
+    const receipt = receipts.find((row) => row.deletedAt === undefined);
+    const note = receipt ? await ctx.db.get(args.noteId) : null;
+    if (!receipt || !note || note.userId !== user._id || note.deletedAt !== undefined) {
+      throw saveError("undoMissing");
+    }
     const now = Date.now();
     if (now - note.createdAt > UNDO_WINDOW_MS) throw saveError("undoGone");
+    if (note.updatedAt - note.createdAt > PAGE_EDIT_GRACE_MS) {
+      return { success: false, removedTasks: 0, kept: "pageChanged" as const };
+    }
+    const named = new Set<string>(args.taskIds);
     const tasks: Doc<"tasks">[] = [];
-    for (const taskId of args.taskIds) {
+    for (const taskId of receipt.savedTaskIds ?? []) {
+      if (!named.has(taskId)) continue;
       const task = await ctx.db.get(taskId);
-      // Only tasks this person made in the same window; anything else is left as it is.
       if (!task || task.userId !== user._id || task.deletedAt !== undefined) continue;
-      if (now - task.createdAt > UNDO_WINDOW_MS) continue;
+      if (task.status === "done") return { success: false, removedTasks: 0, kept: "taskDone" as const };
       tasks.push(task);
     }
     await ctx.db.patch(note._id, { deletedAt: now, updatedAt: now });
     for (const task of tasks) await ctx.db.patch(task._id, { deletedAt: now, updatedAt: now });
+    await ctx.db.patch(receipt._id, { deletedAt: now, updatedAt: now });
     return { success: true, removedTasks: tasks.length };
   },
 });

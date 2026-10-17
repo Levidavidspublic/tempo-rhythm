@@ -370,10 +370,25 @@ export const createFromPreview = mutation({
   },
 });
 
-/** Undo `createFromPreview` within 5 minutes: removes the set and the page it made. */
+/**
+ * A write to a made page this soon after it was made is part of making it, not an edit. Later
+ * than this, `undoCreate` keeps the page (the person has added to it).
+ */
+const PAGE_EDIT_GRACE_MS = 5_000;
+
+/** What `undoCreate` did: took the set (and the page it made) back, or kept both, and why. */
+export type UndoCreateResult =
+  | { success: true; pageRemoved: boolean }
+  | { success: false; pageRemoved: false; kept: "pageChanged" };
+
+/**
+ * Undo `createFromPreview` within 5 minutes: removes the set and the page it made. When that page
+ * changed after its first few seconds, the person has added to it: nothing is removed and the
+ * answer says so (`kept: "pageChanged"`), so the screen can say it in words.
+ */
 export const undoCreate = mutation({
   args: { setId: v.id("studySets") },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<UndoCreateResult> => {
     const user = await requireUser(ctx);
     const set = await ctx.db.get(args.setId);
     if (!set || set.userId !== user._id || set.deletedAt !== undefined) {
@@ -383,16 +398,14 @@ export const undoCreate = mutation({
     if (now - set.createdAt > UNDO_WINDOW_MS) {
       throw new Error("The 5 minutes to undo this have passed.");
     }
-    await ctx.db.patch(set._id, { deletedAt: now, updatedAt: now });
-    let pageRemoved = false;
-    if (set.createdByTempo) {
-      const note = await ctx.db.get(set.noteId);
-      if (note && note.userId === user._id && note.deletedAt === undefined) {
-        await ctx.db.patch(note._id, { deletedAt: now, updatedAt: now });
-        pageRemoved = true;
-      }
+    const note = set.createdByTempo ? await ctx.db.get(set.noteId) : null;
+    const page = note && note.userId === user._id && note.deletedAt === undefined ? note : null;
+    if (page && page.updatedAt - set.createdAt > PAGE_EDIT_GRACE_MS) {
+      return { success: false, pageRemoved: false, kept: "pageChanged" };
     }
-    return { success: true, pageRemoved };
+    await ctx.db.patch(set._id, { deletedAt: now, updatedAt: now });
+    if (page) await ctx.db.patch(page._id, { deletedAt: now, updatedAt: now });
+    return { success: true, pageRemoved: page !== null };
   },
 });
 

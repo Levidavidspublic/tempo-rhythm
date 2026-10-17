@@ -9,6 +9,11 @@ import { v } from "convex/values";
  * given. It never holds audio, words, tokens or provider bodies. Audio goes from the browser
  * straight to Deepgram; the transcript lives in the browser until the person saves a page.
  *
+ * Each save (`saveSession`) is a row of its own, so its Undo removes only what that save made: the
+ * page and task ids (`savedNoteId`, `savedTaskIds`), with no words. A save row is `ended`, zero
+ * length, no tokens, and has empty day keys, so it never counts against anyone's minutes or
+ * sessions.
+ *
  * Lifecycle like every owned table: `userId`, `createdAt`, `updatedAt`, `deletedAt?`, `by_userId`.
  * Enrolled in account soft deletion (`lib/accountDeletion.ts`).
  */
@@ -34,6 +39,10 @@ export const recordingTables = {
     dateKey: v.string(),
     utcDateKey: v.string(),
     grants: v.number(),
+    /** Additive (whole-run review): the page a save made, so its Undo can find that save. */
+    savedNoteId: v.optional(v.id("notes")),
+    /** Additive (whole-run review): the tasks that save made; its Undo removes only these. */
+    savedTaskIds: v.optional(v.array(v.id("tasks"))),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
@@ -41,5 +50,6 @@ export const recordingTables = {
     .index("by_userId", ["userId"])
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_dateKey", ["userId", "dateKey"])
-    .index("by_utcDateKey", ["utcDateKey"]),
+    .index("by_utcDateKey", ["utcDateKey"])
+    .index("by_userId_savedNoteId", ["userId", "savedNoteId"]),
 };
