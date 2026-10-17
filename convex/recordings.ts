@@ -534,6 +534,7 @@ const SAVE_ERRORS = {
   undoMissing: "This page is no longer here to undo.",
   redoGone: "The 5 minutes to bring this back have passed.",
   redoMissing: "There is nothing here to bring back.",
+  accountChanged: "This recording belongs to the account that was signed in when it started, so nothing was changed here.",
 } as const;
 
 /**
@@ -544,6 +545,16 @@ const EDIT_GRACE_MS = 5_000;
 
 function saveError(code: keyof typeof SAVE_ERRORS) {
   return new ConvexError({ code, message: SAVE_ERRORS[code] });
+}
+
+/**
+ * `forUser` is the account the screen was opened for. When another account is signed in by the
+ * time the call runs (a sign-in on the same browser while the call was on its way), nothing is
+ * written. Optional, so older screens keep working as before.
+ */
+const forUserArg = v.optional(v.id("users"));
+function assertForUser(user: { _id: Id<"users"> }, forUser: Id<"users"> | undefined) {
+  if (forUser !== undefined && forUser !== user._id) throw saveError("accountChanged");
 }
 
 /**
@@ -559,10 +570,12 @@ export const saveSession = mutation({
     body: v.string(),
     tasks: v.array(v.object({ title: v.string(), minutes: v.optional(v.number()) })),
     lang: v.optional(langValidator),
+    forUser: forUserArg,
   },
   returns: v.object({ noteId: v.id("notes"), taskIds: v.array(v.id("tasks")), undoUntil: v.number() }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    assertForUser(user, args.forUser);
     const title = args.title.trim();
     if (title.length === 0 || title.length > TITLE_MAX) throw saveError("title");
     if (args.body.length > BODY_MAX) throw saveError("body");
@@ -620,7 +633,7 @@ export const saveSession = mutation({
  * (`removedDone`, how many).
  */
 export const undoSave = mutation({
-  args: { noteId: v.id("notes"), taskIds: v.array(v.id("tasks")) },
+  args: { noteId: v.id("notes"), taskIds: v.array(v.id("tasks")), forUser: forUserArg },
   returns: v.object({
     success: v.boolean(),
     removedTasks: v.number(),
@@ -630,6 +643,7 @@ export const undoSave = mutation({
   }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    assertForUser(user, args.forUser);
     if (args.taskIds.length > SAVE_MAX_TASKS) throw saveError("tasks");
     const receipts = await ctx.db
       .query("recordingSessions")
@@ -675,10 +689,11 @@ export const undoSave = mutation({
  * changes nothing.
  */
 export const redoUndo = mutation({
-  args: { noteId: v.id("notes") },
+  args: { noteId: v.id("notes"), forUser: forUserArg },
   returns: v.object({ success: v.boolean(), restoredTasks: v.number() }),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    assertForUser(user, args.forUser);
     const receipts = await ctx.db
       .query("recordingSessions")
       .withIndex("by_userId_savedNoteId", (q) => q.eq("userId", user._id).eq("savedNoteId", args.noteId))

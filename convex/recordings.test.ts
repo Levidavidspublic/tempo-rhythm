@@ -492,3 +492,51 @@ describe("Undo removes only what that save made (whole-run review)", () => {
     expect(world.row(saved.taskIds[0])?.deletedAt).toBe(long);
   });
 });
+
+describe("forUser: the account the screen was opened for", () => {
+  const code = async (promise: Promise<unknown>) => {
+    try {
+      await promise;
+    } catch (error) {
+      return (error as { data?: { code?: string } }).data?.code;
+    }
+    return "no error";
+  };
+
+  test("a save for another account writes nothing and throws accountChanged", async () => {
+    const world = makeWorld();
+    expect(
+      await code(run(recordings.saveSession, world.as(B), { title: "Standup", body: "x", tasks: [{ title: "One" }], forUser: A })),
+    ).toBe("accountChanged");
+    expect(world.rows("notes")).toHaveLength(0);
+    expect(world.rows("tasks")).toHaveLength(0);
+    expect(world.rows("recordingSessions")).toHaveLength(0);
+  });
+
+  test("Undo and Bring it back for another account change nothing and throw accountChanged", async () => {
+    const world = makeWorld();
+    const saved = await run(recordings.saveSession, world.as(A), { title: "Standup", body: "x", tasks: [{ title: "One" }], forUser: A });
+    expect(await code(run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: saved.taskIds, forUser: B }))).toBe("accountChanged");
+    expect(world.row(saved.noteId)?.deletedAt).toBeUndefined();
+    expect(world.row(saved.taskIds[0])?.deletedAt).toBeUndefined();
+    await run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: saved.taskIds, forUser: A });
+    expect(world.row(saved.noteId)?.deletedAt).toBeNumber();
+    expect(await code(run(recordings.redoUndo, world.as(A), { noteId: saved.noteId, forUser: B }))).toBe("accountChanged");
+    expect(world.row(saved.noteId)?.deletedAt).toBeNumber();
+    expect(await run(recordings.redoUndo, world.as(A), { noteId: saved.noteId, forUser: A })).toEqual({
+      success: true,
+      restoredTasks: 1,
+    });
+    expect(world.row(saved.noteId)?.deletedAt).toBeUndefined();
+  });
+
+  test("without forUser, save, Undo and Bring it back work as before", async () => {
+    const world = makeWorld();
+    const saved = await run(recordings.saveSession, world.as(A), { title: "Standup", body: "x", tasks: [{ title: "One" }] });
+    expect(await run(recordings.undoSave, world.as(A), { noteId: saved.noteId, taskIds: saved.taskIds })).toMatchObject({
+      success: true,
+      removedTasks: 1,
+    });
+    expect(await run(recordings.redoUndo, world.as(A), { noteId: saved.noteId })).toMatchObject({ success: true });
+  });
+});
