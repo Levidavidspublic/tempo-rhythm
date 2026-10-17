@@ -113,6 +113,8 @@ T3, T8, T9 and T10 are done (built, reviewed, fixed, shot at 390 / 1280 in light
 - **Two more on-purpose test changes from the whole-run review.** `recap_player.test.tsx` pinned the fallback to a network voice ("Remote"); it now expects no voice for a list with only network voices (`51a08ad`). `plans.test.ts` stored a made-up source set id; it now uses a real set, and a new test covers the made-up, someone else's and removed cases (`fdaab44`). Both tests were written in this run. `convex/lib/testFakeCtx.ts` (from before this run) gained one line, `take(n)` on the fake query, so `plans.list` can be bounded under test.
 - **Recording saves get rows of their own.** Undo has to know what a save made, and typed notes have no recording lease, so `saveSession` writes an ended, zero-length `recordingSessions` row with `savedNoteId` / `savedTaskIds` (new optional fields and one index on this run's table). Empty day keys keep it out of the minute budget and the 40-a-day count. EXTRAPOLATED.
 
+- **Undo follows HARD_RULES §1, not the "kept" rule (2026-10-17).** The whole-run fixes had made Undo refuse when the person changed an AI-made page or plan after the save ("kept"). A review pointed out that §1 asks for a one-click Undo of every AI mutation for at least 5 minutes, and HARD_RULES wins. Undo now always removes what that save made; when that also removes later changes, the toast says so and offers Bring it back for 5 minutes. This replaces the "kept" decision above.
+
 ## Needs Amit
 
 - `AT` Add the `convex-arch` label to the PR once the `convex-arch:` commits look right. Until then scope-guard is red on purpose.
