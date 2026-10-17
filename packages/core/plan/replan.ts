@@ -22,8 +22,10 @@
  * day's plan minutes within `minutesPerDay`. Starts tried: the session's own clock minute and
  * every `stepMinutes` mark.
  *
- * Sessions with no free start before the deadline come back in `unplaced`, so the screen can
- * offer the planner's ways out: a later date or longer days (`replanWaysOut`), or fewer sessions.
+ * A clashing session keeps its time (and its day's minutes) until it gets a new slot, so nothing
+ * lands on a session that ends up staying. Sessions with no free start before the deadline come
+ * back in `unplaced` and stay where they are, so the screen can offer the planner's ways out: a
+ * later date or longer days (`replanWaysOut`), or fewer sessions.
  */
 
 import { addDays, isLocalDate, type LocalDate, toDayNumber } from "./calendar-math";
@@ -96,7 +98,8 @@ export type ReplanResult = {
 export const DEFAULT_REPLAN_STEP = 15;
 export const DEFAULT_PREFERENCE_SLACK = 120;
 
-type Interval = readonly [start: number, end: number];
+/** An interval of minutes; `owner` is the session holding it, when it may give it up later. */
+type Interval = readonly [start: number, end: number, owner?: string];
 
 function checkWindow(window: ReplanInput["window"]): void {
   const { startMinute, endMinute } = window;
@@ -132,13 +135,22 @@ function absolute(date: LocalDate, minute: number): number {
 class DayIntervals {
   private readonly days = new Map<number, Interval[]>();
 
-  add(start: number, end: number): void {
+  add(start: number, end: number, owner?: string): void {
     if (!(end > start)) return;
     const last = Math.floor((end - 1) / DAY_MINUTES);
     for (let day = Math.floor(start / DAY_MINUTES); day <= last; day += 1) {
       const list = this.days.get(day);
-      if (list) list.push([start, end]);
-      else this.days.set(day, [[start, end]]);
+      if (list) list.push([start, end, owner]);
+      else this.days.set(day, [[start, end, owner]]);
+    }
+  }
+
+  /** Gives up the interval `owner` added at start–end. */
+  remove(start: number, end: number, owner: string): void {
+    const last = Math.floor((end - 1) / DAY_MINUTES);
+    for (let day = Math.floor(start / DAY_MINUTES); day <= last; day += 1) {
+      const list = this.days.get(day);
+      if (list) this.days.set(day, list.filter((interval) => interval[2] !== owner));
     }
   }
 
@@ -187,20 +199,24 @@ export function replanRest(input: ReplanInput): ReplanResult {
     );
 
   // Sessions that stay take their time and count towards their day; the others look for a slot.
+  // A clashing session stays where it is until it gets a new slot (and for good when it gets
+  // none), so until then its time is taken and counts towards its day too. A missed one's time
+  // is over, so nothing could land on it.
   const taken = new DayIntervals();
   const load = new Map<number, number>();
-  const toMove: Array<{ session: ReplanSession; reason: ReplanReason }> = [];
+  const addLoad = (day: number, minutes: number) => load.set(day, (load.get(day) ?? 0) + minutes);
+  const toMove: Array<{ session: ReplanSession; reason: ReplanReason; start: number }> = [];
   for (const { session, start } of ordered) {
     const end = start + session.minutes;
     if (session.status === "todo" && end <= nowAbs) {
-      toMove.push({ session, reason: "missed" });
-    } else if (session.status === "todo" && start >= nowAbs && busy.overlaps(start, end)) {
-      toMove.push({ session, reason: "clash" });
-    } else {
-      taken.add(start, end);
-      const day = toDayNumber(session.date);
-      load.set(day, (load.get(day) ?? 0) + session.minutes);
+      toMove.push({ session, reason: "missed", start });
+      continue;
     }
+    if (session.status === "todo" && start >= nowAbs && busy.overlaps(start, end)) {
+      toMove.push({ session, reason: "clash", start });
+    }
+    taken.add(start, end, session.id);
+    addLoad(toDayNumber(session.date), session.minutes);
   }
 
   const firstDay = toDayNumber(now.date);
@@ -239,16 +255,26 @@ export function replanRest(input: ReplanInput): ReplanResult {
 
   const moves: ReplanMove[] = [];
   const unplaced: ReplanUnplaced[] = [];
-  for (const { session, reason } of toMove) {
+  for (const { session, reason, start: was } of toMove) {
     const from = { date: session.date, startMinute: session.startMinute };
+    // A clashing session looks for a slot without its own time in the way.
+    const held = reason === "clash";
+    if (held) {
+      taken.remove(was, was + session.minutes, session.id);
+      addLoad(toDayNumber(session.date), -session.minutes);
+    }
     const slot = findSlot(session, true) ?? findSlot(session, false);
     if (!slot) {
+      if (held) {
+        taken.add(was, was + session.minutes, session.id);
+        addLoad(toDayNumber(session.date), session.minutes);
+      }
       unplaced.push({ id: session.id, reason, minutes: session.minutes, from });
       continue;
     }
     const start = slot.day * DAY_MINUTES + slot.minute;
-    taken.add(start, start + session.minutes);
-    load.set(slot.day, (load.get(slot.day) ?? 0) + session.minutes);
+    taken.add(start, start + session.minutes, session.id);
+    addLoad(slot.day, session.minutes);
     moves.push({
       id: session.id,
       reason,

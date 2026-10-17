@@ -227,6 +227,47 @@ describe("replanRest: where they go", () => {
     }
   });
 
+  test("nothing lands on a clashing session that finds no new time and stays where it is", () => {
+    // Only Wednesday is left (16:00 to 18:00). Busy 16:00 to 17:15 clashes with the hour-long
+    // session at 17:00, and the 45 free minutes after 17:15 can't hold it, so it stays.
+    const result = replanRest(
+      input({
+        sessions: [session("missed", "2026-10-19", "17:00"), session("clash", "2026-10-21", "17:00", 60)],
+        now: { date: "2026-10-20", minute: clock("21:30") },
+        deadline: "2026-10-22",
+        window: { startMinute: clock("16:00"), endMinute: clock("18:00") },
+        busy: [busy("2026-10-21", "16:00", 75)],
+      })
+    );
+    expect(result.unplaced.map((u) => [u.id, u.reason])).toEqual([
+      ["missed", "missed"],
+      ["clash", "clash"],
+    ]);
+    // 17:15 to 18:00 would have been free if the staying session's hour didn't count.
+    expect(result.moves).toEqual([]);
+  });
+
+  test("a clashing session's minutes count towards its day until it moves", () => {
+    // 45 minutes a day. Wednesday's session clashes; it keeps Wednesday's 45 until it has a new
+    // slot, so the missed one goes to Thursday, and the clashing one then moves within Wednesday.
+    const result = replanRest(
+      input({
+        sessions: [session("missed", "2026-10-19", "17:00"), session("clash", "2026-10-21", "17:00")],
+        now: { date: "2026-10-20", minute: clock("21:30") },
+        busy: [busy("2026-10-21", "17:30", 60)],
+        minutesPerDay: 45,
+      })
+    );
+    expect(slots(result)).toEqual([
+      ["missed", "2026-10-22", clock("17:00")],
+      ["clash", "2026-10-21", clock("16:45")],
+    ]);
+    for (const day of ["2026-10-21", "2026-10-22"]) {
+      const minutes = result.moves.filter((m) => m.to.date === day).reduce((sum, m) => sum + m.minutes, 0);
+      expect(minutes).toBeLessThanOrEqual(45);
+    }
+  });
+
   test("busy time across midnight blocks the early hours of the next day", () => {
     const result = replanRest(
       input({
