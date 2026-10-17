@@ -343,8 +343,8 @@ const replanTasks = [
 Object.assign(queries, {
   "plans.list": view === "plan-scheduler" || replanNoticeView ? [{ _id: "studyPlans:1", title: "Biology bagrut" }] : [],
   "plans.get": replanNoticeView
-    ? { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 10) }, tasks: replanTasks }
-    : { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 14) }, tasks: planTasks },
+    ? { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 10), taskIds: replanTasks.map((task) => task._id) }, tasks: replanTasks }
+    : { plan: { _id: "studyPlans:1", title: "Biology bagrut", deadline: addDays(today, 14), taskIds: planTasks.map((task) => task._id) }, tasks: planTasks },
   "calendar_events.listInRange": replanNoticeView
     ? []
     : [{ _id: "calendar_events:1", title: he ? "שיעור ביולוגיה" : "Biology lesson", startsAtMs: at(addDays(weekStart, 1), 17, 30) }],
