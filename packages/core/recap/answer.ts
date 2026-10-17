@@ -86,13 +86,24 @@ function bagOf(text: string): Set<string> {
 const has = (bag: Set<string>, term: string) => variants(term).some((form) => bag.has(form));
 
 /**
+ * A question counts its first 30 different words. A real question has far fewer; a pasted page
+ * would otherwise check thousands of words against every passage and freeze the screen.
+ */
+export const MAX_QUESTION_TERMS = 30;
+
+/** The question's words as scored and marked: each once, the first `MAX_QUESTION_TERMS` of them. */
+function askedTerms(question: string): string[] {
+  return [...new Set(terms(question))].slice(0, MAX_QUESTION_TERMS);
+}
+
+/**
  * How well each text answers the question, in the texts' order: for each of the question's words
- * found in a text, log(1 + texts / texts with that word), so rare words count for more than common
- * ones. Rounded to 3 places, so equal scores compare equal. All zeros when the question has no
- * real words. `answerFromPage` and `answerFromSet` both rank with it.
+ * (its first 30 different ones) found in a text, log(1 + texts / texts with that word), so rare
+ * words count for more than common ones. Rounded to 3 places, so equal scores compare equal. All
+ * zeros when the question has no real words. `answerFromPage` and `answerFromSet` both rank with it.
  */
 export function scoreTexts(texts: readonly string[], question: string): number[] {
-  const asked = [...new Set(terms(question))];
+  const asked = askedTerms(question);
   const bags = texts.map(bagOf);
   const docs = Math.max(1, bags.length);
   const weights = asked.map((term) => {
@@ -139,10 +150,11 @@ const QUOTE_WORD = /[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}]+)?/gu;
 
 /**
  * Cuts a quote into runs so the screen can mark the words that matched the question, by the same
- * rules as the scoring (stems, Hebrew prefix letters, points). The runs join back to the text.
+ * rules as the scoring (stems, Hebrew prefix letters, points, the first 30 different words). The
+ * runs join back to the text.
  */
 export function markQuote(text: string, question: string): QuoteRun[] {
-  const asked = [...new Set(terms(question))].map(variants);
+  const asked = askedTerms(question).map(variants);
   const runs: QuoteRun[] = [];
   let cursor = 0;
   if (asked.length > 0) {

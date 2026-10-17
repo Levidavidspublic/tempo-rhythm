@@ -18,6 +18,7 @@ import {
   type AskFrom,
   answerFromSet,
   markQuote,
+  type QuoteRun,
   readAskPage,
   type SetMatch,
   setPassages,
@@ -54,12 +55,18 @@ export function fromLabel(t: StudyT, from: AskFrom): ReactNode {
   });
 }
 
-/** A quote line with the words the question matched in <mark> (bold; never colour alone). */
-function marked(line: string, question: string): ReactNode {
-  return markQuote(line, question).map((run, at) =>
+/** A quote line's runs, the words the question matched in <mark> (bold; never colour alone). */
+function marked(runs: readonly QuoteRun[]): ReactNode {
+  return runs.map((run, at) =>
     run.match ? <mark key={at}>{run.text}</mark> : <Fragment key={at}>{run.text}</Fragment>
   );
 }
+
+/** A match with each of its lines cut into runs (`markQuote`) by the question as asked. */
+type MarkedMatch = SetMatch & { runs: QuoteRun[][] };
+
+/** The longest question the field takes: a long sentence, never a pasted page. */
+const MAX_QUESTION_CHARS = 300;
 
 /**
  * What was last asked, and how many times Find it was used. The answers sit in a wrapper keyed on
@@ -111,8 +118,15 @@ export function SetAsk({ block, version, page, online, t, onOpen, initialQuestio
   const body = page ? page.body : null;
   // Read once per page body, not once per question or per new `page` object.
   const reading = useMemo(() => (body ? readAskPage(body) : null), [body]);
-  const matches = useMemo(
-    () => (asked ? answerFromSet({ page: reading, items }, asked) : null),
+  // Searched and marked once per question asked, by its words: typing the next one redoes neither.
+  const matches = useMemo<MarkedMatch[] | null>(
+    () =>
+      asked
+        ? answerFromSet({ page: reading, items }, asked).map((match) => ({
+            ...match,
+            runs: match.lines.map((line) => markQuote(line, asked)),
+          }))
+        : null,
     [asked, reading, items]
   );
 
@@ -166,6 +180,7 @@ export function SetAsk({ block, version, page, online, t, onOpen, initialQuestio
                 value={question}
                 data-action="ask-set-input"
                 aria-describedby={`${id}-help`}
+                maxLength={MAX_QUESTION_CHARS}
                 onChange={(event) => setQuestion(event.currentTarget.value)}
               />
               <button
@@ -187,7 +202,7 @@ export function SetAsk({ block, version, page, online, t, onOpen, initialQuestio
           {matches && asked ? (
             // The live region stays; what's inside is new on each Find it (see AskState).
             <Fragment key={ask.count}>
-              <Answers matches={matches} asked={asked} where={where} page={page} t={t} />
+              <Answers matches={matches} where={where} page={page} t={t} />
             </Fragment>
           ) : null}
         </div>
@@ -198,13 +213,11 @@ export function SetAsk({ block, version, page, online, t, onOpen, initialQuestio
 
 function Answers({
   matches,
-  asked,
   where,
   page,
   t,
 }: {
-  matches: readonly SetMatch[];
-  asked: string;
+  matches: readonly MarkedMatch[];
   where: "page" | "loading" | "set";
   page: AskPage;
   t: StudyT;
@@ -218,9 +231,9 @@ function Answers({
             {matches.map((match) => (
               <li key={match.id} data-from={match.from.kind}>
                 <p className="tp-recap__from">{fromLabel(t, match.from)}</p>
-                {match.lines.map((line, at) => (
+                {match.runs.map((runs, at) => (
                   <p key={at} className="tp-study-ask__line" dir="auto">
-                    {marked(line, asked)}
+                    {marked(runs)}
                   </p>
                 ))}
               </li>

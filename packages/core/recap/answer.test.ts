@@ -74,6 +74,20 @@ describe("answerFromPage", () => {
     ].join("\n");
     expect(answerFromPage(he, "מה זה מטאפאזה?").map((m) => m.text)).toEqual(["פרופאזה, מטאפאזה ואנאפאזה."]);
   });
+  test("a question counts its first 30 different words, so a pasted page can't freeze the search", () => {
+    const filler = Array.from({ length: 30 }, (_, n) => `filler${n}`).join(" ");
+    expect(answerFromPage(PAGE, `${filler} membrane`)).toEqual([]);
+    expect(answerFromPage(PAGE, `membrane ${filler}`).map((m) => m.text)).toEqual([
+      "Osmosis: water moving across a membrane toward the saltier side.",
+    ]);
+    // A word said again counts once, so it doesn't push the others out.
+    expect(answerFromPage(PAGE, `${"membrane ".repeat(40)}${filler}`)).toHaveLength(1);
+    // The marks follow the same words as the scoring.
+    expect(markQuote("Water moving across a membrane", `${filler} membrane`).some((run) => run.match)).toBe(false);
+    expect(markQuote("Water moving across a membrane", `membrane ${filler}`).filter((run) => run.match)).toEqual([
+      { text: "membrane", match: true },
+    ]);
+  });
   test("nothing in common, or only question words, finds nothing", () => {
     expect(answerFromPage(PAGE, "photosynthesis")).toEqual([]);
     expect(answerFromPage(PAGE, "what is it?")).toEqual([]);

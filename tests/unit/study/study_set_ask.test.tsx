@@ -110,6 +110,9 @@ describe("Ask about this set, before asking", () => {
     expect(results(markup)).toBe("");
     expect(primaries(markup)).toBe(0);
   });
+  test("the question takes at most 300 characters, so a pasted page can't freeze the screen", () => {
+    expect(ask({ initialQuestion: "" })).toMatch(/<input [^>]*data-action="ask-set-input"[^>]* maxLength="300"/);
+  });
   test("signed out, loading or gone: the set isn't here, so neither is Ask", () => {
     expect(view({ signedOut: true }, deckData)).not.toContain("SetAsk");
     expect(html(createElement(StudySetView, { data: undefined, online: true, now: 0, onRecord: noop, onRemove: () => {} }))).not.toContain("SetAsk");
