@@ -76,6 +76,7 @@ const nextId = (prefix: string) => {
 export function RecordSession({
   online = true,
   signedOut = false,
+  canSend = !signedOut,
 }: {
   online?: boolean;
   /**
@@ -83,6 +84,12 @@ export function RecordSession({
    * notice says so, and Save waits for the sign-in the way it waits for the connection.
    */
   signedOut?: boolean;
+  /**
+   * Whether the person this screen opened for is signed in right now (RecordKeeper). False while
+   * the session is being checked again or signed out: Save waits, and Undo and Bring it back send
+   * nothing and say so, so nothing is written before the account is known to be the same one.
+   */
+  canSend?: boolean;
 } = {}) {
   const { lang: uiLang } = useLocale();
   const copy = recordCopy(uiLang);
@@ -260,7 +267,7 @@ export function RecordSession({
       setTitleMissing(true);
       return;
     }
-    if (!online || signedOut) {
+    if (!online || !canSend) {
       setHeld(true);
       return;
     }
@@ -293,21 +300,23 @@ export function RecordSession({
     }
   };
 
-  // A waiting save goes ahead by itself once the browser is back online (and signed in), while
-  // review is open.
+  // A waiting save goes ahead by itself once the browser is back online and the same person is
+  // signed in again, while review is open.
   const saveRef = useRef(save);
   saveRef.current = save;
   useEffect(() => {
     if (!held) return;
     if (step !== "review") setHeld(false);
-    else if (online && !signedOut) void saveRef.current();
-  }, [online, signedOut, held, step]);
+    else if (online && canSend) void saveRef.current();
+  }, [online, canSend, held, step]);
 
   // Offline, Undo and Bring it back send nothing (Convex would hold them and the toast would stay
-  // busy): the throw keeps the toast open with its error line, which says so in words.
+  // busy): the throw keeps the toast open with its error line, which says so in words. Signed out
+  // (or while the session is checked again) they send nothing either, and the line says that.
   const undo = async () => {
     if (!saved) return;
     if (!online) throw new Error("offline");
+    if (!canSend) throw new Error("signedOut");
     const result = await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds });
     setSaved(null);
     setUndone(true);
@@ -321,6 +330,7 @@ export function RecordSession({
   const bringItBack = async () => {
     if (!bringBack) return;
     if (!online) throw new Error("offline");
+    if (!canSend) throw new Error("signedOut");
     await redoUndo({ noteId: bringBack.saved.noteId });
     reviewRun.current += 1;
     setProposing(false);
@@ -438,7 +448,7 @@ export function RecordSession({
           saving={saving}
           saveError={saveError}
           waiting={held || (saving && !online)}
-          waitingFor={signedOut ? "signIn" : "online"}
+          waitingFor={signedOut || (online && !canSend) ? "signIn" : "online"}
           titleMissing={titleMissing}
           onSave={() => void save()}
           onBack={() => {
@@ -471,12 +481,12 @@ export function RecordSession({
           onUndo={undo}
           onClose={() => setToastOpen(false)}
           labels={
-            online
+            online && canSend
               ? undefined
               : {
                   action: translate(uiLang, "you.toast.undo"),
                   sub: translate(uiLang, "you.toast.sub"),
-                  error: copy("rec.offline.undo"),
+                  error: copy(online ? "rec.signedOut.undo" : "rec.offline.undo"),
                 }
           }
         />
@@ -492,7 +502,7 @@ export function RecordSession({
           labels={{
             action: copy("rec.bringBack"),
             sub: copy("rec.bringBackSub"),
-            error: copy(online ? "rec.bringBackError" : "rec.offline.bringBack"),
+            error: copy(!online ? "rec.offline.bringBack" : canSend ? "rec.bringBackError" : "rec.signedOut.bringBack"),
           }}
         />
       ) : null}
@@ -517,23 +527,45 @@ export function RecordHead({ copy }: { copy: RecordCopy }) {
 /**
  * Keeps RecordSession mounted once the person was signed in. Before that it draws `before`
  * (RecordScreen's skeletons or sign-in state). After it, a session that reads "loading" again (the
- * profile read resubscribing) is still ready, and one that reads signed out (a token refresh that
- * failed) keeps the screen, with a notice: unmounting it would lose the live words, typed notes,
- * chosen rows and any waiting save, and none of that can be recovered (audio is never stored).
+ * profile read resubscribing) keeps the screen, and one that reads signed out (a token refresh that
+ * failed) keeps it with a notice: unmounting it would lose the live words, typed notes, chosen rows
+ * and any waiting save, and none of that can be recovered (audio is never stored).
+ *
+ * It remembers whose screen it is (`accountId` at the first "ready"). Saving, a waiting save, Undo
+ * and Bring it back go ahead only while that same account reads "ready". When "ready" comes back
+ * with a different account (someone else signed in on this browser, in any tab), the screen starts
+ * over: the other person's words, notes, rows and waiting save are dropped, never shown or saved.
  */
 export function RecordKeeper({
   signedIn,
+  accountId,
   online,
   before,
 }: {
   signedIn: "loading" | "ready" | "signedOut";
+  /** The signed-in account's id (`users.getProfile`'s `_id`); null when there is none yet. */
+  accountId?: string | null;
   online: boolean;
   before: (state: "loading" | "signedOut") => ReactNode;
 }) {
-  const [started, setStarted] = useState(signedIn === "ready");
-  if (signedIn === "ready" && !started) setStarted(true);
-  if (!started && signedIn !== "ready") return <>{before(signedIn)}</>;
-  return <RecordSession online={online} signedOut={signedIn === "signedOut"} />;
+  const [owner, setOwner] = useState<{ id: string | null | undefined; run: number } | null>(
+    signedIn === "ready" ? { id: accountId, run: 0 } : null,
+  );
+  let current = owner;
+  if (signedIn === "ready" && (current === null || current.id !== accountId)) {
+    current = { id: accountId, run: current === null ? 0 : current.run + 1 };
+    setOwner(current);
+  }
+  if (current === null) return <>{before(signedIn === "ready" ? "loading" : signedIn)}</>;
+  const canSend = signedIn === "ready" && accountId === current.id;
+  return (
+    <RecordSession
+      key={current.run}
+      online={online}
+      signedOut={signedIn === "signedOut"}
+      canSend={canSend}
+    />
+  );
 }
 
 /** Signed out after the screen was ready: the notes stay, and signing in opens in a new tab. */

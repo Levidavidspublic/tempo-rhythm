@@ -60,6 +60,7 @@ function installModuleMocks() {
       redoUndo: calls.redoUndo,
     }),
     useRecordingLease: () => ({ startLease: calls.start, renewLease: calls.renew, stopLease: calls.stop, grant: calls.grant }),
+    useRecordingAccount: () => null,
   }));
   mock.module(localeProvider, () => ({
     useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: MessageKey) => translate("en", key) }),
@@ -569,5 +570,106 @@ describe("Bring it back offers the save's own Undo again", () => {
     });
     await clickButton(view, "Bring it back");
     expect(queryByTag(view, "BUTTON", "Undo")).toBeNull();
+  });
+});
+
+// Review (privacy): RecordKeeper knows whose screen it is. Nothing is sent while the session is
+// checked again, and a different account signing in on this browser never gets the first person's
+// words, rows or waiting save.
+async function renderKeeperAs(signedIn: "loading" | "ready" | "signedOut", accountId: string | null, online = true) {
+  useTestDom(documentNode);
+  if (!host) {
+    host = documentNode.createElement("div");
+    documentNode.body?.appendChild(host);
+    root = createRoot(host as unknown as HTMLElement);
+  }
+  await act(async () => {
+    root?.render(
+      createElement(RecordKeeper, {
+        signedIn,
+        accountId,
+        online,
+        before: (state: string) => createElement("p", { "data-before": state }, `before:${state}`),
+      }),
+    );
+  });
+  return host as TestNode;
+}
+
+describe("RecordKeeper: the same person only", () => {
+  test("ready → loading: Save sends nothing and no notice appears; ready again (same account) sends it once", async () => {
+    let view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    view = await renderKeeperAs("loading", null);
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    expect(view.textContent).not.toContain("You're signed out.");
+    view = await renderKeeperAs("ready", "users:a");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+    view = await renderKeeperAs("ready", "users:a");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+  });
+
+  test("ready (A) → signed out → ready (B): nothing is sent and A's words are gone", async () => {
+    let view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    expect(view.textContent).toContain("Send the deck to Dana by Friday");
+    view = await renderKeeperAs("signedOut", null);
+    await clickButton(view, "Save page and tasks");
+    view = await renderKeeperAs("loading", null);
+    view = await renderKeeperAs("ready", "users:b");
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    expect(view.textContent).not.toContain("Send the deck to Dana by Friday");
+    expect(view.textContent).not.toContain("We met about the launch");
+    expect(queryByTag(view, "BUTTON", "Save page and tasks")).toBeNull();
+    expect(findByTag(view, "BUTTON", "Type or paste notes")).toBeTruthy();
+    expect(view.textContent).not.toContain("You're signed out.");
+    // B's own screen works, and stays with B.
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+  });
+
+  test("ready (A) → signed out → ready (A): the waiting save goes", async () => {
+    let view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    view = await renderKeeperAs("signedOut", null);
+    await clickButton(view, "Save page and tasks");
+    expect(calls.saveSession).not.toHaveBeenCalled();
+    view = await renderKeeperAs("ready", "users:a");
+    expect(calls.saveSession).toHaveBeenCalledTimes(1);
+    expect(view.textContent).toContain("Page saved.");
+  });
+});
+
+describe("RecordKeeper: Undo and Bring it back while signed out", () => {
+  test("signed out, Undo sends nothing and the toast says so; signed in again, one click undoes", async () => {
+    let view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    view = await renderKeeperAs("signedOut", null);
+    await clickButton(view, "Undo");
+    expect(calls.undoSave).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("You're not signed in right now, so nothing was undone.");
+    view = await renderKeeperAs("ready", "users:a");
+    await clickButton(view, "Undo");
+    expect(calls.undoSave).toHaveBeenCalledTimes(1);
+  });
+
+  test("signed out, Bring it back sends nothing and says so", async () => {
+    let view = await renderKeeperAs("ready", "users:a");
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    calls.undoSave.mockImplementationOnce(async () => ({
+      success: true,
+      removedTasks: 1,
+      removedEdits: true,
+      redoUntil: Date.now() + 5 * 60_000,
+    }));
+    await clickButton(view, "Undo");
+    view = await renderKeeperAs("signedOut", null);
+    await clickButton(view, "Bring it back");
+    expect(calls.redoUndo).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("You're not signed in right now, so nothing came back.");
   });
 });

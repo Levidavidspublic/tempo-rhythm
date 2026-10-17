@@ -30,3 +30,14 @@ export function useRecordingLease() {
     grant: convexReact.useAction(api.recordings.grant),
   };
 }
+
+/**
+ * The signed-in account's id, from the same profile read as useSignedIn (Convex shares the one
+ * subscription); null while signed out or still loading. RecordKeeper keeps a screen to the
+ * account it opened with.
+ */
+export function useRecordingAccount(): string | null {
+  const { isAuthenticated } = convexReact.useConvexAuth();
+  const profile = convexReact.useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  return profile?._id ?? null;
+}
