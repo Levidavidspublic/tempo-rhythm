@@ -2,14 +2,15 @@
  * ReplanPanel (kitchen F-07, "Re-plan the rest") mounted in the small TestNode DOM
  * (tests/unit/record/testDom; there is no Testing Library here): what changes over time and across
  * renders, which static markup can't show. The plan screen's backend is one module of its own
- * (planApi.ts); it is mocked here, faithfully, and put back after this file.
+ * (planApi.ts); it and the locale (for the Undo toast's words) are mocked here, faithfully, and put
+ * back after this file.
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, setSystemTime, test } from "bun:test";
 import { act, createElement, createRef } from "../../../apps/web/node_modules/react";
 import { createRoot, type Root } from "../../../apps/web/node_modules/react-dom/client";
 import { localSlotToMs } from "../../../apps/web/components/calendar/gridData";
 import type { BusyWindows } from "../../../apps/web/components/calendar/plan/busyWindows";
-import { LocaleProvider } from "../../../apps/web/components/providers/LocaleProvider";
+import { type MessageKey, translate } from "../../../apps/web/lib/i18n";
 import { sameReplan } from "../../../apps/web/components/calendar/plan/replanForm";
 import { findAll, findByTag, installTestDom, type TestNode, useTestDom } from "../record/testDom";
 
@@ -17,7 +18,9 @@ const documentNode = installTestDom();
 
 const webDir = `${process.cwd()}/apps/web`;
 const planApi = Bun.resolveSync("./components/calendar/plan/planApi", webDir);
+const localeProvider = Bun.resolveSync("@/components/providers/LocaleProvider", webDir);
 let previous: Record<string, unknown> = {};
+let previousLocale: Record<string, unknown> = {};
 
 const MIN = 60_000;
 const at = (date: string, hour: number, minute = 0) => localSlotToMs(date, hour * 60 + minute);
@@ -45,15 +48,22 @@ function installModuleMocks() {
     },
     useReplanActions: () => ({ replan: calls.replan, undoReplan: calls.undoReplan }),
   }));
+  mock.module(localeProvider, () => ({
+    ...previousLocale,
+    LocaleProvider: ({ children }: { children: unknown }) => children,
+    useLocale: () => ({ lang: "en", dir: "ltr", setLang() {}, t: (key: MessageKey) => translate("en", key) }),
+  }));
 }
 
 previous = { ...(await import(planApi)) };
+previousLocale = { ...(await import(localeProvider)) };
 installModuleMocks();
 const { ReplanArea } = await import("../../../apps/web/components/calendar/plan/ReplanPanel?replan-dom");
 
 beforeAll(installModuleMocks);
 afterAll(() => {
   mock.module(planApi, () => previous);
+  mock.module(localeProvider, () => previousLocale);
 });
 
 const task = (id: string, title: string, date: string, hour: number, over: Partial<SavedTask> = {}): SavedTask => ({
@@ -84,7 +94,7 @@ const headingRef = createRef<HTMLHeadingElement>();
 /** The re-plan area as the plan screen draws it, under the page's heading. */
 const panel = ({ planId, lang = "en" }: PanelProps) =>
   createElement(
-    LocaleProvider,
+    "div",
     null,
     createElement("h1", { ref: headingRef, tabIndex: -1 }, "Plan back from a deadline"),
     createElement(ReplanArea, { planId: planId as never, lang, headingRef })
