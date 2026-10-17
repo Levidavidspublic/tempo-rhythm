@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 import {
   getCalendarRangeMs,
   getEventsInRange,
+  getMonthGridRangeMs,
   parseDateInputValue,
   type CalendarEvent,
 } from "../../apps/web/lib/calendar/date-math";
+import { addDays, monthMatrix } from "../../packages/core/plan/calendar-math";
 
 const dayMs = 24 * 60 * 60 * 1000;
 
@@ -62,6 +64,32 @@ describe("calendar date math", () => {
 
     expect(new Date(range.startMs)).toEqual(new Date(2026, 11, 1, 0, 0, 0, 0));
     expect(new Date(range.endMs)).toEqual(new Date(2027, 0, 1, 0, 0, 0, 0));
+  });
+
+  test("month grid range covers every one of the 42 cells the grid draws", () => {
+    const at = (d: string) => {
+      const [y, m, day] = d.split("-").map(Number);
+      return new Date(y!, m! - 1, day!).getTime();
+    };
+    for (const weekStartsOn of [0, 1] as const) {
+      for (const [year, month] of [
+        [2026, 10],
+        [2026, 8],
+        [2026, 12],
+        [2027, 2],
+      ] as const) {
+        const cells = monthMatrix(year, month, { weekStartsOn }).flat();
+        const range = getMonthGridRangeMs(new Date(year, month - 1, 17, 15), weekStartsOn);
+        expect(range.startMs).toBe(at(cells[0]!.date));
+        expect(range.endMs).toBe(at(addDays(cells[41]!.date, 1)));
+      }
+    }
+    // October 2026, Monday first: 28 Sep up to (not including) 9 Nov.
+    const oct = getMonthGridRangeMs(new Date(2026, 9, 1), 1);
+    expect(new Date(oct.startMs)).toEqual(new Date(2026, 8, 28));
+    expect(new Date(oct.endMs)).toEqual(new Date(2026, 10, 9));
+    // The plain month range is unchanged for its other callers.
+    expect(new Date(getCalendarRangeMs("month", new Date(2026, 9, 1)).startMs)).toEqual(new Date(2026, 9, 1));
   });
 
   test("incomplete date input returns null instead of throwing during editing", () => {

@@ -104,6 +104,9 @@ export const NOTE_CHILD_TABLES = [
   "pageOperations",
   "pageOperationPayloads",
   "pageProposals",
+  // Study sets (kitchen T3) point at the page holding their block; convex/study.ts reads every
+  // set through requireLivePage, so a deleted page or account hides its sets at once.
+  "studySets",
 ] as const satisfies readonly TableNames[];
 
 /**

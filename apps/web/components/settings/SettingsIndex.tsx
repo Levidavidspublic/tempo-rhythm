@@ -13,6 +13,7 @@ const PAGES: readonly { href: string; icon: TpIconName; label: MessageKey; sub: 
   { href: "/settings/privacy", icon: "shield", label: "set.nav.privacy", sub: "set.privacy.sub" },
   { href: "/settings/memory", icon: "memory", label: "nav.memory", sub: "set.nav.memorySub" },
   { href: "/settings/nags", icon: "nag", label: "nav.nags", sub: "set.nav.nagsSub" },
+  { href: "/settings/reminders", icon: "bell", label: "rem.nav", sub: "rem.navSub" },
   { href: "/billing", icon: "card", label: "set.nav.billing", sub: "set.billing.sub" },
   { href: "/notifications", icon: "bell", label: "set.nav.notif", sub: "set.nav.notifSub" },
   { href: "/ask-founder", icon: "mail", label: "set.nav.founder", sub: "set.nav.founderSub" },

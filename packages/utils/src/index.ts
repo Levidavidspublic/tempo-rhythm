@@ -36,6 +36,8 @@ export {
   type ValidBlockSegment,
 } from "./blocks";
 
+export * from "./study-blocks";
+
 export {
   PAGE_TEXT_LIMITS,
   type PageTextOptions,

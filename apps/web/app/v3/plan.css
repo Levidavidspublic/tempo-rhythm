@@ -1,0 +1,125 @@
+/* Kitchen T8: the week grid (WeekGrid, ItemMover) and "Plan back from a deadline". Layout only;
+   colour, type, spacing and radius come from tokens. Placement is data: --top, --height,
+   --lane and --lanes on each item, in grid rows (see packages/core/plan/schedule.ts). */
+
+/* WeekGrid */
+/* --tp-sched-head: the sticky day names' height (one line of the day number plus its padding). */
+.tp-sched {
+  --tp-sched-slot: var(--tp-space-8); --tp-sched-head: calc(var(--tp-text-lg) * var(--tp-leading-body) + var(--tp-space-1) * 2);
+  display: grid; gap: var(--tp-space-3); min-width: 0;
+}
+.tp-sched__scroll {
+  overflow: auto; overscroll-behavior: contain; max-block-size: min(70vh, calc(var(--tp-space-20) * 8));
+  border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); background: var(--tp-paper);
+  /* Keyboard focus never ends up under the sticky day names (WCAG 2.4.11): an item that Tab or
+     Shift+Tab scrolls into view lands below them, with room for its ring. The calendar's Week
+     view is this same grid. The other three sides keep room for the ring too: an item scrolled in
+     at the bottom or the far side of a phone's two days showed less than half of it (a11y-walk). */
+  scroll-padding-block-start: calc(var(--tp-sched-head) + var(--tp-space-2));
+  scroll-padding-block-end: var(--tp-space-2); scroll-padding-inline: var(--tp-space-2);
+}
+.tp-sched__scroll:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; }
+.tp-sched__grid {
+  display: grid; grid-template-columns: var(--tp-space-16) repeat(7, minmax(calc(var(--tp-space-20) + var(--tp-space-8)), 1fr));
+  grid-template-rows: repeat(5, auto); column-gap: var(--tp-space-1); padding: var(--tp-space-2);
+}
+/* On a phone, two overlapping items share a day in lanes: wider days keep each lane's time and
+   title readable (about 2 days in view; the grid scrolls sideways inside itself). */
+@media (max-width: 47.99rem) {
+  .tp-sched__grid { grid-template-columns: var(--tp-space-16) repeat(7, minmax(calc(var(--tp-space-20) * 1.75), 1fr)); }
+}
+.tp-sched__gutter, .tp-sched__col { grid-row: 1 / span 5; display: grid; grid-template-rows: subgrid; row-gap: var(--tp-space-1); min-width: 0; }
+.tp-sched__col.tp-week__col { min-height: 0; gap: var(--tp-space-1); padding: var(--tp-space-1); }
+.tp-sched__allday-label { align-self: center; font-size: var(--tp-text-xs); text-align: end; padding-inline-end: var(--tp-space-3); }
+.tp-sched__hours { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-rows: calc(var(--tp-sched-slot) * var(--per-hour)); }
+.tp-sched__allday { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); align-content: start; }
+.tp-sched__allday-item { padding: var(--tp-space-1) var(--tp-space-2); }
+.tp-sched__hidden { margin: 0; min-block-size: var(--tp-space-4); font-size: var(--tp-text-xs); }
+.tp-sched__body {
+  position: relative; list-style: none; margin: 0; padding: 0; block-size: calc(var(--tp-sched-slot) * var(--slots));
+  border-radius: var(--tp-radius-md); background-color: var(--tp-paper);
+  /* Not decoration (anti-slop R-01 purpose): a 1 px hairline per hour, the grid's time rules. */
+  background-image: repeating-linear-gradient(180deg, var(--tp-line) 0 1px, transparent 1px calc(var(--tp-sched-slot) * var(--per-hour)));
+}
+.tp-sched__slot {
+  position: absolute; padding: 1px;
+  inset-block-start: calc(var(--top) * var(--tp-sched-slot)); block-size: calc(var(--height) * var(--tp-sched-slot));
+  inset-inline-start: calc(var(--lane) * 100% / var(--lanes)); inline-size: calc(100% / var(--lanes));
+}
+.tp-sched__item {
+  inline-size: 100%; block-size: 100%; min-block-size: var(--tp-space-6); overflow: hidden; align-content: start;
+  padding: var(--tp-space-1) var(--tp-space-2); border-block: 0; border-inline-end: 0;
+  font: inherit; color: var(--tp-ink); text-align: start; cursor: pointer;
+}
+.tp-sched__item[aria-expanded="true"] { box-shadow: inset 0 0 0 2px var(--tp-ink); }
+.tp-sched__item:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 1px; position: relative; z-index: 2; }
+@media (hover: hover) { .tp-sched__item:hover { background: var(--tp-hover); } }
+@media (pointer: coarse) {
+  .tp-sched { --tp-sched-slot: var(--tp-touch); }
+  .tp-sched__item { min-block-size: var(--tp-touch); }
+}
+.tp-sched__now {
+  position: absolute; inset-inline: 0; inset-block-start: calc(var(--top) * var(--tp-sched-slot)); z-index: 1;
+  border-top: 2px solid var(--tp-ink); pointer-events: none; font-size: var(--tp-text-xs); font-weight: 600;
+}
+.tp-sched__now > span {
+  position: absolute; inset-inline-start: 0; inset-block-start: calc(-1 * var(--tp-space-3));
+  padding: 0 var(--tp-space-1); border-radius: var(--tp-radius-sm); background: var(--tp-ink); color: var(--tp-paper);
+}
+.tp-sched__clashes { margin: 0; padding-inline-start: var(--tp-space-4); display: grid; gap: var(--tp-space-1); }
+
+/* ItemMover */
+.tp-sched__mover { display: grid; gap: var(--tp-space-3); }
+.tp-sched__mover-head { display: flex; align-items: center; gap: var(--tp-space-2); }
+.tp-sched__mover-title { flex: 1 1 auto; min-width: 0; margin: 0; font-size: var(--tp-text-lg); overflow-wrap: anywhere; }
+.tp-sched__mover-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tp-sched__pick { display: grid; gap: var(--tp-space-2); max-inline-size: calc(var(--tp-space-20) * 6); }
+.tp-sched__agenda { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-2); }
+.tp-sched__agenda-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); font-size: var(--tp-text-sm); }
+
+/* Plan back from a deadline */
+.tp-plan { display: grid; gap: var(--tp-space-8); min-width: 0; }
+/* Date, time and number fields: Tab walks their inner parts (day, month, year, then the picker
+   button), and Chromium drops :focus-visible and even :focus on the field while its picker button
+   has focus, so the ring follows :focus-within here (R-32). */
+:is(.tp-plan, .cal-screen) .tp-input:is([type="date"], [type="time"], [type="number"]):is(:focus, :focus-within) {
+  outline: var(--tp-focus-w) solid var(--tp-accent);
+  outline-offset: var(--tp-focus-gap);
+}
+.tp-plan__form { display: grid; gap: var(--tp-space-4); }
+.tp-plan__row { display: grid; gap: var(--tp-space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--tp-space-20) * 2)), 1fr)); }
+.tp-plan__days { margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: 0 var(--tp-space-4); }
+.tp-plan__days legend { padding: 0; margin-block-end: var(--tp-space-1); }
+.tp-plan__preview { display: grid; gap: var(--tp-space-4); }
+.tp-plan__week { display: grid; gap: var(--tp-space-2); }
+.tp-plan__week-title { margin: 0; font-size: var(--tp-text-md); font-weight: 600; }
+.tp-plan__day { display: grid; gap: var(--tp-space-1); }
+.tp-plan__day-title { margin: 0; font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-plan__sessions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); }
+.tp-plan__session { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); font-size: var(--tp-text-sm); }
+.tp-plan__ways { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.tp-plan__way { display: grid; gap: var(--tp-space-1); justify-items: start; }
+.tp-plan__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-3); }
+
+/* 44 px touch targets on touch screens. */
+@media (pointer: coarse) {
+  .tp-sched .tp-btn, .tp-plan .tp-btn { min-height: var(--tp-touch); }
+  .tp-sched .tp-btn--icon, .tp-plan .tp-btn--icon { min-width: var(--tp-touch); }
+}
+
+/* Re-plan the rest (ReplanPanel): a quiet notice, then the preview of new times. */
+.tp-plan__replan { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-plan__replan-action { margin-block-start: var(--tp-space-2); }
+.tp-plan__replan-preview { display: grid; gap: var(--tp-space-3); }
+.tp-plan__replan-preview > .tp-section__title { margin: 0; }
+.tp-plan__moves .tp-plan__session { align-items: baseline; }
+/* The re-plan's Undo toast is fixed to the window; its holder takes no row in the screen's grid. */
+.tp-plan__toast { display: contents; }
+
+/* WeekGrid scrolls to the week's first item: the day names (and the corner over the hours) stay
+   in view on top while the hours scroll under them. */
+.tp-sched__col > .tp-week__head, .tp-sched__corner {
+  position: sticky; inset-block-start: 0; z-index: 3; background: inherit;
+  min-block-size: var(--tp-sched-head);
+}
+.tp-sched__corner { background: var(--tp-paper); }

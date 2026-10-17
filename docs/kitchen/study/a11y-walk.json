@@ -1,0 +1,3568 @@
+{
+ "generated": "2026-10-17T06:21:49.254Z",
+ "runs": 260,
+ "views": 66,
+ "totals": {
+  "unreached": {
+   "findings": 0,
+   "unique": 0,
+   "runs": 0
+  },
+  "noIndicator": {
+   "findings": 4,
+   "unique": 2,
+   "runs": 4
+  },
+  "hidden": {
+   "findings": 0,
+   "unique": 0,
+   "runs": 0
+  },
+  "trap": {
+   "findings": 0,
+   "unique": 0,
+   "runs": 0
+  },
+  "reducedMotion": {
+   "findings": 0,
+   "unique": 0,
+   "runs": 0
+  }
+ },
+ "unique": {
+  "unreached": [],
+  "noIndicator": [
+   "page-menu-turn-into div.cm-content.cm-lineWrapping[role=textbox] \"Note body\"",
+   "page-menu-turn-into div.cm-content.cm-lineWrapping[role=textbox] \"גוף הפתק\""
+  ],
+  "hidden": [],
+  "trap": [],
+  "reducedMotion": []
+ },
+ "byView": {
+  "plan-guided": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-guided-edit": {
+   "390": {
+    "en": {
+     "stops": 71,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 71,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 71,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 71,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-guided-accepted": {
+   "390": {
+    "en": {
+     "stops": 43,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 43,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 43,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 43,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-replan-notice": {
+   "390": {
+    "en": {
+     "stops": 21,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 20,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 21,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 20,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "plan-replan-preview": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub": {
+   "390": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-empty": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-truncated": {
+   "390": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-loading": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-signedout": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-hub-offline": {
+   "390": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 9,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-badset": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-quizset": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-loading": {
+   "390": {
+    "en": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 0,
+     "end": "no stops",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-notfound": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-new-nofrom": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-done": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2.tp-state__title \"That's the session\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2.tp-state__title \"זה הסבב\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2.tp-state__title \"That's the session\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2.tp-state__title \"זה הסבב\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-typed": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-review-typed-checked": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "fieldset.tp-study-grades \"How well did you know it?\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "fieldset.tp-study-grades \"כמה טוב ידעתם?\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "fieldset.tp-study-grades \"How well did you know it?\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "fieldset.tp-study-grades \"כמה טוב ידעתם?\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-deck": {
+   "390": {
+    "en": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-quiz": {
+   "390": {
+    "en": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "study-quiz-feedback": {
+   "390": {
+    "en": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-test": {
+   "390": {
+    "en": {
+     "stops": 12,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 12,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 12,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 12,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "study-set-edit": {
+   "390": {
+    "en": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"Edit this set\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"עריכת החומר\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"Edit this set\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"עריכת החומר\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-edit-changed": {
+   "390": {
+    "en": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"Edit this set\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"עריכת החומר\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"Edit this set\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 18,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h2#st-setedit-title.tp-study-setedit__title \"עריכת החומר\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-share": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"Copy linkThe link opens this for\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"העתקת קישורהקישור פותח את זה בשב\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"Copy linkThe link opens this for\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"העתקת קישורהקישור פותח את זה בשב\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-ask": {
+   "390": {
+    "en": {
+     "stops": 13,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"How does diffusion differ from o\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 13,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"How does diffusion differ from o\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 13,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"How does diffusion differ from o\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 13,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"How does diffusion differ from o\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-ask-empty": {
+   "390": {
+    "en": {
+     "stops": 14,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"Who discovered photosynthesis?\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 14,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"מי גילה את הפוטוסינתזה?\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 14,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"Who discovered photosynthesis?\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 14,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"מי גילה את הפוטוסינתזה?\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-set-ask-he": {
+   "390": {
+    "he": {
+     "stops": 13,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"מה קורה במיוזה?\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "he": {
+     "stops": 13,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "input#_r_1_-question.tp-input[data-action=ask-set-input] \"מה קורה במיוזה?\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-test-score": {
+   "390": {
+    "en": {
+     "stops": 8,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 8,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 8,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 8,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-listen": {
+   "390": {
+    "en": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 11,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-listen-he": {
+   "390": {
+    "he": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "he": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-listen-voice-error": {
+   "390": {
+    "en": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "study-new-preview": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-new-undo-edited": {
+   "390": {
+    "en": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 7,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "study-new-nokey": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "calendar-month": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "calendar-week": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "calendar-mover": {
+   "390": {
+    "en": {
+     "stops": 15,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h3#week-mover-h.tp-sched__mover-title \"Move Review: mitosis\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 15,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h3#week-mover-h.tp-sched__mover-title \"הזזה של חזרה: מיטוזה\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 15,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h3#week-mover-h.tp-sched__mover-title \"Move Review: mitosis\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 15,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "h3#week-mover-h.tp-sched__mover-title \"הזזה של חזרה: מיטוזה\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "plan-preview": {
+   "390": {
+    "en": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-short": {
+   "390": {
+    "en": {
+     "stops": 18,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 18,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 18,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 18,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-scheduler": {
+   "390": {
+    "en": {
+     "stops": 23,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 23,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 23,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 23,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "plan-signedout": {
+   "390": {
+    "en": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 17,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-offline": {
+   "390": {
+    "en": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 16,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "plan-undo-edited": {
+   "390": {
+    "en": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-consent": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-signedout": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-checking": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-offline": {
+   "390": {
+    "en": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-typing": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-review": {
+   "390": {
+    "en": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 10,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "record-undo-edited": {
+   "390": {
+    "en": {
+     "stops": 12,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 12,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "ingest-paste": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Paste\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"הדבקה\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Paste\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"הדבקה\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-photo-unsupported": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Photo\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"תמונה\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Photo\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"תמונה\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-done": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "a.tp-btn.tp-btn--primary \"Open the page\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "a.tp-btn.tp-btn--primary \"פתיחת הדף\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "a.tp-btn.tp-btn--primary \"Open the page\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "a.tp-btn.tp-btn--primary \"פתיחת הדף\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "memory-list": {
+   "390": {
+    "en": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "memory-edit": {
+   "390": {
+    "en": {
+     "stops": 16,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "textarea#mm-memories:1-edit.tp-textarea \"Studying for the biology bagrut,\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 16,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "textarea#mm-memories:1-edit.tp-textarea \"לומדת לבגרות בביולוגיה, המבחן בא\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 16,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "textarea#mm-memories:1-edit.tp-textarea \"Studying for the biology bagrut,\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 16,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "textarea#mm-memories:1-edit.tp-textarea \"לומדת לבגרות בביולוגיה, המבחן בא\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "memory-empty": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "memory-loading": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "memory-error": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "share-sheet": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"Share with an app…Opens your dev\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"שיתוף עם אפליקציה…פותח את אפשרוי\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"Share with an app…Opens your dev\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-touch-row[data-component=TouchRow][type=button] \"שיתוף עם אפליקציה…פותח את אפשרוי\"",
+     "arrowGroups": 0
+    }
+   }
+  },
+  "miniapp-approve": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "miniapp-stopped": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "page-menu-turn-into": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [
+      "div.cm-content.cm-lineWrapping[role=textbox] \"Note body\""
+     ],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-menu__item[role=menuitem][type=button] \"Copy as Markdown\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [
+      "div.cm-content.cm-lineWrapping[role=textbox] \"גוף הפתק\""
+     ],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-menu__item[role=menuitem][type=button] \"העתקה כ-Markdown\"",
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [
+      "div.cm-content.cm-lineWrapping[role=textbox] \"Note body\""
+     ],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-menu__item[role=menuitem][type=button] \"Copy as Markdown\"",
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [
+      "div.cm-content.cm-lineWrapping[role=textbox] \"גוף הפתק\""
+     ],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-menu__item[role=menuitem][type=button] \"העתקה כ-Markdown\"",
+     "arrowGroups": 0
+    }
+   }
+  }
+ }
+}

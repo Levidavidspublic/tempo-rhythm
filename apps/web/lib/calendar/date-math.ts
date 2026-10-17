@@ -49,6 +49,22 @@ export function getCalendarRangeMs(mode: CalendarViewMode, date: Date): Calendar
   };
 }
 
+/**
+ * The window a 6 × 7 month grid draws: from its first cell (the start of the week holding the
+ * 1st) to the day after its last cell, half-open. `getCalendarRangeMs("month", …)` stays the
+ * 1st-to-1st month; query with this one so the leading and trailing days show their items too.
+ * `weekStartsOn`: 0 = Sunday … 6 = Saturday.
+ */
+export function getMonthGridRangeMs(date: Date, weekStartsOn: number): CalendarRange {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const lead = (new Date(year, month, 1).getDay() - weekStartsOn + 7) % 7;
+  return {
+    startMs: new Date(year, month, 1 - lead).getTime(),
+    endMs: new Date(year, month, 1 - lead + 42).getTime(),
+  };
+}
+
 export function getEventsInRange<T extends CalendarEvent>(
   events: readonly T[],
   range: CalendarRange,

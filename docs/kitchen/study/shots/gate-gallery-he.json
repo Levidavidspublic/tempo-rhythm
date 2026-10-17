@@ -1,0 +1,530 @@
+[
+  {
+    "name": "study-set-ask-he",
+    "lang": "he",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-set-ask-he-he-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=180ms"
+      }
+    ]
+  },
+  {
+    "name": "study-set-ask-he",
+    "lang": "he",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-set-ask-he-he-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=180ms"
+      }
+    ]
+  },
+  {
+    "name": "study-set-ask-he",
+    "lang": "he",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-set-ask-he-he-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=180ms"
+      }
+    ]
+  },
+  {
+    "name": "study-set-ask-he",
+    "lang": "he",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-set-ask-he-he-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=1"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=180ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen-he",
+    "lang": "he",
+    "width": 390,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-listen-he-he-390-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen-he",
+    "lang": "he",
+    "width": 390,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-listen-he-he-390-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen-he",
+    "lang": "he",
+    "width": 1280,
+    "theme": "light",
+    "file": "gallery-MOCKED-study-listen-he-he-1280-light.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  },
+  {
+    "name": "study-listen-he",
+    "lang": "he",
+    "width": 1280,
+    "theme": "dark",
+    "file": "gallery-MOCKED-study-listen-he-he-1280-dark.jpg",
+    "finalPath": "/",
+    "status": "ok",
+    "errors": [],
+    "gate": [
+      {
+        "id": "R-02",
+        "rule": "no em dash in UI text",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-03",
+        "rule": "no horizontal overflow",
+        "pass": true,
+        "detail": "overflowX=0"
+      },
+      {
+        "id": "R-25",
+        "rule": "text contrast ≥ WCAG AA",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-26",
+        "rule": "no unnamed or dead controls",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-32",
+        "rule": "visible focus ring on Tab",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-text",
+        "rule": "no text under 13 px",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "DESIGN-accent",
+        "rule": "at most one primary button",
+        "pass": true,
+        "detail": "primaries=0"
+      },
+      {
+        "id": "R-01",
+        "rule": "no decorative gradients",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "id": "R-19",
+        "rule": "motion ≤ 250 ms",
+        "pass": true,
+        "detail": "max=120ms"
+      }
+    ]
+  }
+]
