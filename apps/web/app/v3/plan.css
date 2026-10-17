@@ -3,10 +3,18 @@
    --lane and --lanes on each item, in grid rows (see packages/core/plan/schedule.ts). */
 
 /* WeekGrid */
-.tp-sched { --tp-sched-slot: var(--tp-space-8); display: grid; gap: var(--tp-space-3); min-width: 0; }
+/* --tp-sched-head: the sticky day names' height (one line of the day number plus its padding). */
+.tp-sched {
+  --tp-sched-slot: var(--tp-space-8); --tp-sched-head: calc(var(--tp-text-lg) * var(--tp-leading-body) + var(--tp-space-1) * 2);
+  display: grid; gap: var(--tp-space-3); min-width: 0;
+}
 .tp-sched__scroll {
   overflow: auto; overscroll-behavior: contain; max-block-size: min(70vh, calc(var(--tp-space-20) * 8));
   border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); background: var(--tp-paper);
+  /* Keyboard focus never ends up under the sticky day names (WCAG 2.4.11): an item that Tab or
+     Shift+Tab scrolls into view lands below them, with room for its ring. The calendar's Week
+     view is this same grid. */
+  scroll-padding-block-start: calc(var(--tp-sched-head) + var(--tp-space-2));
 }
 .tp-sched__scroll:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; }
 .tp-sched__grid {
@@ -110,5 +118,6 @@
    in view on top while the hours scroll under them. */
 .tp-sched__col > .tp-week__head, .tp-sched__corner {
   position: sticky; inset-block-start: 0; z-index: 3; background: inherit;
+  min-block-size: var(--tp-sched-head);
 }
 .tp-sched__corner { background: var(--tp-paper); }
