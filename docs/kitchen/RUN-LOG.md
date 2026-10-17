@@ -110,6 +110,8 @@ Final reshoot of every gallery view (44 in en and he, plus the two Hebrew-only v
 - `AT` Bring your own voice (T6): pick between the open drafts #213 / #389 and a new adapter set (OpenAI-Realtime family, Gemini Live, listen → think → speak), and confirm it is in scope before Gen 1 (PRD F-102 says END).
 - `AT` Approve (or not) libraries for IngestSheet: an OCR library for photos (for example `tesseract.js`, Apache-2.0, which downloads language data at run time) and PDF / Word readers. Until then photos work only where the browser has a built-in text detector.
 
+- `AT` A per-person daily cap on model calls. `study.generate` (up to 12k characters in / 4,000 tokens out) and `recordings.proposeFromTranscript` (20k / 1,500) are approval-gated and fail gracefully without a key, but an approved account can call them in a loop; the coach and brain dump have the same gap, so today only the provider's spend cap bounds it. A shared counter would be a new table across features: a decision for you, not something this run adds on its own.
+
 ## UNKNOWN
 
 - Live provider round trips: there is no `DEEPINFRA_API_KEY` or `DEEPGRAM_API_KEY` in this sandbox (names checked, no values read).
