@@ -337,6 +337,30 @@ export function previewKey(sessions: readonly TimedSession[]): string {
   return sessions.map((s) => `${s.date}|${s.startMinute}|${s.minutes}|${s.kind}|${s.label}`).join("~");
 }
 
+/** Why "Add these sessions" sends nothing: "skip" quietly, otherwise the words to show (pp.*). */
+export type AcceptBlock = "skip" | "pp.err.title" | "pp.signIn" | "pp.offline.add" | null;
+
+/**
+ * Whether "Add these sessions" may call the server now. A plan whose Undo is still open is already
+ * saved (never add it twice); a plan needs a name; signed out, it says to sign in. Offline nothing
+ * is sent: Convex would hold the write until the connection is back, and the button would say
+ * "Adding" for as long as that takes, so the card says in words why nothing was added.
+ */
+export function acceptBlock(state: {
+  sessions: number;
+  saving: boolean;
+  pinned: boolean;
+  title: string;
+  signedIn: "loading" | "ready" | "signedOut";
+  online: boolean;
+}): AcceptBlock {
+  if (state.sessions === 0 || state.saving || state.pinned) return "skip";
+  if (state.title.trim() === "") return "pp.err.title";
+  if (state.signedIn !== "ready") return "pp.signIn";
+  if (!state.online) return "pp.offline.add";
+  return null;
+}
+
 /**
  * Which decision the plan card shows for the preview `key`. While an accepted plan's Undo is open
  * (`undoOpen`) that plan stays on the card whatever the form says now: a typo, another date or a

@@ -86,6 +86,9 @@ export const en = {
   "pp.signIn": "Sign in to add these sessions to your calendar.",
   "pp.signInLink": "Sign in",
   "pp.error": "That didn't go through. Your plan is still here, so try again in a moment.",
+  "pp.offline": "You're offline. You can still try out a plan here; adding it to your calendar needs a connection.",
+  "pp.offline.add": "You're offline, so nothing was added. Try again when you're back.",
+  "pp.offline.undo": "You're offline, so the plan is still there. Undo works again when you're back.",
   "pp.busyCap": "Events on your calendar are checked up to {date}. Later ones aren't checked yet.",
 
   // GuidedPlanCard (S9): the plan preview as a proposal with Accept / Edit / Reject
@@ -163,6 +166,7 @@ export const en = {
   "rp.cancel": "Cancel",
   "rp.nothing": "There's nothing to change yet.",
   "rp.error": "That didn't go through. Your sessions are where they were, so try again in a moment.",
+  "rp.offline": "You're offline. Moving sessions needs a connection, so Use these times is off until you're back.",
   "rp.refreshed": "Some of these times have passed, so here are new ones. Nothing has changed yet.",
   "rp.toast1": "1 session has a new time.",
   "rp.toastN": "{n} sessions have new times.",
@@ -267,6 +271,9 @@ export const he: Record<keyof typeof en, string> = {
   "pp.signIn": "התחברו כדי להוסיף את המפגשים ליומן.",
   "pp.signInLink": "התחברות",
   "pp.error": "זה לא עבר. התוכנית עדיין כאן, אפשר לנסות שוב בעוד רגע.",
+  "pp.offline": "אין חיבור כרגע. אפשר עדיין לנסות כאן תוכנית; כדי להוסיף אותה ליומן צריך חיבור.",
+  "pp.offline.add": "אין חיבור כרגע, אז שום דבר לא נוסף. אפשר לנסות שוב כשהחיבור יחזור.",
+  "pp.offline.undo": "אין חיבור כרגע, אז התוכנית עדיין שם. הביטול יעבוד שוב כשהחיבור יחזור.",
   "pp.busyCap": "האירועים ביומן נבדקים עד {date}. אירועים מאוחרים יותר עוד לא נבדקים.",
 
   "pp.g.kind": "תוכנית",
@@ -341,6 +348,7 @@ export const he: Record<keyof typeof en, string> = {
   "rp.cancel": "ביטול",
   "rp.nothing": "עדיין אין מה לשנות.",
   "rp.error": "זה לא עבר. המפגשים נשארו במקומם, אפשר לנסות שוב בעוד רגע.",
+  "rp.offline": "אין חיבור כרגע. כדי להזיז מפגשים צריך חיבור, אז הכפתור כבוי עד שהחיבור יחזור.",
   "rp.refreshed": "חלק מהזמנים האלה כבר עברו, אז הנה זמנים חדשים. עדיין שום דבר לא השתנה.",
   "rp.toast1": "למפגש אחד יש זמן חדש.",
   "rp.toastN": "ל־{n} מפגשים יש זמנים חדשים.",

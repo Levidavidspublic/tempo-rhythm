@@ -13,11 +13,13 @@
  * form changes. While Undo is open the accepted plan stays on the card even if the form changes,
  * so it can't be added twice.
  * Above the form, ReplanPanel offers to move the saved plan's missed or clashing sessions.
+ * Offline, a notice says so: the form and its preview still work on the device, while Accept,
+ * Undo and "Use these times" send nothing and say why (`acceptBlock`), so no button waits forever.
  */
 import { GuidedPlanCard, type GuidedStep, type GuidedStepStatus } from "@tempo/ui";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSignedIn } from "@/components/goals/shared";
+import { OfflineNotice, useOnline, useSignedIn } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useToastRoom } from "@/components/study/useToastRoom";
 import { UndoToast } from "@/components/you/UndoToast";
@@ -32,6 +34,7 @@ import { PlanForm, PlanPreview } from "./PlanParts";
 import { useBusyTime } from "./planApi";
 import { ReplanArea } from "./ReplanPanel";
 import {
+  acceptBlock,
   bringBackOffer,
   buildPreview,
   busyByDate,
@@ -50,6 +53,7 @@ import { SessionScheduler } from "./SessionScheduler";
 export function PlanPathScreen() {
   const { lang } = useLocale();
   const signedIn = useSignedIn();
+  const online = useOnline();
   const create = useMutation(api.plans.createFromPreview);
   const undoCreate = useMutation(api.plans.undoCreate);
   const redoUndo = useMutation(api.plans.redoUndo);
@@ -66,6 +70,10 @@ export function PlanPathScreen() {
   const [titleError, setTitleError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  // Back online: the "you're offline" words next to the card have done their job.
+  useEffect(() => {
+    if (online) setMessage((m) => (m === "pp.offline.add" || m === "pp.offline.undo" ? null : m));
+  }, [online]);
   const [planId, setPlanId] = useState<Id<"studyPlans"> | null>(null);
   // What happened to which preview: a new preview (another key) is a fresh proposal.
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -158,15 +166,19 @@ export function PlanPathScreen() {
   const accept = async (steps: GuidedStep[]) => {
     const sessions = sessionsFromSteps(steps);
     // A plan whose Undo is still open is already saved: never add it (or a changed copy) twice.
-    if (sessions.length === 0 || saving || pinned) return;
-    if (values.title.trim() === "") {
-      // Flagged on the field, and said again next to the button that was pressed.
-      setTitleError(true);
-      setMessage("pp.err.title");
-      return;
-    }
-    if (signedIn !== "ready") {
-      setMessage("pp.signIn");
+    const block = acceptBlock({
+      sessions: sessions.length,
+      saving,
+      pinned: pinned !== null,
+      title: values.title,
+      signedIn,
+      online,
+    });
+    if (block === "skip") return;
+    if (block) {
+      // A missing name is flagged on the field, and said again next to the button that was pressed.
+      if (block === "pp.err.title") setTitleError(true);
+      setMessage(block);
       return;
     }
     setSaving(true);
@@ -204,6 +216,10 @@ export function PlanPathScreen() {
 
   const undo = async () => {
     if (!current?.planId || saving) return;
+    if (!online) {
+      setMessage("pp.offline.undo");
+      return;
+    }
     const taken = current.planId;
     setSaving(true);
     setMessage(null);
@@ -309,12 +325,14 @@ export function PlanPathScreen() {
           <p className="tp-pagehead__sub">{pt(lang, "pp.sub")}</p>
         </div>
       </header>
+      {online ? null : <OfflineNotice text={pt(lang, "pp.offline")} />}
 
       {signedIn === "ready" ? (
         <ReplanArea
           lang={lang}
           planId={activePlan}
           headingRef={headingRef}
+          online={online}
           // The plan card's "Add these sessions" is the screen's one primary while it is offered.
           primary={!(preview.status === "ok" && cardStatus === "pending")}
         />
@@ -382,6 +400,8 @@ type Message =
   | "pp.signIn"
   | "pp.error"
   | "pp.err.title"
+  | "pp.offline.add"
+  | "pp.offline.undo"
   | "pp.g.undoError"
   | "pp.g.statusError";
 

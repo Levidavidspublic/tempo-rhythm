@@ -134,6 +134,8 @@ export type ReplanPreviewProps = {
   leaveOut: boolean;
   busy?: boolean;
   failed?: boolean;
+  /** The browser is offline: "Use these times" is off, and a line says why. */
+  offline?: boolean;
   /** Set when the times were worked out again because some had passed: said in words. */
   refreshed?: boolean;
   /** The "worked out again" note, which takes the keyboard when it appears. */
@@ -160,6 +162,7 @@ export function ReplanPreview({
   leaveOut,
   busy = false,
   failed = false,
+  offline = false,
   refreshed = false,
   refreshedRef,
   primary = true,
@@ -310,8 +313,9 @@ export function ReplanPreview({
           className={`tp-btn ${primary ? "tp-btn--primary" : "tp-btn--secondary"}`}
           type="button"
           data-action="replan-accept"
-          disabled={busy || !canAccept}
+          disabled={busy || !canAccept || offline}
           aria-busy={busy || undefined}
+          aria-describedby={offline ? `${headingId}-offline` : undefined}
           onClick={onAccept}
         >
           <TpIcon name="check" size="sm" />
@@ -328,6 +332,11 @@ export function ReplanPreview({
         </button>
       </div>
       {canAccept ? null : <p className="tp-help">{pt(lang, "rp.nothing")}</p>}
+      {offline ? (
+        <p className="tp-help" id={`${headingId}-offline`}>
+          {pt(lang, "rp.offline")}
+        </p>
+      ) : null}
       {failed ? (
         <p className="tp-error-text" role="alert">
           {pt(lang, "rp.error")}
@@ -349,6 +358,8 @@ export type ReplanPanelProps = {
   onReplanned: (done: ReplanDone) => void;
   /** The "Re-plan the rest" button, for the owner to hand focus back to. */
   buttonRef?: RefObject<HTMLButtonElement | null>;
+  /** The browser's online flag (`useOnline`); offline, "Use these times" sends nothing. */
+  online?: boolean;
 };
 
 export function ReplanPanel({
@@ -357,6 +368,7 @@ export function ReplanPanel({
   primary = true,
   onReplanned,
   buttonRef,
+  online = true,
 }: ReplanPanelProps) {
   const saved = usePlan(planId);
   const { replan } = useReplanActions();
@@ -447,7 +459,7 @@ export function ReplanPanel({
   };
 
   const accept = async () => {
-    if (!result || !input || !saved || saving) return;
+    if (!result || !input || !saved || saving || !online) return;
     const current = nowMoment();
     if (!sameMoment(current, input.now) && !sameReplan(replanRest({ ...input, now: current }), result)) {
       showFresh();
@@ -518,6 +530,7 @@ export function ReplanPanel({
             leaveOut={leaveOut}
             busy={saving}
             failed={failed}
+            offline={!online}
             refreshed={refreshed > 0}
             refreshedRef={refreshedRef}
             primary={primary}
@@ -541,6 +554,8 @@ export type ReplanAreaProps = {
   primary?: boolean;
   /** Takes the keyboard when the toast closes and "Re-plan the rest" isn't there (the page's h1). */
   headingRef?: RefObject<HTMLElement | null>;
+  /** The browser's online flag; true when left out. */
+  online?: boolean;
 };
 
 /**
@@ -549,7 +564,7 @@ export type ReplanAreaProps = {
  * these sessions" makes another plan the shown one, and the Undo for the re-plan made a moment ago
  * stays for its 5:00 and still takes back that plan's re-plan.
  */
-export function ReplanArea({ planId, lang, primary = true, headingRef }: ReplanAreaProps) {
+export function ReplanArea({ planId, lang, primary = true, headingRef, online = true }: ReplanAreaProps) {
   const { undoReplan } = useReplanActions();
   // `superseded`: Undo found a newer re-plan (another tab), so it changed nothing.
   const [toast, setToast] = useState<(ReplanDone & { superseded?: boolean }) | null>(null);
@@ -605,6 +620,7 @@ export function ReplanArea({ planId, lang, primary = true, headingRef }: ReplanA
           primary={primary}
           onReplanned={replanned}
           buttonRef={openRef}
+          online={online}
         />
       ) : null}
       {toast ? (
