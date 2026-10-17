@@ -103,6 +103,8 @@
 .tp-plan__replan-preview { display: grid; gap: var(--tp-space-3); }
 .tp-plan__replan-preview > .tp-section__title { margin: 0; }
 .tp-plan__moves .tp-plan__session { align-items: baseline; }
+/* The re-plan's Undo toast is fixed to the window; its holder takes no row in the screen's grid. */
+.tp-plan__toast { display: contents; }
 
 /* WeekGrid scrolls to the week's first item: the day names (and the corner over the hours) stay
    in view on top while the hours scroll under them. */

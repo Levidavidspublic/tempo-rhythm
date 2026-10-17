@@ -25,7 +25,7 @@ import { pt, shortDate } from "../planCopy";
 import { busyWindows } from "./busyWindows";
 import { PlanForm, PlanPreview } from "./PlanParts";
 import { useBusyTime } from "./planApi";
-import { ReplanPanel } from "./ReplanPanel";
+import { ReplanArea } from "./ReplanPanel";
 import {
   buildPreview,
   busyByDate,
@@ -274,9 +274,8 @@ export function PlanPathScreen() {
         </div>
       </header>
 
-      {signedIn === "ready" && activePlan ? (
-        <ReplanPanel
-          key={activePlan}
+      {signedIn === "ready" ? (
+        <ReplanArea
           lang={lang}
           planId={activePlan}
           // The plan card's "Add these sessions" is the screen's one primary while it is offered.

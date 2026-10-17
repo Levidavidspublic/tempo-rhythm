@@ -48,7 +48,7 @@ function installModuleMocks() {
 
 previous = { ...(await import(planApi)) };
 installModuleMocks();
-const { ReplanPanel } = await import("../../../apps/web/components/calendar/plan/ReplanPanel?replan-dom");
+const { ReplanArea } = await import("../../../apps/web/components/calendar/plan/ReplanPanel?replan-dom");
 
 beforeAll(installModuleMocks);
 afterAll(() => {
@@ -78,9 +78,10 @@ function tightPlan(): Saved {
 let root: Root | null = null;
 let host: TestNode | null = null;
 
-type PanelProps = { planId: string; lang?: "en" | "he" };
+type PanelProps = { planId: string | null; lang?: "en" | "he" };
+/** The re-plan area as the plan screen draws it: the panel for the shown plan, and its toast. */
 const panel = ({ planId, lang = "en" }: PanelProps) =>
-  createElement(LocaleProvider, null, createElement(ReplanPanel, { planId: planId as never, lang }));
+  createElement(LocaleProvider, null, createElement(ReplanArea, { planId: planId as never, lang }));
 
 async function mount(props: PanelProps) {
   useTestDom(documentNode);
@@ -91,6 +92,12 @@ async function mount(props: PanelProps) {
     root?.render(panel(props));
   });
   return host;
+}
+
+async function rerender(props: PanelProps) {
+  await act(async () => {
+    root?.render(panel(props));
+  });
 }
 
 async function click(node: TestNode | undefined) {
@@ -138,5 +145,27 @@ describe("ReplanPanel, mounted", () => {
     expect(spans.at(-1)?.range).toEqual({ startMs: at("2026-10-20", 0), endMs: at("2026-10-22", 0) });
     expect(view.textContent).toMatch(/to Wed,? 21 Oct, 16:15/);
     expect(view.textContent).not.toMatch(/to Wed,? 21 Oct, 17:00/);
+  });
+
+  test("the Undo toast outlives a change of the plan shown, and undoes the plan it was for", async () => {
+    setSystemTime(new Date(2026, 9, 20, 18, 0));
+    saved = {
+      plan: { _id: "studyPlans:1", title: "Biology", deadline: "2026-10-30", taskIds: ["tasks:2"] },
+      tasks: [task("tasks:2", "Learn: Mitosis", "2026-10-19", 17)],
+    };
+    const view = await mount({ planId: "studyPlans:1" });
+    await click(byAction(view, "replan-open"));
+    await click(byAction(view, "replan-accept"));
+    expect(calls.replan).toHaveBeenCalledTimes(1);
+    expect(view.textContent).toContain("1 session has a new time.");
+    expect(view.textContent).toContain("5:00");
+
+    // "Add these sessions" made another plan the one the screen shows.
+    saved = { plan: { _id: "studyPlans:2", title: "Maths", deadline: "2026-11-02", taskIds: [] }, tasks: [] };
+    await rerender({ planId: "studyPlans:2" });
+    expect(view.textContent).toContain("1 session has a new time.");
+    await click(findByTag(view, "BUTTON", "Undo"));
+    expect(calls.undoReplan.mock.calls[0]?.[0]).toMatchObject({ planId: "studyPlans:1" });
+    expect(view.textContent).not.toContain("1 session has a new time.");
   });
 });

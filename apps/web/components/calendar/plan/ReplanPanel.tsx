@@ -6,7 +6,8 @@
  * or now overlap something on the calendar, a quiet notice says so in words, with one secondary
  * button. It opens a preview: what moves where, what doesn't fit and the planner's ways out (a
  * later date, longer days, fewer sessions), with Use these times / Cancel. Nothing changes before
- * that. Saving calls `plans.replan`; an Undo toast stays for 5:00 (`plans.undoReplan`).
+ * that. Saving calls `plans.replan`; an Undo toast stays for 5:00 (`plans.undoReplan`), held by
+ * ReplanArea above the panel so it outlives a change of the plan shown.
  *
  * The new times come from `replanRest` (packages/core/plan/replan.ts): done sessions, sessions in
  * progress and fixed events stay where they are. Data: plans.get, and busy time from today to the
@@ -314,16 +315,29 @@ export function ReplanPreview({
   );
 }
 
+/** A saved re-plan's Undo: which plan, the toast's words and when the 5:00 window ends. */
+export type ReplanDone = { planId: Id<"studyPlans">; title: string; undoUntil: number };
+
 export type ReplanPanelProps = {
   planId: Id<"studyPlans">;
   lang: PlanLang;
   /** False when the screen already shows its one primary button (a plan preview to add). */
   primary?: boolean;
+  /** A re-plan was saved: the owner shows its Undo toast (ReplanArea). */
+  onReplanned: (done: ReplanDone) => void;
+  /** The "Re-plan the rest" button, for the owner to hand focus back to. */
+  buttonRef?: RefObject<HTMLButtonElement | null>;
 };
 
-export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) {
+export function ReplanPanel({
+  planId,
+  lang,
+  primary = true,
+  onReplanned,
+  buttonRef,
+}: ReplanPanelProps) {
   const saved = usePlan(planId);
-  const { replan, undoReplan } = useReplanActions();
+  const { replan } = useReplanActions();
   const liveNow = useNowMoment();
   const [open, setOpen] = useState(false);
   // The preview holds still while it is open: now is read once, when it opens.
@@ -332,10 +346,9 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
   const [leaveOut, setLeaveOut] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [toast, setToast] = useState<{ title: string; untilMs: number } | null>(null);
-  const openRef = useRef<HTMLButtonElement>(null);
+  const ownRef = useRef<HTMLButtonElement>(null);
+  const openRef = buttonRef ?? ownRef;
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const toastRef = useRef<HTMLDivElement>(null);
   const previewId = useId();
 
   const now = open && openedAt ? openedAt : liveNow;
@@ -419,15 +432,11 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
         timezoneOffsetMinutes: new Date().getTimezoneOffset(),
       });
       close();
-      setToast({
+      onReplanned({
+        planId,
         title: replanToastTitle(lang, done.moved, done.removed),
-        untilMs: done.undoUntil,
+        undoUntil: done.undoUntil,
       });
-      // The button that was pressed is gone: Undo is the one thing left to do.
-      window.setTimeout(
-        () => toastRef.current?.querySelector<HTMLButtonElement>("button")?.focus(),
-        0
-      );
     } catch {
       setFailed(true);
     } finally {
@@ -435,7 +444,7 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
     }
   };
 
-  if (!notice && !open && !toast) return null;
+  if (!notice && !open) return null;
 
   return (
     <div className="tp-plan__replan" data-component="ReplanPanel">
@@ -472,16 +481,60 @@ export function ReplanPanel({ planId, lang, primary = true }: ReplanPanelProps) 
           />
         ) : null}
       </div>
+    </div>
+  );
+}
+
+export type ReplanAreaProps = {
+  /** The plan the screen shows; null when there is none (a toast may still be open). */
+  planId: Id<"studyPlans"> | null;
+  lang: PlanLang;
+  primary?: boolean;
+};
+
+/**
+ * The re-plan panel for the plan the screen shows, and the Undo toast of the last re-plan. The
+ * panel starts fresh for each plan (it is keyed by it), so the toast lives here, above it: "Add
+ * these sessions" makes another plan the shown one, and the Undo for the re-plan made a moment ago
+ * stays for its 5:00 and still takes back that plan's re-plan.
+ */
+export function ReplanArea({ planId, lang, primary = true }: ReplanAreaProps) {
+  const { undoReplan } = useReplanActions();
+  const [toast, setToast] = useState<ReplanDone | null>(null);
+  const openRef = useRef<HTMLButtonElement>(null);
+  const toastRef = useRef<HTMLDivElement>(null);
+
+  const replanned = (done: ReplanDone) => {
+    setToast(done);
+    // The button that was pressed is gone: Undo is the one thing left to do.
+    window.setTimeout(
+      () => toastRef.current?.querySelector<HTMLButtonElement>("button")?.focus(),
+      0
+    );
+  };
+
+  return (
+    <>
+      {planId ? (
+        <ReplanPanel
+          key={planId}
+          planId={planId}
+          lang={lang}
+          primary={primary}
+          onReplanned={replanned}
+          buttonRef={openRef}
+        />
+      ) : null}
       {toast ? (
-        <div ref={toastRef}>
+        <div className="tp-plan__toast" ref={toastRef}>
           <UndoToast
             title={toast.title}
-            untilMs={toast.untilMs}
-            onUndo={() => undoReplan({ planId })}
+            untilMs={toast.undoUntil}
+            onUndo={() => undoReplan({ planId: toast.planId })}
             onClose={() => setToast(null)}
           />
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
