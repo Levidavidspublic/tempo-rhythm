@@ -1,9 +1,9 @@
 {
   "run": "kitchen/tempo-study",
-  "updated": "2026-10-16T23:35Z",
+  "updated": "2026-10-17T00:45Z",
   "baseline": {
     "command": "bun run test",
-    "last_result": "3121 pass, 3 todo, 0 fail on 413bb1f (was 2348 on 5f1b3ec)"
+    "last_result": "3287 pass, 3 todo, 0 fail on ac79dd2 (Bun 1.3.9; was 2348 on 5f1b3ec)"
   },
   "finish_lines": {
     "T3": {
@@ -33,14 +33,18 @@
   },
   "e2e": {
     "command": "PLAYWRIGHT_BROWSERS_PATH=<scratch dir mapping /opt/pw-browsers chromium 1194 to the expected 1234 path> bunx playwright test --reporter=line (CI unset, so it reused the running local dev server with the same mock env as playwright.config.ts; no config change)",
-    "last_result": "34 passed, 89 skipped, 0 failed on f851e29 (includes tests/e2e/wiring/study.spec.ts 6/6)"
+    "last_result": "35 passed, 89 skipped, 0 failed on 01e2dd4 (includes tests/e2e/wiring/study.spec.ts 7/7)"
   },
   "build": {
     "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
-    "last_result": "pass on 3e31225; /study, /study/[setId], /study/new, /study/plan, /study/record, /study/review listed"
+    "last_result": "pass on ac79dd2; /study, /study/[setId], /study/listen, /study/new, /study/plan, /study/record, /study/review listed"
   },
   "e2e_study_wiring": {
     "command": "bunx playwright test tests/e2e/wiring/study.spec.ts --reporter=line (same browser mapping)",
     "last_result": "7 passed on 79896a6 (adds /study/listen and the Sign in link)"
+  },
+  "scans": {
+    "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
+    "last_result": "all OK on ac79dd2"
   }
 }
