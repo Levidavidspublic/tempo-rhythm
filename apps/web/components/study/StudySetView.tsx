@@ -45,6 +45,7 @@ import {
   studyPanelKey,
   testAttempt,
 } from "./set-logic";
+import { useToastRoom } from "./useToastRoom";
 
 /**
  * A set's markup (deck, quiz, test), with no data access: StudySetScreen.tsx passes data and saves.
@@ -174,6 +175,7 @@ function LoadedSet({
   const [sharing, setSharing] = useState(initialPanel === "share");
   const [toast, setToast] = useState<ToastState | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
+  useToastRoom(toast);
   // After Undo: taken back, or not, because the block changed again after the edit.
   const [undoNote, setUndoNote] = useState<"undone" | "changed" | null>(null);
   const editButton = useRef<HTMLButtonElement>(null);

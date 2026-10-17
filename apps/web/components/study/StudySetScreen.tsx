@@ -16,6 +16,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { type AskPage, askPageId } from "./SetAsk";
 import { BackToStudy, type RecordAttempt, type SetData, StudySetView } from "./StudySetView";
+import { useToastRoom } from "./useToastRoom";
 
 /**
  * A study set (/study/[setId]). A deck: browse it (FlashcardDeck) and "Review due cards". A quiz:
@@ -59,6 +60,7 @@ function StudySetData({ setId }: { setId: string }) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [removeError, setRemoveError] = useState(false);
   const closeToast = useCallback(() => setToast(null), []);
+  useToastRoom(toast);
   const loaded = signedIn === "signedOut" ? null : (data as SetData | null | undefined);
   const id = (loaded ? loaded.set.setId : setId) as Id<"studySets">;
   const [askOpened, setAskOpened] = useState(false);

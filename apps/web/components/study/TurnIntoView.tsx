@@ -40,6 +40,7 @@ import {
   type StudyPreview,
   toPreview,
 } from "./preview";
+import { useToastRoom } from "./useToastRoom";
 
 /** The S25 preview's markup and Accept / Edit / Reject state, with no data access (TurnIntoPreview.tsx saves). */
 export type NotePreviewSource = { id: string; title: string; body: string };
@@ -270,6 +271,7 @@ function PreviewCard({
   // After an Undo that took changes made since: the set it took, until Bring it back closes.
   const [bringBack, setBringBack] = useState<{ created: Created; until: number } | null>(null);
   const closeBringBack = useCallback(() => setBringBack(null), []);
+  useToastRoom(bringBack ?? toast);
   const saving = useRef(false);
   const card = useRef<HTMLElement>(null);
   const kind = preview.kind;

@@ -120,3 +120,14 @@
 .tp-study-ask .tp-recap__quotes li { display: grid; gap: var(--tp-space-1); }
 .tp-study-ask__line { margin: 0; overflow-wrap: anywhere; }
 .tp-study-ask mark { background: var(--tp-hover); color: inherit; font-weight: 600; border-radius: var(--tp-radius-sm); }
+
+/* An open Undo toast floats over the bottom of the screen (tempo.css .tp-toast-region).
+   useToastRoom marks <html> while a study or plan screen shows one and puts the room it takes in
+   --tp-toast-room: Tab then scrolls the focused control above the toast, and the page's bottom
+   padding grows to at least that room, so even its last control can come up past it
+   (WCAG 2.4.11). A short page doesn't grow. */
+html[data-tp-toast-room] { scroll-padding-block-end: calc(var(--tp-toast-room) + var(--tp-space-3)); }
+html[data-tp-toast-room] .tp-app__main { padding-block-end: max(var(--tp-space-20), calc(var(--tp-toast-room) + var(--tp-space-3))); }
+@media (max-width: 767px) {
+  html[data-tp-toast-room] .tp-app__main { padding-block-end: max(calc(var(--tp-tabbar-h) + var(--tp-space-16)), calc(var(--tp-toast-room) + var(--tp-space-3))); }
+}

@@ -8,6 +8,7 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
 import type { Id } from "@/convex/_generated/dataModel";
 import { buildRecordingPage, extractActions, type RecordLang } from "../../../../../packages/core/record";
+import { useToastRoom } from "../useToastRoom";
 import { CaptureStep, type TranscriptLine } from "./CaptureStep";
 import { ConsentStep, type OffReason } from "./ConsentStep";
 import {
@@ -98,6 +99,7 @@ export function RecordSession() {
   const [undone, setUndone] = useState(false);
   // After an Undo that took changes made since: that save, until Bring it back closes.
   const [bringBack, setBringBack] = useState<{ saved: Saved; until: number } | null>(null);
+  useToastRoom(bringBack ?? (toastOpen ? saved : null));
   const [restored, setRestored] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleTouched = useRef(false);

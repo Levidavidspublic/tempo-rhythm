@@ -23,6 +23,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useToastRoom } from "@/components/study/useToastRoom";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -555,6 +556,7 @@ export function ReplanArea({ planId, lang, primary = true, headingRef }: ReplanA
   const supersededRef = useRef(false);
   const openRef = useRef<HTMLButtonElement>(null);
   const toastRef = useRef<HTMLDivElement>(null);
+  useToastRoom(toast);
 
   const replanned = (done: ReplanDone) => {
     setToast(done);

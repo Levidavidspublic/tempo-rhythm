@@ -19,6 +19,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSignedIn } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useToastRoom } from "@/components/study/useToastRoom";
 import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -75,6 +76,7 @@ export function PlanPathScreen() {
   // After an Undo that took changes made since: that plan, until Bring it back closes.
   const [bringBack, setBringBack] = useState<{ decision: Decision; until: number } | null>(null);
   const bringBackRef = useRef<HTMLDivElement>(null);
+  useToastRoom(bringBack);
 
   // What is already on the calendar from today up to the deadline (read only), so the plan only
   // uses the time that is left on each day. Events come in windows of at most 31 days, which
