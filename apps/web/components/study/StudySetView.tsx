@@ -128,6 +128,12 @@ export function StudySetView({ data, online, signedOut, ...rest }: StudySetViewP
         data-component="PageLayout"
         data-screen="StudySet"
       >
+        {/* The set's own title isn't known yet (or at all): the page still has its h1. */}
+        <header className="tp-pagehead" data-component="PageHeader">
+          <div className="tp-pagehead__text">
+            <h1 className="tp-pagehead__title">{t("st.set.h1")}</h1>
+          </div>
+        </header>
         {online ? null : <OfflineNotice text={t("gx.offline")} />}
         {signedOut ? (
           <StateSignedOut />

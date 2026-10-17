@@ -156,6 +156,7 @@ export const en = {
 
   // A set (deck / quiz / test)
   "st.set.loading": "Loading this set",
+  "st.set.h1": "Study set",
   "st.set.error": "Couldn't load this set.",
   "st.set.gone.title": "This set isn't here anymore",
   "st.set.gone.body": "It may have been removed, or the page it lives on was deleted. Your other sets are safe.",
@@ -474,6 +475,7 @@ export const he: Record<StudyCopyKey, string> = {
   "st.ts.seeScore": "לראות את הציון",
 
   "st.set.loading": "טוענים את החומר",
+  "st.set.h1": "חומר לימוד",
   "st.set.error": "לא הצלחנו לטעון את החומר.",
   "st.set.gone.title": "החומר הזה כבר לא כאן",
   "st.set.gone.body": "אולי הוא הוסר, או שהדף שהוא נמצא בו נמחק. שאר החומרים שלכם שמורים.",

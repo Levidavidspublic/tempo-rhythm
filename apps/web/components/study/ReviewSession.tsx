@@ -44,9 +44,12 @@ export function ReviewSession({ setId }: { setId?: string }) {
 function ReviewSessionData({ setId }: { setId?: string }) {
   const signedIn = useSignedIn();
   const online = useOnline();
-  // `?set=` goes to the query as it is: one that names no set has no cards (the empty state).
+  // `?set=` goes to the queries as it is. One that names no set (or someone else's, or a removed
+  // one) has no cards; `study.getSet` answers null for it, so the screen says the set is gone
+  // instead of "Nothing to review right now".
   const args = setId ? { setId } : {};
   const queue = useQuery(api.study.reviewQueue, signedIn === "ready" ? args : "skip");
+  const named = useQuery(api.study.getSet, signedIn === "ready" && setId ? { setId } : "skip");
   const [stored, setSnapshot] = useState<SessionSnapshot | null>(null);
   useEffect(() => {
     const next = nextSnapshot(stored, setId, queue?.cards as QueueCard[] | undefined, Date.now());
@@ -69,6 +72,7 @@ function ReviewSessionData({ setId }: { setId?: string }) {
       now={snapshot?.now ?? 0}
       online={online}
       signedOut={signedIn === "signedOut"}
+      setGone={Boolean(setId) && named === null}
       onSave={save}
       onUndo={undo}
     />

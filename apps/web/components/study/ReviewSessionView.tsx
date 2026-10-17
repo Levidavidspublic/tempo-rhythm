@@ -55,6 +55,8 @@ export type ReviewSessionViewProps = {
   now: number;
   online: boolean;
   signedOut?: boolean;
+  /** `?set=` names no set this person can open (made up, someone else's, or removed). */
+  setGone?: boolean;
   onSave: (key: string, button: ReviewButton) => Promise<SavedGrade>;
   onUndo: (grade: SavedGrade) => Promise<void>;
 };
@@ -64,6 +66,7 @@ export function ReviewSessionView({
   now,
   online,
   signedOut,
+  setGone = false,
   onSave,
   onUndo,
 }: ReviewSessionViewProps) {
@@ -74,10 +77,21 @@ export function ReviewSessionView({
       data-component="PageLayout"
       data-screen="ReviewSession"
     >
-      <SessionHeader t={t} count={cards?.length ?? null} />
+      <SessionHeader t={t} count={setGone ? null : (cards?.length ?? null)} />
       {online ? null : <OfflineNotice text={t("gx.offline")} />}
       {signedOut ? (
         <StateSignedOut />
+      ) : setGone ? (
+        <StateEmpty
+          icon="card"
+          title={t("st.set.gone.title")}
+          body={t("st.set.gone.body")}
+          action={
+            <Link className="tp-btn tp-btn--secondary" href="/study">
+              <span>{t("st.review.back")}</span>
+            </Link>
+          }
+        />
       ) : cards === null ? (
         <StateLoading label={t("st.review.loading")} lead="block" rows={1} />
       ) : cards.length === 0 ? (

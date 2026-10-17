@@ -279,3 +279,35 @@ describe("Type answers (typed recall)", () => {
     expect(markup).not.toMatch(BANNED);
   });
 });
+
+// Kitchen states pass: the non-happy states of the review session, a set and the recorder.
+const noopSave = async () => ({ reviewId: "r", undoUntil: 0 });
+
+describe("states", () => {
+  test("review with a ?set= that names no set of yours says the set is gone, with a way back", () => {
+    const markup = html(
+      createElement(ReviewSessionView, { cards: [], now: 0, online: true, setGone: true, onSave: noopSave, onUndo: noop }),
+    );
+    expect(markup).toContain("This set isn&#x27;t here anymore");
+    expect(markup).not.toContain("Nothing to review right now");
+    expect(markup).toContain('href="/study"');
+    expect(markup).toContain("<h1");
+    expect(markup).not.toMatch(BANNED);
+  });
+
+  test("a gone set wins over the loading state too", () => {
+    const markup = html(
+      createElement(ReviewSessionView, { cards: null, now: 0, online: true, setGone: true, onSave: noopSave, onUndo: noop }),
+    );
+    expect(markup).toContain("This set isn&#x27;t here anymore");
+    expect(markup).not.toContain('data-component="StateLoading"');
+  });
+
+  test("a set keeps a page heading while it loads, when it is gone and when signed out", () => {
+    const base = { online: true, now: 0, onRecord: async () => ({}), onRemove: noop };
+    for (const props of [{ data: undefined }, { data: null }, { data: undefined, signedOut: true }]) {
+      const markup = html(createElement(StudySetView, { ...base, ...props }));
+      expect(markup).toMatch(/<h1[^>]*>Study set<\/h1>/);
+    }
+  });
+});
