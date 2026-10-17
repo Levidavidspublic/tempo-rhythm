@@ -33,10 +33,17 @@ describe("acceptBlock", () => {
   });
 
   test("the offline words exist in both languages, without em dashes", () => {
-    for (const key of ["pp.offline", "pp.offline.add", "pp.offline.undo", "rp.offline"] as const) {
+    for (const key of ["pp.offline", "pp.offline.add", "pp.offline.undo", "pp.offline.bringBack", "rp.offline", "rp.offline.undo"] as const) {
       expect(en[key]).toBeTruthy();
       expect(he[key]).toBeTruthy();
       expect(`${en[key]}${he[key]}`).not.toContain("—");
+    }
+  });
+
+  test("offline Undo words don't promise a later Undo: its 5 minutes keep running", () => {
+    for (const key of ["pp.offline.undo", "pp.offline.bringBack", "rp.offline.undo"] as const) {
+      expect(en[key]).not.toMatch(/works again/i);
+      expect(en[key]).toContain("its time keeps running");
     }
   });
 });

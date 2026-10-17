@@ -88,7 +88,9 @@ export const en = {
   "pp.error": "That didn't go through. Your plan is still here, so try again in a moment.",
   "pp.offline": "You're offline. You can still try out a plan here; adding it to your calendar needs a connection.",
   "pp.offline.add": "You're offline, so nothing was added. Try again when you're back.",
-  "pp.offline.undo": "You're offline, so the plan is still there. Undo works again when you're back.",
+  "pp.offline.undo": "You're offline, so nothing was undone. Undo needs a connection, and its time keeps running.",
+  "pp.offline.bringBack": "You're offline, so nothing came back. Bring it back needs a connection, and its time keeps running.",
+  "rp.offline.undo": "You're offline, so the sessions stay at their new times. Undo needs a connection, and its time keeps running.",
   "pp.busyCap": "Events on your calendar are checked up to {date}. Later ones aren't checked yet.",
 
   // GuidedPlanCard (S9): the plan preview as a proposal with Accept / Edit / Reject
@@ -273,7 +275,9 @@ export const he: Record<keyof typeof en, string> = {
   "pp.error": "זה לא עבר. התוכנית עדיין כאן, אפשר לנסות שוב בעוד רגע.",
   "pp.offline": "אין חיבור כרגע. אפשר עדיין לנסות כאן תוכנית; כדי להוסיף אותה ליומן צריך חיבור.",
   "pp.offline.add": "אין חיבור כרגע, אז שום דבר לא נוסף. אפשר לנסות שוב כשהחיבור יחזור.",
-  "pp.offline.undo": "אין חיבור כרגע, אז התוכנית עדיין שם. הביטול יעבוד שוב כשהחיבור יחזור.",
+  "pp.offline.undo": "אין חיבור כרגע, אז שום דבר לא בוטל. כדי לבטל צריך חיבור, והזמן ממשיך לרוץ.",
+  "pp.offline.bringBack": "אין חיבור כרגע, אז שום דבר לא חזר. כדי להחזיר צריך חיבור, והזמן ממשיך לרוץ.",
+  "rp.offline.undo": "אין חיבור כרגע, אז המפגשים נשארים בזמנים החדשים. כדי לבטל צריך חיבור, והזמן ממשיך לרוץ.",
   "pp.busyCap": "האירועים ביומן נבדקים עד {date}. אירועים מאוחרים יותר עוד לא נבדקים.",
 
   "pp.g.kind": "תוכנית",

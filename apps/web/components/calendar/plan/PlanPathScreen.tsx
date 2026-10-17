@@ -240,6 +240,8 @@ export function PlanPathScreen() {
     const back = bringBack?.decision;
     const backId = back?.planId;
     if (!back || !backId) return;
+    // Offline nothing is sent: the throw keeps the toast open, and its error line says why.
+    if (!online) throw new Error("offline");
     await redoUndo({ planId: backId });
     setPlanId(backId);
     setTapped({});
@@ -377,7 +379,7 @@ export function PlanPathScreen() {
             labels={{
               action: pt(lang, "pp.g.bringBack"),
               sub: pt(lang, "pp.g.bringBackSub"),
-              error: pt(lang, "pp.g.bringBackError"),
+              error: pt(lang, online ? "pp.g.bringBackError" : "pp.offline.bringBack"),
             }}
           />
         </div>

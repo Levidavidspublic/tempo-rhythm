@@ -442,3 +442,36 @@ describe("states: a waiting save checks the title again", () => {
     expect(calls.saveSession).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("states: Undo and Bring it back offline", () => {
+  test("offline, Undo sends nothing and the toast says so; back online, one click undoes", async () => {
+    let view = await renderWith({ online: true });
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    view = await renderWith({ online: false });
+    await clickButton(view, "Undo");
+    expect(calls.undoSave).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("You're offline, so nothing was undone.");
+    view = await renderWith({ online: true });
+    await clickButton(view, "Undo");
+    expect(calls.undoSave).toHaveBeenCalledTimes(1);
+    expect(view.textContent).toContain("Undone. Nothing from this recording is saved");
+  });
+
+  test("offline, Bring it back sends nothing and says so", async () => {
+    let view = await renderWith({ online: true });
+    await toReview(view);
+    await clickButton(view, "Save page and tasks");
+    calls.undoSave.mockImplementationOnce(async () => ({
+      success: true,
+      removedTasks: 1,
+      removedEdits: true,
+      redoUntil: Date.now() + 5 * 60_000,
+    }));
+    await clickButton(view, "Undo");
+    view = await renderWith({ online: false });
+    await clickButton(view, "Bring it back");
+    expect(calls.redoUndo).not.toHaveBeenCalled();
+    expect(view.textContent).toContain("You're offline, so nothing came back.");
+  });
+});

@@ -7,6 +7,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
 import type { Id } from "@/convex/_generated/dataModel";
+import { translate } from "@/lib/i18n";
 import { buildRecordingPage, extractActions, type RecordLang } from "../../../../../packages/core/record";
 import { useToastRoom } from "../useToastRoom";
 import { CaptureStep, type TranscriptLine } from "./CaptureStep";
@@ -291,8 +292,11 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
     else if (online) void saveRef.current();
   }, [online, held, step]);
 
+  // Offline, Undo and Bring it back send nothing (Convex would hold them and the toast would stay
+  // busy): the throw keeps the toast open with its error line, which says so in words.
   const undo = async () => {
     if (!saved) return;
+    if (!online) throw new Error("offline");
     const result = await undoSave({ noteId: saved.noteId, taskIds: saved.taskIds });
     setSaved(null);
     setUndone(true);
@@ -305,6 +309,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
 
   const bringItBack = async () => {
     if (!bringBack) return;
+    if (!online) throw new Error("offline");
     await redoUndo({ noteId: bringBack.saved.noteId });
     reviewRun.current += 1;
     setProposing(false);
@@ -450,6 +455,15 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
           untilMs={saved.undoUntil}
           onUndo={undo}
           onClose={() => setToastOpen(false)}
+          labels={
+            online
+              ? undefined
+              : {
+                  action: translate(uiLang, "you.toast.undo"),
+                  sub: translate(uiLang, "you.toast.sub"),
+                  error: copy("rec.offline.undo"),
+                }
+          }
         />
       ) : null}
 
@@ -463,7 +477,7 @@ export function RecordSession({ online = true }: { online?: boolean } = {}) {
           labels={{
             action: copy("rec.bringBack"),
             sub: copy("rec.bringBackSub"),
-            error: copy("rec.bringBackError"),
+            error: copy(online ? "rec.bringBackError" : "rec.offline.bringBack"),
           }}
         />
       ) : null}

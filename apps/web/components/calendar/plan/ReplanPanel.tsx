@@ -27,6 +27,7 @@ import { useToastRoom } from "@/components/study/useToastRoom";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
 import type { Id } from "@/convex/_generated/dataModel";
+import { translate } from "@/lib/i18n";
 import type { LocalDate } from "../../../../../packages/core/plan/calendar-math";
 import {
   type LocalMoment,
@@ -591,6 +592,8 @@ export function ReplanArea({ planId, lang, primary = true, headingRef, online = 
   // one it doesn't describe.
   const undo = async () => {
     if (!toast) return;
+    // Offline nothing is sent: the throw keeps the toast open, and its error line says why.
+    if (!online) throw new Error("offline");
     const answer = await undoReplan({ planId: toast.planId, undoUntil: toast.undoUntil });
     supersededRef.current = answer.superseded === true;
   };
@@ -635,6 +638,15 @@ export function ReplanArea({ planId, lang, primary = true, headingRef, online = 
             untilMs={toast.undoUntil}
             onUndo={toast.superseded ? undefined : undo}
             onClose={closeToast}
+            labels={
+              online
+                ? undefined
+                : {
+                    action: translate(lang, "you.toast.undo"),
+                    sub: translate(lang, "you.toast.sub"),
+                    error: pt(lang, "rp.offline.undo"),
+                  }
+            }
           />
         </div>
       ) : null}
