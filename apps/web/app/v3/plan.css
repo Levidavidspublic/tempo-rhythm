@@ -13,8 +13,10 @@
   border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); background: var(--tp-paper);
   /* Keyboard focus never ends up under the sticky day names (WCAG 2.4.11): an item that Tab or
      Shift+Tab scrolls into view lands below them, with room for its ring. The calendar's Week
-     view is this same grid. */
+     view is this same grid. The other three sides keep room for the ring too: an item scrolled in
+     at the bottom or the far side of a phone's two days showed less than half of it (a11y-walk). */
   scroll-padding-block-start: calc(var(--tp-sched-head) + var(--tp-space-2));
+  scroll-padding-block-end: var(--tp-space-2); scroll-padding-inline: var(--tp-space-2);
 }
 .tp-sched__scroll:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; }
 .tp-sched__grid {

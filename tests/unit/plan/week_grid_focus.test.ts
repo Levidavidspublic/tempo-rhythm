@@ -36,6 +36,14 @@ describe("week grid: focus isn't hidden under the sticky day names", () => {
     );
   });
 
+  // Quality pass (docs/kitchen/study/a11y-walk.mjs): at 390 px an item that Tab scrolled in at the
+  // region's bottom or inline end lay flush with it, and the region clipped half of its ring.
+  test("the other three sides keep room for the ring when focus scrolls an item in", () => {
+    const scroll = rule(".tp-sched__scroll");
+    expect(scroll).toMatch(/scroll-padding-block-end:\s*var\(--tp-space-2\)/);
+    expect(scroll).toMatch(/scroll-padding-inline:\s*var\(--tp-space-2\)/);
+  });
+
   test("the calendar's Week view is the same grid, so the rule covers it too", () => {
     const views = readFileSync(join(root, "apps/web/components/calendar/CalendarViews.tsx"), "utf8");
     expect(views).toContain('import { WeekGrid } from "./WeekGrid"');
