@@ -192,6 +192,25 @@ export function revealItem(item: Pick<HTMLElement, "scrollIntoView">): void {
   item.scrollIntoView?.({ block: "nearest", inline: "nearest" });
 }
 
+/**
+ * Whether a focus should bring the item into view: only keyboard focus (`:focus-visible`) moving
+ * in from another element. A mouse press focuses the item too, and scrolling it then can move it
+ * out from under the pointer between mousedown and mouseup, so the click is lost; coming back to
+ * the tab focuses it again with no related target, and the grid would jump. A browser that doesn't
+ * know `:focus-visible` says no.
+ */
+export function shouldRevealOnFocus(event: {
+  currentTarget: Pick<Element, "matches">;
+  relatedTarget: unknown;
+}): boolean {
+  if (event.relatedTarget === null || event.relatedTarget === undefined) return false;
+  try {
+    return event.currentTarget.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+}
+
 function timeRange(item: ScheduleItem): string {
   return `${formatClock(item.startMinute)}–${formatClock(item.startMinute + item.durationMinutes)}`;
 }
@@ -370,7 +389,9 @@ export function WeekGrid<T extends WeekItem>({
                           aria-expanded={openId === item.id}
                           aria-controls={`${idPrefix}-mover`}
                           onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                          onFocus={(event) => revealItem(event.currentTarget)}
+                          onFocus={(event) => {
+                            if (shouldRevealOnFocus(event)) revealItem(event.currentTarget);
+                          }}
                         >
                           <span className="tp-week__time tp-num tp-mono tp-ltr">
                             {timeRange(item)}
