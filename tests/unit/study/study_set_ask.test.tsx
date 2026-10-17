@@ -45,7 +45,7 @@ mock.module(goalsShared, () => {
 
 const { StudySetView } = await import("../../../apps/web/components/study/StudySetView");
 type SetData = import("../../../apps/web/components/study/StudySetView").SetData;
-const { SetAsk, askPageId } = await import("../../../apps/web/components/study/SetAsk");
+const { SetAsk, askPageId, askReducer } = await import("../../../apps/web/components/study/SetAsk");
 
 const html = (node: ReactElement) => renderToStaticMarkup(node);
 const primaries = (markup: string) => markup.match(/tp-btn--primary/g)?.length ?? 0;
@@ -195,6 +195,22 @@ describe("Ask about this set, answers", () => {
     };
     const testLive = results(ask({ block: test_, page: null, initialQuestion: "mitosis" })) ?? "";
     expect(testLive).toContain('From <span dir="auto">Part A</span>, question <span class="tp-num">2</span>');
+  });
+});
+
+describe("Ask about this set, asking again", () => {
+  test("each Find it counts, so the same answers asked for again are put back and read out again", () => {
+    const first = askReducer({ question: null, count: 0 }, "  What is osmosis? ");
+    expect(first).toEqual({ question: "What is osmosis?", count: 1 });
+    // The count keys what the live region holds: the same words, a new key.
+    const again = askReducer(first, "What is osmosis?");
+    expect(again.question).toBe(first.question);
+    expect(again.count).not.toBe(first.count);
+    expect(askReducer(again, "   ")).toEqual({ question: null, count: 3 });
+  });
+  test("no element is added around the answers: the live region's own layout still holds them", () => {
+    const live = results(ask({ initialQuestion: "osmosis" })) ?? "";
+    expect(live).toStartWith('<p class="tp-small tp-muted">Words from your question are in bold.</p><ul class="tp-recap__quotes">');
   });
 });
 

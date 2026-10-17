@@ -9,6 +9,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -59,6 +60,18 @@ function marked(line: string, question: string): ReactNode {
   );
 }
 
+/**
+ * What was last asked, and how many times Find it was used. The answers sit in a wrapper keyed on
+ * the count, so asking the same question again puts them back fresh and a screen reader reads them
+ * again: a polite live region doesn't announce words it already holds.
+ */
+export type AskState = { question: string | null; count: number };
+
+/** One Find it: the question as asked (null when it is only spaces), counted. */
+export function askReducer(state: AskState, question: string): AskState {
+  return { question: question.trim() || null, count: state.count + 1 };
+}
+
 export type SetAskProps = {
   block: SetBlock;
   page: AskPage;
@@ -76,7 +89,11 @@ export function SetAsk({ block, page, online, t, onOpen, initialQuestion }: SetA
   const inputId = `${id}-question`;
   const [open, setOpen] = useState(initialQuestion !== undefined);
   const [question, setQuestion] = useState(initialQuestion ?? "");
-  const [asked, setAsked] = useState(initialQuestion?.trim() || null);
+  const [ask, dispatchAsk] = useReducer(askReducer, {
+    question: initialQuestion?.trim() || null,
+    count: 0,
+  });
+  const asked = ask.question;
   const input = useRef<HTMLInputElement>(null);
   const focusField = useRef(false);
   const items = useMemo(() => setPassages(block), [block]);
@@ -104,7 +121,7 @@ export function SetAsk({ block, page, online, t, onOpen, initialQuestion }: SetA
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    setAsked(question.trim() || null);
+    dispatchAsk(question);
   };
 
   return (
@@ -158,7 +175,10 @@ export function SetAsk({ block, page, online, t, onOpen, initialQuestion }: SetA
         </form>
         <div className="tp-study-ask__results" aria-live="polite">
           {matches && asked ? (
-            <Answers matches={matches} asked={asked} where={where} page={page} t={t} />
+            // The live region stays; what's inside is new on each Find it (see AskState).
+            <Fragment key={ask.count}>
+              <Answers matches={matches} asked={asked} where={where} page={page} t={t} />
+            </Fragment>
           ) : null}
         </div>
       </div>
