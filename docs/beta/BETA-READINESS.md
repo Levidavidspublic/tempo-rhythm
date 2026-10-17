@@ -200,7 +200,7 @@ Before clicking:
 - Web search with a real Mistral key (no key here, and none should be used).
 - Whether amit@tempoflow.app is read.
 - How the merged beta behaves on preview: proven per PR and as a combined local build, but not seen on preview, because nothing is merged yet.
-- /tracking with zero habits (#1071) is seen only in its unit tests. No test account has zero habits, and habits can only be deleted, not hidden and brought back. (#1073's sign-out step, UNKNOWN earlier, was walked at 18:37: before, signing out left the kept dump and task draft in the tab; after, they are cleared.)
+- /tracking with zero habits (#1071) is seen only in its unit tests. The walk and Dana accounts have habits, and habits can only be deleted, not hidden and brought back. A third test account with no data (alias tag `zero1017`) was made on TEST on 17 Oct, but it is waiting for approval. Once it is approved on TEST (`approval:setStatusByEmail`; I never run it), the before/after walk is one run. (#1073's sign-out step, UNKNOWN earlier, was walked at 18:37: before, signing out left the kept dump and task draft in the tab; after, they are cleared.)
 - A native Hebrew read of all new copy.
 
 ## Evidence in this folder
