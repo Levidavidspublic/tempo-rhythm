@@ -11,6 +11,9 @@ test.describe("study wiring", () => {
     ["/study/review", "Review"],
     ["/study/new?from=x&kind=flashcards", "New flashcards"],
     ["/study/listen?from=x", "Listen"],
+    // Signed out, the recorder asks to sign in like the other study screens; its consent step
+    // ("Before you start", no microphone until Start) is covered by tests/unit/record.
+    ["/study/record", "Record a meeting or lecture"],
   ];
   for (const [route, heading] of signedOut) {
     test(`${route} renders its screen and asks to sign in for data`, async ({ page }) => {
@@ -30,14 +33,6 @@ test.describe("study wiring", () => {
     await expect(main.getByRole("heading", { level: 1, name: "Plan back from a deadline" })).toBeVisible();
     await expect(main.locator('[data-component="Form"]')).toBeVisible();
     await expect(main.locator('[data-component="PlanPreview"]')).toBeAttached();
-  });
-
-  test("/study/record starts with consent and no microphone", async ({ page }) => {
-    await page.goto("/study/record");
-    await expect(page).not.toHaveURL(/\/sign-in/);
-    const record = page.locator('[data-component="RecordSession"]');
-    await expect(record).toBeVisible();
-    await expect(record.getByRole("heading", { name: "Before you start" })).toBeVisible();
   });
 
   test("/settings/reminders renders the reminders screen", async ({ page }) => {
