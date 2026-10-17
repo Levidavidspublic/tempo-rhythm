@@ -24,13 +24,13 @@ Backlog, after the four lines above (the first brief's lines and the SHARED KIT)
 - [ ] `BLOCKED` T5 English live voice round trip (Deepgram Flux → runtime model → Kokoro), barge-in, voice-gated streaming; Hebrew call = text in + read-aloud out.
 - [ ] `BLOCKED` T6 Bring your own voice: Settings screen + adapters.
 - [ ] `SKIPPED` (coach area: open coach PRs such as `t/1034-coach-dial-timeline-hebrew`) T7 Coach dial + Council view with a Scribe seat.
-- [ ] `AWAY` Remaining SHARED KIT pieces (logged as not this run's or blocked: Decisions), ROADMAP / parity items (done: recording → cards, share / Anki from a set, re-plan the rest, edit after saving, typed recall, ask this set), then quality passes (in progress).
-- [ ] `AWAY` Last step: fresh-context correctness review (done once, 5 of 6 fixed, 1 to Amit), fixes, RESUME comment.
+- [x] `AWAY` Remaining SHARED KIT pieces (logged as not this run's or blocked: Decisions), ROADMAP / parity items (done: recording → cards, share / Anki from a set, re-plan the rest, edit after saving, typed recall, ask this set), then quality passes. Done: keyboard walk and reduced motion; Undo toast focus; states audit and fixes; tests for untested wiring; click-through; axe audit.
+- [x] `AWAY` Last step: fresh-context correctness reviews (three: 5 of 6 fixed and 1 to Amit; 4 of 5 fixed and 1 left with a reason; all 5 fixed, including a privacy high), fixes, RESUME comment (https://github.com/Levidavidspublic/tempo-rhythm/pull/1081#issuecomment-6230986863).
 - [ ] `AT` Amit reviews and decides. The agent never merges.
 
 ## Now working on
 
-T3, T8, T9 and T10 are done (built, reviewed, fixed, shot at 390 / 1280 in light and dark, gate per screen in `docs/kitchen/study/GATE.md`), and so are the study-side backlog pieces (S16, S9, typed recall, edit / share / ask a set, re-plan, recording → cards). BACKLOG step 3 (quality) so far: the keyboard walk and reduced-motion pass in light and dark; the Undo toast never covers the focused control; the states audit and its fixes, with 14 new gallery views; and a second fresh-context review with its fixes. Next: any quality pass still worth doing in this run's areas, then the RESUME comment. Blocked items wait on Amit (Needs Amit).
+Nothing unblocked is left in this run's areas. T3, T8, T9 and T10 are done, and so are the study-side backlog and BACKLOG step 3 (quality). The RESUME comment is posted on #1081. What remains waits on Amit (Needs Amit) or belongs to other areas and open PRs (Decisions, Notes for doc sync). If this run restarts with new instructions, start from Needs Amit.
 
 ## Log
 
@@ -94,6 +94,7 @@ T3, T8, T9 and T10 are done (built, reviewed, fixed, shot at 390 / 1280 in light
 | 2026-10-17 05:55 | `8a04c9d` and the commit after it | quality | Builder V: an axe-core audit of every gallery view (axe 4.10.2 fetched from cdnjs at run time, not a dependency; WCAG 2.0 / 2.1 / 2.2 A and AA plus best-practice; 520 runs). The app had no violations. The 73 findings came from the gallery page itself (no `<title>`, views without the h1 or week h2 the app puts around them). The gallery now adds those headings, visually hidden, so shots don't change; rerun: 0 violations. 3,222 colour-contrast nodes over the paper texture are left for review: UNKNOWN beyond the gate's own R-25 | `docs/kitchen/study/axe-audit.json` |
 | 2026-10-17 06:30 | `f92cabc`…`1a23e46` | quality | Third fresh review, of the code since the second (1 high, 1 medium, 3 low). High, privacy: the recorder kept its screen through a sign-out (`82ce244`) without checking who signed back in. Another person signing in on the same browser would see the transcript, and a waiting Save could be written into their account; it also fired while sign-in was still loading. Fixed: RecordKeeper remembers the account the recording opened with and saves only when that same account is ready; a different account gets a fresh screen. `convex-arch:` `recordings.saveSession`, `undoSave` and `redoUndo` take an optional `forUser`, and the server writes nothing when it isn't the caller, which closes the token-switch race on the server. Medium: Turn into's Accept sent nothing and spun offline; now it waits and says why. Low: Undo and Bring it back while signed out say so; Turn into's first Undo uses the server's window. Full suite 3407 pass, 0 fail; typecheck and lint uncached; scans and build OK; e2e 35 passed, 89 skipped, 0 failed | `tests/unit/record/RecordSession.test.tsx`, `convex/recordings.test.ts`, `tests/unit/study/study_turn_into.test.tsx` |
 | 2026-10-17 06:35 | `1a23e46` | evidence | Evidence rerun on the final code: the record and Turn into views reshot (88 shots, all PASS); keyboard walks light and dark (260 runs each, 2,404 Tab stops, hidden 0, the one pre-existing finding); click-through (2,440 controls, 0 failures); axe (520 runs, 0 violations) | `docs/kitchen/study/GATE.md`, `docs/kitchen/tests.json` |
+| 2026-10-17 06:45 | — | all | RESUME comment posted: https://github.com/Levidavidspublic/tempo-rhythm/pull/1081#issuecomment-6230986863. PR body updated. Nothing unblocked is left in this run's areas | — |
 
 ## Decisions
 
@@ -150,11 +151,17 @@ T3, T8, T9 and T10 are done (built, reviewed, fixed, shot at 390 / 1280 in light
 - `AT` Approve (or not) libraries for IngestSheet: an OCR library for photos (for example `tesseract.js`, Apache-2.0, which downloads language data at run time) and PDF / Word readers. Until then photos work only where the browser has a built-in text detector.
 - `AT` Pick the reminders channel for S14, if any (for example Telegram or WhatsApp; each needs an account, a key and maybe spend). The adapter seam and Settings → Reminders are built, and `reminders.deliver` refuses with `no_channel` until a channel is chosen and wired.
 
+- `WALK` Walk the study screens signed in on the preview, from a phone: `/study`, a set, Review, Turn into from a page, `/study/plan`, `/study/record` (typing only is fine), `/study/listen`. Real data states, real voices and Hebrew copy are what the sandbox couldn't check.
 - `AT` A per-person daily cap on model calls. `study.generate` (up to 12k characters in / 4,000 tokens out) and `recordings.proposeFromTranscript` (20k / 1,500) are approval-gated and fail gracefully without a key, but an approved account can call them in a loop; the coach and brain dump have the same gap, so today only the provider's spend cap bounds it. A shared counter would be a new table across features: a decision for you, not something this run adds on its own.
 
 ## UNKNOWN
 
 - Live provider round trips: there is no `DEEPINFRA_API_KEY` or `DEEPGRAM_API_KEY` in this sandbox (names checked, no values read).
+- Signed-in screens with real data: not walked. AGENTS.md keeps tests off preview URLs, and the sandbox has no account. The gallery shots are the real components with fictional data.
+- Hebrew copy is machine-written and not proofread by a native speaker.
+- Screen readers, real phones and real speech voices: not tried. The keyboard walk, click-through and axe audit run in headless Chromium.
+- Contrast for text over the paper texture: axe leaves 3,222 nodes for review. The gate's R-25 measures text against the nearest opaque background only.
+- Controls inside the mini-app's sandboxed iframe were not pressed by the click-through.
 
 ## Notes for doc sync
 
