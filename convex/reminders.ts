@@ -31,6 +31,7 @@ import {
 import { isInactiveAccount } from "./lib/accountDeletion";
 import { requireUser, resolveUserFromIdentity } from "./lib/requireUser";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
+import { telegramFirstName } from "./lib/telegramName";
 
 /**
  * S14 reminders through a messaging channel (PRD F-61). On 2026-10-18 Amit said "Reminders, yes"
@@ -73,6 +74,8 @@ const channelValidator = v.object({
 	linkedAt: v.optional(v.number()),
 	/** Additive: the last link stopped because Telegram said the bot was blocked. */
 	needsReconnect: v.optional(v.boolean()),
+	/** Additive: the Telegram first name that pressed Start on the live link, when Telegram sent one. */
+	telegramFirstName: v.optional(v.string()),
 });
 
 /** The signed-in, active person, or null. Never throws, so the list shows signed out too. */
@@ -121,6 +124,9 @@ export const channels = query({
 				available: ready,
 				connected: ready && live !== null,
 				...(live ? { linkedAt: live.linkedAt } : {}),
+				...(live?.telegramFirstName !== undefined
+					? { telegramFirstName: live.telegramFirstName }
+					: {}),
 				...(!live && latest?.brokenAt !== undefined
 					? { needsReconnect: true }
 					: {}),
@@ -190,10 +196,15 @@ export const startTelegramLink = mutation({
 
 /**
  * The webhook's write: consume a live, unused code and point the person's Telegram link at
- * `chatId` (replacing an older chat). Returns the person's Tempo language for the reply, when set.
+ * `chatId` (replacing an older chat), with the Telegram first name that pressed Start when there is
+ * one. Returns the person's Tempo language for the reply, when set.
  */
 export const consumeLinkCode = internalMutation({
-	args: { codeHash: v.string(), chatId: v.string() },
+	args: {
+		codeHash: v.string(),
+		chatId: v.string(),
+		firstName: v.optional(v.string()),
+	},
 	returns: v.union(
 		v.object({
 			ok: v.literal(true),
@@ -226,6 +237,8 @@ export const consumeLinkCode = internalMutation({
 				chatId: args.chatId,
 				linkedAt: now,
 				brokenAt: undefined,
+				// A new chat's name, or none: never the previous chat's.
+				telegramFirstName: args.firstName,
 				updatedAt: now,
 			});
 		} else {
@@ -234,6 +247,9 @@ export const consumeLinkCode = internalMutation({
 				channelId: "telegram",
 				chatId: args.chatId,
 				linkedAt: now,
+				...(args.firstName !== undefined
+					? { telegramFirstName: args.firstName }
+					: {}),
 				createdAt: now,
 				updatedAt: now,
 			});
@@ -280,9 +296,11 @@ export const telegramWebhook = httpAction(async (ctx, request) => {
 	if (!telegramReady()) return empty200();
 	const start = parseStartUpdate(update);
 	if (!start) return empty200();
+	const firstName = telegramFirstName(update);
 	const result = await ctx.runMutation(internal.reminders.consumeLinkCode, {
 		codeHash: await sha256Hex(start.code),
 		chatId: start.chatId,
+		...(firstName !== null ? { firstName } : {}),
 	});
 	const fallback = replyLangFromTelegram(start.languageCode);
 	const text = result.ok

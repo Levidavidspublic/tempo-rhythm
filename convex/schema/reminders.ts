@@ -7,7 +7,10 @@ import { v } from "convex/values";
  * `reminderChannelLinks`: one live link per person and channel. `chatId` is Telegram's private chat
  * with the bot, kept as a string. Unlink is a soft delete (`deletedAt`) with a 5-minute Undo; a
  * link Telegram refused with 403 (the person blocked the bot) gets `brokenAt` and is soft-deleted
- * too, so nothing is sent to it again. `testUtcDateKey` / `testsToday` count "Send a test" per day.
+ * too, so nothing is sent to it again. `testUtcDateKey` / `testsToday` count "Send a test" per day
+ * (the daily limit sums them over all of a person's link rows, deleted ones too).
+ * `telegramFirstName` (optional): the Telegram display first name that pressed Start, at most 64
+ * characters, so Settings can say which chat is connected. Personal data, never logged.
  *
  * `reminderLinkCodes`: the one-time codes behind the t.me deep link. Only the SHA-256 hex of a code
  * is stored. A code lives 10 minutes (`expiresAt`), works once (`usedAt`), and a newer code
@@ -25,6 +28,7 @@ export const reminderTables = {
     brokenAt: v.optional(v.number()),
     testUtcDateKey: v.optional(v.string()),
     testsToday: v.optional(v.number()),
+    telegramFirstName: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
