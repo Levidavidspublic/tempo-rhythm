@@ -19,6 +19,11 @@ const fixed: Record<string, string> = {
   "next/navigation": stand("next-navigation.ts"),
   "@convex-dev/auth/react": stand("convex-auth-react.ts"),
   "@tempo/utils": path.join(repo, "packages/utils/src/index.ts"),
+  // The IngestSheet's readers load these with import(); an IIFE can't split them out, so the
+  // gallery gets a stand-in instead of inlining them (its ingest views pass their own readers).
+  "tesseract.js": stand("ingest-libs.ts"),
+  "pdfjs-dist/legacy/build/pdf.mjs": stand("ingest-libs.ts"),
+  mammoth: stand("ingest-libs.ts"),
 };
 
 const result = await Bun.build({
@@ -28,7 +33,12 @@ const result = await Bun.build({
   // `function getSelection` replaced window.getSelection and React's select events threw.
   format: "iife",
   minify: false,
-  define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  // import.meta is a syntax error in a classic script: the IngestSheet's pdf.js worker URL uses
+  // it (never reached here, see the stand-in above), so it gets a plain value.
+  define: {
+    "process.env.NODE_ENV": JSON.stringify("production"),
+    "import.meta.url": JSON.stringify("about:blank"),
+  },
   banner: "globalThis.process = globalThis.process || { env: { NODE_ENV: 'production' } };",
   plugins: [
     {

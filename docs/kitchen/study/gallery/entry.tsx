@@ -41,6 +41,10 @@
 // blocked), reminders-tg-connected, reminders-tg-sent, reminders-tg-error, reminders-tg-nophrases
 // and reminders-tg-disconnected (the Undo toast). MOCKED: the bot name, link code and nags are
 // fictional, and the row is drawn from fixed props (TelegramChannelRow), not the live queries.
+// The IngestSheet's PDF, Word and photo readers (owner-approved 2026-10-18) add ingest-photo-reading
+// (40% through a photo, with Stop reading), ingest-pdf-reading (page 3 of 12), ingest-pdf-no-text
+// (a scan: use a photo instead) and ingest-doc-refused (an old .doc). Each picks a sample file
+// through the real file input; MOCKED: the files and the readers (no OCR, pdf.js or mammoth runs).
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -48,6 +52,7 @@ import { MonthGrid, todayLocal } from "@/components/calendar/MonthGrid";
 import { PlanPathScreen } from "@/components/calendar/plan/PlanPathScreen";
 import { type WeekItem, WeekGrid } from "@/components/calendar/WeekGrid";
 import { IngestSheetView } from "@/components/ingest";
+import type { IngestReaders } from "@/components/ingest/read-sources";
 import { MemoryManager } from "@/components/memory/MemoryManager";
 import { MiniAppFrame } from "@/components/mini-app";
 import { PageEditorView } from "@/components/notes/PageEditorView";
@@ -506,6 +511,32 @@ const fill = (selector: string, value: string) => () => {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 };
 
+/** Pick a file in a file input the way the picker does (its files, then change). */
+const pickFile = (selector: string, file: File) => () => {
+  const input = document.querySelector(selector) as HTMLInputElement | null;
+  if (!input) return;
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  input.files = transfer.files;
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+};
+/** MOCKED readers for the ingest views: a photo 40% read, a PDF at page 3 of 12, nothing ends. */
+const READING: Partial<IngestReaders> = {
+  preparePhoto: async (image) => image,
+  createOcrWorker: async (onProgress) => {
+    onProgress({ stage: "reading", ratio: 0.4 });
+    return { recognize: () => new Promise(() => {}), terminate: async () => {} };
+  },
+  readPdfPages: async (_bytes, { onPage }) => {
+    onPage(3, 12);
+    return new Promise(() => {});
+  },
+  readDocxText: () => new Promise(() => {}),
+};
+/** MOCKED: a scanned PDF, two pages with no text layer. */
+const SCANNED: Partial<IngestReaders> = { readPdfPages: async () => ({ pageCount: 2, pages: ["", ""] }) };
+const MOCK_PDF = () => new File(["%PDF-1.7 MOCKED sample"], "MOCKED-biology-notes.pdf", { type: "application/pdf" });
+
 const PLAN_TOPICS = he ? "תאים\nמיטוזה ומיוזה | 2\nפוטוסינתזה\nגנטיקה" : "Cells\nMitosis and meiosis | 2\nPhotosynthesis\nGenetics";
 const RECORD_NOTES = he
   ? "פתחנו בחזרה על מיטוזה.\nאני אשלח את דוח המעבדה עד יום חמישי.\nהמורה הזכירה שהמבחן בעוד שבועיים.\nלא לשכוח להביא את המחברת."
@@ -960,6 +991,22 @@ const VIEWS: Record<string, () => ReactNode> = {
   "ingest-done": () => {
     steps(click('[role="dialog"] button[type="submit"]'));
     return <IngestSheetView initialTab="paste" initialText={INGEST_TEXT} onClose={() => {}} onSave={async () => "notes:31"} online photoSupported />;
+  },
+  "ingest-photo-reading": () => {
+    steps(pickFile("#gallery-ingest-photo", new File([Uint8Array.of(1)], "MOCKED-page.jpg", { type: "image/jpeg" })));
+    return <IngestSheetView id="gallery-ingest" initialTab="photo" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={READING} />;
+  },
+  "ingest-pdf-reading": () => {
+    steps(pickFile("#gallery-ingest-file", MOCK_PDF()));
+    return <IngestSheetView id="gallery-ingest" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={READING} />;
+  },
+  "ingest-pdf-no-text": () => {
+    steps(pickFile("#gallery-ingest-file", MOCK_PDF()));
+    return <IngestSheetView id="gallery-ingest" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={SCANNED} />;
+  },
+  "ingest-doc-refused": () => {
+    steps(pickFile("#gallery-ingest-file", new File(["MOCKED"], "MOCKED-old-essay.doc", { type: "application/msword" })));
+    return <IngestSheetView id="gallery-ingest" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={READING} />;
   },
   "memory-list": () => <MemoryManager />,
   "memory-edit": () => {
