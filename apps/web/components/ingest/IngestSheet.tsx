@@ -86,12 +86,14 @@ type PhotoState =
   | "none"
   | "error"
   | "too_large"
+  | "pixels"
   | "load";
 
 const PHOTO_PROBLEM = {
   none: "ig.photo.none",
   error: "ig.photo.error",
   too_large: "ig.photo.tooLarge",
+  pixels: "ig.photo.pixels",
   load: "ig.photo.load",
 } as const;
 
@@ -115,6 +117,9 @@ const FILE_PROBLEM = {
   no_text: "ig.file.noText",
   locked: "ig.file.locked",
   file_too_big: "ig.file.bigPdf",
+  docx_too_big: "ig.file.docxUnpacked",
+  not_docx: "ig.file.notDocx",
+  timeout: "ig.file.timeout",
 } as const;
 
 function fileProblemKey(problem: keyof typeof FILE_PROBLEM, kind: IngestSourceKind | null) {

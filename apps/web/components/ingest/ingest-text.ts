@@ -70,6 +70,12 @@ export type IngestProblem =
   | "locked"
   /** A PDF or Word file over its size cap (the text limit is "too_large"). */
   | "file_too_big"
+  /** A Word file whose parts declare more than the reader unpacks (source-checks.ts). */
+  | "docx_too_big"
+  /** A .docx that isn't a zip with a word/document.xml in it. */
+  | "not_docx"
+  /** A Word file that took longer than DOCX_READ_TIMEOUT_MS to read. */
+  | "timeout"
   /** The person stopped the reading. */
   | "cancelled";
 

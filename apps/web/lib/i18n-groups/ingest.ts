@@ -36,11 +36,17 @@ export const en = {
     "This PDF is larger than 20 MB. Save a shorter part of it as a new PDF, or paste the text.",
   "ig.file.bigDocx":
     "This Word file is larger than 10 MB. Save a copy without pictures, or paste the text.",
+  "ig.file.docxUnpacked":
+    "This Word file is too big to read here. Save a shorter copy without pictures, or paste the text.",
+  "ig.file.notDocx":
+    "This doesn't look like a Word file. Open it in Word or Google Docs and save it as .docx, or paste the text.",
+  "ig.file.timeout":
+    "Reading this Word file took too long, so it stopped. Save a shorter copy, or paste the text.",
   "ig.file.pagesCut":
     "Only the first {read} of {total} pages were read. Bring in the rest from a shorter PDF, or paste it.",
   "ig.file.read": "Read {name}. Check the text below before you save.",
   "ig.file.type":
-    "This file type can't be read here yet. Try a .txt, .md, .csv or .html file, or paste the text.",
+    "This file type can't be read here yet. Try a .txt, .md, .csv, .html, .pdf or .docx file, or paste the text.",
   "ig.file.empty": "This file looks empty. Pick another file or paste the text.",
   "ig.file.tooLarge":
     "This file has more than 200 KB of text. Split it into smaller files, or paste a part of it.",
@@ -70,6 +76,8 @@ export const en = {
   "ig.photo.error": "This photo couldn't be read. Try another photo, or paste the text.",
   "ig.photo.tooLarge":
     "This photo is larger than 15 MB. Try a smaller photo or a screenshot of the page, or paste the text.",
+  "ig.photo.pixels":
+    "This photo is too big to read here. Try a smaller photo or a screenshot of the page, or paste the text.",
   "ig.photo.unsupported":
     "Reading photos isn't available in this browser yet. You can type or paste the text instead.",
   "ig.photo.usePaste": "Paste text instead",
@@ -127,11 +135,17 @@ export const he: Record<keyof typeof en, string> = {
   "ig.file.locked": "ה־PDF הזה נעול בסיסמה. שמרו עותק בלי סיסמה, או הדביקו את הטקסט.",
   "ig.file.bigPdf": "ה־PDF הזה גדול מ־20 MB. שמרו חלק קצר יותר ממנו כ־PDF חדש, או הדביקו את הטקסט.",
   "ig.file.bigDocx": "קובץ ה־Word הזה גדול מ־10 MB. שמרו עותק בלי תמונות, או הדביקו את הטקסט.",
+  "ig.file.docxUnpacked":
+    "קובץ ה־Word הזה גדול מכדי לקרוא אותו כאן. שמרו עותק קצר יותר בלי תמונות, או הדביקו את הטקסט.",
+  "ig.file.notDocx":
+    "נראה שזה לא קובץ Word. פתחו אותו ב־Word או ב־Google Docs ושמרו אותו כ־.docx, או הדביקו את הטקסט.",
+  "ig.file.timeout":
+    "הקריאה של קובץ ה־Word הזה לקחה יותר מדי זמן, ולכן נעצרה. שמרו עותק קצר יותר, או הדביקו את הטקסט.",
   "ig.file.pagesCut":
     "נקראו רק {read} העמודים הראשונים מתוך {total}. את השאר אפשר להוסיף מ־PDF קצר יותר, או להדביק.",
   "ig.file.read": "הקובץ {name} נקרא. בדקו את הטקסט למטה לפני השמירה.",
   "ig.file.type":
-    "עוד אי אפשר לקרוא כאן סוג קובץ כזה. נסו קובץ .txt, .md, .csv או .html, או הדביקו את הטקסט.",
+    "עוד אי אפשר לקרוא כאן סוג קובץ כזה. נסו קובץ .txt, .md, .csv, .html, .pdf או .docx, או הדביקו את הטקסט.",
   "ig.file.empty": "נראה שהקובץ ריק. בחרו קובץ אחר או הדביקו את הטקסט.",
   "ig.file.tooLarge":
     "בקובץ הזה יש יותר מ־200 KB של טקסט. חלקו אותו לקבצים קטנים יותר, או הדביקו חלק ממנו.",
@@ -157,6 +171,8 @@ export const he: Record<keyof typeof en, string> = {
   "ig.photo.error": "לא הצלחנו לקרוא את התמונה. נסו תמונה אחרת, או הדביקו את הטקסט.",
   "ig.photo.tooLarge":
     "התמונה הזאת גדולה מ־15 MB. נסו תמונה קטנה יותר או צילום מסך של הדף, או הדביקו את הטקסט.",
+  "ig.photo.pixels":
+    "התמונה הזאת גדולה מכדי לקרוא אותה כאן. נסו תמונה קטנה יותר או צילום מסך של הדף, או הדביקו את הטקסט.",
   "ig.photo.unsupported":
     "קריאת תמונות עוד לא זמינה בדפדפן הזה. אפשר להקליד או להדביק את הטקסט במקום.",
   "ig.photo.usePaste": "הדביקו טקסט במקום",

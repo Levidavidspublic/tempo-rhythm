@@ -85,6 +85,8 @@ describe("readPhotoText", () => {
   // The browser's bitmap decoder and canvas, and the OCR worker, stood in for: what was decoded,
   // and how. No network: the OCR is a fake passed in, never tesseract.js.
   const decoded: { size: number; options: unknown }[] = [];
+  // The canvas the decoded photo was drawn on, and the size it was drawn at.
+  const drawn: { canvas: number[]; drawn: number[] }[] = [];
   const saved: Record<string, unknown> = {};
   const KEYS = ["createImageBitmap", "OffscreenCanvas"] as const;
   const ocr = {
@@ -96,9 +98,18 @@ describe("readPhotoText", () => {
 
   beforeAll(() => {
     for (const key of KEYS) saved[key] = globals[key];
-    globals.createImageBitmap = async (image: Blob, options?: unknown) => {
+    // Like the browser: the resize options are honoured; without them, the photo's full size
+    // (a 4,032 by 3,024 phone photo).
+    globals.createImageBitmap = async (
+      image: Blob,
+      options?: { resizeWidth?: number; resizeHeight?: number }
+    ) => {
       decoded.push({ size: image.size, options });
-      return { width: 2000, height: 1500, close() {} };
+      return {
+        width: options?.resizeWidth ?? 4032,
+        height: options?.resizeHeight ?? 3024,
+        close() {},
+      };
     };
     globals.OffscreenCanvas = class {
       constructor(
@@ -106,7 +117,12 @@ describe("readPhotoText", () => {
         public height: number
       ) {}
       getContext() {
-        return { drawImage() {} };
+        const canvas = [this.width, this.height];
+        return {
+          drawImage: (_bitmap: unknown, _x: number, _y: number, w: number, h: number) => {
+            drawn.push({ canvas, drawn: [w, h] });
+          },
+        };
       }
       async convertToBlob() {
         return new Blob([Uint8Array.of(9)], { type: "image/png" });
@@ -127,13 +143,25 @@ describe("readPhotoText", () => {
     expect(decoded).toEqual([]);
   });
 
+  // Changed in the review fixes: this test used to check only the options passed to the
+  // decoder, whose stand-in ignored them, so it passed while tall photos were decoded huge and
+  // small ones scaled up. It now checks the size the photo is actually drawn at.
   test("a photo is decoded at most 2,000 pixels wide, then read", async () => {
     decoded.length = 0;
-    const photo = new Blob([Uint8Array.of(1, 2, 3)], { type: "image/png" });
+    drawn.length = 0;
+    // A PNG header (IHDR) for a 4,032 by 3,024 photo.
+    const header = new Uint8Array(33);
+    header.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 73, 72, 68, 82]);
+    new DataView(header.buffer).setUint32(16, 4032);
+    new DataView(header.buffer).setUint32(20, 3024);
+    const photo = new Blob([header], { type: "image/png" });
     expect(await readPhotoText(photo, { readers: ocr })).toEqual({
       ok: true,
       text: "Chapter 4\nCells divide.",
     });
-    expect(decoded).toEqual([{ size: 3, options: { resizeWidth: 2000, resizeQuality: "high" } }]);
+    expect(decoded).toEqual([
+      { size: 33, options: { resizeWidth: 2000, resizeHeight: 1500, resizeQuality: "high" } },
+    ]);
+    expect(drawn).toEqual([{ canvas: [2000, 1500], drawn: [2000, 1500] }]);
   });
 });
