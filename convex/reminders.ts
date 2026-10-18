@@ -389,7 +389,10 @@ export const nagForDelivery = internalQuery({
 	},
 });
 
-/** The person's live Telegram link (id and chat), or null. Internal: `deliver` only. */
+/**
+ * The person's live Telegram link (id and chat), or null. Null too when the owner's account is
+ * deactivated or deleted (in its grace period), so nothing is sent to them. Internal: `deliver` only.
+ */
 export const liveTelegramLink = internalQuery({
 	args: { userId: v.id("users") },
 	returns: v.union(
@@ -397,6 +400,8 @@ export const liveTelegramLink = internalQuery({
 		v.object({ linkId: v.id("reminderChannelLinks"), chatId: v.string() }),
 	),
 	handler: async (ctx, args) => {
+		const owner = await ctx.db.get(args.userId);
+		if (!owner || isInactiveAccount(owner)) return null;
 		const live = liveOf(await telegramLinks(ctx, args.userId));
 		return live ? { linkId: live._id, chatId: live.chatId } : null;
 	},
