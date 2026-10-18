@@ -17,6 +17,7 @@ import { useFlushCoachPage } from "./CoachPage";
 import { CoachSources } from "./CoachSources";
 import { VoiceCall } from "./voice/VoiceCall";
 import { useVoiceCall, type VoiceSendResult } from "./voice/useVoiceCall";
+import { ExecutorLookup, ExecutorLookupCard } from "./ExecutorLookup";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -193,7 +194,8 @@ export function CoachConversation({
     // back to listening instead of waiting for a message that won't come.
     return (await reply(conversationId)) ? { kind: "reply" } : { kind: "none" };
   };
-  const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card");
+  // Voice never reads out a lookup answer: it names apps from Executor (TEMPO-B07-08).
+  const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card" && m.modelUsed !== "executor-lookup");
   // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
   // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
   const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
@@ -270,6 +272,7 @@ export function CoachConversation({
                 </div>
                 {message.role === "assistant" ? <CoachSources content={message.content} sources={message.sources} /> : null}
                 {proposal ? <ChatProposal messageId={message._id} proposal={proposal} /> : null}
+                {message.role === "assistant" ? <ExecutorLookupCard toolCalls={message.toolCalls} /> : null}
               </Fragment>
             );
           })
@@ -295,6 +298,7 @@ export function CoachConversation({
         ) : null}
         {variant === "today" ? null : <div ref={bottomRef} />}
       </div>
+      {conversationId && variant !== "today" ? <ExecutorLookup conversationId={conversationId} disabled={busy || waitingForPage} /> : null}
 
       <form
         className="tp-composer"
