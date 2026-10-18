@@ -59,6 +59,7 @@ import type * as lib_task_filters from "../lib/task_filters.js";
 import type * as lib_templateCatalog from "../lib/templateCatalog.js";
 import type * as lib_testFakeCtx from "../lib/testFakeCtx.js";
 import type * as lib_voicePolicy from "../lib/voicePolicy.js";
+import type * as lib_webSearch from "../lib/webSearch.js";
 import type * as mcp from "../mcp.js";
 import type * as mcpHttp from "../mcpHttp.js";
 import type * as mcpTools from "../mcpTools.js";
@@ -138,6 +139,7 @@ declare const fullApi: ApiFromModules<{
   "lib/templateCatalog": typeof lib_templateCatalog;
   "lib/testFakeCtx": typeof lib_testFakeCtx;
   "lib/voicePolicy": typeof lib_voicePolicy;
+  "lib/webSearch": typeof lib_webSearch;
   mcp: typeof mcp;
   mcpHttp: typeof mcpHttp;
   mcpTools: typeof mcpTools;

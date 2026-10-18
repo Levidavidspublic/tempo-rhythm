@@ -117,6 +117,13 @@ export default defineSchema({
     modelUsed: v.optional(v.string()),
     councilResponse: v.optional(v.any()),
     toolCalls: v.optional(v.any()),
+    /**
+     * TEMPO-B07-01 (#976): the web pages a coach reply that searched the web cites, in the order
+     * its `[1]`, `[2]` markers count. Title, site and link only: no page text is stored.
+     */
+    sources: v.optional(
+      v.array(v.object({ title: v.string(), site: v.string(), url: v.string() })),
+    ),
     createdAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
@@ -296,7 +303,9 @@ export default defineSchema({
     .index("by_userId_status", ["userId", "status"])
     .index("by_userId_dueAt", ["userId", "dueAt"])
     .index("by_userId_projectId", ["userId", "projectId"])
-    .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+    .index("by_userId_deletedAt", ["userId", "deletedAt"])
+    // TEMPO-B07-01 (#976): live tasks finished in a time range (`tasks.listDoneInRange`).
+    .index("by_userId_deletedAt_completedAt", ["userId", "deletedAt", "completedAt"]),
 
   /**
    * TF-OSS-01 — recurrence series config. Field design lifted from
@@ -816,12 +825,31 @@ export default defineSchema({
     timeZone: v.string(),
     emailReminders: v.boolean(),
     inAppNotifications: v.boolean(),
+    /** TEMPO-B07-01 (#976): the coach may search the web. Missing means off. */
+    coachWebSearch: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
+
+  /**
+   * TEMPO-B07-01 (#976): one row per web search the coach actually ran, for the per-person daily
+   * limit (`coach.WEB_SEARCH_DAILY_LIMIT`, counted per UTC day in `utcDateKey`). Content-free: no
+   * query, result or page text. Tombstoned rows still count toward their day. Rows from more than
+   * 7 days ago are pruned as new searches are booked (`coach.reserveWebSearch`).
+   */
+  coachWebSearches: defineTable({
+    userId: v.id("users"),
+    /** UTC date (`YYYY-MM-DD`) the search ran on. */
+    utcDateKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_utcDateKey", ["userId", "utcDateKey"]),
 
   /** A reminder the person defines. Phrases are their own words or derived from them. */
   nags: defineTable({
