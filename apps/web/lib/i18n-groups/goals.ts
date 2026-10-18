@@ -47,6 +47,11 @@ export const en = {
   "gl.draft": "New goal",
   "gl.added": "Goal added",
   "gl.draftwhy": "Write why it matters, when you're ready.",
+  "gl.name.label": "Goal name", // new
+  "gl.name.placeholder": "Something you'd like to be true", // new
+  "gl.name.empty": "Give it a name first. A few words is enough.", // new
+  "gl.count.one": "Showing {n} goal", // new
+  "gl.count.many": "Showing {n} goals", // new
 
   // Goal detail
   "gd.back": "All goals",
@@ -187,6 +192,11 @@ export const he: Record<keyof typeof en, string> = {
   "gl.draft": "מטרה חדשה",
   "gl.added": "המטרה נוספה",
   "gl.draftwhy": "כתבי למה זה חשוב, כשתהיי מוכנה.",
+  "gl.name.label": "שם המטרה",
+  "gl.name.placeholder": "משהו שהיית רוצה שיתקיים",
+  "gl.name.empty": "קודם צריך לתת למטרה שם. כמה מילים מספיקות.",
+  "gl.count.one": "מוצגת מטרה אחת",
+  "gl.count.many": "מוצגות {n} מטרות",
 
   "gd.back": "כל המטרות",
   "gd.titleLabel": "מטרה",
