@@ -8,6 +8,37 @@
   align-items: center;
   gap: var(--tp-space-2);
 }
+/* The Telegram row: actions and the test picker sit under the row's words; the badge and
+   Disconnect stay in the control column. */
+.tp-rem-tg { align-items: flex-start; }
+.tp-rem-tg .tp-setting-row__control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--tp-space-2);
+}
+.tp-rem-tg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-2);
+  margin-block-start: var(--tp-space-2);
+}
+.tp-rem-tg__actions .tp-help { flex-basis: 100%; }
+.tp-rem-tg__test {
+  display: grid;
+  gap: var(--tp-space-2);
+  margin-block-start: var(--tp-space-2);
+  max-width: var(--tp-measure);
+}
+.tp-rem-tg__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-2);
+}
+/* Always in the page, so a screen reader hears each result; empty takes no room. */
+.tp-rem-tg__status { display: block; }
 
 /* S26 ShareSheet */
 .tp-share-subject {

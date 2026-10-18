@@ -1,8 +1,10 @@
 /**
  * @screen: settings-reminders (no v3 mock; kitchen T10 S14 [EXTRAPOLATED])
- * @summary: Messaging channels a nag could use, all "Not connected yet"; reminders stay in the app.
- * @queries: reminders.channels
- * @mutations: none
+ * @summary: Messaging channels a nag can use: Telegram (connect, send a test, disconnect with Undo);
+ *   WhatsApp and SMS stay "Not connected yet". No scheduled sends yet.
+ * @queries: reminders.channels, nags.list
+ * @mutations: reminders.startTelegramLink, reminders.unlinkTelegram, reminders.undoUnlinkTelegram,
+ *   reminders.sendTest (action)
  * @auth: required
  */
 import { RemindersSettings } from "@/components/settings-reminders";

@@ -2,13 +2,24 @@
 
 import { useQuery } from "convex/react";
 import Link from "next/link";
+import { Fragment, type ReactNode } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { StateLoading } from "@/components/settings/states";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { MessageKey } from "@/lib/i18n";
+import { TelegramChannel } from "./TelegramChannel";
 
-export type ReminderChannelRow = { id: string; label: string; connected: boolean };
+export type ReminderChannelRow = {
+  id: string;
+  label: string;
+  connected: boolean;
+  /** False when the channel can't be connected (Telegram's env missing; WhatsApp and SMS). */
+  available?: boolean;
+  linkedAt?: number;
+  /** Telegram stopped taking messages (the bot was blocked); connect again. */
+  needsReconnect?: boolean;
+};
 
 const ABOUT: Record<string, { icon: TpIconName; what: MessageKey }> = {
   whatsapp: { icon: "phone", what: "rem.ch.whatsapp" },
@@ -17,18 +28,31 @@ const ABOUT: Record<string, { icon: TpIconName; what: MessageKey }> = {
 };
 
 /**
- * Settings > Reminders body (S14, PRD F-61): the candidate messaging channels from
- * `reminders.channels`, each "Not connected yet" with a badge (an icon and the words, never colour
- * alone), and a way to the nags whose own words a channel would send. There is no Connect button:
- * which channel Tempo uses is still open, so reminders stay in the app.
+ * Settings > Reminders body (S14, PRD F-61): the messaging channels from `reminders.channels`, each
+ * with a badge (an icon and the words, never colour alone), and a way to the nags whose own words a
+ * channel sends. Telegram (picked 2026-10-18) has its own row with Connect, Send a test and
+ * Disconnect (`TelegramChannel`); WhatsApp and SMS stay "Not connected yet" placeholders.
  */
 export function RemindersSettings() {
   const channels = useQuery(api.reminders.channels, {});
   if (channels === undefined) return <StateLoading label="rem.loading" rows={3} />;
-  return <RemindersChannelList channels={channels} />;
+  const telegram = channels.find((channel) => channel.id === "telegram");
+  return (
+    <RemindersChannelList channels={channels} telegram={telegram ? <TelegramChannel channel={telegram} /> : undefined} />
+  );
 }
 
-export function RemindersChannelList({ channels }: { channels: readonly ReminderChannelRow[] }) {
+/**
+ * The list as drawn. `telegram`, when given, takes the Telegram row's place (the live row or a
+ * gallery state); without it every channel shows its "Not connected yet" badge.
+ */
+export function RemindersChannelList({
+  channels,
+  telegram,
+}: {
+  channels: readonly ReminderChannelRow[];
+  telegram?: ReactNode;
+}) {
   const { t } = useLocale();
   return (
     <>
@@ -43,6 +67,7 @@ export function RemindersChannelList({ channels }: { channels: readonly Reminder
           <p className="tp-help">{t("rem.empty")}</p>
         ) : (
           channels.map((channel) => {
+            if (channel.id === "telegram" && telegram) return <Fragment key={channel.id}>{telegram}</Fragment>;
             const about = ABOUT[channel.id] ?? { icon: "bell" as TpIconName, what: "rem.ch.other" as MessageKey };
             return (
               <div className="tp-setting-row" data-component="SettingRow" data-channel={channel.id} key={channel.id}>
@@ -54,7 +79,7 @@ export function RemindersChannelList({ channels }: { channels: readonly Reminder
                   <span className="tp-help">{t(about.what)}</span>
                 </div>
                 <div className="tp-setting-row__control">
-                  {/* Nothing is connected today; a connected channel gets its own control later. */}
+                  {/* A placeholder channel: nothing to connect. */}
                   <span className="tp-badge" data-component="Badge">
                     <TpIcon name="clock" size="sm" />
                     <span>{t("rem.notConnected")}</span>
