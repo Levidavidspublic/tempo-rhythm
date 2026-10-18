@@ -60,6 +60,7 @@ export const en = {
   "rem.tg.err.not_found": "That nag isn't here any more.",
   "rem.tg.err.generic": "Something went wrong. Try again.",
   "rem.tg.err.undo": "Couldn't bring Telegram back. Connect it again instead.",
+  "rem.tg.expired": "That link expired. Press Connect Telegram for a new one.",
 
   // S26 ShareSheet
   "share.menu": "Share…",
@@ -150,6 +151,7 @@ export const he: Record<T10CopyKey, string> = {
   "rem.tg.err.not_found": "הנדנוד הזה כבר לא כאן.",
   "rem.tg.err.generic": "משהו השתבש. אפשר לנסות שוב.",
   "rem.tg.err.undo": "לא הצלחנו להחזיר את Telegram. אפשר לחבר אותו מחדש.",
+  "rem.tg.expired": "הקישור פג. לוחצים על חיבור Telegram כדי לקבל קישור חדש.",
 
   "share.menu": "שיתוף…",
   "share.titlePage": "שיתוף העמוד",

@@ -1,16 +1,14 @@
 "use client";
 
-import * as convexReact from "convex/react";
-import { useMutation, useQuery } from "convex/react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useToastRoom } from "@/components/study/useToastRoom";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { UndoToast } from "@/components/you/UndoToast";
-import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { MessageKey } from "@/lib/i18n";
 import type { ReminderChannelRow } from "./RemindersSettings";
+import { useTelegramApi } from "./telegramApi";
 
 /** One accepted phrase of an enabled nag, as the "Send a test" picker shows it. */
 export type TestPhrase = { value: string; label: string };
@@ -76,6 +74,8 @@ export function TelegramChannelRow({
   onDisconnect,
   connectRef,
   testRef,
+  openRef,
+  disconnectRef,
 }: {
   channel: ReminderChannelRow;
   /** The t.me link while waiting for Start; null otherwise. */
@@ -91,6 +91,8 @@ export function TelegramChannelRow({
   onDisconnect: () => void;
   connectRef?: RefObject<HTMLButtonElement | null>;
   testRef?: RefObject<HTMLButtonElement | null>;
+  openRef?: RefObject<HTMLAnchorElement | null>;
+  disconnectRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const { t } = useLocale();
   const available = channel.available === true;
@@ -143,7 +145,13 @@ export function TelegramChannelRow({
               <span>{t("rem.tg.connect")}</span>
             </button>
             {waitingUrl ? (
-              <a className="tp-btn tp-btn--ghost" href={waitingUrl} target="_blank" rel="noopener noreferrer">
+              <a
+                ref={openRef}
+                className="tp-btn tp-btn--ghost"
+                href={waitingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <TpIcon name="link" size="sm" />
                 <span>{t("rem.tg.openAgain")}</span>
               </a>
@@ -226,6 +234,7 @@ export function TelegramChannelRow({
               <span>{t("rem.tg.connected")}</span>
             </span>
             <button
+              ref={disconnectRef}
               className="tp-btn tp-btn--secondary tp-btn--sm"
               type="button"
               disabled={busy === "disconnect"}
@@ -248,23 +257,27 @@ export function TelegramChannelRow({
 
 type UndoState = { id: number; linkId: Id<"reminderChannelLinks">; untilMs: number };
 
+/** Focus fell to the page (the focused control just unmounted), or nothing has it. */
+function focusLost(): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  return !active || active === document.body;
+}
+
 /**
  * The live Telegram row: `reminders.channels` flips it to Connected on its own once the person
- * presses Start, so Connect only opens the link and waits. Disconnect is a soft delete with a
- * 5:00 Undo toast.
+ * presses Start, so Connect only opens the link and waits (until the code's `expiresAt`). When the
+ * flip takes away the focused button, focus goes to Send a test (or Disconnect with no phrase to
+ * send), as it does after Undo. Disconnect is a soft delete with a 5:00 Undo toast.
  */
 export function TelegramChannel({ channel }: { channel: ReminderChannelRow }) {
   const { t } = useLocale();
   const connected = channel.available === true && channel.connected;
-  const nags = useQuery(api.nags.list, connected ? {} : "skip");
-  const startLink = useMutation(api.reminders.startTelegramLink);
-  const unlink = useMutation(api.reminders.unlinkTelegram);
-  const undoUnlink = useMutation(api.reminders.undoUnlinkTelegram);
-  // Through the namespace: several test files stand in for convex/react without `useAction`, and a
-  // named import of a missing export fails when this module loads (bun's process-wide mocks).
-  const sendTest = convexReact.useAction(api.reminders.sendTest);
+  const { nags, startLink, unlink, undoUnlink, sendTest } = useTelegramApi(connected);
 
   const [waitingUrl, setWaitingUrl] = useState<string | null>(null);
+  /** When the waiting link's code stops working (its `expiresAt`). */
+  const [waitingUntil, setWaitingUntil] = useState<number | null>(null);
   const [busy, setBusy] = useState<TelegramBusy>(null);
   const [status, setStatus] = useState<TelegramStatus>(null);
   const [selected, setSelected] = useState("");
@@ -272,7 +285,14 @@ export function TelegramChannel({ channel }: { channel: ReminderChannelRow }) {
   useToastRoom(toast);
   const connectRef = useRef<HTMLButtonElement>(null);
   const testRef = useRef<HTMLButtonElement>(null);
+  const openRef = useRef<HTMLAnchorElement>(null);
+  const disconnectRef = useRef<HTMLButtonElement>(null);
   const focusNext = useRef<"connect" | "test" | null>(null);
+  /**
+   * Focus waiting for the Connected row to draw its controls (the phrases load after the flip):
+   * "undo" after Undo, "lost" when the focused Connect or Open button went away with the flip.
+   */
+  const focusConnected = useRef<"undo" | "lost" | null>(null);
 
   const phrases = nags === undefined ? undefined : testPhrases(nags);
   const firstPhrase = phrases?.[0]?.value ?? "";
@@ -288,13 +308,40 @@ export function TelegramChannel({ channel }: { channel: ReminderChannelRow }) {
     wasConnected.current = connected;
     if (connected && waitingUrl) {
       setWaitingUrl(null);
+      setWaitingUntil(null);
       setStatus({ tone: "ok", text: "rem.tg.linked" });
     }
     const target = focusNext.current;
     focusNext.current = null;
     if (target === "connect" && !connected) connectRef.current?.focus();
-    if (target === "test" && connected) testRef.current?.focus();
+    if (connected && (target === "test" || focusLost())) focusConnected.current = target === "test" ? "undo" : "lost";
   }, [connected, waitingUrl]);
+
+  // Once the Connected row has its controls: Send a test, or Disconnect when there's no phrase to
+  // send. A person who moved focus elsewhere meanwhile keeps it there.
+  useEffect(() => {
+    const pending = focusConnected.current;
+    if (!pending || !connected || phrases === undefined) return;
+    focusConnected.current = null;
+    if (pending === "lost" && !focusLost()) return;
+    (testRef.current ?? disconnectRef.current)?.focus();
+  }, [connected, phrases]);
+
+  // A link code works for 10 minutes: at its `expiresAt` the waiting state ends and Connect is
+  // offered again (focus on the link to Telegram moves to Connect, which stays).
+  useEffect(() => {
+    if (waitingUntil === null || connected) return;
+    const id = window.setTimeout(
+      () => {
+        if (typeof document !== "undefined" && document.activeElement === openRef.current) connectRef.current?.focus();
+        setWaitingUrl(null);
+        setWaitingUntil(null);
+        setStatus({ tone: "ok", text: "rem.tg.expired" });
+      },
+      Math.max(0, waitingUntil - Date.now()),
+    );
+    return () => window.clearTimeout(id);
+  }, [waitingUntil, connected]);
 
   const connect = async () => {
     if (busy) return;
@@ -317,6 +364,7 @@ export function TelegramChannel({ channel }: { channel: ReminderChannelRow }) {
         tab.location.href = started.url;
       }
       setWaitingUrl(started.url);
+      setWaitingUntil(started.expiresAt);
     } catch {
       tab?.close();
       setStatus({ tone: "error", text: "rem.tg.err.generic" });
@@ -380,6 +428,8 @@ export function TelegramChannel({ channel }: { channel: ReminderChannelRow }) {
         onDisconnect={() => void disconnect()}
         connectRef={connectRef}
         testRef={testRef}
+        openRef={openRef}
+        disconnectRef={disconnectRef}
       />
       {toast ? (
         <UndoToast
