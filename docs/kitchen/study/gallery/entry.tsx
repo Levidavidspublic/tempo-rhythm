@@ -31,6 +31,11 @@
 // "Unknown gallery view" heading, so a stale shot list is caught.
 // study-review-quizset: /study/review?set= naming a live quiz says Review is for flashcards, with
 // a link to open the quiz (MOCKED: the sample quiz above; its queue is empty, as the server's is).
+// Tempo's voice on the audio recap adds study-listen-tempo (reading in Tempo's voice, with the
+// Voice choice), study-listen-tempo-fallback (Tempo's voice fails, the device's reads on, said in
+// a polite line) and study-listen-tempo-budget (today's reading in Tempo's voice is used up).
+// MOCKED: the sample page above, a stand-in studyVoice.speak that answers with a short silent WAV
+// (or fails), and a stand-in device voice that reads quietly.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -46,6 +51,7 @@ import { ReviewHub } from "@/components/study/ReviewHub";
 import { AudioRecapPlayer } from "@/components/study/recap/AudioRecapPlayer";
 import { ListenScreen } from "@/components/study/recap/ListenScreen";
 import type { SpeechEngine } from "@/components/study/recap/speech";
+import type { TempoPiece, TempoVoiceSource } from "@/components/study/recap/tempoVoice";
 import { ReviewSession } from "@/components/study/ReviewSession";
 import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
@@ -432,6 +438,47 @@ const failingVoice: SpeechEngine = {
   },
 };
 
+/** A device voice that reads without a sound and never finishes (the fallback views). MOCKED. */
+const quietVoice: SpeechEngine = {
+  available: () => true,
+  speak: () => ({ cancel: () => {} }),
+};
+
+/** Two seconds of silence as a WAV, standing in for Tempo's voice. MOCKED: no provider. */
+function silentWav(seconds = 2, rate = 8000): ArrayBuffer {
+  const samples = seconds * rate;
+  const buffer = new ArrayBuffer(44 + samples * 2);
+  const data = new DataView(buffer);
+  const text = (at: number, value: string) => {
+    for (let i = 0; i < value.length; i += 1) data.setUint8(at + i, value.charCodeAt(i));
+  };
+  text(0, "RIFF");
+  data.setUint32(4, 36 + samples * 2, true);
+  text(8, "WAVEfmt ");
+  data.setUint32(16, 16, true);
+  data.setUint16(20, 1, true);
+  data.setUint16(22, 1, true);
+  data.setUint32(24, rate, true);
+  data.setUint32(28, rate * 2, true);
+  data.setUint16(32, 2, true);
+  data.setUint16(34, 16, true);
+  text(36, "data");
+  data.setUint32(40, samples * 2, true);
+  return buffer;
+}
+
+/** A stand-in for the listen screen's Tempo voice source. MOCKED. */
+function galleryTempo(kind: "playing" | "fails" | "budget"): TempoVoiceSource {
+  return {
+    availability: kind === "budget" ? { status: "budget", charsLeft: 0 } : { status: "available", charsLeft: 18_400 },
+    online: true,
+    fetchPiece: async (): Promise<TempoPiece> => {
+      if (kind === "fails") throw new Error("Gallery: Tempo's voice is down");
+      return { status: "audio", audio: silentWav(), mime: "audio/wav", count: 6 };
+    },
+  };
+}
+
 function steps(...actions: (() => void)[]) {
   let i = 0;
   const run = () => {
@@ -750,6 +797,20 @@ const VIEWS: Record<string, () => ReactNode> = {
     steps(click('[data-action="recap-play"]'));
     return <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={failingVoice} />;
   },
+  // Tempo's voice (studyVoice.speak, MOCKED) reads the recap; Play pressed, Voice offered.
+  "study-listen-tempo": () => {
+    steps(click('[data-action="recap-play"]'));
+    return <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={quietVoice} tempo={galleryTempo("playing")} />;
+  },
+  // Tempo's voice fails on the first sentence: the device's voice reads on, said in a polite line.
+  "study-listen-tempo-fallback": () => {
+    steps(click('[data-action="recap-play"]'));
+    return <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={quietVoice} tempo={galleryTempo("fails")} />;
+  },
+  // Today's reading in Tempo's voice is used up: no Voice choice, the device's voice reads.
+  "study-listen-tempo-budget": () => (
+    <AudioRecapPlayer noteId="notes:11" title="Cell biology, unit 2" body={PAGE_BODY} mode="recap" engine={quietVoice} tempo={galleryTempo("budget")} />
+  ),
   "study-new-preview": () => <TurnIntoPreview from="notes:11" kind="flashcards" />,
   // Accept, then Undo after the page changed: the set and its page go, and a toast says so with
   // Bring it back.
