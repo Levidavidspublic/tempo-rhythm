@@ -3,7 +3,7 @@
   "updated": "2026-10-18T09:42Z",
   "baseline": {
     "command": "bun run test",
-    "last_result": "3407 pass, 3 todo, 0 fail on 1a23e46 (Bun 1.3.9; was 2348 on 5f1b3ec)"
+    "last_result": "3565 pass, 3 todo, 0 fail on 064621e (Bun 1.3.9; was 3407 on 1a23e46, 2348 on 5f1b3ec)"
   },
   "finish_lines": {
     "T3": {
@@ -37,34 +37,34 @@
   },
   "e2e": {
     "command": "PLAYWRIGHT_BROWSERS_PATH=<scratch dir mapping /opt/pw-browsers chromium 1194 to the expected 1234 path> bunx playwright test --reporter=line (CI unset, so it reused the running local dev server with the same mock env as playwright.config.ts; no config change)",
-    "last_result": "35 passed, 89 skipped, 0 failed on 1a23e46 (includes tests/e2e/wiring/study.spec.ts 7/7)"
+    "last_result": "35 passed, 89 skipped, 0 failed on 064621e (includes tests/e2e/wiring/study.spec.ts 7/7)"
   },
   "build": {
     "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
-    "last_result": "local pass on 1a23e46 (all seven /study routes); Vercel preview of 1a23e46 built and Ready"
+    "last_result": "local pass on 064621e (all seven /study routes and /settings/reminders)"
   },
   "e2e_study_wiring": {
     "command": "bunx playwright test tests/e2e/wiring/study.spec.ts --reporter=line (same browser mapping)",
-    "last_result": "7 passed on 1a23e46"
+    "last_result": "7 passed on 064621e"
   },
   "scans": {
     "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
-    "last_result": "all OK on 1a23e46"
+    "last_result": "all OK on 064621e (notices: 69 documented)"
   },
   "gate": {
-    "command": "bun docs/kitchen/study/shoot.mjs gallery|live \u2026 (see docs/kitchen/study/GATE.md)",
-    "last_result": "556 shots (66 gallery views en+he, 9 live routes); record-* and study-new-* reshot on 1a23e46: gallery 58 PASS, 4 PASS (R-01 purpose), 3 PASS apart from the shared skeleton R-19 (pre-existing), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
+    "command": "bun docs/kitchen/study/shoot.mjs gallery|live … (see docs/kitchen/study/GATE.md)",
+    "last_result": "716 shots (86 gallery views en+he, 9 live routes); the 18 Oct views shot on df29a11, Tempo voice and Telegram views on 064621e: gallery 78 PASS, 4 PASS (R-01 purpose), 3 PASS apart from the shared skeleton R-19 (pre-existing), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
   },
   "a11y_walk": {
     "command": "bun docs/kitchen/study/a11y-walk.mjs <gallery build dir> (THEME=dark for the dark run; CHROMIUM_PATH set to the installed Chromium)",
-    "last_result": "on 1a23e46, light and dark: 260 runs each over 66 views, 2,404 Tab stops; unreached 0, no focus sign 4 runs (notes editor, pre-existing), hidden focus 0, traps 0, reduced motion 0"
+    "last_result": "on 064621e, light and dark: 340 runs each over 86 views, 2,838 Tab stops; unreached 0, no focus sign 4 runs (notes editor, pre-existing), hidden focus 0 (one found on reminders-tg-disconnected he 390, a gallery-only miss, fixed and rewalked), traps 0, reduced motion 0"
   },
   "click_through": {
     "command": "CHROMIUM_PATH=<installed chromium> bun docs/kitchen/study/click-through.mjs <gallery build dir>",
-    "last_result": "on 1a23e46: 260 runs over 66 views, 2,440 controls pressed, each from a fresh page: 0 failures; seen to catch five injected faults"
+    "last_result": "on 064621e: 340 runs over 86 views, 2,958 controls pressed, each from a fresh page: 0 failures"
   },
   "axe_audit": {
     "command": "CHROMIUM_PATH=<installed chromium> [AXE_PATH=<local axe.min.js>] bun docs/kitchen/study/axe-audit.mjs <gallery build dir>",
-    "last_result": "on 1a23e46: 520 runs over 66 views (390/1280, en/he, light/dark), axe-core 4.10.2 WCAG 2.0/2.1/2.2 A+AA and best-practice: 0 violations; 3,222 colour-contrast nodes left for review (text over the paper texture)"
+    "last_result": "on 064621e: 680 runs over 86 views (390/1280, en/he, light/dark), axe-core 4.10.2 WCAG 2.0/2.1/2.2 A+AA and best-practice: 0 violations; 3,672 colour-contrast nodes left for review (text over the paper texture)"
   }
 }

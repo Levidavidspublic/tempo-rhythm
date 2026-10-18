@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-17T06:59:52.897Z",
+ "generated": "2026-10-18T10:37:56.966Z",
  "axe": "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js",
  "tags": [
   "wcag2a",
@@ -9,8 +9,8 @@
   "wcag22aa",
   "best-practice"
  ],
- "runs": 520,
- "views": 66,
+ "runs": 680,
+ "views": 86,
  "themes": [
   "light",
   "dark"
@@ -41,7 +41,7 @@
   },
   "byRule": {},
   "incomplete": {
-   "color-contrast": 3222
+   "color-contrast": 3672
   }
  },
  "unique": [],
@@ -2306,6 +2306,216 @@
     }
    }
   },
+  "study-listen-tempo": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "study-listen-tempo-fallback": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "study-listen-tempo-budget": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 15
+      },
+      "errors": []
+     }
+    }
+   }
+  },
   "study-new-preview": {
    "light": {
     "390": {
@@ -3798,6 +4008,330 @@
     }
    }
   },
+  "ingest-photo-reading": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   }
+  },
+  "ingest-pdf-reading": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   }
+  },
+  "ingest-pdf-no-text": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   }
+  },
+  "ingest-docx-too-big": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   }
+  },
+  "ingest-photo-pixels": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   }
+  },
+  "ingest-doc-refused": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {},
+      "errors": []
+     }
+    }
+   }
+  },
   "memory-list": {
    "light": {
     "390": {
@@ -4149,6 +4683,776 @@
    }
   },
   "reminders": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-unavailable": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-connect": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-waiting": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-reconnect": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-connected": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-sent": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-error": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-nophrases": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-disconnected": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 2
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 2
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-connected-name": {
+   "light": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   },
+   "dark": {
+    "390": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    },
+    "1280": {
+     "en": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     },
+     "he": {
+      "violations": [],
+      "incomplete": {
+       "color-contrast": 1
+      },
+      "errors": []
+     }
+    }
+   }
+  },
+  "reminders-tg-expired": {
    "light": {
     "390": {
      "en": {

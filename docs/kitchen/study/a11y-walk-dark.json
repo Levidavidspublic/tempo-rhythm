@@ -1,7 +1,7 @@
 {
- "generated": "2026-10-17T06:27:29.741Z",
- "runs": 260,
- "views": 66,
+ "generated": "2026-10-18T09:55:08.707Z",
+ "runs": 340,
+ "views": 86,
  "totals": {
   "unreached": {
    "findings": 0,
@@ -205,7 +205,7 @@
   "plan-replan-notice": {
    "390": {
     "en": {
-     "stops": 21,
+     "stops": 20,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -231,7 +231,7 @@
    },
    "1280": {
     "en": {
-     "stops": 21,
+     "stops": 20,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],
@@ -1828,6 +1828,168 @@
     }
    }
   },
+  "study-listen-tempo": {
+   "390": {
+    "en": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 2
+    },
+    "he": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 2
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 2
+    },
+    "he": {
+     "stops": 15,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 2
+    }
+   }
+  },
+  "study-listen-tempo-fallback": {
+   "390": {
+    "en": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
+  "study-listen-tempo-budget": {
+   "390": {
+    "en": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 14,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 1
+    }
+   }
+  },
   "study-new-preview": {
    "390": {
     "en": {
@@ -3016,6 +3178,330 @@
     }
    }
   },
+  "ingest-photo-reading": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Photo\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"תמונה\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Photo\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"תמונה\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-pdf-reading": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-pdf-no-text": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-docx-too-big": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-photo-pixels": {
+   "390": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Photo\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"תמונה\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"Photo\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 6,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"תמונה\"",
+     "arrowGroups": 1
+    }
+   }
+  },
+  "ingest-doc-refused": {
+   "390": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"File\"",
+     "arrowGroups": 1
+    },
+    "he": {
+     "stops": 5,
+     "end": "cycle",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": "button.tp-seg__opt[role=radio][type=button] \"קובץ\"",
+     "arrowGroups": 1
+    }
+   }
+  },
   "memory-list": {
    "390": {
     "en": {
@@ -3328,6 +3814,600 @@
     },
     "he": {
      "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-unavailable": {
+   "390": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 1,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-connect": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-waiting": {
+   "390": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 3,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-reconnect": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-connected": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-sent": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-error": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-nophrases": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-disconnected": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-connected-name": {
+   "390": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 4,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   }
+  },
+  "reminders-tg-expired": {
+   "390": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    }
+   },
+   "1280": {
+    "en": {
+     "stops": 2,
+     "end": "wrapped",
+     "unreached": [],
+     "noIndicator": [],
+     "hidden": [],
+     "trap": [],
+     "reducedMotion": [],
+     "errors": [],
+     "start": null,
+     "arrowGroups": 0
+    },
+    "he": {
+     "stops": 2,
      "end": "wrapped",
      "unreached": [],
      "noIndicator": [],

@@ -1,9 +1,9 @@
 {
- "generated": "2026-10-17T06:53:22.417Z",
- "runs": 260,
- "views": 66,
+ "generated": "2026-10-18T10:29:22.256Z",
+ "runs": 340,
+ "views": 86,
  "totals": {
-  "pressed": 2440,
+  "pressed": 2958,
   "failures": 0,
   "unique": 0,
   "viewsWithFailures": 0
@@ -103,8 +103,8 @@
    }
   },
   "plan-replan-notice": {
-   "controls": 16,
-   "pressed": 62,
+   "controls": 15,
+   "pressed": 60,
    "failures": [],
    "links": {},
    "dom": [],
@@ -112,13 +112,13 @@
    "loadErrors": [],
    "runs": {
     "en-390": {
-     "controls": 16,
-     "pressed": 16,
+     "controls": 15,
+     "pressed": 15,
      "failures": 0
     },
     "en-1280": {
-     "controls": 16,
-     "pressed": 16,
+     "controls": 15,
+     "pressed": 15,
      "failures": 0
     },
     "he-390": {
@@ -950,13 +950,13 @@
     "a.tp-btn.tp-btn--secondary \"Open the page\"": "/notes/notes%3A11",
     "a.tp-btn.tp-btn--ghost[data-action=listen-page] \"Listen to the page this came from\"": "/study/listen?from=notes%3A11&mode=recap",
     "a.tp-btn.tp-btn--secondary[data-action=review-due] \"Review due cards\"": "/study/review?set=studySets%3A1",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:37199/c94474f6-b671-49cd-a630-ba1e75c857e6",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:37199/5d0ec156-544b-428d-bd25-7204e5437e0c",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:39819/b18b475c-1852-41fc-92c5-421e4712198b",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:39819/e67a8ca7-b442-49b4-820e-b51fdd72a312",
     "a.tp-btn.tp-btn--secondary \"לפתוח את הדף\"": "/notes/notes%3A11",
     "a.tp-btn.tp-btn--ghost[data-action=listen-page] \"להאזין לדף שממנו זה הגיע\"": "/study/listen?from=notes%3A11&mode=recap",
     "a.tp-btn.tp-btn--secondary[data-action=review-due] \"לחזור על הכרטיסים שהגיע זמנם\"": "/study/review?set=studySets%3A1",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:37199/b61a280f-9c47-4615-86ff-6fb0fb49ee51",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:37199/47b490bd-9db9-48d1-a19e-9fe6afce30ff"
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:39819/864f0169-314d-43fa-a260-6f7e6d743ac0",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:39819/4fa4878e-1211-491c-9e26-df5abf03dba3"
    },
    "dom": [
     "a.tp-btn.tp-btn--secondary \"Open the page\"",
@@ -1209,6 +1209,114 @@
    }
   },
   "study-listen-voice-error": {
+   "controls": 17,
+   "pressed": 68,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--ghost \"Hear the whole page\"": "/study/listen?from=notes%3A11&mode=full",
+    "a.tp-btn.tp-btn--ghost \"Open the page\"": "/notes/notes%3A11",
+    "a.tp-btn.tp-btn--ghost \"להאזין לדף כולו\"": "/study/listen?from=notes%3A11&mode=full",
+    "a.tp-btn.tp-btn--ghost \"לפתוח את הדף\"": "/notes/notes%3A11"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    }
+   }
+  },
+  "study-listen-tempo": {
+   "controls": 19,
+   "pressed": 76,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--ghost \"Hear the whole page\"": "/study/listen?from=notes%3A11&mode=full",
+    "a.tp-btn.tp-btn--ghost \"Open the page\"": "/notes/notes%3A11",
+    "a.tp-btn.tp-btn--ghost \"להאזין לדף כולו\"": "/study/listen?from=notes%3A11&mode=full",
+    "a.tp-btn.tp-btn--ghost \"לפתוח את הדף\"": "/notes/notes%3A11"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 19,
+     "pressed": 19,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 19,
+     "pressed": 19,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 19,
+     "pressed": 19,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 19,
+     "pressed": 19,
+     "failures": 0
+    }
+   }
+  },
+  "study-listen-tempo-fallback": {
+   "controls": 17,
+   "pressed": 68,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--ghost \"Hear the whole page\"": "/study/listen?from=notes%3A11&mode=full",
+    "a.tp-btn.tp-btn--ghost \"Open the page\"": "/notes/notes%3A11",
+    "a.tp-btn.tp-btn--ghost \"להאזין לדף כולו\"": "/study/listen?from=notes%3A11&mode=full",
+    "a.tp-btn.tp-btn--ghost \"לפתוח את הדף\"": "/notes/notes%3A11"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 17,
+     "pressed": 17,
+     "failures": 0
+    }
+   }
+  },
+  "study-listen-tempo-budget": {
    "controls": 17,
    "pressed": 68,
    "failures": [],
@@ -1959,6 +2067,210 @@
     }
    }
   },
+  "ingest-photo-reading": {
+   "controls": 8,
+   "pressed": 32,
+   "failures": [],
+   "links": {},
+   "dom": [
+    "button.tp-sheet-scrim[type=button] \"Close\"",
+    "button.tp-sheet-scrim[type=button] \"סגירה\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    }
+   }
+  },
+  "ingest-pdf-reading": {
+   "controls": 8,
+   "pressed": 32,
+   "failures": [],
+   "links": {},
+   "dom": [
+    "button.tp-sheet-scrim[type=button] \"Close\"",
+    "button.tp-sheet-scrim[type=button] \"סגירה\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    }
+   }
+  },
+  "ingest-pdf-no-text": {
+   "controls": 8,
+   "pressed": 32,
+   "failures": [],
+   "links": {},
+   "dom": [
+    "button.tp-sheet-scrim[type=button] \"Close\"",
+    "button.tp-sheet-scrim[type=button] \"סגירה\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    }
+   }
+  },
+  "ingest-docx-too-big": {
+   "controls": 7,
+   "pressed": 28,
+   "failures": [],
+   "links": {},
+   "dom": [
+    "button.tp-sheet-scrim[type=button] \"Close\"",
+    "button.tp-sheet-scrim[type=button] \"סגירה\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    }
+   }
+  },
+  "ingest-photo-pixels": {
+   "controls": 8,
+   "pressed": 32,
+   "failures": [],
+   "links": {},
+   "dom": [
+    "button.tp-sheet-scrim[type=button] \"Close\"",
+    "button.tp-sheet-scrim[type=button] \"סגירה\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 8,
+     "pressed": 8,
+     "failures": 0
+    }
+   }
+  },
+  "ingest-doc-refused": {
+   "controls": 7,
+   "pressed": 28,
+   "failures": [],
+   "links": {},
+   "dom": [
+    "button.tp-sheet-scrim[type=button] \"Close\"",
+    "button.tp-sheet-scrim[type=button] \"סגירה\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 7,
+     "pressed": 7,
+     "failures": 0
+    }
+   }
+  },
   "memory-list": {
    "controls": 15,
    "pressed": 60,
@@ -2106,7 +2418,7 @@
    "dom": [],
    "skipped": [],
    "loadErrors": [
-    "Error: Gallery error mode: users.getProfile at read (<gallery>:32900:13) at useQuery (<gallery>:32908:12) at useMemoryBackend (<gallery>:42855:21) at MemoryContent (<gallery>:42977:9) at renderWithHooks ("
+    "Error: Gallery error mode: users.getProfile at read (<gallery>:32923:13) at useQuery (<gallery>:32931:12) at useMemoryBackend (<gallery>:43707:21) at MemoryContent (<gallery>:43829:9) at renderWithHooks ("
    ],
    "runs": {
     "en-390": {
@@ -2165,15 +2477,392 @@
     }
    }
   },
+  "reminders-tg-unavailable": {
+   "controls": 1,
+   "pressed": 4,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 1,
+     "pressed": 1,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 1,
+     "pressed": 1,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 1,
+     "pressed": 1,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 1,
+     "pressed": 1,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-connect": {
+   "controls": 2,
+   "pressed": 8,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-waiting": {
+   "controls": 2,
+   "pressed": 8,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-reconnect": {
+   "controls": 2,
+   "pressed": 8,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-connected": {
+   "controls": 4,
+   "pressed": 16,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-sent": {
+   "controls": 4,
+   "pressed": 16,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-error": {
+   "controls": 4,
+   "pressed": 16,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-nophrases": {
+   "controls": 2,
+   "pressed": 8,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-disconnected": {
+   "controls": 4,
+   "pressed": 16,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [
+    "a.tp-btn.tp-btn--secondary \"Open nags\"",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\""
+   ],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-connected-name": {
+   "controls": 4,
+   "pressed": 16,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 4,
+     "pressed": 4,
+     "failures": 0
+    }
+   }
+  },
+  "reminders-tg-expired": {
+   "controls": 2,
+   "pressed": 8,
+   "failures": [],
+   "links": {
+    "a.tp-btn.tp-btn--secondary \"Open nags\"": "/settings/nags",
+    "a.tp-btn.tp-btn--secondary \"לנדנודים\"": "/settings/nags"
+   },
+   "dom": [],
+   "skipped": [],
+   "loadErrors": [],
+   "runs": {
+    "en-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "en-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-390": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    },
+    "he-1280": {
+     "controls": 2,
+     "pressed": 2,
+     "failures": 0
+    }
+   }
+  },
   "share-sheet": {
    "controls": 6,
    "pressed": 24,
    "failures": [],
    "links": {
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:37199/969bbd6c-21cc-412f-8501-47f113f1aa93",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:37199/ebadf7bd-4338-4548-9e8a-4d4c24753fde",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:37199/84826ccb-c3c7-4f85-ac2c-97dd58905d84",
-    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:37199/5fe909d0-481d-4fdd-b8a6-c204d746e9ad"
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download MarkdownA .md file you can open\"": "blob:http://localhost:39819/c9e93329-f4e1-4b10-9779-ebafbcbcdba2",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"Download for AnkiYour cards as a tab-sep\"": "blob:http://localhost:39819/6fb6a083-5124-4180-9bc3-a9dd5e45630b",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה כ־Markdownקובץ ‎.md שאפשר לפתוח בכ\"": "blob:http://localhost:39819/23672a2f-ce9e-4afa-80be-933a88b97ddf",
+    "button.tp-touch-row[data-component=TouchRow][type=button] \"הורדה ל־Ankiהכרטיסים כקובץ טקסט מופרד בט\"": "blob:http://localhost:39819/e7038a35-d1a7-4864-9a51-61d3498a1d0d"
    },
    "dom": [
     "button.tp-sheet-scrim[type=button] \"Close\"",

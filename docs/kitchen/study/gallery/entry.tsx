@@ -56,6 +56,7 @@ import { MonthGrid, todayLocal } from "@/components/calendar/MonthGrid";
 import { PlanPathScreen } from "@/components/calendar/plan/PlanPathScreen";
 import { type WeekItem, WeekGrid } from "@/components/calendar/WeekGrid";
 import { IngestSheetView } from "@/components/ingest";
+import { useToastRoom } from "@/components/study/useToastRoom";
 import { IngestRefusal, type IngestReaders } from "@/components/ingest/read-sources";
 import { MemoryManager } from "@/components/memory/MemoryManager";
 import { MiniAppFrame } from "@/components/mini-app";
@@ -593,6 +594,8 @@ function AppHeadings({ h1, h2, children }: { h1?: string; h2?: string; children:
 const TG_URL = "https://t.me/TempoSampleBot?start=MOCKEDsampleCodeMOCKEDsample0";
 type TgRowProps = Partial<Parameters<typeof TelegramChannelRow>[0]>;
 function TelegramReminders({ row, toast = false }: { row: TgRowProps; toast?: boolean }) {
+  // The live row (TelegramChannel) makes room for its Undo toast the same way.
+  useToastRoom(toast);
   const telegram = { id: "telegram", label: "Telegram", connected: false, available: true, ...(row.channel ?? {}) };
   const channels = [
     { id: "whatsapp", label: "WhatsApp", connected: false, available: false },
