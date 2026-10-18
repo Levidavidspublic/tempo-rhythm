@@ -19,8 +19,10 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import {
+  closesPageMenu,
   exportContents,
   exportFileName,
+  exportMarkdownFile,
   filterSlashCommands,
   insertedBlockId,
   SLASH_COMMANDS,
@@ -248,9 +250,31 @@ export function PageEditorView(props: Props) {
     }
   };
 
+  // Escape closes the page menu. This listens on the document, which hears the key before the
+  // shell's listener on window, and marks it taken so the shell leaves the rail and the coach
+  // panel open. An Escape a popup above already took (the slash menu, a dialog) stays theirs.
+  // Focus goes back to the ⋯ button when it was in the menu or nowhere (a click on a button
+  // leaves none in Safari); focus in the editor or the title stays where it is.
+  const menuRoot = useRef<HTMLDivElement | null>(null);
+  const menuButton = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!closesPageMenu(event)) return;
+      event.preventDefault();
+      setMenuOpen(false);
+      const from = event.target;
+      const inMenu = from instanceof Node && (menuRoot.current?.contains(from) ?? false);
+      if (inMenu || from === document.body || from === document.documentElement) menuButton.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   const exportMarkdown = () => {
     setMenuOpen(false);
-    const blob = new Blob([exportContents(body)], { type: "text/markdown;charset=utf-8" });
+    const file = exportMarkdownFile(title, body, t("page.untitled"));
+    const blob = new Blob([file], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -309,8 +333,9 @@ export function PageEditorView(props: Props) {
                   </button>
                 </>
               ) : null}
-              <div className="tp-menu" data-component="PageMenu">
+              <div className="tp-menu" data-component="PageMenu" ref={menuRoot}>
                 <button
+                  ref={menuButton}
                   className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon"
                   type="button"
                   aria-haspopup="menu"

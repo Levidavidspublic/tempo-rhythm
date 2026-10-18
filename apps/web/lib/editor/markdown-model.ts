@@ -337,7 +337,52 @@ export function exportFileName(title: string): string {
   return `${cleaned || "Untitled"}.md`;
 }
 
-/** The exported file is the body itself: no front matter, no rewriting. */
+/** What Copy as Markdown copies: the body itself, no front matter, no rewriting. */
 export function exportContents(body: string): string {
   return body;
+}
+
+/**
+ * A page title as the text of a Markdown heading that reads exactly as typed. Inline marks
+ * (code, emphasis, links, HTML, strikethrough, entities) are escaped anywhere; a block mark at the
+ * start (#, >, -, +, "1.") is escaped so a reader never sees a list or a quote; and a trailing
+ * " #" is escaped, because a heading would drop it as its closing sequence.
+ */
+function markdownHeadingText(title: string): string {
+  return title
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[\\`*_[\]<~]/g, "\\$&")
+    .replace(/&(?=#?\w+;)/g, "\\&")
+    .replace(/^(?:[#>+-]|(\d{1,9})([.)]))/, (mark, digits?: string, dot?: string) =>
+      digits ? `${digits}\\${dot}` : `\\${mark}`,
+    )
+    .replace(/ (#+)$/, " \\$1");
+}
+
+/**
+ * The Export .md file: `# <title>`, a blank line, then the body exactly as saved. An untitled page
+ * gets the app's untitled name (`untitled`), and an empty page exports just the heading.
+ */
+export function exportMarkdownFile(title: string, body: string, untitled: string): string {
+  const heading = `# ${markdownHeadingText(title) || markdownHeadingText(untitled)}\n`;
+  return body.trim() === "" ? heading : `${heading}\n${body}`;
+}
+
+/** The parts of a keydown the page menu reads (a DOM KeyboardEvent fits). */
+export type PageMenuKeyEvent = {
+  key: string;
+  isComposing?: boolean;
+  keyCode?: number;
+  defaultPrevented?: boolean;
+};
+
+/**
+ * True when a keydown closes the open page menu: Escape that no popup above already took (it
+ * would be `defaultPrevented`) and that isn't an IME cancelling its composition (`isComposing`,
+ * or keyCode 229 where a browser leaves `isComposing` unset).
+ */
+export function closesPageMenu(event: PageMenuKeyEvent): boolean {
+  if (event.key !== "Escape" || event.defaultPrevented) return false;
+  return !event.isComposing && event.keyCode !== 229;
 }
