@@ -4,7 +4,7 @@
  * from the cp.* copy, and a Hebrew render has no English label left besides the tasks' own
  * titles (which stay as written, in dir="auto"). The card shows no clock time or date.
  */
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { anyApi, componentsGeneric, getFunctionName } from "convex/server";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -333,6 +333,17 @@ const decideProposal = mock(
     taskLoad: 3,
   })
 );
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 // The same api as convex/_generated/api.js, so a partial api mock left by another test file
 // in the same bun process cannot hide these functions.

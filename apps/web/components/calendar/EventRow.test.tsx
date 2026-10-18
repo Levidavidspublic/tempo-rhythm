@@ -4,7 +4,7 @@
  * screen or in what a screen reader hears. EventRow reads no Convex, so only the locale is mocked;
  * HistoryScreen.test.tsx renders the whole /calendar page.
  */
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Lang, MessageKey } from "@/lib/i18n";
@@ -12,6 +12,14 @@ import type { Lang, MessageKey } from "@/lib/i18n";
 let lang: Lang = "he";
 
 const { MESSAGES, translate } = await import("@/lib/i18n");
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 mock.module("@/components/providers/LocaleProvider", () => ({
   useLocale: () => ({
     lang,

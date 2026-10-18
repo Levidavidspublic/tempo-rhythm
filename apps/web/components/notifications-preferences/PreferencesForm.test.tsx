@@ -3,7 +3,7 @@
  * is outside this ticket's scope. bun:test plus react-dom covers the same checks
  * (same minimal DOM as components/account/ProfileForm.test.tsx).
  */
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, mock, test } from "bun:test";
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { type MessageKey, translate } from "@/lib/i18n";
@@ -327,6 +327,18 @@ const prefs: Prefs | undefined = {
   inAppNotifications: true,
 };
 let items: Item[] | undefined = [];
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/providers/ThemeProvider": { ...(await import("@/components/providers/ThemeProvider")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("@/convex/_generated/api", () => ({
   api: {

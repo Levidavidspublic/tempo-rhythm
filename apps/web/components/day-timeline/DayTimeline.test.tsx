@@ -5,7 +5,7 @@
  * 24-hour 09:00 in Hebrew. Effects do not run in a static render, so the "Now" marker and the
  * localized date line (both wait for mount) are checked as copy, not as rendered markup.
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { anyApi, componentsGeneric, getFunctionName } from "convex/server";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -59,6 +59,17 @@ let auth = { isAuthenticated: true, isLoading: false };
 let blocks: Block[] = BLOCKS;
 let events = EVENTS;
 let settings: { dial: number; panicUntil: number | null } | undefined;
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 // The same api as convex/_generated/api.js, so a partial api mock left by another test file
 // in the same bun process cannot hide these functions.

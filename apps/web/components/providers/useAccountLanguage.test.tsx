@@ -92,7 +92,7 @@ const localeProvider = "@/components/providers/LocaleProvider";
 // (A plain string: the type checker does not resolve the query suffix.)
 const freshLocaleProvider: string = "./LocaleProvider?account-language";
 const realLocale: Record<string, unknown> = await import(freshLocaleProvider);
-let previousModules: Record<string, Record<string, unknown>> = {};
+const previousModules: Record<string, Record<string, unknown>> = {};
 
 function installModuleMocks() {
   mock.module(convexReact, () => ({
@@ -118,6 +118,12 @@ function installModuleMocks() {
   mock.module(localeProvider, () => realLocale);
 }
 
+// Keep what is registered before this file installs anything (the real modules and globals),
+// so afterAll puts that back and not this file's own fakes. Loading the real modules first also
+// keeps every export name importable for the files that run later.
+previousGlobals = new Map(GLOBALS.map((key) => [key, Object.getOwnPropertyDescriptor(g, key)]));
+for (const key of [convexReact, localeProvider]) previousModules[key] = { ...(await import(key)) };
+
 installGlobals();
 installModuleMocks();
 
@@ -126,10 +132,7 @@ const { useAccountLanguage } = await import("./useAccountLanguage");
 const { usePeriodPage } = await import("@/components/today/usePeriodPage");
 const { createRoot } = await import("react-dom/client");
 
-beforeAll(async () => {
-  previousGlobals = new Map(GLOBALS.map((key) => [key, Object.getOwnPropertyDescriptor(g, key)]));
-  previousModules = {};
-  for (const key of [convexReact, localeProvider]) previousModules[key] = { ...(await import(key)) };
+beforeAll(() => {
   installGlobals();
   installModuleMocks();
 });

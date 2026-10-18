@@ -10,7 +10,7 @@
  * "Saving…" need a click, which a static render can't make: the error copy is checked through
  * the dialog's own helpers, and every key is checked to be used by the dialog.
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { anyApi, componentsGeneric, getFunctionName } from "convex/server";
@@ -40,6 +40,19 @@ const BLOCK = {
 const USER_TEXT = ["Write report", "Dentist forms", "Stretch"];
 
 let lang: Lang = "en";
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+  "@radix-ui/react-dialog": { ...(await import("@radix-ui/react-dialog")) },
+  "@/components/ui/dialog": { ...(await import("@/components/ui/dialog")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 // The same api as convex/_generated/api.js, so a partial api mock left by another test file
 // in the same bun process cannot hide these functions.
@@ -97,6 +110,13 @@ mock.module("@radix-ui/react-dialog", () => ({
   Title: stub("h2"),
   Description: stub("p"),
 }));
+
+// components/ui/dialog keeps the Radix parts it saw when it first loaded, and an earlier file in
+// the same bun process may have loaded it with the real ones. A fresh copy, loaded after the
+// stand-in above, takes its place. (A plain string: the type checker does not resolve the query.)
+const freshDialog: string = "../ui/dialog?time-block-dialog";
+const dialogWithStandIn: Record<string, unknown> = await import(freshDialog);
+mock.module("@/components/ui/dialog", () => ({ ...dialogWithStandIn }));
 
 const { TimeBlockDialog, fieldErrorKeys, fillTimes } = await import("./TimeBlockDialog");
 

@@ -25,6 +25,20 @@ type UpdateArgs = { noteId: string; title?: string; body?: string };
 const update = mock(async (_args: UpdateArgs) => null);
 const otherMutation = mock(async () => ({}));
 
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "next/navigation": { ...(await import("next/navigation")) },
+  "next/link": { ...(await import("next/link")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+  "./PageEditorView": { ...(await import("./PageEditorView")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
+
 mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: authed, isLoading: false }),
   useQuery: (ref: string, args: unknown) => {

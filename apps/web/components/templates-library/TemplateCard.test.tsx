@@ -6,7 +6,7 @@
  * outline headings come from lib/i18n-groups/starter-templates.ts, keyed by the starter's id,
  * whose English is word for word the catalog's (convex/lib/templateCatalog.ts).
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { createElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
@@ -18,6 +18,16 @@ import { type Lang, type MessageKey, translate } from "@/lib/i18n";
 import { en as starterEn, he as starterHe } from "@/lib/i18n-groups/starter-templates";
 
 let lang: Lang = "en";
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+  "next/link": { ...(await import("next/link")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("@/components/providers/LocaleProvider", () => ({
   useLocale: () => ({
