@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import type {
   TaskChecklistItem,
   TaskEnergy,
@@ -38,6 +39,7 @@ function localEndOfDay(value: string): number | null {
 }
 
 export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
+  const { t } = useLocale();
   const [title, setTitle] = useState(task.title);
   const [priority, setPriority] = useState(task.priority);
   const [energy, setEnergy] = useState(task.energy);
@@ -56,11 +58,14 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
   };
 
   return (
-    <fieldset className="tk-editor" aria-label={`Edit ${task.title}`}>
+    <fieldset
+      className="tk-editor"
+      aria-label={t("tasks.editName").replace("{title}", () => task.title)}
+    >
       <label className="tp-field">
-        <span className="tp-label">Task title</span>
+        <span className="tp-label">{t("editor.taskTitle")}</span>
         <input
-          aria-label="Edit task title"
+          aria-label={t("tasks.editTitle")}
           dir="auto"
           value={title}
           disabled={disabled}
@@ -70,38 +75,38 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
       </label>
       <div className="tk-editor__grid">
         <label className="tp-field">
-          <span className="tp-label">Priority</span>
+          <span className="tp-label">{t("tasks.priority")}</span>
           <select
-            aria-label="Edit priority"
+            aria-label={t("tasks.editPriority")}
             value={priority}
             disabled={disabled}
             onChange={(event) => setPriority(event.target.value as TaskPriority)}
             className="tp-input"
           >
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            <option value="high">{t("tasks.level.high")}</option>
+            <option value="medium">{t("tasks.level.medium")}</option>
+            <option value="low">{t("tasks.level.low")}</option>
           </select>
         </label>
         <label className="tp-field">
-          <span className="tp-label">Energy</span>
+          <span className="tp-label">{t("tasks.energy")}</span>
           <select
-            aria-label="Edit energy"
+            aria-label={t("tasks.editEnergy")}
             value={energy}
             disabled={disabled}
             onChange={(event) => setEnergy(event.target.value as TaskEnergy)}
             className="tp-input"
           >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">{t("tasks.level.low")}</option>
+            <option value="medium">{t("tasks.level.medium")}</option>
+            <option value="high">{t("tasks.level.high")}</option>
           </select>
         </label>
         <label className="tp-field">
-          <span className="tp-label">Due date</span>
+          <span className="tp-label">{t("tasks.dueDate")}</span>
           <input
             type="date"
-            aria-label="Edit due date"
+            aria-label={t("tasks.editDue")}
             value={dueDate}
             disabled={disabled}
             onChange={(event) => setDueDate(event.target.value)}
@@ -110,7 +115,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
         </label>
       </div>
       <div className="tp-field">
-        <span className="tp-label">Checklist steps</span>
+        <span className="tp-label">{t("tasks.checklistSteps")}</span>
         {checklist.map((item) => (
           <div key={item.id} className="tk-editor__step">
             <span className="tk-editor__steptext" dir="auto">
@@ -120,16 +125,16 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
               type="button"
               className="tp-btn tp-btn--secondary tp-btn--sm"
               disabled={disabled}
-              aria-label={`Remove step ${item.text}`}
+              aria-label={t("tasks.removeStep").replace("{step}", () => item.text)}
               onClick={() => setChecklist((current) => current.filter((step) => step.id !== item.id))}
             >
-              Remove
+              {t("editor.remove")}
             </button>
           </div>
         ))}
         <div className="tk-editor__add">
           <input
-            aria-label="New checklist step"
+            aria-label={t("tasks.newStep")}
             dir="auto"
             value={newStep}
             disabled={disabled}
@@ -141,7 +146,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
               }
             }}
             className="tp-input"
-            placeholder="Add a small step"
+            placeholder={t("tasks.newStepPh")}
           />
           <button
             type="button"
@@ -149,7 +154,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
             disabled={disabled || !newStep.trim()}
             onClick={addStep}
           >
-            Add step
+            {t("tasks.addStep")}
           </button>
         </div>
       </div>
@@ -167,7 +172,7 @@ export function TaskRowEditor({ task, disabled, onSave }: TaskRowEditorProps) {
           })
         }
       >
-        Save task
+        {t("tasks.save")}
       </button>
     </fieldset>
   );
