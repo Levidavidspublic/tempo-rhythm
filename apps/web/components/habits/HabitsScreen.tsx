@@ -47,6 +47,22 @@ type HabitRow = Doc<"habits">;
 type CheckInRow = { habitId: string; localDate: string };
 
 /**
+ * Starts `run` only when `flag` shows no earlier run still going, and holds the flag until it
+ * settles. The flag is set before the first await, so a double click that lands before React has
+ * re-rendered the button as disabled still makes one call. Resolves to false when it was skipped.
+ */
+export async function createOnce(flag: { current: boolean }, run: () => Promise<unknown>): Promise<boolean> {
+  if (flag.current) return false;
+  flag.current = true;
+  try {
+    await run();
+    return true;
+  } finally {
+    flag.current = false;
+  }
+}
+
+/**
  * Habits (docs/design/v3/screens/web/habits.html): each habit with Log today and its last 7
  * local days, filled circle = logged, empty ring = not logged. No streak counter anywhere.
  *
@@ -133,6 +149,8 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
   const [quickName, setQuickName] = useState("");
   const [quickInvalid, setQuickInvalid] = useState(false);
   const [quickBusy, setQuickBusy] = useState(false);
+  // One quick add at a time: a double click on Add habit must not make two habits.
+  const quickCreating = useRef(false);
 
   const live = useMemo<HabitRow[]>(
     () =>
@@ -206,19 +224,25 @@ function HabitsContent({ todayMs }: { todayMs: number }) {
 
   const quickAdd = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (quickBusy) return;
-    const name = quickName.trim();
-    if (!name) {
-      setQuickInvalid(true);
-      return;
-    }
-    setQuickInvalid(false);
-    setSaveError(false);
-    setQuickBusy(true);
-    addHabit({ name, cadence: "daily" })
-      .then(() => setQuickName(""))
-      .catch(() => setSaveError(true))
-      .finally(() => setQuickBusy(false));
+    // A submit while a create is still going is ignored, not queued.
+    void createOnce(quickCreating, async () => {
+      const name = quickName.trim();
+      if (!name) {
+        setQuickInvalid(true);
+        return;
+      }
+      setQuickInvalid(false);
+      setSaveError(false);
+      setQuickBusy(true);
+      try {
+        await addHabit({ name, cadence: "daily" });
+        setQuickName("");
+      } catch {
+        setSaveError(true);
+      } finally {
+        setQuickBusy(false);
+      }
+    });
   };
 
   const state =
