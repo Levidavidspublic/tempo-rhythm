@@ -301,10 +301,15 @@ export function TrackingDashboard() {
             {habitStreak.streakCount}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {fillTemplate(
-              t(habitStreak.habitCount === 1 ? "track.longest.one" : "track.longest.many"),
-              { n: habitStreak.habitCount, longest: habitStreak.longestAmongHabits }
-            )}{" "}
+            {/* With no habits there is no longest streak to name, so the line is left out. */}
+            {habitStreak.habitCount > 0 ? (
+              <>
+                {fillTemplate(
+                  t(habitStreak.habitCount === 1 ? "track.longest.one" : "track.longest.many"),
+                  { n: habitStreak.habitCount, longest: habitStreak.longestAmongHabits }
+                )}{" "}
+              </>
+            ) : null}
             {t("track.streakNote")}{" "}
             <Link href="/habits" className="underline underline-offset-4">
               {t("track.openHabits")}
