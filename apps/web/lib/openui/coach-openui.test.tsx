@@ -204,6 +204,17 @@ describe("the coach library renders Tempo's cards", () => {
     expect(html).toContain("That didn&#x27;t go through. Try again.");
   });
 
+  test("a pending note shows all of its body before Accept; an accepted template doesn't", () => {
+    const html = render(CASES["note pending"] as ProgramProposal);
+    expect(html).toContain("Show all of it");
+    expect(html).toContain("# Packing\n- passport");
+    expect(html).toContain('aria-label="What it says"');
+    expect(html).toContain(">Accept<");
+    const he = render(CASES["note pending"] as ProgramProposal, { lang: "he" });
+    expect(he).toContain(translate("he", "proposal.showAll"));
+    expect(render(CASES["template accepted"] as ProgramProposal)).not.toContain("Show all of it");
+  });
+
   test("Hebrew: the same card in the page language, the person's own words unchanged", () => {
     const html = render(CASES["task accepted"] as ProgramProposal, { lang: "he" });
     expect(html).toContain(translate("he", "proposal.accepted"));

@@ -63,7 +63,9 @@ export function proposalProgram(p: ProgramProposal): string {
     } else {
       const name = p.kind === "note" ? p.title : p.name;
       const period = p.kind === "template" ? str(p.period) : "null";
-      lines.push(`change = PageChange(${str(name)}, ${str(firstLine(p.body))}, ${period})`);
+      // While it waits for Accept, the card carries the whole body so the person can read all of it first.
+      const body = p.status === "pending" ? str(p.body) : "null";
+      lines.push(`change = PageChange(${str(name)}, ${str(firstLine(p.body))}, ${period}, ${body})`);
     }
   }
   if (p.status === "pending") {

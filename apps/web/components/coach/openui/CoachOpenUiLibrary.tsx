@@ -68,35 +68,45 @@ const TaskChange = defineComponent({
 
 const PageChange = defineComponent({
   name: "PageChange",
-  description: "A new page or template: its name, how it starts, and what it is used for.",
+  description: "A new page or template: its name, how it starts, what it is used for, and (before Accept) all of it.",
   props: z.object({
     name: z.string(),
     startsWith: z.string(),
     period: z.enum(["daily", "weekly", "none"]).optional(),
+    body: z.string().optional(),
   }),
   component: ({ props }) => {
     const { t } = useContext(CoachCardRuntimeContext);
     return (
-      <dl className="tp-proposal__what">
-        <div className="tp-what-row">
-          <dt>{t("proposal.name")}</dt>
-          <dd>
-            <span className="tp-change__title" dir="auto">
-              {props.name}
-            </span>
-          </dd>
-        </div>
-        <div className="tp-what-row">
-          <dt>{t("proposal.startsWith")}</dt>
-          <dd dir="auto">{props.startsWith}</dd>
-        </div>
-        {props.period ? (
+      <>
+        <dl className="tp-proposal__what">
           <div className="tp-what-row">
-            <dt>{t("proposal.field.period")}</dt>
-            <dd>{t(`proposal.period.${props.period}`)}</dd>
+            <dt>{t("proposal.name")}</dt>
+            <dd>
+              <span className="tp-change__title" dir="auto">
+                {props.name}
+              </span>
+            </dd>
           </div>
+          <div className="tp-what-row">
+            <dt>{t("proposal.startsWith")}</dt>
+            <dd dir="auto">{props.startsWith}</dd>
+          </div>
+          {props.period ? (
+            <div className="tp-what-row">
+              <dt>{t("proposal.field.period")}</dt>
+              <dd>{t(`proposal.period.${props.period}`)}</dd>
+            </div>
+          ) : null}
+        </dl>
+        {props.body ? (
+          // Same as the direct card: the whole page or template before Accept; the two lines above are only its start.
+          <details className="tp-proposal__what">
+            <summary>{t("proposal.showAll")}</summary>
+            <textarea className="tp-textarea" readOnly rows={8} value={props.body} dir="auto" aria-label={t("proposal.field.body")} />
+          </details>
         ) : null}
-      </dl>
+      </>
     );
   },
 });
