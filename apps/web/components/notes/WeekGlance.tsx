@@ -21,11 +21,10 @@ class GlanceBoundary extends Component<{ children: ReactNode }, { failed: boolea
 function WeekGlanceData({ monday }: { monday: string }) {
   const { t, lang } = useLocale();
   const bounds = useMemo(() => weekBounds(monday), [monday]);
-  const tasks = useQuery(api.tasks.list, bounds ? { status: "done" } : "skip");
-  const blocks = useQuery(
-    api.focusBlocks.listInRange,
-    bounds ? { startMs: bounds[0] as number, endMs: bounds[7] as number } : "skip",
-  );
+  const range = bounds ? { startMs: bounds[0] as number, endMs: bounds[7] as number } : null;
+  // Only this week's finished tasks, read through an index (not every task ever finished).
+  const tasks = useQuery(api.tasks.listDoneInRange, range ?? "skip");
+  const blocks = useQuery(api.focusBlocks.listInRange, range ?? "skip");
   const glance = useMemo(
     () => (tasks === undefined || blocks === undefined ? undefined : weekGlance(monday, tasks, blocks)),
     [monday, tasks, blocks],
