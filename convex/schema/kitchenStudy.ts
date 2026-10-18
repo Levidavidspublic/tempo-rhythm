@@ -1,5 +1,6 @@
 import { planTables } from "./plans";
 import { recordingTables } from "./recordings";
+import { reminderTables } from "./reminders";
 import { studyTables } from "./study";
 import { studyVoiceTables } from "./studyVoice";
 
@@ -12,4 +13,5 @@ export const kitchenStudyTables = {
   ...planTables,
   ...recordingTables,
   ...studyVoiceTables,
+  ...reminderTables,
 };

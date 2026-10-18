@@ -79,6 +79,7 @@ import type * as revenuecat from "../revenuecat.js";
 import type * as schema_kitchenStudy from "../schema/kitchenStudy.js";
 import type * as schema_plans from "../schema/plans.js";
 import type * as schema_recordings from "../schema/recordings.js";
+import type * as schema_reminders from "../schema/reminders.js";
 import type * as schema_study from "../schema/study.js";
 import type * as schema_studyVoice from "../schema/studyVoice.js";
 import type * as search from "../search.js";
@@ -169,6 +170,7 @@ declare const fullApi: ApiFromModules<{
   "schema/kitchenStudy": typeof schema_kitchenStudy;
   "schema/plans": typeof schema_plans;
   "schema/recordings": typeof schema_recordings;
+  "schema/reminders": typeof schema_reminders;
   "schema/study": typeof schema_study;
   "schema/studyVoice": typeof schema_studyVoice;
   search: typeof search;

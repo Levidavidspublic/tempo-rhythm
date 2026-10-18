@@ -50,6 +50,9 @@ export const USER_OWNED_TABLES = [
   "recordingSessions",
   // Study read-aloud in Tempo's voice: content-free usage per local day, like `voiceSessions`.
   "studyVoiceUsage",
+  // S14 reminders through Telegram: the person's chat link and their one-time link codes.
+  "reminderChannelLinks",
+  "reminderLinkCodes",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

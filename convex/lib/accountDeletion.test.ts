@@ -443,6 +443,23 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  reminderChannelLinks: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    channelId: "telegram",
+    chatId: "1000001",
+    linkedAt: 1,
+    createdAt: 1,
+    updatedAt: 1,
+  })),
+  reminderLinkCodes: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    channelId: "telegram",
+    codeHash: "0".repeat(64),
+    expiresAt: 2,
+    utcDateKey: "2026-10-18",
+    createdAt: 1,
+    updatedAt: 1,
+  })),
   nags: fixture("additional-soft-delete", (userId) => ({
     userId,
     label: "nag",
