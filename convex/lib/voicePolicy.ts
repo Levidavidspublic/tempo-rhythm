@@ -60,6 +60,13 @@ export function dailyMinutesFor(tier: string | undefined): number {
   return Math.min(byTier, VOICE_LIMITS.dailyMinutesPerUser);
 }
 
+/**
+ * Deepgram's EU endpoint (VOICE.md decision 1, adopted by Amit 18 Oct 2026: E-1 EU processing).
+ * The grant and both lanes use it; Deepgram documents the same keys and tokens working there.
+ */
+export const DEEPGRAM_HOST = "api.eu.deepgram.com";
+export const DEEPGRAM_GRANT_URL = `https://${DEEPGRAM_HOST}/v1/auth/grant`;
+
 /** Where the browser streams microphone audio, per language (P-1, P-2, P-9). */
 export type VoiceLane = {
   language: "en" | "he";
@@ -69,11 +76,13 @@ export type VoiceLane = {
 
 const LANES: Record<"en" | "he", VoiceLane> = {
   // P-1: Flux, English, on /v2/listen. WebM/Opus from MediaRecorder needs no encoding params.
-  en: { language: "en", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" },
+  // `mip_opt_out=true` on every stream: no model training on the audio, kept only while it is
+  // processed (decision 1: E-2, E-3).
+  en: { language: "en", url: `wss://${DEEPGRAM_HOST}/v2/listen?model=flux-general-en&mip_opt_out=true` },
   // P-2: Nova-3 Hebrew (Flux has no Hebrew).
   he: {
     language: "he",
-    url: "wss://api.deepgram.com/v1/listen?model=nova-3&language=he&interim_results=true&smart_format=true&endpointing=500&utterance_end_ms=1500&vad_events=true",
+    url: `wss://${DEEPGRAM_HOST}/v1/listen?model=nova-3&language=he&interim_results=true&smart_format=true&endpointing=500&utterance_end_ms=1500&vad_events=true&mip_opt_out=true`,
   },
 };
 

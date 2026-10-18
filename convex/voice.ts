@@ -7,6 +7,7 @@ import { requireApprovedForAi } from "./lib/aiGate";
 import { isApproved, requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
 import {
+  DEEPGRAM_GRANT_URL,
   VOICE_LIMITS,
   dailyMinutesFor,
   laneFor,
@@ -54,7 +55,6 @@ function voiceError(code: keyof typeof VOICE_ERRORS) {
   return new ConvexError({ code, message: VOICE_ERRORS[code] });
 }
 
-const DEEPGRAM_GRANT_URL = "https://api.deepgram.com/v1/auth/grant";
 export const CHATTERBOX_URL = "https://api.deepinfra.com/v1/inference/ResembleAI/chatterbox-multilingual";
 
 /** Both providers' keys are set (presence only; the values never leave the server). */

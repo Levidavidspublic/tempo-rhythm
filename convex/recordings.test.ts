@@ -273,9 +273,9 @@ describe("grant", () => {
       new Response(JSON.stringify({ access_token: "token-abcdefghijklmnop" }), { status: 200 })) as unknown as typeof fetch);
     try {
       const result = await run(recordings.grant, world.actionAs(A), { sessionId: started.sessionId });
-      expect(result).toEqual({ ok: true, token: "token-abcdefghijklmnop", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" });
+      expect(result).toEqual({ ok: true, token: "token-abcdefghijklmnop", url: "wss://api.eu.deepgram.com/v2/listen?model=flux-general-en&mip_opt_out=true" });
       const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe("https://api.deepgram.com/v1/auth/grant");
+      expect(url).toBe("https://api.eu.deepgram.com/v1/auth/grant");
       expect(JSON.parse(String(init.body))).toEqual({ ttl_seconds: VOICE_LIMITS.tokenTtlSeconds });
       expect(world.row(started.sessionId)?.grants).toBe(1);
     } finally {

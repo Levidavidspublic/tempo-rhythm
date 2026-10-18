@@ -13,7 +13,7 @@ import {
 
 describe("laneFor", () => {
   test("English (and no preference) streams to Flux on /v2/listen", () => {
-    expect(laneFor("en")).toEqual({ language: "en", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" });
+    expect(laneFor("en")).toEqual({ language: "en", url: "wss://api.eu.deepgram.com/v2/listen?model=flux-general-en&mip_opt_out=true" });
     expect(laneFor(undefined)?.language).toBe("en");
   });
 

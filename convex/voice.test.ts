@@ -377,9 +377,9 @@ describe("grant: a 30-second Deepgram token per lease", () => {
     const net = fakeFetch(() => Response.json({ access_token: "jwt-for-the-browser-0123456789", expires_in: 30 }));
     try {
       const granted = await run(voice.grant, world.actionAs(A), { sessionId });
-      expect(granted).toEqual({ token: "jwt-for-the-browser-0123456789", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" });
+      expect(granted).toEqual({ token: "jwt-for-the-browser-0123456789", url: "wss://api.eu.deepgram.com/v2/listen?model=flux-general-en&mip_opt_out=true" });
       expect(JSON.stringify(granted)).not.toContain(KEYS.DEEPGRAM_API_KEY);
-      expect(net.calls[0]?.url).toBe("https://api.deepgram.com/v1/auth/grant");
+      expect(net.calls[0]?.url).toBe("https://api.eu.deepgram.com/v1/auth/grant");
       expect(new Headers(net.calls[0]?.init.headers).get("authorization")).toBe(`Token ${KEYS.DEEPGRAM_API_KEY}`);
       expect(JSON.parse(String(net.calls[0]?.init.body))).toEqual({ ttl_seconds: 30 });
     } finally {

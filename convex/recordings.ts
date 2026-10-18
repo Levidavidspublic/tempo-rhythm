@@ -10,6 +10,7 @@ import { isApproved, requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
 import { UNDO_WINDOW_MS } from "./lib/softDelete";
 import {
+  DEEPGRAM_GRANT_URL,
   VOICE_LIMITS,
   dailyMinutesFor,
   laneFor,
@@ -41,7 +42,6 @@ import { createTaskForUser } from "./tasks";
  * Keys are names only: DEEPGRAM_API_KEY, DEEPINFRA_API_KEY.
  */
 
-const DEEPGRAM_GRANT_URL = "https://api.deepgram.com/v1/auth/grant";
 
 type Db = QueryCtx | MutationCtx;
 type Lease = Doc<"recordingSessions">;
