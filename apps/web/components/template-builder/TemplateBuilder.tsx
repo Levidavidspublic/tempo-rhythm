@@ -81,6 +81,8 @@ function BuilderFrame({ status, action, children }: { status?: string; action?: 
       </header>
       {/* The (bare) layout has no shell, so this page holds its own main landmark. */}
       <main className="tp-app__main bld-main" id="main" tabIndex={-1}>
+        {/* The page's one h1, in every state, for screen readers; the bar above shows the same name. */}
+        <h1 className="tp-sr-only">{t("tb.title")}</h1>
         {online ? null : (
           <output className="tp-notice tp-offline" data-tone="caution" data-component="StateOffline">
             <span className="tp-notice__icon">
@@ -131,7 +133,7 @@ function BuilderMissing() {
             <span className="tp-state__icon">
               <TpIcon name="refresh" size="lg" />
             </span>
-            <h1 className="tp-state__title">{t("tb.missing")}</h1>
+            <h2 className="tp-state__title">{t("tb.missing")}</h2>
             <p className="tp-state__body">{t("tb.missingHint")}</p>
             <div className="tp-state__actions">
               <Link className="tp-btn tp-btn--secondary" href="/templates">
