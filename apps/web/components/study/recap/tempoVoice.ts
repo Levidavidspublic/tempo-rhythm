@@ -21,11 +21,15 @@ export type TempoPiece =
   | { status: "done" }
   | { status: "exhausted" };
 
-/** One clip playing; `cancel` stops it and releases it. */
-export type ClipPlayer = (
+/**
+ * One clip playing; `cancel` stops it and releases it. `unlock`, where there is one, must be called
+ * inside the person's own press (Play, a sentence, the voice choice): iOS Safari lets an <audio>
+ * element make sound later, after the clip is fetched, only once it has played during a press.
+ */
+export type ClipPlayer = ((
   clip: { bytes: ArrayBuffer; mime: string },
   options: { rate: number; onEnd: () => void; onError: () => void },
-) => SpeechHandle;
+) => SpeechHandle) & { unlock?: () => void };
 
 /** What the listen screen hands the player when Tempo's voice may be used. */
 export type TempoVoiceSource = {
@@ -184,19 +188,35 @@ export type AudioLike = {
   removeAttribute(name: string): void;
 };
 
-/** A clip player over an <audio> element and object URLs. Exported for tests; the app uses `browserClipPlayer`. */
+/** A few samples of silence (8 kHz, 8-bit WAV), played once inside a press to unlock the element. */
+export const SILENT_CLIP = "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA==";
+
+/**
+ * A clip player over one reused <audio> element and object URLs (one element, so the press that
+ * unlocked it covers every clip after). Exported for tests; the app uses `browserClipPlayer`.
+ */
 export function createClipPlayer(env: {
   makeAudio: () => AudioLike;
   createUrl: (blob: Blob) => string;
   revokeUrl: (url: string) => void;
 }): ClipPlayer {
-  return (clip, { rate, onEnd, onError }) => {
+  let element: AudioLike | null = null;
+  let unlocked = false;
+  /** The clip that owns the element now; a new clip or `unlock` releases it first. */
+  let current: (() => boolean) | null = null;
+  const audioElement = () => {
+    element ??= env.makeAudio();
+    return element;
+  };
+  const player: ClipPlayer = (clip, { rate, onEnd, onError }) => {
+    current?.();
     const url = env.createUrl(new Blob([clip.bytes], { type: clip.mime }));
-    const audio = env.makeAudio();
+    const audio = audioElement();
     let released = false;
     const release = () => {
       if (released) return false;
       released = true;
+      if (current === release) current = null;
       audio.onended = null;
       audio.onerror = null;
       audio.pause();
@@ -210,6 +230,7 @@ export function createClipPlayer(env: {
     audio.onerror = () => {
       if (release()) onError();
     };
+    current = release;
     audio.src = url;
     audio.playbackRate = rate;
     try {
@@ -221,6 +242,27 @@ export function createClipPlayer(env: {
     }
     return { cancel: () => void release() };
   };
+  player.unlock = () => {
+    if (unlocked || current) return;
+    unlocked = true;
+    const audio = audioElement();
+    audio.src = SILENT_CLIP;
+    try {
+      Promise.resolve(audio.play())
+        .then(() => {
+          if (current) return;
+          audio.pause();
+          audio.removeAttribute("src");
+        })
+        .catch(() => {
+          // Not unlocked after all (no sound device, or refused): the next press tries again.
+          unlocked = false;
+        });
+    } catch {
+      unlocked = false;
+    }
+  };
+  return player;
 }
 
 /** The browser's <audio> clip player, or null where there is none (the server, old browsers). */

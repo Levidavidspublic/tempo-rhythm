@@ -140,6 +140,11 @@ export function AudioRecapPlayer({ noteId, title, body, mode, engine: override, 
 
   const [question, setQuestion] = useState("");
   const [answers, setAnswers] = useState<PageMatch[] | null>(null);
+  // Every action comes from the person's own press, the only moment iOS Safari lets the <audio>
+  // element be unlocked for the clips that arrive later.
+  const unlock = () => {
+    if (choice.offered) play?.unlock?.();
+  };
 
   return (
     <AudioRecapPlayerView
@@ -152,7 +157,10 @@ export function AudioRecapPlayer({ noteId, title, body, mode, engine: override, 
       state={state}
       status={status}
       elapsed={elapsedSeconds(timeline, state.index, state.playing ? within : 0)}
-      onAction={dispatch}
+      onAction={(action) => {
+        unlock();
+        dispatch(action);
+      }}
       question={question}
       onQuestion={setQuestion}
       answers={answers}
@@ -163,7 +171,10 @@ export function AudioRecapPlayer({ noteId, title, body, mode, engine: override, 
           ? {
               offered: choice.offered && reader !== null,
               pick,
-              onPick: setPick,
+              onPick: (next) => {
+                if (next === "tempo") unlock();
+                setPick(next);
+              },
               note: choice.note,
               deviceReads: !useTempo && deviceStatus === "ready",
             }

@@ -17,6 +17,7 @@ import {
   chooseVoice,
   createClipPlayer,
   createTempoReader,
+  SILENT_CLIP,
   piecesAt,
   type TempoPiece,
   type TempoVoiceSource,
@@ -209,7 +210,12 @@ describe("the <audio> clip player", () => {
           onended: null as (() => void) | null,
           onerror: null as (() => void) | null,
           paused: false,
-          play: () => playResult,
+          plays: [] as string[],
+          play: () => {
+            element.plays.push(element.src);
+            element.paused = false;
+            return playResult;
+          },
           pause() {
             element.paused = true;
           },
@@ -227,7 +233,13 @@ describe("the <audio> clip player", () => {
       },
       revokeUrl: (url) => urls.revoked.push(url),
     });
-    return { made, urls, player, failNextPlay: () => (playResult = Promise.reject(new Error("blocked"))) };
+    return {
+      made,
+      urls,
+      player,
+      failNextPlay: () => (playResult = Promise.reject(new Error("blocked"))),
+      playAgain: () => (playResult = Promise.resolve()),
+    };
   }
   const clip = { bytes: new Uint8Array([1]).buffer, mime: "audio/wav" };
 
@@ -253,12 +265,54 @@ describe("the <audio> clip player", () => {
     expect(urls.revoked).toEqual(["blob:clip-0"]);
     expect((made[0] as { paused: boolean }).paused).toBe(true);
     player(clip, { rate: 1, onEnd: () => said.push("end"), onError: () => said.push("error") });
-    (made[1] as { onerror: () => void }).onerror();
+    (made[0] as { onerror: () => void }).onerror();
     failNextPlay();
     player(clip, { rate: 1, onEnd: () => said.push("end"), onError: () => said.push("error") });
     await flush();
     expect(said).toEqual(["error", "error"]);
     expect(urls.revoked).toEqual(["blob:clip-0", "blob:clip-1", "blob:clip-2"]);
+  });
+
+  test("one <audio> element serves every clip, and a new clip releases the one before", () => {
+    const { made, urls, player } = env();
+    const said: string[] = [];
+    player(clip, { rate: 1, onEnd: () => said.push("end 1"), onError: () => said.push("error 1") });
+    player(clip, { rate: 1, onEnd: () => said.push("end 2"), onError: () => said.push("error 2") });
+    expect(made).toHaveLength(1);
+    expect(urls.revoked).toEqual(["blob:clip-0"]);
+    (made[0] as { onended: () => void }).onended();
+    expect(said).toEqual(["end 2"]);
+  });
+
+  test("unlock plays a moment of silence inside the press, once, then frees the element", async () => {
+    const { made, player } = env();
+    player.unlock?.();
+    player.unlock?.();
+    const element = made[0] as { plays: string[]; paused: boolean; src: string };
+    expect(element.plays).toEqual([SILENT_CLIP]);
+    await flush();
+    expect(element.paused).toBe(true);
+    expect(element.src).toBe("");
+    player(clip, { rate: 1, onEnd: () => {}, onError: () => {} });
+    expect(made).toHaveLength(1);
+    expect(element.plays).toEqual([SILENT_CLIP, "blob:clip-0"]);
+  });
+
+  test("an unlock the browser refuses is tried again on the next press", async () => {
+    const { made, player, failNextPlay, playAgain } = env();
+    failNextPlay();
+    player.unlock?.();
+    await flush();
+    playAgain();
+    player.unlock?.();
+    expect((made[0] as { plays: string[] }).plays).toEqual([SILENT_CLIP, SILENT_CLIP]);
+  });
+
+  test("unlock never interrupts a clip that is playing", () => {
+    const { made, player } = env();
+    player(clip, { rate: 1, onEnd: () => {}, onError: () => {} });
+    player.unlock?.();
+    expect((made[0] as { plays: string[] }).plays).toEqual(["blob:clip-0"]);
   });
 });
 
