@@ -50,6 +50,7 @@ import type * as lib_memoryImport from "../lib/memoryImport.js";
 import type * as lib_nagPhrase from "../lib/nagPhrase.js";
 import type * as lib_requireUser from "../lib/requireUser.js";
 import type * as lib_revenuecat_events from "../lib/revenuecat_events.js";
+import type * as lib_signInEmail from "../lib/signInEmail.js";
 import type * as lib_softDelete from "../lib/softDelete.js";
 import type * as lib_subscriptionGuards from "../lib/subscriptionGuards.js";
 import type * as lib_taskChecklists from "../lib/taskChecklists.js";
@@ -128,6 +129,7 @@ declare const fullApi: ApiFromModules<{
   "lib/nagPhrase": typeof lib_nagPhrase;
   "lib/requireUser": typeof lib_requireUser;
   "lib/revenuecat_events": typeof lib_revenuecat_events;
+  "lib/signInEmail": typeof lib_signInEmail;
   "lib/softDelete": typeof lib_softDelete;
   "lib/subscriptionGuards": typeof lib_subscriptionGuards;
   "lib/taskChecklists": typeof lib_taskChecklists;
