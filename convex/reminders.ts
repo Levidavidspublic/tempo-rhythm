@@ -541,7 +541,9 @@ export const deliver = internalAction({
 
 /**
  * The signed-in owner's side of "Send a test": the same checks as `deliver`, then the daily
- * limit, counted only when a send will actually be tried.
+ * limit, counted only when a send will actually be tried. The limit is per person per UTC day:
+ * the count is summed over all their link rows (disconnected ones too), so connecting again
+ * doesn't reset it.
  */
 export const claimTestSend = internalMutation({
 	args: { nagId: v.id("nags"), phraseId: v.string() },
@@ -565,16 +567,19 @@ export const claimTestSend = internalMutation({
 		if (!checked.ok) return checked;
 		if (!telegramReady())
 			return { ok: false as const, reason: "no_channel" as const };
-		const live = liveOf(await telegramLinks(ctx, user._id));
+		const links = await telegramLinks(ctx, user._id);
+		const live = liveOf(links);
 		if (!live) return { ok: false as const, reason: "no_channel" as const };
 		const now = Date.now();
 		const dayKey = utcDateKey(now);
-		const used = live.testUtcDateKey === dayKey ? (live.testsToday ?? 0) : 0;
+		const testsOn = (link: Doc<"reminderChannelLinks">) =>
+			link.testUtcDateKey === dayKey ? (link.testsToday ?? 0) : 0;
+		const used = links.reduce((n, link) => n + testsOn(link), 0);
 		if (used >= TESTS_PER_DAY)
 			return { ok: false as const, reason: "rate_limited" as const };
 		await ctx.db.patch(live._id, {
 			testUtcDateKey: dayKey,
-			testsToday: used + 1,
+			testsToday: testsOn(live) + 1,
 			updatedAt: now,
 		});
 		return {
