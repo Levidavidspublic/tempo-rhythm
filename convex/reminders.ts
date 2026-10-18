@@ -402,13 +402,18 @@ export const liveTelegramLink = internalQuery({
 	},
 });
 
-/** Telegram answered 403 (the person blocked the bot): stop sending to that chat. */
+/**
+ * Telegram answered 403 for `chatId` (the person blocked the bot): stop sending to that chat. Only
+ * when the link still points at that chat: a relink patches `chatId` in place, so a 403 for the old
+ * chat that lands after the person moved to a new one leaves the new, working link alone.
+ */
 export const markLinkBroken = internalMutation({
-	args: { linkId: v.id("reminderChannelLinks") },
+	args: { linkId: v.id("reminderChannelLinks"), chatId: v.string() },
 	returns: v.null(),
 	handler: async (ctx, args) => {
 		const link = await ctx.db.get(args.linkId);
-		if (!link || link.deletedAt !== undefined) return null;
+		if (!link || link.deletedAt !== undefined || link.chatId !== args.chatId)
+			return null;
 		const now = Date.now();
 		await ctx.db.patch(link._id, {
 			brokenAt: now,
@@ -487,6 +492,7 @@ async function sendThroughTelegram(
 	if (sent.reason === "blocked") {
 		await ctx.runMutation(internal.reminders.markLinkBroken, {
 			linkId: link.linkId,
+			chatId: link.chatId,
 		});
 		return { ok: false, reason: "blocked" };
 	}
