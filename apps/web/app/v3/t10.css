@@ -9,14 +9,17 @@
   gap: var(--tp-space-2);
 }
 /* The Telegram row: actions and the test picker sit under the row's words; the badge and
-   Disconnect stay in the control column. */
-.tp-rem-tg { align-items: flex-start; }
+   Disconnect stay in the control column. On a narrow screen the words keep the full width and
+   the badge and Disconnect wrap under them (side by side they covered the name at 390 px). */
+.tp-rem-tg { align-items: flex-start; flex-wrap: wrap; }
+.tp-rem-tg .tp-setting-row__text { flex: 1 1 16rem; }
 .tp-rem-tg .tp-setting-row__control {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: var(--tp-space-2);
+  margin-inline-start: auto;
 }
 .tp-rem-tg__actions {
   display: flex;
