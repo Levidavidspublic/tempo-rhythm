@@ -598,3 +598,47 @@ describe("speak: one sentence of a coach reply, resolved on the server", () => {
     }
   });
 });
+
+describe("the read-aloud cap is shared with study read-aloud", () => {
+  const WAV = new Uint8Array([82, 73, 70, 70, 1, 2, 3, 4]);
+
+  test("characters study read-aloud spent on the lease's day count: the coach's voice is exhausted, with no provider call", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const messageId = await reply(world, conversationId, "One more sentence.");
+    const { sessionId } = await startSession(world, conversationId);
+    const dateKey = world.row(sessionId)?.dateKey;
+    // Study read-aloud spent all but a few characters today; one of its rows is tombstoned.
+    await world.db.insert("studyVoiceUsage", {
+      userId: A, dateKey, chars: VOICE_LIMITS.dailyTtsCharsPerUser - 100, sentences: 10, createdAt: 1, updatedAt: 1,
+    });
+    await world.db.insert("studyVoiceUsage", {
+      userId: A, dateKey, chars: 95, sentences: 1, createdAt: 1, updatedAt: 1, deletedAt: 1,
+    });
+    // Another person's study read-aloud and another day's don't count.
+    await world.db.insert("studyVoiceUsage", {
+      userId: B, dateKey, chars: VOICE_LIMITS.dailyTtsCharsPerUser, sentences: 1, createdAt: 1, updatedAt: 1,
+    });
+    const net = fakeFetch(() => new Response(WAV, { headers: { "content-type": "audio/wav" } }));
+    try {
+      expect(await run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 })).toEqual({ status: "exhausted" });
+      expect(await run(voice.admitSentence, world.as(A), { sessionId, messageId, index: 0 })).toEqual({ status: "exhausted" });
+      expect(net.calls).toHaveLength(0);
+      expect(world.row(sessionId)).toMatchObject({ sentences: 0, ttsChars: 0 });
+    } finally {
+      net.restore();
+    }
+  });
+
+  test("study read-aloud on another day leaves the coach's voice its characters", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const messageId = await reply(world, conversationId, "One more sentence.");
+    const { sessionId } = await startSession(world, conversationId);
+    await world.db.insert("studyVoiceUsage", {
+      userId: A, dateKey: "2000-01-01", chars: VOICE_LIMITS.dailyTtsCharsPerUser, sentences: 1, createdAt: 1, updatedAt: 1,
+    });
+    const admitted = await run(voice.admitSentence, world.as(A), { sessionId, messageId, index: 0 });
+    expect(admitted.status).toBe("sentence");
+  });
+});

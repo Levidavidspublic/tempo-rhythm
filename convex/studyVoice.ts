@@ -8,6 +8,7 @@ import { isApproved, requireApprovedUser } from "./lib/approval";
 import { requireLivePage } from "./lib/pagePrivacy";
 import { requireUser } from "./lib/requireUser";
 import { pageReading, speechPieces } from "./lib/studyVoice";
+import { ttsCharsUsed } from "./lib/ttsBudget";
 import { VOICE_LIMITS, localDateKey } from "./lib/voicePolicy";
 import { synthesize } from "./voice";
 
@@ -51,29 +52,6 @@ async function dateKeyFor(ctx: Db, userId: Id<"users">, now: number) {
 		)
 		.first();
 	return localDateKey(now, prefs?.timeZone);
-}
-
-/**
- * Characters read aloud today in either voice: the coach's sessions and study read-aloud. Tombstoned
- * rows count too, so deleting the account and restoring it in the grace period gives nothing back.
- */
-async function ttsCharsUsed(ctx: Db, userId: Id<"users">, dateKey: string) {
-	const coach = await ctx.db
-		.query("voiceSessions")
-		.withIndex("by_userId_dateKey", (q) =>
-			q.eq("userId", userId).eq("dateKey", dateKey),
-		)
-		.collect();
-	const study = await ctx.db
-		.query("studyVoiceUsage")
-		.withIndex("by_userId_dateKey", (q) =>
-			q.eq("userId", userId).eq("dateKey", dateKey),
-		)
-		.collect();
-	return (
-		coach.reduce((n, r) => n + r.ttsChars, 0) +
-		study.reduce((n, r) => n + r.chars, 0)
-	);
 }
 
 /**
