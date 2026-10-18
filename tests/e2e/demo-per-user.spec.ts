@@ -47,6 +47,8 @@ test.describe("demo: notes stay per user", () => {
     await pageA.goto(url("/notes"));
     await expect(pageA.getByRole("main").getByRole("heading", { name: "Notes" })).toBeVisible();
 
+    await pageA.getByLabel("New note title").fill("E2E test page");
+
     await pageA.getByRole("button", { name: "New note" }).click();
     await expect(pageA).toHaveURL(/\/notes\/[^/]+$/);
     const noteId = new URL(pageA.url()).pathname.split("/").pop() as string;

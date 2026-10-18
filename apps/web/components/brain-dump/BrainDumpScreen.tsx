@@ -297,7 +297,8 @@ export function BrainDumpScreen() {
             type="button"
             className="tp-btn tp-btn--primary"
             onClick={() => void handleSort()}
-            disabled={busy || !canSubmit(draft)}
+            // Not disabled when empty: the press itself shows the "type something first" hint.
+            disabled={busy}
           >
             <TpIcon name="sparkle" size="sm" />
             <span>{isSorting ? t("bd.sorting") : t("bd.sort")}</span>
