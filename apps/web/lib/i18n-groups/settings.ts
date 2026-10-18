@@ -32,6 +32,12 @@ export const en = {
   "set.nav.founder": "Ask the founder",
   "set.nav.founderSub": "A person reads every message.",
 
+  // Ask the founder (ask-founder.html; its form has no backend, so the page gives Amit's email)
+  "set.founder.title": "Ask the founder",
+  "set.founder.sub": "Amit builds Tempo and reads every message himself. Questions, ideas, something that feels off: all welcome.",
+  "set.founder.mail": "Write to Amit", // new
+  "set.founder.mailHelp": "For now, you can reach him by email.", // new
+
   // Profile (settings-profile.html)
   "set.profile.title": "Profile",
   "set.profile.sub": "Who you are to Tempo. Change anything, any time.",
@@ -352,6 +358,11 @@ export const he: Record<keyof typeof en, string> = {
   "set.nav.nagsSub": "התזכורות שלך והמילים שהן משתמשות בהן.",
   "set.nav.founder": "לשאול את המייסד",
   "set.nav.founderSub": "אדם קורא כל הודעה.",
+
+  "set.founder.title": "לשאול את המייסד",
+  "set.founder.sub": "עמית בונה את Tempo וקורא כל הודעה בעצמו. שאלות, רעיונות, משהו שמרגיש לא בסדר: הכול מתקבל בברכה.",
+  "set.founder.mail": "לכתוב לעמית",
+  "set.founder.mailHelp": "בינתיים אפשר להגיע אליו במייל.",
 
   "set.profile.title": "פרופיל",
   "set.profile.sub": "מי את בשביל Tempo. אפשר לשנות הכול, בכל רגע.",
