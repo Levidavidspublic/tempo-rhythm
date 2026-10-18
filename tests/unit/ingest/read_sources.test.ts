@@ -82,22 +82,35 @@ describe("readIngestFile encodings", () => {
 });
 
 describe("readPhotoText", () => {
-  // The browser's text detector and bitmap decoder, stood in for: what was decoded, and how.
+  // The browser's bitmap decoder and canvas, and the OCR worker, stood in for: what was decoded,
+  // and how. No network: the OCR is a fake passed in, never tesseract.js.
   const decoded: { size: number; options: unknown }[] = [];
   const saved: Record<string, unknown> = {};
-  const KEYS = ["window", "TextDetector", "createImageBitmap"] as const;
+  const KEYS = ["createImageBitmap", "OffscreenCanvas"] as const;
+  const ocr = {
+    createOcrWorker: async () => ({
+      recognize: async () => ({ data: { text: "Chapter 4\nCells divide.\n" } }),
+      terminate: async () => {},
+    }),
+  };
 
   beforeAll(() => {
     for (const key of KEYS) saved[key] = globals[key];
-    globals.window = globalThis;
-    globals.TextDetector = class {
-      async detect() {
-        return [{ rawValue: "Chapter 4" }, { rawValue: "Cells divide." }];
-      }
-    };
     globals.createImageBitmap = async (image: Blob, options?: unknown) => {
       decoded.push({ size: image.size, options });
-      return { close() {} };
+      return { width: 2000, height: 1500, close() {} };
+    };
+    globals.OffscreenCanvas = class {
+      constructor(
+        public width: number,
+        public height: number
+      ) {}
+      getContext() {
+        return { drawImage() {} };
+      }
+      async convertToBlob() {
+        return new Blob([Uint8Array.of(9)], { type: "image/png" });
+      }
     };
   });
   afterAll(() => {
@@ -110,14 +123,17 @@ describe("readPhotoText", () => {
   test("a photo over 15 MB is refused before it is decoded", async () => {
     decoded.length = 0;
     const big = new Blob([new Uint8Array(15 * 1024 * 1024 + 1)], { type: "image/jpeg" });
-    expect(await readPhotoText(big)).toEqual({ ok: false, problem: "too_large" });
+    expect(await readPhotoText(big, { readers: ocr })).toEqual({ ok: false, problem: "too_large" });
     expect(decoded).toEqual([]);
   });
 
   test("a photo is decoded at most 2,000 pixels wide, then read", async () => {
     decoded.length = 0;
     const photo = new Blob([Uint8Array.of(1, 2, 3)], { type: "image/png" });
-    expect(await readPhotoText(photo)).toEqual({ ok: true, text: "Chapter 4\nCells divide." });
+    expect(await readPhotoText(photo, { readers: ocr })).toEqual({
+      ok: true,
+      text: "Chapter 4\nCells divide.",
+    });
     expect(decoded).toEqual([{ size: 3, options: { resizeWidth: 2000, resizeQuality: "high" } }]);
   });
 });

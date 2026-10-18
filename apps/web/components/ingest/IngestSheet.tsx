@@ -6,6 +6,7 @@ import {
   type ChangeEvent,
   type FormEvent,
   type KeyboardEvent,
+  type RefObject,
   useCallback,
   useEffect,
   useId,
@@ -21,10 +22,18 @@ import {
   deriveTitle,
   INGEST_ACCEPT,
   type IngestProblem,
+  type IngestSourceKind,
+  ingestKind,
   isTooLarge,
   toPageBody,
 } from "./ingest-text";
-import { canReadPhotos, readIngestFile, readPhotoText } from "./read-sources";
+import {
+  canReadPhotos,
+  type IngestReaders,
+  type OcrProgress,
+  readIngestFile,
+  readPhotoText,
+} from "./read-sources";
 
 export type IngestTab = "file" | "paste" | "photo";
 
@@ -46,25 +55,51 @@ export type IngestSheetViewProps = IngestSheetProps & {
   onSave: IngestSave;
   /** The browser's online flag. Offline, saving waits. */
   online: boolean;
-  /** Whether the browser can read text in photos. Default: detected (`window.TextDetector`). */
+  /** Whether the browser can read text in photos. Default: detected (a web worker and WASM). */
   photoSupported?: boolean;
+  /**
+   * The readers for photos (tesseract.js), PDFs (pdf.js) and Word files (mammoth). Default: the
+   * real ones, loaded on first use; tests and the gallery pass stand-ins.
+   */
+  readers?: Partial<IngestReaders>;
   /** Text already in the sheet when it opens. */
   initialText?: string;
 };
 
 type FileState =
   | { status: "idle" }
-  | { status: "reading" }
-  | { status: "read"; name: string }
-  | { status: "problem"; problem: IngestProblem };
+  | { status: "reading"; kind: IngestSourceKind; done?: number; total?: number }
+  | { status: "read"; name: string; pages?: { read: number; total: number } }
+  | { status: "stopped" }
+  | {
+      status: "problem";
+      problem: Exclude<IngestProblem, "cancelled">;
+      kind: IngestSourceKind | null;
+    };
 
-type PhotoState = "idle" | "reading" | "read" | "none" | "error" | "too_large";
+type PhotoState =
+  | "idle"
+  | "loading"
+  | "reading"
+  | "read"
+  | "stopped"
+  | "none"
+  | "error"
+  | "too_large"
+  | "load";
 
 const PHOTO_PROBLEM = {
   none: "ig.photo.none",
   error: "ig.photo.error",
   too_large: "ig.photo.tooLarge",
+  load: "ig.photo.load",
 } as const;
+
+type PhotoProblem = keyof typeof PHOTO_PROBLEM;
+
+function isPhotoProblem(state: PhotoState): state is PhotoProblem {
+  return state in PHOTO_PROBLEM;
+}
 
 type SaveState = "idle" | "saving" | "waiting" | "error";
 
@@ -76,7 +111,15 @@ const FILE_PROBLEM = {
   empty: "ig.file.empty",
   too_large: "ig.file.tooLarge",
   unreadable: "ig.file.unreadable",
+  doc: "ig.file.doc",
+  no_text: "ig.file.noText",
+  locked: "ig.file.locked",
+  file_too_big: "ig.file.bigPdf",
 } as const;
+
+function fileProblemKey(problem: keyof typeof FILE_PROBLEM, kind: IngestSourceKind | null) {
+  return problem === "file_too_big" && kind === "docx" ? "ig.file.bigDocx" : FILE_PROBLEM[problem];
+}
 
 /**
  * IngestSheet (T8-T10 spec, S2): bring a file, pasted text or a photo of text into a new page.
@@ -108,6 +151,7 @@ export function IngestSheetView({
   onSave,
   online,
   photoSupported,
+  readers,
   initialText = "",
 }: IngestSheetViewProps) {
   const t = useIngestCopy();
@@ -119,6 +163,7 @@ export function IngestSheetView({
   const [titleEdited, setTitleEdited] = useState(false);
   const [fileState, setFileState] = useState<FileState>({ status: "idle" });
   const [photoState, setPhotoState] = useState<PhotoState>("idle");
+  const [photoRatio, setPhotoRatio] = useState(0);
   const [canPhoto] = useState(() => photoSupported ?? canReadPhotos());
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [needText, setNeedText] = useState(false);
@@ -129,6 +174,13 @@ export function IngestSheetView({
   const busy = useRef(false);
   // Set by "Paste text instead": the text box gets focus once it is on screen.
   const focusText = useRef(false);
+  // Set by Stop reading and "Use a photo instead": that picker gets focus once it is on screen.
+  const focusPicker = useRef<"file" | "photo" | null>(null);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const photoInput = useRef<HTMLInputElement | null>(null);
+  // The read in progress, if any: aborting it stops pdf.js or terminates the OCR worker.
+  const fileJob = useRef<AbortController | null>(null);
+  const photoJob = useRef<AbortController | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -138,6 +190,9 @@ export function IngestSheetView({
     sheet.current?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus();
     return () => {
       mounted.current = false;
+      // RAM-ONLY: closing the sheet mid-read stops the reader and lets the file or photo go.
+      fileJob.current?.abort();
+      photoJob.current?.abort();
       document.body.style.overflow = overflow;
       if (opener?.isConnected) opener.focus();
     };
@@ -158,6 +213,14 @@ export function IngestSheetView({
       focusText.current = false;
       textBox.current.focus();
       return;
+    }
+    if (focusPicker.current) {
+      const target = focusPicker.current === "file" ? fileInput.current : photoInput.current;
+      focusPicker.current = null;
+      if (target) {
+        target.focus();
+        return;
+      }
     }
     const active = document.activeElement;
     if (!active || active === document.body || !document.contains(active)) root.focus();
@@ -246,16 +309,36 @@ export function IngestSheetView({
     // Let go of the picked file straight away; only its text is kept (RAM-only).
     input.value = "";
     if (!file || fileState.status === "reading") return;
-    setFileState({ status: "reading" });
-    void readIngestFile(file).then((result) => {
-      if (!mounted.current) return;
+    const kind = ingestKind(file.name, file.type);
+    const job = new AbortController();
+    fileJob.current = job;
+    setFileState({ status: "reading", kind: kind ?? "text" });
+    const current = () => mounted.current && fileJob.current === job;
+    void readIngestFile(file, {
+      readers,
+      signal: job.signal,
+      onProgress: (progress) => {
+        if (current()) setFileState({ status: "reading", ...progress });
+      },
+    }).then((result) => {
+      if (!current()) return;
+      fileJob.current = null;
       if (result.ok) {
         takeText(result.text, result.title);
-        setFileState({ status: "read", name: file.name });
+        setFileState({ status: "read", name: file.name, pages: result.pages });
+      } else if (result.problem === "cancelled") {
+        setFileState({ status: "stopped" });
       } else {
-        setFileState({ status: "problem", problem: result.problem });
+        setFileState({ status: "problem", problem: result.problem, kind });
       }
     });
+  };
+
+  const stopFile = () => {
+    fileJob.current?.abort();
+    fileJob.current = null;
+    focusPicker.current = "file";
+    setFileState({ status: "stopped" });
   };
 
   const onPhoto = (event: ChangeEvent<HTMLInputElement>) => {
@@ -263,17 +346,43 @@ export function IngestSheetView({
     const image = input.files?.[0];
     // RAM-ONLY: the photo is read in memory and dropped; it is never uploaded or stored.
     input.value = "";
-    if (!image || photoState === "reading") return;
-    setPhotoState("reading");
-    void readPhotoText(image).then((result) => {
-      if (!mounted.current) return;
+    if (!image || photoState === "loading" || photoState === "reading") return;
+    const job = new AbortController();
+    photoJob.current = job;
+    setPhotoState("loading");
+    setPhotoRatio(0);
+    const current = () => mounted.current && photoJob.current === job;
+    void readPhotoText(image, {
+      readers,
+      signal: job.signal,
+      onProgress: ({ stage, ratio }: OcrProgress) => {
+        if (!current()) return;
+        setPhotoState(stage);
+        setPhotoRatio(stage === "reading" ? ratio : 0);
+      },
+    }).then((result) => {
+      if (!current()) return;
+      photoJob.current = null;
       if (result.ok) {
         takeText(result.text, deriveTitle(result.text));
         setPhotoState("read");
       } else {
-        setPhotoState(result.problem);
+        setPhotoState(result.problem === "cancelled" ? "stopped" : result.problem);
       }
     });
+  };
+
+  // Terminates the OCR worker (read-sources.ts); the photo is dropped with it.
+  const stopPhoto = () => {
+    photoJob.current?.abort();
+    photoJob.current = null;
+    focusPicker.current = "photo";
+    setPhotoState("stopped");
+  };
+
+  const switchToPhoto = () => {
+    focusPicker.current = "photo";
+    setTab("photo");
   };
 
   const onTextChange = (next: string) => {
@@ -381,7 +490,15 @@ export function IngestSheetView({
                 onSubmit={submit}
               >
                 {tab === "file" ? (
-                  <FilePanel id={id} t={t} state={fileState} onFile={onFile} />
+                  <FilePanel
+                    id={id}
+                    t={t}
+                    state={fileState}
+                    inputRef={fileInput}
+                    onFile={onFile}
+                    onStop={stopFile}
+                    onUsePhoto={switchToPhoto}
+                  />
                 ) : null}
                 {tab === "photo" ? (
                   <PhotoPanel
@@ -389,7 +506,10 @@ export function IngestSheetView({
                     t={t}
                     supported={canPhoto}
                     state={photoState}
+                    ratio={photoRatio}
+                    inputRef={photoInput}
                     onPhoto={onPhoto}
+                    onStop={stopPhoto}
                     onUsePaste={switchToPaste}
                   />
                 ) : null}
@@ -518,32 +638,78 @@ function CharCount({ text, t }: { text: string; t: IngestT }) {
   );
 }
 
+/** "Stop reading": a secondary button beside the reading status. */
+function StopButton({ t, onStop }: { t: IngestT; onStop: () => void }) {
+  return (
+    <button className="tp-btn tp-btn--secondary" type="button" onClick={onStop}>
+      <TpIcon name="x" size="sm" />
+      <span>{t("ig.stop")}</span>
+    </button>
+  );
+}
+
+/** A plain bar for how far reading has got (no animation, so nothing moves on its own). */
+function ReadingBar({
+  t,
+  value,
+  max,
+  label,
+}: {
+  t: IngestT;
+  value: number;
+  max: number;
+  label: string;
+}) {
+  return (
+    <>
+      <progress
+        className="tp-ingest-progress"
+        max={max}
+        value={value}
+        aria-label={t("ig.progress")}
+      />
+      <p className="tp-help tp-num">{label}</p>
+    </>
+  );
+}
+
+const READING_KEY = { pdf: "ig.file.readingPdf", docx: "ig.file.readingDocx" } as const;
+
 function FilePanel({
   id,
   t,
   state,
+  inputRef,
   onFile,
+  onStop,
+  onUsePhoto,
 }: {
   id: string;
   t: IngestT;
   state: FileState;
+  inputRef: RefObject<HTMLInputElement | null>;
   onFile: (event: ChangeEvent<HTMLInputElement>) => void;
+  onStop: () => void;
+  onUsePhoto: () => void;
 }) {
   const problem = state.status === "problem" ? state.problem : null;
-  const reading = state.status === "reading";
+  const reading = state.status === "reading" ? state : null;
+  // Text files read at once; a PDF or a Word file can take a while, so it can be stopped.
+  const slow = reading?.kind === "pdf" || reading?.kind === "docx";
   return (
     <div className="tp-field" data-component="Field">
       <label className="tp-label" htmlFor={`${id}-file`}>
         {t("ig.file.label")}
       </label>
       <input
+        ref={inputRef}
         className="tp-input"
         id={`${id}-file`}
         type="file"
         accept={INGEST_ACCEPT}
         aria-invalid={problem ? true : undefined}
         aria-describedby={problem ? `${id}-file-help ${id}-file-status` : `${id}-file-help`}
-        aria-disabled={reading || undefined}
+        aria-disabled={reading ? true : undefined}
         onClick={(event) => {
           // aria-disabled, not disabled, so focus stays here; no second picker while reading.
           if (reading) event.preventDefault();
@@ -554,8 +720,28 @@ function FilePanel({
         {t("ig.file.help")}
       </p>
       {reading ? (
+        <div className="tp-ingest-reading" data-testid="ingest-file-reading">
+          <output className="tp-help" id={`${id}-file-status`}>
+            {t(
+              reading.kind === "pdf" || reading.kind === "docx"
+                ? READING_KEY[reading.kind]
+                : "ig.file.reading"
+            )}
+          </output>
+          {slow ? <StopButton t={t} onStop={onStop} /> : null}
+        </div>
+      ) : null}
+      {reading?.kind === "pdf" && reading.total ? (
+        <ReadingBar
+          t={t}
+          value={reading.done ?? 0}
+          max={reading.total}
+          label={t("ig.file.pages", { n: reading.done ?? 0, total: reading.total })}
+        />
+      ) : null}
+      {state.status === "stopped" ? (
         <output className="tp-help" id={`${id}-file-status`}>
-          {t("ig.file.reading")}
+          {t("ig.file.stopped")}
         </output>
       ) : null}
       {state.status === "read" ? (
@@ -567,13 +753,30 @@ function FilePanel({
             {t("ig.file.read").split("{name}")[0]}
             <bdi>{state.name}</bdi>
             {t("ig.file.read").split("{name}")[1] ?? ""}
+            {state.pages ? (
+              <> {t("ig.file.pagesCut", { read: state.pages.read, total: state.pages.total })}</>
+            ) : null}
           </span>
         </output>
       ) : null}
-      {problem ? (
+      {problem === "no_text" ? (
+        <div className="tp-notice" data-tone="caution" id={`${id}-file-status`} role="alert">
+          <span className="tp-notice__icon">
+            <TpIcon name="alert" size="sm" />
+          </span>
+          <span className="tp-notice__text">{t("ig.file.noText")}</span>
+          <button
+            className="tp-btn tp-btn--secondary tp-notice__action"
+            type="button"
+            onClick={onUsePhoto}
+          >
+            <span>{t("ig.file.usePhoto")}</span>
+          </button>
+        </div>
+      ) : problem && state.status === "problem" ? (
         <p className="tp-error-text" id={`${id}-file-status`} role="alert">
           <TpIcon name="alert" size="sm" />
-          <span>{t(FILE_PROBLEM[problem])}</span>
+          <span>{t(fileProblemKey(problem, state.kind))}</span>
         </p>
       ) : null}
     </div>
@@ -585,14 +788,21 @@ function PhotoPanel({
   t,
   supported,
   state,
+  ratio,
+  inputRef,
   onPhoto,
+  onStop,
   onUsePaste,
 }: {
   id: string;
   t: IngestT;
   supported: boolean;
   state: PhotoState;
+  /** How much of the photo the OCR has read, 0 to 1. */
+  ratio: number;
+  inputRef: RefObject<HTMLInputElement | null>;
   onPhoto: (event: ChangeEvent<HTMLInputElement>) => void;
+  onStop: () => void;
   onUsePaste: () => void;
 }) {
   if (!supported) {
@@ -612,32 +822,48 @@ function PhotoPanel({
       </div>
     );
   }
-  const problem = state === "none" || state === "error" || state === "too_large";
+  const problem = isPhotoProblem(state) ? state : null;
+  const busy = state === "loading" || state === "reading";
+  const percent = Math.round(Math.min(1, Math.max(0, ratio)) * 100);
   return (
     <div className="tp-field" data-component="Field">
       <label className="tp-label" htmlFor={`${id}-photo`}>
         {t("ig.photo.label")}
       </label>
       <input
+        ref={inputRef}
         className="tp-input"
         id={`${id}-photo`}
         type="file"
         accept="image/*"
         capture="environment"
-        aria-invalid={problem || undefined}
+        aria-invalid={problem ? true : undefined}
         aria-describedby={problem ? `${id}-photo-help ${id}-photo-status` : `${id}-photo-help`}
-        aria-disabled={state === "reading" || undefined}
+        aria-disabled={busy || undefined}
         onClick={(event) => {
-          if (state === "reading") event.preventDefault();
+          if (busy) event.preventDefault();
         }}
         onChange={onPhoto}
       />
       <p className="tp-help" id={`${id}-photo-help`}>
         {t("ig.photo.help")}
       </p>
+      {busy ? (
+        <div className="tp-ingest-reading" data-testid="ingest-photo-reading">
+          {/* One polite live region: it speaks once when the reader is ready and reading starts,
+              not on every percent. */}
+          <output className="tp-help" id={`${id}-photo-status`}>
+            {t(state === "loading" ? "ig.photo.loading" : "ig.photo.reading")}
+          </output>
+          <StopButton t={t} onStop={onStop} />
+        </div>
+      ) : null}
       {state === "reading" ? (
+        <ReadingBar t={t} value={percent} max={100} label={t("ig.photo.percent", { n: percent })} />
+      ) : null}
+      {state === "stopped" ? (
         <output className="tp-help" id={`${id}-photo-status`}>
-          {t("ig.photo.reading")}
+          {t("ig.photo.stopped")}
         </output>
       ) : null}
       {state === "read" ? (
@@ -653,7 +879,7 @@ function PhotoPanel({
           <span className="tp-notice__icon">
             <TpIcon name="alert" size="sm" />
           </span>
-          <span className="tp-notice__text">{t(PHOTO_PROBLEM[state])}</span>
+          <span className="tp-notice__text">{t(PHOTO_PROBLEM[problem])}</span>
           <button
             className="tp-btn tp-btn--secondary tp-notice__action"
             type="button"

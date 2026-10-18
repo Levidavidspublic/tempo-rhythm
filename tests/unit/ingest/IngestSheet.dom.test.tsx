@@ -30,7 +30,7 @@ const localeProvider = Bun.resolveSync("@/components/providers/LocaleProvider", 
 let previousLocale: Record<string, unknown> = {};
 const realFocus = TestNode.prototype.focus;
 const globals = globalThis as Record<string, unknown>;
-const SAVED_GLOBALS = ["FileReader", "TextDetector", "createImageBitmap"] as const;
+const SAVED_GLOBALS = ["FileReader"] as const;
 const savedGlobals: Record<string, unknown> = {};
 
 function installLocale() {
@@ -56,12 +56,6 @@ beforeAll(async () => {
   globals.FileReader = class {
     readAsArrayBuffer() {}
   };
-  globals.TextDetector = class {
-    detect() {
-      return new Promise(() => {});
-    }
-  };
-  globals.createImageBitmap = async () => ({ close() {} });
 });
 
 afterAll(() => {
@@ -72,6 +66,14 @@ afterAll(() => {
     else globals[key] = savedGlobals[key];
   }
 });
+
+// The photo, PDF and Word readers stood in for: they never finish, and never touch the network.
+const NEVER_DONE: NonNullable<IngestSheetViewProps["readers"]> = {
+  preparePhoto: async (image) => image,
+  createOcrWorker: () => new Promise(() => {}),
+  readPdfPages: () => new Promise(() => {}),
+  readDocxText: () => new Promise(() => {}),
+};
 
 let root: Root | null = null;
 let host: TestNode | null = null;
@@ -89,6 +91,7 @@ async function render(props: Partial<IngestSheetViewProps> = {}) {
     onSave: async () => "n1",
     online: true,
     photoSupported: false,
+    readers: NEVER_DONE,
     ...props,
   };
   host = documentNode.createElement("div");
@@ -267,5 +270,158 @@ describe("IngestSheet offline save", () => {
     expect(onSave).not.toHaveBeenCalled();
     expect(saveButton(view).textContent).toContain("Save as a page");
     expect(view.textContent).toContain("more than 200 KB of text");
+  });
+});
+
+describe("IngestSheet reading PDFs, Word files and photos", () => {
+  // A FileReader that hands back the bytes, for the reads that must get past it.
+  class BytesFileReader {
+    result: ArrayBuffer | null = null;
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    onabort: (() => void) | null = null;
+    readAsArrayBuffer(blob: Blob) {
+      void blob.arrayBuffer().then((buffer) => {
+        this.result = buffer;
+        this.onload?.();
+      });
+    }
+  }
+  type Readers = NonNullable<IngestSheetViewProps["readers"]>;
+  let hangingReader: unknown;
+  const useBytesReader = () => {
+    hangingReader = globals.FileReader;
+    globals.FileReader = BytesFileReader;
+  };
+  afterEach(() => {
+    if (hangingReader) globals.FileReader = hangingReader;
+    hangingReader = undefined;
+  });
+
+  async function pick(view: TestNode, inputId: string, file: File) {
+    const input = findById(view, inputId);
+    (input as unknown as { files: File[] }).files = [file];
+    await act(async () => {
+      (reactProps(input).onChange as (event: unknown) => void)({
+        target: input,
+        currentTarget: input,
+      });
+    });
+    // Let the FileReader stand-in and the reader's promises run.
+    await act(async () => {
+      await Bun.sleep(5);
+    });
+  }
+
+  const pdfFile = (name = "Biology notes.pdf") =>
+    new File(["%PDF-1.7 fictional"], name, { type: "application/pdf" });
+
+  test("a PDF shows its page progress and Stop; Stop ends it and gives the picker focus", async () => {
+    useBytesReader();
+    let signal: AbortSignal | null = null;
+    const readPdfPages: Readers["readPdfPages"] = (_bytes, options) => {
+      signal = options.signal;
+      options.onPage(3, 12);
+      return new Promise(() => {});
+    };
+    const { view } = await render({ readers: { ...NEVER_DONE, readPdfPages } });
+    await pick(view, "ig-file", pdfFile());
+    expect(view.textContent).toContain("Reading the PDF…");
+    expect(view.textContent).toContain("Page 3 of 12");
+    const [bar] = findAll(view, (n) => n.tagName === "PROGRESS");
+    expect(bar?.getAttribute("aria-label")).toBe("Reading progress");
+    expect(bar?.getAttribute("max")).toBe("12");
+    expect(bar?.getAttribute("value")).toBe("3");
+    expect(findById(view, "ig-file-status").tagName).toBe("OUTPUT");
+
+    await focusAndClick(findByTag(view, "BUTTON", "Stop reading"));
+    expect((signal as AbortSignal | null)?.aborted).toBe(true);
+    expect(view.textContent).toContain("Reading stopped. Choose the file again to start over.");
+    expect(focused()).toBe("INPUT#ig-file");
+    expect(findById(view, "ig-file").getAttribute("aria-disabled")).toBeNull();
+  });
+
+  test("an old .doc is refused in plain words, without being read", async () => {
+    const { view } = await render();
+    await pick(view, "ig-file", new File(["x"], "Old essay.doc", { type: "application/msword" }));
+    const status = findById(view, "ig-file-status");
+    expect(status.getAttribute("role")).toBe("alert");
+    expect(status.textContent).toContain("Old Word files (.doc) can't be read here.");
+    expect(status.textContent).toContain("save it as .docx");
+  });
+
+  test("a PDF without text suggests a photo; Use a photo instead opens the Photo picker", async () => {
+    useBytesReader();
+    const readPdfPages = async () => ({ pageCount: 2, pages: ["", ""] });
+    const { view } = await render({
+      photoSupported: true,
+      readers: { ...NEVER_DONE, readPdfPages },
+    });
+    await pick(view, "ig-file", pdfFile("scan.pdf"));
+    expect(findById(view, "ig-file-status").textContent).toContain(
+      "This PDF has no text in it, so it's probably a scanned page."
+    );
+    await focusAndClick(findByTag(view, "BUTTON", "Use a photo instead"));
+    expect(focused()).toBe("INPUT#ig-photo");
+  });
+
+  test("a PDF longer than the cap says how many pages were read", async () => {
+    useBytesReader();
+    const readPdfPages = async () => ({ pageCount: 240, pages: ["Cells", "Tissues"] });
+    const { view } = await render({ readers: { ...NEVER_DONE, readPdfPages } });
+    await pick(view, "ig-file", pdfFile());
+    expect(view.textContent).toContain("Only the first 2 of 240 pages were read.");
+    // "Cells\n\nTissues" is in the text box.
+    expect(view.textContent).toContain("14 characters");
+  });
+
+  test("a photo: getting ready, then reading with a percent; Stop terminates the worker", async () => {
+    type Worker = { recognize: () => Promise<never>; terminate: () => Promise<void> };
+    let ready: (worker: Worker) => void = () => {};
+    let progress: (p: { stage: "loading" | "reading"; ratio: number }) => void = () => {};
+    const terminate = mock(async () => {});
+    const readers: Readers = {
+      ...NEVER_DONE,
+      createOcrWorker: (onProgress) => {
+        progress = onProgress;
+        return new Promise<Worker>((resolve) => {
+          ready = resolve;
+        });
+      },
+    };
+    const { view } = await render({ initialTab: "photo", photoSupported: true, readers });
+    await pick(view, "ig-photo", new File([Uint8Array.of(1)], "page.jpg", { type: "image/jpeg" }));
+    expect(findById(view, "ig-photo-status").textContent).toBe("Getting the photo reader ready…");
+    expect(findById(view, "ig-photo").getAttribute("aria-disabled")).toBe("true");
+
+    await act(async () => {
+      ready({ recognize: () => new Promise<never>(() => {}), terminate });
+      progress({ stage: "reading", ratio: 0.4 });
+      await Bun.sleep(0);
+    });
+    expect(findById(view, "ig-photo-status").textContent).toBe("Reading the photo…");
+    expect(view.textContent).toContain("40% read");
+
+    await focusAndClick(findByTag(view, "BUTTON", "Stop reading"));
+    expect(terminate).toHaveBeenCalledTimes(1);
+    expect(view.textContent).toContain("Reading stopped. Choose the photo again to start over.");
+    expect(focused()).toBe("INPUT#ig-photo");
+  });
+
+  test("closing the sheet mid-read stops the reader", async () => {
+    useBytesReader();
+    let signal: AbortSignal | null = null;
+    const readPdfPages: Readers["readPdfPages"] = (_bytes, options) => {
+      signal = options.signal;
+      return new Promise(() => {});
+    };
+    const { view } = await render({ readers: { ...NEVER_DONE, readPdfPages } });
+    await pick(view, "ig-file", pdfFile());
+    expect((signal as AbortSignal | null)?.aborted).toBe(false);
+    await act(async () => {
+      root?.unmount();
+    });
+    root = null;
+    expect((signal as AbortSignal | null)?.aborted).toBe(true);
   });
 });

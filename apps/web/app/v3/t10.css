@@ -134,3 +134,10 @@
 [data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) .tp-notice__text { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
 /* A picker that is reading keeps focus (aria-disabled, not disabled) and looks like a disabled field. */
 [data-testid="ingest-sheet"] .tp-input[aria-disabled="true"] { background: var(--tp-sunken); color: var(--tp-ink-muted); cursor: not-allowed; }
+/* Reading a PDF, a Word file or a photo: the status and Stop reading share a row, and a plain bar
+   shows how far it has got. The bar never animates by itself (MOTION 1). */
+[data-testid="ingest-sheet"] .tp-ingest-reading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-2) var(--tp-space-3); }
+[data-testid="ingest-sheet"] .tp-ingest-progress { appearance: none; inline-size: 100%; block-size: var(--tp-space-2); border: 0; border-radius: var(--tp-radius-pill); background: var(--tp-sunken); color: var(--tp-ink-muted); overflow: hidden; }
+[data-testid="ingest-sheet"] .tp-ingest-progress::-webkit-progress-bar { background: var(--tp-sunken); border-radius: var(--tp-radius-pill); }
+[data-testid="ingest-sheet"] .tp-ingest-progress::-webkit-progress-value { background: var(--tp-ink-muted); border-radius: var(--tp-radius-pill); }
+[data-testid="ingest-sheet"] .tp-ingest-progress::-moz-progress-bar { background: var(--tp-ink-muted); border-radius: var(--tp-radius-pill); }

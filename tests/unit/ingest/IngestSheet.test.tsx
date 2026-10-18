@@ -73,7 +73,7 @@ describe("IngestSheet", () => {
     expect(html).toContain('<label class="tp-label" for="ig-file">Choose a file</label>');
     expect(html).toContain('type="file"');
     expect(html).toContain(
-      'accept=".txt,.md,.markdown,.csv,.html,.htm,text/plain,text/markdown,text/csv,text/html"'
+      'accept=".txt,.md,.markdown,.csv,.html,.htm,.pdf,.docx,text/plain,text/markdown,text/csv,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"'
     );
     expect(html).toContain("Up to 200 KB of text.");
     expect(html).not.toContain("<textarea");

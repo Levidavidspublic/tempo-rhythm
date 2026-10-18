@@ -1,6 +1,7 @@
 /**
- * Pure helpers for the IngestSheet (T8-T10 spec, S2): turn a file, pasted text or a photo's
- * detected text into a safe page body. No React, no network, no storage.
+ * Pure helpers for the IngestSheet (T8-T10 spec, S2): turn a file (text, web page, PDF, Word
+ * .docx), pasted text or a photo's recognised text into a safe page body. No React, no network,
+ * no storage; the libraries that read PDFs, Word files and photos live in read-sources.ts.
  *
  * RAM-ONLY (HARD_RULES §6.4): everything here works on strings in memory. Nothing in this file
  * writes the source anywhere; the sheet saves only the text the person checked and kept.
@@ -17,30 +18,85 @@ export const INGEST_MAX_FILE_BYTES = 2 * 1024 * 1024;
 
 export const INGEST_EXTENSIONS = [".txt", ".md", ".markdown", ".csv", ".html", ".htm"] as const;
 
-/** The `accept` attribute for the File tab. */
+/**
+ * PDFs bigger than this aren't opened (EXTRAPOLATED: 20 MB holds a long text PDF, while a scan
+ * that size has no text layer anyway). pdf.js keeps the whole file in memory while it reads.
+ */
+export const INGEST_MAX_PDF_BYTES = 20 * 1024 * 1024;
+
+/**
+ * Only this many pages of a PDF are read (EXTRAPOLATED: 100 pages of text is about 200 KB, the
+ * page's own limit, so reading further would only be cut off). The sheet says when it stopped.
+ */
+export const INGEST_MAX_PDF_PAGES = 100;
+
+/** Word .docx files bigger than this aren't opened (EXTRAPOLATED: text-only .docx files are
+ * small; most of a big one is pictures, which aren't read). */
+export const INGEST_MAX_DOCX_BYTES = 10 * 1024 * 1024;
+
+const PDF_TYPE = "application/pdf";
+const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const DOC_TYPE = "application/msword";
+
+/** The `accept` attribute for the File tab. Old .doc files aren't listed: they can't be read. */
 export const INGEST_ACCEPT = [
   ...INGEST_EXTENSIONS,
+  ".pdf",
+  ".docx",
   "text/plain",
   "text/markdown",
   "text/csv",
   "text/html",
+  PDF_TYPE,
+  DOCX_TYPE,
 ].join(",");
 
+/** The two kinds of text file, decoded as text (see fileKind). */
 export type IngestFileKind = "text" | "html";
 
-export type IngestProblem = "type" | "empty" | "too_large" | "unreadable";
+/** Every kind of file the File tab knows: text files, PDFs, Word .docx and old Word .doc. */
+export type IngestSourceKind = IngestFileKind | "pdf" | "docx" | "doc";
+
+export type IngestProblem =
+  | "type"
+  | "empty"
+  | "too_large"
+  | "unreadable"
+  /** An old binary Word file (.doc): not supported, said plainly. */
+  | "doc"
+  /** A PDF with no text layer, such as a scan: a photo of the page can be read instead. */
+  | "no_text"
+  /** A PDF locked with a password. */
+  | "locked"
+  /** A PDF or Word file over its size cap (the text limit is "too_large"). */
+  | "file_too_big"
+  /** The person stopped the reading. */
+  | "cancelled";
 
 export type IngestResult =
-  | { ok: true; text: string; title: string }
+  | {
+      ok: true;
+      text: string;
+      title: string;
+      /** Set only when a PDF had more pages than were read (INGEST_MAX_PDF_PAGES). */
+      pages?: { read: number; total: number };
+    }
   | { ok: false; problem: IngestProblem };
 
 const TITLE_MAX = 80;
 
-/** Which reader a file needs, from its name (the type is a hint only), or null when unsupported. */
-export function fileKind(name: string, type = ""): IngestFileKind | null {
+function extension(name: string): string {
   const lower = name.toLowerCase();
   const dot = lower.lastIndexOf(".");
-  const ext = dot >= 0 ? lower.slice(dot) : "";
+  return dot >= 0 ? lower.slice(dot) : "";
+}
+
+/**
+ * Which text decoder a text file needs, from its name (the type is a hint only), or null when
+ * it isn't a text file. PDFs and Word files are told apart by ingestKind.
+ */
+export function fileKind(name: string, type = ""): IngestFileKind | null {
+  const ext = extension(name);
   if (ext === ".html" || ext === ".htm") return "html";
   if ((INGEST_EXTENSIONS as readonly string[]).includes(ext)) return "text";
   if (!ext) {
@@ -48,6 +104,43 @@ export function fileKind(name: string, type = ""): IngestFileKind | null {
     if (type === "text/plain" || type === "text/markdown" || type === "text/csv") return "text";
   }
   return null;
+}
+
+/** Which reader any picked file needs: a text kind, "pdf", "docx", "doc" (refused), or null. */
+export function ingestKind(name: string, type = ""): IngestSourceKind | null {
+  const text = fileKind(name, type);
+  if (text) return text;
+  const ext = extension(name);
+  if (ext === ".pdf") return "pdf";
+  if (ext === ".docx") return "docx";
+  if (ext === ".doc") return "doc";
+  if (!ext) {
+    if (type === PDF_TYPE) return "pdf";
+    if (type === DOCX_TYPE) return "docx";
+    if (type === DOC_TYPE) return "doc";
+  }
+  return null;
+}
+
+/** The size cap for a PDF or Word file, or null for text files (they have their own). */
+export function maxFileBytes(kind: IngestSourceKind): number {
+  if (kind === "pdf") return INGEST_MAX_PDF_BYTES;
+  if (kind === "docx") return INGEST_MAX_DOCX_BYTES;
+  return INGEST_MAX_FILE_BYTES;
+}
+
+/**
+ * True for the old binary Office format (an OLE compound file: D0 CF 11 E0 A1 B1 1A E1). A .doc
+ * renamed to .docx starts this way, and is refused like a .doc instead of failing to unzip.
+ */
+export function isOldOfficeFile(bytes: Uint8Array): boolean {
+  const magic = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+  return bytes.length >= magic.length && magic.every((byte, i) => bytes[i] === byte);
+}
+
+/** True when the text has at least one letter or digit in any script. */
+export function hasWords(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text);
 }
 
 /** LF line endings, no byte-order mark, no NUL characters, at most one blank line in a row. */
@@ -308,6 +401,63 @@ export function htmlToText(html: string): string {
     return nodeToText(doc.body ?? doc);
   }
   return stripHtmlFallback(html);
+}
+
+// ---------------------------------------------------------------- PDF, Word and photo text
+
+/** One run of text in a PDF page's text layer, as pdf.js gives it (`getTextContent().items`). */
+export type PdfTextItem = { str?: string; hasEOL?: boolean };
+
+/** One page's text from its text-layer runs: a line break wherever pdf.js marks a line's end. */
+export function pdfPageText(items: readonly PdfTextItem[]): string {
+  let out = "";
+  for (const item of items) {
+    out += item.str ?? "";
+    if (item.hasEOL) out += "\n";
+  }
+  return out
+    .split("\n")
+    .map((line) => line.replace(/[ \t\u00a0]+/g, " ").trim())
+    .join("\n");
+}
+
+/**
+ * A PDF's pages as the import. No letters or digits on any page means no text layer (a scan, or
+ * pictures of text): "no_text", so the sheet can suggest a photo of the page instead.
+ */
+export function interpretPdf(
+  name: string,
+  read: { pageCount: number; pages: readonly string[] }
+): IngestResult {
+  const text = normaliseNewlines(read.pages.join("\n\n"));
+  if (!hasWords(text)) return { ok: false, problem: "no_text" };
+  if (isTooLarge(text)) return { ok: false, problem: "too_large" };
+  const title = deriveTitle(text, name);
+  return read.pageCount > read.pages.length
+    ? { ok: true, text, title, pages: { read: read.pages.length, total: read.pageCount } }
+    : { ok: true, text, title };
+}
+
+/** A Word file's raw text (mammoth's extractRawText) as the import. */
+export function interpretDocx(name: string, raw: string): IngestResult {
+  const text = normaliseNewlines(raw);
+  if (!text.trim()) return { ok: false, problem: "empty" };
+  if (isTooLarge(text)) return { ok: false, problem: "too_large" };
+  return { ok: true, text, title: deriveTitle(text, name) };
+}
+
+/**
+ * The text recognised in a photo, tidied: trimmed lines, no runs of blank lines. Null when it
+ * has no letters or digits (OCR on a picture with no text tends to return stray marks).
+ */
+export function photoText(raw: string): string | null {
+  const text = normaliseNewlines(
+    raw
+      .split("\n")
+      .map((line) => line.replace(/[ \t\u00a0]+/g, " ").trim())
+      .join("\n")
+  );
+  return hasWords(text) ? text : null;
 }
 
 /** Turn a file's raw text into the import, or say what's wrong in one word. */
