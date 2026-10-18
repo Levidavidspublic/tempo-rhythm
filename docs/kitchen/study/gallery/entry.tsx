@@ -36,6 +36,11 @@
 // a polite line) and study-listen-tempo-budget (today's reading in Tempo's voice is used up).
 // MOCKED: the sample page above, a stand-in studyVoice.speak that answers with a short silent WAV
 // (or fails), and a stand-in device voice that reads quietly.
+// S14 Telegram reminders add reminders-tg-unavailable (env missing), reminders-tg-connect,
+// reminders-tg-waiting (after Connect, waiting for Start), reminders-tg-reconnect (the bot was
+// blocked), reminders-tg-connected, reminders-tg-sent, reminders-tg-error, reminders-tg-nophrases
+// and reminders-tg-disconnected (the Undo toast). MOCKED: the bot name, link code and nags are
+// fictional, and the row is drawn from fixed props (TelegramChannelRow), not the live queries.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -57,6 +62,8 @@ import { StudySetScreen } from "@/components/study/StudySetScreen";
 import { TurnIntoPreview } from "@/components/study/TurnIntoPreview";
 import { RecordScreen } from "@/components/study/record/RecordScreen";
 import { RemindersChannelList } from "@/components/settings-reminders/RemindersSettings";
+import { TelegramChannelRow } from "@/components/settings-reminders/TelegramChannel";
+import { UndoToast } from "@/components/you/UndoToast";
 import { ShareSheet } from "@/components/share";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
 import { pt, shortDate } from "@/components/calendar/planCopy";
@@ -535,6 +542,52 @@ function AppHeadings({ h1, h2, children }: { h1?: string; h2?: string; children:
   );
 }
 
+// S14 Telegram row states (MOCKED: fictional bot, code and nags).
+const TG_URL = "https://t.me/TempoSampleBot?start=MOCKEDsampleCodeMOCKEDsample0";
+type TgRowProps = Partial<Parameters<typeof TelegramChannelRow>[0]>;
+function TelegramReminders({ row, toast = false }: { row: TgRowProps; toast?: boolean }) {
+  const telegram = { id: "telegram", label: "Telegram", connected: false, available: true, ...(row.channel ?? {}) };
+  const channels = [
+    { id: "whatsapp", label: "WhatsApp", connected: false, available: false },
+    telegram,
+    { id: "sms", label: "SMS", connected: false, available: false },
+  ];
+  const phrases = he
+    ? [
+        { value: "nags:1::p1", label: "עציצים: להשקות את העציצים, הם אוהבים להיות ירוקים" },
+        { value: "nags:2::p1", label: "מפתחות: מפתחות, ארנק, טלפון" },
+      ]
+    : [
+        { value: "nags:1::p1", label: "Plants: Water the plants, you like them green" },
+        { value: "nags:2::p1", label: "Keys: Keys, wallet, phone" },
+      ];
+  return (
+    <Page title={he ? "תזכורות" : "Reminders"}>
+      <RemindersChannelList
+        channels={channels}
+        telegram={
+          <TelegramChannelRow
+            waitingUrl={null}
+            phrases={phrases}
+            selected={phrases[0]?.value ?? ""}
+            busy={null}
+            status={null}
+            onConnect={() => {}}
+            onSelect={() => {}}
+            onTest={() => {}}
+            onDisconnect={() => {}}
+            {...row}
+            channel={telegram}
+          />
+        }
+      />
+      {toast ? (
+        <UndoToast title={he ? "Telegram נותק." : "Telegram disconnected."} untilMs={Date.now() + 4 * 60 * 1000 + 37 * 1000} onUndo={() => {}} onClose={() => {}} />
+      ) : null}
+    </Page>
+  );
+}
+
 function Page({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="tp-page">
@@ -927,6 +980,30 @@ const VIEWS: Record<string, () => ReactNode> = {
       />
     </Page>
   ),
+  "reminders-tg-unavailable": () => <TelegramReminders row={{ channel: { id: "telegram", label: "Telegram", connected: false, available: false } }} />,
+  "reminders-tg-connect": () => <TelegramReminders row={{}} />,
+  "reminders-tg-waiting": () => <TelegramReminders row={{ waitingUrl: TG_URL }} />,
+  "reminders-tg-reconnect": () => (
+    <TelegramReminders row={{ channel: { id: "telegram", label: "Telegram", connected: false, available: true, needsReconnect: true } }} />
+  ),
+  "reminders-tg-connected": () => <TelegramReminders row={{ channel: { id: "telegram", label: "Telegram", connected: true, available: true } }} />,
+  "reminders-tg-sent": () => (
+    <TelegramReminders
+      row={{ channel: { id: "telegram", label: "Telegram", connected: true, available: true }, status: { tone: "ok", text: "rem.tg.sent" } }}
+    />
+  ),
+  "reminders-tg-error": () => (
+    <TelegramReminders
+      row={{
+        channel: { id: "telegram", label: "Telegram", connected: true, available: true },
+        status: { tone: "error", text: "rem.tg.err.rate_limited" },
+      }}
+    />
+  ),
+  "reminders-tg-nophrases": () => (
+    <TelegramReminders row={{ channel: { id: "telegram", label: "Telegram", connected: true, available: true }, phrases: [] }} />
+  ),
+  "reminders-tg-disconnected": () => <TelegramReminders row={{}} toast />,
   "share-sheet": () => (
     <ShareSheet
       systemShare
