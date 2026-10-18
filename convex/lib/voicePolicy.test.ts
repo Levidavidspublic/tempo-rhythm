@@ -115,4 +115,11 @@ describe("daily live minutes by tier (HARD_RULES §9)", () => {
     expect(dailyMinutesFor("platinum")).toBe(0);
     expect(dailyMinutesFor("toString")).toBe(0);
   });
+
+  test("beta testers on Max get 50 minutes a day (Amit, 18 Oct 2026); Basic keeps its 30", () => {
+    expect(VOICE_LIMITS.dailyMinutesPerUser).toBe(50);
+    expect(dailyMinutesFor("max")).toBe(50);
+    expect(dailyMinutesFor("pro")).toBe(50);
+    expect(dailyMinutesFor("basic")).toBe(30);
+  });
 });
