@@ -91,6 +91,25 @@ describe("Telegram row states", () => {
     expect(html).not.toContain("Connect Telegram");
   });
 
+  test("connected: names the Telegram account that pressed Start, with a way out if it isn't them", () => {
+    const html = render({ channel: tg({ available: true, connected: true, telegramFirstName: "Dana" }) });
+    expect(html).toContain('Connected to Telegram as <bdi class="tp-rem-tg__who">Dana</bdi>.');
+    expect(html).toContain("Not you? Disconnect.");
+    expect(html).not.toContain("Your nags can reach you in Telegram");
+    // Without a name, today's words; and a name is never shown on a row that isn't connected.
+    const plain = render({ channel: tg({ available: true, connected: true }) });
+    expect(plain).toContain("Your nags can reach you in Telegram, in your own words.");
+    expect(plain).not.toContain("Not you?");
+    const off = render({ channel: tg({ available: true, connected: false, telegramFirstName: "Dana" }) });
+    expect(off).not.toContain("Dana");
+  });
+
+  test("the name is drawn as text, never as markup", () => {
+    const html = render({ channel: tg({ available: true, connected: true, telegramFirstName: "<b>Dana</b>" }) });
+    expect(html).toContain("&lt;b&gt;Dana&lt;/b&gt;");
+    expect(html).not.toContain("<b>Dana</b>");
+  });
+
   test("connected with no phrase to send says how to get one", () => {
     const html = render({ channel: tg({ available: true, connected: true }), phrases: [] });
     expect(html).toContain("No phrase to send yet.");

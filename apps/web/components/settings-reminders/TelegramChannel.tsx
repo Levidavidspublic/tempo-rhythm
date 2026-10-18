@@ -95,6 +95,9 @@ export function TelegramChannelRow({
   const { t } = useLocale();
   const available = channel.available === true;
   const connected = available && channel.connected;
+  // Which Telegram account pressed Start, so a leaked link code shows up as someone else's name.
+  const [asBefore, asAfter = ""] = t("rem.tg.connectedAs").split("{name}");
+  const firstName = connected ? channel.telegramFirstName : undefined;
   const statusText = status ? t(status.text) : waitingUrl && !connected ? t("rem.tg.waiting") : "";
   return (
     <div className="tp-setting-row tp-rem-tg" data-component="SettingRow" data-channel="telegram">
@@ -104,8 +107,21 @@ export function TelegramChannelRow({
           <span>{channel.label}</span>
         </span>
         <span className="tp-help" id="rem-tg-help">
-          {!available ? t("rem.tg.unavailableHelp") : connected ? t("rem.tg.connectedHelp") : t("rem.ch.telegram")}
+          {!available ? (
+            t("rem.tg.unavailableHelp")
+          ) : firstName ? (
+            <>
+              {asBefore}
+              <bdi className="tp-rem-tg__who">{firstName}</bdi>
+              {asAfter}
+            </>
+          ) : connected ? (
+            t("rem.tg.connectedHelp")
+          ) : (
+            t("rem.ch.telegram")
+          )}
         </span>
+        {firstName ? <span className="tp-help">{t("rem.tg.notYou")}</span> : null}
         {available && !connected && channel.needsReconnect ? (
           <span className="tp-help tp-rem-tg__note">
             <TpIcon name="alert" size="sm" />

@@ -19,6 +19,8 @@ export type ReminderChannelRow = {
   linkedAt?: number;
   /** Telegram stopped taking messages (the bot was blocked); connect again. */
   needsReconnect?: boolean;
+  /** The Telegram first name that pressed Start on the live link, when Telegram sent one. */
+  telegramFirstName?: string;
 };
 
 const ABOUT: Record<string, { icon: TpIconName; what: MessageKey }> = {

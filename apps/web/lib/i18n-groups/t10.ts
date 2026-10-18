@@ -38,6 +38,8 @@ export const en = {
   "rem.tg.reconnect":
     "Telegram stopped taking messages from Tempo, maybe because the bot was blocked. Connect again to get nags there.",
   "rem.tg.connectedHelp": "Your nags can reach you in Telegram, in your own words.",
+  "rem.tg.connectedAs": "Connected to Telegram as {name}.",
+  "rem.tg.notYou": "Not you? Disconnect.",
   "rem.tg.linked": "Telegram is connected.",
   "rem.tg.testLabel": "Phrase to send",
   "rem.tg.test": "Send a test",
@@ -128,6 +130,8 @@ export const he: Record<T10CopyKey, string> = {
     "Telegram הפסיק לקבל הודעות מ־Tempo, אולי כי הבוט נחסם. אפשר לחבר מחדש כדי לקבל שם נדנודים.",
   "rem.tg.connectedHelp": "הנדנודים יכולים להגיע אליכם ב־Telegram, במילים שלכם.",
   "rem.tg.linked": "Telegram מחובר.",
+  "rem.tg.connectedAs": "מחובר ל־Telegram של {name}.",
+  "rem.tg.notYou": "לא אתם? אפשר לנתק.",
   "rem.tg.testLabel": "משפט לשליחה",
   "rem.tg.test": "שליחת בדיקה",
   "rem.tg.testHelp": "שולח עכשיו ל־Telegram אחד מהמשפטים שאישרתם.",
