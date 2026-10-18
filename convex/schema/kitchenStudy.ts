@@ -1,6 +1,7 @@
 import { planTables } from "./plans";
 import { recordingTables } from "./recordings";
 import { studyTables } from "./study";
+import { studyVoiceTables } from "./studyVoice";
 
 /**
  * Every table the kitchen study and planning run adds, gathered here so `convex/schema.ts` takes
@@ -10,4 +11,5 @@ export const kitchenStudyTables = {
   ...studyTables,
   ...planTables,
   ...recordingTables,
+  ...studyVoiceTables,
 };
