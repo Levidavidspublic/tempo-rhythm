@@ -533,8 +533,8 @@ export const speak = action({
   },
 });
 
-/** One sentence as audio from DeepInfra. Errors say nothing of the provider's body. */
-async function synthesize(key: string, text: string, language: string): Promise<{ bytes: ArrayBuffer; mime: string }> {
+/** One sentence as audio from DeepInfra. Errors say nothing of the provider's body. Also reads study pages aloud (studyVoice.ts). */
+export async function synthesize(key: string, text: string, language: string): Promise<{ bytes: ArrayBuffer; mime: string }> {
   let response: Response;
   try {
     response = await fetch(CHATTERBOX_URL, {
