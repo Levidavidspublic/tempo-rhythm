@@ -228,7 +228,7 @@ export function telegramSendRequest(
 	};
 }
 
-export type TelegramSendResult = SendResult | { ok: false; reason: "blocked" };
+export type TelegramSendResult = SendResult;
 
 /**
  * The Telegram channel. `send` posts one `sendMessage`; 403 means the person blocked the bot
@@ -238,9 +238,7 @@ export type TelegramSendResult = SendResult | { ok: false; reason: "blocked" };
 export function telegramChannel(options: {
 	token: string;
 	fetch: TelegramFetch;
-}): ReminderChannel & {
-	send(to: string, text: string): Promise<TelegramSendResult>;
-} {
+}): ReminderChannel {
 	return {
 		id: "telegram",
 		label: "Telegram",

@@ -10,7 +10,11 @@ export type ConnectResult =
 
 export type SendResult =
 	| { ok: true }
-	| { ok: false; reason: "not_connected" | "empty_text" | "send_failed" };
+	| {
+			ok: false;
+			/** `blocked`: the person blocked the bot or channel (Telegram's 403); stop sending there. */
+			reason: "not_connected" | "empty_text" | "send_failed" | "blocked";
+	  };
 
 /** One messaging channel a nag could reach the person through. */
 export type ReminderChannel = {
