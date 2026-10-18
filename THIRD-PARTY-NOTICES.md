@@ -356,6 +356,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://lucide.dev
 - Used by: apps/mobile/package.json
 
+### mammoth
+
+- Version: 1.13.0
+- License: BSD-2-Clause
+- Source: https://github.com/mwilliamson/mammoth.js
+- Used by: apps/web/package.json
+- Notes: IngestSheet reads the raw text of Word .docx files with `extractRawText` (its browser build, through the package's `browser` field), loaded with `import()` only when a .docx is picked. Owner-approved 2026-10-18. Transitive: jszip (dual MIT OR GPL-3.0-or-later; used under MIT), pako (MIT AND Zlib), @xmldom/xmldom, underscore, xmlbuilder, base64-js, lie, immediate, setimmediate, readable-stream (MIT), lop, option, dingbat-to-unicode (BSD-2-Clause); argparse and sprintf-js only serve its command-line tool.
+
 ### nativewind
 
 - Version: 4.2.2
@@ -376,6 +384,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT, (c) Khalid Abdi
 - Source: https://github.com/panel-ui/PanelUI
 - Used by: apps/web/components/panelui/kpi.tsx, apps/web/components/panelui/day-grid.tsx (each file keeps the attribution header)
+
+### pdfjs-dist
+
+- Version: 6.4.299
+- License: Apache-2.0
+- Source: https://github.com/mozilla/pdf.js
+- Used by: apps/web/package.json
+- Notes: IngestSheet reads a PDF's text layer with the legacy build (`pdfjs-dist/legacy/build/pdf.mjs` and its worker, served from this app's own build), loaded with `import()` only when a PDF is picked. Unmodified. Owner-approved 2026-10-18. No runtime dependencies (its optional @napi-rs/canvas is for Node only).
 
 ### react
 
@@ -490,6 +506,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT
 - Source: https://github.com/heroui-inc/tailwind-variants
 - Used by: apps/web/package.json (PanelUI's KPI and Day Grid, apps/web/components/panelui)
+
+### tesseract.js
+
+- Version: 7.0.0
+- License: Apache-2.0
+- Source: https://github.com/naptha/tesseract.js
+- Used by: apps/web/package.json
+- Notes: IngestSheet reads text in photos on the device (English and Hebrew), loaded with `import()` only when a photo is picked. Unmodified. Owner-approved 2026-10-18. At runtime it fetches its worker, its WASM core (tesseract.js-core 7.0.0, Apache-2.0) and the English and Hebrew language data (@tesseract.js-data, Apache-2.0, from Tesseract's tessdata) from cdn.jsdelivr.net; no user data is sent. Transitive: idb-keyval and wasm-feature-detect (Apache-2.0), bmp-js, is-url, node-fetch, regenerator-runtime, zlibjs, opencollective-postinstall (MIT).
 
 ### zod
 
