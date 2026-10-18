@@ -694,3 +694,138 @@ describe("the webhook route", () => {
 		expect(http.lookup("/telegram/webhook", "POST")).not.toBeNull();
 	});
 });
+
+describe("review fixes", () => {
+	/** A private `/start <code>` from `chat`, with whatever `from` Telegram sends. */
+	function postStart(
+		t: T,
+		code: string,
+		chat: string,
+		from: Record<string, unknown>,
+	) {
+		return t.fetch("/telegram/webhook", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"X-Telegram-Bot-Api-Secret-Token": ENV.TELEGRAM_WEBHOOK_SECRET,
+			},
+			body: JSON.stringify({
+				update_id: 1,
+				message: {
+					message_id: 1,
+					text: `/start ${code}`,
+					chat: { id: Number(chat), type: "private" },
+					from,
+				},
+			}),
+		});
+	}
+
+	test("a 403 for the old chat doesn't break a link the person just moved to a new chat", async () => {
+		const t = setup();
+		const userId = await addUser(t, "a@example.test");
+		const nagId = await addNag(t, userId);
+		await linked(t, userId, "111");
+		const { code } = await startLink(t, userId);
+		// While the send to chat 111 is in flight, the person relinks from chat 222; then 111 says 403.
+		globalThis.fetch = (async () => {
+			const relinked = await postStart(t, code, "222", {});
+			expect(relinked.status).toBe(200);
+			return new Response("{}", { status: 403 });
+		}) as unknown as typeof fetch;
+		expect(
+			await t.action(internal.reminders.deliver, {
+				userId,
+				nagId,
+				phraseId: "mine",
+				channelId: "telegram",
+			}),
+		).toEqual({ ok: false, reason: "blocked" });
+		const rows = await links(t, userId);
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ chatId: "222" });
+		expect(rows[0]?.brokenAt).toBeUndefined();
+		expect(rows[0]?.deletedAt).toBeUndefined();
+		expect(await telegramRow(t, userId)).toMatchObject({ connected: true });
+	});
+
+	test("the /start sender's first name is kept on the link (trimmed, at most 64) and shown on the row", async () => {
+		const t = setup();
+		const userId = await addUser(t, "a@example.test");
+		const first = await startLink(t, userId);
+		await postStart(t, first.code, CHAT, {
+			language_code: "en",
+			first_name: "  Dana  ",
+		});
+		expect((await links(t, userId))[0]?.telegramFirstName).toBe("Dana");
+		expect(await telegramRow(t, userId)).toMatchObject({
+			connected: true,
+			telegramFirstName: "Dana",
+		});
+
+		const second = await startLink(t, userId);
+		await postStart(t, second.code, CHAT, { first_name: "ש".repeat(80) });
+		expect((await links(t, userId))[0]?.telegramFirstName).toBe("ש".repeat(64));
+
+		// No name in the update: none is kept, and the row says nothing of the old one.
+		const third = await startLink(t, userId);
+		await postStart(t, third.code, CHAT, { language_code: "en" });
+		expect((await links(t, userId))[0]?.telegramFirstName).toBeUndefined();
+		expect(await telegramRow(t, userId)).not.toHaveProperty(
+			"telegramFirstName",
+		);
+	});
+
+	test("a deactivated or deleted account gets no Telegram sends", async () => {
+		const t = setup();
+		const userId = await addUser(t, "a@example.test");
+		const nagId = await addNag(t, userId);
+		await linked(t, userId);
+		fetchStatus = 200;
+		for (const patch of [{ isActive: false }, { deletedAt: Date.now() }]) {
+			await t.run((ctx) => ctx.db.patch(userId, patch));
+			expect(
+				await t.query(internal.reminders.liveTelegramLink, { userId }),
+			).toBeNull();
+			expect(
+				await t.action(internal.reminders.deliver, {
+					userId,
+					nagId,
+					phraseId: "mine",
+					channelId: "telegram",
+				}),
+			).toEqual({ ok: false, reason: "no_channel" });
+			await t.run((ctx) =>
+				ctx.db.patch(userId, { isActive: undefined, deletedAt: undefined }),
+			);
+		}
+		expect(fetchCalls).toHaveLength(0);
+	});
+
+	test("the daily test limit holds across Disconnect and Connect again", async () => {
+		const t = setup();
+		const userId = await addUser(t, "a@example.test");
+		const nagId = await addNag(t, userId);
+		await linked(t, userId);
+		fetchStatus = 200;
+		for (let i = 0; i < TESTS_PER_DAY; i += 1) {
+			expect(
+				await as(t, userId).action(api.reminders.sendTest, {
+					nagId,
+					phraseId: "mine",
+				}),
+			).toEqual({ ok: true });
+		}
+		const gone = await as(t, userId).mutation(api.reminders.unlinkTelegram, {});
+		expect(gone.ok).toBe(true);
+		await linked(t, userId, "999");
+		expect(await links(t, userId)).toHaveLength(2);
+		expect(
+			await as(t, userId).action(api.reminders.sendTest, {
+				nagId,
+				phraseId: "mine",
+			}),
+		).toEqual({ ok: false, reason: "rate_limited" });
+		expect(fetchCalls).toHaveLength(TESTS_PER_DAY);
+	});
+});
