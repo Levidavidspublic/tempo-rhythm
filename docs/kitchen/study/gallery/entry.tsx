@@ -492,6 +492,9 @@ function galleryTempo(kind: "playing" | "fails" | "budget"): TempoVoiceSource {
       if (kind === "fails") throw new Error("Gallery: Tempo's voice is down");
       return { status: "audio", audio: silentWav(), mime: "audio/wav", count: 6 };
     },
+    // A clip that keeps playing: headless Chromium may refuse <audio> without a real press, which
+    // would show the fallback line instead of Tempo's voice reading.
+    play: kind === "playing" ? () => ({ cancel: () => {} }) : undefined,
   };
 }
 
