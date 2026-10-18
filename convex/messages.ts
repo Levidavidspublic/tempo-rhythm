@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { PENDING_APPROVAL_MESSAGE, isApproved, requireApprovedUser } from "./lib/approval";
+import { modelSafeContent } from "./lib/connections/lookup";
 import { requireLiveConversation } from "./lib/pagePrivacy";
 import { requireUser } from "./lib/requireUser";
 
@@ -303,7 +304,8 @@ export async function readLegacyHistoryForAgentContext(
       source: "legacy",
       legacyMessageId: message._id,
       role: message.role,
-      content: message.content.slice(0, LEGACY_CONTEXT_MAX_CHARS),
+      // An Executor lookup's answer names apps from Executor; models get a fixed line (#989).
+      content: modelSafeContent(message).slice(0, LEGACY_CONTEXT_MAX_CHARS),
       createdAt: message.createdAt,
     });
   }
