@@ -40,6 +40,19 @@ export const USER_OWNED_TABLES = [
   "pageOperationPayloads",
   "pageProposals",
   "voiceSessions",
+  // Study layer (kitchen T3): `studySets` is a page child; the rest hang off a set.
+  "studySets",
+  "studyCardStates",
+  "studyReviews",
+  "studyAttempts",
+  "studyPlans",
+  // Record a meeting or lecture (kitchen T8): a content-free lease, like `voiceSessions`.
+  "recordingSessions",
+  // Study read-aloud in Tempo's voice: content-free usage per local day, like `voiceSessions`.
+  "studyVoiceUsage",
+  // S14 reminders through Telegram: the person's chat link and their one-time link codes.
+  "reminderChannelLinks",
+  "reminderLinkCodes",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];

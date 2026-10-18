@@ -29,6 +29,7 @@ const LIBRARY: readonly NavItem[] = [
   { href: "/routines", label: "nav.routines", icon: "refresh" },
   { href: "/goals", label: "nav.goals", icon: "flag" },
   { href: "/projects", label: "nav.projects", icon: "folder" },
+  { href: "/study", label: "nav.study", icon: "card" },
 ];
 
 const YOU: readonly NavItem[] = [

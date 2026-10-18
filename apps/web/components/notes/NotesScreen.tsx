@@ -9,6 +9,7 @@ import { notePatch, shouldAdoptRemoteTitle } from "@/lib/note-sync";
 import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
 import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
+import { useStudyLinkNavigation } from "@/components/study/StudyBlockView";
 import { NotesList } from "@/components/notes-pages/NotesList";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { StateLoading } from "@/components/you/ScreenStates";
@@ -80,6 +81,8 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const router = useRouter();
   const { t } = useLocale();
   const online = useOnline();
+  // The editor's study cards ask to open /study client-side, so the unmount flush below runs first.
+  useStudyLinkNavigation();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
   // During sign-in getProfile resolves safely while the user record is being created.

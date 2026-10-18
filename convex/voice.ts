@@ -6,7 +6,9 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireApprovedForAi } from "./lib/aiGate";
 import { isApproved, requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
+import { ttsCharsUsed } from "./lib/ttsBudget";
 import {
+  DEEPGRAM_GRANT_URL,
   VOICE_LIMITS,
   dailyMinutesFor,
   laneFor,
@@ -31,6 +33,7 @@ import { requireLegacyWritableConversation } from "./messages";
  *   client (A-10). The crisis card is never read aloud (L-12).
  * - Every session is a lease (`voiceSessions`, content-free) that the client renews; the daily
  *   minutes, the global ceiling and the read-aloud characters are counted from it (A-3, A-5, A-6).
+ *   The read-aloud characters are one daily cap shared with study read-aloud (lib/ttsBudget.ts).
  *
  * Off unless both keys are set on the deployment (names only: DEEPGRAM_API_KEY,
  * DEEPINFRA_API_KEY). No audio, transcript, token or provider body is ever stored or logged.
@@ -54,7 +57,6 @@ function voiceError(code: keyof typeof VOICE_ERRORS) {
   return new ConvexError({ code, message: VOICE_ERRORS[code] });
 }
 
-const DEEPGRAM_GRANT_URL = "https://api.deepgram.com/v1/auth/grant";
 export const CHATTERBOX_URL = "https://api.deepinfra.com/v1/inference/ResembleAI/chatterbox-multilingual";
 
 /** Both providers' keys are set (presence only; the values never leave the server). */
@@ -101,14 +103,6 @@ async function usedGlobalMs(ctx: Db, utcKey: string, now: number, except?: Id<"v
     .take(VOICE_LIMITS.globalRowsPerDay + 1);
   if (rows.length > VOICE_LIMITS.globalRowsPerDay) return Number.POSITIVE_INFINITY;
   return rows.filter((r) => r._id !== except).reduce((ms, r) => ms + leaseMs(r, now), 0);
-}
-
-async function ttsCharsToday(ctx: Db, userId: Id<"users">, dateKey: string) {
-  const rows = await ctx.db
-    .query("voiceSessions")
-    .withIndex("by_userId_dateKey", (q) => q.eq("userId", userId).eq("dateKey", dateKey))
-    .collect();
-  return rows.reduce((n, r) => n + r.ttsChars, 0);
 }
 
 /**
@@ -454,7 +448,8 @@ export const admitSentence = internalMutation({
     const sentences = speechSentences(message.content);
     const text = sentences[args.index];
     if (text === undefined) return { status: "done" as const };
-    if ((await ttsCharsToday(ctx, user._id, lease.dateKey)) + text.length > VOICE_LIMITS.dailyTtsCharsPerUser) {
+    // One daily cap with study read-aloud (lib/ttsBudget.ts), counted on the lease's local day.
+    if ((await ttsCharsUsed(ctx, user._id, lease.dateKey)) + text.length > VOICE_LIMITS.dailyTtsCharsPerUser) {
       return { status: "exhausted" as const };
     }
     await ctx.db.patch(lease._id, {
@@ -533,8 +528,8 @@ export const speak = action({
   },
 });
 
-/** One sentence as audio from DeepInfra. Errors say nothing of the provider's body. */
-async function synthesize(key: string, text: string, language: string): Promise<{ bytes: ArrayBuffer; mime: string }> {
+/** One sentence as audio from DeepInfra. Errors say nothing of the provider's body. Also reads study pages aloud (studyVoice.ts). */
+export async function synthesize(key: string, text: string, language: string): Promise<{ bytes: ArrayBuffer; mime: string }> {
   let response: Response;
   try {
     response = await fetch(CHATTERBOX_URL, {

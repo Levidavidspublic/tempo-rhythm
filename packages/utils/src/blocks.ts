@@ -54,11 +54,184 @@ export const templateDataSchema = z
   })
   .strict();
 
+/**
+ * Study blocks (kitchen T3): flashcards, a quiz and a practice test, saved inside a page as
+ * `json tempo` fences like every other block. `blocks.ts` adds the three envelopes to the one
+ * page codec; this file only holds their `data` shapes, so the codec keeps a single parser.
+ *
+ * The limits are the codec's own: every free-text field is at most 500 characters and every list
+ * at most 100 items, so a deck or a test always fits in one block (64 KB).
+ */
+
+// Study fields reuse the codec's own `text` (1–500 chars) and `shortString` (≤ 200 chars).
+
+/** A card, choice, question or part id. Unique inside its block; never shown. */
+const studyItemId = z.string().regex(/^[A-Za-z0-9_-]{1,32}$/);
+
+/** Who made the block: the person, the coach (after Accept), or Tempo's outline reader. */
+const studyOriginSchema = z.enum(["user", "coach", "outline"]);
+
+/** The page a block was made from. `noteId` is an opaque page id. */
+const studySourceSchema = z
+  .object({
+    noteId: shortString.min(1),
+    title: text,
+  })
+  .strict();
+
+const flashcardSchema = z
+  .object({
+    id: studyItemId,
+    front: text,
+    back: text,
+    hint: text.optional(),
+  })
+  .strict();
+
+const flashcardsDataSchema = z
+  .object({
+    title: text,
+    cards: z.array(flashcardSchema).min(1).max(100),
+    origin: studyOriginSchema,
+    source: studySourceSchema.optional(),
+  })
+  .strict()
+  .refine((data) => uniqueIds(data.cards.map((card) => card.id)), "Card ids repeat");
+
+const studyChoiceSchema = z.object({ id: studyItemId, text }).strict();
+
+/** 1 = recall, 2 = understand, 3 = apply. The adaptive quiz moves between them. */
+const quizDifficultySchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+
+const quizQuestionSchema = z
+  .object({
+    id: studyItemId,
+    prompt: text,
+    choices: z.array(studyChoiceSchema).min(2).max(6),
+    answerId: studyItemId,
+    explanation: text.optional(),
+    difficulty: quizDifficultySchema,
+  })
+  .strict()
+  .refine((q) => q.choices.some((choice) => choice.id === q.answerId), "The answer is not a choice")
+  .refine((q) => uniqueIds(q.choices.map((choice) => choice.id)), "Choice ids repeat");
+
+const quizDataSchema = z
+  .object({
+    title: text,
+    mode: z.enum(["adaptive", "fixed"]),
+    questions: z.array(quizQuestionSchema).min(1).max(100),
+    origin: studyOriginSchema,
+    source: studySourceSchema.optional(),
+  })
+  .strict()
+  .refine((data) => uniqueIds(data.questions.map((q) => q.id)), "Question ids repeat");
+
+const studyPoints = z.number().int().min(1).max(100);
+
+/** Test question plugins. Each plugin owns how a question is drawn and how it is marked. */
+const mcqQuestionSchema = z
+  .object({
+    plugin: z.literal("mcq"),
+    id: studyItemId,
+    prompt: text,
+    points: studyPoints,
+    choices: z.array(studyChoiceSchema).min(2).max(6),
+    answerId: studyItemId,
+    explanation: text.optional(),
+  })
+  .strict()
+  .refine((q) => q.choices.some((choice) => choice.id === q.answerId), "The answer is not a choice");
+
+const shortQuestionSchema = z
+  .object({
+    plugin: z.literal("short"),
+    id: studyItemId,
+    prompt: text,
+    points: studyPoints,
+    accepted: z.array(shortString.min(1)).min(1).max(10),
+    explanation: text.optional(),
+  })
+  .strict();
+
+/** One numbered part of a Bagrut-style question (labelled א, ב, ג… or a, b, c…). */
+const bagrutPartSchema = z
+  .object({
+    id: studyItemId,
+    label: z.string().min(1).max(8),
+    prompt: text,
+    points: studyPoints,
+    modelAnswer: text.optional(),
+    rubric: text.optional(),
+  })
+  .strict();
+
+/** A Bagrut-style question: a stem and its parts, each with its own points; marked by rubric. */
+const bagrutQuestionSchema = z
+  .object({
+    plugin: z.literal("bagrut"),
+    id: studyItemId,
+    stem: text,
+    parts: z.array(bagrutPartSchema).min(1).max(8),
+  })
+  .strict()
+  .refine((q) => uniqueIds(q.parts.map((part) => part.id)), "Part ids repeat");
+
+const testQuestionSchema = z.union([mcqQuestionSchema, shortQuestionSchema, bagrutQuestionSchema]);
+
+/**
+ * A section of a test. `pick` = "answer N of these" (Bagrut style); without it every question
+ * in the section counts.
+ */
+const testSectionSchema = z
+  .object({
+    id: studyItemId,
+    title: text,
+    instructions: text.optional(),
+    pick: z.number().int().min(1).max(20).optional(),
+    questions: z.array(testQuestionSchema).min(1).max(20),
+  })
+  .strict()
+  .refine((section) => section.pick === undefined || section.pick <= section.questions.length, {
+    message: "A section can't ask for more questions than it has",
+  });
+
+const testDataSchema = z
+  .object({
+    title: text,
+    style: z.enum(["standard", "bagrut"]),
+    durationMin: z.number().int().min(1).max(300).optional(),
+    passMark: z.number().int().min(0).max(100).optional(),
+    sections: z.array(testSectionSchema).min(1).max(10),
+    origin: studyOriginSchema,
+    source: studySourceSchema.optional(),
+  })
+  .strict()
+  .refine(
+    (data) =>
+      uniqueIds(data.sections.map((s) => s.id)) &&
+      uniqueIds(data.sections.flatMap((s) => s.questions.map((q) => q.id))),
+    "Section or question ids repeat",
+  );
+
+
+/** The three study block types, as they appear in a block envelope's `type`. */
+const STUDY_BLOCK_TYPES = ["flashcards", "quiz", "test"] as const;
+
+
+function uniqueIds(ids: readonly string[]): boolean {
+  return new Set(ids).size === ids.length;
+}
+
 const envelopeBase = { id: blockId, v: z.literal(1) } as const;
 export const tempoBlockSchema = z.discriminatedUnion("type", [
   z.object({ ...envelopeBase, type: z.literal("page-meta"), data: pageMetaDataSchema }).strict(),
   z.object({ ...envelopeBase, type: z.literal("task"), data: taskDataSchema }).strict(),
   z.object({ ...envelopeBase, type: z.literal("template"), data: templateDataSchema }).strict(),
+  // Study blocks (kitchen T3); data shapes above.
+  z.object({ ...envelopeBase, type: z.literal("flashcards"), data: flashcardsDataSchema }).strict(),
+  z.object({ ...envelopeBase, type: z.literal("quiz"), data: quizDataSchema }).strict(),
+  z.object({ ...envelopeBase, type: z.literal("test"), data: testDataSchema }).strict(),
 ]);
 
 export type TempoBlock = z.infer<typeof tempoBlockSchema>;
@@ -179,7 +352,7 @@ function classifyError(value: unknown): BlockErrorCode {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return "invalid_envelope";
   const record = value as Record<string, unknown>;
   if (record.v !== 1) return "unsupported_version";
-  if (!(["page-meta", "task", "template"] as unknown[]).includes(record.type)) {
+  if (!(["page-meta", "task", "template", ...STUDY_BLOCK_TYPES] as unknown[]).includes(record.type)) {
     return "unsupported_type";
   }
   return "invalid_data";

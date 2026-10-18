@@ -179,8 +179,8 @@ describe("starting a voice session", () => {
     const today = new Date(now).toISOString().slice(0, 10);
     await world.db.insert("voiceSessions", {
       userId: A, conversationId, clientKey: "old_key_1", status: "ended", language: "en",
-      // 14.5 of the 15 minutes used: less than the 1 minute a start needs.
-      startedAt: now - 20.5 * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
+      // Half a minute short of today's cap used: less than the 1 minute a start needs.
+      startedAt: now - (VOICE_LIMITS.dailyMinutesPerUser + 5.5) * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
       dateKey: today, utcDateKey: today, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
     });
     expect(await run(voice.availability, world.as(A), {})).toMatchObject({ available: false, reason: "budget", minutesLeft: 0 });
@@ -202,7 +202,7 @@ describe("starting a voice session", () => {
     const today = new Date(now).toISOString().slice(0, 10);
     await world.db.insert("voiceSessions", {
       userId: A, conversationId, clientKey: "old_key_1", status: "ended", language: "en",
-      startedAt: now - 20.5 * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
+      startedAt: now - (VOICE_LIMITS.dailyMinutesPerUser + 5.5) * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
       dateKey: today, utcDateKey: today, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
       deletedAt: now - 60_000,
     });
@@ -377,9 +377,9 @@ describe("grant: a 30-second Deepgram token per lease", () => {
     const net = fakeFetch(() => Response.json({ access_token: "jwt-for-the-browser-0123456789", expires_in: 30 }));
     try {
       const granted = await run(voice.grant, world.actionAs(A), { sessionId });
-      expect(granted).toEqual({ token: "jwt-for-the-browser-0123456789", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" });
+      expect(granted).toEqual({ token: "jwt-for-the-browser-0123456789", url: "wss://api.eu.deepgram.com/v2/listen?model=flux-general-en&mip_opt_out=true" });
       expect(JSON.stringify(granted)).not.toContain(KEYS.DEEPGRAM_API_KEY);
-      expect(net.calls[0]?.url).toBe("https://api.deepgram.com/v1/auth/grant");
+      expect(net.calls[0]?.url).toBe("https://api.eu.deepgram.com/v1/auth/grant");
       expect(new Headers(net.calls[0]?.init.headers).get("authorization")).toBe(`Token ${KEYS.DEEPGRAM_API_KEY}`);
       expect(JSON.parse(String(net.calls[0]?.init.body))).toEqual({ ttl_seconds: 30 });
     } finally {
@@ -596,5 +596,49 @@ describe("speak: one sentence of a coach reply, resolved on the server", () => {
     } finally {
       net.restore();
     }
+  });
+});
+
+describe("the read-aloud cap is shared with study read-aloud", () => {
+  const WAV = new Uint8Array([82, 73, 70, 70, 1, 2, 3, 4]);
+
+  test("characters study read-aloud spent on the lease's day count: the coach's voice is exhausted, with no provider call", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const messageId = await reply(world, conversationId, "One more sentence.");
+    const { sessionId } = await startSession(world, conversationId);
+    const dateKey = world.row(sessionId)?.dateKey;
+    // Study read-aloud spent all but a few characters today; one of its rows is tombstoned.
+    await world.db.insert("studyVoiceUsage", {
+      userId: A, dateKey, chars: VOICE_LIMITS.dailyTtsCharsPerUser - 100, sentences: 10, createdAt: 1, updatedAt: 1,
+    });
+    await world.db.insert("studyVoiceUsage", {
+      userId: A, dateKey, chars: 95, sentences: 1, createdAt: 1, updatedAt: 1, deletedAt: 1,
+    });
+    // Another person's study read-aloud and another day's don't count.
+    await world.db.insert("studyVoiceUsage", {
+      userId: B, dateKey, chars: VOICE_LIMITS.dailyTtsCharsPerUser, sentences: 1, createdAt: 1, updatedAt: 1,
+    });
+    const net = fakeFetch(() => new Response(WAV, { headers: { "content-type": "audio/wav" } }));
+    try {
+      expect(await run(voice.speak, world.actionAs(A), { sessionId, messageId, index: 0 })).toEqual({ status: "exhausted" });
+      expect(await run(voice.admitSentence, world.as(A), { sessionId, messageId, index: 0 })).toEqual({ status: "exhausted" });
+      expect(net.calls).toHaveLength(0);
+      expect(world.row(sessionId)).toMatchObject({ sentences: 0, ttsChars: 0 });
+    } finally {
+      net.restore();
+    }
+  });
+
+  test("study read-aloud on another day leaves the coach's voice its characters", async () => {
+    const world = makeWorld();
+    const conversationId = await conversation(world);
+    const messageId = await reply(world, conversationId, "One more sentence.");
+    const { sessionId } = await startSession(world, conversationId);
+    await world.db.insert("studyVoiceUsage", {
+      userId: A, dateKey: "2000-01-01", chars: VOICE_LIMITS.dailyTtsCharsPerUser, sentences: 1, createdAt: 1, updatedAt: 1,
+    });
+    const admitted = await run(voice.admitSentence, world.as(A), { sessionId, messageId, index: 0 });
+    expect(admitted.status).toBe("sentence");
   });
 });

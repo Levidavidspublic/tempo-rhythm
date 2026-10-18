@@ -1,0 +1,133 @@
+/* v3 study components (kitchen T3): FlashcardDeck, FlashcardReview, AdaptiveQuiz, TestRunner and ScoreCard from @tempo/ui. Layout only; colour, type, spacing and radius come from tokens. The card, quiz, choice and artifact styles live in tempo.css. */
+
+.tp-study-deck, .tp-study-review, .tp-study-quiz, .tp-study-test, .tp-study-score { min-width: 0; }
+.tp-study-keys, .tp-study-progress, .tp-study-hint { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-study-hint__label { font-weight: 600; }
+.tp-study-review__front { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); overflow-wrap: anywhere; }
+.tp-flashcard:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; border-radius: var(--tp-radius-md); }
+
+/* Again / Hard / Good / Easy, each with its interval */
+.tp-study-grades { border: 0; margin: 0; padding: 0; min-width: 0; flex: 1 1 auto; display: grid; gap: var(--tp-space-2); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Four grades in one row, or two by two on a phone (never three and one). */
+@media (max-width: 559px) { .tp-study-grades { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tp-study-grade { flex-direction: column; gap: 0; padding-block: var(--tp-space-1); }
+.tp-study-grade__interval { font-size: var(--tp-text-xs); font-weight: 400; color: var(--tp-ink-muted); }
+.tp-study-grades[tabindex]:focus-visible { border-radius: var(--tp-radius-md); }
+
+/* Typed recall: the "Type answers" switch, the answer field, and the comparison after Check (icon + word; colour only adds to it). The "Suggested" marker is a word on the grade button, never a colour alone. No motion of its own: the back face's existing pop is the one transition. */
+.tp-study-typed { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--tp-space-1) var(--tp-space-2); }
+.tp-study-typed__label { font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink); cursor: pointer; }
+.tp-study-recall__field { text-align: start; }
+.tp-study-recall { justify-self: stretch; display: grid; gap: var(--tp-space-2); margin-top: var(--tp-space-2); padding-top: var(--tp-space-3); border-top: 1px solid var(--tp-line); text-align: start; }
+.tp-study-recall__given { margin: 0; overflow-wrap: anywhere; }
+.tp-study-recall__label { font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-study-recall__verdict { justify-self: start; display: inline-flex; align-items: center; gap: var(--tp-space-1); margin: 0; padding: var(--tp-space-1) var(--tp-space-3); border-radius: var(--tp-radius-pill); background: var(--tp-sunken); color: var(--tp-ink); font-size: var(--tp-text-sm); font-weight: 600; }
+.tp-study-recall__verdict svg { flex: none; color: var(--tp-ink-muted); }
+.tp-study-recall[data-result="matches"] .tp-study-recall__verdict { background: var(--tp-done-wash); }
+.tp-study-recall[data-result="matches"] .tp-study-recall__verdict svg { color: var(--tp-done); }
+.tp-study-recall[data-result="close"] .tp-study-recall__verdict { background: var(--tp-caution-wash); }
+.tp-study-recall[data-result="close"] .tp-study-recall__verdict svg { color: var(--tp-caution); }
+.tp-study-grade[data-suggested="true"] { border-color: var(--tp-ink); }
+.tp-study-grade__suggested { font-size: var(--tp-text-xs); font-weight: 600; color: var(--tp-ink); }
+
+.tp-study-feedback__text { display: grid; gap: var(--tp-space-1); min-width: 0; }
+
+/* Practice test */
+.tp-study-timer { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); margin-inline-start: auto; font-size: var(--tp-text-sm); }
+.tp-study-timer__left { display: inline-flex; align-items: center; gap: var(--tp-space-1); }
+.tp-study-section { display: grid; gap: var(--tp-space-3); }
+.tp-study-section + .tp-study-section { border-top: 1px solid var(--tp-line); padding-top: var(--tp-space-4); }
+.tp-study-section__title { font-family: var(--tp-font-serif); font-size: var(--tp-text-lg); margin: 0; }
+.tp-study-section__pick { font-size: var(--tp-text-sm); font-weight: 600; }
+.tp-study-questions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-5); }
+.tp-study-question { min-width: 0; }
+.tp-study-question__head { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-study-question__points { font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+.tp-study-question__prompt, .tp-study-part__prompt { display: block; overflow-wrap: anywhere; }
+.tp-study-bagrut, .tp-study-mark { display: grid; gap: var(--tp-space-3); }
+.tp-study-mark + .tp-study-mark { border-top: 1px solid var(--tp-line); padding-top: var(--tp-space-4); }
+.tp-study-mark__part { display: grid; gap: var(--tp-space-2); }
+.tp-study-mark__answer, .tp-study-mark__model, .tp-study-mark__rubric { padding: var(--tp-space-3); border-radius: var(--tp-radius-md); background: var(--tp-ground); overflow-wrap: anywhere; }
+.tp-study-mark__points { max-width: calc(var(--tp-space-20) + var(--tp-space-4)); }
+.tp-study-confirm { flex: 1 1 100%; display: grid; gap: var(--tp-space-2); }
+.tp-study-confirm__list { margin: 0; padding-inline-start: var(--tp-space-5); }
+.tp-study-confirm__actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
+/* Score card */
+.tp-study-score__total { font-family: var(--tp-font-serif); font-size: var(--tp-text-xl); margin: 0; }
+.tp-study-score__percent { margin: 0; color: var(--tp-ink-muted); }
+.tp-study-score__pass { display: flex; align-items: flex-start; gap: var(--tp-space-2); margin: 0; padding: var(--tp-space-3) var(--tp-space-4); border-radius: var(--tp-radius-md); font-size: var(--tp-text-sm); }
+.tp-study-score__pass[data-result="passed"] { background: var(--tp-done-wash); }
+.tp-study-score__pass[data-result="passed"] svg { color: var(--tp-done); }
+.tp-study-score__pass[data-result="below"] { background: var(--tp-sunken); }
+.tp-study-score__sections { display: grid; gap: var(--tp-space-2); }
+.tp-study-score__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); }
+.tp-study-score__row { display: flex; justify-content: space-between; gap: var(--tp-space-3); font-size: var(--tp-text-sm); }
+
+@media (pointer: coarse) {
+  .tp-study-grade, .tp-study-confirm__actions .tp-btn { min-height: var(--tp-touch); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-study-deck .tp-flashcard__face, .tp-study-review .tp-flashcard__face { animation: none; }
+}
+
+/* Study screens (apps/web/components/study): hub, session, set, Turn into preview. Layout only. */
+.tp-study-stack { gap: var(--tp-space-6); }
+.tp-study-focus .tp-nextup__meta { align-items: center; font-size: var(--tp-text-sm); }
+.tp-study-group { display: grid; gap: var(--tp-space-2); min-width: 0; }
+.tp-study-group__title { display: inline-flex; align-items: center; gap: var(--tp-space-2); margin: 0; }
+.tp-study-list { padding-inline: var(--tp-space-1); }
+.tp-study-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tp-study-session { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-study-lock { border: 0; margin: 0; padding: 0; min-width: 0; }
+.tp-study-session__status:empty { display: none; }
+.tp-study-deckbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-2) var(--tp-space-3); }
+.tp-study-deckbar__text { margin: 0; color: var(--tp-ink-muted); font-size: var(--tp-text-sm); }
+.tp-study-kind { display: inline-flex; align-items: center; gap: var(--tp-space-1); margin: 0; font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+.tp-study-source { display: flex; align-items: flex-start; gap: var(--tp-space-2); margin: 0; }
+.tp-study-what { margin: 0; overflow-wrap: anywhere; }
+.tp-study-changes { list-style: none; margin: 0; padding: 0; max-height: none; }
+.tp-study-edit { display: grid; gap: var(--tp-space-4); padding: var(--tp-space-4); border-bottom: 1px solid var(--tp-line); }
+.tp-study-edit__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-3); }
+.tp-study-edit__set { display: grid; gap: var(--tp-space-2); margin: 0; padding: var(--tp-space-3); min-width: 0; border: 1px solid var(--tp-line); border-radius: var(--tp-radius-md); }
+.tp-study-edit__set > .tp-btn { justify-self: start; }
+.tp-study-problem { display: block; }
+.tp-proposal__note .tp-btn--link { min-height: var(--tp-touch); }
+.tp-proposal__note { flex-wrap: wrap; }
+[data-component="StudyBlock"] .tp-card__head { flex-wrap: wrap; }
+[data-component="StudyBlock"] .tp-btn { margin-inline-start: auto; }
+@media (pointer: coarse) {
+  .tp-study-edit__set > .tp-btn, [data-component="StudyBlock"] .tp-btn { min-height: var(--tp-touch); }
+}
+/* Edit a saved set (SetEditor): the preview's edit list in a proposal frame. Layout only. */
+.tp-study-setedit .tp-proposal__head { flex-wrap: wrap; }
+.tp-study-setedit__title { flex: 0 1 auto; min-width: 0; margin: 0; font-size: var(--tp-text-md); font-weight: 560; overflow-wrap: anywhere; }
+.tp-study-setedit__notes { display: grid; gap: var(--tp-space-2); padding: var(--tp-space-3) var(--tp-space-4) 0; }
+.tp-study-setedit .tp-notice:has(.tp-notice__action) { flex-wrap: wrap; }
+.tp-study-setedit .tp-notice:has(.tp-notice__action) .tp-notice__text { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
+@media (pointer: coarse) {
+  .tp-study-setedit .tp-notice__action { min-height: var(--tp-touch); }
+}
+/* Ask about this set (SetAsk): a quiet disclosure under the study panel. The question row and the quotes reuse the recap's .tp-recap__askrow and .tp-recap__quotes (recap.css). Matched words are bold on a light wash, and a line above the quotes says so, so colour is never the only sign. No motion of its own: the chevron turns at once. */
+.tp-study-ask { display: grid; gap: var(--tp-space-3); min-width: 0; padding-top: var(--tp-space-4); border-top: 1px solid var(--tp-line); }
+.tp-study-ask__heading { margin: 0; font: inherit; }
+.tp-study-ask__toggle { padding-inline: var(--tp-space-2); white-space: normal; text-align: start; }
+.tp-study-ask__toggle[aria-expanded="true"] .tp-study-ask__chevron { transform: rotate(180deg); }
+.tp-study-ask__panel { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.tp-study-ask__results { display: grid; gap: var(--tp-space-2); justify-items: start; min-width: 0; }
+.tp-study-ask__results > p { margin: 0; }
+.tp-study-ask__results .tp-recap__quotes { justify-self: stretch; }
+.tp-study-ask .tp-recap__quotes li { display: grid; gap: var(--tp-space-1); }
+.tp-study-ask__line { margin: 0; overflow-wrap: anywhere; }
+.tp-study-ask mark { background: var(--tp-hover); color: inherit; font-weight: 600; border-radius: var(--tp-radius-sm); }
+
+/* An open Undo toast floats over the bottom of the screen (tempo.css .tp-toast-region).
+   useToastRoom marks <html> while a study or plan screen shows one and puts the room it takes in
+   --tp-toast-room: Tab then scrolls the focused control above the toast, and the page's bottom
+   padding grows to at least that room, so even its last control can come up past it
+   (WCAG 2.4.11). A short page doesn't grow. */
+html[data-tp-toast-room] { scroll-padding-block-end: calc(var(--tp-toast-room) + var(--tp-space-3)); }
+html[data-tp-toast-room] .tp-app__main { padding-block-end: max(var(--tp-space-20), calc(var(--tp-toast-room) + var(--tp-space-3))); }
+@media (max-width: 767px) {
+  html[data-tp-toast-room] .tp-app__main { padding-block-end: max(calc(var(--tp-tabbar-h) + var(--tp-space-16)), calc(var(--tp-toast-room) + var(--tp-space-3))); }
+}

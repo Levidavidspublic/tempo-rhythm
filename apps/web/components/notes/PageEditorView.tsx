@@ -16,6 +16,9 @@ import { ReadView } from "@/components/editor/ReadView";
 import { type MenuItem, SlashMenu } from "@/components/editor/SlashMenu";
 import { useRegisterCoachPage } from "@/components/coach/CoachPage";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { flashcardsInBody, ShareSheet } from "@/components/share";
+import { ListenMenuItem } from "@/components/study/recap/ListenMenuItem";
+import { TurnIntoMenu } from "@/components/study/TurnIntoMenu";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import {
@@ -104,6 +107,7 @@ export function PageEditorView(props: Props) {
   const editor = useRef<LivePreviewEditorHandle | null>(null);
   const [mode, setMode] = useState<"edit" | "read">("edit");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   // The page menu behaves like a menu: focus goes to its first item, arrows move, Escape closes and
@@ -341,6 +345,24 @@ export function PageEditorView(props: Props) {
                       <TpIcon name="download" size="sm" />
                       {t("page.export")}
                     </button>
+                    {props.backHref === null ? null : (
+                      <>
+                        <TurnIntoMenu noteId={noteId} onNavigate={() => setMenuOpen(false)} />
+                        <ListenMenuItem noteId={noteId} onNavigate={() => setMenuOpen(false)} />
+                      </>
+                    )}
+                    <button
+                      className="tp-menu__item"
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setShareOpen(true);
+                      }}
+                    >
+                      <TpIcon name="send" size="sm" />
+                      {t("share.menu")}
+                    </button>
                     <button
                       className="tp-menu__item"
                       type="button"
@@ -414,7 +436,7 @@ export function PageEditorView(props: Props) {
 
         {props.lead}
 
-        <div className="tp-page-content tp-slash-anchor" data-component="BlockList">
+        <div className="tp-page-content tp-slash-anchor" data-component="BlockList" data-note-id={noteId}>
           {mode === "edit" ? (
             <LivePreviewEditor
               ref={editor}
@@ -468,6 +490,19 @@ export function PageEditorView(props: Props) {
           </section>
         ) : null}
       </div>
+      {shareOpen ? (
+        <ShareSheet
+          target={{
+            kind: "page",
+            title: title.trim() || t("page.untitled"),
+            markdown: exportContents(body),
+            url: window.location.href,
+            cards: flashcardsInBody(body),
+          }}
+          returnFocus={menuButtonRef}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }

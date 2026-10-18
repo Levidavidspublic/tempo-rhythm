@@ -1,0 +1,167 @@
+/**
+ * IngestSheet browser readers (T8-T10 spec, S2): how a picked file's bytes become text. Bun has
+ * File and TextDecoder but no FileReader, so a stand-in that reads the way browsers do (UTF-8
+ * with replacement characters unless a BOM says otherwise) is installed for these tests only.
+ */
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { readIngestFile, readPhotoText } from "../../../apps/web/components/ingest/read-sources";
+
+class BrowserLikeFileReader {
+  result: string | ArrayBuffer | null = null;
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+  readAsText(blob: Blob) {
+    void blob.arrayBuffer().then((buffer) => {
+      const bytes = new Uint8Array(buffer);
+      const label = bytes[0] === 0xff && bytes[1] === 0xfe ? "utf-16le" : "utf-8";
+      this.result = new TextDecoder(label).decode(bytes);
+      this.onload?.();
+    });
+  }
+  readAsArrayBuffer(blob: Blob) {
+    void blob.arrayBuffer().then((buffer) => {
+      this.result = buffer;
+      this.onload?.();
+    });
+  }
+}
+
+const globals = globalThis as Record<string, unknown>;
+const hadReader = "FileReader" in globals;
+const realReader = globals.FileReader;
+beforeAll(() => {
+  globals.FileReader = BrowserLikeFileReader;
+});
+afterAll(() => {
+  if (hadReader) globals.FileReader = realReader;
+  else delete globals.FileReader;
+});
+
+const file = (bytes: number[], name = "notes.txt") =>
+  new File([Uint8Array.from(bytes)], name, { type: "text/plain" });
+
+// "שלום עולם" in each encoding.
+const WIN_1255 = [0xf9, 0xec, 0xe5, 0xed, 0x20, 0xf2, 0xe5, 0xec, 0xed];
+const UTF_8 = [...new TextEncoder().encode("שלום עולם")];
+
+describe("readIngestFile encodings", () => {
+  test("a Windows-1255 Hebrew text file reads as Hebrew, not as replacement marks", async () => {
+    expect(await readIngestFile(file(WIN_1255))).toEqual({
+      ok: true,
+      text: "שלום עולם",
+      title: "notes",
+    });
+  });
+
+  test("UTF-8 stays UTF-8, with or without a byte-order mark", async () => {
+    const want = { ok: true, text: "שלום עולם", title: "notes" };
+    expect(await readIngestFile(file(UTF_8))).toEqual(want);
+    expect(await readIngestFile(file([0xef, 0xbb, 0xbf, ...UTF_8]))).toEqual(want);
+  });
+
+  test("UTF-16 with a byte-order mark still reads", async () => {
+    const units = [..."Hi שלום"].flatMap((ch) => {
+      const code = ch.charCodeAt(0);
+      return [code & 0xff, code >> 8];
+    });
+    expect(await readIngestFile(file([0xff, 0xfe, ...units]))).toEqual({
+      ok: true,
+      text: "Hi שלום",
+      title: "notes",
+    });
+  });
+
+  test("bytes that are neither UTF-8 nor Windows-1255 are unreadable, said in words", async () => {
+    // 0xFF is not a character in Windows-1255 and never valid in UTF-8.
+    expect(await readIngestFile(file([0x61, 0xff, 0x62]))).toEqual({
+      ok: false,
+      problem: "unreadable",
+    });
+  });
+});
+
+describe("readPhotoText", () => {
+  // The browser's bitmap decoder and canvas, and the OCR worker, stood in for: what was decoded,
+  // and how. No network: the OCR is a fake passed in, never tesseract.js.
+  const decoded: { size: number; options: unknown }[] = [];
+  // The canvas the decoded photo was drawn on, and the size it was drawn at.
+  const drawn: { canvas: number[]; drawn: number[] }[] = [];
+  const saved: Record<string, unknown> = {};
+  const KEYS = ["createImageBitmap", "OffscreenCanvas"] as const;
+  const ocr = {
+    createOcrWorker: async () => ({
+      recognize: async () => ({ data: { text: "Chapter 4\nCells divide.\n" } }),
+      terminate: async () => {},
+    }),
+  };
+
+  beforeAll(() => {
+    for (const key of KEYS) saved[key] = globals[key];
+    // Like the browser: the resize options are honoured; without them, the photo's full size
+    // (a 4,032 by 3,024 phone photo).
+    globals.createImageBitmap = async (
+      image: Blob,
+      options?: { resizeWidth?: number; resizeHeight?: number }
+    ) => {
+      decoded.push({ size: image.size, options });
+      return {
+        width: options?.resizeWidth ?? 4032,
+        height: options?.resizeHeight ?? 3024,
+        close() {},
+      };
+    };
+    globals.OffscreenCanvas = class {
+      constructor(
+        public width: number,
+        public height: number
+      ) {}
+      getContext() {
+        const canvas = [this.width, this.height];
+        return {
+          drawImage: (_bitmap: unknown, _x: number, _y: number, w: number, h: number) => {
+            drawn.push({ canvas, drawn: [w, h] });
+          },
+        };
+      }
+      async convertToBlob() {
+        return new Blob([Uint8Array.of(9)], { type: "image/png" });
+      }
+    };
+  });
+  afterAll(() => {
+    for (const key of KEYS) {
+      if (saved[key] === undefined) delete globals[key];
+      else globals[key] = saved[key];
+    }
+  });
+
+  test("a photo over 15 MB is refused before it is decoded", async () => {
+    decoded.length = 0;
+    const big = new Blob([new Uint8Array(15 * 1024 * 1024 + 1)], { type: "image/jpeg" });
+    expect(await readPhotoText(big, { readers: ocr })).toEqual({ ok: false, problem: "too_large" });
+    expect(decoded).toEqual([]);
+  });
+
+  // Changed in the review fixes: this test used to check only the options passed to the
+  // decoder, whose stand-in ignored them, so it passed while tall photos were decoded huge and
+  // small ones scaled up. It now checks the size the photo is actually drawn at.
+  test("a photo is decoded at most 2,000 pixels wide, then read", async () => {
+    decoded.length = 0;
+    drawn.length = 0;
+    // A PNG header (IHDR) for a 4,032 by 3,024 photo.
+    const header = new Uint8Array(33);
+    header.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 73, 72, 68, 82]);
+    new DataView(header.buffer).setUint32(16, 4032);
+    new DataView(header.buffer).setUint32(20, 3024);
+    const photo = new Blob([header], { type: "image/png" });
+    expect(await readPhotoText(photo, { readers: ocr })).toEqual({
+      ok: true,
+      text: "Chapter 4\nCells divide.",
+    });
+    expect(decoded).toEqual([
+      { size: 33, options: { resizeWidth: 2000, resizeHeight: 1500, resizeQuality: "high" } },
+    ]);
+    expect(drawn).toEqual([{ canvas: [2000, 1500], drawn: [2000, 1500] }]);
+  });
+});

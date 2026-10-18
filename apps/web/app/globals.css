@@ -4,8 +4,15 @@
 @import "./v3/habits.css";
 @import "./v3/goals.css";
 @import "./v3/you.css";
+@import "./v3/memory.css";
 @import "./v3/settings.css";
 @import "./v3/extras.css";
+@import "./v3/study.css";
+@import "./v3/plan.css";
+@import "./v3/guided.css";
+@import "./v3/recap.css";
+@import "./v3/t10.css";
+@import "./v3/record.css";
 
 /* ==========================================================================
    Tempo Flow — design tokens

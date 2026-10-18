@@ -155,6 +155,33 @@ export const context = query({
   },
 });
 
+/**
+ * Changes the words of one live memory (S31 edit). Same trim and length limit as `remember`.
+ * Returns the previous words so the UI can offer Undo by calling `update` with them.
+ */
+export const update = mutation({
+  args: { memoryId: v.id("memories"), content: v.string() },
+  returns: v.object({ success: v.literal(true), previous: v.string() }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const m = await ctx.db.get(args.memoryId);
+    if (!m || m.userId !== user._id || m.deletedAt !== undefined) {
+      throw new Error("Memory not found");
+    }
+    const content = args.content.trim();
+    if (!content) {
+      throw new Error("Write something to remember first.");
+    }
+    if (content.length > CONTENT_MAX) {
+      throw new Error(`Keep a memory to ${CONTENT_MAX} characters or fewer.`);
+    }
+    if (content !== m.content) {
+      await ctx.db.patch(m._id, { content, updatedAt: Date.now() });
+    }
+    return { success: true as const, previous: m.content };
+  },
+});
+
 /** Soft delete (HARD_RULES §9). */
 export const forget = mutation({
   args: { memoryId: v.id("memories") },

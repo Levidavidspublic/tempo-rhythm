@@ -15,6 +15,7 @@ export function UndoToast({
   untilMs,
   onUndo,
   onClose,
+  labels,
 }: {
   title: string;
   /** When the Undo window ends. */
@@ -22,6 +23,11 @@ export function UndoToast({
   /** Omit for a plain notice toast. Throwing keeps the toast open with an error. */
   onUndo?: () => Promise<unknown> | unknown;
   onClose: () => void;
+  /**
+   * Other words for the button, the line before the countdown and the error, for a toast whose
+   * action isn't "Undo" (Bring it back, after an Undo). Defaults to the Undo words.
+   */
+  labels?: { action: string; sub: string; error: string };
 }) {
   const { t } = useLocale();
   const [now, setNow] = useState(() => Date.now());
@@ -64,7 +70,7 @@ export function UndoToast({
           <span className="tp-toast__title">{title}</span>
           {onUndo ? (
             <span className="tp-toast__sub">
-              {t("you.toast.sub")}{" "}
+              {labels?.sub ?? t("you.toast.sub")}{" "}
               <span className="tp-num tp-mono" aria-hidden="true">
                 {formatCountdown(untilMs - now)}
               </span>
@@ -73,7 +79,7 @@ export function UndoToast({
           ) : null}
           {failed ? (
             <span className="tp-error-text" role="alert">
-              {t("you.toast.undoError")}
+              {labels?.error ?? t("you.toast.undoError")}
             </span>
           ) : null}
         </span>
@@ -85,7 +91,7 @@ export function UndoToast({
             onClick={() => void undo()}
           >
             <TpIcon name="undo" size="sm" />
-            <span>{t("you.toast.undo")}</span>
+            <span>{labels?.action ?? t("you.toast.undo")}</span>
           </button>
         ) : null}
         <button

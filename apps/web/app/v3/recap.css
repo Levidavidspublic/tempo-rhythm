@@ -1,0 +1,52 @@
+/* Study: read aloud and the audio recap (kitchen T4, S16 AudioRecapPlayer + ReadAloudButton). Layout only; colour, type, spacing and radius come from tokens. The .tp-readaloud colours live in tempo.css. */
+
+/* ReadAloudButton beside a card face, a quiz prompt or a test question */
+.tp-readaloud { justify-self: start; align-self: flex-start; }
+.tp-readaloud-note { margin: 0; font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+@media (pointer: coarse) {
+  .tp-readaloud { min-height: var(--tp-touch); }
+}
+
+/* The player card */
+.tp-recap__player { min-width: 0; }
+.tp-recap__player .tp-artifact__body { display: grid; gap: var(--tp-space-4); }
+.tp-recap__controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--tp-space-2) var(--tp-space-3); }
+.tp-recap__play { min-width: calc(var(--tp-space-20) + var(--tp-space-8)); }
+.tp-recap__time { margin: 0; text-align: center; font-size: var(--tp-text-sm); }
+.tp-recap__estimate { color: var(--tp-ink-muted); }
+.tp-recap__speed { display: grid; justify-items: center; gap: var(--tp-space-2); }
+.tp-recap__speed .tp-seg__opt { min-width: var(--tp-touch); justify-content: center; }
+@media (pointer: coarse) {
+  .tp-recap__speed .tp-seg__opt { min-height: var(--tp-touch); }
+}
+
+/* Transcript: every sentence is a button; the current one has a "Now" word and a line, never colour alone */
+.tp-recap__transcript, .tp-recap__ask { display: grid; gap: var(--tp-space-2); min-width: 0; }
+.tp-recap__heading { margin: 0; font-family: var(--tp-font-serif); font-size: var(--tp-text-lg); font-weight: 500; }
+.tp-recap__lines { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--tp-space-1); }
+.tp-recap__line {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--tp-space-2);
+  width: 100%; min-height: var(--tp-touch); padding: var(--tp-space-2) var(--tp-space-3);
+  border: 0; border-inline-start: 3px solid transparent; border-radius: var(--tp-radius-sm);
+  background: transparent; color: var(--tp-ink); font: inherit; text-align: start; cursor: pointer;
+  overflow-wrap: anywhere;
+  transition: background-color var(--tp-dur-fast) var(--tp-ease-out);
+}
+.tp-recap__line:hover { background: var(--tp-hover); }
+.tp-recap__line:focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 2px; }
+.tp-recap__line[aria-current="true"] { background: var(--tp-hover); border-inline-start-color: var(--tp-ink); font-weight: 600; }
+.tp-recap__item[data-kind="cue"] .tp-recap__line { font-family: var(--tp-font-serif); font-size: var(--tp-text-lg); padding-block-start: var(--tp-space-3); }
+.tp-recap__now { flex: none; font-size: var(--tp-text-xs); font-weight: 600; color: var(--tp-ink-muted); }
+
+/* Ask a question: the answer quotes the page */
+.tp-recap__askform { display: block; }
+.tp-recap__askrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
+.tp-recap__askrow .tp-input { flex: 1 1 calc(var(--tp-space-20) * 2); min-width: 0; }
+.tp-recap__answers { display: grid; gap: var(--tp-space-2); }
+.tp-recap__from { margin: 0; font-size: var(--tp-text-sm); font-weight: 600; }
+.tp-recap__quotes { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--tp-space-2); }
+.tp-recap__quotes li { padding: var(--tp-space-3); border-inline-start: 3px solid var(--tp-line-strong); border-radius: var(--tp-radius-sm); background: var(--tp-ground); overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-recap__line { transition: none; }
+}

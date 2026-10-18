@@ -8,12 +8,16 @@ import {
 import { z } from "zod";
 import {
   brokenBlockCardPropsSchema,
+  flashcardsBlockPropsSchema,
   pageMetaPropsSchema,
+  quizBlockPropsSchema,
+  STUDY_PREVIEW_ITEMS,
   setTaskDoneParamsSchema,
   TASK_TOGGLE_EVENT,
   taskBlockPropsSchema,
   templateBlockPropsSchema,
   tempoBlockCatalog,
+  testBlockPropsSchema,
 } from "./catalog";
 
 /**
@@ -25,7 +29,8 @@ import {
  *
  * What crosses the bridge, and what does not:
  * - Rendering fields only. The block `id`, `v`, `order`, `doneAt` and template `tokens` are not
- *   props. A checkbox carries the block id inside its `setTaskDone` action binding, never in props
+ *   props. Study blocks carry counts and the first few fronts or prompts, never card, question or
+ *   section ids and never the source page id. A checkbox carries the block id inside its `setTaskDone` action binding, never in props
  *   and never in the element key.
  * - Broken blocks carry a fixed calm sentence chosen by error code. The segment `source` and any
  *   raw JSON are never read, so they cannot reach a spec, an error or a card.
@@ -134,6 +139,19 @@ const blockElementSchema = z.discriminatedUnion("type", [
       props: brokenBlockCardPropsSchema,
       children: noChildren,
     })
+    .strict(),
+  z
+    .object({
+      type: z.literal("FlashcardsBlock"),
+      props: flashcardsBlockPropsSchema,
+      children: noChildren,
+    })
+    .strict(),
+  z
+    .object({ type: z.literal("QuizBlock"), props: quizBlockPropsSchema, children: noChildren })
+    .strict(),
+  z
+    .object({ type: z.literal("TestBlock"), props: testBlockPropsSchema, children: noChildren })
     .strict(),
 ]);
 
@@ -285,11 +303,60 @@ function convertBlock(block: unknown, options: BlockSpecOptions): TempoBlockSpec
       });
       break;
     }
+    case "flashcards": {
+      const { title, cards, origin, source } = value.data;
+      spec = singleElementSpec("FlashcardsBlock", {
+        title,
+        cardCount: cards.length,
+        fronts: firstFew(cards.map((card) => card.front)),
+        origin,
+        ...sourceTitle(source),
+      });
+      break;
+    }
+    case "quiz": {
+      const { title, mode, questions, origin, source } = value.data;
+      spec = singleElementSpec("QuizBlock", {
+        title,
+        mode,
+        questionCount: questions.length,
+        prompts: firstFew(questions.map((question) => question.prompt)),
+        origin,
+        ...sourceTitle(source),
+      });
+      break;
+    }
+    case "test": {
+      const { title, style, durationMin, passMark, sections, origin, source } = value.data;
+      const questions = sections.flatMap((section) => section.questions);
+      spec = singleElementSpec("TestBlock", {
+        title,
+        style,
+        sectionCount: sections.length,
+        questionCount: questions.length,
+        ...(durationMin !== undefined ? { durationMin } : {}),
+        ...(passMark !== undefined ? { passMark } : {}),
+        prompts: firstFew(questions.map((q) => (q.plugin === "bagrut" ? q.stem : q.prompt))),
+        origin,
+        ...sourceTitle(source),
+      });
+      break;
+    }
   }
 
   // Belt and braces: never hand the renderer a spec the gate would reject.
   const checked = validateBlockSpec(spec);
   return checked.ok ? checked.spec : brokenBlockSpec("invalid_spec", options);
+}
+
+/** The first few preview lines of a study block. */
+function firstFew(lines: readonly string[]): string[] {
+  return lines.slice(0, STUDY_PREVIEW_ITEMS);
+}
+
+/** The source page's title only: its id is never a prop. */
+function sourceTitle(source: { title: string } | undefined): { sourceTitle?: string } {
+  return source !== undefined ? { sourceTitle: source.title } : {};
 }
 
 /**

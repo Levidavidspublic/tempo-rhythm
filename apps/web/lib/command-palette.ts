@@ -41,6 +41,7 @@ export const SCREEN_LABEL: Readonly<Record<string, MessageKey>> = {
   routines: "nav.routines",
   goals: "nav.goals",
   projects: "nav.projects",
+  study: "nav.study",
   templates: "nav.templates",
   analytics: "nav.insights",
   search: "nav.search",

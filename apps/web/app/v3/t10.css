@@ -1,0 +1,146 @@
+/* Kitchen T10 stretch: Settings > Reminders, ShareSheet and MiniAppFrame. Layout only, tp-*
+   classes and --tp-* tokens; logical properties so dir="rtl" mirrors for free. No motion here:
+   the sheet's own enter/exit comes from tempo.css. */
+
+/* S14 Settings > Reminders */
+.tp-rem-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tp-space-2);
+}
+/* The Telegram row: actions and the test picker sit under the row's words; the badge and
+   Disconnect stay in the control column. On a narrow screen the words keep the full width and
+   the badge and Disconnect wrap under them (side by side they covered the name at 390 px). */
+.tp-rem-tg { align-items: flex-start; flex-wrap: wrap; }
+.tp-rem-tg .tp-setting-row__text { flex: 1 1 16rem; }
+.tp-rem-tg .tp-setting-row__control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--tp-space-2);
+  margin-inline-start: auto;
+}
+.tp-rem-tg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tp-space-2);
+  margin-block-start: var(--tp-space-2);
+}
+.tp-rem-tg__actions .tp-help { flex-basis: 100%; }
+.tp-rem-tg__test {
+  display: grid;
+  gap: var(--tp-space-2);
+  margin-block-start: var(--tp-space-2);
+  max-width: var(--tp-measure);
+}
+.tp-rem-tg__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-2);
+}
+/* Always in the page, so a screen reader hears each result; empty takes no room. */
+.tp-rem-tg__status { display: block; }
+
+/* S26 ShareSheet */
+.tp-share-subject {
+  margin: 0 0 var(--tp-space-3);
+  font-size: var(--tp-text-sm);
+  color: var(--tp-ink-muted);
+  overflow-wrap: anywhere;
+}
+.tp-share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--tp-line);
+}
+.tp-share-list .tp-touch-row {
+  padding-block: var(--tp-space-2);
+  cursor: pointer;
+  font: inherit;
+}
+.tp-share-row__text {
+  display: grid;
+  gap: var(--tp-space-1);
+}
+.tp-share-status,
+.tp-share-private {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-2);
+  margin: var(--tp-space-3) 0 0;
+  font-size: var(--tp-text-sm);
+}
+.tp-share-status:empty {
+  margin: 0;
+}
+.tp-share-status[data-tone="done"] {
+  color: var(--tp-done);
+}
+.tp-share-status[data-tone="caution"] {
+  color: var(--tp-ink);
+}
+.tp-share-status[data-tone="caution"] .tp-icon {
+  color: var(--tp-caution);
+}
+
+/* S24 MiniAppFrame */
+.tp-miniapp {
+  display: grid;
+  gap: var(--tp-space-2);
+  min-width: 0;
+}
+.tp-miniapp__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tp-space-1);
+  margin: 0;
+  font-size: var(--tp-text-xs);
+  color: var(--tp-ink-muted);
+}
+.tp-miniapp__title {
+  margin: 0;
+  font-size: var(--tp-text-md);
+  overflow-wrap: anywhere;
+}
+.tp-miniapp__body {
+  margin: 0;
+  max-inline-size: var(--tp-measure);
+}
+.tp-miniapp__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tp-space-2);
+  margin: 0;
+  font-size: var(--tp-text-sm);
+}
+.tp-miniapp__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tp-space-2);
+}
+.tp-miniapp__frame {
+  display: block;
+  inline-size: 100%;
+  min-block-size: 80px;
+  max-block-size: 800px;
+  border: 1px solid var(--tp-line-card);
+  border-radius: var(--tp-radius-md);
+  background: var(--tp-paper);
+}
+
+/* S2 IngestSheet: a notice with an action ("Paste text instead") lets the button drop under the
+   words on a phone, instead of squeezing the words into a narrow column. */
+[data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) { flex-wrap: wrap; }
+[data-testid="ingest-sheet"] .tp-notice:has(.tp-notice__action) .tp-notice__text { flex: 1 1 calc(var(--tp-space-20) * 2.5); }
+/* A picker that is reading keeps focus (aria-disabled, not disabled) and looks like a disabled field. */
+[data-testid="ingest-sheet"] .tp-input[aria-disabled="true"] { background: var(--tp-sunken); color: var(--tp-ink-muted); cursor: not-allowed; }
+/* Reading a PDF, a Word file or a photo: the status and Stop reading share a row, and a plain bar
+   shows how far it has got. The bar never animates by itself (MOTION 1). */
+[data-testid="ingest-sheet"] .tp-ingest-reading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--tp-space-2) var(--tp-space-3); }
+[data-testid="ingest-sheet"] .tp-ingest-progress { appearance: none; inline-size: 100%; block-size: var(--tp-space-2); border: 0; border-radius: var(--tp-radius-pill); background: var(--tp-sunken); color: var(--tp-ink-muted); overflow: hidden; }
+[data-testid="ingest-sheet"] .tp-ingest-progress::-webkit-progress-bar { background: var(--tp-sunken); border-radius: var(--tp-radius-pill); }
+[data-testid="ingest-sheet"] .tp-ingest-progress::-webkit-progress-value { background: var(--tp-ink-muted); border-radius: var(--tp-radius-pill); }
+[data-testid="ingest-sheet"] .tp-ingest-progress::-moz-progress-bar { background: var(--tp-ink-muted); border-radius: var(--tp-radius-pill); }

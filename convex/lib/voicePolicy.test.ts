@@ -13,7 +13,7 @@ import {
 
 describe("laneFor", () => {
   test("English (and no preference) streams to Flux on /v2/listen", () => {
-    expect(laneFor("en")).toEqual({ language: "en", url: "wss://api.deepgram.com/v2/listen?model=flux-general-en" });
+    expect(laneFor("en")).toEqual({ language: "en", url: "wss://api.eu.deepgram.com/v2/listen?model=flux-general-en&mip_opt_out=true" });
     expect(laneFor(undefined)?.language).toBe("en");
   });
 
@@ -114,5 +114,12 @@ describe("daily live minutes by tier (HARD_RULES §9)", () => {
     expect(dailyMinutesFor(undefined)).toBe(0);
     expect(dailyMinutesFor("platinum")).toBe(0);
     expect(dailyMinutesFor("toString")).toBe(0);
+  });
+
+  test("beta testers on Max get 50 minutes a day (Amit, 18 Oct 2026); Basic keeps its 30", () => {
+    expect(VOICE_LIMITS.dailyMinutesPerUser).toBe(50);
+    expect(dailyMinutesFor("max")).toBe(50);
+    expect(dailyMinutesFor("pro")).toBe(50);
+    expect(dailyMinutesFor("basic")).toBe(30);
   });
 });
