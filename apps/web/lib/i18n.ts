@@ -12,6 +12,7 @@ import * as extrasCopy from "./i18n-groups/extras";
 import * as goalsCopy from "./i18n-groups/goals";
 import * as habitsCopy from "./i18n-groups/habits";
 import * as settingsCopy from "./i18n-groups/settings";
+import * as starterTemplatesCopy from "./i18n-groups/starter-templates";
 import * as youCopy from "./i18n-groups/you";
 
 export const LANG_STORAGE_KEY = "tempo-lang";
@@ -439,6 +440,7 @@ const en = {
   "bd.back": "Back to my dump",
   "notes.noContent": "No content yet.",
   // v3 screen groups keep their copy in lib/i18n-groups/, one file per group.
+  ...starterTemplatesCopy.en,
   ...habitsCopy.en,
   "approval.loading": "Opening Tempo…",
   "approval.waitingTitle": "Waiting for approval",
@@ -863,6 +865,7 @@ const he: Record<MessageKey, string> = {
   "bd.error": "זה לא הצליח. הטקסט עדיין כאן, אפשר לנסות שוב בעוד רגע.",
   "bd.back": "חזרה לטקסט שלי",
   "notes.noContent": "עוד אין תוכן.",
+  ...starterTemplatesCopy.he,
   ...habitsCopy.he,
   "approval.loading": "פותחים את Tempo…",
   "approval.waitingTitle": "ממתינים לאישור",
