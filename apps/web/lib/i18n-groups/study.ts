@@ -300,6 +300,14 @@ export const en = {
   "st.ls.fromPage": "From your page:",
   "st.ls.notFound": "Your page doesn't seem to say. The coach can help with that.",
   "st.ls.askCoach": "Ask the coach",
+  // Tempo's voice on the audio recap (Chatterbox through studyVoice.speak), the device's as fallback.
+  "st.ls.voice": "Voice",
+  "st.ls.voice.tempo": "Tempo voice",
+  "st.ls.voice.device": "This device's voice",
+  "st.ls.tv.error": "Tempo's voice isn't available right now.",
+  "st.ls.tv.budget": "Today's reading in Tempo's voice is used up. It's back tomorrow.",
+  "st.ls.tv.offline": "Tempo's voice needs a connection.",
+  "st.ls.tv.device": "This device's voice is reading instead.",
 
   // Editing and sharing a saved set (StudyFetch parity)
   "st.set.edit": "Edit",
@@ -624,6 +632,13 @@ export const he: Record<StudyCopyKey, string> = {
   "st.ls.fromPage": "מתוך הדף שלכם:",
   "st.ls.notFound": "נראה שהדף לא מתייחס לזה. המאמן יכול לעזור.",
   "st.ls.askCoach": "לשאול את המאמן",
+  "st.ls.voice": "קול",
+  "st.ls.voice.tempo": "הקול של Tempo",
+  "st.ls.voice.device": "הקול של המכשיר",
+  "st.ls.tv.error": "הקול של Tempo לא זמין כרגע.",
+  "st.ls.tv.budget": "ההקראה בקול של Tempo להיום נגמרה. היא תחזור מחר.",
+  "st.ls.tv.offline": "הקול של Tempo צריך חיבור לאינטרנט.",
+  "st.ls.tv.device": "הקול של המכשיר מקריא במקומו.",
 
   "st.set.edit": "עריכה",
   "st.set.share": "שיתוף",

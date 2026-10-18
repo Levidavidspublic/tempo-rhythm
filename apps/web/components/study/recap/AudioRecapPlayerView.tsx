@@ -19,6 +19,7 @@ import {
   RATES,
   type Rate,
 } from "./player";
+import type { VoiceNote, VoicePick } from "./tempoVoice";
 import type { SpeechStatus } from "./useReadAloud";
 
 /**
@@ -28,7 +29,23 @@ import type { SpeechStatus } from "./useReadAloud";
  * is a list of buttons: the current sentence has aria-current and a "Now" word (never colour
  * alone), and choosing one plays from there. Works with no voice at all: the transcript and
  * "Ask a question" stay, and the player says plainly why it can't play.
+ *
+ * With `voice` (Tempo's voice may be used), a small labelled choice between "Tempo voice" and
+ * "This device's voice" shows while Tempo's voice is offered, and a polite line says when it
+ * isn't (offline, today's reading used up, or it failed) and whether the device's voice reads
+ * instead. Play stays the one primary.
  */
+
+export type RecapVoiceProps = {
+  /** The choice between the two voices is shown. */
+  offered: boolean;
+  pick: VoicePick;
+  onPick: (pick: VoicePick) => void;
+  /** Why Tempo's voice isn't reading, or null. */
+  note: VoiceNote;
+  /** The device's voice is the one reading. */
+  deviceReads: boolean;
+};
 
 export type AudioRecapPlayerViewProps = {
   noteId: string;
@@ -49,7 +66,18 @@ export type AudioRecapPlayerViewProps = {
   onAsk: () => void;
   /** Base for element ids; unique per player on the page. */
   idBase: string;
+  /** Tempo's voice, when the screen can offer it. */
+  voice?: RecapVoiceProps;
 };
+
+const VOICE_NOTES = { error: "st.ls.tv.error", budget: "st.ls.tv.budget", offline: "st.ls.tv.offline" } as const;
+
+/** The line under the player when Tempo's voice isn't the one reading. */
+export function voiceNoteText(t: StudyT, voice: RecapVoiceProps | undefined): string {
+  if (!voice?.note) return "";
+  const why = t(VOICE_NOTES[voice.note]);
+  return voice.deviceReads ? `${why} ${t("st.ls.tv.device")}` : why;
+}
 
 /** Arrow keys move through the speed options; Right goes forward in LTR and back in RTL. */
 export function rateForKey(key: string, current: Rate, rtl: boolean): Rate | null {
@@ -196,6 +224,7 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
                   ))}
                 </div>
               </div>
+              {props.voice?.offered ? <VoiceChoice voice={props.voice} idBase={idBase} /> : null}
               <p className="tp-small tp-muted" aria-live="polite">
                 {status === "checking"
                   ? t("st.ls.checking")
@@ -214,12 +243,58 @@ export function AudioRecapPlayerView(props: AudioRecapPlayerViewProps) {
               <span className="tp-notice__text">{noVoiceText(t, status, lang)}</span>
             </p>
           )}
+          {props.voice ? (
+            <p className="tp-small tp-muted" aria-live="polite" data-voice-note={props.voice.note ?? undefined}>
+              {voiceNoteText(t, props.voice)}
+            </p>
+          ) : null}
         </div>
       </section>
 
       <Transcript sentences={sentences} index={state.index} canPlay={canPlay} onAction={onAction} idBase={idBase} />
 
       <AskPanel {...props} t={t} />
+    </div>
+  );
+}
+
+const VOICE_PICKS: readonly VoicePick[] = ["tempo", "device"];
+
+/** "Voice": Tempo voice or This device's voice, a radio group like Speed (arrow keys move). */
+function VoiceChoice({ voice, idBase }: { voice: RecapVoiceProps; idBase: string }) {
+  const { t } = useLocale();
+  const labelId = `${idBase}-voice`;
+  const onKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    event.preventDefault();
+    const next = voice.pick === "tempo" ? "device" : "tempo";
+    voice.onPick(next);
+    const group = event.currentTarget.parentElement;
+    window.requestAnimationFrame(() => group?.querySelector<HTMLButtonElement>(`[data-voice="${next}"]`)?.focus());
+  };
+  return (
+    <div className="tp-recap__speed" data-component="RecapVoice">
+      <span className="tp-label" id={labelId}>
+        {t("st.ls.voice")}
+      </span>
+      <div className="tp-segmented" role="radiogroup" aria-labelledby={labelId} data-component="Segmented">
+        {VOICE_PICKS.map((pick) => (
+          // biome-ignore lint/a11y/useSemanticElements: one option of the v3 segmented control
+          <button
+            key={pick}
+            type="button"
+            role="radio"
+            className="tp-seg__opt"
+            data-voice={pick}
+            aria-checked={voice.pick === pick}
+            tabIndex={voice.pick === pick ? 0 : -1}
+            onClick={() => voice.onPick(pick)}
+            onKeyDown={onKey}
+          >
+            {pick === "tempo" ? t("st.ls.voice.tempo") : t("st.ls.voice.device")}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
