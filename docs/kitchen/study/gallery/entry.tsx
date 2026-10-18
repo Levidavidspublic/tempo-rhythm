@@ -38,9 +38,11 @@
 // (or fails), and a stand-in device voice that reads quietly.
 // S14 Telegram reminders add reminders-tg-unavailable (env missing), reminders-tg-connect,
 // reminders-tg-waiting (after Connect, waiting for Start), reminders-tg-reconnect (the bot was
-// blocked), reminders-tg-connected, reminders-tg-sent, reminders-tg-error, reminders-tg-nophrases
-// and reminders-tg-disconnected (the Undo toast). MOCKED: the bot name, link code and nags are
-// fictional, and the row is drawn from fixed props (TelegramChannelRow), not the live queries.
+// blocked), reminders-tg-connected, reminders-tg-sent, reminders-tg-error, reminders-tg-nophrases,
+// reminders-tg-disconnected (the Undo toast), reminders-tg-connected-name (which Telegram account
+// pressed Start, "Not you? Disconnect.") and reminders-tg-expired (the waiting link ran out).
+// MOCKED: the bot name, link code, Telegram first name and nags are fictional, and the row is
+// drawn from fixed props (TelegramChannelRow), not the live queries.
 // The IngestSheet's PDF, Word and photo readers (owner-approved 2026-10-18) add ingest-photo-reading
 // (40% through a photo, with Stop reading), ingest-pdf-reading (page 3 of 12), ingest-pdf-no-text
 // (a scan: use a photo instead) and ingest-doc-refused (an old .doc). Each picks a sample file
@@ -1051,6 +1053,12 @@ const VIEWS: Record<string, () => ReactNode> = {
     <TelegramReminders row={{ channel: { id: "telegram", label: "Telegram", connected: true, available: true }, phrases: [] }} />
   ),
   "reminders-tg-disconnected": () => <TelegramReminders row={{}} toast />,
+  "reminders-tg-connected-name": () => (
+    <TelegramReminders
+      row={{ channel: { id: "telegram", label: "Telegram", connected: true, available: true, telegramFirstName: "Noa" } }}
+    />
+  ),
+  "reminders-tg-expired": () => <TelegramReminders row={{ status: { tone: "ok", text: "rem.tg.expired" } }} />,
   "share-sheet": () => (
     <ShareSheet
       systemShare
