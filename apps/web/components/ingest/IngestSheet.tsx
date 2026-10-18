@@ -385,9 +385,28 @@ export function IngestSheetView({
     setPhotoState("stopped");
   };
 
+  /**
+   * A new source stops the one being read, so a late result can't replace text typed meanwhile.
+   * Aborting stops pdf.js and terminates the OCR or Word worker (read-sources.ts).
+   */
+  const changeTab = (next: IngestTab) => {
+    if (next === tab) return;
+    if (fileJob.current) {
+      fileJob.current.abort();
+      fileJob.current = null;
+      setFileState({ status: "stopped" });
+    }
+    if (photoJob.current) {
+      photoJob.current.abort();
+      photoJob.current = null;
+      setPhotoState("stopped");
+    }
+    setTab(next);
+  };
+
   const switchToPhoto = () => {
     focusPicker.current = "photo";
-    setTab("photo");
+    changeTab("photo");
   };
 
   const onTextChange = (next: string) => {
@@ -396,7 +415,7 @@ export function IngestSheetView({
 
   const switchToPaste = () => {
     focusText.current = true;
-    setTab("paste");
+    changeTab("paste");
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -479,7 +498,7 @@ export function IngestSheetView({
               <Segmented<IngestTab>
                 label={t("ig.source")}
                 value={tab}
-                onChange={setTab}
+                onChange={changeTab}
                 options={[
                   { value: "file", label: t("ig.tab.file") },
                   { value: "paste", label: t("ig.tab.paste") },
