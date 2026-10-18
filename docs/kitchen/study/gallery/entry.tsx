@@ -47,6 +47,8 @@
 // (40% through a photo, with Stop reading), ingest-pdf-reading (page 3 of 12), ingest-pdf-no-text
 // (a scan: use a photo instead) and ingest-doc-refused (an old .doc). Each picks a sample file
 // through the real file input; MOCKED: the files and the readers (no OCR, pdf.js or mammoth runs).
+// The review fixes add ingest-docx-too-big (a Word file whose parts would unpack too big) and
+// ingest-photo-pixels (a photo over 40 megapixels); MOCKED: the readers refuse straight away.
 import { GuidedPlanCard } from "@tempo/ui";
 import { type ReactNode, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -54,7 +56,7 @@ import { MonthGrid, todayLocal } from "@/components/calendar/MonthGrid";
 import { PlanPathScreen } from "@/components/calendar/plan/PlanPathScreen";
 import { type WeekItem, WeekGrid } from "@/components/calendar/WeekGrid";
 import { IngestSheetView } from "@/components/ingest";
-import type { IngestReaders } from "@/components/ingest/read-sources";
+import { IngestRefusal, type IngestReaders } from "@/components/ingest/read-sources";
 import { MemoryManager } from "@/components/memory/MemoryManager";
 import { MiniAppFrame } from "@/components/mini-app";
 import { PageEditorView } from "@/components/notes/PageEditorView";
@@ -537,6 +539,15 @@ const READING: Partial<IngestReaders> = {
 };
 /** MOCKED: a scanned PDF, two pages with no text layer. */
 const SCANNED: Partial<IngestReaders> = { readPdfPages: async () => ({ pageCount: 2, pages: ["", ""] }) };
+/** MOCKED: a Word file that would unpack too big, and a photo with too many pixels. */
+const REFUSING: Partial<IngestReaders> = {
+  readDocxText: async () => {
+    throw new IngestRefusal("docx_too_big");
+  },
+  preparePhoto: async () => {
+    throw new IngestRefusal("pixels");
+  },
+};
 const MOCK_PDF = () => new File(["%PDF-1.7 MOCKED sample"], "MOCKED-biology-notes.pdf", { type: "application/pdf" });
 
 const PLAN_TOPICS = he ? "תאים\nמיטוזה ומיוזה | 2\nפוטוסינתזה\nגנטיקה" : "Cells\nMitosis and meiosis | 2\nPhotosynthesis\nGenetics";
@@ -1005,6 +1016,14 @@ const VIEWS: Record<string, () => ReactNode> = {
   "ingest-pdf-no-text": () => {
     steps(pickFile("#gallery-ingest-file", MOCK_PDF()));
     return <IngestSheetView id="gallery-ingest" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={SCANNED} />;
+  },
+  "ingest-docx-too-big": () => {
+    steps(pickFile("#gallery-ingest-file", new File(["MOCKED"], "MOCKED-lab-report.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })));
+    return <IngestSheetView id="gallery-ingest" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={REFUSING} />;
+  },
+  "ingest-photo-pixels": () => {
+    steps(pickFile("#gallery-ingest-photo", new File([Uint8Array.of(1)], "MOCKED-panorama.jpg", { type: "image/jpeg" })));
+    return <IngestSheetView id="gallery-ingest" initialTab="photo" onClose={() => {}} onSave={async () => "notes:31"} online photoSupported readers={REFUSING} />;
   },
   "ingest-doc-refused": () => {
     steps(pickFile("#gallery-ingest-file", new File(["MOCKED"], "MOCKED-old-essay.doc", { type: "application/msword" })));
