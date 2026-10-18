@@ -1,6 +1,7 @@
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import * as convexReact from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useToastRoom } from "@/components/study/useToastRoom";
@@ -243,7 +244,9 @@ export function TelegramChannel({ channel }: { channel: ReminderChannelRow }) {
   const startLink = useMutation(api.reminders.startTelegramLink);
   const unlink = useMutation(api.reminders.unlinkTelegram);
   const undoUnlink = useMutation(api.reminders.undoUnlinkTelegram);
-  const sendTest = useAction(api.reminders.sendTest);
+  // Through the namespace: several test files stand in for convex/react without `useAction`, and a
+  // named import of a missing export fails when this module loads (bun's process-wide mocks).
+  const sendTest = convexReact.useAction(api.reminders.sendTest);
 
   const [waitingUrl, setWaitingUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState<TelegramBusy>(null);
