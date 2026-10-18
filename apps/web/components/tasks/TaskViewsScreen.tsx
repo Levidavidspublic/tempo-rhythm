@@ -87,9 +87,10 @@ const viewHrefs: Record<Exclude<TaskView, "project">, string> = {
   checklists: "/tasks/checklists",
 };
 
+// The project starts empty: a prefilled name made a project the person never chose.
 const defaultDraft: Draft = {
   title: "",
-  projectName: "Home reset",
+  projectName: "",
   priority: "medium",
   energy: "medium",
   dueToday: false,
@@ -201,6 +202,16 @@ function localEndOfDay(value: string): number | undefined {
   if (!value) return undefined;
   const [year, month, day] = value.split("-").map(Number);
   return new Date(year, month - 1, day + 1).getTime() - 1;
+}
+
+/**
+ * The project a new task gets from the typed name. A blank name means no project at all, never
+ * `""`: projects are only the tasks that share a projectId, so a stray value lists a stray project.
+ */
+export function projectForCreate(name: string): { projectId?: string; projectName?: string } {
+  const projectName = name.trim();
+  if (!projectName) return {};
+  return { projectId: slugifyProjectName(projectName) || undefined, projectName };
 }
 
 function getViewTitle(view: TaskView, t: Translate, projectSlug?: string): string {
@@ -331,12 +342,12 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
   };
 
   const createFromDraft = async (title: string) => {
-    const normalizedProjectName =
-      view === "project" ? (projectName ?? draft.projectName) : draft.projectName.trim();
     // Project view must reuse the filter's projectId — do not re-slugify the
     // display title alone, or URL slug and stored id can diverge.
-    const normalizedProjectId =
-      view === "project" && projectId ? projectId : slugifyProjectName(normalizedProjectName);
+    const project =
+      view === "project" && projectId
+        ? { projectId, projectName: projectName ?? draft.projectName }
+        : projectForCreate(draft.projectName);
     const dueAt = draft.dueToday ? bounds.endMs - 1 : localEndOfDay(draft.dueDate);
     const checklist = parseChecklistText(draft.checklistText);
 
@@ -346,8 +357,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
         priority: draft.priority,
         energy: draft.energy,
         dueAt,
-        projectId: normalizedProjectId,
-        projectName: normalizedProjectName,
+        projectId: project.projectId,
+        projectName: project.projectName,
         checklist,
       });
       if (draft.repeat === "daily" || draft.repeat === "weekly") {
@@ -370,8 +381,8 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           status: "todo",
           priority: draft.priority,
           energy: draft.energy,
-          projectId: normalizedProjectId,
-          projectName: normalizedProjectName,
+          projectId: project.projectId,
+          projectName: project.projectName,
           dueAt,
           checklist,
           createdAt: now,
@@ -561,6 +572,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
                 setDraft((current) => ({ ...current, projectName: event.target.value }))
               }
               disabled={view === "project" || !taskStoreReady}
+              placeholder={t("tasks.projectPh")}
             />
           </label>
           <label className="tp-field">
