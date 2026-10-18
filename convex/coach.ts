@@ -31,7 +31,14 @@ import {
   readProposal,
   readSearchRequest,
   withCardOutcome,
+  withoutAcceptPromise,
 } from "./lib/coachPrompt";
+import {
+  ALREADY_ON_TODAY_NOTE,
+  MAX_OPEN_TASKS_CHECKED,
+  cardTitle,
+  duplicateOfOpenTask,
+} from "./lib/coachProposalGuard";
 import { requireUser } from "./lib/requireUser";
 import { isValidLocalDate } from "./lib/pageLedger";
 import { undoUntil } from "./lib/softDelete";
@@ -87,6 +94,10 @@ const AVAILABLE_MINUTES_BAD_DAY = 60;
  * day per person), makes a second model call with the numbered results, and saves the reply with
  * its `sources`. `webSearchStatus({ utcDay })` tells the client whether it is available, on, and
  * how much of that UTC day's limit is used.
+ *
+ * A task card for a task that is already open and due in the person's day is never shown
+ * (TEMPO-B07-29, #1031): the reply goes out without it, with one fixed line saying so
+ * (lib/coachProposalGuard.ts).
  */
 
 /** Longest message the coach takes. */
@@ -198,6 +209,8 @@ const turnContextValidator = v.object({
   history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("assistant")), content: v.string() })),
   page: v.union(v.null(), v.object({ title: v.string(), text: v.string() })),
   tasks: v.array(v.object({ title: v.string(), minutes: v.union(v.null(), v.number()) })),
+  /** Every open task due in their day (at most `MAX_OPEN_TASKS_CHECKED`), for the duplicate check. */
+  openToday: v.array(v.object({ title: v.string() })),
   /** The person's app language, for the coach's few fixed lines. */
   locale: v.union(v.literal("en"), v.literal("he")),
   /** Whether the person turned web search on, and how many searches are left today. */
@@ -275,9 +288,10 @@ function dayBounds(args: { dayStartMs?: number; dayEndMs?: number }): { start: n
 const MAX_DAY_TASKS_SCANNED = 500;
 
 /**
- * The caller's open tasks due in their day, soonest first: what "these" means in "what order
- * should I do these in?". Done and deleted rows are skipped while reading, so they never crowd
- * open tasks out of the cap (Codex P2 on #940).
+ * The caller's open tasks due in their day, soonest first, at most `MAX_OPEN_TASKS_CHECKED`: the
+ * first `COACH_LIMITS.contextTasks` are what "these" means in "what order should I do these in?",
+ * and a task card is checked against all of them (#1031). Done and deleted rows are skipped while
+ * reading, so they never crowd open tasks out of the cap (Codex P2 on #940).
  */
 async function openTasksForDay(ctx: Db, userId: UserId, day: { start: number; end: number }): Promise<CoachTaskContext[]> {
   const open: CoachTaskContext[] = [];
@@ -291,7 +305,7 @@ async function openTasksForDay(ctx: Db, userId: UserId, day: { start: number; en
         title: t.title,
         minutes: t.timeEstimate !== undefined && t.timeEstimate > 0 ? Math.round(t.timeEstimate / 60_000) : null,
       });
-      if (open.length === COACH_LIMITS.contextTasks) break;
+      if (open.length === MAX_OPEN_TASKS_CHECKED) break;
     }
     if (scanned === MAX_DAY_TASKS_SCANNED) break;
   }
@@ -373,7 +387,7 @@ export const claimTurn = internalMutation({
       }
     }
     const day = dayBounds(args);
-    const tasks = day ? await openTasksForDay(ctx, user._id, day) : [];
+    const open = day ? await openTasksForDay(ctx, user._id, day) : [];
     const settings = await loadSettings(ctx, user._id);
     const prefs = await preferencesFor(ctx, user._id);
     const used = prefs.coachWebSearch ? await searchesOn(ctx, user._id, utcDay(now)) : 0;
@@ -383,7 +397,8 @@ export const claimTurn = internalMutation({
       dial: settings?.dial ?? DEFAULT_DIAL,
       history,
       page,
-      tasks,
+      tasks: open.slice(0, COACH_LIMITS.contextTasks),
+      openToday: open.map((task) => ({ title: cardTitle(task.title) })),
       locale: prefs.locale,
       webSearch: { enabled: prefs.coachWebSearch, left: Math.max(0, WEB_SEARCH_DAILY_LIMIT - used) },
     };
@@ -550,6 +565,11 @@ export const WEB_SEARCH_NOTES = {
  * saved with a plain line saying so; with no first answer there is nothing to save, and the turn
  * is "unavailable". Crisis text as the newest message never gets here: `claimTurn` returns null
  * for it, so it reaches neither the model nor the search.
+ *
+ * A task card in the first answer whose title is one of the open tasks due in the person's day
+ * (`duplicateOfOpenTask`) is dropped before a search runs, so a second call never mentions it, and
+ * the reply ends with `ALREADY_ON_TODAY_NOTE` in the person's app language (#1031). No model call is
+ * added for it.
  */
 export async function runCoachReply(
   ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
@@ -575,7 +595,7 @@ export async function runCoachReply(
   if (context === "busy") {
     return "busy";
   }
-  const { replyTo, claim, locale, webSearch, ...prompt } = context;
+  const { replyTo, claim, locale, webSearch, openToday, ...prompt } = context;
   const release = () =>
     ctx.runMutation(internal.coach.releaseTurn, { conversationId: args.conversationId, messageId: replyTo, claim });
   const base = { ...prompt, ...(today ? { today } : {}) };
@@ -611,6 +631,10 @@ export async function runCoachReply(
     await release();
     return "unavailable";
   }
+  // A task card for a task already open on Today goes, and with it the promise that it waits for a
+  // yes; the reply says why below (#1031).
+  const duplicate = answer !== null && duplicateOfOpenTask(answer.proposal, openToday) !== null;
+  if (answer && duplicate) answer = { reply: withoutAcceptPromise(answer.reply), proposal: null };
 
   let sources: CoachSource[] = [];
   let note: keyof typeof WEB_SEARCH_NOTES | null = null;
@@ -672,6 +696,9 @@ export async function runCoachReply(
     console.error("coach.reply: the model gave an empty answer");
     await release();
     return "unavailable";
+  }
+  if (duplicate) {
+    answer = { ...answer, reply: `${answer.reply}\n\n${ALREADY_ON_TODAY_NOTE[locale]}` };
   }
   if (note !== null) {
     answer = { ...answer, reply: `${answer.reply}\n\n${WEB_SEARCH_NOTES[note][locale]}` };
