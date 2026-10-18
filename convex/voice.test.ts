@@ -179,8 +179,8 @@ describe("starting a voice session", () => {
     const today = new Date(now).toISOString().slice(0, 10);
     await world.db.insert("voiceSessions", {
       userId: A, conversationId, clientKey: "old_key_1", status: "ended", language: "en",
-      // 14.5 of the 15 minutes used: less than the 1 minute a start needs.
-      startedAt: now - 20.5 * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
+      // Half a minute short of today's cap used: less than the 1 minute a start needs.
+      startedAt: now - (VOICE_LIMITS.dailyMinutesPerUser + 5.5) * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
       dateKey: today, utcDateKey: today, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
     });
     expect(await run(voice.availability, world.as(A), {})).toMatchObject({ available: false, reason: "budget", minutesLeft: 0 });
@@ -202,7 +202,7 @@ describe("starting a voice session", () => {
     const today = new Date(now).toISOString().slice(0, 10);
     await world.db.insert("voiceSessions", {
       userId: A, conversationId, clientKey: "old_key_1", status: "ended", language: "en",
-      startedAt: now - 20.5 * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
+      startedAt: now - (VOICE_LIMITS.dailyMinutesPerUser + 5.5) * 60_000, lastRenewalAt: now - 6 * 60_000, endedAt: now - 6 * 60_000,
       dateKey: today, utcDateKey: today, grants: 1, sentences: 0, ttsChars: 0, createdAt: 1, updatedAt: 1,
       deletedAt: now - 60_000,
     });

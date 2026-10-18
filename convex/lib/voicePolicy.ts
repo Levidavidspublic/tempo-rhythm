@@ -11,10 +11,11 @@
 
 export const VOICE_LIMITS = {
   /**
-   * Preview cap on live minutes per person per local day (A-7: 15). It only ever lowers the
-   * tier's HARD_RULES §9 number (`dailyMinutesFor`); it never raises it.
+   * Preview cap on live minutes per person per local day: 50 for the beta testers (Amit, 18 Oct
+   * 2026; VOICE.md A-7 had 15). It only ever lowers the tier's HARD_RULES §9 number
+   * (`dailyMinutesFor`); it never raises it. Recording (convex/recordings.ts) shares it.
    */
-  dailyMinutesPerUser: 15,
+  dailyMinutesPerUser: 50,
   /** Voice sessions one person can start per local day, so no client floods the day's rows. */
   sessionsPerUserPerDay: 40,
   /**

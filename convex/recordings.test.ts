@@ -185,13 +185,13 @@ describe("availability and start", () => {
 describe("the daily budget is shared with voice", () => {
   test("voice minutes used today leave less for recording", async () => {
     const world = makeWorld();
-    await usedVoice(world, A, 10);
+    await usedVoice(world, A, VOICE_LIMITS.dailyMinutesPerUser - 5);
     expect((await run(recordings.availability, world.as(A), { lang: "en" })).minutesLeft).toBe(5);
   });
 
   test("with under a minute left, start is a typed budget refusal", async () => {
     const world = makeWorld();
-    await usedVoice(world, A, 14.5);
+    await usedVoice(world, A, VOICE_LIMITS.dailyMinutesPerUser - 0.5);
     expect(await run(recordings.availability, world.as(A), { lang: "en" })).toMatchObject({ live: false, reason: "budget" });
     expect(await run(recordings.start, world.as(A), { lang: "en" })).toEqual({ ok: false, reason: "budget" });
   });
@@ -203,7 +203,7 @@ describe("the daily budget is shared with voice", () => {
       userId: A,
       status: "ended",
       lang: "en",
-      startedAt: now - 16 * 60_000,
+      startedAt: now - (VOICE_LIMITS.dailyMinutesPerUser + 1) * 60_000,
       lastRenewalAt: now - 60_000,
       endedAt: now - 60_000,
       dateKey: today(),
@@ -219,7 +219,7 @@ describe("the daily budget is shared with voice", () => {
   test("a renewal past today's minutes ends the lease as exhausted", async () => {
     const world = makeWorld();
     const started = await run(recordings.start, world.as(A), { lang: "en" });
-    await usedVoice(world, A, 15);
+    await usedVoice(world, A, VOICE_LIMITS.dailyMinutesPerUser);
     expect((await run(recordings.renew, world.as(A), { sessionId: started.sessionId })).status).toBe("exhausted");
     expect(world.row(started.sessionId)).toMatchObject({ status: "ended", endReason: "exhausted" });
   });
