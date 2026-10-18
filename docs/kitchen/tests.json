@@ -1,6 +1,6 @@
 {
   "run": "kitchen/tempo-study",
-  "updated": "2026-10-17T06:35Z",
+  "updated": "2026-10-18T09:42Z",
   "baseline": {
     "command": "bun run test",
     "last_result": "3407 pass, 3 todo, 0 fail on 1a23e46 (Bun 1.3.9; was 2348 on 5f1b3ec)"
@@ -16,19 +16,23 @@
     },
     "T9": {
       "proof": "bun test tests/unit/ingest tests/unit/memory_manager.test.tsx convex/memoryUpdate.test.ts",
-      "last_result": "73 pass 0 fail Ran 73 tests across 6 files on e9a761f"
+      "last_result": "136 pass 0 fail Ran 136 tests across 8 files. on 064621e"
     },
     "T10": {
-      "proof": "bun test packages/core/reminders convex/reminders.test.ts tests/unit/t10",
-      "last_result": "52 pass 0 fail Ran 52 tests across 6 files on e9a761f"
+      "proof": "bun test packages/core/reminders convex/reminders.test.ts convex/reminders_telegram.test.ts convex/lib/telegramName.test.ts tests/unit/t10",
+      "last_result": "111 pass 0 fail Ran 111 tests across 11 files. on 064621e"
     },
     "T4 (backlog, S16)": {
-      "proof": "bun test packages/core/recap tests/unit/study/recap_player.test.tsx packages/ui/src/study/ReadAloudButton.test.tsx",
-      "last_result": "103 pass 0 fail Ran 103 tests across 7 files on e9a761f"
+      "proof": "bun test packages/core/recap tests/unit/study/recap_player.test.tsx tests/unit/study/recap_tempo_voice.test.tsx packages/ui/src/study/ReadAloudButton.test.tsx convex/studyVoice.test.ts",
+      "last_result": "136 pass 0 fail Ran 136 tests across 9 files. on 064621e"
     },
     "T2 (backlog, S9)": {
       "proof": "bun test packages/ui/src/plan",
       "last_result": "29 pass 0 fail Ran 29 tests across 3 files on e9a761f"
+    },
+    "Voice caps and providers (18 Oct)": {
+      "proof": "bun test convex/lib/voicePolicy.test.ts convex/voice.test.ts convex/recordings.test.ts",
+      "last_result": "75 pass 0 fail Ran 75 tests across 3 files. on 064621e"
     }
   },
   "e2e": {
@@ -48,7 +52,7 @@
     "last_result": "all OK on 1a23e46"
   },
   "gate": {
-    "command": "bun docs/kitchen/study/shoot.mjs gallery|live … (see docs/kitchen/study/GATE.md)",
+    "command": "bun docs/kitchen/study/shoot.mjs gallery|live \u2026 (see docs/kitchen/study/GATE.md)",
     "last_result": "556 shots (66 gallery views en+he, 9 live routes); record-* and study-new-* reshot on 1a23e46: gallery 58 PASS, 4 PASS (R-01 purpose), 3 PASS apart from the shared skeleton R-19 (pre-existing), 1 pre-existing FAIL (R-32 notes editor); live only pre-existing R-19"
   },
   "a11y_walk": {
