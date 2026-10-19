@@ -107,15 +107,21 @@ describe("KB-03 hydrated search gallery", () => {
     await writeFile(mockApi, `export const api={search:{all:"search.all"}};`);
     const entry = join(directory, "entry.tsx");
     await writeFile(entry, `import React from ${JSON.stringify(reactPath)};import{createRoot}from ${JSON.stringify(join(root,"apps/web/node_modules/react-dom/client"))};import{Kb03Gallery,SearchHeader,SearchScreenBody}from ${JSON.stringify(source)};const probe=new URLSearchParams(location.search).has("probe");createRoot(document.getElementById("root")).render(probe?React.createElement("main",{className:"tp-page"},React.createElement(SearchHeader),React.createElement(SearchScreenBody)):React.createElement(Kb03Gallery));`);
-    const bundle = await Bun.build({ entrypoints: [entry], target: "browser", minify: false, alias: {
-      "react-native": join(root, "apps/web/node_modules/react-native-web"),
+    const mocks: Record<string, string> = {
       "convex/react": mockQuery,
       "next/navigation": mockNext,
       "next/link": mockLink,
       "@/convex/_generated/api": mockApi,
       "@/components/providers/LocaleProvider": mockLocale,
       "@/components/tempo/TpIcon": mockIcon,
-    } });
+    };
+    const bundle = await Bun.build({ entrypoints: [entry], target: "browser", minify: false,
+      alias: { "react-native": join(root, "apps/web/node_modules/react-native-web") },
+      plugins: [{ name: "kb03-browser-stubs", setup(build) {
+        build.onResolve({ filter: /^(convex\/react|next\/(navigation|link)|@\/convex\/_generated\/api|@\/components\/(providers\/LocaleProvider|tempo\/TpIcon))$/ },
+          ({ path }) => ({ path: mocks[path] ?? path }));
+      } }],
+    });
     if (!bundle.success) throw new Error(`KB-03 bundle failed: ${bundle.logs.map(String).join(" | ")}`);
     const script = await bundle.outputs.find((output) => output.path.endsWith(".js"))?.text();
     if (!script) throw new Error("KB-03 bundle had no JavaScript output");
@@ -226,10 +232,11 @@ describe("KB-03 hydrated search gallery", () => {
           overflow: document.documentElement.scrollWidth <= innerWidth,
           targets: [...document.querySelectorAll(".sr-gallery button")].filter((element) => !(element as HTMLButtonElement).disabled).every((element) => element.getBoundingClientRect().height >= 44),
           motion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+          largeText: parseFloat(getComputedStyle(document.body).fontSize) >= 20,
           mains: document.querySelectorAll("main").length,
           headings: document.querySelectorAll("h1").length,
         }));
-        expect(metrics).toEqual({ overflow: true, targets: true, motion: true, mains: 1, headings: 1 });
+        expect(metrics).toEqual({ overflow: true, targets: true, motion: true, largeText: true, mains: 1, headings: 1 });
       } finally { await page.close(); }
     }
   }, 240_000);
