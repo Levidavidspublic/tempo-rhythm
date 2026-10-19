@@ -5,10 +5,45 @@ import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { createElement } from "../../apps/web/node_modules/react";
 import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
-import { Kb08Gallery, ProjectListState, ProjectSummaryRow } from "../../apps/web/components/projects/ProjectsScreen";
 import { en, he, translateKb08 } from "../../apps/web/lib/i18n-groups/kb-08";
 import type { ProjectSummary } from "../../apps/web/lib/goals-projects";
 
+// Bun module mocks are process-global. Other component tests replace the generated API, so
+// execute this file's actual renders in one clean child process during the full suite.
+if (process.env.KB08_ISOLATED !== "1") {
+  const names = [
+    "empty projects offer one deliberate start action",
+    "one project renders a named summary with distinct safe destinations",
+    "count labels distinguish 0/1, 1/1 and multiple tasks",
+    "long user names retain auto direction and a wrapping class",
+    "actions are peers, never nested interactive controls",
+    "disabled navigation has no href or keyboard target",
+    "Hebrew count has RTL copy and isolated LTR digits",
+    "offline state stays a notice and does not create a project",
+    "filtered state only exposes the supplied reset callback",
+    "error and loading states render separately",
+    "gallery renders the real exported row and owns one h1 and one main",
+    "English and Hebrew dictionaries have exact key parity",
+    "hydrated gallery: keyboard navigation, callbacks, RTL, states and responsive targets",
+  ];
+  let output: string | undefined;
+  for (const name of names) {
+    test(`KB-08 isolated: ${name}`, () => {
+      if (output === undefined) {
+        const run = Bun.spawnSync([process.execPath, "test", import.meta.path], {
+          cwd: process.cwd(),
+          env: { ...process.env, KB08_ISOLATED: "1" },
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        output = `${run.stdout.toString()}${run.stderr.toString()}`;
+        if (run.exitCode !== 0) throw new Error(`KB-08 clean test process failed:\n${output}`);
+      }
+      expect(output).toContain(name);
+    }, 180_000);
+  }
+} else {
+const { Kb08Gallery, ProjectListState, ProjectSummaryRow } = await import("../../apps/web/components/projects/ProjectsScreen");
 const project: ProjectSummary = { id: "maya-home", name: "Maya's home", done: 2, total: 6, status: "active", updatedAt: 1 };
 const render = (node: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(node);
 
@@ -179,3 +214,4 @@ test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsi
     server.stop();
   }
 }, 120_000);
+}
