@@ -91,7 +91,7 @@ export function JournalScreen() {
       <div className="tp-section__head"><h2 className="tp-section__title" id="jr-past-h">{t("journal.past")}</h2></div>
       {!isLoading && !isAuthenticated ? <p className="tp-muted">{t("journal.signIn")}</p>
         : profile && today ? <JournalChunk before={today} first />
-        : <p className="kb04-state" aria-busy="true" role="status">{t("journal.loading")}</p>}
+        : <output className="kb04-state" aria-busy="true">{t("journal.loading")}</output>}
     </section>
   </div>;
 }
@@ -105,7 +105,7 @@ function JournalChunk({ before, first = false, focusNew = false, onReady, mayFoc
   const [more, setMore] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const firstHeadingRef = useRef<HTMLHeadingElement>(null);
-  const endRef = useRef<HTMLParagraphElement>(null);
+  const endRef = useRef<HTMLOutputElement>(null);
   const didFocus = useRef(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const handleReady = useCallback(() => setAdvanced(true), []);
@@ -119,18 +119,18 @@ function JournalChunk({ before, first = false, focusNew = false, onReady, mayFoc
     });
     return () => cancelAnimationFrame(frame);
   }, [focusNew, mayFocus, onReady, rows]);
-  if (rows === undefined) return <p className="kb04-state" aria-busy="true" role="status">{kb04t(lang, "kb04.loading")}</p>;
+  if (rows === undefined) return <output className="kb04-state" aria-busy="true">{kb04t(lang, "kb04.loading")}</output>;
   if (rows.length === 0 && first) return <div className="tp-empty" data-component="Empty">
     <TpIcon name="today" size="lg" /><p>{kb04t(lang, "kb04.empty")}</p>
   </div>;
-  if (rows.length === 0) return <p className="kb04-state" role="status" ref={endRef} tabIndex={-1}>{kb04t(lang, "kb04.end")}</p>;
+  if (rows.length === 0) return <output className="kb04-state" ref={endRef} tabIndex={-1}>{kb04t(lang, "kb04.end")}</output>;
   const last = rows[rows.length - 1];
   return <>
     <JournalRows rows={rows} lang={lang} firstHeadingRef={focusNew ? firstHeadingRef : undefined} />
     {rows.length === CHUNK && last ? <div className="kb04-more-wrap">
       {!advanced && <JournalLoadMore lang={lang} onLoad={() => setMore(true)} loading={more} buttonRef={buttonRef} />}
       {more && <JournalChunk before={last.date} focusNew onReady={handleReady} mayFocus={shouldFocusChild} />}
-    </div> : <p className="kb04-state" role="status">{kb04t(lang, "kb04.end")}</p>}
+    </div> : <output className="kb04-state">{kb04t(lang, "kb04.end")}</output>}
   </>;
 }
 
@@ -162,15 +162,15 @@ export function Kb04Gallery({ lang = "en" }: Readonly<{ lang?: JournalLang }>) {
       {galleryStates.map((item) => <button key={item} type="button" aria-pressed={state === item}
         onClick={() => { setState(item); setAdded(false); }}>{kb04t(lang, galleryLabels[item])}</button>)}
     </nav>
-    {state === "empty" && <p className="kb04-state" role="status">{kb04t(lang, "kb04.empty")}</p>}
-    {state === "loading" && <p className="kb04-state" role="status" aria-busy="true">{kb04t(lang, "kb04.loading")}</p>}
+    {state === "empty" && <output className="kb04-state">{kb04t(lang, "kb04.empty")}</output>}
+    {state === "loading" && <output className="kb04-state" aria-busy="true">{kb04t(lang, "kb04.loading")}</output>}
     {state === "error" && <div role="alert"><p className="kb04-state">{kb04t(lang, "kb04.error")}</p>
       <button className="tp-btn tp-btn--secondary" type="button" onClick={() => setState("default")}>{kb04t(lang, "kb04.retry")}</button></div>}
     {(state === "default" || state === "disabled" || state === "overflow") && <>
       <JournalRows rows={rows} lang={lang} />
       {added ? <><JournalRows rows={[{ _id: "fictional-extra", date: "2026-10-01", title: "One more day", tags: [] }]}
         lang={lang} firstHeadingRef={addedRef} />
-        <p className="kb04-state" role="status">{kb04t(lang, "kb04.end")}</p></>
+        <output className="kb04-state">{kb04t(lang, "kb04.end")}</output></>
         : <div className="kb04-more-wrap"><JournalLoadMore lang={lang} disabled={state === "disabled"} onLoad={() => setAdded(true)} /></div>}
     </>}
   </main>;

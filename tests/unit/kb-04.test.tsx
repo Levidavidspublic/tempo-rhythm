@@ -20,10 +20,8 @@ const stubs: Record<string, string> = {
   "convex/react": `import React from "${web}/node_modules/react";const rows=(before, scenario, released)=>{if(scenario==="loading" || (scenario==="delayed" && before!=="2026-10-19" && !released))return undefined;if(scenario==="empty")return [];if(before!=="2026-10-19"){if(scenario==="end")return [];return scenario==="multiple"||scenario==="delayed"?[{_id:"fictional-extra-1",date:"2026-10-08",title:"Maya's next day",tags:[]},{_id:"fictional-extra-2",date:"2026-10-07",title:"Dana's next day",tags:[]}]:[]};const count=scenario==="one"?1:10;return Array.from({length:count},(_,i)=>({_id:"fictional-"+i,date:"2026-10-"+String(18-i).padStart(2,"0"),title:i===0?"Maya's quiet morning":i===1?"Dana's walk":null,tags:i===0?["Reflection"]:[]}))};export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});export const useQuery=(ref,args)=>{const released=React.useSyncExternalStore(fn=>{window.addEventListener("kb04:query",fn);return()=>window.removeEventListener("kb04:query",fn)},()=>!!window.__loadedMore,()=>false);return args?.pageType==="daily"?rows(args.before,new URLSearchParams(location.search).get("scenario"),released):{name:"Maya"}};`,
   "next/link": `import React from "${web}/node_modules/react";export default function Link({href,children,...rest}){return React.createElement("a",{href,...rest},children)}`,
   "@/components/providers/LocaleProvider": `import {translate} from "${web}/lib/i18n.ts";export function useLocale(){const lang=document.documentElement.lang==="he"?"he":"en";return {lang,dir:lang==="he"?"rtl":"ltr",t:key=>translate(lang,key)}}`,
-  "@/components/tempo/TpIcon": `import React from "${web}/node_modules/react";export function TpIcon(){return React.createElement("span",{"aria-hidden":true},"◦")}`,
   "@/convex/_generated/api": `export const api={users:{getProfile:{}},notes:{listPeriodPages:{}}};`,
   "@/lib/useLocalDayBounds": `export function useLocalDayBounds(){return {startMs:Date.parse("2026-10-19T00:00:00Z")}}`,
-  "@/lib/period-pages": `export function localIsoDate(value){return value.toISOString().slice(0,10)}`,
 };
 
 function browserExecutable(): string {
@@ -37,11 +35,11 @@ async function makeFixture() {
   mkdirSync(join(repo, "work"), { recursive: true });
   fixtureDir = mkdtempSync(join(repo, "work", "kb-04-"));
   symlinkSync(join(web, "node_modules"), join(fixtureDir, "node_modules"), "dir");
-  writeFileSync(join(fixtureDir, "entry.tsx"), `import React from "${web}/node_modules/react";import {createRoot} from "${web}/node_modules/react-dom/client";import {JournalScreen,Kb04Gallery} from "${component}";window.__loadedMore=false;window.__releaseMore=()=>{window.__loadedMore=true;window.dispatchEvent(new Event("kb04:query"))};const params=new URLSearchParams(location.search);const lang=document.documentElement.lang==="he"?"he":"en";createRoot(document.getElementById("root")!).render(<React.StrictMode>{params.has("gallery")?<Kb04Gallery lang={lang}/>:<main><JournalScreen/></main>}</React.StrictMode>);`);
+  writeFileSync(join(fixtureDir, "entry.tsx"), `import React from "${web}/node_modules/react";import {createRoot} from "${web}/node_modules/react-dom/client";import {TpIconSprite} from "${web}/components/tempo/TpIcon";import {JournalScreen,Kb04Gallery} from "${component}";window.__loadedMore=false;window.__releaseMore=()=>{window.__loadedMore=true;window.dispatchEvent(new Event("kb04:query"))};const params=new URLSearchParams(location.search);const lang=document.documentElement.lang==="he"?"he":"en";createRoot(document.getElementById("root")!).render(<React.StrictMode><TpIconSprite/>{params.has("gallery")?<Kb04Gallery lang={lang}/>:<main><JournalScreen/></main>}</React.StrictMode>);`);
   const result = await Bun.build({
     entrypoints: [join(fixtureDir, "entry.tsx")], outdir: fixtureDir, target: "browser",
     plugins: [{ name: "kb04-fictional-data", setup(build) {
-      build.onResolve({ filter: /^(convex\/react|next\/link|@\/components\/providers\/LocaleProvider|@\/components\/tempo\/TpIcon|@\/convex\/_generated\/api|@\/lib\/useLocalDayBounds|@\/lib\/period-pages)$/ }, args => ({ path: args.path, namespace: "kb04" }));
+      build.onResolve({ filter: /^(convex\/react|next\/link|@\/components\/providers\/LocaleProvider|@\/convex\/_generated\/api|@\/lib\/useLocalDayBounds)$/ }, args => ({ path: args.path, namespace: "kb04" }));
       build.onLoad({ filter: /.*/, namespace: "kb04" }, args => ({ contents: stubs[args.path], loader: "tsx", resolveDir: web }));
     } }],
   });
@@ -195,6 +193,20 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe("One more day");
     await page.close();
   });
+  test("keyboard focus is visible and reduced motion removes transitions", async () => {
+    const page = await open(390, "gallery=1");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.keyboard.press("Tab");
+    const focused = await page.evaluate(() => {
+      const node = document.activeElement as HTMLElement;
+      const style = getComputedStyle(node);
+      return { tag: node.tagName, width: style.outlineWidth, motion: style.transitionDuration };
+    });
+    expect(focused.tag).toBe("BUTTON");
+    expect(Number.parseFloat(focused.width)).toBeGreaterThanOrEqual(2);
+    expect(focused.motion.split(",").every(value => Number.parseFloat(value) === 0)).toBe(true);
+    await page.close();
+  });
   test("new exports render and English/Hebrew keys match", () => {
     const heading = renderToStaticMarkup(createElement(JournalDayHeading, { date: "2026-10-19", lang: "he" }));
     const button = renderToStaticMarkup(createElement(JournalLoadMore, { lang: "en", onLoad() {} }));
@@ -206,8 +218,9 @@ describe.serial("KB-04 mounted journal and gallery", () => {
   });
   test("mounted screenshots cover 390/1280, en/he and light/dark", async () => {
     for (const width of [390, 1280]) for (const lang of ["en", "he"] as const) for (const theme of ["light", "dark"] as const) {
-      const page = await open(width, `scenario=one&lang=${lang}&theme=${theme}`);
-      await page.locator(".kb04-day").waitFor();
+      const page = await open(width, `scenario=multiple&lang=${lang}&theme=${theme}`);
+      await page.locator(".kb04-day").first().waitFor();
+      await page.locator(".kb04-day").nth(9).waitFor();
       expect(await page.locator("main").count()).toBe(1);
       expect(await page.locator("h1").count()).toBe(1);
       expect(await noOverflow(page)).toBe(true);
@@ -215,4 +228,32 @@ describe.serial("KB-04 mounted journal and gallery", () => {
       await page.close();
     }
   }, 120_000);
+  test("hydrated gallery works at phone and desktop widths in both locales and themes", async () => {
+    for (const width of [390, 1280]) for (const lang of ["en", "he"] as const) for (const theme of ["light", "dark"] as const) {
+      const page = await open(width, `gallery=1&lang=${lang}&theme=${theme}`);
+      expect(await page.locator("main").count()).toBe(1);
+      expect(await page.locator("h1").count()).toBe(1);
+      expect(await page.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
+      await capture(page, `gallery-${width}-${lang}-${theme}.png`);
+      await page.getByRole("button", { name: kb04t(lang, "kb04.emptyState") }).click();
+      expect(await page.getByRole("status").getByText(kb04t(lang, "kb04.empty")).count()).toBe(1);
+      await page.getByRole("button", { name: kb04t(lang, "kb04.loadingState") }).click();
+      expect(await page.getByRole("status").getByText(kb04t(lang, "kb04.loading")).count()).toBe(1);
+      await page.getByRole("button", { name: kb04t(lang, "kb04.errorState") }).click();
+      await page.getByRole("button", { name: kb04t(lang, "kb04.retry") }).click();
+      await page.getByRole("button", { name: kb04t(lang, "kb04.disabledState") }).click();
+      expect(await page.getByRole("button", { name: kb04t(lang, "kb04.more") }).isDisabled()).toBe(true);
+      await page.getByRole("button", { name: kb04t(lang, "kb04.overflowState") }).click();
+      expect(await noOverflow(page)).toBe(true);
+      await page.getByRole("button", { name: kb04t(lang, "kb04.default") }).click();
+      const more = page.getByRole("button", { name: kb04t(lang, "kb04.more") });
+      if (width === 390) expect(await more.evaluate(node => node.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+      await more.focus();
+      await page.keyboard.press("Enter");
+      await page.getByRole("heading", { name: "One more day" }).waitFor();
+      expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe("One more day");
+      expect(await noOverflow(page)).toBe(true);
+      await page.close();
+    }
+  }, 300_000);
 });
