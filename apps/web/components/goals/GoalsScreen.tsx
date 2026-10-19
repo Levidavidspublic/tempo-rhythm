@@ -427,15 +427,16 @@ export function Kb05Gallery({ lang = "en" }: { readonly lang?: "en" | "he" }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const openButton = useRef<HTMLButtonElement>(null);
+  const lastTrigger = useRef<HTMLButtonElement | null>(null);
   useEffect(() => { if (editing) document.getElementById(NAME_ID)?.focus(); }, [editing]);
   const cancel = () => {
     setEditing(false);
-    requestAnimationFrame(() => openButton.current?.focus());
+    requestAnimationFrame(() => lastTrigger.current?.focus());
   };
   const create = (_name: string) => {
     setSaved(true);
     setEditing(false);
-    requestAnimationFrame(() => openButton.current?.focus());
+    requestAnimationFrame(() => lastTrigger.current?.focus());
   };
   const longName = lang === "he"
     ? "לתכנן בעדינות זמן לקריאה, למנוחה ולמפגש עם חברים לאורך השבוע הקרוב"
@@ -452,7 +453,7 @@ export function Kb05Gallery({ lang = "en" }: { readonly lang?: "en" | "he" }) {
         ))}
       </fieldset>
       {state === "empty" ? (
-        <GoalEmptyState lang={lang} onCreate={() => setEditing(true)} />
+        <GoalEmptyState lang={lang} buttonId="kb05-empty-action" onCreate={() => { lastTrigger.current = document.getElementById("kb05-empty-action") as HTMLButtonElement; setEditing(true); }} />
       ) : state === "loading" ? (
         <output className="tp-state tp-state--loading" aria-busy="true">{kb05t(lang, "kb05.gallery.loadingText")}</output>
       ) : state === "error" ? (
@@ -470,7 +471,7 @@ export function Kb05Gallery({ lang = "en" }: { readonly lang?: "en" | "he" }) {
       )}
       {state !== "loading" && state !== "error" ? (
         <div className="kb05-gallery__form">
-          <button ref={openButton} type="button" className="tp-btn tp-btn--primary kb05-action" disabled={state === "disabled"} onClick={() => setEditing(true)}>{kb05t(lang, "kb05.gallery.create")}</button>
+          <button ref={openButton} type="button" className="tp-btn tp-btn--primary kb05-action" disabled={state === "disabled"} onClick={() => { lastTrigger.current = openButton.current; setEditing(true); }}>{kb05t(lang, "kb05.gallery.create")}</button>
           {editing ? (
             <GoalNameForm lang={lang} busy={false} onSubmit={create} onCancel={cancel} />
           ) : null}

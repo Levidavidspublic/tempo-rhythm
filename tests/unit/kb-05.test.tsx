@@ -102,7 +102,7 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
   directory = await mkdtemp(join(tmpdir(), "tempo-kb05-"));
   const entry = join(directory, "entry.tsx");
   const modulePath = join(repo, "apps/web/components/goals/GoalsScreen.tsx");
-  await writeFile(entry, `import React from "${join(repo, "apps/web/node_modules/react")}";\nimport { createRoot } from "${join(repo, "apps/web/node_modules/react-dom/client")}";\nimport { Kb05Gallery } from ${JSON.stringify(modulePath)};\nconst params = new URLSearchParams(location.search); createRoot(document.getElementById("root")!).render(React.createElement(Kb05Gallery, { lang: params.get("lang") === "he" ? "he" : "en" }));`);
+  await writeFile(entry, `import React from "${join(repo, "apps/web/node_modules/react")}";\nimport { createRoot } from "${join(repo, "apps/web/node_modules/react-dom/client")}";\nimport { TpIconSprite } from "${join(repo, "apps/web/components/tempo/TpIcon.tsx")}";\nimport { Kb05Gallery } from ${JSON.stringify(modulePath)};\nconst params = new URLSearchParams(location.search); createRoot(document.getElementById("root")!).render(React.createElement(React.Fragment, null, React.createElement(TpIconSprite), React.createElement(Kb05Gallery, { lang: params.get("lang") === "he" ? "he" : "en" })));`);
   const result = await Bun.build({ entrypoints: [entry], target: "browser", outdir: directory, minify: false });
   expect(result.success).toBe(true);
   const assets = new Map<string, Uint8Array>();
@@ -147,7 +147,7 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
         await page.screenshot({ path: join(captureRoot, `after-${lang}-${width}-empty-dark.png`), fullPage: true });
         await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });
       }
-      await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.create") }).click();
+      await page.locator("#kb05-empty-action").click();
       const input = page.locator("#gl-name");
       await input.waitFor();
       expect(await input.evaluate((node) => node === document.activeElement)).toBe(true);
@@ -156,9 +156,26 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
       expect(await input.getAttribute("aria-describedby")).toBe("gl-name-hint");
       await input.press("Escape");
       expect(await input.count()).toBe(0);
+      expect(await page.locator("#kb05-empty-action").evaluate((node) => node === document.activeElement)).toBe(true);
+      await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.create") }).click();
+      await page.locator("#gl-name").fill(lang === "he" ? "לקרוא יותר ספרים" : "Read more books");
+      await page.locator("form button[type=submit]").click();
+      expect(await page.getByText(kb05t(lang, "kb05.gallery.saved")).count()).toBe(1);
       expect(await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.create") }).evaluate((node) => node === document.activeElement)).toBe(true);
       await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.overflow") }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.loading") }).click();
+      expect(await page.getByText(kb05t(lang, "kb05.gallery.loadingText")).count()).toBe(1);
+      await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.error") }).click();
+      await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.retry") }).click();
+      expect(await page.locator('[data-component="GoalProgressLabel"]').count()).toBe(2);
+      await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.disabled") }).click();
+      expect(await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.create") }).isDisabled()).toBe(true);
+      const lightPaper = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--tp-paper"));
+      await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
+      const darkPaper = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--tp-paper"));
+      expect(darkPaper).not.toBe(lightPaper);
+      await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });
       for (const button of await page.locator(".kb05-gallery button").all()) {
         const box = await button.boundingBox();
         if (box && await button.isVisible()) expect(box.height).toBeGreaterThanOrEqual(44);
