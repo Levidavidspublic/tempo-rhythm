@@ -337,6 +337,22 @@
     ]
   },
   {
+    "id": "KB-71",
+    "title": "Shared buttons have phone-sized targets on real screens",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/ui/button.tsx",
+      "apps/web/lib/i18n-groups/kb-71.ts",
+      "apps/web/app/v3/kb-71.css",
+      "tests/unit/kb-71.test.tsx",
+      "docs/polish/evidence/kb-71-shared-buttons-have-phone-sized-targets.md",
+      "docs/polish/evidence/kb-71-shared-buttons-have-phone-sized-targets.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",

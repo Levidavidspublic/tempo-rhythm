@@ -2,7 +2,7 @@
 
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. The separate implementation PRs below target `integration` as drafts; none is merged or deployed by this run. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
-The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more. This is **29 views across sixteen pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 is in progress. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
+The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more. This is **29 views across seventeen pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 also polishes an existing shell and adds no primary view. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
 
 | Ticket | Issue | Draft implementation PR | Mounted views / scope |
 |---|---|---|---|
@@ -21,10 +21,11 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-67 | #1169 | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | SelectedNagPhraseForm, NagSuggestionNotice; reminder phrases |
 | KB-69 | #1161 | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | ApprovalStatus, WaitingNameFeedback; approval waiting |
 | KB-70 | #1166 | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | NotificationReadFeedback; notification read actions |
+| KB-71 | #1175 | In progress; not yet a pushed PR at this snapshot | Existing shared Button phone targets at real callers; zero new primary views planned |
 | KB-73 | #1170 | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | Existing ThemeToggle touch target and bilingual action label; zero new primary views |
-| KB-74 | #1171 | In progress; not yet a pushed PR at this snapshot | Existing TempoShell mobile drawer focus; zero new primary views planned |
+| KB-74 | #1171 | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | Existing TempoShell mobile drawer focus; zero new primary views planned |
 
-All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these seventeen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
+All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these eighteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 
@@ -39,7 +40,7 @@ All these implementation assignments use Sol under AGENTS.md's mid-tier rule, in
 
 ## Needs Amit
 
-KB-02, KB-04 and KB-44 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
+[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don’t make a 4th attempt.” KB-02, KB-04 and KB-44 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
 
 Held KA persona/memory/council scopes (#1110/#1112/#1129), runtime model/cost choices, the backend `convex-arch` owner gate when dependencies are ready, search service provisioning, native Hebrew review, and release/device accessibility decisions remain with Amit. These do not block independent scoped UI work. Follow the repository's three-attempt limit on stuck tickets; do not evade it with a duplicate issue or an out-of-scope baseline/config edit.
 

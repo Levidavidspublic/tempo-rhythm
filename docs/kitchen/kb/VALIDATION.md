@@ -124,3 +124,7 @@ KB-74 (#1171) covers a source-confirmed mobile drawer keyboard/focus defect. All
 ## Exact existing contracts and sixteenth implementation draft
 
 The ten original polish tickets KB-02/03/04/05/07/08/09/10/44/45 now spell out their existing call-site function names, arguments and return shapes instead of delegating that information to source exports. These are verified integration APIs, not new backend work. KB-06 already received the same correction. Product scope, dependencies, behavior and required gates are unchanged. KB-73 now has draft PR #1173; the implementation index distinguishes sixteen pushed drafts from the 29 primary views and the still-pending KB-74. The 51-ticket documentation validator and diff whitespace check pass; no app checks are repeated for these docs-only changes.
+
+## KB-71 shared phone button targets
+
+The shared button primitive has 36/40 px variants mounted on real screens. KB-71 (#1175) now scopes a 44 px phone-target repair while preserving public/ref/asChild/form semantics and desktop sizes, with actual AdminApprovals and DayPlanPanel fixtures. All 109 open PR file lists (including complete pagination of four large PRs) and 285 open issue bodies had no competing exact-path owner; KA scopes do not overlap. It adds zero primary views. The queue now has 52 tickets: original45 plus seven batch-5 components; eighteen independent assignments. Documentation schema/scope/dependency/inventory validation passes. KB-74 is now pushed in draft PR #1174, bringing implementation drafts to seventeen.
