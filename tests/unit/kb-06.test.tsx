@@ -14,23 +14,21 @@ let origin: string;
 let temp: string;
 
 const stubs: Record<string, string> = {
-  "convex/react": `export const useQuery=()=>{const state=new URLSearchParams(location.search).get("scenario");if(state==="loading")return undefined;if(state==="missing")return [];return [{_id:"fictional-goal",title:state==="long"?"A calm home with a thoughtful place for every book and every visit from Dana and Yoni, without rushing into a decision":"A calmer home for Maya",description:state==="long"?"A smaller place close to work where evenings feel calm, guests can stay, books have room, and the choice has time to feel right.":"A smaller place near work, with room for Dana and Yoni to visit.",progressPercent:35,status:"active",createdAt:1,updatedAt:1}]};export const useMutation=()=>async patch=>{window.__kbCalls.push(patch);return null};`,
+  "convex/react": `export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});export const useQuery=ref=>{if(ref?.__kb==="profile")return {_id:"fictional-user"};const state=new URLSearchParams(location.search).get("scenario");if(state==="loading")return undefined;if(state==="missing")return [];return [{_id:"fictional-goal",title:state==="long"?"A calm home with a thoughtful place for every book and every visit from Dana and Yoni, without rushing into a decision":"A calmer home for Maya",description:state==="long"?"A smaller place close to work where evenings feel calm, guests can stay, books have room, and the choice has time to feel right.":"A smaller place near work, with room for Dana and Yoni to visit.",progressPercent:35,status:"active",createdAt:1,updatedAt:1}]};export const useMutation=()=>async patch=>{window.__kbCalls.push(patch);return null};`,
   "next/link": `import React from "${web}/node_modules/react";export default function Link({href,children,...rest}){return React.createElement("a",{href,...rest},children)}`,
-  "@/components/providers/LocaleProvider": `export function useLocale(){const he=document.documentElement.lang==="he";const en={"gd.back":"Goals","gd.titleLabel":"Goal title","gd.status":"Status","gd.why.h":"Why this matters","gl.status.active":"Active","gl.status.completed":"Completed","gl.status.archived":"Archived","gl.draftwhy":"Why this matters","gx.saveError":"Couldn't save"};const tr={"gd.back":"יעדים","gd.titleLabel":"שם היעד","gd.status":"מצב","gd.why.h":"למה זה חשוב","gl.status.active":"פעיל","gl.status.completed":"הושלם","gl.status.archived":"בארכיון","gl.draftwhy":"למה זה חשוב","gx.saveError":"לא נשמר"};return{lang:he?"he":"en",dir:he?"rtl":"ltr",t:k=>(he?tr:en)[k]??k}}`,
-  "@/components/tempo/TpIcon": `import React from "${web}/node_modules/react";export function TpIcon(){return React.createElement("span",{"aria-hidden":true},"◦")}`,
-  "@/convex/_generated/api": `export const api={goals:{list:{},update:{}}};`,
-  "@/lib/goals-projects": `export const GOAL_STATUSES=["active","completed","archived"];export const goalStatus=s=>s;export const storedGoalStatus=s=>s;`,
-  "./shared": `import React from "${web}/node_modules/react";export const useOnline=()=>new URLSearchParams(location.search).get("scenario")!=="offline";export const useSignedIn=()=>"ready";export const ScreenBoundary=({children})=>children;export const SignedOutState=()=>React.createElement("p",{},"Signed out");export const StatusBadge=({status})=>React.createElement("span",{className:"tp-status"},status);`,
+  "@/components/providers/LocaleProvider": `export function useLocale(){const he=document.documentElement.lang==="he";const en={"gd.back":"Goals","gd.titleLabel":"Goal title","gd.status":"Status","gd.why.h":"Why this matters","gl.status.active":"Active","gl.status.resting":"Resting","gl.status.done":"Done","gl.draftwhy":"Why this matters","gx.saveError":"Couldn't save"};const tr={"gd.back":"יעדים","gd.titleLabel":"שם היעד","gd.status":"מצב","gd.why.h":"למה זה חשוב","gl.status.active":"פעיל","gl.status.resting":"במנוחה","gl.status.done":"הושלם","gl.draftwhy":"למה זה חשוב","gx.saveError":"לא נשמר"};return{lang:he?"he":"en",dir:he?"rtl":"ltr",t:k=>(he?tr:en)[k]??k}}`,
+  "@/convex/_generated/api": `export const api={users:{getProfile:{__kb:"profile"}},goals:{list:{__kb:"goals"},update:{}}};`,
+  "./shared": `export{StatusBadge,ScreenBoundary,SignedOutState}from"${web}/components/goals/shared.tsx";export const useOnline=()=>new URLSearchParams(location.search).get("scenario")!=="offline";export const useSignedIn=()=>"ready";`,
 };
 
 async function makeFixture() {
   temp = mkdtempSync(join(tmpdir(), "tempo-kb06-work-"));
   symlinkSync(join(web, "node_modules"), join(temp, "node_modules"), "dir");
-  writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{GoalDetailScreen,Kb06Gallery}from"${component}";window.__kbCalls=[];const gallery=new URLSearchParams(location.search).has("gallery");createRoot(document.getElementById("root")!).render(gallery?<Kb06Gallery/>:<main><GoalDetailScreen goalId="fictional-goal"/></main>);`);
+  writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{TpIconSprite}from"${web}/components/tempo/TpIcon.tsx";import{GoalDetailScreen,Kb06Gallery}from"${component}";window.__kbCalls=[];const gallery=new URLSearchParams(location.search).has("gallery");createRoot(document.getElementById("root")!).render(<><TpIconSprite/>{gallery?<Kb06Gallery/>:<main><GoalDetailScreen goalId="fictional-goal"/></main>}</>);`);
   const result = await Bun.build({
-    entrypoints: [join(temp, "entry.tsx")], outdir: temp, target: "browser",
+    entrypoints: [join(temp, "entry.tsx")], outdir: temp, target: "browser", define: { "process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS": '"0"' },
     plugins: [{ name: "kb06-fictional-data", setup(build) {
-      build.onResolve({ filter: /^(convex\/react|next\/link|@\/components\/providers\/LocaleProvider|@\/components\/tempo\/TpIcon|@\/convex\/_generated\/api|@\/lib\/goals-projects|\.\/shared)$/ }, args => ({ path: args.path, namespace: "kb06" }));
+      build.onResolve({ filter: /^(convex\/react|next\/link|@\/components\/providers\/LocaleProvider|@\/convex\/_generated\/api|\.\/shared)$/ }, args => ({ path: args.path, namespace: "kb06" }));
       build.onLoad({ filter: /.*/, namespace: "kb06" }, args => ({ contents: stubs[args.path], loader: "tsx", resolveDir: web }));
     } }],
   });
@@ -128,7 +126,7 @@ describe.serial("KB-06 mounted goal detail and gallery", () => {
   }, 60_000);
   test("status selection keeps the existing status payload", async () => {
     const page = await open();
-    await page.locator("#gd-status").selectOption("completed");
+    await page.locator("#gd-status").selectOption("done");
     await page.waitForFunction(() => window.__kbCalls.length === 1);
     expect(await page.evaluate(() => window.__kbCalls[0])).toEqual({ goalId: "fictional-goal", status: "completed" });
     await page.close();

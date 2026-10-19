@@ -1,6 +1,6 @@
 # KB-06 goal detail evidence
 
-Source commit: `8897308` (`t/1143-kb-06`). The [contact sheet](kb-06-goal-details-show-milestones-without-crowding.jpg) compares the checked-in `GoalDetailScreen` before and after this change at 390 and 1280 px, English and Hebrew, light and dark. Every screenshot uses the actual mounted component in an isolated hydrated browser fixture with fictional Maya, Dana and Yoni data. Convex reads and writes and locale context are stubbed; no real account or backend is exercised. Labels appear only on this evidence sheet.
+Source commit: `8897308` (`t/1143-kb-06`). The [contact sheet](kb-06-goal-details-show-milestones-without-crowding.jpg) compares the checked-in `GoalDetailScreen` before and after this change at 390 and 1280 px, English and Hebrew, light and dark. Every screenshot mounts the actual component in an isolated hydrated browser fixture with fictional Maya, Dana and Yoni data. The pure goal status mapping, `StatusBadge`, `TpIcon` and `TpIconSprite` are production modules; Convex reads and writes, locale context, and the Next link are fixture stubs. The standalone CSS fixture uses local font fallback. No real account or backend is exercised. Labels appear only on this evidence sheet.
 
 The original screen showed title, status and the editable “why”, then an empty state for steps. The changed screen keeps those controls and adds the stored progress value with a labelled bar and a plain milestone-empty message. At 390 px the status control fills the available width and tested title/select targets reach 44 px. Long goal text and large text mode have no horizontal overflow. Hebrew follows RTL page direction while user text keeps `dir="auto"`. Light and dark views share the v3 tokens. Both states contain one `main` and one `h1` in the isolated mounted fixture.
 
@@ -14,7 +14,7 @@ New regression cases in `tests/unit/kb-06.test.tsx`:
 4. long goal text wraps without horizontal overflow
 5. keyboard title save keeps the existing update payload
 6. why blur keeps the existing description payload
-7. status selection keeps the existing status payload
+7. status selection maps the real `done` display state to the existing `completed` status payload
 8. Hebrew layout is RTL and user text keeps auto direction
 9. large text remains readable at phone width
 10. real progress is labelled and empty milestones are honest
