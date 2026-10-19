@@ -1,0 +1,9 @@
+# KB-44 onboarding progress and input evidence
+
+The existing `/onboarding` flow still uses its five steps, `?step=` address state, and the same backend calls and arguments. The mounted flow now shows a visible and spoken step count with native progress. Opening a later step from the address shows a resume notice that asks the person to review earlier choices; it never claims that unsaved text survived a reload. The review action locks during an in-flight save. Optional steps say they can be changed later.
+
+The [contact sheet](./kb-44-onboarding-shows-one-clear-step-and-preserves-input.jpg) will pair source-derived before views from the original checked-in `OnboardingFlow.tsx` saved before editing with the updated production component and its gallery at 390 and 1280 px in English and Hebrew, light and dark. Fixtures use fictional Maya, Dana, and Yoni data. A mocked query/mutation/router boundary makes the mounted flow inspectable without a live account; it does not prove server behavior.
+
+The hydrated browser test exercises the actual `OnboardingFlow` with its real `NameStep` and controls: Back retains a typed name, Continue moves focus to the new heading, an in-flight Finish locks review, a failed Finish stays on step 5, and review returns to step 1 after the failure. The separate interactive gallery presents empty, loading, error, disabled, long-input, resume, and pending views with the real summary and notice exports. Gallery browser checks cover phone and desktop widths, English/Hebrew direction, light/dark surfaces, reduced motion, touch targets, one heading and main, and horizontal overflow. Final screenshot results and source commit will be recorded after capture.
+
+Hebrew copy is machine-drafted for Amit's native review. Device screen-reader behavior and live-account flows remain UNKNOWN.
