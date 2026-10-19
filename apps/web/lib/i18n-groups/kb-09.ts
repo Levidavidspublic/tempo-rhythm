@@ -1,0 +1,66 @@
+/** Project detail UI. Hebrew is machine-drafted and needs Amit's native review. */
+export const en = {
+  "task.complete": "Mark done",
+  "task.reopen": "Reopen",
+  "task.completeNamed": "Mark {title} done",
+  "task.reopenNamed": "Reopen {title}",
+  "rename.pending": "Saving project name…",
+  "rename.saved": "Project name saved.",
+  "rename.error": "Couldn't save the name. Your text is still here. Try again.",
+  "firstTask": "Add a first task to keep this project name.",
+  "gallery.title": "Project details",
+  "gallery.state": "View state",
+  "gallery.default": "Tasks",
+  "gallery.empty": "Empty",
+  "gallery.loading": "Loading",
+  "gallery.error": "Error",
+  "gallery.disabled": "Disabled",
+  "gallery.overflow": "Long title",
+  "gallery.add": "Add task",
+  "gallery.cancel": "Cancel",
+  "gallery.taskLabel": "Task name",
+  "gallery.projectLabel": "Project name",
+  "gallery.initialProject": "Maya's project",
+  "gallery.initialTask": "Plan with Dana",
+  "gallery.longText": "Yoni Dana Maya ",
+  "gallery.loadingText": "Loading tasks…",
+  "gallery.emptyText": "No tasks yet. Add one when you're ready.",
+  "gallery.errorText": "Tasks didn't load. Try again.",
+  "gallery.retry": "Try again",
+} as const;
+
+export const he: Record<keyof typeof en, string> = {
+  "task.complete": "סימון כהושלמה",
+  "task.reopen": "פתיחה מחדש",
+  "task.completeNamed": "סימון {title} כהושלמה",
+  "task.reopenNamed": "פתיחה מחדש של {title}",
+  "rename.pending": "שומרים את שם הפרויקט…",
+  "rename.saved": "שם הפרויקט נשמר.",
+  "rename.error": "לא הצלחנו לשמור את השם. הטקסט עדיין כאן. אפשר לנסות שוב.",
+  "firstTask": "אפשר להוסיף משימה ראשונה כדי לשמור את שם הפרויקט.",
+  "gallery.title": "פרטי הפרויקט",
+  "gallery.state": "מצב תצוגה",
+  "gallery.default": "משימות",
+  "gallery.empty": "ריק",
+  "gallery.loading": "בטעינה",
+  "gallery.error": "שגיאה",
+  "gallery.disabled": "מושבת",
+  "gallery.overflow": "כותרת ארוכה",
+  "gallery.add": "הוספת משימה",
+  "gallery.cancel": "ביטול",
+  "gallery.taskLabel": "שם המשימה",
+  "gallery.projectLabel": "שם הפרויקט",
+  "gallery.initialProject": "הפרויקט של מאיה",
+  "gallery.initialTask": "לתכנן עם דנה",
+  "gallery.longText": "יוני דנה מאיה ",
+  "gallery.loadingText": "טוענים משימות…",
+  "gallery.emptyText": "אין משימות עדיין. אפשר להוסיף משימה כשמתאים.",
+  "gallery.errorText": "המשימות לא נטענו. אפשר לנסות שוב.",
+  "gallery.retry": "ניסיון נוסף",
+};
+
+export type Kb09Key = keyof typeof en;
+export function kb09t(lang: "en" | "he", key: Kb09Key, values?: { title?: string }): string {
+  const template: string = (lang === "he" ? he : en)[key];
+  return values?.title === undefined ? template : template.replace("{title}", values.title);
+}
