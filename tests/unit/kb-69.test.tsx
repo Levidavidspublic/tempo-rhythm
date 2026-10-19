@@ -76,9 +76,13 @@ async function buildFixture() {
   if (!js) throw new Error("KB-69 browser fixture did not bundle JS");
   const bundleCss = (await Promise.all(result.outputs.filter(file => file.path.endsWith(".css")).map(file => file.text()))).join("\n");
   const baseCss = (await Promise.all(["docs/design/v3/tokens.css", "apps/web/app/tempo.css"].map(file => readFile(join(root, file), "utf8")))).join("\n").replace(/@import url\([^;]+;\s*/g, "");
-  // Local source snapshot is captured before editing; CI tests only the checked-in current source.
+  // Opt in to the local pre-edit snapshot only for evidence capture. A second Bun.build inside
+  // the parallel full suite can interfere with other test files' module resolution.
   const snapshot = join(root, "work/kb69-before-source.tsx");
-  if (existsSync(snapshot)) {
+  if (process.env.KB69_CAPTURE_BEFORE === "1" && !existsSync(snapshot)) {
+    throw new Error("KB-69 before capture needs the saved pre-edit source snapshot");
+  }
+  if (process.env.KB69_CAPTURE_BEFORE === "1") {
     await writeFile(join(temp, "before-entry.tsx"), `import React from "react"; import { createRoot } from "react-dom/client"; import { LocaleProvider } from "@/components/providers/LocaleProvider"; import { WaitingForApproval } from ${JSON.stringify(snapshot)}; createRoot(document.getElementById("app")).render(<LocaleProvider><WaitingForApproval email="maya@example.com" revoked={new URLSearchParams(location.search).get("revoked") === "1"} /></LocaleProvider>);`);
     const before = await buildEntry(join(temp, "before-entry.tsx"));
     if (!before.success) throw new Error(before.logs.map(String).join("\n"));
@@ -269,7 +273,7 @@ describe.serial("KB-69 approval waiting", () => {
       await page.close();
     }
   });
-  test("browser evidence covers source-derived before/current, widths, locales and themes", async () => {
+  test("browser evidence covers current and opt-in source-derived before, widths, locales and themes", async () => {
     const shots = join(root, "work/kb69-captures");
     await mkdir(shots, { recursive: true });
     for (const width of [390, 1280]) for (const lang of ["en", "he"] as const) for (const theme of ["light", "dark"] as const) {
