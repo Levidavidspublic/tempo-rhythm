@@ -22,11 +22,17 @@ on:
         type: string
         required: false
         default: ""
+      concurrency_group:
+        description: Own concurrency group for this call. release-go.yml passes one so its candidate scans and release.yml's gate scans never cancel each other. Empty = security-<event>-<ref>, as before.
+        type: string
+        required: false
+        default: ""
 
 concurrency:
   # event_name keeps release.yml's call (event workflow_dispatch, ref integration) from cancelling, or being
-  # cancelled by, the push run on integration.
-  group: security-${{ github.event_name }}-${{ github.ref }}
+  # cancelled by, the push run on integration. inputs is empty for every event but workflow_call, so every
+  # existing run keeps security-<event>-<ref>; only a caller that passes concurrency_group gets its own group.
+  group: ${{ inputs.concurrency_group || format('security-{0}-{1}', github.event_name, github.ref) }}
   cancel-in-progress: true
 
 permissions:
