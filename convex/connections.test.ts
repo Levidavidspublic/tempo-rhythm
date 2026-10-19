@@ -341,6 +341,7 @@ describe("the contract", () => {
       "consumePending",
       "stageTokens",
       "confirmStaged",
+      "expireConfirmNonce",
       "clientRowOf",
       "secretsForCall",
       "reserveCall",
@@ -975,18 +976,58 @@ describe("M2: new tokens belong to nobody until the person who started the conne
     expect(consoleLines.some((line) => line.includes(nonce))).toBe(false);
   });
 
-  test("the same person confirms: connected, the nonce is spent, and a second use is expired", async () => {
+  test("the same person confirms: connected; the same nonce again (a lost reply) is connected again and changes nothing", async () => {
     const world = makeWorld();
     const executor = fakeExecutor();
     const nonce = await stage(world, executor);
     expect(await confirm(world, executor, nonce)).toEqual({ status: "connected" });
     const [row] = world.rows("connections");
     expect(row).toMatchObject({ status: "connected" });
-    expect(row?.confirmNonceHash).toBeUndefined();
     expect((await view(world)).status).toBe("connected");
-    expect(await confirm(world, executor, nonce)).toEqual({ status: "expired" });
-    expect(world.rows("connections")[0]?.status).toBe("connected");
+    // The hash (never the nonce) stays only until the nonce's own expiry, and a clear is scheduled.
+    expect(row?.confirmNonceHash).toBe(createHash("sha256").update(nonce).digest("hex"));
+    expect(world.dump()).not.toContain(nonce);
+    expect(world.scheduled).toContainEqual({
+      when: "at",
+      ms: (row?.confirmExpiresAt as number) + 1_000,
+      name: "connections:expireConfirmNonce",
+      args: { connectionId: row?._id },
+    });
+
+    // Twice more: the same answer, no second row, nothing retired or revoked.
+    expect(await confirm(world, executor, nonce)).toEqual({ status: "connected" });
+    expect(await confirm(world, executor, nonce)).toEqual({ status: "connected" });
+    expect(world.rows("connections")).toHaveLength(1);
+    expect(world.rows("connectionSecrets")).toHaveLength(1);
+    expect(world.row(row?._id as string)).toMatchObject({ status: "connected", connectedAt: row?.connectedAt });
     expect(executor.revoked).toEqual([]);
+
+    // Someone else holding the nonce gets nothing and breaks nothing.
+    expect(await confirm(world, executor, nonce, B)).toEqual({ status: "expired" });
+    expect(world.row(row?._id as string)?.status).toBe("connected");
+    expect(executor.revoked).toEqual([]);
+
+    // Past the nonce's ten minutes a repeat is expired (still no change), and the clear drops the hash.
+    await world.db.patch(row?._id as string, { confirmExpiresAt: Date.now() - 1 });
+    expect(await confirm(world, executor, nonce)).toEqual({ status: "expired" });
+    expect(await run(connections.expireConfirmNonce, world.as(null), { connectionId: row?._id })).toBeNull();
+    expect(world.row(row?._id as string)?.confirmNonceHash).toBeUndefined();
+    expect(world.row(row?._id as string)?.confirmExpiresAt).toBeUndefined();
+    expect(world.row(row?._id as string)?.status).toBe("connected");
+    expect(await confirm(world, executor, nonce)).toEqual({ status: "expired" });
+    expect(executor.revoked).toEqual([]);
+  });
+
+  test("a repeated confirm after a reconnect revokes the replaced tokens once and keeps the new connection", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor();
+    await connectFully(world, executor);
+    const { nonce } = await connectFully(world, executor);
+    const live = liveConnectionRow(world);
+    expect(await confirm(world, executor, nonce)).toEqual({ status: "connected" });
+    expect(executor.revoked.map((r) => r.token)).toEqual([SECRETS.refresh1, SECRETS.access1]);
+    expect(liveConnectionRow(world)?._id).toBe(live?._id);
+    expect(world.rows("connections").filter((r) => r.deletedAt === undefined)).toHaveLength(1);
   });
 
   test("another person's confirm fails: the tokens are revoked at Executor and scrubbed, and nobody gets them", async () => {
@@ -1150,6 +1191,184 @@ describe("m1–m4: limits, a forgotten client, and tokens Tempo stops holding", 
     expect(executor.revoked.map((r) => r.token)).toEqual([SECRETS.refresh1, SECRETS.access1]);
     expect(world.rows("connections")).toHaveLength(0);
     expect(world.rows("connectionSecrets")).toHaveLength(0);
+  });
+});
+
+describe("switch-on hardening: a disconnect cancels attempts in flight", () => {
+  const limitsOf = (world: World, userId = A) => world.rows("connectionLimits").find((r) => r.userId === userId);
+
+  test("every disconnect moves the person's cancellation point, even with nothing live", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor();
+    await connections.disconnectFlow(world.actionAs(A), deps(executor));
+    expect(limitsOf(world)?.disconnectGeneration).toBe(1);
+    await connections.disconnectFlow(world.actionAs(A), deps(executor));
+    expect(limitsOf(world)?.disconnectGeneration).toBe(2);
+    expect(world.rows("connectionLimits")).toHaveLength(1);
+    // A connect started after it carries the new number and works end to end.
+    await connectFully(world, executor);
+    expect(world.rows("oauthPending").at(-1)?.startGeneration).toBe(2);
+    expect(liveConnectionRow(world)).toMatchObject({ status: "connected", startGeneration: 2 });
+  });
+
+  test("a disconnect between the callback's spent attempt and staging: refused, revoked, nothing to confirm", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor();
+    const { state } = await startConnect(world, executor);
+    // The person disconnects (another tab) while Executor answers the code exchange.
+    const racing: connections.ConnectionDeps = {
+      ...deps(executor),
+      fetch: async (url, init) => {
+        const response = await executor.fetch(url, init);
+        if (url === FAKE.token) await connections.disconnectFlow(world.actionAs(A), deps(executor));
+        return response;
+      },
+    };
+    const params = new URLSearchParams({ code: SECRETS.code, state, iss: FAKE.issuer });
+    const response = await connections.handleExecutorCallback(
+      world.actionAs(null),
+      new Request(`${REDIRECT_URI}?${params}`),
+      racing,
+    );
+    expect(response.headers.get("Location")).toBe(`${SITE}/settings/integrations?executor=error`);
+    expect(confirmNonce(response)).toBeNull();
+    expect(executor.revoked).toEqual([
+      { token: SECRETS.refresh1, hint: "refresh_token" },
+      { token: SECRETS.access1, hint: "access_token" },
+    ]);
+    expect(world.rows("connections")).toHaveLength(0);
+    expect(world.rows("connectionSecrets")).toHaveLength(0);
+    expect((await view(world)).status).toBe("not_connected");
+    expectNoSecrets([response.headers.get("Location"), world.dump()]);
+  });
+
+  test("a staged connection a disconnect did not retire is still never confirmed: expired, and revoked", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor();
+    const { state } = await startConnect(world, executor);
+    const response = await callback(world, executor, { code: SECRETS.code, state, iss: FAKE.issuer });
+    const nonce = confirmNonce(response) as string;
+    const staged = world.rows("connections")[0];
+    // The cancellation point moved without the staged row being retired.
+    await world.db.patch(limitsOf(world)?._id as string, { disconnectGeneration: 1 });
+    expect(await confirm(world, executor, nonce)).toEqual({ status: "expired" });
+    expect(world.row(staged?._id as string)).toMatchObject({ status: "disconnected", deletedAt: expect.any(Number) });
+    expect(executor.revoked.map((r) => r.token)).toEqual([SECRETS.refresh1, SECRETS.access1]);
+    expect((await view(world)).status).toBe("not_connected");
+  });
+
+  test("an attempt that started before a disconnect exchanges no code at the callback", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor();
+    const { state } = await startConnect(world, executor);
+    await world.db.patch(limitsOf(world)?._id as string, { disconnectGeneration: 1 });
+    const response = await callback(world, executor, { code: SECRETS.code, state, iss: FAKE.issuer });
+    expect(response.headers.get("Location")).toBe(`${SITE}/settings/integrations?executor=expired`);
+    expect(executor.calls.some((c) => c.url === FAKE.token)).toBe(false);
+    expect(world.rows("connections")).toHaveLength(0);
+  });
+});
+
+describe("switch-on hardening: new tokens Tempo could not keep are revoked", () => {
+  /** An HTTP-action ctx whose `stageTokens` write fails. */
+  function stagingFails(world: World): ActionCtx {
+    const base = world.actionAs(null);
+    return {
+      runQuery: base.runQuery,
+      runMutation: (ref: unknown, args: unknown) =>
+        getFunctionName(ref as never) === "connections:stageTokens"
+          ? Promise.reject(new Error("the write failed"))
+          : base.runMutation(ref as never, args as never),
+    } as unknown as ActionCtx;
+  }
+
+  async function failedStaging(world: World, executor: FakeExecutor) {
+    const { state } = await startConnect(world, executor);
+    const params = new URLSearchParams({ code: SECRETS.code, state, iss: FAKE.issuer });
+    return connections.handleExecutorCallback(stagingFails(world), new Request(`${REDIRECT_URI}?${params}`), deps(executor));
+  }
+
+  test("staging that throws after a good exchange revokes exactly the new tokens, once each; no token in logs or returns", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor();
+    const response = await failedStaging(world, executor);
+    expect(response.headers.get("Location")).toBe(`${SITE}/settings/integrations?executor=error`);
+    const revokeCalls = executor.calls.filter((c) => c.url === FAKE.revoke);
+    expect(revokeCalls).toHaveLength(2);
+    expect(executor.revoked).toEqual([
+      { token: SECRETS.refresh1, hint: "refresh_token" },
+      { token: SECRETS.access1, hint: "access_token" },
+    ]);
+    expect(world.rows("connections")).toHaveLength(0);
+    expect(consoleLines.at(-1)).toBe("connections.callback: could not finish (Error)");
+    expectNoSecrets([response.headers.get("Location"), response.status, world.dump()]);
+  });
+
+  test("without a revocation endpoint a staging failure sends nothing and logs the kind only", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor({ revocation: false });
+    const response = await failedStaging(world, executor);
+    expect(response.headers.get("Location")).toBe(`${SITE}/settings/integrations?executor=error`);
+    expect(executor.calls.some((c) => c.url === FAKE.revoke)).toBe(false);
+    expect(consoleLines).toContain(
+      "connections: new access and refresh tokens were not kept; Executor offers no revocation",
+    );
+    expectNoSecrets([response.headers.get("Location"), world.dump()]);
+  });
+
+  test("a refresh whose tokens can't be stored (lease lost) revokes those new tokens and keeps the stored ones", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor({ expiresIn: 30 });
+    await connectFully(world, executor);
+    const connection = liveConnectionRow(world);
+    const conversationId = await seedConversation(world);
+    // Another refresh takes the lease while this one waits for Executor: storeRefreshed says false.
+    const racing: connections.ConnectionDeps = {
+      ...deps(executor),
+      fetch: async (url, init) => {
+        const response = await executor.fetch(url, init);
+        if (url === FAKE.token && String(init?.body).includes("grant_type=refresh_token")) {
+          await world.db.patch(connection?._id as string, { refreshLeaseToken: "another-refresh" });
+        }
+        return response;
+      },
+    };
+    const outcome = await coach.runExecutorLookup(world.actionAs(A), { conversationId, query: "my calendar" }, racing);
+    expect(outcome).toBe("busy");
+    expect(executor.revoked).toEqual([
+      { token: SECRETS.refresh2, hint: "refresh_token" },
+      { token: SECRETS.access2, hint: "access_token" },
+    ]);
+    expect(executor.isValid(SECRETS.access2)).toBe(false);
+    // The stored ciphertexts are the ones from the connect, untouched.
+    expect(executor.mcpCalls()).toHaveLength(0);
+    expectNoSecrets([outcome, world.dump()]);
+  });
+
+  test("a refresh that lands after a disconnect retired the connection revokes the new tokens too", async () => {
+    const world = makeWorld();
+    const executor = fakeExecutor({ expiresIn: 30 });
+    await connectFully(world, executor);
+    const conversationId = await seedConversation(world);
+    const racing: connections.ConnectionDeps = {
+      ...deps(executor),
+      fetch: async (url, init) => {
+        const response = await executor.fetch(url, init);
+        if (url === FAKE.token && String(init?.body).includes("grant_type=refresh_token")) {
+          await connections.disconnectFlow(world.actionAs(A), deps(executor));
+        }
+        return response;
+      },
+    };
+    expect(await coach.runExecutorLookup(world.actionAs(A), { conversationId, query: "my calendar" }, racing)).toBe("busy");
+    // The disconnect revoked what it held; the refresh's new pair is revoked as well.
+    expect(executor.revoked.map((r) => r.token)).toEqual([
+      SECRETS.refresh1,
+      SECRETS.access1,
+      SECRETS.refresh2,
+      SECRETS.access2,
+    ]);
+    expect(liveConnectionRow(world)).toBeUndefined();
   });
 });
 

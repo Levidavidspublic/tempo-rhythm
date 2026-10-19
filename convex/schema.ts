@@ -973,9 +973,18 @@ export default defineSchema({
     connectedAt: v.number(),
     lastUsedAt: v.optional(v.number()),
     lastErrorAt: v.optional(v.number()),
-    /** `pending_confirm` only: SHA-256 hex of the one-time confirm nonce. Cleared once used. */
+    /**
+     * SHA-256 hex of the one-time confirm nonce. Set on `pending_confirm`; kept after the confirm
+     * only until `confirmExpiresAt` (never longer), so a repeated confirm whose reply was lost gets
+     * the same answer; then cleared (`expireConfirmNonce`), and cleared at once on retirement.
+     */
     confirmNonceHash: v.optional(v.string()),
     confirmExpiresAt: v.optional(v.number()),
+    /**
+     * The person's `connectionLimits.disconnectGeneration` when the connect attempt that made this
+     * row started (missing reads as 0). A row from before the latest disconnect is never confirmed.
+     */
+    startGeneration: v.optional(v.number()),
     refreshLeaseUntil: v.optional(v.number()),
     refreshLeaseToken: v.optional(v.string()),
     /** Set when a disconnect or account deletion finishes: whether Executor confirmed the revoke. */
@@ -994,6 +1003,8 @@ export default defineSchema({
    * TEMPO-B07-07 (#989) — one row per person: the fixed-window counters for Executor connect
    * attempts and lookups. Per person, not per connection, so disconnecting and reconnecting does
    * not reset them. Read even when tombstoned, so a restored account does not get a fresh window.
+   * `disconnectGeneration` is the person's cancellation point: every disconnect adds one, and a
+   * connect attempt that started under a lower number is never staged or confirmed.
    */
   connectionLimits: defineTable({
     userId: v.id("users"),
@@ -1001,6 +1012,8 @@ export default defineSchema({
     connectWindowCount: v.optional(v.number()),
     callWindowStartMs: v.optional(v.number()),
     callWindowCount: v.optional(v.number()),
+    /** How many disconnects the person has made (missing reads as 0). Only ever goes up. */
+    disconnectGeneration: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
@@ -1073,6 +1086,8 @@ export default defineSchema({
     returnTo: v.union(v.literal("settings"), v.literal("coach")),
     expiresAt: v.number(),
     usedAt: v.optional(v.number()),
+    /** The person's `connectionLimits.disconnectGeneration` when this attempt started (missing: 0). */
+    startGeneration: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),

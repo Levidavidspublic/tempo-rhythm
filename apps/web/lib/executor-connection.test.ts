@@ -14,6 +14,7 @@ import {
   lookupErrorOutcome,
   lookupOutcome,
   readExecutorReturn,
+  recoverConfirm,
   returnNotice,
   safeAuthorizationUrl,
   toolCountKey,
@@ -215,6 +216,47 @@ describe("notices", () => {
   test("disconnect says whether Executor revoked too", () => {
     expect(disconnectNotice(true).text).toBe("exec.disconnected");
     expect(disconnectNotice(false).text).toBe("exec.disconnectedHere");
+  });
+});
+
+describe("recoverConfirm: a confirm whose reply never came", () => {
+  const connecting = { status: "connecting", enabled: true } as const;
+  const connectedAt = (ms: number) => ({ status: "connected", enabled: true, connectedAt: ms }) as const;
+
+  test("the live status reads a new connection: the confirm landed, say connected", () => {
+    expect(recoverConfirm(connecting, connectedAt(2_000), false)).toBe("connected");
+    // Also after the one Try again.
+    expect(recoverConfirm(connecting, connectedAt(2_000), true)).toBe("connected");
+    // A reconnect over an older connection: only a different connectedAt counts.
+    expect(recoverConfirm(connectedAt(1_000), connectedAt(2_000), false)).toBe("connected");
+  });
+  test("the staged tokens may still be waiting: offer one Try again with the same nonce", () => {
+    expect(recoverConfirm(connecting, connecting, false)).toBe("retry");
+    expect(recoverConfirm(connecting, undefined, false)).toBe("retry");
+    expect(recoverConfirm(undefined, null, false)).toBe("retry");
+    // The older connection still shows and hides the staged one.
+    expect(recoverConfirm(connectedAt(1_000), connectedAt(1_000), false)).toBe("retry");
+  });
+  test("a baseline that hadn't loaded is never read as success (Codex P2 on #1089)", () => {
+    // Reconnect over an older connection; the confirm went out before the status loaded, then
+    // rejected; the status reads the unchanged older connection. Unknown, not connected.
+    const older = connectedAt(1_000);
+    expect(recoverConfirm(undefined, older, false)).toBe("retry");
+    expect(recoverConfirm(null, older, false)).toBe("retry");
+    expect(recoverConfirm(undefined, older, true)).toBe("final");
+    // Even a connection that looks new is unknown without a baseline: the Try again (an
+    // idempotent confirm) says what really happened.
+    expect(recoverConfirm(undefined, connectedAt(2_000), false)).toBe("retry");
+    expect(recoverConfirm(undefined, connectedAt(2_000), true)).toBe("final");
+  });
+  test("nothing left to confirm, or the Try again was used: the error line, no button", () => {
+    for (const status of ["not_connected", "needs_reauth", "unavailable"] as const) {
+      expect(recoverConfirm(connecting, { status, enabled: true }, false)).toBe("final");
+    }
+    expect(recoverConfirm(connecting, { status: "unavailable", enabled: false }, false)).toBe("final");
+    expect(recoverConfirm(connecting, connecting, true)).toBe("final");
+    expect(recoverConfirm(connectedAt(1_000), connectedAt(1_000), true)).toBe("final");
+    expect(recoverConfirm(connecting, undefined, true)).toBe("final");
   });
 });
 

@@ -69,11 +69,15 @@ import { resolveUserFromIdentity } from "./lib/requireUser";
  *   encrypted tokens on a `pending_confirm` connection, then sends the browser to the app with
  *   `?executor=confirm&n=<one-time nonce>`. Nothing can use those tokens yet.
  * - `confirmExecutorConnect({ nonce })` (the signed-in person): the tokens become theirs only when
- *   they are the person who started the connect, still approved, within 10 minutes; otherwise
- *   the tokens are revoked at Executor and scrubbed. This ties the callback to the person: a link
- *   someone else started can't put your Executor account on their Tempo account.
- * - `disconnect({ provider: "executor" })` (the signed-in owner, approved or not): revokes at
- *   Executor when it offers revocation, then scrubs every ciphertext, whatever the revoke said.
+ *   they are the person who started the connect, still approved, within 10 minutes, and the
+ *   attempt started after their latest disconnect; otherwise the tokens are revoked at Executor
+ *   and scrubbed. This ties the callback to the person: a link someone else started can't put
+ *   your Executor account on their Tempo account. Safe to repeat: the same nonce again (a reply
+ *   that got lost) answers "connected" within the nonce's 10 minutes and changes nothing.
+ * - `disconnect({ provider: "executor" })` (the signed-in owner, approved or not): moves the
+ *   person's cancellation point (`connectionLimits.disconnectGeneration`), so a connect attempt
+ *   already past its callback can't stage or confirm afterwards; revokes at Executor when it
+ *   offers revocation, then scrubs every ciphertext, whatever the revoke said.
  * - The coach's "Look in my apps" lookup is `coach.lookUpInExecutor`; its Executor half is
  *   `searchExecutorFor` here.
  *
@@ -82,7 +86,8 @@ import { resolveUserFromIdentity } from "./lib/requireUser";
  * line or an error message. The only secret-like value that leaves Convex is the confirm nonce,
  * once, in the redirect to the browser that finished the OAuth step. Log lines name an error's
  * class and kind only. Tokens Tempo stops holding (replaced, refused, dropped) are revoked at
- * Executor first, best effort.
+ * Executor first, best effort; so are new tokens it never managed to keep (a staging or a
+ * refresh write that failed or was refused).
  *
  * When `TEMPO_EXECUTOR_ENABLED` is not `true`, or `EXECUTOR_MCP_URL`, `TEMPO_CONNECTIONS_KEY`,
  * `SITE_URL` or `CONVEX_SITE_URL` is missing or malformed, Executor is `unavailable`: no connect
@@ -235,6 +240,36 @@ async function revokeAtProvider(
     all = all && ok;
   }
   return all;
+}
+
+/**
+ * Newly issued tokens that never reached Tempo's keeping (their staging or refresh write failed
+ * or was refused): nothing else would ever hand them back, so revoke those exact tokens at
+ * Executor, best effort. Without a public revocation endpoint nothing is sent and the log line
+ * names the kind of tokens only. Never throws, so the caller's own error path runs next.
+ */
+async function revokeUnkept(
+  fetchImpl: FetchLike,
+  revocationEndpoint: string | undefined,
+  client: ClientCredentials,
+  issued: { accessToken: string; refreshToken?: string },
+): Promise<void> {
+  if (!publicHttpsUrl(revocationEndpoint)) {
+    console.error(
+      issued.refreshToken
+        ? "connections: new access and refresh tokens were not kept; Executor offers no revocation"
+        : "connections: a new access token was not kept; Executor offers no revocation",
+    );
+    return;
+  }
+  try {
+    await revokeAtProvider(fetchImpl, revocationEndpoint, client, [
+      { token: issued.refreshToken, hint: "refresh_token" },
+      { token: issued.accessToken, hint: "access_token" },
+    ]);
+  } catch (error) {
+    console.error(`connections: could not revoke tokens that were not kept (${connectionErrorKind(error)})`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -395,6 +430,29 @@ async function countInWindow(
   return true;
 }
 
+/**
+ * The person's cancellation point: how many disconnects they have made (`connectionLimits`, read
+ * even when tombstoned; missing reads as 0). A connect attempt carries the number it started
+ * under through its pending row and its staged connection; one below this is never staged or
+ * confirmed, so a disconnect also cancels a callback that is already past its pending row.
+ */
+async function disconnectGeneration(ctx: Reader, userId: Id<"users">): Promise<number> {
+  const row = await ctx.db
+    .query("connectionLimits")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .first();
+  return row?.disconnectGeneration ?? 0;
+}
+
+/** True when a disconnect came after the attempt that started under `startGeneration`. */
+async function cancelledByDisconnect(
+  ctx: Reader,
+  userId: Id<"users">,
+  startGeneration: number | undefined,
+): Promise<boolean> {
+  return (startGeneration ?? 0) < (await disconnectGeneration(ctx, userId));
+}
+
 // ---------------------------------------------------------------------------
 // Connect
 // ---------------------------------------------------------------------------
@@ -402,18 +460,21 @@ async function countInWindow(
 /**
  * Counts one connect attempt for the approved caller before anything is fetched, so failing
  * attempts (discovery, registration) are limited too. "rate_limited" past
- * `CONNECT_ATTEMPTS_PER_HOUR` in the hour.
+ * `CONNECT_ATTEMPTS_PER_HOUR` in the hour. "ok" carries the person's disconnect generation now:
+ * the attempt's start, which its pending row and staged connection keep.
  */
 export const reserveConnectAttempt = internalMutation({
   args: {},
   returns: v.union(
-    v.object({ status: v.literal("ok"), userId: v.id("users") }),
+    v.object({ status: v.literal("ok"), userId: v.id("users"), startGeneration: v.number() }),
     v.object({ status: v.literal("rate_limited") }),
   ),
   handler: async (ctx) => {
     const user = await requireApprovedUser(ctx);
     const ok = await countInWindow(ctx, user._id, "connect", CONNECT_ATTEMPTS_PER_HOUR, Date.now());
-    return ok ? { status: "ok" as const, userId: user._id } : { status: "rate_limited" as const };
+    return ok
+      ? { status: "ok" as const, userId: user._id, startGeneration: await disconnectGeneration(ctx, user._id) }
+      : { status: "rate_limited" as const };
   },
 });
 
@@ -512,6 +573,7 @@ export const createPending = internalMutation({
     redirectUri: v.string(),
     clientRowId: v.id("oauthClients"),
     returnTo: returnToValidator,
+    startGeneration: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -528,6 +590,7 @@ export const createPending = internalMutation({
       redirectUri: args.redirectUri,
       clientRowId: args.clientRowId,
       returnTo: args.returnTo,
+      startGeneration: args.startGeneration,
       expiresAt,
       createdAt: now,
       updatedAt: now,
@@ -631,6 +694,7 @@ export async function startExecutorConnectFlow(
       redirectUri: config.redirectUri,
       clientRowId,
       returnTo: args.returnTo ?? "settings",
+      startGeneration: attempt.startGeneration,
     });
     const scope = chooseScope(resource.resourceScope, metadata);
     return {
@@ -674,8 +738,8 @@ async function cancelPending(ctx: MutationCtx, userId: Id<"users">, now: number)
  * Doc §2.4 steps 1–2: finds the attempt by the SHA-256 of `state` and spends it in this same
  * transaction, before any network call: marks it used, scrubs the verifier from the row and
  * tombstones it. Returns what the code exchange needs (the verifier still encrypted). A missing,
- * used or expired attempt is "expired"; a deleted or no longer approved account, or a missing
- * client, is "error" (and no code is exchanged).
+ * used or expired attempt, or one a later disconnect cancelled, is "expired"; a deleted or no
+ * longer approved account, or a missing client, is "error" (and no code is exchanged).
  */
 export const consumePending = internalMutation({
   args: { stateHash: v.string() },
@@ -693,6 +757,7 @@ export const consumePending = internalMutation({
       codeVerifierCipher: v.string(),
       clientRowId: v.id("oauthClients"),
       client: clientMaterialValidator,
+      startGeneration: v.number(),
     }),
   ),
   handler: async (ctx, args) => {
@@ -718,6 +783,10 @@ export const consumePending = internalMutation({
     if (!user || isInactiveAccount(user) || !isApproved(user) || !client || client.deletedAt !== undefined) {
       return { status: "error" as const, returnTo: row.returnTo };
     }
+    if (await cancelledByDisconnect(ctx, row.userId, row.startGeneration)) {
+      // The person disconnected after this attempt started: no code is exchanged for it.
+      return { status: "expired" as const, returnTo: row.returnTo };
+    }
     return {
       status: "ok" as const,
       userId: row.userId,
@@ -729,6 +798,7 @@ export const consumePending = internalMutation({
       codeVerifierCipher: row.codeVerifierCipher,
       clientRowId: row.clientRowId,
       client: clientMaterial(client),
+      startGeneration: row.startGeneration ?? 0,
     };
   },
 });
@@ -738,7 +808,8 @@ export const consumePending = internalMutation({
  * new `pending_confirm` connection that nothing can use, with the SHA-256 of a one-time confirm
  * nonce and a 10-minute life. The account's current connection is untouched until the confirm.
  * Cancels any other open connect attempt and schedules the sweep for the nonce's expiry. False
- * when the account is gone, inactive or no longer approved.
+ * when the account is gone, inactive or no longer approved, or when the person disconnected after
+ * this attempt started (the caller then revokes the tokens).
  */
 export const stageTokens = internalMutation({
   args: {
@@ -752,11 +823,15 @@ export const stageTokens = internalMutation({
     accessTokenExpiresAt: v.optional(v.number()),
     keyVersion: v.number(),
     confirmNonceHash: v.string(),
+    startGeneration: v.number(),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user || isInactiveAccount(user) || !isApproved(user)) {
+      return false;
+    }
+    if (await cancelledByDisconnect(ctx, args.userId, args.startGeneration)) {
       return false;
     }
     const now = Date.now();
@@ -772,6 +847,7 @@ export const stageTokens = internalMutation({
       connectedAt: now,
       confirmNonceHash: args.confirmNonceHash,
       confirmExpiresAt,
+      startGeneration: args.startGeneration,
       createdAt: now,
       updatedAt: now,
     });
@@ -872,29 +948,33 @@ export async function handleExecutorCallback(
       }
       throw error;
     }
-    // 7. Encrypt and stage them until the person confirms.
-    const nonce = randomBase64Url(32);
-    const now = deps.now();
-    const staged = await ctx.runMutation(internal.connections.stageTokens, {
-      userId: pending.userId,
-      issuer: pending.issuer,
-      mcpUrl: pending.resource,
-      clientRowId: pending.clientRowId,
-      ...(tokens.scope ? { scope: tokens.scope } : {}),
-      accessTokenCipher: await encryptSecret(key, tokens.accessToken, tokenAad(pending.userId, "accessToken")),
-      ...(tokens.refreshToken
-        ? { refreshTokenCipher: await encryptSecret(key, tokens.refreshToken, tokenAad(pending.userId, "refreshToken")) }
-        : {}),
-      ...(tokens.expiresIn !== undefined ? { accessTokenExpiresAt: now + tokens.expiresIn * 1000 } : {}),
-      keyVersion: CONNECTIONS_KEY_VERSION,
-      confirmNonceHash: await sha256Hex(nonce),
-    });
-    if (!staged) {
-      // Nobody may hold these tokens now: hand them back to Executor at once (best effort).
-      await revokeAtProvider(deps.fetch, pending.client.revocationEndpoint, client, [
-        { token: tokens.refreshToken, hint: "refresh_token" },
-        { token: tokens.accessToken, hint: "access_token" },
-      ]);
+    // 7. Encrypt and stage them until the person confirms. Tokens that were not staged (the
+    // encryption or the write threw, or the account or a disconnect refused them) belong to
+    // nobody: hand them back to Executor at once (best effort), then take the error path.
+    let nonce: string | null = null;
+    try {
+      const candidate = randomBase64Url(32);
+      const now = deps.now();
+      const staged = await ctx.runMutation(internal.connections.stageTokens, {
+        userId: pending.userId,
+        issuer: pending.issuer,
+        mcpUrl: pending.resource,
+        clientRowId: pending.clientRowId,
+        ...(tokens.scope ? { scope: tokens.scope } : {}),
+        accessTokenCipher: await encryptSecret(key, tokens.accessToken, tokenAad(pending.userId, "accessToken")),
+        ...(tokens.refreshToken
+          ? { refreshTokenCipher: await encryptSecret(key, tokens.refreshToken, tokenAad(pending.userId, "refreshToken")) }
+          : {}),
+        ...(tokens.expiresIn !== undefined ? { accessTokenExpiresAt: now + tokens.expiresIn * 1000 } : {}),
+        keyVersion: CONNECTIONS_KEY_VERSION,
+        confirmNonceHash: await sha256Hex(candidate),
+        startGeneration: pending.startGeneration,
+      });
+      if (staged) nonce = candidate;
+    } finally {
+      if (!nonce) await revokeUnkept(deps.fetch, pending.client.revocationEndpoint, client, tokens);
+    }
+    if (!nonce) {
       return back("error");
     }
     return redirect(pending.returnTo, "confirm", nonce);
@@ -928,12 +1008,18 @@ async function retireConnection(ctx: MutationCtx, row: Doc<"connections">, now: 
 }
 
 /**
- * The confirm (M2 of the #989 review). Finds the staged connection by the nonce's hash and spends
- * the nonce whatever happens. "connected" only when the signed-in person started this connect,
- * is still active and approved, and the nonce is under 10 minutes old; their previous connection
- * (and any other staged one) is then retired for revoking. Otherwise the staged tokens are
- * retired: "expired" (unknown, used or late nonce), "mismatch" (another person), "error" (the
- * owner is no longer active or approved). `revoke` lists the rows the action revokes and scrubs.
+ * The confirm (M2 of the #989 review). Finds the staged connection by the nonce's hash.
+ * "connected" only when the signed-in person started this connect, is still active and approved,
+ * the nonce is under 10 minutes old, and no disconnect came after the attempt started; their
+ * previous connection (and any other staged one) is then retired for revoking. Otherwise the
+ * staged tokens are retired: "expired" (unknown, late or cancelled by a disconnect), "mismatch"
+ * (another person), "error" (the owner is no longer active or approved). `revoke` lists the rows
+ * the action revokes and scrubs.
+ *
+ * Idempotent: a confirmed row keeps the nonce's hash until the nonce's own `confirmExpiresAt`
+ * (never longer; `expireConfirmNonce` clears it then), so the same nonce again from its owner (a
+ * retry after a lost reply) answers "connected" and changes nothing. From anyone else, or after
+ * that time, it is "expired" and still changes nothing.
  */
 export const confirmStaged = internalMutation({
   args: { nonceHash: v.string() },
@@ -944,10 +1030,15 @@ export const confirmStaged = internalMutation({
       .query("connections")
       .withIndex("by_confirmNonceHash", (q) => q.eq("confirmNonceHash", args.nonceHash))
       .first();
-    if (!row || row.deletedAt !== undefined || row.status !== "pending_confirm") {
+    if (!row || row.deletedAt !== undefined) {
       return { status: "expired" as const, revoke: [] };
     }
     const now = Date.now();
+    if (row.status !== "pending_confirm") {
+      // Only a live row this nonce already confirmed still carries its hash: a repeated confirm.
+      const repeat = row.userId === user._id && (row.confirmExpiresAt ?? 0) > now;
+      return { status: repeat ? ("connected" as const) : ("expired" as const), revoke: [] };
+    }
     const refused: ConfirmStatus | null =
       (row.confirmExpiresAt ?? 0) <= now
         ? "expired"
@@ -955,7 +1046,9 @@ export const confirmStaged = internalMutation({
           ? "mismatch"
           : isInactiveAccount(user) || !isApproved(user)
             ? "error"
-            : null;
+            : (await cancelledByDisconnect(ctx, user._id, row.startGeneration))
+              ? "expired"
+              : null;
     if (refused) {
       await retireConnection(ctx, row, now);
       await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
@@ -965,18 +1058,34 @@ export const confirmStaged = internalMutation({
     for (const other of others) {
       await retireConnection(ctx, other, now);
     }
+    // The nonce's hash and expiry stay until that expiry, for a repeated confirm; then they go.
     await ctx.db.patch(row._id, {
       status: "connected",
       connectedAt: now,
-      confirmNonceHash: undefined,
-      confirmExpiresAt: undefined,
       lastErrorAt: undefined,
       updatedAt: now,
+    });
+    await ctx.scheduler.runAt((row.confirmExpiresAt ?? now) + 1_000, internal.connections.expireConfirmNonce, {
+      connectionId: row._id,
     });
     if (others.length > 0) {
       await ctx.scheduler.runAfter(REVOKE_GRACE_MS + 1_000, internal.connections.sweep, {});
     }
     return { status: "connected" as const, revoke: others.map((other) => other._id) };
+  },
+});
+
+/** Clears a confirmed row's nonce hash once the nonce's 10 minutes are over (scheduled by the confirm). */
+export const expireConfirmNonce = internalMutation({
+  args: { connectionId: v.id("connections") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.connectionId);
+    const now = Date.now();
+    if (row && row.status !== "pending_confirm" && row.confirmNonceHash !== undefined && (row.confirmExpiresAt ?? 0) <= now) {
+      await ctx.db.patch(row._id, { confirmNonceHash: undefined, confirmExpiresAt: undefined, updatedAt: now });
+    }
+    return null;
   },
 });
 
@@ -1001,7 +1110,9 @@ export async function confirmExecutorConnectFlow(
 /**
  * The app calls this with `n` from `?executor=confirm&n=<nonce>`, as the signed-in person. Returns
  * `{ status: "connected" | "expired" | "mismatch" | "error" }`; on anything but "connected" the
- * new tokens are already revoked and scrubbed. Throws only when nobody is signed in.
+ * new tokens are already revoked and scrubbed. Throws only when nobody is signed in. Safe to call
+ * again with the same nonce when a reply was lost: within the nonce's 10 minutes its owner gets
+ * "connected" again and nothing is created or retired twice.
  */
 export const confirmExecutorConnect = action({
   args: { nonce: v.string() },
@@ -1398,16 +1509,23 @@ export async function searchExecutorFor(
       return unavailable(error instanceof OAuthFlowError && error.kind === "timeout" ? "timeout" : "error", true);
     }
     const now = deps.now();
-    const stored = await ctx.runMutation(internal.connections.storeRefreshed, {
-      connectionId,
-      leaseToken: lease.leaseToken,
-      accessTokenCipher: await encryptSecret(key, tokens.accessToken, tokenAad(userId, "accessToken")),
-      ...(tokens.refreshToken
-        ? { refreshTokenCipher: await encryptSecret(key, tokens.refreshToken, tokenAad(userId, "refreshToken")) }
-        : {}),
-      ...(tokens.expiresIn !== undefined ? { accessTokenExpiresAt: now + tokens.expiresIn * 1000 } : {}),
-      ...(tokens.scope ? { scope: tokens.scope } : {}),
-    });
+    let stored = false;
+    try {
+      stored = await ctx.runMutation(internal.connections.storeRefreshed, {
+        connectionId,
+        leaseToken: lease.leaseToken,
+        accessTokenCipher: await encryptSecret(key, tokens.accessToken, tokenAad(userId, "accessToken")),
+        ...(tokens.refreshToken
+          ? { refreshTokenCipher: await encryptSecret(key, tokens.refreshToken, tokenAad(userId, "refreshToken")) }
+          : {}),
+        ...(tokens.expiresIn !== undefined ? { accessTokenExpiresAt: now + tokens.expiresIn * 1000 } : {}),
+        ...(tokens.scope ? { scope: tokens.scope } : {}),
+      });
+    } finally {
+      // Not kept (the connection was retired, the lease was lost, or the write threw): revoke the
+      // tokens this refresh just got, and only those; the stored ones stay as they are.
+      if (!stored) await revokeUnkept(deps.fetch, material.client.revocationEndpoint, client, tokens);
+    }
     if (!stored) {
       return { status: "busy" };
     }
@@ -1533,10 +1651,12 @@ async function scrubConnection(
 
 /**
  * Disconnect step 1 (doc §2.5), for the signed-in owner whatever their approval (a revoked or
- * deactivated person can still take their tokens back). Every live connection row, including one
- * waiting for its confirm, becomes `revoking` and is tombstoned at once (the person sees "not
- * connected"); open connect attempts are cancelled; the sweep is scheduled in case a revoke never
- * finishes. A deleted account has nothing live left (account deletion retired it).
+ * deactivated person can still take their tokens back). The person's disconnect generation goes
+ * up by one, so an attempt that started before now can't stage or confirm later (even one whose
+ * callback already spent its pending row). Every live connection row, including one waiting for
+ * its confirm, becomes `revoking` and is tombstoned at once (the person sees "not connected");
+ * open connect attempts are cancelled; the sweep is scheduled in case a revoke never finishes. A
+ * deleted account has nothing live left (account deletion retired it).
  */
 export const beginDisconnect = internalMutation({
   args: {},
@@ -1544,6 +1664,21 @@ export const beginDisconnect = internalMutation({
   handler: async (ctx) => {
     const user = await signedInPerson(ctx);
     const now = Date.now();
+    const limits = await ctx.db
+      .query("connectionLimits")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .first();
+    const generation = (limits?.disconnectGeneration ?? 0) + 1;
+    if (limits) {
+      await ctx.db.patch(limits._id, { disconnectGeneration: generation, updatedAt: now });
+    } else {
+      await ctx.db.insert("connectionLimits", {
+        userId: user._id,
+        disconnectGeneration: generation,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
     await cancelPending(ctx, user._id, now);
     const rows = await liveConnections(ctx, user._id);
     for (const row of rows) {
