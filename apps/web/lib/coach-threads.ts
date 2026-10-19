@@ -81,6 +81,37 @@ export function nextAfterDelete<Id extends string>(threads: readonly { _id: Id }
   return threads.find((thread) => thread._id !== deletedId)?._id ?? null;
 }
 
+/**
+ * What New chat does: "wait" while the page has no open chat yet (the first chat is still being
+ * opened or made, or the last one is being deleted), so it never makes a second empty chat beside
+ * that one; "focus" when the open chat is still empty; else "create".
+ */
+export function newChatAction(open: { createdAt: number; updatedAt: number } | undefined, selectedId: string | null): "wait" | "focus" | "create" {
+  if (selectedId === null) return "wait";
+  return open && isEmptyThread(open) ? "focus" : "create";
+}
+
+/**
+ * Deleting `deletedId`: the chat to show at once, and whether making a fresh chat has to wait for
+ * the delete to finish. It waits when no chat would be left open, so a delete that fails can put
+ * the chat back without an extra empty one beside it.
+ */
+export function selectionOnDelete<Id extends string>(
+  threads: readonly { _id: Id }[],
+  deletedId: Id,
+  selectedId: Id | null,
+): { next: Id | null; holdCreate: boolean } {
+  const next = nextAfterDelete(threads, deletedId, selectedId);
+  return { next, holdCreate: next === null };
+}
+
+/** Milliseconds from `now` to the next local midnight (the viewer's time zone), at least 1. */
+export function msUntilNextLocalMidnight(now: number): number {
+  const day = new Date(now);
+  const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+  return Math.max(1, next - now);
+}
+
 /** The query to send, or null while it is too short. Runs of spaces count as one. */
 export function searchQueryOf(raw: string): string | null {
   const query = raw.replace(/\s+/g, " ").trim().slice(0, SEARCH_MAX_CHARS);

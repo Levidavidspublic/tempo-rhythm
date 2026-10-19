@@ -9,10 +9,13 @@ import {
   groupSearchHits,
   isEmptyThread,
   matchSnippet,
+  msUntilNextLocalMidnight,
+  newChatAction,
   nextAfterDelete,
   previousDayKey,
   SEARCH_MAX_CHARS,
   searchQueryOf,
+  selectionOnDelete,
   threadDateLabel,
   threadTitle,
   withDayDividers,
@@ -76,6 +79,48 @@ describe("nextAfterDelete", () => {
   test("deleting the last chat leaves nothing selected", () => {
     expect(nextAfterDelete([{ _id: "c1" }], "c1", "c1")).toBeNull();
     expect(nextAfterDelete([], "c1", null)).toBeNull();
+  });
+});
+
+describe("newChatAction", () => {
+  const empty = { createdAt: 100, updatedAt: 100 };
+  const used = { createdAt: 100, updatedAt: 200 };
+  test("waits while no chat is open yet, so the automatic first chat is never doubled", () => {
+    expect(newChatAction(undefined, null)).toBe("wait");
+    expect(newChatAction(empty, null)).toBe("wait");
+  });
+  test("an open empty chat is reused; otherwise a chat is made", () => {
+    expect(newChatAction(empty, "c1")).toBe("focus");
+    expect(newChatAction(used, "c1")).toBe("create");
+    // Just made and not in the list yet: still a create, never a wait.
+    expect(newChatAction(undefined, "c1")).toBe("create");
+  });
+});
+
+describe("selectionOnDelete", () => {
+  const threads = [{ _id: "c3" }, { _id: "c2" }];
+  test("another chat stays or opens at once, and nothing waits", () => {
+    expect(selectionOnDelete(threads, "c2", "c3")).toEqual({ next: "c3", holdCreate: false });
+    expect(selectionOnDelete(threads, "c3", "c3")).toEqual({ next: "c2", holdCreate: false });
+  });
+  test("deleting the only chat holds the fresh chat until the delete is done", () => {
+    expect(selectionOnDelete([{ _id: "c1" }], "c1", "c1")).toEqual({ next: null, holdCreate: true });
+  });
+});
+
+describe("msUntilNextLocalMidnight", () => {
+  test("lands on the first moment of the next local day", () => {
+    for (const now of [NOW, Date.UTC(2026, 9, 25, 0, 30), Date.UTC(2026, 2, 27, 23, 59, 59), Date.UTC(2026, 11, 31, 23, 0)]) {
+      const wait = msUntilNextLocalMidnight(now);
+      expect(wait).toBeGreaterThan(0);
+      expect(wait).toBeLessThanOrEqual(25 * HOUR);
+      expect(dayKeyOf(now + wait - 1)).toBe(dayKeyOf(now));
+      expect(previousDayKey(dayKeyOf(now + wait))).toBe(dayKeyOf(now));
+    }
+  });
+  test("one millisecond before midnight waits one millisecond", () => {
+    const beforeMidnight = new Date(2026, 9, 19, 23, 59, 59, 999).getTime();
+    expect(msUntilNextLocalMidnight(beforeMidnight)).toBe(1);
   });
 });
 

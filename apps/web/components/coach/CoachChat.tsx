@@ -16,8 +16,9 @@ import {
   coachThreads,
   dayDividerLabel,
   followUpTarget,
-  isEmptyThread,
-  nextAfterDelete,
+  msUntilNextLocalMidnight,
+  newChatAction,
+  selectionOnDelete,
   threadTitle,
   withDayDividers,
 } from "@/lib/coach-threads";
@@ -184,11 +185,15 @@ export function CoachConversation({
 }: {
   variant: "page" | "panel" | "today";
   pageId?: string | null;
-  /** /coach only: the open chat, how to open another, and chats being deleted (never auto-opened). */
+  /**
+   * /coach only: the open chat, how to open another, chats being deleted (never auto-opened), and
+   * whether making a fresh chat waits (the last chat is being deleted).
+   */
   selection?: {
     id: Id<"conversations"> | null;
     onChange: (id: Id<"conversations">) => void;
     removed: ReadonlySet<string>;
+    holdCreate?: boolean;
   };
 }) {
   const { lang, t } = useLocale();
@@ -213,6 +218,7 @@ export function CoachConversation({
   const conversationId = selection ? selection.id : ownConversationId;
   const setConversationId = selection ? selection.onChange : setOwnConversationId;
   const removed = selection?.removed;
+  const holdCreate = selection?.holdCreate === true;
   // Chats being deleted on /coach are never opened again by the pick below.
   const candidates = useMemo(
     () => (conversations && removed && removed.size > 0 ? conversations.filter((c) => !removed.has(c._id)) : conversations),
@@ -242,7 +248,7 @@ export function CoachConversation({
       setConversationId(latest._id);
       return;
     }
-    if (!profile) return;
+    if (!profile || holdCreate) return;
     let pending = creating.get(profile._id);
     if (!pending) {
       pending = createConversation({});
@@ -260,7 +266,7 @@ export function CoachConversation({
     return () => {
       live = false;
     };
-  }, [isAuthenticated, profile, candidates, conversationId, createConversation, setConversationId]);
+  }, [isAuthenticated, profile, candidates, conversationId, createConversation, setConversationId, holdCreate]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -397,6 +403,14 @@ export function CoachConversation({
   const onPage = variant === "page";
   const followUpId = onPage ? followUpTarget(messages, { busy, crisisHold }) : null;
   const [webSearchOn, setWebSearchOn] = useState(false);
+  // The day dividers' clock: one timer, re-armed for each next local midnight, so a page left open
+  // overnight relabels "Today" as "Yesterday".
+  const [dayNow, setDayNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!onPage) return;
+    const timer = window.setTimeout(() => setDayNow(Date.now()), msUntilNextLocalMidnight(dayNow));
+    return () => window.clearTimeout(timer);
+  }, [onPage, dayNow]);
   // Copy's "Copied" goes to a live region that owns its own state, so a copy never re-renders (and
   // so never scrolls) the thread.
   const noteRef = useRef<((text: string) => void) | null>(null);
@@ -476,10 +490,10 @@ export function CoachConversation({
             <p className="tp-muted">{t("coachChat.empty")}</p>
           )
         ) : onPage && shown ? (
-          withDayDividers(shown, Date.now()).map((item) =>
+          withDayDividers(shown, dayNow).map((item) =>
             item.type === "day" ? (
               <p key={`day-${item.key}`} className="tp-coach-day" data-component="CoachDayDivider">
-                <span>{dayDividerLabel(item, intlLocale(lang), { today: t("cc.today"), yesterday: t("cc.yesterday") }, Date.now())}</span>
+                <span>{dayDividerLabel(item, intlLocale(lang), { today: t("cc.today"), yesterday: t("cc.yesterday") }, dayNow)}</span>
               </p>
             ) : (
               renderMessage(item.message)
@@ -653,8 +667,9 @@ class ThreadBoundary extends Component<{ children: ReactNode; fallback: ReactNod
  * The /coach page: the chats column (CoachThreads) and the conversation on paper, with the page
  * title the shell's main holds. The page owns which chat is open; with none chosen the
  * conversation opens the newest (or makes one) and reports it back. New chat makes a chat and
- * opens it, unless the open one is still empty. Deleting the open chat opens the newest of the
- * rest, or a fresh empty one when none is left.
+ * opens it, unless the open one is still empty; it waits while no chat is open yet. Deleting the
+ * open chat opens the newest of the rest, or, once the delete is done, a fresh empty one when none
+ * is left.
  */
 export function CoachChat() {
   const { t } = useLocale();
@@ -666,12 +681,21 @@ export function CoachChat() {
   const narrow = useMaxWidth(1023);
   const [selectedId, setSelectedId] = useState<Id<"conversations"> | null>(null);
   const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  // Deletes that leave no chat open; while any runs, the conversation makes no fresh chat.
+  const [holdingDeletes, setHoldingDeletes] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [creatingNew, setCreatingNew] = useState(false);
   const [newError, setNewError] = useState<string | null>(null);
   const [focusComposer, setFocusComposer] = useState(0);
   const chatsButton = useRef<HTMLButtonElement | null>(null);
   const seen = useRef(new Set<string>());
+  // Bumped by every chat the person opens here (pick, New chat, delete), so a delete that fails
+  // late only reopens its chat when nothing newer was opened meanwhile.
+  const selectionVersion = useRef(0);
+  const choose = (id: Id<"conversations"> | null) => {
+    selectionVersion.current += 1;
+    setSelectedId(id);
+  };
 
   const threads = useMemo(
     () => (conversations === undefined ? undefined : coachThreads(conversations).filter((c) => !removed.has(c._id))),
@@ -705,14 +729,17 @@ export function CoachChat() {
   }, []);
 
   const select = (id: Id<"conversations">) => {
-    setSelectedId(id);
+    choose(id);
     if (narrow && drawerOpen) closeDrawer();
   };
 
   const handleNew = async () => {
     setNewError(null);
+    const action = newChatAction(current, selectedId);
+    // The first chat is still being opened or made: making another here would leave two.
+    if (action === "wait") return;
     // An empty chat is already a new chat: go to its composer instead of making another.
-    if (current && isEmptyThread(current)) {
+    if (action === "focus") {
       setDrawerOpen(false);
       setFocusComposer((n) => n + 1);
       return;
@@ -720,7 +747,7 @@ export function CoachChat() {
     setCreatingNew(true);
     try {
       const id = await createConversation({});
-      setSelectedId(id);
+      choose(id);
       setDrawerOpen(false);
       setFocusComposer((n) => n + 1);
     } catch {
@@ -732,19 +759,25 @@ export function CoachChat() {
 
   const handleDelete = async (id: Id<"conversations">) => {
     const wasOpen = selectedId === id;
-    // Leave the chat before it is deleted, so nothing on screen reads a deleted chat.
+    const { next, holdCreate } = selectionOnDelete(threads ?? [], id, selectedId);
+    // Leave the chat before it is deleted, so nothing on screen reads a deleted chat. With no chat
+    // left open, the fresh one waits until the delete is done.
     setRemoved((prev) => new Set(prev).add(id));
-    if (wasOpen) setSelectedId(nextAfterDelete(threads ?? [], id, selectedId));
+    if (holdCreate) setHoldingDeletes((n) => n + 1);
+    if (wasOpen) choose(next);
+    const version = selectionVersion.current;
     try {
       await removeConversation({ conversationId: id });
     } catch (error) {
       setRemoved((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
+        const rest = new Set(prev);
+        rest.delete(id);
+        return rest;
       });
-      if (wasOpen) setSelectedId(id);
+      if (wasOpen && selectionVersion.current === version) choose(id);
       throw error;
+    } finally {
+      if (holdCreate) setHoldingDeletes((n) => n - 1);
     }
   };
 
@@ -771,7 +804,7 @@ export function CoachChat() {
           threads={authLoading ? undefined : isAuthenticated ? threads : []}
           selectedId={selectedId}
           searchReady={Boolean(isAuthenticated && profile)}
-          creating={creatingNew}
+          creating={creatingNew || selectedId === null}
           newError={newError}
           drawer={narrow}
           open={drawerOpen}
@@ -801,7 +834,7 @@ export function CoachChat() {
               type="button"
               aria-label={t("cc.newChat")}
               title={t("cc.newChat")}
-              disabled={creatingNew}
+              disabled={creatingNew || selectedId === null}
               onClick={() => void handleNew()}
             >
               <TpIcon name="plus" size="sm" />
@@ -812,7 +845,10 @@ export function CoachChat() {
             onError={onThreadError}
             fallback={<p className="tp-muted tp-small tp-coach-thread">{t("cc.threadError")}</p>}
           >
-            <CoachConversation variant="page" selection={{ id: selectedId, onChange: setSelectedId, removed }} />
+            <CoachConversation
+              variant="page"
+              selection={{ id: selectedId, onChange: setSelectedId, removed, holdCreate: holdingDeletes > 0 }}
+            />
           </ThreadBoundary>
         </section>
       </div>
