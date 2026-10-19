@@ -2,7 +2,7 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TaskRowEditor, type TaskEditorUpdate } from "@/components/tasks/TaskRowEditor";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
@@ -275,10 +275,26 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
     });
   };
 
-  const handleCreate = async () => {
-    const title = draft.title.trim();
-    if (!title || !taskStoreReady) return;
+  // One create at a time: a double click (or Enter twice) must not make two tasks.
+  const creatingRef = useRef(false);
+  const [showTitleHint, setShowTitleHint] = useState(false);
 
+  const handleCreate = async () => {
+    if (creatingRef.current || !taskStoreReady) return;
+    const title = draft.title.trim();
+    if (!title) {
+      setShowTitleHint(true);
+      return;
+    }
+    creatingRef.current = true;
+    try {
+      await createFromDraft(title);
+    } finally {
+      creatingRef.current = false;
+    }
+  };
+
+  const createFromDraft = async (title: string) => {
     const normalizedProjectName =
       view === "project" ? (projectName ?? draft.projectName) : draft.projectName.trim();
     // Project view must reuse the filter's projectId — do not re-slugify the
@@ -469,11 +485,17 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
               autoComplete="off"
               value={draft.title}
               disabled={!taskStoreReady}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, title: event.target.value }))
-              }
+              onChange={(event) => {
+                setShowTitleHint(false);
+                setDraft((current) => ({ ...current, title: event.target.value }));
+              }}
               placeholder="One small next step"
             />
+            {showTitleHint && !draft.title.trim() ? (
+              <output className="text-sm text-muted-foreground">
+                Type a short task name first.
+              </output>
+            ) : null}
           </label>
           <label className="tp-field">
             <span className="tp-label">Project</span>
@@ -563,7 +585,7 @@ export function TaskViewsScreen({ view, projectSlug }: TaskViewsScreenProps) {
           <button
             type="button"
             className="tp-btn tp-btn--primary tk-create__add"
-            disabled={!taskStoreReady || !draft.title.trim()}
+            disabled={!taskStoreReady}
             onClick={() => void handleCreate()}
           >
             <TpIcon name="plus" size="sm" />

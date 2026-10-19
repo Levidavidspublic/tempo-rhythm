@@ -33,6 +33,7 @@ export function NotesList() {
   const remove = useMutation(api.notes.remove);
   const restore = useMutation(api.notes.restore);
   const [title, setTitle] = useState("");
+  const [titleMissing, setTitleMissing] = useState(false);
   const [periodType, setPeriodType] = useState<PeriodType>("none");
   const [removed, setRemoved] = useState<RemovedNote[]>([]);
   const [pendingDelete, setPendingDelete] = useState<Id<"notes"> | null>(null);
@@ -98,9 +99,16 @@ export function NotesList() {
         className="tp-toolbar"
         onSubmit={(event) => {
           event.preventDefault();
+          // A page needs a title before it is made, so an empty submit asks for one instead.
+          if (!title.trim()) {
+            setTitleMissing(true);
+            document.getElementById("nt-new-title")?.focus();
+            return;
+          }
+          setTitleMissing(false);
           void perform(async () => {
             const id = await create({
-              title: title.trim() || t("notes.untitled"),
+              title: title.trim(),
               body: "",
               periodType,
             });
@@ -117,9 +125,19 @@ export function NotesList() {
             className="tp-input"
             dir="auto"
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            aria-invalid={titleMissing || undefined}
+            aria-describedby={titleMissing ? "nt-new-title-hint" : undefined}
+            onChange={(event) => {
+              setTitleMissing(false);
+              setTitle(event.target.value);
+            }}
             placeholder={t("notes.untitled")}
           />
+          {titleMissing ? (
+            <output id="nt-new-title-hint" className="text-sm text-muted-foreground">
+              {t("notes.titleNeeded")}
+            </output>
+          ) : null}
         </div>
         <div className="tp-field">
           <label className="tp-label" htmlFor="nt-new-type">
