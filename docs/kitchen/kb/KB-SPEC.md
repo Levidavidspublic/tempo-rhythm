@@ -36,7 +36,7 @@ HARD_RULES §6.3's older confidence auto-apply text conflicts with §1/§6.2 and
 
 ## Claude handoff
 
-After this draft opens, Claude files each still-unfiled written ticket verbatim as an issue (leading front matter intact), checks the implementation follow-up to avoid duplicate issues, maps TEMPO-KB dependencies to created issue numbers, retains KA issue links, and gives Amit one paste-ready Codex Cloud prompt per issue. A prompt includes repo, integration base, issue URL, lane/code-model rule, the entire ticket, no questions, draft-only/no merge, and AGENTS report instructions. Do not file later title-only entries as runnable issues. The current planning PR has no implementation issue to close; scope-guard may need an owner-approved planning issue after filing. Do not use KA #1135 as a fake Closes target.
+After this draft opens, Claude files each still-unfiled written ticket verbatim as an issue (leading front matter intact), checks the implementation follow-up to avoid duplicate issues, maps TEMPO-KB dependencies to created issue numbers, retains KA issue links, and gives Amit one paste-ready Codex Cloud prompt per issue. A prompt includes repo, integration base, issue URL, lane/code-model rule, the entire ticket, no questions, draft-only/no merge, and AGENTS report instructions. Do not file later title-only entries as runnable issues. Planning PR #1140 links its own administrative lead issue [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176), outside the KB worker queue. This records the actual docs-only work without an owner exception or labels. Do not file a duplicate lead issue or use KA #1135 as a fake Closes target.
 
 ## Implementation follow-up
 

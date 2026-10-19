@@ -29,7 +29,7 @@ Bun **1.3.9**. No app, route, config, baseline or test file changed.
 | `CI=1 bunx playwright test --reporter=line` | FAIL, 27 pass / 89 skip / 1 fail with installed Chromium 151 |
 | `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, 1/1 build task |
 
-The browser failure is `tests/e2e/task-views-core.spec.ts:39`: after navigating to `/projects`, the test timed out waiting for the “Home reset” heading. Product code and this test are unchanged; the root cause is unresolved. This planning PR is complete as a draft artifact, but its checks are **not all green**. Fixing product code is outside the authorized scope.
+The browser failure is `tests/e2e/task-views-core.spec.ts:39`: after navigating to `/projects`, the test timed out waiting for the “Home reset” heading. Product code and this test are unchanged; the root cause is unresolved. This planning PR is complete as a draft artifact, but its checks are **not all green**. Fixing product code in this planning branch is outside its documentation-only scope; the later implementation authorization is handled in separate worker PRs.
 
 The first browser attempt could not launch Playwright’s expected binary (1 pass / 88 skip / 28 launch failures). The CDN download returned HTTP 403. The rerun used the installed `/usr/bin/chromium` through a task-local `PLAYWRIGHT_BROWSERS_PATH`; no repository configuration changed. Bun’s release download also returned 403; the exact 1.3.9 binary was obtained from its version-pinned npm artifact. No real keys, accounts or preview/live URLs were used.
 
@@ -89,7 +89,7 @@ The first browser attempt could not launch Playwright’s expected binary (1 pas
 
 ## Publication/owner gates
 
-The draft is not a merge request. No labels, issue closures or review-bot requests are added. Since Claude files the issues after this PR opens, there is no planning issue in a Closes clause; the existing scope-guard may reject that until an owner-approved planning issue exists. This is an acknowledged gate, not a falsely linked KA issue. Future backend tickets require Amit’s convex-arch label; Astra billing eligibility and held KA scopes remain owner decisions. Native accessibility and actual service behavior are UNKNOWN.
+The draft is not a merge request. No labels, issue closures or review-bot requests are added. The initial PR had no linked lead issue, so scope-guard rejected it. The implementation follow-up now links a dedicated administrative planning issue #1176, whose scope is exactly docs/kitchen/kb/. No owner exception, label, rule change or false KA closure was needed. It is outside the KB-NN worker queue and authorizes no product implementation. Future backend tickets require Amit’s convex-arch label; Astra billing eligibility and held KA scopes remain owner decisions. Native accessibility and actual service behavior are UNKNOWN.
 
 
 ## Implementation follow-up: KB-69 expansion (19 Oct)
@@ -136,3 +136,7 @@ The lead did not file polish work merely to increase a count. BillingPlan's appa
 ## Carry-over ownership and study dependency recheck
 
 Live GitHub reads on 19 Oct confirm PR #1053 is an open draft from `kitchen/polish-pass` into integration, and PR #1081 is an open draft from `kitchen/tempo-study` into `kitchen/polish-pass`. PR #1053 already changes CarryOverStrip.tsx to add v3 rows, localized actions and visible mutation errors. KB-63 was not admitted as duplicate independent work; its title/inventory now call for residual focus, checkbox-label and weekday-locale review after that existing work lands. This run does not merge either PR or move their target branches.
+
+## Planning issue linkage
+
+The lead created administrative issue #1176 for this actual documentation artifact and linked it to PR #1140. Scope-guard permits only data/component classifications; the issue uses the stricter non-backend component classification, with documentation-only scope and no implementation files. It is not a 53rd worker ticket, a backend authorization or a dispatcher job. Local scope judgment against the complete PR path list passes. Existing sandbox failures remain reported; fixing this link does not turn those failures into passes.
