@@ -19,7 +19,7 @@ A second way to start the same release. The gate below does not change. Workflow
 1. Each time integration changes, **release-go** checks that commit: full CI, secret scans since master, and the signed-in preview acceptance (a throwaway test account on preview.tempoflow.dev). No Bugbot here. Bugbot still reviews once, inside the release.
 2. It writes the result into one comment on the open Release PR (`Release YYYY-MM-DD`, label `release`): the commit, the preview link, pass or fail for each check, and whether Convex prod will deploy. The same comment is updated every time.
 3. Walk the preview. Then read the comment. When it says **ALL PASSED** and "Comment `go` to release this commit.", comment exactly `go` on the Release PR.
-4. The workflow checks again: you wrote it, the text is `go`, the check is for the current integration commit and passed, the factory is not paused, and no release is already running. Then it starts **Release to production** (not a dry run) as you, reacts 🚀 and replies with the run link. From there it is the same release as the button.
+4. The workflow checks again: you wrote it, the text is `go`, the check is for the current integration commit and passed, the comment did not change after your `go`, your `go` is less than 30 minutes old, the factory is not paused, and no release is already running. Then it starts **Release to production** (not a dry run) as you, reacts 🚀 and replies with the run link. From there it is the same release as the button.
 5. If any of those fail, it replies once with the reason and starts nothing. Any other comment is ignored.
 
 The button above still works exactly as before.

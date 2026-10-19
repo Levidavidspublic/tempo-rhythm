@@ -6,10 +6,12 @@ import {
   CANDIDATE_AUTHOR,
   candidateRunProblem,
   checkResults,
+  dispatchOutcome,
   goVerdict,
   isGo,
   latestCandidate,
   parseCandidate,
+  pickDispatchedRun,
   refusal,
   renderCandidate,
 } from "../../scripts/factory/release-go.mjs";
@@ -26,13 +28,20 @@ const REPO = { full_name: "Levidavidspublic/tempo-rhythm" };
 const candidateBody = (sha: string, state: string, run = RUN) =>
   renderCandidate({ sha, run, runUrl: "https://example.test/run", state, checks: checkResults({ ci: "success", security: "success", acceptance: "success" }).checks, convexChanged: false, masterSha: MASTER });
 
+const CAND_AT = "2026-10-19T09:00:00Z"; // candidate comment last updated (pass)
+const GO_AT = "2026-10-19T09:10:00Z"; // Amit's `go` written after reading it
+const NOW = Date.parse("2026-10-19T09:11:00Z"); // guard job runs a minute later
+const candidate = (over: Loose = {}): Loose => ({ id: 9, sha: SHA, run: RUN, state: "pass", updated_at: CAND_AT, ...over });
+
 const facts = (over: Loose = {}): Loose => ({
   body: "go",
   author: "Division6066",
+  goCreatedAt: GO_AT,
+  now: NOW,
   pr: { state: "open", base: { ref: "master", repo: REPO }, head: { ref: "integration", repo: REPO }, labels: [{ name: "release" }] },
   paused: { pausedAll: "", paused: "" },
   userToken: true,
-  candidate: { id: 9, sha: SHA, run: RUN, state: "pass" },
+  candidate: candidate(),
   integrationSha: SHA,
   candidateRun: { id: RUN, path: ".github/workflows/release-go.yml", event: "workflow_run", head_sha: SHA, status: "completed", conclusion: "success" },
   releaseRuns: [{ status: "completed", html_url: "https://example.test/old" }],
@@ -73,8 +82,8 @@ describe("release-go: go guards", () => {
   });
 
   test("failed candidate: a fail or pending candidate refuses, so does a run that did not end green", () => {
-    expect(verdict({ candidate: { id: 9, sha: SHA, run: RUN, state: "fail" } }).guard).toBe("candidate");
-    expect(verdict({ candidate: { id: 9, sha: SHA, run: RUN, state: "pending" } }).reason).toContain("still running");
+    expect(verdict({ candidate: candidate({ state: "fail" }) }).guard).toBe("candidate");
+    expect(verdict({ candidate: candidate({ state: "pending" }) }).reason).toContain("still running");
     expect(verdict({ candidate: null }).guard).toBe("candidate");
     const run = facts().candidateRun as Loose;
     expect(verdict({ candidateRun: { ...run, conclusion: "failure" } }).guard).toBe("candidate-run");
@@ -98,6 +107,27 @@ describe("release-go: go guards", () => {
     const busy = verdict({ releaseRuns: [{ status: "in_progress", html_url: "https://example.test/live" }] });
     expect(busy.guard).toBe("busy");
     expect(busy.reason).toContain("https://example.test/live");
+  });
+
+  test("P1 bind: candidate B passed after Amit's `go` for A -> refused, even though B is the current head", () => {
+    // Amit read A and commented go at 09:10; integration moved and candidate B passed at 09:10:30, before the job ran.
+    const v = verdict({ candidate: candidate({ sha: NEWER, updated_at: "2026-10-19T09:10:30Z" }), integrationSha: NEWER, candidateRun: { ...(facts().candidateRun as Loose), head_sha: NEWER } });
+    expect(v.ok).toBe(false);
+    expect(v.guard).toBe("changed");
+    expect(v.reason).toContain("changed after your `go`");
+    expect(v.reason).toContain("613d2ea");
+    expect(verdict({ candidate: candidate({ updated_at: GO_AT }) }).guard).toBe("changed"); // same second: fail closed
+    expect(verdict({ candidate: candidate({ updated_at: "" }) }).guard).toBe("changed"); // unknown time: fail closed
+  });
+
+  test("P1 re-run: a `go` older than 30 minutes (re-run of an old comment run) is refused", () => {
+    const v = verdict({ now: Date.parse("2026-10-19T09:40:01Z") });
+    expect(v.guard).toBe("old-go");
+    expect(v.reason).toContain("30 minutes");
+    expect(v.reason).toContain("re-run");
+    expect(verdict({ now: Date.parse("2026-10-19T09:40:00Z") }).ok).toBe(true); // exactly 30 min still counts
+    expect(verdict({ goCreatedAt: "" }).guard).toBe("old-go"); // unknown time: fail closed
+    expect(verdict({ goCreatedAt: "not a date" }).guard).toBe("old-go");
   });
 
   test("guard order: a stranger learns nothing past the author guard", () => {
@@ -125,7 +155,7 @@ describe("release-go: candidate comment", () => {
       { id: 2, user: { login: "Division6066" }, updated_at: "2026-10-19T10:00:00Z", body: candidateBody(NEWER, "pass") },
       { id: 3, user: { login: CANDIDATE_AUTHOR }, updated_at: "2026-10-19T09:00:00Z", body: candidateBody(SHA, "pass") },
     ];
-    expect(latestCandidate(comments)).toEqual({ id: 3, sha: SHA, run: RUN, state: "pass" });
+    expect(latestCandidate(comments)).toEqual({ id: 3, sha: SHA, run: RUN, state: "pass", updated_at: "2026-10-19T09:00:00Z" });
     expect(latestCandidate([comments[1]])).toBeNull();
   });
 
@@ -148,6 +178,39 @@ describe("release-go: candidate comment", () => {
     expect(r.state).toBe("fail");
     expect(r.checks).toEqual({ ci: "pass", security: "fail", acceptance: "fail" });
     expect(checkResults({}).state).toBe("fail");
+  });
+
+  test("P2 dispatch correlation: only one new workflow_dispatch run on integration by the token user, after the dispatch", () => {
+    const since = Date.parse("2026-10-19T09:11:00Z");
+    const before = new Set([100]);
+    const actor = "Division6066";
+    const run = (id: number, over: Loose = {}): Loose => ({
+      id, event: "workflow_dispatch", head_branch: "integration", actor: { login: actor }, created_at: "2026-10-19T09:11:00Z", html_url: `https://example.test/runs/${id}`, ...over,
+    });
+    const pick = (runs: Loose[]) => pickDispatchedRun(runs, { before, since, actor }) as { run?: Loose; none?: boolean; ambiguous?: Loose[] };
+    // exactly one -> that run
+    expect(pick([run(101), run(100)]).run?.id).toBe(101);
+    // zero -> none (seen before, other actor, other branch, other event, created before the dispatch)
+    const unrelated = [
+      run(100),
+      run(102, { actor: { login: "someone-else" } }),
+      run(103, { head_branch: "master" }),
+      run(104, { event: "push" }),
+      run(105, { created_at: "2026-10-19T09:10:59Z" }),
+    ];
+    expect(pick(unrelated)).toEqual({ none: true });
+    expect(pick([])).toEqual({ none: true });
+    // more than one -> ambiguous (the caller then cancels nothing)
+    const amb = pick([run(106), run(107, { created_at: "2026-10-19T09:11:02Z" })]);
+    expect(amb.run).toBeUndefined();
+    expect(amb.ambiguous?.map((x) => x.id)).toEqual([106, 107]);
+  });
+
+  test("P2 never cancels a run it did not uniquely identify", () => {
+    expect(dispatchOutcome({ none: true }, SHA)).toEqual({ result: "unidentified", cancel: null });
+    expect(dispatchOutcome({ ambiguous: [{ id: 1, head_sha: NEWER }, { id: 2, head_sha: NEWER }] }, SHA)).toEqual({ result: "ambiguous", cancel: null });
+    expect(dispatchOutcome({ run: { id: 7, head_sha: SHA } }, SHA)).toEqual({ result: "started", cancel: null });
+    expect(dispatchOutcome({ run: { id: 7, head_sha: NEWER } }, SHA)).toEqual({ result: "mismatch", cancel: 7 });
   });
 
   test("candidate run must be a release-go candidate run on that SHA", () => {

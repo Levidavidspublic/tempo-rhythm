@@ -17,7 +17,10 @@ name: release-go
 # Part 2, `go` (issue_comment). Amit comments exactly `go` on the open Release PR. The guard step checks every rule
 # (goVerdict in the script): text, Release PR, author Division6066 (comment.user.login), factory not paused,
 # candidate comment (github-actions[bot] only) for the current integration head and passed, its run really is a
-# green release-go candidate run on that SHA, no release run already queued/running, FACTORY_BATCH_TOKEN set.
+# green release-go candidate run on that SHA, no release run already queued/running, FACTORY_BATCH_TOKEN set,
+# the `go` is under 30 minutes old (no re-run of an old comment) and the candidate comment did not change after it.
+# The started run is identified by time + actor + branch (release.yml has no correlation input); a run that is not
+# uniquely identified is reported, never cancelled.
 # Only then does it dispatch release.yml (dry_run=false) on integration with FACTORY_BATCH_TOKEN, so the run's actor
 # is Division6066 (release.yml's preflight requires that). It reacts and replies with the run link. A failed guard
 # gets one reply naming it and nothing else happens. A comment that is not exactly `go` is ignored silently.
@@ -216,6 +219,7 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          COMMENT_CREATED_AT: ${{ github.event.comment.created_at }}
           PAUSED_ALL: ${{ vars.FACTORY_PAUSED_ALL }}
           PAUSED: ${{ vars.FACTORY_PAUSED }}
           USER_TOKEN_SET: ${{ secrets.FACTORY_BATCH_TOKEN != '' }}

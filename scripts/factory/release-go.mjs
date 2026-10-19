@@ -11,6 +11,9 @@
 // Part 2, `go` (subcommands guard / dispatch / announce). goVerdict() holds every rule. If all hold, release.yml
 //   is dispatched (dry_run=false) on integration with FACTORY_BATCH_TOKEN, so the run's actor is Division6066
 //   (release.yml's preflight requires that). A failed guard gets one reply naming it; nothing else happens.
+//   The `go` is bound to what Amit read: refused if older than 30 min (re-run of an old comment run) or if the
+//   candidate comment changed at/after it. The started run is identified by pickDispatchedRun (no correlation
+//   input exists); a run not uniquely identified is reported and never cancelled.
 //   A comment whose text is not exactly `go` is ignored without a reply.
 // Env: GH_TOKEN (github.token, except the two dispatch steps: FACTORY_BATCH_TOKEN), GITHUB_REPOSITORY, SHA,
 //      RUN_ID, RUN_URL, EVENT_NAME, PR_NUMBER, COMMENT_ID, COMMENT_BODY, COMMENT_AUTHOR, PAUSED_ALL, PAUSED,
@@ -102,7 +105,28 @@ export function latestCandidate(comments) {
     .map((c) => ({ c, p: parseCandidate(c.body) }))
     .filter((x) => x.p)
     .sort((a, b) => String(b.c.updated_at || b.c.created_at).localeCompare(String(a.c.updated_at || a.c.created_at)));
-  return found.length ? { id: found[0].c.id, ...found[0].p } : null;
+  return found.length ? { id: found[0].c.id, ...found[0].p, updated_at: found[0].c.updated_at || found[0].c.created_at || "" } : null;
+}
+
+// A `go` older than this is refused: a re-run of an old issue_comment run must not release today's commit.
+export const GO_MAX_AGE_MINUTES = 30;
+
+// Which run did OUR dispatch start? release.yml / preview-acceptance.yml take no correlation input, so: a
+// workflow_dispatch run on integration by the token's user, created at/after the dispatch (GitHub's created_at is
+// whole seconds, so `since` is floored by the caller) and not seen before it. Exactly one = ours; else unknown.
+export function pickDispatchedRun(runs, { before, since, actor }) {
+  const mine = (runs || []).filter((x) => x && !before.has(x.id) && x.event === "workflow_dispatch" && x.head_branch === "integration" &&
+    x.actor && x.actor.login === actor && Date.parse(x.created_at) >= since);
+  if (mine.length === 1) return { run: mine[0] };
+  return mine.length ? { ambiguous: mine } : { none: true };
+}
+
+// What to do after dispatching release.yml. Only a uniquely identified run that started on the wrong SHA is cancelled.
+export function dispatchOutcome(found, sha) {
+  if (!found || found.none) return { result: "unidentified", cancel: null };
+  if (found.ambiguous) return { result: "ambiguous", cancel: null };
+  if (found.run.head_sha !== sha) return { result: "mismatch", cancel: found.run.id };
+  return { result: "started", cancel: null };
 }
 
 // The run named in the candidate comment must be a finished, green release-go candidate run on that SHA.
@@ -130,8 +154,19 @@ export function goVerdict(f) {
   if (f.author !== AMIT) return no("author", `only ${AMIT} (Amit) can release by comment (this comment: ${f.author || "unknown"}).`);
   if (isPaused(f.paused || {})) return no("paused", "the factory is paused (repo variable FACTORY_PAUSED_ALL or FACTORY_PAUSED is true).");
   if (!f.userToken) return no("token", "secret FACTORY_BATCH_TOKEN is not set, so the release can't start as Division6066.");
+  // Bind the `go` to what Amit read: refuse an old `go` (e.g. a re-run of an old comment run) and any candidate
+  // comment that changed at or after the `go` was written. Missing or unreadable times refuse too (fail closed).
+  const goAt = Date.parse(f.goCreatedAt || "");
+  const nowMs = f.now === undefined ? Date.now() : Number(f.now);
+  if (!Number.isFinite(goAt) || nowMs - goAt > GO_MAX_AGE_MINUTES * 60_000) {
+    return no("old-go", `this \`go\` was written more than ${GO_MAX_AGE_MINUTES} minutes ago (or its time is unknown), for example a re-run of an old comment run. Read the candidate comment again, then comment \`go\` again.`);
+  }
   const c = f.candidate;
   if (!c) return no("candidate", "there is no candidate check on this PR yet. Wait for the comment that says \"Comment `go` to release this commit.\"");
+  const candAt = Date.parse(c.updated_at || "");
+  if (!Number.isFinite(candAt) || candAt >= goAt) {
+    return no("changed", `the candidate comment changed after your \`go\` (it is now for \`${short(c.sha)}\`, ${c.state}), so this \`go\` may not be for that commit. Read it again, then comment \`go\` again.`);
+  }
   if (!f.integrationSha || c.sha !== f.integrationSha) return no("stale", `the candidate check is for \`${short(c.sha)}\`, but integration is now \`${short(f.integrationSha)}\`. A new check runs on the new commit; comment \`go\` when it says ALL PASSED.`);
   if (c.state === "pending") return no("candidate", `the candidate check for \`${short(c.sha)}\` is still running.`);
   if (c.state !== "pass") return no("candidate", `the candidate check for \`${short(c.sha)}\` did not pass. Fix it on integration first.`);
@@ -162,16 +197,21 @@ async function findReleasePr(o, r) {
   return prs.find((p) => p.labels.some((l) => l.name === RELEASE_LABEL)) || prs.find((p) => isReleaseTitle(p.title)) || null;
 }
 
-// Dispatch a workflow on integration and return the new run (ids seen before the dispatch are skipped).
+// Dispatch a workflow on integration and identify the run it started (pickDispatchedRun). Returns { run } |
+// { none: true } | { ambiguous: [runs] }. Once a match shows up, one more look 10 s later catches a twin dispatch.
 async function dispatchAndFind(o, r, wf, inputs) {
-  const before = new Set((await workflowRuns(o, r, wf, "&event=workflow_dispatch")).map((x) => x.id));
+  const actor = (await gh("/user")).login;
+  const list = () => workflowRuns(o, r, wf, "&event=workflow_dispatch&branch=integration");
+  const before = new Set((await list()).map((x) => x.id));
+  const since = Math.floor(Date.now() / 1000) * 1000;
   await gh(`/repos/${o}/${r}/actions/workflows/${wf}/dispatches`, { method: "POST", body: { ref: "integration", ...(inputs ? { inputs } : {}) } });
   for (let i = 0; i < 36; i++) {
     await sleep(5_000);
-    const run = (await workflowRuns(o, r, wf, "&event=workflow_dispatch")).find((x) => !before.has(x.id));
-    if (run) return run;
+    if (pickDispatchedRun(await list(), { before, since, actor }).none) continue;
+    await sleep(10_000);
+    return pickDispatchedRun(await list(), { before, since, actor });
   }
-  return null;
+  return { none: true };
 }
 
 async function prep(o, r) {
@@ -197,8 +237,10 @@ async function acceptance(o, r) {
   if (!truthy(process.env.USER_TOKEN_SET)) throw new Error("preview-acceptance must be dispatched as Division6066: secret FACTORY_BATCH_TOKEN is not set.");
   const sha = process.env.SHA;
   if ((await tipOf(o, r, "integration")) !== sha) throw new Error(`integration moved past \`${short(sha)}\`; not testing an old commit.`);
-  const run = await dispatchAndFind(o, r, ACCEPTANCE_WORKFLOW);
-  if (!run) throw new Error(`dispatched ${ACCEPTANCE_WORKFLOW}, but no new run appeared within 3 minutes.`);
+  const found = await dispatchAndFind(o, r, ACCEPTANCE_WORKFLOW);
+  if (found.none) throw new Error(`dispatched ${ACCEPTANCE_WORKFLOW}, but its run was not identified within 3 minutes.`);
+  if (found.ambiguous) throw new Error(`dispatched ${ACCEPTANCE_WORKFLOW}, but ${found.ambiguous.length} new runs match; can't tell which one tests \`${short(sha)}\`.`);
+  const run = found.run;
   out("acceptance_url", run.html_url);
   if (run.head_sha !== sha) throw new Error(`${ACCEPTANCE_WORKFLOW} started on \`${short(run.head_sha)}\`, not \`${short(sha)}\` (integration moved): ${run.html_url}`);
   await say(`Preview acceptance run: ${run.html_url}`);
@@ -234,7 +276,7 @@ async function guard(o, r) {
   const pr = await gh(`/repos/${o}/${r}/pulls/${n}`);
   const candidate = latestCandidate(await ghAll(`/repos/${o}/${r}/issues/${n}/comments`));
   const f = {
-    body, pr, author: process.env.COMMENT_AUTHOR, candidate,
+    body, pr, author: process.env.COMMENT_AUTHOR, candidate, goCreatedAt: process.env.COMMENT_CREATED_AT, now: Date.now(),
     paused: { pausedAll: process.env.PAUSED_ALL, paused: process.env.PAUSED },
     userToken: truthy(process.env.USER_TOKEN_SET),
     integrationSha: await tipOf(o, r, "integration"),
@@ -252,16 +294,18 @@ async function dispatch(o, r) {
   const sha = process.env.SHA;
   try {
     if ((await tipOf(o, r, "integration")) !== sha) { out("result", "moved"); return say(`integration moved past \`${short(sha)}\`; not dispatched.`); }
-    const run = await dispatchAndFind(o, r, RELEASE_WORKFLOW, { dry_run: "false" });
-    if (!run) { out("result", "not-found"); return say("Dispatched release.yml, but no new run appeared within 3 minutes."); }
-    out("run_url", run.html_url);
-    if (run.head_sha !== sha) {
-      await gh(`/repos/${o}/${r}/actions/runs/${run.id}/cancel`, { method: "POST" });
-      out("result", "mismatch"); out("detail", `started on ${short(run.head_sha)}`);
-      return say(`Release run ${run.html_url} started on \`${short(run.head_sha)}\`, not the checked \`${short(sha)}\`. Cancelled it.`);
+    const found = await dispatchAndFind(o, r, RELEASE_WORKFLOW, { dry_run: "false" });
+    const d = dispatchOutcome(found, sha);
+    out("result", d.result);
+    if (d.result === "unidentified") return say("Dispatched release.yml (started), but its run was not identified within 3 minutes. Cancelled nothing.");
+    if (d.result === "ambiguous") return say(`Dispatched release.yml, but ${found.ambiguous.length} new runs match: ${found.ambiguous.map((x) => x.html_url).join(" ")}. Cancelled nothing.`);
+    out("run_url", found.run.html_url);
+    if (d.cancel) {
+      await gh(`/repos/${o}/${r}/actions/runs/${d.cancel}/cancel`, { method: "POST" });
+      out("detail", short(found.run.head_sha));
+      return say(`Release run ${found.run.html_url} started on \`${short(found.run.head_sha)}\`, not the checked \`${short(sha)}\`. Cancelled it.`);
     }
-    out("result", "started");
-    await say(`Release to production started on \`${short(sha)}\`: ${run.html_url}`);
+    await say(`Release to production started on \`${short(sha)}\`: ${found.run.html_url}`);
   } catch (e) {
     out("result", "error"); out("detail", e.message.slice(0, 200));
     throw e;
@@ -274,7 +318,8 @@ async function announce(o, r) {
   const res = process.env.RESULT || "error";
   const text = {
     started: [`Release started for \`${short(sha)}\` (Release to production, dry_run=false, as ${AMIT}): ${url}`, "", "The full release gate runs first (CI, secret scans, preview E2E, one Cursor Bugbot review). Any red check stops it before the merge. Rollback: docs/DEPLOY.md."],
-    "not-found": [`Release dispatched for \`${short(sha)}\`, but its run did not show up yet. Check here: ${all}`],
+    unidentified: [`Release started for \`${short(sha)}\`, but its run was not identified. Check the runs page: ${all}`],
+    ambiguous: [`Release dispatched for \`${short(sha)}\`, but more than one new run matched, so none was identified and nothing was cancelled. Check the runs page: ${all}`],
     mismatch: [`Stopped: the release run started on \`${process.env.DETAIL || "another commit"}\`, not the checked \`${short(sha)}\` (integration moved). It was cancelled: ${url}`, "", "Wait for the new candidate comment, then comment `go` again."],
     moved: [`Not started: integration moved past \`${short(sha)}\` just now. Wait for the new candidate comment, then comment \`go\` again.`],
     error: [`Could not start the release for \`${short(sha)}\`: ${process.env.DETAIL || "see the workflow run"}. Run: ${process.env.RUN_URL}`],
