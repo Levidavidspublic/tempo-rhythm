@@ -1,0 +1,252 @@
+name: release-go
+
+# Kitchen (owner-approved 19 Oct 2026): Amit releases by commenting `go` on the Release PR after checking preview.
+# Amit-facing guide: docs/DEPLOY.md "Release by comment". Script: scripts/factory/release-go.mjs (read its header).
+#
+# Part 1, candidate check (automatic). Starts when integration changes (the Security push run on integration
+# finishes), when factory-release-pr finishes, or by hand (Run workflow, branch integration). On the integration head
+# SHA it runs full CI (ci.yml), secret scans since master (security.yml) and the signed-in preview acceptance
+# (preview-acceptance.yml, dispatched as Division6066 with FACTORY_BATCH_TOKEN). Then it posts or updates ONE comment
+# on the open Release PR: SHA, preview URL, pass/fail per check, whether convex/ differs from master.
+# NO Bugbot here: release.yml asks for ONE Bugbot review inside the real release. A release.yml dry run is NOT used:
+# its bugbot job has no dry_run guard, so a dry run would request Bugbot too.
+# Skipped while the factory is paused, while a "Release to production" run is queued or running (its gate is testing
+# already), or when no Release PR is open. Our ci.yml and security.yml calls use their own concurrency groups (input
+# concurrency_group), so they can never cancel release.yml's gate CI / scans, or be cancelled by them.
+# Spend: each candidate run = one preview-acceptance run = one coach message (provider credit) + one mail.tm inbox.
+#
+# Part 2, `go` (issue_comment). Amit comments exactly `go` on the open Release PR. The guard step checks every rule
+# (goVerdict in the script): text, Release PR, author Division6066 (comment.user.login), factory not paused,
+# candidate comment (github-actions[bot] only) for the current integration head and passed, its run really is a
+# green release-go candidate run on that SHA, no release run already queued/running, FACTORY_BATCH_TOKEN set,
+# the `go` is under 30 minutes old (no re-run of an old comment) and the candidate comment did not change after it.
+# The started run is identified by time + actor + branch (release.yml has no correlation input); a run that is not
+# uniquely identified is reported, never cancelled.
+# Only then does it dispatch release.yml (dry_run=false) on integration with FACTORY_BATCH_TOKEN, so the run's actor
+# is Division6066 (release.yml's preflight requires that). It reacts and replies with the run link. A failed guard
+# gets one reply naming it and nothing else happens. A comment that is not exactly `go` is ignored silently.
+#
+# Never here: no merge, no deploy, no Convex. release.yml's gate is unchanged and still decides everything.
+# Tokens: comments, labels and reactions use github.token (they start no workflows, so no loops). FACTORY_BATCH_TOKEN
+# is only in the env of the two steps that dispatch (preview-acceptance, release). Never echoed.
+
+on:
+  workflow_run:
+    workflows: ["Security", "factory-release-pr"]
+    types: [completed]
+    branches: [integration]
+  workflow_dispatch:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Candidate runs: the newest wins. Comment runs: one group per comment, never cancelled (the go job has its own lock).
+  group: ${{ github.event_name == 'issue_comment' && format('release-go-comment-{0}', github.event.comment.id) || 'release-go-candidate' }}
+  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
+
+env:
+  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  prep:
+    name: candidate - find the Release PR
+    if: >-
+      github.event_name != 'issue_comment' &&
+      vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        ((github.event.workflow_run.name == 'Security' && github.event.workflow_run.event == 'push') ||
+         (github.event.workflow_run.name == 'factory-release-pr' && github.event.workflow_run.conclusion == 'success'))))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    outputs:
+      run: ${{ steps.prep.outputs.run }}
+      pr_number: ${{ steps.prep.outputs.pr_number }}
+      comment_id: ${{ steps.prep.outputs.comment_id }}
+      master_sha: ${{ steps.prep.outputs.master_sha }}
+      convex_changed: ${{ steps.prep.outputs.convex_changed }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Find the Release PR and mark the check as running
+        id: prep
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/factory/release-go.mjs prep
+
+  ci:
+    name: candidate CI
+    needs: prep
+    if: needs.prep.outputs.run == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      # Not ci-refs/heads/integration (release.yml's gate CI uses that group): the two never cancel each other.
+      # Older candidate runs are already cancelled by this workflow's own concurrency group.
+      concurrency_group: release-go-candidate-ci
+
+  security:
+    name: candidate secret scans
+    needs: prep
+    if: needs.prep.outputs.run == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/security.yml
+    with:
+      base_sha: ${{ needs.prep.outputs.master_sha }}
+      # Not security-<event>-refs/heads/integration (a hand-started candidate would share release.yml's group).
+      concurrency_group: release-go-candidate-security
+
+  acceptance:
+    name: candidate preview acceptance
+    needs: prep
+    if: needs.prep.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    permissions:
+      contents: read
+      deployments: read
+      statuses: read
+      actions: read
+    outputs:
+      preview_url: ${{ steps.preview.outputs.url }}
+      skipped: ${{ steps.preview.outputs.skipped }}
+      acceptance_url: ${{ steps.accept.outputs.acceptance_url }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/factory
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Wait for the Vercel preview of this SHA
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.sha }}
+          PREVIEW_ENVIRONMENT: ${{ vars.FACTORY_PREVIEW_ENVIRONMENT }}
+          PREVIEW_STATUS_CONTEXT: ${{ vars.FACTORY_PREVIEW_STATUS_CONTEXT }}
+        run: node scripts/factory/wait-preview.mjs
+      - name: Vercel did not build this commit
+        if: steps.preview.outputs.skipped == 'true'
+        run: |
+          # preview-acceptance refuses unless preview serves this exact commit, so it can't run here.
+          echo "::error::Vercel skipped the preview build for ${GITHUB_SHA::7} (no app change), so preview acceptance can't run on it. Use the one-click Release to production button, or check again after the next app change."
+          exit 1
+      - name: Run preview-acceptance on this SHA (dispatched as Division6066) and wait
+        id: accept
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_BATCH_TOKEN }}
+          USER_TOKEN_SET: ${{ secrets.FACTORY_BATCH_TOKEN != '' }}
+          SHA: ${{ github.sha }}
+          ACCEPTANCE_WAIT_MINUTES: "50"
+        run: node scripts/factory/release-go.mjs acceptance
+
+  report:
+    name: candidate - update the Release PR comment
+    needs: [prep, ci, security, acceptance]
+    if: ${{ !cancelled() && needs.prep.outputs.run == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/factory
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Write the result into the Release PR comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          PR_NUMBER: ${{ needs.prep.outputs.pr_number }}
+          COMMENT_ID: ${{ needs.prep.outputs.comment_id }}
+          MASTER_SHA: ${{ needs.prep.outputs.master_sha }}
+          CONVEX_CHANGED: ${{ needs.prep.outputs.convex_changed }}
+          PREVIEW_URL: ${{ needs.acceptance.outputs.preview_url }}
+          VERCEL_SKIPPED: ${{ needs.acceptance.outputs.skipped }}
+          ACCEPTANCE_URL: ${{ needs.acceptance.outputs.acceptance_url }}
+          RESULTS: >-
+            {"ci": "${{ needs.ci.result }}", "security": "${{ needs.security.result }}",
+             "acceptance": "${{ needs.acceptance.result }}"}
+        run: node scripts/factory/release-go.mjs report
+
+  go:
+    name: go - check the guards, then start the release
+    # Cheap pre-filter only; the script checks every guard exactly (trimmed, case-insensitive `go`, author, ...).
+    if: >-
+      github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      github.event.issue.state == 'open' && contains(github.event.issue.labels.*.name, 'release') &&
+      github.event.comment.user.type != 'Bot' && contains(github.event.comment.body, 'go')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: release-go-dispatch
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      # issue_comment always runs the default branch's (integration) copy of this file and script.
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/factory
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Check every guard (one reply if one fails)
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          COMMENT_CREATED_AT: ${{ github.event.comment.created_at }}
+          PAUSED_ALL: ${{ vars.FACTORY_PAUSED_ALL }}
+          PAUSED: ${{ vars.FACTORY_PAUSED }}
+          USER_TOKEN_SET: ${{ secrets.FACTORY_BATCH_TOKEN != '' }}
+        run: node scripts/factory/release-go.mjs guard
+      - name: Start Release to production (dry_run=false) as Division6066
+        id: dispatch
+        if: steps.guard.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_BATCH_TOKEN }}
+          SHA: ${{ steps.guard.outputs.sha }}
+        run: node scripts/factory/release-go.mjs dispatch
+      - name: React and reply with the run link
+        # Also replies when the guard step itself errored (an API failure after a real `go`): nothing was started.
+        if: always() && (steps.guard.outputs.ok == 'true' || steps.guard.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          SHA: ${{ steps.guard.outputs.sha }}
+          RESULT: ${{ steps.guard.outcome == 'failure' && 'guard-error' || steps.dispatch.outputs.result }}
+          RELEASE_RUN_URL: ${{ steps.dispatch.outputs.run_url }}
+          DETAIL: ${{ steps.dispatch.outputs.detail }}
+        run: node scripts/factory/release-go.mjs announce

@@ -12,6 +12,24 @@ Times are Israel time (IDT).
 That is the only click. Only your account (Division6066) can run it. Anyone else's run stops in the first step.
 Tick **Dry run** to run the whole gate without merging. Nothing goes live in a dry run.
 
+## Release by comment (`go`)
+
+A second way to start the same release. The gate below does not change. Workflow: `.github/workflows/release-go.yml`. Script: `scripts/factory/release-go.mjs`.
+
+1. Each time integration changes, **release-go** checks that commit: full CI, secret scans since master, and the signed-in preview acceptance (a throwaway test account on preview.tempoflow.dev). No Bugbot here. Bugbot still reviews once, inside the release.
+2. It writes the result into one comment on the open Release PR (`Release YYYY-MM-DD`, label `release`): the commit, the preview link, pass or fail for each check, and whether Convex prod will deploy. The same comment is updated every time.
+3. Walk the preview. Then read the comment. When it says **ALL PASSED** and "Comment `go` to release this commit.", comment exactly `go` on the Release PR.
+4. The workflow checks again: you wrote it, the text is `go`, the check is for the current integration commit and passed, the comment did not change after your `go`, your `go` is less than 30 minutes old, the factory is not paused, and no release is already running. Then it starts **Release to production** (not a dry run) as you, reacts 🚀 and replies with the run link. From there it is the same release as the button.
+5. If any of those fail, it replies once with the reason and starts nothing. Any other comment is ignored.
+
+The button above still works exactly as before.
+
+Good to know:
+- `go` releases the commit named in the comment. If integration moves, wait for the new comment, then comment `go` again.
+- If Vercel did not build the latest commit (no app change, for example only docs or workflows), preview acceptance can't run, so `go` is refused. Use the button: it tests the integration preview in that case.
+- Each check sends one coach message on preview (a little provider credit).
+- One-time setup: the `FACTORY_BATCH_TOKEN` token also needs **Actions: Read and write**. It starts the release and the preview acceptance as you.
+
 ## What it checks (the second gate)
 
 All checks run on the exact integration commit you released (the "gate SHA").
@@ -98,7 +116,8 @@ You asked for one click, so the merge needs no approval. If you ever want a conf
 
 | Name | Kind | Needed for | Exists (6 Oct 2026) |
 |---|---|---|---|
-| `FACTORY_BATCH_TOKEN` | repo secret | PR, Bugbot request, labels, merge | **no** |
+| `FACTORY_BATCH_TOKEN` | repo secret | PR, Bugbot request, labels, merge; for `go` also Actions: Read and write (starts release.yml and preview-acceptance) | **no** |
+| `FACTORY_PAUSED_ALL`, `FACTORY_PAUSED` | repo variables | `true` = no candidate check and `go` is refused | not checked |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | repo secret | Playwright on the protected preview | yes |
 | `CONVEX_DEPLOY_KEY_LIVE` | secret on environment Production | Convex prod deploy (only when convex/ changed) | yes (set 6 Oct) |
 | `RELEASE_MERGE_METHOD` | repo variable, optional | `merge` (default) or `squash` | not set (merge) |
