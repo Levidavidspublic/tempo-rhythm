@@ -2,7 +2,7 @@
 
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. The separate implementation PRs below target `integration` as drafts; none is merged or deployed by this run. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
-The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more. This is **29 views across seventeen pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 also polishes an existing shell and adds no primary view. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
+The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more. This is **29 views across eighteen pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 also polishes an existing shell and adds no primary view. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
 
 | Ticket | Issue | Draft implementation PR | Mounted views / scope |
 |---|---|---|---|
@@ -21,7 +21,7 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-67 | #1169 | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | SelectedNagPhraseForm, NagSuggestionNotice; reminder phrases |
 | KB-69 | #1161 | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | ApprovalStatus, WaitingNameFeedback; approval waiting |
 | KB-70 | #1166 | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | NotificationReadFeedback; notification read actions |
-| KB-71 | #1175 | In progress; not yet a pushed PR at this snapshot | Existing shared Button phone targets at real callers; zero new primary views planned |
+| KB-71 | #1175 | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | Existing shared Button phone targets at real callers; zero new primary views planned |
 | KB-73 | #1170 | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | Existing ThemeToggle touch target and bilingual action label; zero new primary views |
 | KB-74 | #1171 | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | Existing TempoShell mobile drawer focus; zero new primary views planned |
 
@@ -37,6 +37,19 @@ All these implementation assignments use Sol under AGENTS.md's mid-tier rule, in
 - The existing outer auth modal titles remain English outside KB-10/45 scopes. The scoped inner forms/wrappers are bilingual; complete modal-shell localization remains residual work.
 - KB-67 fixes draft/feedback ownership across reminder selection. Existing derived-phrase acceptance lacks a five-minute Undo toast; this narrow UI fix does not claim to repair it.
 - No Vane/Open WebUI code was copied. Open WebUI contributes UX comparison only. No new provider, secret, paid call, environment value, label, review-bot request or merge was authorized here.
+
+## Existing polish branch overlap
+
+A complete open-PR file audit found that open draft [#1053](https://github.com/Levidavidspublic/tempo-rhythm/pull/1053) also changes four hosts already used by KB drafts. The initial KA-only ownership audit missed this broader overlap. These drafts must be reconciled before integration; their separate green checks do not test a combined result. Compare the merge-base proposal, not an older branch's whole file, and preserve current integration behavior:
+
+| KB draft | Shared host | Reconciliation required |
+|---|---|---|
+| KB-02 / #1160 | BrainDumpScreen | Retain integration’s existing accepted “Now” task scheduling/Open today behavior and two-hour tab draft/plan/choice retention. #1053’s older snapshot lacks that retention; preserve KB recovery/status when reconciling error handling and saved-page tracking. Accepted-task Undo remains a gap. |
+| KB-10 / #1159 | SignInForm | Reconcile #1053’s offline guard, validation summary and typed send errors with KB bilingual feedback/focus. Preserve its exported AuthCardLoading used by its changed auth routes, plus current auth props/callbacks. |
+| KB-44 / #1158 | OnboardingFlow | Retain #1053's brand span in the loading Card alongside KB progress/resume behavior. |
+| KB-69 / #1164 | WaitingForApproval | Preserve integration's optional name form and KB revision-aware feedback; #1053's older file lacks that form. Review its WaitingCard, revoked contact link and sign-out feedback without replacing the current host wholesale. |
+
+No rebase, merge or extra source attempt is implied here. PR #728 is an integration-to-master release promotion, not a competing implementation owner; PR #403 is an older explicitly “DO NOT MERGE” mock branch. KB-63 remains deferred because #1053 already implements its carry-over polish. Study PR #1081 targets #1053's branch.
 
 ## Needs Amit
 

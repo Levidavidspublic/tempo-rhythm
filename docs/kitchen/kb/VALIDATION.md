@@ -140,3 +140,9 @@ Live GitHub reads on 19 Oct confirm PR #1053 is an open draft from `kitchen/poli
 ## Planning issue linkage
 
 The lead created administrative issue #1176 for this actual documentation artifact and linked it to PR #1140. Scope-guard permits only data/component classifications; the issue uses the stricter non-backend component classification, with documentation-only scope and no implementation files. It is not a 53rd worker ticket, a backend authorization or a dispatcher job. Local scope judgment against the complete PR path list passes. Existing sandbox failures remain reported; fixing this link does not turn those failures into passes.
+
+## Open polish overlap and current remote checks
+
+The broader 109-open-PR audit identified PR #1053 overlap for KB-02/10/44/69 that the initial KA-only ownership audit missed. Their expected merge is now small-conflict and their WHEN text requires reconciliation before integration; IMPLEMENTATION.md records the specific behaviors to retain. No product code or dependency contract changes. The 52-ticket schema/scope/DAG/inventory validation still passes. GitHub checks on planning head 772615a, including scope-guard after issue #1176 linkage, are green. The earlier local browser failure remains reported and is not erased by remote success.
+
+KB-71 first source/test commit 9f26833 is pushed in draft PR #1177, bringing the implementation total to eighteen drafts and still 29 primary new views. Its browser evidence and formal local gates are pending at this snapshot.
