@@ -289,6 +289,22 @@
     ]
   },
   {
+    "id": "KB-67",
+    "title": "Phrase drafts stay with the selected nag",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/app/(tempo)/settings/nags/NagsScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-67.ts",
+      "apps/web/app/v3/kb-67.css",
+      "tests/unit/kb-67.test.tsx",
+      "docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.md",
+      "docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",

@@ -2,7 +2,7 @@
 
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. The separate implementation PRs below target `integration` as drafts; none is merged or deployed by this run. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
-The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more. This is **25 views across thirteen pushed implementation drafts**, not 150 completed components. KB-66 is in progress. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
+The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. This is **27 views across fourteen pushed implementation drafts**, not 150 completed components. KB-67 is in progress. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
 
 | Ticket | Issue | Draft implementation PR | Mounted views / scope |
 |---|---|---|---|
@@ -17,11 +17,12 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-10 | #1155 | [#1159](https://github.com/Levidavidspublic/tempo-rhythm/pull/1159) | MagicLinkStatus, SignInHelp; sign-in/shared auth form |
 | KB-44 | #1154 | [#1158](https://github.com/Levidavidspublic/tempo-rhythm/pull/1158) | OnboardingStepSummary, OnboardingResumeNotice |
 | KB-45 | #1156 | [#1163](https://github.com/Levidavidspublic/tempo-rhythm/pull/1163) | SignUpStatus, SignUpPrivacyLine; sign-up wrapper |
-| KB-66 | #1165 | In progress; not yet a pushed PR at this snapshot | ActivityLoadMore, ActivityEndStatus planned; activity |
+| KB-66 | #1165 | [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) | ActivityLoadMore, ActivityEndStatus; activity |
+| KB-67 | #1169 | In progress; not yet a pushed PR at this snapshot | SelectedNagPhraseForm, NagSuggestionNotice planned; reminder phrases |
 | KB-69 | #1161 | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | ApprovalStatus, WaitingNameFeedback; approval waiting |
 | KB-70 | #1166 | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | NotificationReadFeedback; notification read actions |
 
-All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these fourteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
+All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these fifteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 
@@ -31,6 +32,7 @@ All these implementation assignments use Sol under AGENTS.md's mid-tier rule, in
 - KB-06 does not invent milestone storage or goal/task relationships absent from integration. The lead corrected that unsupported requirement in the specification on 19 Oct; the PR delivers existing-state/progress polish only. Milestones still require a future backend scope. This correction does not turn failing local checks into a pass.
 - Brain dump's existing Save as page path has Undo; its accepted-task path does not have that control. KB-02 does not invent an undo backend or claim that gap is fixed.
 - The existing outer auth modal titles remain English outside KB-10/45 scopes. The scoped inner forms/wrappers are bilingual; complete modal-shell localization remains residual work.
+- KB-67 fixes draft/feedback ownership across reminder selection. Existing derived-phrase acceptance lacks a five-minute Undo toast; this narrow UI fix does not claim to repair it.
 - No Vane/Open WebUI code was copied. Open WebUI contributes UX comparison only. No new provider, secret, paid call, environment value, label, review-bot request or merge was authorized here.
 
 ## Needs Amit

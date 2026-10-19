@@ -108,3 +108,7 @@ The queue now has 48 entries, including three expanded components in batch 5. JS
 ## KB-06 planning correction
 
 The title, goal, exact existing API contract and steps now match supported goal progress/state data. The unsupported milestone capability is explicitly not delivered and requires a future backend scope. All mandatory checks remain unchanged. The 48-ticket documentation validator and diff whitespace check pass; no application source changed in this planning branch.
+
+## KB-67 independently scoped follow-up
+
+KB-67 (#1169) now covers a verified cross-reminder draft/async-response defect in the mounted NagsScreen. Its existing API signatures are explicit; legacy unmounted nag modules remain residual work. The queue has 49 tickets, four expanded batch-5 components and fifteen independent jobs. Documentation schema, scope, dependency and full-inventory validation pass. No product source changed in this branch.
