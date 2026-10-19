@@ -234,7 +234,8 @@ export function confirmNotice(result: unknown): ExecutorNotice {
  * The confirm is safe to repeat with the same nonce, so the page reads the live
  * `connections.status` instead of treating the failure as final:
  * - "connected": it reads connected on a connection that wasn't there when the confirm went out
- *   (another `connectedAt`), so the confirm landed;
+ *   (another `connectedAt`), so the confirm landed. Only with a loaded `before`: without one, a
+ *   connected status may be the older connection, so it is unknown and goes to Try again;
  * - "retry": the staged tokens may still be waiting (it reads connecting, hasn't loaded, or shows
  *   the older connection a staged one hides behind) and the one Try again isn't used yet;
  * - "final": nothing is left to confirm, or the Try again was used.
@@ -248,7 +249,7 @@ export function recoverConfirm(
   retried: boolean,
 ): ConfirmRecovery {
   const sameAsBefore = before?.status === "connected" && before.connectedAt === now?.connectedAt;
-  if (now?.status === "connected" && now.connectedAt !== undefined && !sameAsBefore) return "connected";
+  if (before && now?.status === "connected" && now.connectedAt !== undefined && !sameAsBefore) return "connected";
   if (retried) return "final";
   return !now || now.status === "connecting" || now.status === "connected" ? "retry" : "final";
 }
