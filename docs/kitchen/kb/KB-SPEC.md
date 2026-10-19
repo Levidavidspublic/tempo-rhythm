@@ -64,7 +64,7 @@ Batch 4 (KB-46–60):
 Batch 5 (KB-61–75):
 - KB-61 — Habits, routines, tracking and insights close gaps remaining after KA
 - KB-62 — Calendar and time-block surfaces close gaps remaining after KA
-- KB-63 — Tasks and day-planning surfaces close gaps remaining after KA
+- KB-63 — Tasks and day-planning surfaces close gaps remaining after KA. CarryOverStrip also waits for open polish PR #1053: that PR already adds v3 rows, localized action copy and errors; inspect only residual focus/aria/date-locale gaps after it lands. Study PR #1081 targets #1053's branch, not integration directly.
 - KB-64 — Notes, journal and capture surfaces close remaining reading gaps
 - KB-65 — Memory and notebooks close remaining v3 and citation gaps
 - KB-66 — **Expanded:** [Activity load more keeps the reader's place](tickets/KB-66.md), issue #1165. Other modules/goals/projects remain residual KB-75 work; do not file the broad title again.

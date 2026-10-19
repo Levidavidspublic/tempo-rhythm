@@ -132,3 +132,7 @@ The shared button primitive has 36/40 px variants mounted on real screens. KB-71
 ## Rejected KB-68 candidates and route reachability correction
 
 The lead did not file polish work merely to increase a count. BillingPlan's apparent null-plan spinner is hidden by the existing profile gate, so no visible defect was demonstrated. The legacy PaywallModal does omit accessible selected-plan state, but its only route callers, `/page2` and `/page3`, redirect to `/dashboard` in Next config before rendering; Navbar has no current static importer. The two payment inventory rows now distinguish static imports from an active mount. These modules need a later mount/retirement review, not an orphan gallery presented as live product polish. No payment, routing or source behavior was changed.
+
+## Carry-over ownership and study dependency recheck
+
+Live GitHub reads on 19 Oct confirm PR #1053 is an open draft from `kitchen/polish-pass` into integration, and PR #1081 is an open draft from `kitchen/tempo-study` into `kitchen/polish-pass`. PR #1053 already changes CarryOverStrip.tsx to add v3 rows, localized actions and visible mutation errors. KB-63 was not admitted as duplicate independent work; its title/inventory now call for residual focus, checkbox-label and weekday-locale review after that existing work lands. This run does not merge either PR or move their target branches.
