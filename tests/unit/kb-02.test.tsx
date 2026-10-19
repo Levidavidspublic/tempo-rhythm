@@ -9,6 +9,7 @@ import { en, he, tKb02 } from "../../apps/web/lib/i18n-groups/kb-02";
 const repo = process.cwd();
 const web = join(repo, "apps/web");
 const source = process.env.KB02_BEFORE_SOURCE ?? join(web, "components/brain-dump/BrainDumpScreen.tsx");
+const beforeMode = Boolean(process.env.KB02_BEFORE_SOURCE);
 const plan = { summary: "A quieter week for Maya.", priorities: [
   { title: "Ask Dana about Friday", reason: "There is time to decide.", urgency: "now" },
   { title: "Make space for Yoni's visit", reason: "A small first step.", urgency: "soon" },
@@ -42,7 +43,7 @@ function executable(): string {
 async function makeFixture() {
   temp = mkdtempSync(join(tmpdir(), "tempo-kb02-work-"));
   symlinkSync(join(web, "node_modules"), join(temp, "node_modules"), "dir");
-  writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{TpIconSprite}from"${web}/components/tempo/TpIcon.tsx";import{BrainDumpScreen,Kb02Gallery}from"${source}";window.__kbCalls=[];const gallery=new URLSearchParams(location.search).has("gallery");createRoot(document.getElementById("root")!).render(<><TpIconSprite/>{gallery?<Kb02Gallery/>:<main><BrainDumpScreen/></main>}</>);`);
+  writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{TpIconSprite}from"${web}/components/tempo/TpIcon.tsx";import{BrainDumpScreen${beforeMode ? "" : ",Kb02Gallery"}}from"${source}";window.__kbCalls=[];const gallery=new URLSearchParams(location.search).has("gallery");createRoot(document.getElementById("root")!).render(<><TpIconSprite/>${beforeMode ? "<main><BrainDumpScreen/></main>" : "{gallery?<Kb02Gallery/>:<main><BrainDumpScreen/></main>}"}</>);`);
   const result = await bun.build({
     entrypoints: [join(temp, "entry.tsx")], outdir: temp, target: "browser",
     define: { "process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS": '"0"' },
@@ -73,9 +74,12 @@ async function makeFixture() {
 
 async function open(width = 390, params = "", kept?: object): Promise<Page> {
   const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1, reducedMotion: "reduce" });
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.stack ?? String(error)));
   if (kept) await page.addInitScript(value => sessionStorage.setItem("tempo:brain-dump:session", JSON.stringify({ v: 1, savedAt: Date.now(), ...value })), kept);
   await page.goto(`${origin}/?${params}`, { waitUntil: "domcontentloaded" });
-  await page.locator("main").waitFor();
+  try { await page.locator("main").waitFor(); }
+  catch (error) { throw new Error(`Mounted screen did not appear. Browser errors: ${errors.join(" | ") || "none"}`, { cause: error }); }
   await page.locator("h1").waitFor();
   return page;
 }
@@ -217,6 +221,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
       expect(await noOverflow(page)).toBe(true);
       await capture(page, `screen-${width}-${lang}-${theme}.png`);
       await page.close();
+      if (beforeMode) continue;
       const gallery = await open(width, `${params}&gallery=1`);
       expect(await gallery.locator("main").count()).toBe(1);
       expect(await gallery.locator("h1").count()).toBe(1);

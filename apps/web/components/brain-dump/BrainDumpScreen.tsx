@@ -392,7 +392,7 @@ export function BrainDumpScreen() {
         <div className="bd-actions">
           <button
             type="button"
-            className="tp-btn tp-btn--primary"
+            className={plan ? "tp-btn tp-btn--secondary" : "tp-btn tp-btn--primary"}
             onClick={() => void handleSort()}
             // Not disabled when empty: the press itself shows the "type something first" hint.
             disabled={busy}
