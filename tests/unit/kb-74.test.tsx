@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { en, he, kb74t } from "../../apps/web/lib/i18n-groups/kb-74";
@@ -15,7 +15,7 @@ async function serveFixture() {
   symlinkSync(join(web, "node_modules"), join(dir, "node_modules"), "dir");
   writeFileSync(join(dir, "entry.tsx"), `import React from "${web}/node_modules/react";import {createRoot} from "${web}/node_modules/react-dom/client";import {TempoShell,Kb74Gallery} from "${component}";const gallery=new URLSearchParams(location.search).has("gallery");createRoot(document.getElementById("root")!).render(<React.StrictMode>{gallery?<Kb74Gallery/>:<TempoShell><section className="tp-paper"><h1>Today for Maya</h1><button type="button" id="page-action">Page action</button></section></TempoShell>}</React.StrictMode>);`);
   const stubs: Record<string, string> = {
-    "convex/react": `export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});export const useQuery=(ref,args)=>{const key=String(ref);if(args==="skip")return undefined;if(key.includes("getProfile"))return {greetingName:"Maya",email:"maya@example.test"};if(key.includes("listForRail")||key.includes("searchTitles")||key.includes("conversations.list")||key.includes("messages.list"))return [];if(key.includes("voice.availability"))return {available:false};return undefined};export const useMutation=()=>async()=>null;export const useAction=()=>async()=>null;`,
+    "convex/react": `export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});export const useQuery=(ref,args)=>{const key=String(ref);if(args==="skip")return undefined;if(key.includes("getProfile"))return {greetingName:"Maya",email:"maya@example.test"};if(key.includes("listForRail")||key.includes("searchTitles")||key.includes("conversations.list")||key.includes("messages.list"))return [];if(key.includes("voice.availability"))return {available:false};return undefined};export const useMutation=()=>async()=>null;export const useAction=()=>async()=>null;export const useConvex=()=>({query:async()=>({isCrisis:false})});`,
     "@convex-dev/auth/react": `export const useAuthActions=()=>({signOut:async()=>{}});`,
     "next/navigation": `import React from "${web}/node_modules/react";export const usePathname=()=>React.useSyncExternalStore(fn=>{window.addEventListener("kb74:path",fn);return()=>window.removeEventListener("kb74:path",fn)},()=>window.__kb74Path||"/today",()=>"/today");export const useRouter=()=>({push:path=>{window.__kb74Path=path;window.dispatchEvent(new Event("kb74:path"))},replace:path=>{window.__kb74Path=path;window.dispatchEvent(new Event("kb74:path"))}});`,
     "next/link": `import React from "${web}/node_modules/react";export default function Link({href,children,onClick,...rest}){const path=typeof href==="string"?href:href.pathname;return React.createElement("a",{href:path,onClick:event=>{event.preventDefault();onClick?.(event);window.__kb74Path=path;window.dispatchEvent(new Event("kb74:path"))},...rest},children)}`,
@@ -29,7 +29,14 @@ async function serveFixture() {
     plugins: [{ name: "kb74-fictional-data", setup(build) {
       build.onResolve({ filter: /^(@\/|convex\/react$|@convex-dev\/auth\/react$|next\/(navigation|link)$)/ }, args => {
         if (args.path in stubs) return { path: args.path, namespace: "kb74" };
-        if (args.path.startsWith("@/")) return { path: resolve(web, args.path.slice(2)) };
+        if (args.path.startsWith("@/")) {
+          const base = resolve(web, args.path.slice(2));
+          // A plugin-returned absolute path bypasses Bun's usual extension lookup.
+          const path = [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`,
+            join(base, "index.ts"), join(base, "index.tsx")].find(candidate => existsSync(candidate) && statSync(candidate).isFile());
+          if (!path) throw new Error(`KB-74 fixture import not found: ${args.path}`);
+          return { path };
+        }
       });
       build.onLoad({ filter: /.*/, namespace: "kb74" }, args => ({ contents: stubs[args.path], loader: "tsx", resolveDir: web }));
     } }],
@@ -38,13 +45,20 @@ async function serveFixture() {
   for (const output of result.outputs) writeFileSync(join(dir, basename(output.path)), await output.arrayBuffer());
   const files = result.outputs.map(output => basename(output.path));
   const css = files.filter(file => file.endsWith(".css"));
-  const server = Bun.serve({ port: 0, fetch(request) {
+  // Compile the same Tailwind @theme tokens that Next emits; raw globals.css leaves the
+  // focus-ring colour undefined in a standalone browser and gives a false focus failure.
+  const postcss = (await import(join(web, "node_modules/postcss/lib/postcss.mjs"))).default;
+  const tailwind = (await import(join(web, "node_modules/@tailwindcss/postcss/dist/index.mjs"))).default;
+  const globalSource = join(web, "app/globals.css");
+  const globalCss = (await postcss([tailwind({ base: repo })]).process(readFileSync(globalSource, "utf8"), { from: globalSource })).css;
+  const server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === "/") {
       const lang = url.searchParams.get("lang") === "he" ? "he" : "en";
       const theme = url.searchParams.get("theme") === "dark" ? "dark" : "light";
-      return new Response(`<!doctype html><html lang="${lang}" dir="${lang === "he" ? "rtl" : "ltr"}" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/globals.css"><link rel="stylesheet" href="/tempo.css">${css.map(file => `<link rel="stylesheet" href="/${file}">`).join("")}</head><body><div id="root"></div><script type="module" src="/entry.js"></script></body></html>`, { headers: { "content-type": "text/html" } });
+      return new Response(`<!doctype html><html lang="${lang}" dir="${lang === "he" ? "rtl" : "ltr"}" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/globals.css">${css.map(file => `<link rel="stylesheet" href="/${file}">`).join("")}</head><body><div id="root"></div><script>window.process={env:{NODE_ENV:"production",NEXT_PUBLIC_VERCEL_ENV:"production"}};</script><script type="module" src="/entry.js"></script></body></html>`, { headers: { "content-type": "text/html" } });
     }
+    if (url.pathname === "/globals.css") return new Response(globalCss, { headers: { "content-type": "text/css" } });
     const name = url.pathname.slice(1);
     const path = files.includes(name) ? join(dir, name) : resolve(web, "app", name);
     if (!path.startsWith(dir) && !path.startsWith(join(web, "app"))) return new Response("not found", { status: 404 });
@@ -90,7 +104,7 @@ if (!childMode) {
     const dir = process.env.KB74_EVIDENCE_DIR;
     if (!dir) return;
     mkdirSync(dir, { recursive: true });
-    await page.screenshot({ path: join(dir, name), fullPage: true });
+    await page.screenshot({ path: join(dir, name), fullPage: true, animations: "disabled" });
   }
 
   beforeAll(async () => {
@@ -147,6 +161,28 @@ if (!childMode) {
       const page = await open(); await openDrawer(page, "tabbar");
       expect(await page.locator('[data-component="Sidebar"] [data-component="CommandTrigger"]:focus').count()).toBe(1);
       await page.close();
+    });
+    test("keyboard opening shows visible focus inside the real drawer", async () => {
+      for (const lang of ["en", "he"]) {
+        const page = await open(390, `lang=${lang}`);
+        await page.locator('[data-component="Topbar"] .tp-topbar__menu').focus();
+        await page.keyboard.press("Enter");
+        await page.waitForFunction(() => document.activeElement?.getAttribute("data-component") === "CommandTrigger");
+        const focusAppearance = await page.locator('[data-component="CommandTrigger"]').evaluate(el => {
+          const style = getComputedStyle(el);
+          return { outline: style.outline, outlineWidth: style.outlineWidth, boxShadow: style.boxShadow, border: style.border,
+            focusVisible: el.matches(":focus-visible"), focused: document.activeElement === el };
+        });
+        console.log("KB-74 keyboard drawer focus appearance:", lang, focusAppearance);
+        await capture(page, `after-open-keyboard-390-${lang}-light.png`);
+        expect(focusAppearance.focused && focusAppearance.focusVisible).toBe(true);
+        expect(focusAppearance.outline).toContain("solid");
+        expect(parseFloat(focusAppearance.outlineWidth)).toBeGreaterThanOrEqual(2);
+        await page.keyboard.press("Escape");
+        await page.locator('[data-component="Topbar"] .tp-topbar__menu:focus').waitFor();
+        await capture(page, `after-restored-390-${lang}-light.png`);
+        await page.close();
+      }
     });
     test("programmatic topbar click remembers its real trigger while another button had focus", async () => {
       const page = await open();
@@ -308,6 +344,7 @@ if (!childMode) {
           if (width === 390) {
             const menu = page.locator('[data-component="Topbar"] .tp-topbar__menu');
             expect(await menu.evaluate(el => el.getBoundingClientRect().height >= 44)).toBe(true);
+            expect(await page.locator('[data-component="TabBar"] button').evaluate(el => el.getBoundingClientRect().height >= 44)).toBe(true);
             await openDrawer(page);
             expect(await page.locator('[data-component="Sidebar"] [data-component="CommandTrigger"]').evaluate(el => el.getBoundingClientRect().height >= 44)).toBe(true);
             expect(await page.locator('[data-component="Sidebar"] a[href="/today"]').evaluate(el => el.getBoundingClientRect().height >= 44)).toBe(true);
