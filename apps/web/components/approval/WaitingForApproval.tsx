@@ -181,13 +181,13 @@ export function Kb69Gallery() {
   const email = state === "overflow" ? "maya.a.very.long.fictional.address.for.a.narrow.phone@example.test" : "maya@example.com";
   return <main className="kb69-gallery" lang={lang} dir={lang === "he" ? "rtl" : "ltr"} data-component="Kb69Gallery">
     <TpIconSprite />
-    <div className="kb69-gallery__controls" role="group" aria-label={kb69t(lang, "gallery.title")}>
+    <fieldset className="kb69-gallery__controls"><legend className="tp-sr-only">{kb69t(lang, "gallery.title")}</legend>
       <button type="button" lang="en" aria-pressed={lang === "en"} onClick={() => setLang("en")}>English</button>
       <button type="button" lang="he" aria-pressed={lang === "he"} onClick={() => setLang("he")}>עברית</button>
       {states.map(next => <button key={next} type="button" aria-pressed={state === next} onClick={() => { setState(next); setRetry(false); }}>
         {kb69t(lang, `gallery.${next}`)}
       </button>)}
-    </div>
+    </fieldset>
     <section className="kb69-card kb69-gallery__sample">
       <ApprovalStatus email={email} revoked={state === "revoked"} lang={lang} />
       {state === "revoked" ? null : <WaitingNameFeedback id="kb69-gallery-feedback" feedback={feedback} currentRevision={0} lang={lang} />}
