@@ -10,8 +10,9 @@ name: release-go
 # on the open Release PR: SHA, preview URL, pass/fail per check, whether convex/ differs from master.
 # NO Bugbot here: release.yml asks for ONE Bugbot review inside the real release. A release.yml dry run is NOT used:
 # its bugbot job has no dry_run guard, so a dry run would request Bugbot too.
-# Skipped while the factory is paused, while a "Release to production" run is queued or running (our CI call and its
-# gate CI share ci.yml's concurrency group ci-refs/heads/integration), or when no Release PR is open.
+# Skipped while the factory is paused, while a "Release to production" run is queued or running (its gate is testing
+# already), or when no Release PR is open. Our ci.yml call uses its own concurrency group (input concurrency_group),
+# so it can never cancel release.yml's gate CI (group ci-refs/heads/integration), or be cancelled by it.
 # Spend: each candidate run = one preview-acceptance run = one coach message (provider credit) + one mail.tm inbox.
 #
 # Part 2, `go` (issue_comment). Amit comments exactly `go` on the open Release PR. The guard step checks every rule
@@ -96,6 +97,10 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
+    with:
+      # Not ci-refs/heads/integration (release.yml's gate CI uses that group): the two never cancel each other.
+      # Older candidate runs are already cancelled by this workflow's own concurrency group.
+      concurrency_group: release-go-candidate-ci
 
   security:
     name: candidate secret scans

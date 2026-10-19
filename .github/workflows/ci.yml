@@ -15,12 +15,19 @@ on:
   workflow_dispatch:
   # release.yml (Phase H) runs this whole CI again on the exact integration SHA before a production release.
   workflow_call:
+    inputs:
+      concurrency_group:
+        description: Own concurrency group for this call. release-go.yml passes one so its candidate CI and release.yml's gate CI (both ref integration) never cancel each other. Empty = ci-<ref>, as before.
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # inputs is empty for every event but workflow_call, so PR, merge-queue, dispatch and release.yml runs keep ci-<ref>.
+  group: ${{ inputs.concurrency_group || format('ci-{0}', github.ref) }}
   cancel-in-progress: true
 
 env:
