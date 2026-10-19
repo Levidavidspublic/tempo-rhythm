@@ -275,7 +275,7 @@ render();`);
               const capture = process.env.KB70_EVIDENCE_DIR;
               if (capture) {
                 await mkdir(capture, { recursive: true });
-                await page.screenshot({ path: join(capture, `after-${width}-${lang}-${theme}.png`), fullPage: true });
+                await page.screenshot({ path: join(capture, `gallery-${width}-${lang}-${theme}.png`), fullPage: true });
               }
             }
           }
