@@ -8,6 +8,8 @@
  *   laptop or phone browser.
  * - Voice is not offered: it only works where its keys are set.
  * - Pricing is "free during the beta", and Amit approves each account by hand (convex/approval.ts).
+ * - The coach card's chats line is /coach's chats column (#1090): chats are kept, New chat, and
+ *   one search across all chats (messages.searchMine).
  *
  * Hebrew uses plural or impersonal forms so it speaks to everyone, like lib/i18n.ts.
  */
@@ -173,7 +175,7 @@ const en: LandingCopy = {
     coach: {
       eyebrow: "02 — Coach",
       title: "It suggests. You decide.",
-      body: "The coach sees the page you have open and today's open tasks. It can suggest a task, a new page, a template or an order for your day. A dial from 0 to 10 sets how much it pushes.",
+      body: "The coach sees the page you have open and today's open tasks. It can suggest a task, a new page, a template or an order for your day. A dial from 0 to 10 sets how much it pushes. Your chats with it are kept: start a new chat any time, and search across all of them.",
       exampleLabel: "Example",
       example: "“Want me to add ‘Book the dentist’ to today, 10 minutes?”",
     },
@@ -352,7 +354,7 @@ const he: LandingCopy = {
     coach: {
       eyebrow: "02 — המאמן",
       title: "הוא מציע. ההחלטה שלך.",
-      body: "המאמן רואה את הדף הפתוח ואת המשימות הפתוחות של היום. הוא יכול להציע משימה, דף חדש, תבנית או סדר ליום. חוגה מ-0 עד 10 קובעת כמה הוא דוחף.",
+      body: "המאמן רואה את הדף הפתוח ואת המשימות הפתוחות של היום. הוא יכול להציע משימה, דף חדש, תבנית או סדר ליום. חוגה מ-0 עד 10 קובעת כמה הוא דוחף. השיחות עם המאמן נשמרות: אפשר לפתוח שיחה חדשה בכל רגע, ולחפש בכל השיחות.",
       exampleLabel: "דוגמה",
       example: "״להוסיף את ׳לקבוע תור לרופא שיניים׳ להיום, 10 דקות?״",
     },
