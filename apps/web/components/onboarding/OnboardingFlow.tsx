@@ -463,7 +463,7 @@ export function OnboardingResumeNotice({ step, lang, disabled = false, onReview 
   readonly disabled?: boolean;
   readonly onReview: () => void;
 }) {
-  return <aside className="kb44-resume" data-component="OnboardingResumeNotice" role="status">
+  return <aside className="kb44-resume" data-component="OnboardingResumeNotice">
     <TpIcon name="info" size="sm" />
     <div className="kb44-resume__copy">
       <p><strong>{translateKb44(lang, "resume.title", { step: `\u2066${step}\u2069` })}</strong></p>
@@ -482,7 +482,7 @@ export function Kb44Gallery() {
   const [feedback, setFeedback] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
-  useEffect(() => { if (moved.current) { heading.current?.focus(); moved.current = false; } }, [step]);
+  useEffect(() => { if (moved.current) { heading.current?.focus(); moved.current = false; } });
   const move = (next: number) => {
     if (next === step) return;
     moved.current = true;

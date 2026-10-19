@@ -264,7 +264,7 @@ createRoot(document.getElementById("root")!).render(<LocaleProvider><ThemeProvid
       await page.goto(`${server.url.href}?step=5`);
       await page.locator('[data-component="OnboardingResumeNotice"]').waitFor();
       const review = page.getByRole("button", { name: "Review earlier steps" });
-      await page.getByRole("button", { name: "Finish" }).click();
+      await page.getByRole("button", { name: "Start using Tempo" }).click();
       expect(await review.isDisabled()).toBe(true);
       await review.evaluate((node: HTMLButtonElement) => node.click());
       expect(await page.locator("#s5-title").count()).toBe(1);
