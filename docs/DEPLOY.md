@@ -16,7 +16,7 @@ Tick **Dry run** to run the whole gate without merging. Nothing goes live in a d
 
 A second way to start the same release. The gate below does not change. Workflow: `.github/workflows/release-go.yml`. Script: `scripts/factory/release-go.mjs`.
 
-1. Each time integration changes, **release-go** checks that commit: full CI, secret scans since master, and the signed-in preview acceptance (a throwaway test account on preview.tempoflow.dev). No Bugbot here. Bugbot still reviews once, inside the release.
+1. Each time integration changes, **release-go** checks that commit: full CI, secret scans since master, and the signed-in preview acceptance (a throwaway test account on preview.tempoflow.dev). No code review here. Bugbot or CodeRabbit still reviews once, inside the release.
 2. It writes the result into one comment on the open Release PR (`Release YYYY-MM-DD`, label `release`): the commit, the preview link, pass or fail for each check, and whether Convex prod will deploy. The same comment is updated every time.
 3. Walk the preview. Then read the comment. When it says **ALL PASSED** and "Comment `go` to release this commit.", comment exactly `go` on the Release PR.
 4. The workflow checks again: you wrote it, the text is `go`, the check is for the current integration commit and passed, the comment did not change after your `go`, your `go` is less than 30 minutes old, the factory is not paused, and no release is already running. Then it starts **Release to production** (not a dry run) as you, reacts 🚀 and replies with the run link. From there it is the same release as the button.
@@ -39,9 +39,9 @@ All checks run on the exact integration commit you released (the "gate SHA").
 3. **Full CI** on the gate SHA: lint, typecheck, unit tests, scans (forbidden tech, RAM-only, design tokens), third-party notices, local Playwright E2E, build.
 4. **Secret scans**: gitleaks, trufflehog, scanner self-test. They cover every commit since master.
 5. **Playwright against the integration preview.** It waits for the Vercel preview of the gate SHA. It runs the whole suite there with the protection bypass. If Vercel skipped that commit (no app change), it tests preview.tempoflow.dev, which serves the same app code.
-6. **One Cursor Bugbot review** of the whole release PR. It runs only after steps 3 to 5 are green, so a red CI never costs a Bugbot run. If Bugbot already reviewed this exact SHA, that review counts. Otherwise the workflow posts `@cursor review` once.
+6. **One code review** of the whole release PR. Which reviewer runs is the repo variable `RELEASE_REVIEWER`: `bugbot` (default) or `coderabbit`. It runs only after steps 3 to 5 are green. If that reviewer already finished this exact SHA, that review counts. Otherwise the workflow posts one request (`@cursor review` or `@coderabbitai review`). A CodeRabbit status whose description says the review was skipped does not count as a pass.
 
-Any red check or any Bugbot finding stops the release. The PR gets `blocked:amit` and a comment that lists what failed. There is no auto-fix on a release. Fix it on integration, then click again.
+Any red check or any review finding stops the release. The PR gets `blocked:amit` and a comment that lists what failed. There is no auto-fix on a release. Fix it on integration, then click again.
 
 ## Then it ships (real run only)
 
@@ -58,15 +58,15 @@ Any red check or any Bugbot finding stops the release. The PR gets `blocked:amit
 Usually about 20 to 35 minutes:
 - preflight and the PR: 1 to 2 min
 - CI, scans and preview E2E, in parallel: about 5 min
-- Bugbot: about 5 to 15 min (a big release takes longer)
+- Code review: about 5 to 15 min for Bugbot, up to about 45 min for CodeRabbit
 - Convex (only when it changed): about 2 min
 - Vercel production build: about 3 to 5 min, then the health check
 
-Hard limits: 35 min for Bugbot, 60 min for the PR checks, 30 min for the Vercel deployment.
+Hard limits: 35 min for Bugbot, 45 min for CodeRabbit, 60 min for the PR checks, 30 min for the Vercel deployment.
 
 ## What you'll see
 
-- The run page shows each job: preflight, release PR, gate CI, gate secret scans, gate E2E on preview, gate Bugbot, gate verdict, release PR mergeable, Convex prod deploy, merge + verify production.
+- The run page shows each job: preflight, release PR, gate CI, gate secret scans, gate E2E on preview, gate code review, gate verdict, release PR mergeable, Convex prod deploy, merge + verify production.
 - Green run = live. The summary shows the merged master commit, the Vercel deployment link, and "commit … matches" from /api/health.
 - Red run = stopped. The summary and the PR comment say where and why. If it stopped before the merge, nothing changed in production.
 - Dry run = it stops after "gate verdict" with "Dry run: release gate GREEN" (or red), and a PR comment.
@@ -90,7 +90,7 @@ Hard limits: 35 min for Bugbot, 60 min for the PR checks, 30 min for the Vercel 
 Status 6 Oct 2026, ~12:50 IDT. Steps 2 to 6 are **done** (approved by Amit 12:44 IDT; JSON backups of every setting before the change are kept outside the repo). Only step 1, the token, is still open.
 The workflow checks all of these in preflight and names any that are missing. A dry run works before they are done. It just reports them.
 
-1. **Release token (OPEN).** Add repo secret `FACTORY_BATCH_TOKEN`: a Division6066 fine-grained token, repo tempo-rhythm only, 365 days max. Permissions: Contents, Pull requests, Issues and Workflows = Read and write; Administration = Read only, so preflight can read master protection (Metadata read is automatic). The repo is public, so reading checks and deployments needs nothing extra. The workflow uses it to open the PR, ask Bugbot, label and merge. Workflows write is needed because a release merges workflow files into master.
+1. **Release token (OPEN).** Add repo secret `FACTORY_BATCH_TOKEN`: a Division6066 fine-grained token, repo tempo-rhythm only, 365 days max. Permissions: Contents, Pull requests, Issues and Workflows = Read and write; Administration = Read only, so preflight can read master protection (Metadata read is automatic). The repo is public, so reading checks and deployments needs nothing extra. The workflow uses it to open the PR, ask for the code review, label and merge. Workflows write is needed because a release merges workflow files into master.
 2. **(done)** **factory-live ruleset** (Settings → Rules → Rulesets → factory-live): delete the rule **Restrict updates**. With no bypass list, it blocks every merge into master, including yours. Also untick **Require branches to be up to date before merging**. Keep the 5 required checks.
 3. **(done)** **Classic master protection** (Settings → Branches → master): untick **Require branches to be up to date** and **Require linear history**.
 4. **(done)** **Allow merge commits** (Settings → General → Pull Requests). The release uses a merge commit, so master keeps integration's history and the next release has no conflicts. The integration merge queue stays squash.
@@ -116,10 +116,11 @@ You asked for one click, so the merge needs no approval. If you ever want a conf
 
 | Name | Kind | Needed for | Exists (6 Oct 2026) |
 |---|---|---|---|
-| `FACTORY_BATCH_TOKEN` | repo secret | PR, Bugbot request, labels, merge; for `go` also Actions: Read and write (starts release.yml and preview-acceptance) | **no** |
+| `FACTORY_BATCH_TOKEN` | repo secret | PR, code-review request, labels, merge; for `go` also Actions: Read and write (starts release.yml and preview-acceptance) | **no** |
 | `FACTORY_PAUSED_ALL`, `FACTORY_PAUSED` | repo variables | `true` = no candidate check and `go` is refused | not checked |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | repo secret | Playwright on the protected preview | yes |
 | `CONVEX_DEPLOY_KEY_LIVE` | secret on environment Production | Convex prod deploy (only when convex/ changed) | yes (set 6 Oct) |
+| `RELEASE_REVIEWER` | repo variable, optional | `bugbot` (default) or `coderabbit`. Chooses the one review inside the release. Set `coderabbit` to use CodeRabbit instead of Cursor Bugbot. | not set (bugbot) |
 | `RELEASE_MERGE_METHOD` | repo variable, optional | `merge` (default) or `squash` | not set (merge) |
 | `RELEASE_PREVIEW_SPECS` | repo variable, optional | narrow the preview Playwright run | not set (whole suite) |
 | `RELEASE_PREVIEW_URL` | repo variable, optional | fallback preview URL | not set (preview.tempoflow.dev) |

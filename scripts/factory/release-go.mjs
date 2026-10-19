@@ -6,8 +6,8 @@
 //   preview acceptance (preview-acceptance.yml, dispatched as Division6066). The result goes into ONE comment on
 //   the open Release PR, written with github.token and starting with the hidden marker
 //   <!-- release-candidate {"sha":"<40 hex>","run":<run id>,"state":"pending|pass|fail"} -->
-//   NO Bugbot here: release.yml asks for ONE Bugbot review inside the real release. A release.yml dry run is not
-//   used, because its bugbot job has no dry_run guard (it would request Bugbot too).
+//   NO code review here: release.yml asks for ONE review inside the real release (REVIEWER / RELEASE_REVIEWER).
+//   A release.yml dry run is not used, because its review job has no dry_run guard (it would request that review too).
 // Part 2, `go` (subcommands guard / dispatch / announce). goVerdict() holds every rule. If all hold, release.yml
 //   is dispatched (dry_run=false) on integration with FACTORY_BATCH_TOKEN, so the run's actor is Division6066
 //   (release.yml's preflight requires that). A failed guard gets one reply naming it; nothing else happens.
@@ -77,7 +77,7 @@ export function renderCandidate({ sha, run, runUrl, state, checks = {}, previewU
     "|---|---|",
     ...CHECKS.map(([k, name]) => `| ${name} | ${show(k)} |`),
     "",
-    "Cursor Bugbot is not part of this check. It reviews once, inside the real release.",
+    "Code review is not part of this check. Bugbot or CodeRabbit (repo variable RELEASE_REVIEWER) reviews once, inside the real release.",
     "",
   ];
   if (state === "pass") lines.push("**Comment `go` to release this commit.**", "");
@@ -317,7 +317,7 @@ async function announce(o, r) {
   const all = `${process.env.GITHUB_SERVER_URL || "https://github.com"}/${o}/${r}/actions/workflows/${RELEASE_WORKFLOW}`;
   const res = process.env.RESULT || "error";
   const text = {
-    started: [`Release started for \`${short(sha)}\` (Release to production, dry_run=false, as ${AMIT}): ${url}`, "", "The full release gate runs first (CI, secret scans, preview E2E, one Cursor Bugbot review). Any red check stops it before the merge. Rollback: docs/DEPLOY.md."],
+    started: [`Release started for \`${short(sha)}\` (Release to production, dry_run=false, as ${AMIT}): ${url}`, "", "The full release gate runs first (CI, secret scans, preview E2E, one code review). Any red check stops it before the merge. Rollback: docs/DEPLOY.md."],
     unidentified: [`Release started for \`${short(sha)}\`, but its run was not identified. Check the runs page: ${all}`],
     ambiguous: [`Release dispatched for \`${short(sha)}\`, but more than one new run matched, so none was identified and nothing was cancelled. Check the runs page: ${all}`],
     mismatch: [`Stopped: the release run started on \`${process.env.DETAIL || "another commit"}\`, not the checked \`${short(sha)}\` (integration moved). It was cancelled: ${url}`, "", "Wait for the new candidate comment, then comment `go` again."],

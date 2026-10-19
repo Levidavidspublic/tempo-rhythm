@@ -8,8 +8,9 @@ name: release-go
 # SHA it runs full CI (ci.yml), secret scans since master (security.yml) and the signed-in preview acceptance
 # (preview-acceptance.yml, dispatched as Division6066 with FACTORY_BATCH_TOKEN). Then it posts or updates ONE comment
 # on the open Release PR: SHA, preview URL, pass/fail per check, whether convex/ differs from master.
-# NO Bugbot here: release.yml asks for ONE Bugbot review inside the real release. A release.yml dry run is NOT used:
-# its bugbot job has no dry_run guard, so a dry run would request Bugbot too.
+# NO code review here: release.yml asks for ONE review inside the real release (Bugbot, or CodeRabbit when
+# RELEASE_REVIEWER=coderabbit). A release.yml dry run is NOT used: its review job has no dry_run guard, so a
+# dry run would request that review too.
 # Skipped while the factory is paused, while a "Release to production" run is queued or running (its gate is testing
 # already), or when no Release PR is open. Our ci.yml and security.yml calls use their own concurrency groups (input
 # concurrency_group), so they can never cancel release.yml's gate CI / scans, or be cancelled by them.
