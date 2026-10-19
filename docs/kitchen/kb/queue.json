@@ -257,6 +257,38 @@
     ]
   },
   {
+    "id": "KB-66",
+    "title": "Activity load more keeps the reader's place",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/activity/ActivityScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-66.ts",
+      "apps/web/app/v3/kb-66.css",
+      "tests/unit/kb-66.test.tsx",
+      "docs/polish/evidence/kb-66-activity-load-more-keeps-reading-place.md",
+      "docs/polish/evidence/kb-66-activity-load-more-keeps-reading-place.jpg"
+    ]
+  },
+  {
+    "id": "KB-70",
+    "title": "Notification actions keep focus and submit once",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/notifications/NotificationsScreen.tsx",
+      "apps/web/lib/i18n-groups/kb-70.ts",
+      "apps/web/app/v3/kb-70.css",
+      "tests/unit/kb-70.test.tsx",
+      "docs/polish/evidence/kb-70-notification-actions-keep-focus-and-submit-once.md",
+      "docs/polish/evidence/kb-70-notification-actions-keep-focus-and-submit-once.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",
