@@ -412,6 +412,12 @@ createRoot(document.getElementById("root")).render(view);`
     results.largeTextNoOverflow = await gallery.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth
     );
+    if (captureDir) {
+      await gallery.screenshot({
+        path: join(captureDir, "after-gallery-he-390-large-text-dark.png"),
+        fullPage: true,
+      });
+    }
     await gallery.close();
     const desktop = await open("after", "gallery", "en", 1280, "light");
     results.desktopSmall = (await measure(desktop, "button")).h;
@@ -502,7 +508,7 @@ if (child) {
     ]);
     if (code !== 0) throw Error(`KB71 clean child exited ${code}: ${err.slice(-5000)}`);
     r = JSON.parse(out.trim().split("\n").at(-1) ?? "{}");
-  }, 240_000);
+  }, process.env.KB71_CAPTURE_DIR ? 480_000 : 240_000);
   describe("KB-71 shared Button contract", () => {
     test("small phone button reaches 44 px", () => expect(r.small).toBeGreaterThanOrEqual(44));
     test("default phone button reaches 44 px", () => {

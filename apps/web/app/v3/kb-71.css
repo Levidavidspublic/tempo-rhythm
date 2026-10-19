@@ -23,6 +23,7 @@
 
 .kb71-gallery {
   display: grid;
+  align-content: start;
   justify-items: start;
   gap: var(--tp-space-4);
   max-inline-size: 100%;
