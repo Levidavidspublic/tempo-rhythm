@@ -5,9 +5,21 @@
  * list itself did not change. The dialog mounts in a Radix portal, which only renders in a
  * browser, so the open-then-close wiring is checked by hand (see the ticket report).
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "next/navigation": { ...(await import("next/navigation")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+  "@/components/providers/ThemeProvider": { ...(await import("@/components/providers/ThemeProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: false, isLoading: false }),

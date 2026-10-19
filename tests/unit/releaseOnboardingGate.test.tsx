@@ -307,10 +307,11 @@ let profileResult: Profile | undefined;
 let startersResult: { templateId: string; name: string }[] | undefined;
 let approvalResult: Approval;
 
-// bun's mock.module is process-global and bun loads every test file before running any, so
-// OnboardingFlow.test.tsx's mocks of the same modules are registered by the time these tests
-// start. Snapshot whatever is registered then, install ours for this file only, and put the
-// snapshot back afterwards so neither file sees the other's router/query mocks.
+// bun's mock.module is process-global and outlives the file that calls it (bun runs the test
+// files one after another in one process). Snapshot what is registered before this file
+// installs anything (the real modules, which also keeps every export name importable for the
+// files that run later), install ours for this file only, and put the snapshot back afterwards
+// so no later file sees this file's router/query mocks.
 // These packages are installed under apps/web only, so key the mocks by the path they
 // resolve to from there (the same key OnboardingFlow.test.tsx's bare specifiers get).
 const webDir = `${process.cwd()}/apps/web`;
@@ -370,6 +371,7 @@ function installModuleMocks() {
   }));
 }
 
+await snapshotModuleMocks();
 installModuleMocks();
 
 // The query suffix gives this file its own module instances, so it never shares (or
@@ -427,10 +429,7 @@ async function rerender(element: Build) {
   });
 }
 
-beforeAll(async () => {
-  await snapshotModuleMocks();
-  installModuleMocks();
-});
+beforeAll(installModuleMocks);
 afterAll(restoreModuleMocks);
 
 beforeEach(() => {

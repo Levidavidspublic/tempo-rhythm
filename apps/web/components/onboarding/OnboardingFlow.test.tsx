@@ -2,7 +2,7 @@
  * Vitest and Testing Library are not dependencies in this repo, and package.json
  * is outside this ticket's scope. bun:test plus react-dom covers the same checks.
  */
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { act, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { getFunctionName } from "convex/server";
@@ -306,6 +306,18 @@ type Profile = { fullName?: string; greetingName: string; onboardedAt?: number }
 
 let profileResult: Profile | undefined;
 let coachResult: { dial: number } | undefined;
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "next/navigation": { ...(await import("next/navigation")) },
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+  "@/components/providers/ThemeProvider": { ...(await import("@/components/providers/ThemeProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("next/navigation", () => ({
   useRouter: () => ({ push, replace }),

@@ -4,7 +4,7 @@
  * component tests: bun:test, react-dom on a small test DOM, and mocked convex/react, next/* and
  * the locale provider. Each case runs in English and in Hebrew.
  */
-import { afterEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, mock, test } from "bun:test";
 import { getFunctionName } from "convex/server";
 import { act, createElement, type ReactNode } from "react";
 import type { Root } from "react-dom/client";
@@ -327,6 +327,18 @@ const MUTATIONS: Record<string, unknown> = {
   "goals:create": createGoal,
   "goals:remove": removeGoal,
 };
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "next/navigation": { ...(await import("next/navigation")) },
+  "next/link": { ...(await import("next/link")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),

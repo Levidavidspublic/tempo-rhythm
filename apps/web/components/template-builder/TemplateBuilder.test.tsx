@@ -2,7 +2,7 @@
  * Vitest and Testing Library are not dependencies in this repo, and package.json
  * is outside this ticket's scope. bun:test plus react-dom covers the same checks.
  */
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { getFunctionName } from "convex/server";
 import { act, createElement, forwardRef, type ReactElement, type ReactNode } from "react";
 import type { Root } from "react-dom/client";
@@ -301,6 +301,22 @@ function installTestDom() {
   return documentNode;
 }
 
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+// (Before the test DOM: CodeMirror reads the browser when it loads.)
+const realModules = {
+  "next/navigation": { ...(await import("next/navigation")) },
+  "next/link": { ...(await import("next/link")) },
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/editor/LivePreviewEditor": { ...(await import("@/components/editor/LivePreviewEditor")) },
+  "@/components/editor/live-preview": { ...(await import("@/components/editor/live-preview")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+  "@/components/providers/ThemeProvider": { ...(await import("@/components/providers/ThemeProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
+
 const documentNode = installTestDom();
 // react-dom reads the DOM when it loads, so it is imported after the test DOM exists.
 const { createRoot } = await import("react-dom/client");
@@ -438,10 +454,21 @@ function findForm(root: TestNode): TestNode {
   return form;
 }
 
+/** The props React gave a rendered node. */
+function reactProps(node: TestNode): Record<string, unknown> {
+  const key = Object.keys(node).find((name) => name.startsWith("__reactProps$"));
+  if (!key) throw new Error(`No React props on ${node.tagName}`);
+  return (node as unknown as Record<string, Record<string, unknown>>)[key] as Record<string, unknown>;
+}
+
+// Calls the field's onChange, as ProfileForm.test.tsx and GoalsScreen.test.tsx do. A dispatched
+// "input" event only reaches it when react-dom first loaded on this file's DOM (it checks for
+// input events once, when it loads), and in `bun run test` an earlier file may have loaded it.
 async function typeInto(node: TestNode, value: string) {
   await act(async () => {
     node.value = value;
-    node.dispatchEvent(new TestEvent("input", node));
+    const onChange = reactProps(node).onChange as (event: TestEvent) => void;
+    onChange(new TestEvent("input", node));
   });
 }
 

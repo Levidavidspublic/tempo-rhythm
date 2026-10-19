@@ -2,7 +2,7 @@
  * Vitest and Testing Library are not dependencies in this repo, and package.json
  * is outside this ticket's scope. bun:test covers the same checks.
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { type MessageKey, translate } from "@/lib/i18n";
@@ -29,6 +29,16 @@ const paidPro: CurrentPlan = {
 };
 
 let planResult: CurrentPlan | null | undefined = betaTester;
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("convex/react", () => ({
   useQuery: () => planResult,

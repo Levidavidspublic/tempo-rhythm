@@ -58,7 +58,7 @@ UNKNOWN. `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`, `FACTORY_MODEL_CURSOR_P
 |---|---|
 | install | `bun install` |
 | dev | `bun run dev` |
-| test | `bun test convex apps/web/lib tests/unit packages` |
+| test | `bun test convex apps/web/lib apps/web/components tests/unit packages` (= `bun run test`) |
 | lint | `bun run lint` |
 | typecheck | `bun run typecheck` |
 | build | `bun run build` |

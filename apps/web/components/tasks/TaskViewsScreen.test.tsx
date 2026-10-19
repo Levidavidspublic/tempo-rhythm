@@ -5,13 +5,25 @@
  * field gives a task no project), the row editor's Enter and Escape rules, and
  * the Undo toast a delete shows.
  */
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Lang } from "@/lib/i18n";
 import type { TaskViewRecord } from "@/lib/task-view-filters";
+
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "next/link": { ...(await import("next/link")) },
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
 
 mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated: false, isLoading: false }),

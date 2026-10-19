@@ -35,6 +35,18 @@ const results: Record<string, (args: QueryArgs) => unknown> = {
   "tasks.listDueInRange": () => dueTasks,
 };
 
+// bun's mock.module is process-wide and outlives this file. Load the real modules first, so
+// files that run later can still import every export, and put them back after this file.
+const realModules = {
+  "convex/react": { ...(await import("convex/react")) },
+  "next/link": { ...(await import("next/link")) },
+  "@/convex/_generated/api": { ...(await import("@/convex/_generated/api")) },
+  "@/components/providers/LocaleProvider": { ...(await import("@/components/providers/LocaleProvider")) },
+};
+afterAll(() => {
+  for (const [key, real] of Object.entries(realModules)) mock.module(key, () => real);
+});
+
 mock.module("convex/react", () => ({
   useConvexAuth: () => ({ isAuthenticated, isLoading: false }),
   useMutation: () => async () => undefined,
