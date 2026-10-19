@@ -228,6 +228,31 @@ export function confirmNotice(result: unknown): ExecutorNotice {
     : CONFIRM_NOTICES.error;
 }
 
+/**
+ * What the page does after `confirmExecutorConnect` threw instead of answering (a dropped
+ * connection, a timeout): the server may have confirmed and the reply got lost, or never got it.
+ * The confirm is safe to repeat with the same nonce, so the page reads the live
+ * `connections.status` instead of treating the failure as final:
+ * - "connected": it reads connected on a connection that wasn't there when the confirm went out
+ *   (another `connectedAt`), so the confirm landed;
+ * - "retry": the staged tokens may still be waiting (it reads connecting, hasn't loaded, or shows
+ *   the older connection a staged one hides behind) and the one Try again isn't used yet;
+ * - "final": nothing is left to confirm, or the Try again was used.
+ * `before` is the status when the first confirm went out (undefined if it hadn't loaded).
+ */
+export type ConfirmRecovery = "connected" | "retry" | "final";
+
+export function recoverConfirm(
+  before: ExecutorStatusView | null | undefined,
+  now: ExecutorStatusView | null | undefined,
+  retried: boolean,
+): ConfirmRecovery {
+  const sameAsBefore = before?.status === "connected" && before.connectedAt === now?.connectedAt;
+  if (now?.status === "connected" && now.connectedAt !== undefined && !sameAsBefore) return "connected";
+  if (retried) return "final";
+  return !now || now.status === "connecting" || now.status === "connected" ? "retry" : "final";
+}
+
 /** What Disconnect says once it is done (doc §2.5 step 5). */
 export function disconnectNotice(revokedAtProvider: boolean): ExecutorNotice {
   return revokedAtProvider

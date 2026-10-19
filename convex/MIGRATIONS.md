@@ -308,3 +308,24 @@ table, three new optional fields, one new index. No backfill.
 - **New index `tasks.by_userId_deletedAt_completedAt`** — `tasks.listDoneInRange`.
 
 Deployed to: **not deployed by this authoring ticket**.
+
+## 2026-10-19 — Kitchen: Executor connection hardening before switch-on
+
+Branch `kitchen/executor-hardening` (owner-approved Kitchen PR, `convex-arch`; based on
+`batch/b07`, after #1082). Widen-only — three new optional fields, no new index, no backfill.
+
+- **New optional field `connectionLimits.disconnectGeneration`** — the person's cancellation
+  point: every Executor disconnect adds one. Missing reads as `0`.
+- **New optional field `oauthPending.startGeneration`** — the person's `disconnectGeneration` when
+  the connect attempt started. Missing reads as `0`, so an attempt in flight during the deploy
+  still works unless the person disconnects after it.
+- **New optional field `connections.startGeneration`** — carried from the attempt to the staged
+  (`pending_confirm`) row. The callback and `confirmExecutorConnect` refuse an attempt whose start
+  is below the person's current `disconnectGeneration` (the tokens are revoked at Executor).
+- **`connections.confirmNonceHash` / `confirmExpiresAt` meaning widened** — a confirmed row now keeps
+  the nonce's SHA-256 until the nonce's own `confirmExpiresAt` (10 minutes from staging, never
+  extended), so a repeated confirm answers `connected` instead of `expired`; the scheduled
+  `connections.expireConfirmNonce` clears both then. Rows confirmed before this deploy have them
+  cleared already, which is the same end state.
+
+Deployed to: **not deployed by this PR**.

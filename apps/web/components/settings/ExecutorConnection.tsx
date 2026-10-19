@@ -2,7 +2,7 @@
 
 import { useAction, useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { Component, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { Component, type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { ConfirmSheet } from "@/components/you/Controls";
@@ -17,6 +17,7 @@ import {
   executorRow,
   formatDay,
   readExecutorReturn,
+  recoverConfirm,
   returnNotice,
   safeAuthorizationUrl,
 } from "@/lib/executor-connection";
@@ -30,8 +31,10 @@ import type { MessageKey } from "@/lib/i18n";
  * inert). Connect asks `connections.startExecutorConnect` for the authorization URL and opens it
  * in this tab. Executor's callback sends the person back with `?executor=confirm&n=<nonce>`: the
  * page calls `connections.confirmExecutorConnect({ nonce })` once, while signed in, and says the
- * answer. (`?executor=connected|denied|expired|error` is said as it is.) Either way the
- * parameters leave the address bar at once.
+ * answer. If that call throws (its reply never came), the live status decides: connected means it
+ * landed; otherwise one "Try again" re-sends the same nonce (the confirm is safe to repeat).
+ * (`?executor=connected|denied|expired|error` is said as it is.) Either way the parameters leave
+ * the address bar at once.
  *
  * The browser never holds a token, a code or a client id, and nothing about the connection is
  * kept in browser storage. If the backend isn't deployed yet (or the query throws), the row
@@ -186,22 +189,33 @@ export function ExecutorRow({
 /**
  * A short line that says what just happened (the OAuth return, a disconnect). The live region is
  * always on the page, empty until there is something to say, so the line is spoken when it arrives.
+ * With `onRetry`, a "Try again" button sits under it (outside the live region).
  */
-export function ExecutorNoticeLine({ notice }: { notice: ExecutorNotice | null }) {
+export function ExecutorNoticeLine({ notice, onRetry }: { notice: ExecutorNotice | null; onRetry?: (() => void) | null }) {
   const { t } = useLocale();
   return (
-    <output className={notice ? "tp-setting-row" : undefined} data-component="ExecutorNotice">
-      {notice ? (
-        <span className="tp-notice ig-grow" data-tone={notice.tone} data-component="Notice">
-          <span className="tp-notice__icon">
-            <TpIcon name={notice.icon} size="sm" />
+    <>
+      <output className={notice ? "tp-setting-row" : undefined} data-component="ExecutorNotice">
+        {notice ? (
+          <span className="tp-notice ig-grow" data-tone={notice.tone} data-component="Notice">
+            <span className="tp-notice__icon">
+              <TpIcon name={notice.icon} size="sm" />
+            </span>
+            <span className="tp-notice__text">
+              <span>{t(notice.text)}</span>
+            </span>
           </span>
-          <span className="tp-notice__text">
-            <span>{t(notice.text)}</span>
-          </span>
-        </span>
+        ) : null}
+      </output>
+      {notice && onRetry ? (
+        <div className="tp-setting-row" data-component="SettingRow">
+          <button className="tp-btn tp-btn--secondary" type="button" data-action="retry-confirm" onClick={onRetry}>
+            <TpIcon name="refresh" size="sm" />
+            <span>{t("exec.look.retry")}</span>
+          </button>
+        </div>
       ) : null}
-    </output>
+    </>
   );
 }
 
@@ -219,11 +233,21 @@ class ExecutorBoundary extends Component<{ children: ReactNode; fallback: ReactN
 /** What the row shows when the backend can't be read: Executor is off on this deployment. */
 export const EXECUTOR_NOT_SET_UP: ExecutorStatusView = { status: "unavailable", enabled: false };
 
-function LiveExecutorRow({ onNotice }: { onNotice: (notice: ExecutorNotice | null) => void }) {
+function LiveExecutorRow({
+  onNotice,
+  onView,
+}: {
+  onNotice: (notice: ExecutorNotice | null) => void;
+  /** The live status, for the confirm's reconcile (useExecutorReturn); undefined while it loads. */
+  onView: (view: ExecutorStatusView | undefined) => void;
+}) {
   const { isAuthenticated } = useConvexAuth();
   // connections.status needs the users row: wait for the profile, like the coach does.
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   const view = useQuery(api.connections.status, isAuthenticated && profile ? { provider: "executor" } : "skip");
+  useEffect(() => {
+    onView(view ?? undefined);
+  }, [view, onView]);
   const start = useAction(api.connections.startExecutorConnect);
   const disconnect = useAction(api.connections.disconnect);
   const [busy, setBusy] = useState<ExecutorBusy>(null);
@@ -296,19 +320,47 @@ function LiveExecutorRow({ onNotice }: { onNotice: (notice: ExecutorNotice | nul
 /** Nonces already sent to `confirmExecutorConnect` while this page is open: each is used once. */
 const confirmedNonces = new Set<string>();
 
+/** A confirm whose reply never came: its nonce (memory only), the status when it first went out. */
+type FailedConfirm = { nonce: string; before: ExecutorStatusView | undefined; retried: boolean };
+
 /**
  * Reads the OAuth return once and takes it out of the address bar (`router.replace`, no scroll,
  * other parameters kept). `?executor=confirm&n=…` finishes the connection: once signed in,
- * `connections.confirmExecutorConnect({ nonce })` runs exactly once and its answer is said.
- * `?executor=connected|denied|expired|error` is said as it is. The nonce stays in memory for
- * that one call; it is never shown, logged or stored.
+ * `connections.confirmExecutorConnect({ nonce })` runs once and its answer is said. If the call
+ * throws instead (its reply never came), `recoverConfirm` reads the live status `view`: a new
+ * connection means it landed ("connected"); while the staged tokens may still wait, the returned
+ * function is the one "Try again", which re-sends the same nonce (the confirm is idempotent);
+ * otherwise the general error line. `?executor=connected|denied|expired|error` is said as it is.
+ * The nonce stays in memory only (this hook's state), for the call and that one Try again, then
+ * it is dropped; it is never shown, logged or put in browser storage or the address bar. A
+ * reload forgets it, and the server lets the staged tokens expire (and revokes them).
  */
-function useExecutorReturn(onNotice: (notice: ExecutorNotice | null) => void) {
+function useExecutorReturn(
+  onNotice: (notice: ExecutorNotice | null) => void,
+  view: ExecutorStatusView | undefined,
+): (() => void) | null {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
   const confirm = useAction(api.connections.confirmExecutorConnect);
   const read = useRef(false);
   const [nonce, setNonce] = useState<string | null>(null);
+  const [failed, setFailed] = useState<FailedConfirm | null>(null);
+  // The live status when a confirm goes out (read in an effect, never during render).
+  const viewRef = useRef(view);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  const send = useCallback(
+    (value: string, before: ExecutorStatusView | undefined, retried: boolean) => {
+      onNotice({ text: "exec.back.confirming", tone: "info", icon: "info" });
+      confirm({ nonce: value }).then(
+        (result) => onNotice(confirmNotice(result)),
+        () => setFailed({ nonce: value, before, retried }),
+      );
+    },
+    [confirm, onNotice],
+  );
 
   useEffect(() => {
     if (read.current) return;
@@ -331,19 +383,32 @@ function useExecutorReturn(onNotice: (notice: ExecutorNotice | null) => void) {
     // A second run of this effect (React's strict mode, a remount) must not send it again.
     if (confirmedNonces.has(nonce)) return;
     confirmedNonces.add(nonce);
-    onNotice({ text: "exec.back.confirming", tone: "info", icon: "info" });
-    confirm({ nonce }).then(
-      (result) => onNotice(confirmNotice(result)),
-      () => onNotice(confirmNotice(null)),
-    );
-  }, [nonce, isAuthenticated, confirm, onNotice]);
+    send(nonce, viewRef.current, false);
+  }, [nonce, isAuthenticated, send]);
+
+  // A failed confirm: wait on the live status. Connected → say so; staged tokens may still wait →
+  // the error line with Try again (below); nothing left, or Try again used → the error line, and
+  // the nonce is dropped.
+  const recovery = failed ? recoverConfirm(failed.before, view, failed.retried) : null;
+  useEffect(() => {
+    if (!recovery) return;
+    if (recovery !== "retry") setFailed(null);
+    onNotice(confirmNotice(recovery === "connected" ? { status: "connected" } : null));
+  }, [recovery, onNotice]);
+
+  if (!failed || recovery !== "retry") return null;
+  return () => {
+    setFailed(null);
+    send(failed.nonce, failed.before, true);
+  };
 }
 
 /** Settings · Connections: the section with the Executor row (live data). */
 export function ExecutorConnection() {
   const { t } = useLocale();
   const [notice, setNotice] = useState<ExecutorNotice | null>(null);
-  useExecutorReturn(setNotice);
+  const [view, setView] = useState<ExecutorStatusView | undefined>(undefined);
+  const retryConfirm = useExecutorReturn(setNotice, view);
   return (
     <section
       className="tp-settings-section"
@@ -356,9 +421,9 @@ export function ExecutorConnection() {
           {t("exec.section")}
         </h2>
       </div>
-      <ExecutorNoticeLine notice={notice} />
+      <ExecutorNoticeLine notice={notice} onRetry={retryConfirm} />
       <ExecutorBoundary fallback={<ExecutorRow view={EXECUTOR_NOT_SET_UP} />}>
-        <LiveExecutorRow onNotice={setNotice} />
+        <LiveExecutorRow onNotice={setNotice} onView={setView} />
       </ExecutorBoundary>
     </section>
   );
