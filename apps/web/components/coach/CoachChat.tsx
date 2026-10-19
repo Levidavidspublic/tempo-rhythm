@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Component, Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CrisisResourcesCard } from "@/components/coach-crisis/CrisisResourcesCard";
 import { useCrisisGuard } from "@/components/coach-crisis/useCrisisGuard";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -9,10 +9,25 @@ import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { pickCoachConversation, replyInFlightUntil } from "@/lib/coach-conversation";
+import { searchesLeft, utcDayOf } from "@/lib/coach-sources";
+import {
+  COACH_FOLLOW_UPS,
+  COACH_STARTERS,
+  coachThreads,
+  dayDividerLabel,
+  followUpTarget,
+  msUntilNextLocalMidnight,
+  newChatAction,
+  selectionOnDelete,
+  threadTitle,
+  withDayDividers,
+} from "@/lib/coach-threads";
 import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { useOnline } from "@/lib/useOnline";
+import { intlLocale } from "@/lib/you/screenState";
 import { ChatProposal, proposalOf } from "./ChatProposal";
+import { CoachThreads } from "./CoachThreads";
 import { useFlushCoachPage } from "./CoachPage";
 import { CoachSources } from "./CoachSources";
 import { VoiceCall } from "./voice/VoiceCall";
@@ -53,6 +68,103 @@ const TODAY_MESSAGES = 6;
  */
 const creating = new Map<string, Promise<Id<"conversations">>>();
 
+/** Two squares, drawn in the v3 icon family (24 grid, 1.5 px line); the sprite has no copy icon. */
+function CopyIcon() {
+  return (
+    <svg className="tp-icon tp-icon--sm" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+      <path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" />
+    </svg>
+  );
+}
+
+/** Copy under a coach reply (/coach). The page's live region says "Copied" (or why it could not). */
+function CopyReply({ text, onResult }: { text: string; onResult: (copied: boolean) => void }) {
+  const { t } = useLocale();
+  const [state, setState] = useState<"idle" | "copied" | "error">("idle");
+  useEffect(() => {
+    if (state === "idle") return;
+    const timer = window.setTimeout(() => setState("idle"), state === "copied" ? 2000 : 5000);
+    return () => window.clearTimeout(timer);
+  }, [state]);
+  return (
+    <>
+      <button
+        className="tp-btn tp-btn--ghost tp-btn--sm tp-coach-copy"
+        type="button"
+        data-component="CopyReply"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(text);
+            setState("copied");
+            onResult(true);
+          } catch {
+            setState("error");
+            onResult(false);
+          }
+        }}
+      >
+        {state === "copied" ? <TpIcon name="check" size="sm" /> : <CopyIcon />}
+        <span>{state === "copied" ? t("cc.copied") : t("cc.copy")}</span>
+      </button>
+      {state === "error" ? <span className="tp-xs tp-muted">{t("cc.copyError")}</span> : null}
+    </>
+  );
+}
+
+/** A part of the page that is extra: if it throws (say its backend isn't deployed yet), it is left out. */
+class QuietBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+/**
+ * A polite live region with its own state: `handle.current(text)` says `text` (again, when it is the
+ * same words as last time) and clears it a few seconds later.
+ */
+function LiveNote({ handle }: { handle: { current: ((text: string) => void) | null } }) {
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    let frame = 0;
+    let timer = 0;
+    handle.current = (text: string) => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+      setNote("");
+      frame = window.requestAnimationFrame(() => setNote(text));
+      timer = window.setTimeout(() => setNote(""), 4000);
+    };
+    return () => {
+      handle.current = null;
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [handle]);
+  return (
+    <p className="tp-sr-only" aria-live="polite" data-component="CoachLiveNote">
+      {note}
+    </p>
+  );
+}
+
+/**
+ * Tells the page whether the coach may search the web for this person right now
+ * (`coach.webSearchStatus`: set up, turned on, searches left today). Only the waiting line reads it.
+ */
+function WebSearchProbe({ onChange }: { onChange: (on: boolean) => void }) {
+  const status = useQuery(api.coach.webSearchStatus, { utcDay: utcDayOf(Date.now()) });
+  const on = Boolean(status?.available && status.enabled && searchesLeft(status.usedToday, status.dailyLimit) > 0);
+  useEffect(() => {
+    onChange(on);
+  }, [on, onChange]);
+  return null;
+}
+
 /**
  * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
  * classes. Used by the /coach page, by the coach panel beside any page, and inline on Today; the
@@ -60,15 +172,33 @@ const creating = new Map<string, Promise<Id<"conversations">>>();
  * day, so the coach sees today's open tasks ("what order should I do these in?"). The message is
  * saved first; the reply comes from the model through `coach.reply`, with a typing state while it
  * runs (the model seam does not stream).
+ *
+ * On /coach ("page") the page owns which chat is open (`selection`, from the chats column beside
+ * it); with nothing selected it still opens the newest chat, or makes one. Only there does the
+ * thread get day dividers, starter cards in an empty chat, Copy under each reply, follow-ups under
+ * the newest reply and a worded waiting line. The panel and Today are unchanged.
  */
 export function CoachConversation({
   variant,
   pageId = null,
+  selection,
 }: {
   variant: "page" | "panel" | "today";
   pageId?: string | null;
+  /**
+   * /coach only: the open chat, how to open another, chats being deleted (never auto-opened), and
+   * whether making a fresh chat waits (the last chat is being deleted).
+   */
+  selection?: {
+    id: Id<"conversations"> | null;
+    onChange: (id: Id<"conversations">) => void;
+    removed: ReadonlySet<string>;
+    holdCreate?: boolean;
+    /** The automatic first chat could not be made, so the page lets New chat make one. */
+    onCreateFailed?: () => void;
+  };
 }) {
-  const { t } = useLocale();
+  const { lang, t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // conversations.list calls requireUser: wait for the users row (getProfile is null until then).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -86,7 +216,17 @@ export function CoachConversation({
   // minutes left today); otherwise the composer is unchanged.
   const voiceAvailability = useQuery(api.voice.availability, isAuthenticated && profile ? {} : "skip");
 
-  const [conversationId, setConversationId] = useState<Id<"conversations"> | null>(null);
+  const [ownConversationId, setOwnConversationId] = useState<Id<"conversations"> | null>(null);
+  const conversationId = selection ? selection.id : ownConversationId;
+  const setConversationId = selection ? selection.onChange : setOwnConversationId;
+  const removed = selection?.removed;
+  const holdCreate = selection?.holdCreate === true;
+  const onCreateFailed = selection?.onCreateFailed;
+  // Chats being deleted on /coach are never opened again by the pick below.
+  const candidates = useMemo(
+    () => (conversations && removed && removed.size > 0 ? conversations.filter((c) => !removed.has(c._id)) : conversations),
+    [conversations, removed],
+  );
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -98,14 +238,20 @@ export function CoachConversation({
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // Once the list shows a conversation the shared create is done with: a later create (every chat
+  // deleted on /coach) makes a new one instead of reopening the first.
   useEffect(() => {
-    if (!isAuthenticated || conversations === undefined || conversationId) return;
-    const latest = pickCoachConversation(conversations);
+    if (profile && conversations?.some((c) => c.chatMode !== "agent")) creating.delete(profile._id);
+  }, [profile, conversations]);
+
+  useEffect(() => {
+    if (!isAuthenticated || candidates === undefined || conversationId) return;
+    const latest = pickCoachConversation(candidates);
     if (latest) {
       setConversationId(latest._id);
       return;
     }
-    if (!profile) return;
+    if (!profile || holdCreate) return;
     let pending = creating.get(profile._id);
     if (!pending) {
       pending = createConversation({});
@@ -118,12 +264,14 @@ export function CoachConversation({
       (id) => {
         if (live) setConversationId(id);
       },
-      () => {},
+      () => {
+        if (live) onCreateFailed?.();
+      },
     );
     return () => {
       live = false;
     };
-  }, [isAuthenticated, profile, conversations, conversationId, createConversation]);
+  }, [isAuthenticated, profile, candidates, conversationId, createConversation, setConversationId, holdCreate, onCreateFailed]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -137,6 +285,11 @@ export function CoachConversation({
     if (variant === "today") {
       const thread = threadRef.current;
       if (thread) thread.scrollTop = thread.scrollHeight;
+      return;
+    }
+    // An empty chat on /coach starts at its starter cards' heading, not scrolled past it.
+    if (variant === "page" && messages?.length === 0) {
+      if (threadRef.current) threadRef.current.scrollTop = 0;
       return;
     }
     bottomRef.current?.scrollIntoView({ block: "end" });
@@ -206,10 +359,11 @@ export function CoachConversation({
     replyInFlight: inFlightUntil !== null,
   });
 
-  const handleSend = async () => {
-    const text = input.trim();
+  // The one send path: the composer, and on /coach a starter card or a follow-up (`fromComposer`
+  // false). A picked text that didn't send lands in an empty composer, so it is still there to retry.
+  const deliver = async (text: string, fromComposer: boolean) => {
     if (!text || !conversationId || isSending || replying || waitingForPage) return;
-    setInput("");
+    if (fromComposer) setInput("");
     setIsSending(true);
     try {
       const outcome = await deliverCoachMessage(text, guard, async (content) => {
@@ -225,12 +379,14 @@ export function CoachConversation({
       setIsSending(false);
       await reply(conversationId);
     } catch {
-      setInput(text);
+      if (fromComposer) setInput(text);
+      else setInput((current) => (current.trim() ? current : text));
       setSendError(t("coachChat.sendError"));
     } finally {
       setIsSending(false);
     }
   };
+  const handleSend = () => deliver(input.trim(), true);
 
   const isLoading =
     isAuthenticated && (conversations === undefined || !conversationId || messages === undefined);
@@ -248,39 +404,127 @@ export function CoachConversation({
   // reloaded while one was running. Either way the message is saved and can be answered again.
   const waiting = !busy && !crisisHold && messages !== undefined && messages.at(-1)?.role === "user";
 
+  // /coach only, below: Copy, follow-ups, day dividers, starters and the worded waiting line.
+  const onPage = variant === "page";
+  const followUpId = onPage ? followUpTarget(messages, { busy, crisisHold }) : null;
+  const [webSearchOn, setWebSearchOn] = useState(false);
+  // The day dividers' clock: one timer, re-armed for each next local midnight, so a page left open
+  // overnight relabels "Today" as "Yesterday".
+  const [dayNow, setDayNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!onPage) return;
+    const timer = window.setTimeout(() => setDayNow(Date.now()), msUntilNextLocalMidnight(dayNow));
+    return () => window.clearTimeout(timer);
+  }, [onPage, dayNow]);
+  // Copy's "Copied" goes to a live region that owns its own state, so a copy never re-renders (and
+  // so never scrolls) the thread.
+  const noteRef = useRef<((text: string) => void) | null>(null);
+  const announceCopy = useCallback((copied: boolean) => noteRef.current?.(t(copied ? "cc.copied" : "cc.copyError")), [t]);
+  const pickDisabled = !conversationId || busy || waitingForPage;
+
+  const renderMessage = (message: NonNullable<typeof messages>[number]) => {
+    const proposal = message.role === "assistant" ? proposalOf(message.toolCalls) : null;
+    return (
+      <Fragment key={message._id}>
+        <div
+          data-role={message.role}
+          className={message.role === "user" ? "tp-msg tp-msg--user" : "tp-msg"}
+          data-component="CoachMessage"
+        >
+          <span className="tp-msg__who">{message.role === "user" ? t("coachChat.you") : t("coach.name")}</span>
+          <p className="tp-msg__text" dir="auto">
+            {message.content}
+          </p>
+        </div>
+        {onPage && message.role === "assistant" ? (
+          <div className="tp-coach-msg-actions" aria-live="off">
+            <CopyReply text={message.content} onResult={announceCopy} />
+          </div>
+        ) : null}
+        {message.role === "assistant" ? <CoachSources content={message.content} sources={message.sources} /> : null}
+        {proposal ? <ChatProposal messageId={message._id} proposal={proposal} /> : null}
+        {message.role === "assistant" ? <ExecutorLookupCard toolCalls={message.toolCalls} /> : null}
+        {message._id === followUpId ? (
+          <ul className="tp-coach-followups" aria-label={t("cc.followLabel")} aria-live="off" data-component="CoachFollowUps">
+            {COACH_FOLLOW_UPS.map((key) => (
+              <li key={key}>
+                <button
+                  className="tp-btn tp-btn--secondary tp-btn--sm tp-coach-followup"
+                  type="button"
+                  disabled={pickDisabled}
+                  onClick={() => void deliver(t(key), false)}
+                >
+                  <TpIcon name="arrow" size="sm" flip />
+                  <span>{t(key)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </Fragment>
+    );
+  };
+
   return (
     <>
       <div ref={threadRef} className="tp-coach-thread" data-component="CoachThread" data-variant={variant} aria-live="polite">
         {isLoading ? (
           <p className="tp-muted tp-small">{t("coachChat.loading")}</p>
         ) : shown && shown.length === 0 ? (
-          variant === "today" ? null : <p className="tp-muted">{t("coachChat.empty")}</p>
+          variant === "today" ? null : onPage && !crisisHold ? (
+            <div className="tp-coach-start" data-component="CoachStarters">
+              <h2 className="tp-coach-start__title">{t("cc.startTitle")}</h2>
+              <p className="tp-muted tp-small">{t("coachChat.empty")}</p>
+              <ul className="tp-coach-starters">
+                {COACH_STARTERS.map((starter) => (
+                  <li key={starter.label}>
+                    <button
+                      className="tp-coach-starter"
+                      type="button"
+                      disabled={pickDisabled}
+                      onClick={() => void deliver(t(starter.label), false)}
+                    >
+                      <span className="tp-coach-starter__label">{t(starter.label)}</span>
+                      <span className="tp-coach-starter__hint">{t(starter.hint)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="tp-muted">{t("coachChat.empty")}</p>
+          )
+        ) : onPage && shown ? (
+          withDayDividers(shown, dayNow).map((item) =>
+            item.type === "day" ? (
+              <p key={`day-${item.key}`} className="tp-coach-day" data-component="CoachDayDivider">
+                <span>{dayDividerLabel(item, intlLocale(lang), { today: t("cc.today"), yesterday: t("cc.yesterday") }, dayNow)}</span>
+              </p>
+            ) : (
+              renderMessage(item.message)
+            ),
+          )
         ) : (
-          shown?.map((message) => {
-            const proposal = message.role === "assistant" ? proposalOf(message.toolCalls) : null;
-            return (
-              <Fragment key={message._id}>
-                <div
-                  data-role={message.role}
-                  className={message.role === "user" ? "tp-msg tp-msg--user" : "tp-msg"}
-                  data-component="CoachMessage"
-                >
-                  <span className="tp-msg__who">{message.role === "user" ? t("coachChat.you") : t("coach.name")}</span>
-                  <p className="tp-msg__text" dir="auto">
-                    {message.content}
-                  </p>
-                </div>
-                {message.role === "assistant" ? <CoachSources content={message.content} sources={message.sources} /> : null}
-                {proposal ? <ChatProposal messageId={message._id} proposal={proposal} /> : null}
-                {message.role === "assistant" ? <ExecutorLookupCard toolCalls={message.toolCalls} /> : null}
-              </Fragment>
-            );
-          })
+          shown?.map(renderMessage)
         )}
         {crisisHold ? <CoachCrisisReply /> : null}
         {busy ? (
           <output aria-label={t("coachChat.typing")} className="tp-msg tp-muted" data-component="CoachTyping">
-            …
+            {onPage ? (
+              <span className="tp-coach-working">
+                <span className="tp-typing">
+                  <span className="tp-typing__dots" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                  <span>{t("cc.working")}</span>
+                </span>
+                {webSearchOn ? <span className="tp-xs">{t("cc.workingWeb")}</span> : null}
+              </span>
+            ) : (
+              "…"
+            )}
           </output>
         ) : null}
         {waiting && conversationId ? (
@@ -298,6 +542,12 @@ export function CoachConversation({
         ) : null}
         {variant === "today" ? null : <div ref={bottomRef} />}
       </div>
+      {onPage ? <LiveNote handle={noteRef} /> : null}
+      {onPage && isAuthenticated && profile ? (
+        <QuietBoundary>
+          <WebSearchProbe onChange={setWebSearchOn} />
+        </QuietBoundary>
+      ) : null}
       {conversationId && variant !== "today" ? <ExecutorLookup conversationId={conversationId} disabled={busy || waitingForPage} /> : null}
 
       <form
@@ -389,9 +639,175 @@ export function CoachConversation({
   );
 }
 
-/** The /coach page: the conversation on paper, with the page title the shell's main holds. */
+function useMaxWidth(px: number): boolean {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${px}px)`);
+    const update = () => setMatches(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, [px]);
+  return matches;
+}
+
+/**
+ * If the open chat stops loading because it is gone (deleted in another tab), the page opens
+ * another one instead of breaking; any other failure keeps a quiet line and stays put.
+ */
+class ThreadBoundary extends Component<{ children: ReactNode; fallback: ReactNode; onError: () => void }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+/**
+ * The /coach page: the chats column (CoachThreads) and the conversation on paper, with the page
+ * title the shell's main holds. The page owns which chat is open; with none chosen the
+ * conversation opens the newest (or makes one) and reports it back. New chat makes a chat and
+ * opens it, unless the open one is still empty; it waits while no chat is open yet. Deleting the
+ * open chat opens the newest of the rest, or, once the delete is done, a fresh empty one when none
+ * is left.
+ */
 export function CoachChat() {
   const { t } = useLocale();
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
+  const conversations = useQuery(api.conversations.list, isAuthenticated && profile ? {} : "skip");
+  const createConversation = useMutation(api.conversations.create);
+  const removeConversation = useMutation(api.conversations.remove);
+  const narrow = useMaxWidth(1023);
+  const [selectedId, setSelectedId] = useState<Id<"conversations"> | null>(null);
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(() => new Set());
+  // Deletes that leave no chat open; while any runs, the conversation makes no fresh chat.
+  const [holdingDeletes, setHoldingDeletes] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [creatingNew, setCreatingNew] = useState(false);
+  // The automatic first chat failed to be made: New chat makes one instead of waiting for it.
+  const [autoCreateFailed, setAutoCreateFailed] = useState(false);
+  const [newError, setNewError] = useState<string | null>(null);
+  const [focusComposer, setFocusComposer] = useState(0);
+  const chatsButton = useRef<HTMLButtonElement | null>(null);
+  const seen = useRef(new Set<string>());
+  // Bumped by every chat the person opens here (pick, New chat, delete), so a delete that fails
+  // late only reopens its chat when nothing newer was opened meanwhile.
+  const selectionVersion = useRef(0);
+  const choose = (id: Id<"conversations"> | null) => {
+    selectionVersion.current += 1;
+    setSelectedId(id);
+  };
+
+  const threads = useMemo(
+    () => (conversations === undefined ? undefined : coachThreads(conversations).filter((c) => !removed.has(c._id))),
+    [conversations, removed],
+  );
+  const current = threads?.find((thread) => thread._id === selectedId);
+
+  // A chat deleted somewhere else (another tab) closes here too, and the newest one opens.
+  useEffect(() => {
+    if (!conversations) return;
+    const live = new Set<string>(conversations.map((c) => c._id));
+    if (selectedId && seen.current.has(selectedId) && !live.has(selectedId)) {
+      setRemoved((prev) => new Set(prev).add(selectedId));
+      setSelectedId(null);
+    }
+    for (const id of live) seen.current.add(id);
+  }, [conversations, selectedId]);
+
+  useEffect(() => {
+    if (focusComposer > 0) document.getElementById("coach-message")?.focus();
+  }, [focusComposer]);
+
+  // Once a chat is open the failed automatic create no longer matters.
+  useEffect(() => {
+    if (selectedId) setAutoCreateFailed(false);
+  }, [selectedId]);
+
+  const onCreateFailed = useCallback(() => {
+    setAutoCreateFailed(true);
+    setNewError(t("cc.newError"));
+  }, [t]);
+
+  // The drawer is only a drawer under 1024 px; widening the window puts the column back.
+  useEffect(() => {
+    if (!narrow) setDrawerOpen(false);
+  }, [narrow]);
+
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+    window.requestAnimationFrame(() => chatsButton.current?.focus());
+  }, []);
+
+  const select = (id: Id<"conversations">) => {
+    choose(id);
+    if (narrow && drawerOpen) closeDrawer();
+  };
+
+  const handleNew = async () => {
+    setNewError(null);
+    const action = newChatAction(current, selectedId, autoCreateFailed);
+    // The first chat is still being opened or made: making another here would leave two.
+    if (action === "wait") return;
+    // An empty chat is already a new chat: go to its composer instead of making another.
+    if (action === "focus") {
+      setDrawerOpen(false);
+      setFocusComposer((n) => n + 1);
+      return;
+    }
+    setCreatingNew(true);
+    try {
+      const id = await createConversation({});
+      choose(id);
+      setDrawerOpen(false);
+      setFocusComposer((n) => n + 1);
+    } catch {
+      setNewError(t("cc.newError"));
+    } finally {
+      setCreatingNew(false);
+    }
+  };
+
+  const handleDelete = async (id: Id<"conversations">) => {
+    const wasOpen = selectedId === id;
+    const { next, holdCreate } = selectionOnDelete(threads ?? [], id, selectedId);
+    // Leave the chat before it is deleted, so nothing on screen reads a deleted chat. With no chat
+    // left open, the fresh one waits until the delete is done.
+    setRemoved((prev) => new Set(prev).add(id));
+    if (holdCreate) setHoldingDeletes((n) => n + 1);
+    if (wasOpen) choose(next);
+    const version = selectionVersion.current;
+    try {
+      await removeConversation({ conversationId: id });
+    } catch (error) {
+      setRemoved((prev) => {
+        const rest = new Set(prev);
+        rest.delete(id);
+        return rest;
+      });
+      if (wasOpen && selectionVersion.current === version) choose(id);
+      throw error;
+    } finally {
+      if (holdCreate) setHoldingDeletes((n) => n - 1);
+    }
+  };
+
+  const onThreadError = () => {
+    if (selectedId && conversations && !conversations.some((c) => c._id === selectedId)) {
+      setRemoved((prev) => new Set(prev).add(selectedId));
+      setSelectedId(null);
+    }
+  };
+
+  const title = threadTitle(current?.title, t("cc.untitled"));
+  const newChatWaits = newChatAction(current, selectedId, autoCreateFailed) === "wait";
+
   return (
     <div className="tp-page" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
@@ -401,9 +817,59 @@ export function CoachChat() {
           <p className="tp-pagehead__sub">{t("coachChat.sub")}</p>
         </div>
       </header>
-      <section className="tp-surface tp-coach-page" style={{ padding: 0, gap: 0 }} aria-label={t("coach.name")}>
-        <CoachConversation variant="page" />
-      </section>
+      <div className="tp-coach-layout" data-component="CoachLayout">
+        <CoachThreads
+          threads={authLoading ? undefined : isAuthenticated ? threads : []}
+          selectedId={selectedId}
+          searchReady={Boolean(isAuthenticated && profile)}
+          creating={creatingNew || newChatWaits}
+          newError={newError}
+          drawer={narrow}
+          open={drawerOpen}
+          onSelect={select}
+          onNew={() => void handleNew()}
+          onDelete={handleDelete}
+          onClose={closeDrawer}
+        />
+        <section className="tp-surface tp-coach-page" style={{ padding: 0, gap: 0 }} aria-label={t("coach.name")}>
+          <div className="tp-coach-chathead" data-component="CoachChatHeader">
+            <button
+              ref={chatsButton}
+              className="tp-btn tp-btn--ghost tp-btn--sm tp-coach-chathead__chats"
+              type="button"
+              aria-expanded={drawerOpen}
+              aria-controls="coach-threads"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <TpIcon name="sidebar" size="sm" />
+              <span>{t("cc.chats")}</span>
+            </button>
+            <p className="tp-coach-chathead__title" dir="auto">
+              {title}
+            </p>
+            <button
+              className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon tp-coach-chathead__new"
+              type="button"
+              aria-label={t("cc.newChat")}
+              title={t("cc.newChat")}
+              disabled={creatingNew || newChatWaits}
+              onClick={() => void handleNew()}
+            >
+              <TpIcon name="plus" size="sm" />
+            </button>
+          </div>
+          <ThreadBoundary
+            key={selectedId ?? "newest"}
+            onError={onThreadError}
+            fallback={<p className="tp-muted tp-small tp-coach-thread">{t("cc.threadError")}</p>}
+          >
+            <CoachConversation
+              variant="page"
+              selection={{ id: selectedId, onChange: setSelectedId, removed, holdCreate: holdingDeletes > 0, onCreateFailed }}
+            />
+          </ThreadBoundary>
+        </section>
+      </div>
     </div>
   );
 }

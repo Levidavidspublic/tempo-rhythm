@@ -7,6 +7,7 @@
  * Hebrew copy is machine-drafted and needs native review (OVERNIGHT-RUN.md hard limits).
  */
 
+import * as coachChatCopy from "./i18n-groups/coach-chat";
 import * as coachProposalCopy from "./i18n-groups/coach-proposal";
 import * as extrasCopy from "./i18n-groups/extras";
 import * as goalsCopy from "./i18n-groups/goals";
@@ -561,6 +562,7 @@ const en = {
   ...goalsCopy.en,
   ...youCopy.en,
   ...coachProposalCopy.en,
+  ...coachChatCopy.en,
   ...settingsCopy.en,
   ...extrasCopy.en,
   // Executor: Settings · Connections and the coach's "Look in my apps" (TEMPO-B07-08).
@@ -1161,6 +1163,7 @@ const he: Record<MessageKey, string> = {
   ...goalsCopy.he,
   ...youCopy.he,
   ...coachProposalCopy.he,
+  ...coachChatCopy.he,
   ...settingsCopy.he,
   ...extrasCopy.he,
   // Executor (TEMPO-B07-08). After the groups on purpose: it rewrites the Integrations notice.
