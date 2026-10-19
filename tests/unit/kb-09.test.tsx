@@ -65,12 +65,13 @@ const entry = `
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
+import { TpIconSprite } from "@/components/tempo/TpIcon";
 import { Kb09Gallery, ProjectDetailScreen } from "@/components/projects/ProjectDetailScreen";
 const params = new URLSearchParams(location.search);
 const lang = params.get("lang") === "he" ? "he" : "en";
 const mode = params.get("mode") || "gallery";
 const root = createRoot(document.getElementById("app"));
-root.render(<LocaleProvider>{mode === "screen" ? <main><ProjectDetailScreen projectSlug="project-maya1" /></main> : <Kb09Gallery lang={lang} />}</LocaleProvider>);
+root.render(<LocaleProvider><TpIconSprite />{mode === "screen" ? <main><ProjectDetailScreen projectSlug="project-maya1" /></main> : <Kb09Gallery lang={lang} />}</LocaleProvider>);
 `;
 
 function html(mode: string, lang: string): string {
@@ -88,6 +89,7 @@ async function buildFixture() {
     define: { "process.env.NODE_ENV": '"test"', "process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS": '"0"' },
     plugins: [{ name: "kb09-fixture", setup(build) {
       build.onResolve({ filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/ }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
+      build.onResolve({ filter: /^next\/link$/ }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
       build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: join(temp, "backend.ts") }));
       build.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({ path: join(temp, "api.ts") }));
       build.onResolve({ filter: /^@\// }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
@@ -106,7 +108,7 @@ async function buildFixture() {
   // checked-in current component and does not depend on this ignored workspace snapshot.
   const beforeSource = join(root, "work/kb09-before-source.tsx");
   if (existsSync(beforeSource)) {
-    const beforeEntry = `import React from "react"; import { createRoot } from "react-dom/client"; import { LocaleProvider } from "@/components/providers/LocaleProvider"; import { ProjectDetailScreen } from ${JSON.stringify(beforeSource)}; createRoot(document.getElementById("app")).render(<LocaleProvider><main><ProjectDetailScreen projectSlug="project-maya1" /></main></LocaleProvider>);`;
+    const beforeEntry = `import React from "react"; import { createRoot } from "react-dom/client"; import { LocaleProvider } from "@/components/providers/LocaleProvider"; import { TpIconSprite } from "@/components/tempo/TpIcon"; import { ProjectDetailScreen } from ${JSON.stringify(beforeSource)}; createRoot(document.getElementById("app")).render(<LocaleProvider><TpIconSprite /><main><ProjectDetailScreen projectSlug="project-maya1" /></main></LocaleProvider>);`;
     await writeFile(join(temp, "before-entry.tsx"), beforeEntry);
     const beforeResult = await buildEntry(join(temp, "before-entry.tsx"));
     if (!beforeResult.success) throw new Error(beforeResult.logs.map(String).join("\n"));
