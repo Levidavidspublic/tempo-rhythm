@@ -128,7 +128,7 @@ describe("KB-66 hydrated activity gallery and mounted screen", () => {
 
   test("no entries retain the mounted empty view and no paging control", async () => {
     const page=await fixture(390,"en",true);
-    try { await setActivityCount(page,0); await pwExpect(page.getByText("Your activity will collect here")).toBeVisible(); await pwExpect(page.getByRole("button",{name:"Show older"})).toHaveCount(0); }
+    try { await setActivityCount(page,0); await pwExpect(page.getByText("Nothing has changed this week.")).toBeVisible(); await pwExpect(page.getByRole("button",{name:"Show older"})).toHaveCount(0); }
     finally { await page.close(); }
   },120_000);
 
@@ -182,7 +182,7 @@ describe("KB-66 hydrated activity gallery and mounted screen", () => {
 
   test("gallery controls and retry callback remain operable", async () => {
     const page=await fixture();
-    try { await page.getByRole("button",{name:"Error example"}).click(); await pwExpect(page.getByRole("button",{name:"Try again"})).toBeVisible(); await page.getByRole("button",{name:"Try again"}).click(); await pwExpect(page.getByRole("button",{name:"Show older"})).toBeVisible(); await page.getByRole("button",{name:"0 items"}).click(); await pwExpect(page.getByText("No recent activity")).toBeVisible(); await page.getByRole("button",{name:"31 items"}).click(); await pwExpect(page.getByRole("button",{name:"Show older"})).toBeVisible(); await page.getByRole("button",{name:"New activity arrived"}).click(); await pwExpect(page.getByText("Dana's new activity")).toBeVisible(); await page.getByRole("button",{name:"עברית"}).click(); await pwExpect(page.locator("html")).toHaveAttribute("dir","rtl"); await page.getByRole("button",{name:"English"}).click(); await pwExpect(page.locator("html")).toHaveAttribute("dir","ltr"); }
+    try { await page.getByRole("button",{name:"Error example"}).click(); await pwExpect(page.getByRole("button",{name:"Retry"})).toBeVisible(); await page.getByRole("button",{name:"Retry"}).click(); await pwExpect(page.getByRole("button",{name:"Show older"})).toBeVisible(); await page.getByRole("button",{name:"0 items"}).click(); await pwExpect(page.getByText("No recent activity")).toBeVisible(); await page.getByRole("button",{name:"31 items"}).click(); await pwExpect(page.getByRole("button",{name:"Show older"})).toBeVisible(); await page.getByRole("button",{name:"New activity arrived"}).click(); await pwExpect(page.getByText("Dana's new activity")).toBeVisible(); await page.getByRole("button",{name:"עברית"}).click(); await pwExpect(page.locator("html")).toHaveAttribute("dir","rtl"); await page.getByRole("button",{name:"English"}).click(); await pwExpect(page.locator("html")).toHaveAttribute("dir","ltr"); }
     finally { await page.close(); }
   },120_000);
 
@@ -197,6 +197,7 @@ describe("KB-66 hydrated activity gallery and mounted screen", () => {
         await page.evaluate(()=>document.documentElement.setAttribute("data-theme","dark"));
         await page.screenshot({path:join(root,"work",`kb66-mounted-final-${width}-${lang}-dark.png`),fullPage:true});
         await page.evaluate(()=>document.documentElement.setAttribute("data-text-size","l"));
+        await pwExpect(page.locator("body")).toHaveCSS("font-size","20px");
         const metrics=await page.evaluate(()=>({
           overflow:document.documentElement.scrollWidth<=innerWidth,
           targets:[...document.querySelectorAll(".kb66-row a")].every((value)=>value.getBoundingClientRect().height>=44),
