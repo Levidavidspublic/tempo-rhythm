@@ -77,3 +77,5 @@ Before writing code:
 - Prefer composition over inheritance.
 - If a rule in this file conflicts with `docs/HARD_RULES.md`, `HARD_RULES.md` wins.
 - Ask a clarifying question rather than guess.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

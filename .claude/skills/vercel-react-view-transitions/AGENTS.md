@@ -953,3 +953,5 @@ Page stays mounted on dynamic segment change — enter/exit never fire. Use `key
 - `<ViewTransition>` works in Server and Client Components
 - `<Link transitionTypes>` works in Server Components
 - `addTransitionType` and programmatic nav require Client Components
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

@@ -131,3 +131,5 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

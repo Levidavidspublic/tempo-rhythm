@@ -944,3 +944,5 @@ const value = use(MyContext)
 1. [https://react.dev](https://react.dev)
 2. [https://react.dev/learn/passing-data-deeply-with-context](https://react.dev/learn/passing-data-deeply-with-context)
 3. [https://react.dev/reference/react/use](https://react.dev/reference/react/use)
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

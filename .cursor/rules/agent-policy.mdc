@@ -5,8 +5,9 @@ alwaysApply: true
 
 # Agent Policy
 
-MODEL: Grok 4.5 or Grok 4.6, explicitly pinned. If the model shows Auto, default or
-inherited, STOP without running.
+MODEL: Use WORKHORSE for factory execution and FRONTIER for kitchen and orchestration.
+Resolve the assigned role through SLOTS.md and pin it explicitly. If the assignment is
+UNKNOWN or the model shows Auto, default or inherited, STOP without running.
 
 BRANCH: branch from `integration`, target `integration`. Never target, merge, push,
 force-push or rebase `master`.
@@ -29,3 +30,5 @@ SCHEDULE: never run on Friday or Saturday, Asia/Jerusalem.
 
 DONE: complete the named change, run only the named checks, report results and remaining
 UNKNOWNs, then stop. Do not look for more work.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

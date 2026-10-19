@@ -54,3 +54,5 @@ Full rules: [`docs/HARD_RULES.md`](docs/HARD_RULES.md). If anything here looks o
 
 - `docs/brain/` is a git submodule (`tempo-brain`). Edits happen **inside** the submodule (cd first), then the parent commit bumps the pointer. See `docs/brain/AGENTS.md` §3.
 - Never commit secrets to either repo.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

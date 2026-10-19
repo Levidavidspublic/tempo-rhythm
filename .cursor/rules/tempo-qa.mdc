@@ -94,3 +94,5 @@ QA: typecheck ✓  lint ✓  test ✓ (or n/a)  hard-rules ✓  convex ✓ (or n
 ```
 
 If any step is `✗`, stop — do not proceed to merge.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.
