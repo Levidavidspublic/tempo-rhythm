@@ -3,7 +3,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
 import type React from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { kb10t, type Kb10Key, type Kb10Lang } from "@/lib/i18n-groups/kb-10";
@@ -33,7 +33,7 @@ type MagicLinkStatusProps = {
 
 /** The sent view shares the real reset callback with both mounted auth flows. */
 export function MagicLinkStatus({ email, flow, lang, variant, onReset, headingRef }: MagicLinkStatusProps) {
-  const Heading = variant === "page" ? "h1" : "h2";
+  const Heading = variant === "page" ? "h1" : "h3";
   return (
     <div className="kb10-status" data-component="MagicLinkStatus">
       <Heading className="tp-auth-card__title" ref={headingRef} tabIndex={-1}>{kb10t(lang, "kb10.sent")}</Heading>
@@ -98,9 +98,9 @@ type PageCardProps = {
 
 /** One visual and semantic form for the existing page and modal callers. */
 function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onReset, otherHref, variant, lang, onSwitch, onLanguageChange, inputRef, headingRef, disabled = false }: PageCardProps) {
-  const fieldId = useId();
+  const fieldId = `${flow}-email`;
   const errorId = `${fieldId}-error`;
-  const Heading = variant === "page" ? "h1" : "h2";
+  const Heading = variant === "page" ? "h1" : "h3";
   return (
     <div className="tp-auth-card kb10-card" data-component="AuthCard" data-variant={variant} dir={lang === "he" ? "rtl" : "ltr"} lang={lang}>
       <TpIconSprite />

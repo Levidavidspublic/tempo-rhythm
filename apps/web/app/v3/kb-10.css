@@ -22,4 +22,3 @@
 .kb10-gallery__states { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--tp-space-2); max-width: 100%; }
 .kb10-gallery__states button { min-height: 44px; padding: var(--tp-space-2) var(--tp-space-3); border: 1px solid var(--tp-line); border-radius: var(--tp-radius-pill); }
 .kb10-gallery__states button[aria-pressed="true"] { background: var(--tp-accent-wash); }
-@media (prefers-reduced-motion: reduce) { .kb10-card *, .kb10-gallery * { transition-duration: 0s !important; animation-duration: 0s !important; } }

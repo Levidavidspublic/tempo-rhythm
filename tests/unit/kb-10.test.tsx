@@ -163,7 +163,7 @@ describe.serial("KB-10 mounted sign-in and gallery", () => {
   });
   test("sign-up and modal preserve shared callbacks and approval copy", async () => {
     const page = await open(390, "flow=sign-up&variant=modal");
-    expect(await page.getByRole("heading", { level: 2, name: kb10t("en", "kb10.signUp") }).count()).toBe(1);
+    expect(await page.getByRole("heading", { level: 3, name: kb10t("en", "kb10.signUp") }).count()).toBe(1);
     await page.getByRole("button", { name: kb10t("en", "kb10.signIn") }).click();
     expect(await page.evaluate(() => (window as unknown as { __switchCount: number }).__switchCount)).toBe(1);
     await page.getByRole("textbox", { name: kb10t("en", "kb10.email") }).fill("dana@example.com");
@@ -173,9 +173,11 @@ describe.serial("KB-10 mounted sign-in and gallery", () => {
   });
   test("gallery controls change real states, send and reset", async () => {
     const page = await open(390, "gallery=1");
+    const controls = page.locator(".kb10-gallery__states");
     for (const state of ["kb10.emptyState", "kb10.pendingState", "kb10.errorState", "kb10.disabledState", "kb10.overflowState", "kb10.sentState"] as const) {
-      await page.getByRole("button", { name: kb10t("en", state) }).click();
-      expect(await page.getByRole("button", { name: kb10t("en", state) }).getAttribute("aria-pressed")).toBe("true");
+      const control = controls.getByRole("button", { name: kb10t("en", state), exact: true });
+      await control.click();
+      expect(await control.getAttribute("aria-pressed")).toBe("true");
     }
     await page.getByRole("button", { name: kb10t("en", "kb10.reset") }).click();
     await page.getByRole("button", { name: kb10t("en", "kb10.send") }).click();
@@ -189,12 +191,13 @@ describe.serial("KB-10 mounted sign-in and gallery", () => {
     const style = await page.evaluate(() => { const node = document.activeElement as HTMLElement; const css = getComputedStyle(node); return { tag: node.tagName, outline: css.outlineWidth, transition: css.transitionDuration }; });
     expect(style.tag).toBe("BUTTON");
     expect(Number.parseFloat(style.outline)).toBeGreaterThanOrEqual(2);
-    expect(style.transition.split(",").every(value => Number.parseFloat(value) <= 0.01)).toBe(true);
+    // The shared reduced-motion policy allows at most 0.01ms (0.00001s).
+    expect(style.transition.split(",").every(value => Number.parseFloat(value) <= 0.000011)).toBe(true);
     await page.close();
   });
   test("new exports render and English/Hebrew keys match", () => {
     const status = renderToStaticMarkup(createElement(MagicLinkStatus, { email: "maya@example.com", flow: "sign-in", lang: "en", variant: "page", onReset() {} }));
-    const help = renderToStaticMarkup(createElement(SignInHelp, { flow: "sign-in", lang: "he", variant: "page", otherHref: "/sign-up" }));
+    const help = renderToStaticMarkup(createElement(SignInHelp, { flow: "sign-in", lang: "he", variant: "modal", otherHref: "/sign-up" }));
     const gallery = renderToStaticMarkup(createElement(Kb10Gallery, { lang: "en" }));
     expect(status).toContain("bdi");
     expect(help).toContain('lang="he"');
