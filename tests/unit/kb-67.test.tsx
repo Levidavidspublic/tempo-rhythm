@@ -39,6 +39,8 @@ window.__kb67 = {
     state.nags = view === "empty" ? [] : [nagA, nagB]; emit(); },
   hold(ref) { state.hold.push(ref); },
   reject(ref) { state.reject.push(ref); },
+  clearOwn(nagId) { state.nags = state.nags.map(n => n._id === nagId
+    ? { ...n, enabled: false, phrases: n.phrases.filter(p => p.source !== "user") } : n); emit(); },
   settle(ref, ok, value) { const index = state.held.findIndex(item => item.ref === ref);
     if (index < 0) throw new Error("No held " + ref); const [item] = state.held.splice(index, 1);
     if (ok) item.resolve(value); else item.reject(new Error("fictional " + ref + " failure")); },
@@ -105,13 +107,17 @@ async function buildFixture() {
           name: "kb67-fixture",
           setup(build) {
             build.onResolve(
-              { filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/ },
+              {
+                filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/,
+              },
               ({ path }) => ({ path: Bun.resolveSync(path, web) })
             );
             build.onResolve({ filter: /^(convex\/react|next\/navigation)$/ }, () => ({
               path: join(temp, "backend.ts"),
             }));
-            build.onResolve({ filter: /^next\/link$/ }, () => ({ path: join(temp, "link.ts") }));
+            build.onResolve({ filter: /^next\/link$/ }, () => ({
+              path: join(temp, "link.ts"),
+            }));
             build.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({
               path: join(temp, "api.ts"),
             }));
@@ -166,15 +172,25 @@ async function buildFixture() {
     fetch(request) {
       const url = new URL(request.url);
       if (url.pathname === "/bundle.js")
-        return new Response(js, { headers: { "content-type": "text/javascript" } });
+        return new Response(js, {
+          headers: { "content-type": "text/javascript" },
+        });
       if (url.pathname === "/bundle.css")
-        return new Response(bundleCss, { headers: { "content-type": "text/css" } });
+        return new Response(bundleCss, {
+          headers: { "content-type": "text/css" },
+        });
       if (url.pathname === "/before.js")
-        return new Response(beforeJs ?? "", { headers: { "content-type": "text/javascript" } });
+        return new Response(beforeJs ?? "", {
+          headers: { "content-type": "text/javascript" },
+        });
       if (url.pathname === "/before.css")
-        return new Response(beforeCss, { headers: { "content-type": "text/css" } });
+        return new Response(beforeCss, {
+          headers: { "content-type": "text/css" },
+        });
       if (url.pathname === "/base.css")
-        return new Response(baseCss, { headers: { "content-type": "text/css" } });
+        return new Response(baseCss, {
+          headers: { "content-type": "text/css" },
+        });
       return new Response(
         html(
           url.searchParams.get("mode") ?? "screen",
@@ -192,14 +208,20 @@ async function buildFixture() {
   ].find(existsSync);
   if (!browserPath)
     throw new Error("KB-67 fixture needs installed Playwright Chromium or system Chrome/Chromium");
-  browser = await chromium.launch({ executablePath: browserPath, args: ["--no-sandbox"] });
+  browser = await chromium.launch({
+    executablePath: browserPath,
+    args: ["--no-sandbox"],
+  });
 }
 async function pageFor(
   mode: "screen" | "gallery" | "before" = "screen",
   lang: "en" | "he" = "en",
   width = 390
 ): Promise<Page> {
-  const page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+  const page = await browser.newPage({
+    viewport: { width, height: 844 },
+    reducedMotion: "reduce",
+  });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${server.port}/?mode=${mode}&lang=${lang}`);
@@ -245,6 +267,13 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     expect(await page.locator('[data-component="SelectedNagPhraseForm"]').count()).toBe(1);
     await page.getByRole("button", { name: en["gallery.pending"] }).click();
     expect(await page.locator('[data-component="NagSuggestionNotice"]').count()).toBe(1);
+    await pwExpect(
+      page.locator('[data-component="NagSuggestionNotice"] bdi[dir="auto"]')
+    ).toHaveText("Maya's morning");
+    await page.getByRole("button", { name: en["gallery.success"] }).click();
+    await pwExpect(page.locator('[data-kind="saved"] bdi[dir="auto"]')).toHaveText(
+      "Maya's morning"
+    );
     await page.close();
   });
 
@@ -324,11 +353,14 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     await pwExpect(phrase(page)).toHaveValue("Dana phrase");
     await select(page).selectOption("nag-a");
     await pwExpect(phrase(page)).toHaveValue("");
-    await pwExpect(
-      page.getByText(kb67t("en", "phrase.saved", { label: "Maya's morning" }))
-    ).toBeVisible();
+    await pwExpect(page.locator("#ng-add-feedback")).toHaveText(
+      kb67t("en", "phrase.saved", { label: "Maya's morning" })
+    );
     expect(await calls(page, "nags:addPhrase")).toEqual([
-      { ref: "nags:addPhrase", args: { nagId: "nag-a", text: "Maya phrase", source: "user" } },
+      {
+        ref: "nags:addPhrase",
+        args: { nagId: "nag-a", text: "Maya phrase", source: "user" },
+      },
     ]);
     await page.close();
   });
@@ -359,13 +391,11 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     await pwExpect(page.getByText(en["phrase.savingEarlier"])).toBeVisible();
     await settle(page, "nags:addPhrase", true);
     await pwExpect(phrase(page)).toHaveValue("Newer words");
-    expect(
-      await page.getByText(kb67t("en", "phrase.saved", { label: "Maya's morning" })).count()
-    ).toBe(0);
+    await pwExpect(page.locator("#ng-add-feedback")).toHaveCount(0);
     await page.close();
   });
 
-  test("newer same-A words survive earlier rejected save without stale error", async () => {
+  test("newer same-A words survive earlier rejected save with an attributed earlier-error notice", async () => {
     const page = await pageFor();
     await hold(page, "nags:addPhrase");
     await phrase(page).fill("Earlier words");
@@ -374,7 +404,79 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     await settle(page, "nags:addPhrase", false);
     await pwExpect(phrase(page)).toHaveValue("Newer words");
     expect(await page.getByText(en["phrase.error"]).count()).toBe(0);
+    await pwExpect(
+      page.getByText(kb67t("en", "phrase.earlierError", { label: "Maya's morning" }))
+    ).toBeVisible();
+    await pwExpect(phrase(page)).not.toHaveAttribute("aria-invalid", "true");
     await pwExpect(phrase(page)).toBeFocused();
+    await page.close();
+  });
+
+  test("a failed add does not steal focus after moving to another control on the same nag", async () => {
+    const page = await pageFor();
+    await hold(page, "nags:addPhrase");
+    await phrase(page).fill("Maya phrase");
+    await page.getByRole("button", { name: "Add phrase" }).click();
+    await page.locator("#nag-new-label").focus();
+    await pwExpect(page.locator("#nag-new-label")).toBeFocused();
+    await settle(page, "nags:addPhrase", false);
+    await pwExpect(page.getByText(en["phrase.error"])).toBeVisible();
+    await pwExpect(page.locator("#nag-new-label")).toBeFocused();
+    await page.close();
+  });
+
+  test("a current add failure focuses the matching phrase when focus intent stays", async () => {
+    const page = await pageFor();
+    await hold(page, "nags:addPhrase");
+    await phrase(page).fill("Maya phrase");
+    await page.getByRole("button", { name: "Add phrase" }).click();
+    await settle(page, "nags:addPhrase", false);
+    await pwExpect(page.getByText(en["phrase.error"])).toBeVisible();
+    await pwExpect(phrase(page)).toBeFocused();
+    await page.close();
+  });
+
+  test("adding an own phrase clears only that nag's need-own suggestion note", async () => {
+    const page = await pageFor();
+    await page.evaluate(() => (window as any).__kb67.clearOwn("nag-a"));
+    await page.getByRole("button", { name: "Suggest from my words" }).click();
+    await pwExpect(
+      page.getByText("Add a phrase of your own first so suggestions can come from your words.")
+    ).toBeVisible();
+    await select(page).selectOption("nag-b");
+    await page.evaluate(() => (window as any).__kb67.clearOwn("nag-b"));
+    await page.getByRole("button", { name: "Suggest from my words" }).click();
+    await pwExpect(
+      page.getByText("Add a phrase of your own first so suggestions can come from your words.")
+    ).toBeVisible();
+    await select(page).selectOption("nag-a");
+    await phrase(page).fill("My words for Maya");
+    await page.getByRole("button", { name: "Add phrase" }).click();
+    await pwExpect(page.locator('[data-component="NagSuggestionNotice"]')).toHaveCount(0);
+    await pwExpect(page.getByRole("switch", { name: /Maya's morning on/i })).toBeEnabled();
+    await pwExpect(page.locator('[aria-live="polite"]')).toHaveText(
+      kb67t("en", "phrase.canEnable", { label: "Maya's morning" })
+    );
+    await select(page).selectOption("nag-b");
+    await pwExpect(
+      page.getByText("Add a phrase of your own first so suggestions can come from your words.")
+    ).toBeVisible();
+    expect(await calls(page, "nags:proposePhrases")).toHaveLength(0);
+    await page.close();
+  });
+
+  test("A's first phrase announcement remains attributed to A after selecting B", async () => {
+    const page = await pageFor();
+    await page.evaluate(() => (window as any).__kb67.clearOwn("nag-a"));
+    await hold(page, "nags:addPhrase");
+    await phrase(page).fill("My first A phrase");
+    await page.getByRole("button", { name: "Add phrase" }).click();
+    await select(page).selectOption("nag-b");
+    await settle(page, "nags:addPhrase", true);
+    await pwExpect(page.locator('[aria-live="polite"]')).toHaveText(
+      kb67t("en", "phrase.canEnable", { label: "Maya's morning" })
+    );
+    await pwExpect(phrase(page)).toHaveValue("");
     await page.close();
   });
 
@@ -385,8 +487,18 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     await pwExpect(page.locator('[data-component="NagSuggestionNotice"]')).toBeVisible();
     await select(page).selectOption("nag-b");
     expect(await page.locator('[data-component="NagSuggestionNotice"]').count()).toBe(0);
-    await settle(page, "nags:proposePhrases", true, { proposals: ["Maya's calm suggestion"] });
-    expect(await page.getByText("Maya's calm suggestion").count()).toBe(0);
+    await settle(page, "nags:proposePhrases", true, {
+      proposals: ["Maya's calm suggestion"],
+    });
+    await pwExpect(
+      page.locator('[aria-labelledby="ng-nag-a-title"]').getByText("Maya's calm suggestion")
+    ).toBeVisible();
+    expect(
+      await page
+        .locator('[aria-labelledby="ng-nag-b-title"]')
+        .getByText("Maya's calm suggestion")
+        .count()
+    ).toBe(0);
     await select(page).selectOption("nag-a");
     await pwExpect(page.getByText("Maya's calm suggestion")).toBeVisible();
     expect(await calls(page, "nags:proposePhrases")).toEqual([
@@ -471,7 +583,11 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     expect(await calls(page, "nags:addPhrase")).toEqual([
       {
         ref: "nags:addPhrase",
-        args: { nagId: "nag-a", text: "Try a gentle stretch", source: "derived" },
+        args: {
+          nagId: "nag-a",
+          text: "Try a gentle stretch",
+          source: "derived",
+        },
       },
     ]);
     expect(await calls(page, "nags:decidePhrase")).toEqual([
@@ -534,7 +650,10 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
     await page.keyboard.press("Tab");
     const style = await page.evaluate(() => {
       const css = getComputedStyle(document.activeElement as Element);
-      return { outline: Number.parseFloat(css.outlineWidth), transition: css.transitionDuration };
+      return {
+        outline: Number.parseFloat(css.outlineWidth),
+        transition: css.transitionDuration,
+      };
     });
     expect(style.outline).toBeGreaterThanOrEqual(2);
     expect(style.transition.split(",").every((value) => Number.parseFloat(value) <= 0.000011)).toBe(

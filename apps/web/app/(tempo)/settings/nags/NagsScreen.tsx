@@ -20,7 +20,7 @@ import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { MessageKey } from "@/lib/i18n";
-import { type Kb67Lang, kb67t } from "@/lib/i18n-groups/kb-67";
+import { type Kb67Key, type Kb67Lang, kb67t } from "@/lib/i18n-groups/kb-67";
 import {
   checkNagLabel,
   checkPhrase,
@@ -51,7 +51,7 @@ type Nag = {
 };
 type Suggestion = { key: string; text: string };
 type Toast = { title: string; untilMs: number; onUndo?: () => Promise<unknown> };
-type PhraseFeedback = { kind: "saving" | "saved" | "error"; revision: number };
+type PhraseFeedback = { kind: "saving" | "saved" | "error" | "earlierError"; revision: number };
 export type NagSuggestionNote = { kind: "pending" | "needOwn" | "empty" | "error"; label?: string };
 
 const LABEL_PROBLEM: Record<WordsProblem, MessageKey> = {
@@ -64,6 +64,17 @@ const PHRASE_PROBLEM: Record<WordsProblem, MessageKey> = {
   long: "ng.add.long",
   emoji: "ng.add.emoji",
 };
+
+function labelledMessage(lang: Kb67Lang, key: Kb67Key, label: string) {
+  const [before, after] = kb67t(lang, key).split("{label}");
+  return (
+    <>
+      {before}
+      <bdi dir="auto">{label}</bdi>
+      {after}
+    </>
+  );
+}
 
 function NagsHead() {
   const { t } = useLocale();
@@ -176,7 +187,7 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
   }
 
   const announceIfNowOn = (nag: Nag) => {
-    if (!canEnable(nag)) setLive(t("ng.nowOn"));
+    if (!canEnable(nag)) setLive(kb67t(lang as Kb67Lang, "phrase.canEnable", { label: nag.label }));
   };
 
   const onCreate = (event: FormEvent<HTMLFormElement>) => {
@@ -214,6 +225,17 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
       return;
     }
     const submittedRevision = phraseRevisions.current[id] ?? 0;
+    const submitFocus = document.activeElement;
+    let focusMoved = false;
+    const markMoved = () => {
+      focusMoved = true;
+    };
+    const markFocusMoved = (focusEvent: FocusEvent) => {
+      if (focusEvent.target !== submitFocus) focusMoved = true;
+    };
+    document.addEventListener("pointerdown", markMoved);
+    document.addEventListener("keydown", markMoved);
+    document.addEventListener("focusin", markFocusMoved);
     setPhraseProblems((all) => ({ ...all, [id]: null }));
     setPhraseFeedback((all) => ({ ...all, [id]: { kind: "saving", revision: submittedRevision } }));
     void run(
@@ -230,21 +252,29 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
         } else {
           setPhraseFeedback((all) => ({ ...all, [id]: null }));
         }
-        setLive(kb67t(lang as Kb67Lang, "phrase.addedTo", { label: nag.label }));
-        announceIfNowOn(nag);
+        setNotesByNag((all) => ({ ...all, [id]: null }));
+        if (!canEnable(nag)) announceIfNowOn(nag);
+        else setLive(kb67t(lang as Kb67Lang, "phrase.addedTo", { label: nag.label }));
       },
       () => {
         if ((phraseRevisions.current[id] ?? 0) !== submittedRevision) {
-          setPhraseFeedback((all) => ({ ...all, [id]: null }));
+          setPhraseFeedback((all) => ({
+            ...all,
+            [id]: { kind: "earlierError", revision: submittedRevision },
+          }));
           return;
         }
         setPhraseFeedback((all) => ({
           ...all,
           [id]: { kind: "error", revision: submittedRevision },
         }));
-        if (selectedIdRef.current === id) phraseRef.current?.focus();
+        if (selectedIdRef.current === id && !focusMoved) phraseRef.current?.focus();
       }
-    );
+    ).finally(() => {
+      document.removeEventListener("pointerdown", markMoved);
+      document.removeEventListener("keydown", markMoved);
+      document.removeEventListener("focusin", markFocusMoved);
+    });
   };
 
   const onSuggest = () => {
@@ -528,7 +558,9 @@ export function NagSuggestionNotice({
       data-component="NagSuggestionNotice"
       data-kind={note.kind}
     >
-      {text}
+      {note.kind === "pending"
+        ? labelledMessage(lang as Kb67Lang, "suggest.pending", note.label ?? "")
+        : text}
     </output>
   );
 }
@@ -569,12 +601,15 @@ export function SelectedNagPhraseForm({
       ? feedback.kind
       : feedback?.kind === "saving"
         ? "savingEarlier"
-        : null;
+        : feedback?.kind === "earlierError"
+          ? "earlierError"
+          : null;
   const phraseError = problem
     ? t(PHRASE_PROBLEM[problem])
     : activeFeedback === "error"
       ? kb67t(lang as Kb67Lang, "phrase.error")
       : null;
+  const earlierError = activeFeedback === "earlierError";
   const status =
     activeFeedback === "saving"
       ? kb67t(lang as Kb67Lang, "phrase.saving")
@@ -642,13 +677,25 @@ export function SelectedNagPhraseForm({
               {phraseError}
             </p>
           ) : null}
+          {earlierError ? (
+            <p
+              className="kb67-phrase-feedback tp-error-text"
+              id="ng-add-earlier-error"
+              role="alert"
+              data-kind="earlierError"
+            >
+              {labelledMessage(lang as Kb67Lang, "phrase.earlierError", selectedNag.label)}
+            </p>
+          ) : null}
           {status ? (
             <output
               className="kb67-phrase-feedback tp-help"
               id="ng-add-feedback"
               data-kind={activeFeedback}
             >
-              {status}
+              {activeFeedback === "saved"
+                ? labelledMessage(lang as Kb67Lang, "phrase.saved", selectedNag.label)
+                : status}
             </output>
           ) : null}
         </div>
