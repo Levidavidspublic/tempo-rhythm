@@ -70,13 +70,13 @@ let browser: Browser;
 let server: ReturnType<typeof Bun.serve>;
 let directory: string;
 
-async function galleryPage(width = 390, probe = false): Promise<Page> {
+async function galleryPage(width = 390, probe = false, lang: "en" | "he" = "en"): Promise<Page> {
   const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   await page.route("**/*", (route) => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.abort());
-  await page.goto(`http://127.0.0.1:${server.port}${probe ? "/?probe=1&q=moving" : "/"}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`http://127.0.0.1:${server.port}/${probe ? `?probe=1&q=moving&lang=${lang}` : ""}`, { waitUntil: "domcontentloaded" });
   try {
     await pwExpect(page.locator("main")).toHaveCount(1, { timeout: 20_000 });
   } catch {
@@ -97,28 +97,25 @@ describe("KB-03 hydrated search gallery", () => {
     const mockLocale = join(directory, "mock-locale.ts");
     const mockNext = join(directory, "mock-next.ts");
     const mockLink = join(directory, "mock-link.tsx");
-    const mockIcon = join(directory, "mock-icon.tsx");
     const mockApi = join(directory, "mock-api.ts");
     await writeFile(mockQuery, `import React from ${JSON.stringify(reactPath)};\nconst base={notes:[{_id:"n1",title:"Maya's moving note",snippet:"Ask Yoni about the van"}],tasks:[{_id:"t1",title:"Book van with Yoni",status:"todo"}],habits:[],goals:[{_id:"g1",title:"Dana's new flat"}]};\nwindow.__kb03Responses={moving:base};\nexport function useQuery(_ref,args){const [version,setVersion]=React.useState(0);React.useEffect(()=>{const refresh=()=>setVersion(v=>v+1);window.addEventListener("kb03-query",refresh);return()=>window.removeEventListener("kb03-query",refresh)},[]);void version;return args==="skip"?undefined:window.__kb03Responses[args.query]}`);
     await writeFile(mockLocale, `import {translate} from ${JSON.stringify(localeLib)};\nexport function useLocale(){const lang=document.documentElement.lang==="he"?"he":"en";return {lang,dir:lang==="he"?"rtl":"ltr",t:(key)=>translate(lang,key)}}`);
     await writeFile(mockNext, `export const useRouter=()=>({replace:(href)=>history.replaceState(null,"",href)});export const usePathname=()=>"/search";export const useSearchParams=()=>new URLSearchParams(location.search);`);
     await writeFile(mockLink, `import React from ${JSON.stringify(reactPath)};export default function Link({href,children,...rest}){return React.createElement("a",{href,...rest},children)}`);
-    await writeFile(mockIcon, `import React from ${JSON.stringify(reactPath)};export function TpIcon(){return React.createElement("span",{"aria-hidden":true})}`);
     await writeFile(mockApi, `export const api={search:{all:"search.all"}};`);
     const entry = join(directory, "entry.tsx");
-    await writeFile(entry, `import React from ${JSON.stringify(reactPath)};import{createRoot}from ${JSON.stringify(join(root,"apps/web/node_modules/react-dom/client"))};import{Kb03Gallery,SearchHeader,SearchScreenBody}from ${JSON.stringify(source)};const probe=new URLSearchParams(location.search).has("probe");createRoot(document.getElementById("root")).render(probe?React.createElement("main",{className:"tp-page"},React.createElement(SearchHeader),React.createElement(SearchScreenBody)):React.createElement(Kb03Gallery));`);
+    await writeFile(entry, `import React from ${JSON.stringify(reactPath)};import{createRoot}from ${JSON.stringify(join(root,"apps/web/node_modules/react-dom/client"))};import{TpIconSprite}from ${JSON.stringify(join(root,"apps/web/components/tempo/TpIcon.tsx"))};import{Kb03Gallery,SearchHeader,SearchScreenBody}from ${JSON.stringify(source)};const probe=new URLSearchParams(location.search).has("probe");createRoot(document.getElementById("root")).render(React.createElement(React.Fragment,null,React.createElement(TpIconSprite),probe?React.createElement("main",{className:"tp-page"},React.createElement(SearchHeader),React.createElement(SearchScreenBody)):React.createElement(Kb03Gallery)));`);
     const mocks: Record<string, string> = {
       "convex/react": mockQuery,
       "next/navigation": mockNext,
       "next/link": mockLink,
       "@/convex/_generated/api": mockApi,
       "@/components/providers/LocaleProvider": mockLocale,
-      "@/components/tempo/TpIcon": mockIcon,
     };
     const bundle = await Bun.build({ entrypoints: [entry], target: "browser", minify: false,
       alias: { "react-native": join(root, "apps/web/node_modules/react-native-web") },
       plugins: [{ name: "kb03-browser-stubs", setup(build) {
-        build.onResolve({ filter: /^(convex\/react|next\/(navigation|link)|@\/convex\/_generated\/api|@\/components\/(providers\/LocaleProvider|tempo\/TpIcon))$/ },
+        build.onResolve({ filter: /^(convex\/react|next\/(navigation|link)|@\/convex\/_generated\/api|@\/components\/providers\/LocaleProvider)$/ },
           ({ path }) => ({ path: mocks[path] ?? path }));
       } }],
     });
@@ -132,7 +129,8 @@ describe("KB-03 hydrated search gallery", () => {
     const html = `<!doctype html><html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css.join("\n")}\n${generatedCss.join("\n")}</style></head><body style="margin:0;background:var(--tp-ground);color:var(--tp-ink)"><div id="root" style="max-width:760px;margin:auto;padding:16px"></div><script>window.process={env:{NODE_ENV:"production"}};</script><script src="/bundle.js"></script></body></html>`;
     server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
       const isScript = new URL(request.url).pathname === "/bundle.js";
-      return new Response(isScript ? script : html, { headers: { "Content-Type": isScript ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8" } });
+      const page = new URL(request.url).searchParams.get("lang") === "he" ? html.replace('<html lang="en" dir="ltr">', '<html lang="he" dir="rtl">') : html;
+      return new Response(isScript ? script : page, { headers: { "Content-Type": isScript ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8" } });
     } });
     const bundledBrowser = chromium.executablePath();
     const systemBrowser = ["/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
@@ -187,6 +185,26 @@ describe("KB-03 hydrated search gallery", () => {
     } finally { await page.close(); }
   }, 120_000);
 
+  test("mounted Hebrew search wraps arrows and returns query focus after clearing", async () => {
+    const page = await galleryPage(390, true, "he");
+    try {
+      const all = page.locator('[role="radio"][data-kind="all"]');
+      const goals = page.locator('[role="radio"][data-kind="goals"]');
+      await all.focus();
+      await page.keyboard.press("ArrowRight");
+      await pwExpect(goals).toHaveAttribute("aria-checked", "true");
+      await pwExpect(goals).toBeFocused();
+      await page.keyboard.press("ArrowLeft");
+      await pwExpect(all).toHaveAttribute("aria-checked", "true");
+      await pwExpect(all).toBeFocused();
+      await page.locator('[role="radio"][data-kind="notes"]').click();
+      await page.locator(".sr-filter-summary__clear").click();
+      await pwExpect(page.getByRole("searchbox")).toBeFocused();
+      await page.keyboard.press("Enter");
+      await pwExpect(page.locator("[data-search-result]").first()).toBeFocused();
+    } finally { await page.close(); }
+  }, 120_000);
+
   test("Enter from the query moves focus to the first result", async () => {
     const page = await galleryPage();
     try {
@@ -228,6 +246,7 @@ describe("KB-03 hydrated search gallery", () => {
         await page.screenshot({ path: join(root, "work", `kb03-gallery-${width}-he-dark.png`), fullPage: true });
         await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
         await page.evaluate(() => document.documentElement.setAttribute("data-text-size", "l"));
+        await pwExpect(page.locator("body")).toHaveCSS("font-size", "20px");
         const metrics = await page.evaluate(() => ({
           overflow: document.documentElement.scrollWidth <= innerWidth,
           targets: [...document.querySelectorAll(".sr-gallery button")].filter((element) => !(element as HTMLButtonElement).disabled).every((element) => element.getBoundingClientRect().height >= 44),
@@ -238,6 +257,22 @@ describe("KB-03 hydrated search gallery", () => {
         }));
         expect(metrics).toEqual({ overflow: true, targets: true, motion: true, largeText: true, mains: 1, headings: 1 });
       } finally { await page.close(); }
+    }
+  }, 240_000);
+
+  test("mounted search captures the filtered summary in both languages and themes", async () => {
+    for (const width of [390, 1280]) {
+      for (const lang of ["en", "he"] as const) {
+        const page = await galleryPage(width, true, lang);
+        try {
+          await page.locator('[role="radio"][data-kind="notes"]').click();
+          await pwExpect(page.locator(".sr-filter-summary")).toBeVisible();
+          await page.screenshot({ path: join(root, "work", `kb03-mounted-${width}-${lang}-light.png`), fullPage: true });
+          await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+          await page.screenshot({ path: join(root, "work", `kb03-mounted-${width}-${lang}-dark.png`), fullPage: true });
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        } finally { await page.close(); }
+      }
     }
   }, 240_000);
 });
