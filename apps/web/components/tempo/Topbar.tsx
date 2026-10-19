@@ -1,12 +1,11 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { usePathname } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { api } from "@/convex/_generated/api";
-import { crumbKey, initialsFor } from "@/lib/shell";
-import { TEMPO_SCREENS } from "@/lib/tempo-nav";
+import { crumbsFor, initialsFor, pageIdFor } from "@/lib/shell";
 import { TpIcon } from "./TpIcon";
 
 type TopbarProps = {
@@ -23,12 +22,16 @@ export function Topbar({ railOpen, onToggleRail, onOpenPalette }: TopbarProps) {
   const pathname = usePathname() ?? "/";
   const { t } = useLocale();
   const { resolvedTheme, setTheme } = useTheme();
+  const { isAuthenticated } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, {});
-  const key = crumbKey(pathname);
-  const fallback =
-    TEMPO_SCREENS.find((s) => s.route === pathname)?.title ??
-    TEMPO_SCREENS.find((s) => pathname.startsWith(`${s.route}/`))?.title ??
-    "Tempo";
+  // On a page, read its title with the same query and arguments the page itself uses
+  // (NotePage), so Convex shares one subscription. Until it arrives the bar shows "Pages".
+  const pageId = pageIdFor(pathname);
+  const page = useQuery(
+    api.notes.getSafe,
+    pageId && isAuthenticated && profile != null ? { noteId: pageId } : "skip",
+  );
+  const crumbs = crumbsFor(pathname, page === undefined ? undefined : (page?.title ?? null));
   const initials = initialsFor(profile);
   const dark = resolvedTheme === "dark";
 
@@ -44,9 +47,20 @@ export function Topbar({ railOpen, onToggleRail, onOpenPalette }: TopbarProps) {
         <TpIcon name="sidebar" />
       </button>
       <div className="tp-topbar__crumbs">
-        <span className="tp-topbar__hide-sm">{t("top.crumb")}</span>
-        <TpIcon name="chevron" size="sm" flip className="tp-topbar__hide-sm" />
-        <strong>{key ? t(key) : fallback}</strong>
+        {crumbs.section ? (
+          <>
+            <span className="tp-topbar__hide-sm">{t(crumbs.section)}</span>
+            <TpIcon name="chevron" size="sm" flip className="tp-topbar__hide-sm" />
+          </>
+        ) : null}
+        {"key" in crumbs.current ? (
+          <strong>{t(crumbs.current.key)}</strong>
+        ) : (
+          // A page title is the person's own text: it takes its own direction (DESIGN.md §10).
+          <strong dir="auto" title={crumbs.current.text}>
+            {crumbs.current.text}
+          </strong>
+        )}
       </div>
       <button
         className="tp-btn tp-btn--ghost tp-btn--icon"

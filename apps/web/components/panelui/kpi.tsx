@@ -377,7 +377,8 @@ function KpiChart({
       aria-label="Trend"
       viewBox={`0 0 ${GRID_WIDTH} ${GRID_HEIGHT}`}
       preserveAspectRatio="none"
-      className={slots.chart({ className })}
+      // Time runs with the reading direction: in Hebrew, Monday is on the right, like the day grid.
+      className={slots.chart({ className: `rtl:-scale-x-100 ${className ?? ''}` })}
       style={{
         height: height ?? (inline ? INLINE_HEIGHT : 56),
         ...(inline ? { width: INLINE_WIDTH, flex: 'none' } : null),

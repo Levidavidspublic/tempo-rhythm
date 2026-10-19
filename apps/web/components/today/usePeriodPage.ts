@@ -3,6 +3,7 @@
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useAccountLanguage } from "@/components/providers/useAccountLanguage";
 import { api } from "@/convex/_generated/api";
 import { type PeriodKind, periodPageDraft } from "@/lib/period-pages";
 
@@ -23,9 +24,12 @@ export type PeriodPageState =
 /**
  * The daily page for a local date (or the weekly page for a Monday). Made from the template on
  * first open; `notes.ensurePeriodPage` is idempotent, so two tabs opening at once share one page.
+ * The title is written once, in the app's language, so nothing is made until that language is
+ * known (a new device first takes the account's language).
  */
 export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPageState {
   const { lang } = useLocale();
+  const { settled } = useAccountLanguage();
   const { isAuthenticated, isLoading } = useConvexAuth();
   // notes.* call requireUser: wait for the users row (getProfile is null until it exists).
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -52,11 +56,11 @@ export function usePeriodPage(kind: PeriodKind, date: string | null): PeriodPage
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt is the Retry trigger
   useEffect(() => {
-    if (!ready || page !== null || template === undefined || asked.current === key || gone) return;
+    if (!ready || !settled || page !== null || template === undefined || asked.current === key || gone) return;
     asked.current = key;
     const draft = periodPageDraft(kind, date, template?.body ?? "", lang);
     ensure({ pageType: kind, date, title: draft.title, body: draft.body }).catch(() => setFailed(key));
-  }, [ready, page, template, key, kind, date, lang, ensure, gone, attempt]);
+  }, [ready, settled, page, template, key, kind, date, lang, ensure, gone, attempt]);
 
   if (!isLoading && !isAuthenticated) return { status: "signed-out" };
   if (failed === key) {

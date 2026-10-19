@@ -1,5 +1,6 @@
 /**
- * v3 screens: Insights, activity, notifications, nags, memory, memory import, modules and module preview (docs/design/v3/screen-map.md).
+ * v3 screens: Insights, activity, notifications, nags, memory, memory import, modules and module preview (docs/design/v3/screen-map.md),
+ * plus Today's "Match your energy" card.
  * English and Hebrew; i18n.ts merges both. Hebrew needs native review (OVERNIGHT-RUN.md).
  * English comes from each screen's markup; Hebrew from its TP_STRINGS.he. Strings the designs
  * don't have (honest copy where a backend piece is missing, e2e-kept labels) are drafted here.
@@ -25,6 +26,28 @@ export const en = {
   "you.today": "today",
   "you.saveError": "That didn't save. Try again?",
 
+  // Today: Match your energy. The reasons mirror lib/energyRecommendations.ts (an exact fit,
+  // or a neighbouring level), keyed by the energy the user picked.
+  "today.energy.title": "Match your energy",
+  "today.energy.sub": "How's your energy right now? We'll suggest tasks that fit. You decide.",
+  "today.energy.pick": "Pick your current energy level",
+  "today.energy.low": "Low",
+  "today.energy.medium": "Medium",
+  "today.energy.high": "High",
+  "today.energy.loading": "Finding tasks that fit…",
+  "today.energy.empty.t": "Nothing outside today's plan fits that energy right now.",
+  "today.energy.empty.b": "That's a fine answer. Today's list already has you covered.",
+  "today.energy.why.low": "A gentle fit for low energy. Small effort, real progress.",
+  "today.energy.why.medium": "A steady fit for how you're feeling right now.",
+  "today.energy.why.high": "You've got momentum, and this one is sized for it.",
+  "today.energy.near.low": "Close to your current energy. Only if it feels right.",
+  "today.energy.near.medium": "Slightly off your current energy, but very doable.",
+  "today.energy.near.high": "Not quite max-energy work, but momentum makes it easy.",
+  "today.energy.add": "Add to Today",
+  "today.energy.addLabel": "Add {title} to Today",
+  "today.energy.skip": "Not now",
+  "today.energy.skipLabel": "Not now: {title}",
+
   // Insights
   "ins.title": "Insights",
   "ins.sub.2w": "Patterns from your last two weeks, in plain words. Nothing here is a score.",
@@ -34,6 +57,10 @@ export const en = {
   "ins.r2w": "2 weeks",
   "ins.r4w": "4 weeks",
   "ins.r3m": "3 months",
+  // Each range option's accessible name; it keeps the visible label inside it.
+  "ins.r2w.name": "Last 2 weeks",
+  "ins.r4w.name": "Last 4 weeks",
+  "ins.r3m.name": "Last 3 months",
   "ins.pat.h": "Gentle patterns",
   "ins.pat.n": "noticed",
   "ins.pat.none": "No clear patterns in this time yet. That's fine; they need a few more days.",
@@ -78,6 +105,9 @@ export const en = {
   "ins.line.peak": "Focus time peaked at {m} minutes in week {w}.",
   "ins.line.now": "Week {w} isn't over yet.",
   "ins.line.none": "No focus sessions in this time yet.",
+  // The glance's KPI cards and Day Grid; the card titles and day labels are the weekly glance's (wk.*).
+  "ins.doneTrend": "Tasks finished, by week",
+  "ins.grid.summary": "Something on {a} of {n} days in this time.",
   "ins.nostreak.t": "No streaks here",
   "ins.nostreak.b":
     "A missed day is just a day. Coming back is always welcome, and nothing resets.",
@@ -349,6 +379,26 @@ export const he: Record<keyof typeof en, string> = {
   "you.today": "היום",
   "you.saveError": "זה לא נשמר. לנסות שוב?",
 
+  "today.energy.title": "לפי האנרגיה שלכם",
+  "today.energy.sub": "איך האנרגיה שלכם עכשיו? נציע משימות שמתאימות לה, וההחלטה שלכם.",
+  "today.energy.pick": "בחירת רמת האנרגיה שלכם עכשיו",
+  "today.energy.low": "נמוכה",
+  "today.energy.medium": "בינונית",
+  "today.energy.high": "גבוהה",
+  "today.energy.loading": "מחפשים משימות שמתאימות…",
+  "today.energy.empty.t": "כרגע אין משימה מחוץ לתוכנית של היום שמתאימה לאנרגיה הזו.",
+  "today.energy.empty.b": "זו תשובה טובה. ברשימה של היום כבר יש מספיק.",
+  "today.energy.why.low": "משימה עדינה לאנרגיה נמוכה. מאמץ קטן, התקדמות אמיתית.",
+  "today.energy.why.medium": "משימה יציבה שמתאימה להרגשה שלכם עכשיו.",
+  "today.energy.why.high": "יש לכם תנופה, והמשימה הזו בגודל שמתאים לה.",
+  "today.energy.near.low": "קרובה לאנרגיה שלכם עכשיו. רק אם זה מרגיש נכון.",
+  "today.energy.near.medium": "קצת שונה מהאנרגיה שלכם עכשיו, אבל בהחלט אפשר לעשות אותה.",
+  "today.energy.near.high": "לא צריך בשבילה את כל האנרגיה, אבל עם תנופה היא קלה.",
+  "today.energy.add": "הוספה להיום",
+  "today.energy.addLabel": "הוספת {title} להיום",
+  "today.energy.skip": "לא עכשיו",
+  "today.energy.skipLabel": "לא עכשיו: {title}",
+
   "ins.title": "תובנות",
   "ins.sub.2w": "דפוסים משבועיים האחרונים, במילים פשוטות. שום דבר כאן אינו ציון.",
   "ins.sub.4w": "דפוסים מארבעת השבועות האחרונים שלך, במילים פשוטות. שום דבר כאן אינו ציון.",
@@ -357,6 +407,9 @@ export const he: Record<keyof typeof en, string> = {
   "ins.r2w": "שבועיים",
   "ins.r4w": "4 שבועות",
   "ins.r3m": "3 חודשים",
+  "ins.r2w.name": "שבועיים אחרונים",
+  "ins.r4w.name": "4 שבועות אחרונים",
+  "ins.r3m.name": "3 חודשים אחרונים",
   "ins.pat.h": "דפוסים עדינים",
   "ins.pat.n": "שזוהו",
   "ins.pat.none": "עוד אין דפוסים ברורים בתקופה הזו. זה בסדר, הם צריכים עוד כמה ימים.",
@@ -400,6 +453,8 @@ export const he: Record<keyof typeof en, string> = {
   "ins.line.peak": "זמן הריכוז הגיע לשיא של {m} דקות בשבוע {w}.",
   "ins.line.now": "שבוע {w} עוד לא נגמר.",
   "ins.line.none": "עוד אין סשנים של ריכוז בתקופה הזו.",
+  "ins.doneTrend": "משימות שהסתיימו, לפי שבוע",
+  "ins.grid.summary": "משהו קרה ב־{a} מתוך {n} ימים בתקופה הזו.",
   "ins.nostreak.t": "בלי רצפים",
   "ins.nostreak.b": "יום שהתפספס הוא פשוט יום. תמיד אפשר לחזור, ושום דבר לא מתאפס.",
   "ins.empty.t": "לדפוסים צריך בערך שבוע.",

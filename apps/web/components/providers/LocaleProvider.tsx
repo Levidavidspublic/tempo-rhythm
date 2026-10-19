@@ -9,6 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { deviceSettingChange } from "@/lib/device-sync";
 import {
   dirFor,
   LANG_STORAGE_KEY,
@@ -53,6 +54,16 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     const next = resolveLang(param, stored);
     setLangState(next);
     applyToDocument(next);
+
+    // The language was switched in another tab of this browser: switch here too.
+    const onStorage = (event: StorageEvent) => {
+      const change = deviceSettingChange(event.key, event.newValue);
+      if (change?.kind !== "lang") return;
+      setLangState(change.lang);
+      applyToDocument(change.lang);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const setLang = useCallback((next: Lang) => {

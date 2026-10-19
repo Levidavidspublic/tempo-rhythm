@@ -10,6 +10,7 @@ import {
   newUserFields,
   shouldGrantSubscription,
 } from "./lib/entitlements";
+import { sendSignInEmail } from "./lib/signInEmail";
 
 type AppDb = GenericMutationCtx<DataModel>["db"];
 
@@ -71,7 +72,11 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Resend({
       from: process.env.RESEND_FROM_EMAIL ?? "Tempo Flow <onboarding@resend.dev>",
+      // The sign-in email says "30 minutes" (convex/lib/signInEmail.ts). Change both together.
       maxAge: 60 * 30,
+      // Our own email content (English, then Hebrew). Same Resend API, key and sender as the
+      // Auth.js default it replaces.
+      sendVerificationRequest: sendSignInEmail,
     }),
   ],
   session: {

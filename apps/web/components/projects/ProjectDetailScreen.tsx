@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type FocusEvent, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import {
   InlineAdd,
   makeToast,
@@ -33,6 +33,14 @@ import {
 import { projectIdFromSlug } from "@/lib/taskKanban";
 import { titleFromProjectSlug } from "@/lib/task-view-filters";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+
+/**
+ * True when `next` names a new project that has no task yet. The name lives on a project's tasks,
+ * so nothing can keep it until the first task is added.
+ */
+export function waitsForFirstTask(projectId: string, taskCount: number, next: string, name: string): boolean {
+  return taskCount === 0 && isNewProjectId(projectId) && next !== "" && next !== name;
+}
 
 /**
  * Project page (docs/design/v3/screens/web/project-detail.html): the project's name, status and
@@ -95,6 +103,8 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     );
   });
   const [adding, setAdding] = useState(false);
+  // A new project was named before it had a task: the page says it is kept once it has one.
+  const [namedNew, setNamedNew] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [error, setError] = useState(false);
   const closeToast = useCallback(() => setToast(null), []);
@@ -138,11 +148,19 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
   const projectName = title.trim() || name;
 
-  const rename = () => {
+  const rename = (event: FocusEvent<HTMLInputElement>) => {
     titleFocused.current = false;
     const next = title.trim();
     if (!next) {
       setTitle(name);
+      return;
+    }
+    if (waitsForFirstTask(projectId, rows.length, next, name)) {
+      // Opening the first-task field focuses it. One already open takes focus only when the name
+      // was left with Enter, not when the person moved somewhere else.
+      setNamedNew(true);
+      if (adding && event.relatedTarget === null) document.getElementById("pd-add")?.focus();
+      setAdding(true);
       return;
     }
     if (next === name || rows.length === 0) return;
@@ -225,6 +243,12 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
             <StatusBadge kind="project" status={projectStatusFor(done, ordered.length)} />
           </div>
         </div>
+
+        {namedNew && rows.length === 0 ? (
+          <p className="tp-help">
+            <output>{t("pd.keptHint")}</output>
+          </p>
+        ) : null}
 
         {error ? (
           <p className="tp-notice" data-tone="caution" role="alert">

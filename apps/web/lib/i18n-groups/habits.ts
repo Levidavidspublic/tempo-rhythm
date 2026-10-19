@@ -1,8 +1,9 @@
 /**
- * v3 screens: Habits, habit detail, routines and routine detail (docs/design/v3/screen-map.md).
+ * v3 screens: Habits, habit detail, routines and routine detail (docs/design/v3/screen-map.md),
+ * plus Today's day plan (the plan panel and the "Your day" summary).
  * English and Hebrew; i18n.ts merges both. Hebrew needs native review (OVERNIGHT-RUN.md).
  * English is from the design files; Hebrew is from their TP_STRINGS.he where the design has it.
- * Prefixes: hr. shared, hb. habits, hd. habit detail, rt. routines, rd. routine detail.
+ * Prefixes: hr. shared, hb. habits, dp. day plan, hd. habit detail, rt. routines, rd. routine detail.
  */
 export const en = {
   // Shared states and controls
@@ -43,6 +44,17 @@ export const en = {
   "hb.unlog.sr": ", undo today's check for {name}",
   "hb.dayDone": "logged",
   "hb.dayOpen": "not logged",
+  // Habit check-in strip on Today (components/habit-checkin-strip)
+  "hb.strip.title": "Habits today",
+  "hb.strip.sub": "Check a habit for this calendar day. Undo it whenever you want.",
+  "hb.strip.empty": "No habits yet. Add one on the {link}.",
+  "hb.strip.emptyLink": "Habits page",
+  "hb.strip.check": "Check",
+  "hb.strip.checked": "Checked",
+  "hb.strip.check.sr": "Check {name} for today",
+  "hb.strip.uncheck.sr": "Undo today's check for {name}",
+  "hb.strip.streak.one": "1 day in a row",
+  "hb.strip.streak.many": "{n} days in a row",
   "hb.empty.t": "No habits yet. You don't need any to have a good day.",
   "hb.empty.b":
     "If there's one small thing you'd like to do most days, add it here. One is plenty to start.",
@@ -68,6 +80,37 @@ export const en = {
   "hb.energy.accept": "Add this gentle step",
   "hb.energy.reject": "Not for now",
   "hb.energy.done": "Added as today's check for {name}.",
+
+  // Day plan on Today: the plan panel, then the "Your day" summary once it is set
+  "dp.title": "Plan for today",
+  "dp.sub": "Set an intention, pick what matters most, and note your energy.",
+  "dp.set": "Your day is set.",
+  "dp.intention": "Intention",
+  "dp.intention.ph": "What would make today feel good?",
+  "dp.pick": "Pick up to {n}",
+  "dp.noTasks": "No tasks to pick from yet. Add one below and it will show up here.",
+  "dp.energy": "Energy",
+  "dp.energy.low": "Low",
+  "dp.energy.medium": "Medium",
+  "dp.energy.high": "High",
+  "dp.saveError":
+    "We couldn't save that just now. Your changes are still here, so you can try again.",
+  "dp.commitError": "We couldn't set your day just now. Nothing is lost, so you can try again.",
+  "dp.edit": "Edit plan",
+  "dp.doneEditing": "Done editing",
+  "dp.commit": "This is my day",
+  "dp.summary": "Your day",
+  "dp.badge.low": "Low energy",
+  "dp.badge.medium": "Medium energy",
+  "dp.badge.high": "High energy",
+  "dp.progress": "{done} of {total} done",
+  "dp.markDone": "Mark {title} done",
+  "dp.markUndone": "Mark {title} as not done",
+  "dp.upNext": "Up next",
+  "dp.upNext.none": "Nothing else is planned for today.",
+  "dp.done": "Done",
+  "dp.letGo": "Let it go",
+  "dp.letGo.sr": "Let {title} go",
 
   // Habit detail (habit-detail.html)
   "hd.back": "All habits",
@@ -146,6 +189,8 @@ export const en = {
   "rd.loading": "Loading your routine",
   "rd.error": "Couldn't load this routine.",
   "rd.gone": "This routine isn't here any more.",
+  "rd.addSteps": "Add steps",
+  "rd.resumed": "Picked up where you left off.",
 } as const;
 
 export const he: Record<keyof typeof en, string> = {
@@ -185,6 +230,16 @@ export const he: Record<keyof typeof en, string> = {
   "hb.unlog.sr": ", לבטל את הסימון של היום עבור {name}",
   "hb.dayDone": "נרשם",
   "hb.dayOpen": "לא נרשם",
+  "hb.strip.title": "הרגלים להיום",
+  "hb.strip.sub": "אפשר לסמן הרגל ליום הזה. אפשר לבטל את הסימון מתי שרוצים.",
+  "hb.strip.empty": "עוד אין הרגלים. אפשר להוסיף אחד ב{link}.",
+  "hb.strip.emptyLink": "דף ההרגלים",
+  "hb.strip.check": "לסמן",
+  "hb.strip.checked": "סומן",
+  "hb.strip.check.sr": "לסמן את {name} להיום",
+  "hb.strip.uncheck.sr": "לבטל את הסימון של היום עבור {name}",
+  "hb.strip.streak.one": "יום אחד ברצף",
+  "hb.strip.streak.many": "{n} ימים ברצף",
   "hb.empty.t": "עוד אין הרגלים. לא צריך אף אחד כדי שיהיה יום טוב.",
   "hb.empty.b":
     "אם יש דבר קטן אחד שהיית רוצה לעשות ברוב הימים, אפשר להוסיף אותו כאן. אחד זה מספיק להתחלה.",
@@ -210,6 +265,35 @@ export const he: Record<keyof typeof en, string> = {
   "hb.energy.accept": "להוסיף את הצעד העדין הזה",
   "hb.energy.reject": "לא עכשיו",
   "hb.energy.done": "נוסף כרישום של היום עבור {name}.",
+
+  "dp.title": "התוכנית להיום",
+  "dp.sub": "אפשר לבחור כוונה ליום, את מה שהכי חשוב, ולציין את האנרגיה.",
+  "dp.set": "היום שלך מוכן.",
+  "dp.intention": "כוונה",
+  "dp.intention.ph": "מה יעזור להיום להרגיש טוב?",
+  "dp.pick": "אפשר לבחור עד {n}",
+  "dp.noTasks": "עוד אין משימות לבחור מהן. אפשר להוסיף משימה למטה, והיא תופיע כאן.",
+  "dp.energy": "אנרגיה",
+  "dp.energy.low": "נמוכה",
+  "dp.energy.medium": "בינונית",
+  "dp.energy.high": "גבוהה",
+  "dp.saveError": "לא הצלחנו לשמור את זה כרגע. השינויים שלך עדיין כאן, אז אפשר לנסות שוב.",
+  "dp.commitError": "לא הצלחנו לקבוע את היום כרגע. שום דבר לא אבד, אז אפשר לנסות שוב.",
+  "dp.edit": "עריכת התוכנית",
+  "dp.doneEditing": "סיום העריכה",
+  "dp.commit": "זה היום שלי",
+  "dp.summary": "היום שלך",
+  "dp.badge.low": "אנרגיה נמוכה",
+  "dp.badge.medium": "אנרגיה בינונית",
+  "dp.badge.high": "אנרגיה גבוהה",
+  "dp.progress": "{done} מתוך {total} בוצעו",
+  "dp.markDone": "לסמן את {title} כבוצע",
+  "dp.markUndone": "לסמן את {title} כלא בוצע",
+  "dp.upNext": "בהמשך",
+  "dp.upNext.none": "אין עוד משהו מתוכנן להיום.",
+  "dp.done": "בוצע",
+  "dp.letGo": "לשחרר",
+  "dp.letGo.sr": "לשחרר את {title}",
 
   "hd.back": "כל ההרגלים",
   "hd.sub.daily": "ברוב הימים.",
@@ -285,4 +369,6 @@ export const he: Record<keyof typeof en, string> = {
   "rd.loading": "טוען את השגרה שלך",
   "rd.error": "לא הצלחנו לטעון את השגרה.",
   "rd.gone": "השגרה הזאת כבר לא כאן.",
+  "rd.addSteps": "להוסיף צעדים",
+  "rd.resumed": "ממשיכים מאיפה שהפסקת.",
 };

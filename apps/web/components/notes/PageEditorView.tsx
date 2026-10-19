@@ -4,7 +4,7 @@ import { isLinkableTitle, parseTempoBlocks, sameTitle, titleKey } from "@tempo/u
 import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type EditorTrigger,
   LivePreviewEditor,
@@ -19,8 +19,10 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import {
+  closesPageMenu,
   exportContents,
   exportFileName,
+  exportMarkdownFile,
   filterSlashCommands,
   insertedBlockId,
   SLASH_COMMANDS,
@@ -98,7 +100,23 @@ export function PageEditorView(props: Props) {
   useRegisterCoachPage(noteId);
 
   const editor = useRef<LivePreviewEditorHandle | null>(null);
+  const titleField = useRef<HTMLTextAreaElement | null>(null);
   const [mode, setMode] = useState<"edit" | "read">("edit");
+
+  // The title wraps on a narrow screen instead of scrolling out of sight: a one-line textarea
+  // that grows with its text (where `field-sizing` isn't supported, its height is set here).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new title is what changes the height
+  useLayoutEffect(() => {
+    const field = titleField.current;
+    if (!field) return;
+    const fit = () => {
+      field.style.height = "auto";
+      field.style.height = `${field.scrollHeight}px`;
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [title]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [trigger, setTrigger] = useState<EditorTrigger | null>(null);
@@ -232,9 +250,31 @@ export function PageEditorView(props: Props) {
     }
   };
 
+  // Escape closes the page menu. This listens on the document, which hears the key before the
+  // shell's listener on window, and marks it taken so the shell leaves the rail and the coach
+  // panel open. An Escape a popup above already took (the slash menu, a dialog) stays theirs.
+  // Focus goes back to the ⋯ button when it was in the menu or nowhere (a click on a button
+  // leaves none in Safari); focus in the editor or the title stays where it is.
+  const menuRoot = useRef<HTMLDivElement | null>(null);
+  const menuButton = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!closesPageMenu(event)) return;
+      event.preventDefault();
+      setMenuOpen(false);
+      const from = event.target;
+      const inMenu = from instanceof Node && (menuRoot.current?.contains(from) ?? false);
+      if (inMenu || from === document.body || from === document.documentElement) menuButton.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   const exportMarkdown = () => {
     setMenuOpen(false);
-    const blob = new Blob([exportContents(body)], { type: "text/markdown;charset=utf-8" });
+    const file = exportMarkdownFile(title, body, t("page.untitled"));
+    const blob = new Blob([file], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -263,13 +303,19 @@ export function PageEditorView(props: Props) {
         <div className="tp-page-head" data-component="PageHead" data-variant="note">
           <div className="tp-page-head__row">
             <h1 className="tp-page-title" id="page-title">
-              <input
+              <textarea
+                ref={titleField}
                 aria-label={t("page.titleLabel")}
-                className="w-full min-w-0 border-0 bg-transparent p-0 placeholder:text-ink-subtle"
+                className="block w-full min-w-0 resize-none overflow-hidden border-0 bg-transparent p-0 field-sizing-content wrap-anywhere placeholder:text-ink-subtle"
                 dir="auto"
+                rows={1}
                 value={title}
                 placeholder={t("page.untitled")}
-                onChange={(event) => props.onTitleChange(event.target.value)}
+                // A title is one line: Enter doesn't add a line break, and pasted breaks become spaces.
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.nativeEvent.isComposing) event.preventDefault();
+                }}
+                onChange={(event) => props.onTitleChange(event.target.value.replace(/[\r\n]+/g, " "))}
               />
             </h1>
             <div className="tp-page-head__actions">
@@ -287,8 +333,9 @@ export function PageEditorView(props: Props) {
                   </button>
                 </>
               ) : null}
-              <div className="tp-menu" data-component="PageMenu">
+              <div className="tp-menu" data-component="PageMenu" ref={menuRoot}>
                 <button
+                  ref={menuButton}
                   className="tp-btn tp-btn--ghost tp-btn--sm tp-btn--icon"
                   type="button"
                   aria-haspopup="menu"

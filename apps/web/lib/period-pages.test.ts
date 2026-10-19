@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { parseTempoBlocks } from "@tempo/utils";
+import { STARTER_TEMPLATES } from "@/convex/lib/templateCatalog";
+import { dayTokens } from "@/lib/editor/markdown-model";
+import { STARTER_BODIES_EN, STARTER_BODIES_HE } from "./period-page-bodies";
 import {
   addDays,
   isIsoDate,
@@ -113,5 +116,106 @@ describe("periodPageDraft", () => {
 
   test("a template without a top heading is kept whole", () => {
     expect(prose(periodPageDraft("daily", "2026-10-12", "## Plan\n- [ ] One").body)).toBe("## Plan\n- [ ] One");
+  });
+
+  describe("the starter outline in the page's language (#1075)", () => {
+    const catalog = (id: string) => {
+      const found = STARTER_TEMPLATES.find((t) => t.templateId === id);
+      if (!found) throw new Error(`no ${id} in the template catalog`);
+      return found.body;
+    };
+    const STARTERS = { daily: catalog("starter:daily-page"), weekly: catalog("starter:weekly-page") };
+    const KINDS = ["daily", "weekly"] as const;
+    const MONDAY = "2026-10-12";
+    const lines = (markdown: string) => markdown.split("\n");
+    const headings = (markdown: string) => lines(markdown).filter((l) => /^#{1,6} /.test(l));
+    const checkboxes = (markdown: string) => lines(markdown).filter((l) => l.startsWith("- [ ] "));
+    /** Each line's Markdown shape: its heading marks, a checkbox, a blank line, or text. */
+    const shape = (markdown: string) =>
+      lines(markdown).map((l) => /^#{1,6} /.exec(l)?.[0] ?? (l.startsWith("- [ ] ") ? "- [ ] " : l === "" ? "" : "text"));
+    /** A deterministic draft, so two drafts can be compared byte for byte. */
+    const draft = (kind: "daily" | "weekly", body: string, lang?: "en" | "he") =>
+      periodPageDraft(kind, MONDAY, body, lang, 0, () => 0);
+
+    test("the English copies are the catalog's starter bodies, byte for byte", () => {
+      expect(STARTER_BODIES_EN.daily).toBe(STARTERS.daily);
+      expect(STARTER_BODIES_EN.weekly).toBe(STARTERS.weekly);
+    });
+
+    test("each Hebrew outline has the English outline's headings, checkboxes and blank lines", () => {
+      for (const kind of KINDS) expect(shape(STARTER_BODIES_HE[kind])).toEqual(shape(STARTER_BODIES_EN[kind]));
+    });
+
+    test("he + the starter: Hebrew headings, as many headings and checkboxes as English, no English left", () => {
+      for (const kind of KINDS) {
+        const en = prose(draft(kind, STARTERS[kind], "en").body);
+        const he = prose(draft(kind, STARTERS[kind], "he").body);
+        expect(headings(he)).toHaveLength(headings(en).length);
+        expect(checkboxes(he)).toHaveLength(checkboxes(en).length);
+        expect(shape(he)).toEqual(shape(en));
+        for (const heading of headings(he)) expect(heading).toMatch(/^#{2,3} [א-ת][א-ת ]*$/);
+        expect(he).not.toMatch(/[A-Za-z]/);
+      }
+    });
+
+    test("he + the daily starter: its headings and checkboxes", () => {
+      const he = prose(draft("daily", STARTERS.daily, "he").body);
+      expect(headings(he)).toEqual(["## כוונה", "## לוח זמנים", "## הערות"]);
+      expect(checkboxes(he)).toEqual(["- [ ] בוקר", "- [ ] צהריים", "- [ ] אחר הצהריים"]);
+    });
+
+    test("he + the weekly starter: its headings, with the days in the week's own order", () => {
+      const he = prose(draft("weekly", STARTERS.weekly, "he").body);
+      const days = [0, 1, 2, 3, 4, 5, 6].map((i) => `### ${dayTokens(addDays(MONDAY, i), "he").weekday}`);
+      expect(headings(he)).toEqual(["## מיקוד", "## ימים", ...days, "## להמשך"]);
+      expect(days[0]).toBe("### יום שני");
+      expect(days[6]).toBe("### יום ראשון");
+      expect(checkboxes(he)).toEqual(["- [ ] ", "- [ ] ", "- [ ] "]);
+    });
+
+    test("he + the starter with extra whitespace at its end is still the starter", () => {
+      for (const kind of KINDS) {
+        const he = draft(kind, `${STARTERS[kind]}\n \t\n`, "he");
+        expect(he).toEqual(draft(kind, STARTERS[kind], "he"));
+        expect(prose(he.body)).toBe(prose(draft(kind, STARTER_BODIES_HE[kind], "he").body));
+      }
+    });
+
+    test("he + an edited or any other template body: used as is", () => {
+      const edited = [
+        `${STARTERS.daily}- [ ] Call the bank\n`,
+        STARTERS.daily.replace("Morning", "Gym"),
+        STARTERS.daily.replace("# Today", "# My day"),
+        // Only trailing whitespace at the very end is ignored.
+        `\n${STARTERS.daily}`,
+        "## Plan\n- [ ] One",
+        "",
+      ];
+      for (const body of edited) expect(draft("daily", body, "he").body).toBe(draft("daily", body, "en").body);
+      expect(prose(draft("daily", edited[0] ?? "", "he").body)).toContain("## Intention\n");
+      expect(prose(draft("daily", edited[0] ?? "", "he").body)).toContain("- [ ] Call the bank\n");
+      // A starter for the other kind is not this kind's starter.
+      expect(draft("weekly", STARTERS.daily, "he").body).toBe(draft("weekly", STARTERS.daily, "en").body);
+      expect(draft("daily", STARTERS.weekly, "he").body).toBe(draft("daily", STARTERS.weekly, "en").body);
+      // Tokens are still filled in Hebrew.
+      expect(prose(draft("daily", template, "he").body)).toBe("## Intention\nFor יום שני 2026-10-12: {{mood}}\n");
+    });
+
+    test("en + the starter: byte-identical to the drafts made before #1075", () => {
+      const meta = (kind: string) =>
+        `\`\`\`json tempo\n{"id":"blk_00000000000000000000000000","v":1,"type":"page-meta","data":{"pageType":"${kind}","date":"2026-10-12","tags":[]}}\n\`\`\`\n`;
+      const daily = {
+        title: "Monday, 12 October",
+        body: `${meta("daily")}## Intention\nOne line for what would make today feel complete.\n\n## Schedule\n- [ ] Morning\n- [ ] Midday\n- [ ] Afternoon\n\n## Notes\n`,
+      };
+      const weekly = {
+        title: "Week 42",
+        body: `${meta("weekly")}## Focus\nThree outcomes that matter this week.\n\n- [ ] \n- [ ] \n- [ ] \n\n## Days\n### Monday\n### Tuesday\n### Wednesday\n### Thursday\n### Friday\n### Saturday\n### Sunday\n\n## Carry forward\nWhat stays open for next week.\n`,
+      };
+      expect(draft("daily", STARTERS.daily, "en")).toEqual(daily);
+      expect(draft("daily", STARTERS.daily)).toEqual(daily);
+      expect(draft("weekly", STARTERS.weekly, "en")).toEqual(weekly);
+      expect(draft("weekly", STARTERS.weekly)).toEqual(weekly);
+    });
   });
 });

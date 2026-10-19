@@ -3,8 +3,11 @@ import { parseTempoBlocks } from "@tempo/utils";
 import {
   applyTemplateTokens,
   backlinksFor,
+  closesPageMenu,
   dayTokens,
+  exportContents,
   exportFileName,
+  exportMarkdownFile,
   filterSlashCommands,
   findWikiLinks,
   insertedBlockId,
@@ -164,6 +167,75 @@ describe("page menu", () => {
   test("dirty only when the text differs", () => {
     expect(isDirty("a", "a")).toBe(false);
     expect(isDirty("a", "a ")).toBe(true);
+  });
+
+  test("Export .md starts with the title as a heading, a blank line, then the body as saved", () => {
+    const body = "Pack the kitchen.\n\n- [ ] Boxes\n";
+    expect(exportMarkdownFile("Moving day", body, "Untitled")).toBe(`# Moving day\n\n${body}`);
+    expect(exportMarkdownFile("  Moving   day ", "x", "Untitled")).toBe("# Moving day\n\nx");
+  });
+
+  test("Export .md keeps Tempo fences and every body byte after the heading", () => {
+    const body = `Before\n${tempoFence(newTaskBlock("Call the bank", 0, () => 0))}After`;
+    expect(exportMarkdownFile("Week", body, "Untitled")).toBe(`# Week\n\n${body}`);
+  });
+
+  test("an untitled page gets the app's untitled name", () => {
+    expect(exportMarkdownFile("", "Hello", "Untitled")).toBe("# Untitled\n\nHello");
+    expect(exportMarkdownFile("   ", "Hello", "ללא כותרת")).toBe("# ללא כותרת\n\nHello");
+  });
+
+  test("an empty page exports just the heading, never a 0-byte file", () => {
+    expect(exportMarkdownFile("Inbox", "", "Untitled")).toBe("# Inbox\n");
+    expect(exportMarkdownFile("Inbox", " \n\n", "Untitled")).toBe("# Inbox\n");
+    expect(exportMarkdownFile("", "", "Untitled")).toBe("# Untitled\n");
+  });
+
+  test("a title that starts with Markdown marks stays a plain heading", () => {
+    const heading = (title: string) => exportMarkdownFile(title, "", "Untitled");
+    expect(heading("# Not a subheading")).toBe("# \\# Not a subheading\n");
+    expect(heading("#hashtag")).toBe("# \\#hashtag\n");
+    expect(heading("#")).toBe("# \\#\n");
+    expect(heading("* starred")).toBe("# \\* starred\n");
+    expect(heading("*bold* and _soft_")).toBe("# \\*bold\\* and \\_soft\\_\n");
+    expect(heading("> quoted")).toBe("# \\> quoted\n");
+    expect(heading("- item")).toBe("# \\- item\n");
+    expect(heading("+ item")).toBe("# \\+ item\n");
+    expect(heading("1. First")).toBe("# 1\\. First\n");
+    expect(heading("12) Twelfth")).toBe("# 12\\) Twelfth\n");
+  });
+
+  test("a title keeps its inline text and its trailing #", () => {
+    const heading = (title: string) => exportMarkdownFile(title, "", "Untitled");
+    expect(heading("Ideas #")).toBe("# Ideas \\#\n");
+    expect(heading("Ideas ##")).toBe("# Ideas \\##\n");
+    expect(heading("C# notes")).toBe("# C# notes\n");
+    expect(heading("A > B")).toBe("# A > B\n");
+    expect(heading("[link](x) `code` <b> ~~gone~~ \\")).toBe(
+      "# \\[link\\](x) \\`code\\` \\<b> \\~\\~gone\\~\\~ \\\\\n",
+    );
+    expect(heading("Q&A &amp; more")).toBe("# Q&A \\&amp; more\n");
+  });
+
+  test("Hebrew titles and bodies export as typed", () => {
+    expect(exportMarkdownFile("רשימת המעבר", "לארוז את המטבח\n", "ללא כותרת")).toBe("# רשימת המעבר\n\nלארוז את המטבח\n");
+    expect(exportMarkdownFile("#משימות", "", "ללא כותרת")).toBe("# \\#משימות\n");
+    expect(exportMarkdownFile("- קניות", "", "ללא כותרת")).toBe("# \\- קניות\n");
+  });
+
+  test("Copy as Markdown still copies the body alone", () => {
+    expect(exportContents("Body only\n")).toBe("Body only\n");
+  });
+
+  test("Escape closes the page menu unless a popup above took it or an IME is composing", () => {
+    expect(closesPageMenu({ key: "Escape" })).toBe(true);
+    expect(closesPageMenu({ key: "Escape", isComposing: false, keyCode: 27, defaultPrevented: false })).toBe(true);
+    expect(closesPageMenu({ key: "Escape", defaultPrevented: true })).toBe(false);
+    expect(closesPageMenu({ key: "Escape", isComposing: true })).toBe(false);
+    expect(closesPageMenu({ key: "Escape", keyCode: 229 })).toBe(false);
+    expect(closesPageMenu({ key: "Process", keyCode: 229 })).toBe(false);
+    expect(closesPageMenu({ key: "Enter" })).toBe(false);
+    expect(closesPageMenu({ key: "Esc" })).toBe(false);
   });
 });
 

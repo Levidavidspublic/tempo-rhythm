@@ -33,7 +33,9 @@ test.describe("integrations screen", () => {
     await expect(integrationsPage.getByText("Gmail", { exact: true })).toBeVisible();
     // v3 (settings-integrations.html): six planned connectors, each badged "Coming later".
     await expect(integrationsPage.locator('[data-component="Badge"]', { hasText: "Coming later" })).toHaveCount(6);
-    await expect(integrationsPage.getByRole("button", { name: /^Connect/i })).toHaveCount(0);
+    // The planned connectors offer no Connect button. Executor's row (Connections) has a real one.
+    const planned = integrationsPage.locator('section[aria-labelledby="soon-title"]');
+    await expect(planned.getByRole("button", { name: /^Connect/i })).toHaveCount(0);
     expect(consoleErrors).toEqual([]);
   });
 
