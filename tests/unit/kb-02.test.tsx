@@ -5,6 +5,7 @@ import { basename, join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import * as bun from "bun";
 import { en, he, tKb02 } from "../../apps/web/lib/i18n-groups/kb-02";
+import { translate } from "../../apps/web/lib/i18n";
 
 const repo = process.cwd();
 const web = join(repo, "apps/web");
@@ -21,6 +22,39 @@ declare global {
     __kbResolveUndo: (value: null) => void;
   }
 }
+// Bun.build's plugin resolver can leak into later Bun.build tests in the shared test process.
+// Run this browser fixture in a clean child while retaining named cases in the main report.
+if (process.env.KB02_ISOLATED !== "1" && !beforeMode) {
+  const names = [
+    "empty capture gives a gentle prompt before sorting",
+    "multiline Hebrew capture keeps direction and wraps",
+    "pending sort leaves the draft visible and then shows a proposal",
+    "proposal is a preview until a person accepts and adds",
+    "saved page retains keyboard reachable Open and Undo while removal waits",
+    "recovery notice dismisses and returns focus to the draft",
+    "390 px long text does not widen the viewport",
+    "offline copy explains the draft and the connection",
+    "gallery states, controls, focus, and disabled action work",
+    "English and Hebrew new keys match",
+    "mounted screen and gallery fit phone and desktop in both languages and themes",
+  ];
+  let output: string | undefined;
+  for (const name of names) {
+    test(`KB-02 isolated: ${name}`, () => {
+      if (output === undefined) {
+        const run = bun.spawnSync([process.execPath, "test", import.meta.path], {
+          cwd: repo,
+          env: { ...process.env, KB02_ISOLATED: "1" },
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        output = `${run.stdout.toString()}${run.stderr.toString()}`;
+        if (run.exitCode !== 0) throw new Error(`KB-02 clean test process failed:\n${output}`);
+      }
+      expect(output).toContain(name);
+    }, 300_000);
+  }
+} else {
 let browser: Browser;
 let server: ReturnType<typeof bun.serve>;
 let origin: string;
@@ -50,6 +84,11 @@ async function makeFixture() {
     plugins: [{ name: "kb02-fictional-data", setup(build) {
       build.onResolve({ filter: /^(convex\/react|next\/link|@\/components\/providers\/LocaleProvider|@\/convex\/_generated\/api)$/ }, args => ({ path: args.path, namespace: "kb02" }));
       build.onLoad({ filter: /.*/, namespace: "kb02" }, args => ({ contents: stubs[args.path], loader: "tsx", resolveDir: web }));
+      if (beforeMode) build.onResolve({ filter: /^@\// }, args => {
+        const base = join(web, args.path.slice(2));
+        const path = [base, `${base}.ts`, `${base}.tsx`, `${base}/index.ts`, `${base}/index.tsx`].find(existsSync);
+        return path ? { path } : undefined;
+      });
       build.onResolve({ filter: /^\.\/brainDumpState$/ }, args => args.importer === source ? { path: join(web, "components/brain-dump/brainDumpState.ts") } : undefined);
       build.onResolve({ filter: /^react-native$/ }, () => ({ path: join(web, "node_modules/react-native-web/dist/index.js") }));
     } }],
@@ -76,6 +115,7 @@ async function open(width = 390, params = "", kept?: object): Promise<Page> {
   const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1, reducedMotion: "reduce" });
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.stack ?? String(error)));
+  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   if (kept) await page.addInitScript(value => sessionStorage.setItem("tempo:brain-dump:session", JSON.stringify({ v: 1, savedAt: Date.now(), ...value })), kept);
   await page.goto(`${origin}/?${params}`, { waitUntil: "domcontentloaded" });
   try { await page.locator("main").waitFor(); }
@@ -124,6 +164,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     expect(await page.locator("textarea").inputValue()).toBe("Maya needs a calmer Friday.");
     expect(await page.locator("textarea").isDisabled()).toBe(true);
     expect(await page.getByRole("button", { name: tKb02("en", "kb02.dismiss") }).isDisabled()).toBe(true);
+    await page.waitForFunction(() => typeof window.__kbResolve === "function");
     await page.evaluate(value => window.__kbResolve(value), plan);
     await page.getByRole("heading", { name: "Your order" }).waitFor();
     expect(await page.getByText(tKb02("en", "kb02.ready")).count()).toBe(1);
@@ -141,6 +182,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.getByRole("button", { name: tKb02("en", "kb02.edit") }).first().click();
     await page.getByRole("textbox", { name: tKb02("en", "kb02.editLabel") }).fill("Ask Dana about Saturday");
     await page.getByRole("button", { name: tKb02("en", "kb02.saveEdit") }).click();
+    await page.waitForFunction(label => document.activeElement?.textContent?.includes(label), tKb02("en", "kb02.edit"));
     await page.getByRole("button", { name: "Accept" }).first().click();
     expect(await page.evaluate(() => window.__kbCalls.some(call => call.kind === "acceptPlan"))).toBe(false);
     await page.getByRole("button", { name: /Add accepted/ }).click();
@@ -204,6 +246,10 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     expect(await page.getByRole("button", { name: tKb02("en", "kb02.dismiss") }).isDisabled()).toBe(true);
     const minHeight = await page.locator(".kb02-gallery__controls .tp-btn").evaluateAll(nodes => Math.min(...nodes.map(node => node.getBoundingClientRect().height)));
     expect(minHeight).toBeGreaterThanOrEqual(44);
+    await page.getByRole("button", { name: tKb02("en", "kb02.galleryDefault") }).focus();
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => document.activeElement?.matches(":focus-visible"))).toBe(true);
+    expect(await page.evaluate(() => getComputedStyle(document.activeElement!).outlineStyle)).not.toBe("none");
     await page.close();
   }, 90_000);
 
@@ -219,15 +265,20 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
       expect(await page.locator("main").count()).toBe(1);
       expect(await page.locator("h1").count()).toBe(1);
       expect(await noOverflow(page)).toBe(true);
+      await page.getByRole("button", { name: translate(lang, "bd.savePage") }).click();
+      await page.locator(".bd-saved a").waitFor();
       await capture(page, `screen-${width}-${lang}-${theme}.png`);
       await page.close();
       if (beforeMode) continue;
       const gallery = await open(width, `${params}&gallery=1`);
       expect(await gallery.locator("main").count()).toBe(1);
       expect(await gallery.locator("h1").count()).toBe(1);
+      expect(await gallery.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
       expect(await noOverflow(gallery)).toBe(true);
+      expect(await gallery.locator(".kb02-capture-status").evaluate(node => getComputedStyle(node).transitionDuration)).toBe("0s");
       await capture(gallery, `gallery-${width}-${lang}-${theme}.png`);
       await gallery.close();
     }
   }, 180_000);
 });
+}

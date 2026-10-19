@@ -1,13 +1,14 @@
 /** Brain dump capture and recovery copy. Hebrew is machine-drafted for native review. */
 export const en = {
-  "kb02.kept": "Your draft stays in this tab.",
+  "kb02.kept": "Your draft is here. Nothing is added until you choose.",
   "kb02.empty": "Start with anything on your mind. You can sort it when you're ready.",
   "kb02.sorting": "Sorting your draft. Your words stay here.",
   "kb02.ready": "Review the suggestions before adding anything.",
   "kb02.error": "Your draft is still here. You can try sorting again.",
-  "kb02.offline": "You're offline. Your draft stays here; sorting needs a connection.",
+  "kb02.offline": "You're offline. Your draft is here; sorting needs a connection.",
   "kb02.disabled": "This action is paused while your current request finishes.",
-  "kb02.recovered": "Your draft and choices are back in this tab.",
+  "kb02.recovered": "Your draft and plan are back in this tab.",
+  "kb02.recoveredDraft": "Your draft is back in this tab.",
   "kb02.dismiss": "Dismiss draft notice",
   "kb02.edit": "Edit idea",
   "kb02.editLabel": "Edit this idea",
@@ -31,14 +32,15 @@ export const en = {
 } as const;
 
 export const he: Record<keyof typeof en, string> = {
-  "kb02.kept": "הטיוטה נשמרת בלשונית הזו.",
+  "kb02.kept": "הטיוטה כאן. שום דבר לא נוסף בלי בחירה.",
   "kb02.empty": "אפשר להתחיל בכל מה שעולה בראש. אפשר לעשות סדר כשתהיה מוכנות.",
   "kb02.sorting": "מארגנים את הטיוטה. המילים נשארות כאן.",
   "kb02.ready": "אפשר לעבור על ההצעות לפני שמוסיפים משהו.",
   "kb02.error": "הטיוטה עדיין כאן. אפשר לנסות לארגן שוב.",
-  "kb02.offline": "אין חיבור. הטיוטה נשארת כאן; צריך חיבור כדי לארגן אותה.",
+  "kb02.offline": "אין חיבור. הטיוטה כאן; צריך חיבור כדי לארגן אותה.",
   "kb02.disabled": "הפעולה ממתינה עד שהבקשה הנוכחית תסתיים.",
-  "kb02.recovered": "הטיוטה והבחירות חזרו ללשונית הזו.",
+  "kb02.recovered": "הטיוטה והתוכנית חזרו ללשונית הזו.",
+  "kb02.recoveredDraft": "הטיוטה חזרה ללשונית הזו.",
   "kb02.dismiss": "סגירת ההודעה על הטיוטה",
   "kb02.edit": "עריכת רעיון",
   "kb02.editLabel": "עריכת הרעיון הזה",
