@@ -6,10 +6,17 @@
 // "pending"  = Bugbot check running, or no Bugbot result for the head commit yet.
 // "blocked"  = Bugbot answered that it can't run (e.g. "GitHub account mismatch": the PR author is a bot and
 //              no Cursor team covers the repo) → needs Amit, never auto-fixed.
+//
+// coderabbitState() is the release-gate alternative (repo variable RELEASE_REVIEWER=coderabbit). It reads the
+// `CodeRabbit` commit status on the head SHA, not a check run. A success whose description says the review
+// was skipped (release PRs into master, which is not the default branch) is blocked, never clean.
 import { gh, ghAll } from "./gh-api.mjs";
 
 export const BUGBOT_LOGINS = ["cursor[bot]", "cursor"];
+export const CODERABBIT_LOGINS = ["coderabbitai[bot]", "coderabbitai"];
+export const CODERABBIT_STATUS_CONTEXT = "CodeRabbit";
 const isBugbotUser = (u) => !!u && BUGBOT_LOGINS.includes(u.login || u);
+const isCoderabbitUser = (u) => !!u && CODERABBIT_LOGINS.includes(u.login || u);
 // GitHub Actions jobs are never Bugbot: the release gate's own job is named "gate Bugbot (one review)".
 export const isBugbotRun = (r) => r.app?.slug !== "github-actions" && (/bugbot/i.test(r.name || "") || (r.app && /cursor/i.test(r.app.slug || "") && /review|bug/i.test(r.name || "")));
 
@@ -30,15 +37,90 @@ export function bugbotState({ headSha, checkRuns = [], threads = [], comments = 
   return { state: "pending", findings: [], detail: "no Bugbot result for the head commit yet" };
 }
 
+const REVIEW_THREADS_QUERY = `query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{isResolved isOutdated path line comments(first:1){nodes{author{login} body url}}}}}}}`;
+
+export function mapReviewThread(t) {
+  const c = t.comments.nodes[0] || {};
+  const login = c.author && c.author.login;
+  return {
+    isResolved: t.isResolved,
+    isOutdated: t.isOutdated,
+    path: t.path,
+    line: t.line,
+    author: login ? { login: login === "cursor" ? "cursor[bot]" : login } : null,
+    body: c.body || "",
+    url: c.url,
+  };
+}
+
+export async function fetchReviewThreads(owner, repo, number) {
+  const g = await gh("/graphql", { method: "POST", body: { query: REVIEW_THREADS_QUERY, variables: { o: owner, r: repo, n: Number(number) } } });
+  const nodes = g?.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
+  return nodes.map(mapReviewThread);
+}
+
 export async function fetchBugbot(owner, repo, number) {
   const pr = await gh(`/repos/${owner}/${repo}/pulls/${number}`);
   const checkRuns = await ghAll(`/repos/${owner}/${repo}/commits/${pr.head.sha}/check-runs`, (j) => j.check_runs);
   const comments = await ghAll(`/repos/${owner}/${repo}/issues/${number}/comments`);
-  const q = `query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{isResolved isOutdated path line comments(first:1){nodes{author{login} body url}}}}}}}`;
-  const g = await gh("/graphql", { method: "POST", body: { query: q, variables: { o: owner, r: repo, n: Number(number) } } });
-  const nodes = g?.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
-  const threads = nodes.map((t) => { const c = t.comments.nodes[0] || {}; return { isResolved: t.isResolved, isOutdated: t.isOutdated, path: t.path, line: t.line, author: c.author ? { login: c.author.login === "cursor" ? "cursor[bot]" : c.author.login } : null, body: c.body || "", url: c.url }; });
+  const threads = await fetchReviewThreads(owner, repo, number);
   return { pr, ...bugbotState({ headSha: pr.head.sha, checkRuns, threads, comments }) };
+}
+
+// Latest CodeRabbit commit status (combined status is one object per context).
+export function coderabbitStatus(statuses = []) {
+  return statuses.find((s) => s && s.context === CODERABBIT_STATUS_CONTEXT) || null;
+}
+
+// Clean only when the status finished a review. "Review skipped: ..." is success on GitHub and is not this.
+export function isCoderabbitCompletedStatus(status) {
+  if (!status || status.context !== CODERABBIT_STATUS_CONTEXT) return false;
+  const desc = String(status.description || "");
+  return status.state === "success" && /review completed/i.test(desc) && !/skipped/i.test(desc);
+}
+
+// The walkthrough comment ("summarize by coderabbit.ai") says "Failed" and "skipped" for pre-merge
+// checks. That is not the review failing to run. Only a separate CodeRabbit comment counts.
+const CR_BLOCK_COMMENT = /rate[\s-]*limit|failed|paused/i;
+function coderabbitBlockComment(comments) {
+  return [...comments].reverse().find((c) => isCoderabbitUser(c.user) && !/summarize by coderabbit\.ai/i.test(c.body || "") && CR_BLOCK_COMMENT.test(c.body || ""));
+}
+
+// "clean"    = CodeRabbit status on the head SHA is success, description says the review completed
+//              (not skipped), and no unresolved non-outdated CodeRabbit review thread.
+// "findings" = unresolved, non-outdated review thread started by coderabbitai.
+// "blocked"  = status description contains "skipped", or a CodeRabbit comment says rate limited / failed / paused.
+// "pending"  = no finished review yet.
+export function coderabbitState({ headSha, statuses = [], threads = [], comments = [] }) {
+  const status = coderabbitStatus(statuses);
+  const desc = String(status?.description || "");
+  const findings = threads.filter((t) => !t.isResolved && !t.isOutdated && isCoderabbitUser(t.author));
+  if (findings.length) return { state: "findings", findings, detail: `${findings.length} unresolved CodeRabbit thread(s)` };
+
+  const note = coderabbitBlockComment(comments);
+  if (note) {
+    const commentAt = Date.parse(note.created_at || 0) || 0;
+    const statusAt = Date.parse(status?.updated_at || status?.created_at || 0) || 0;
+    if (!isCoderabbitCompletedStatus(status) || commentAt > statusAt) {
+      const line = (note.body || "").split("\n")[0].replace(/<[^>]+>/g, "").slice(0, 120);
+      return { state: "blocked", findings: [], detail: `CodeRabbit couldn't review: ${line}` };
+    }
+  }
+
+  if (/skipped/i.test(desc)) return { state: "blocked", findings: [], detail: `CodeRabbit review skipped: ${desc.slice(0, 140)}` };
+  if (isCoderabbitCompletedStatus(status)) return { state: "clean", findings: [], detail: `CodeRabbit review completed on ${String(headSha).slice(0, 7)}` };
+  if (status && ["failure", "error"].includes(status.state)) return { state: "blocked", findings: [], detail: `CodeRabbit status ${status.state}: ${desc.slice(0, 120) || "no description"}` };
+  return { state: "pending", findings: [], detail: status ? `CodeRabbit ${status.state}: ${desc.slice(0, 120)}` : "no CodeRabbit status for the head commit yet" };
+}
+
+export async function fetchCoderabbit(owner, repo, number) {
+  const pr = await gh(`/repos/${owner}/${repo}/pulls/${number}`);
+  const combined = await gh(`/repos/${owner}/${repo}/commits/${pr.head.sha}/status`);
+  const statuses = combined?.statuses || [];
+  const comments = await ghAll(`/repos/${owner}/${repo}/issues/${number}/comments`);
+  const threads = await fetchReviewThreads(owner, repo, number);
+  const status = coderabbitStatus(statuses);
+  return { pr, statuses, status, ...coderabbitState({ headSha: pr.head.sha, statuses, threads, comments }) };
 }
 
 export function findingsNote(findings, max = 12000) {
