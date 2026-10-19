@@ -6,7 +6,7 @@ Your friend uses their own phone or laptop. You keep your phone for one thing: a
 
 ## Before the demo (Amit, about 10 minutes, once)
 
-1. **The release puts this build on tempoflow.dev (AT).** It ships `integration` (the B07 batch, #1082) plus the /coach chat (#1090). Walk preview.tempoflow.dev with this script first. Then comment `go` on the Release PR: that starts **Release to production** (see `docs/DEPLOY.md`). When the run is green, tempoflow.dev serves the same build. That's your merge and your deploy.
+1. **The release puts this build on tempoflow.dev (AT).** It ships `integration` (the B07 batch, #1082) plus the /coach chat (#1090). Walk preview.tempoflow.dev with this script first. Then comment `go` on the Release PR: that starts **Release to production** (#1088; see `docs/DEPLOY.md`). If the `go` comment isn't set up yet, run **Release to production** from GitHub Actions on `integration` with **Dry run** unticked instead. When the run is green, tempoflow.dev serves the same build. That's your merge and your deploy.
 2. **Check you can approve people:** on your phone, sign in to tempoflow.dev and open `https://tempoflow.dev/admin/approvals`. You should see the admin list, not "Admins only". If it says "Admins only", your email isn't in `TEMPO_ADMIN_EMAILS` on the production Convex deployment.
 3. Optional: English or Hebrew. Inside the app, the switch is in the rail under **You** (it reads **עברית** / **English**). The landing follows the same choice on that device. On the landing itself, tap **EN** / **עב** at the top (**English** / **עברית** in the footer), or add `?lang=he` to the address. The sign-up and sign-in pages stay English either way.
 
@@ -67,7 +67,7 @@ If they closed the page: they come back to tempoflow.dev and tap **Sign in** wit
    - Tap **New chat**. The chat from Today stays in the list.
    - In **Search your chats**, type **afternoon**. The chat from Today comes up with the matching line; tap it to open it.
    - Under a coach reply, tap **Copy**. It turns into **Copied**.
-   **"Nothing you talk through gets lost. Start fresh any time, and find it again later."**
+   **"Your chats are kept. Start fresh any time, and search back through what you said."**
 
 ## If something goes sideways
 
