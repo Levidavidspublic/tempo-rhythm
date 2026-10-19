@@ -77,6 +77,19 @@ const GROUP_LABEL: Record<CommandGroup, MessageKey> = { recent: "cmd.g.recent", 
 type Variant = "dialog" | "page";
 
 /**
+ * Where focus goes as the Ctrl K palette closes without navigating: back to the control that
+ * had it before the palette opened, while that control is still in the page; otherwise the main
+ * content (`#main`, the skip link's target). Null when there is neither.
+ */
+export function pickReturnFocus(opener: Element | null, main: HTMLElement | null): HTMLElement | null {
+  if (!opener?.isConnected) return main;
+  const doc = opener.ownerDocument;
+  // Nothing was focused: the page itself is not a place to return to.
+  if (opener === doc.body || opener === doc.documentElement) return main;
+  return typeof (opener as HTMLElement).focus === "function" ? (opener as HTMLElement) : main;
+}
+
+/**
  * The command bar's body (docs/design/v3/screens/web/command.html): a combobox box over a
  * grouped listbox. Up / Down move (wrapping), Home / End jump when the box is empty, Enter
  * opens. The Ctrl K dialog adds Recent pages; the /command page lists screens and actions.
@@ -87,8 +100,8 @@ function CommandBody({
   inputRef,
 }: {
   variant: Variant;
-  /** Called after a row is chosen (the dialog closes). */
-  onDone: () => void;
+  /** Called after a row is chosen (the dialog closes); `navigating` when the row opens a page. */
+  onDone: (navigating: boolean) => void;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
   const { t } = useLocale();
@@ -177,12 +190,12 @@ function CommandBody({
     if (!row) return;
     if (row.action === "theme") {
       setTheme(resolvedTheme === "dark" ? "light" : "dark");
-      onDone();
+      onDone(false);
       return;
     }
     if (row.action === "font") {
       setDyslexia(!dyslexia);
-      onDone();
+      onDone(false);
       return;
     }
     if (row.action === "new-page") {
@@ -191,7 +204,7 @@ function CommandBody({
       setNewError(false);
       try {
         const id = await createNote({ title: "", body: "" });
-        onDone();
+        onDone(true);
         router.push(`/notes/${id}`);
       } catch {
         setNewError(true);
@@ -202,7 +215,7 @@ function CommandBody({
     }
     const href = row.always ? searchHref(query) : row.href;
     if (!href) return;
-    onDone();
+    onDone(true);
     router.push(href);
   };
 
@@ -390,13 +403,20 @@ export function CommandPanel() {
 
 /**
  * CommandPalette: the Ctrl K command bar (docs/design/v3/screens/web/command.html), a glass
- * modal dialog over the current page. Focus goes to the box; Esc closes and focus returns to
- * where it was (Radix restores it, or `returnFocus` moves it). Tab stays inside.
- * shadcn target: command in dialog.
+ * modal dialog over the current page. Focus goes to the box; Tab stays inside. Closing it (Esc,
+ * a click outside, the close button) puts focus back on the control that had it, or on #main
+ * when that control is gone (`returnFocus` goes first). A chosen row that opens a page leaves
+ * focus to the navigation. The palette has no Radix Trigger, so Radix alone would drop focus on
+ * <body>. shadcn target: command in dialog.
  */
 export function CommandPalette({ open, onOpenChange, returnFocus }: Props) {
   const { t } = useLocale();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // What had focus as the palette opened, and whether a chosen row is opening a page.
+  const opener = useRef<Element | null>(null);
+  const navigating = useRef(false);
+  const openRef = useRef(open);
+  openRef.current = open;
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -407,14 +427,43 @@ export function CommandPalette({ open, onOpenChange, returnFocus }: Props) {
           data-component="CommandPalette"
           onOpenAutoFocus={(event) => {
             event.preventDefault();
+            // Radix fires this before focus moves, so the active element is still the opener.
+            opener.current = document.activeElement;
+            navigating.current = false;
             inputRef.current?.focus();
           }}
           onCloseAutoFocus={(event) => {
-            if (returnFocus?.()) event.preventDefault();
+            // React's dev double mount can fire this while the palette is still open: not a close.
+            if (openRef.current) return;
+            const from = opener.current;
+            const followNavigation = navigating.current;
+            opener.current = null;
+            navigating.current = false;
+            if (returnFocus?.()) {
+              event.preventDefault();
+              return;
+            }
+            // A chosen row opened a page: focus follows the navigation, as before.
+            if (followNavigation) return;
+            const main = document.getElementById("main");
+            const target = pickReturnFocus(from, main);
+            if (!target) return;
+            event.preventDefault();
+            target.focus();
+            // A control that can no longer take focus (disabled, hidden) sends it to the page.
+            if (document.activeElement !== target) main?.focus();
           }}
         >
           <Dialog.Title className="tp-sr-only">{t("cmd.title")}</Dialog.Title>
-          <CommandBody variant="dialog" onDone={() => onOpenChange(false)} inputRef={inputRef} />
+          <CommandBody
+            variant="dialog"
+            onDone={(opensPage) => {
+              // A page that opens after the palette already closed (a slow New page) changes nothing.
+              if (openRef.current) navigating.current = opensPage;
+              onOpenChange(false);
+            }}
+            inputRef={inputRef}
+          />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

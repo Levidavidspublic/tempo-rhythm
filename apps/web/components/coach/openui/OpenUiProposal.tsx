@@ -16,7 +16,8 @@ import { type CoachCardRuntime, CoachCardRuntimeContext, coachOpenUiLibrary } fr
 /** Draws the direct card instead: on a render error, and for Edit (the direct card owns the form). */
 export type DirectCard = (options: { editing: boolean; onCancelEdit: () => void }) => ReactNode;
 
-class OpenUiBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+/** Hands over to the direct card when OpenUI throws while drawing (also used by ../CoachSources.tsx). */
+export class OpenUiBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };

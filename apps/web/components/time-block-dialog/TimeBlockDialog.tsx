@@ -1,10 +1,13 @@
 "use client";
 
+import { Cross2Icon } from "@radix-ui/react-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -15,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Lang, MessageKey } from "@/lib/i18n";
 import {
   BLOCK_KINDS,
   type BlockFormErrors,
@@ -27,6 +31,59 @@ import {
 const QUICK_DURATIONS = [15, 30, 60, 90] as const;
 const SELECT_CLASS =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm";
+/** The close button DialogContent draws, with its label in the app language. */
+const CLOSE_CLASS =
+  "absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground";
+const DAY_MINUTES = 1440;
+
+const KIND_KEYS: Record<BlockKind, MessageKey> = {
+  focus: "timeBlock.kind.focus",
+  task: "timeBlock.kind.task",
+  habit: "timeBlock.kind.habit",
+  break: "timeBlock.kind.break",
+  other: "timeBlock.kind.other",
+};
+
+export type FieldErrorKeys = Partial<
+  Record<"title" | "start" | "durationMinutes" | "kind", MessageKey>
+>;
+
+/**
+ * blockForm writes its errors in English; the dialog shows each field's copy instead. A length
+ * inside blockForm's 5 to 720 range can only fail by running past midnight.
+ */
+export function fieldErrorKeys(errors: BlockFormErrors, durationMinutes: number): FieldErrorKeys {
+  const keys: FieldErrorKeys = {};
+  if (errors.title) keys.title = "timeBlock.error.title";
+  if (errors.start) keys.start = "timeBlock.error.start";
+  if (errors.durationMinutes) {
+    const inRange =
+      Number.isInteger(durationMinutes) && durationMinutes >= 5 && durationMinutes <= 720;
+    keys.durationMinutes = inRange ? "timeBlock.error.pastMidnight" : "timeBlock.error.length";
+  }
+  if (errors.kind) keys.kind = "timeBlock.error.kind";
+  return keys;
+}
+
+/**
+ * English reads 9:30 AM; Hebrew reads the 24-hour 09:30. The same clock as DayTimeline's
+ * formatMinute, which that file does not export.
+ */
+function formatMinute(minute: number, lang: Lang): string {
+  const clamped = Math.max(0, Math.min(DAY_MINUTES, minute));
+  const hours = Math.floor(clamped / 60) % 24;
+  const mins = String(clamped % 60).padStart(2, "0");
+  if (lang === "he") return `${String(hours).padStart(2, "0")}:${mins}`;
+  const suffix = hours >= 12 ? "PM" : "AM";
+  return `${hours % 12 === 0 ? 12 : hours % 12}:${mins} ${suffix}`;
+}
+
+/** Fills {from} and {to} with the day's first and last minute, in the app language's clock. */
+export function fillTimes(text: string, lang: Lang): string {
+  return text
+    .replace("{from}", () => formatMinute(0, lang))
+    .replace("{to}", () => formatMinute(DAY_MINUTES - 1, lang));
+}
 
 export type TimeBlockDialogProps = {
   open: boolean;
@@ -61,6 +118,7 @@ function TimeBlockDialogBody({
   block,
 }: TimeBlockDialogProps) {
   const isEdit = block !== undefined;
+  const { t, lang } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   const createBlock = useMutation(api.timeBlocks.create);
   const updateBlock = useMutation(api.timeBlocks.update);
@@ -80,27 +138,30 @@ function TimeBlockDialogBody({
   const [kind, setKind] = useState<BlockKind>(block?.kind ?? "focus");
   const [taskId, setTaskId] = useState("");
   const [habitId, setHabitId] = useState("");
-  const [errors, setErrors] = useState<BlockFormErrors>({});
-  const [serverError, setServerError] = useState("");
+  const [errors, setErrors] = useState<FieldErrorKeys>({});
+  const [serverError, setServerError] = useState<MessageKey | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const errorText = (key: MessageKey) => fillTimes(t(key), lang);
+
   const submit = async () => {
+    const durationMinutes = duration.trim() === "" ? Number.NaN : Number(duration);
     const parsed = parseBlockForm({
       localDate: block?.localDate ?? localDate,
       title,
       start,
-      durationMinutes: duration.trim() === "" ? Number.NaN : Number(duration),
+      durationMinutes,
       kind,
       taskId: taskId || undefined,
       habitId: habitId || undefined,
     });
     if (!parsed.ok) {
-      setErrors(parsed.errors);
+      setErrors(fieldErrorKeys(parsed.errors, durationMinutes));
       return;
     }
     setErrors({});
-    setServerError("");
+    setServerError(null);
     setBusy(true);
     try {
       const v = parsed.value;
@@ -129,7 +190,7 @@ function TimeBlockDialogBody({
       }
       onOpenChange(false);
     } catch {
-      setServerError("Could not save that block right now. Try again?");
+      setServerError("timeBlock.error.save");
     } finally {
       setBusy(false);
     }
@@ -137,13 +198,13 @@ function TimeBlockDialogBody({
 
   const remove = async () => {
     if (!block) return;
-    setServerError("");
+    setServerError(null);
     setBusy(true);
     try {
       await removeBlock({ timeBlockId: block._id });
       onOpenChange(false);
     } catch {
-      setServerError("Could not delete that block right now. Try again?");
+      setServerError("timeBlock.error.delete");
     } finally {
       setBusy(false);
     }
@@ -151,14 +212,15 @@ function TimeBlockDialogBody({
 
   return (
     <DialogContent
+      hideCloseButton
       onOpenAutoFocus={(event) => {
         event.preventDefault();
         document.getElementById("time-block-title")?.focus();
       }}
     >
       <DialogHeader>
-        <DialogTitle>{isEdit ? "Edit time block" : "New time block"}</DialogTitle>
-        <DialogDescription>Set aside a slot for a task, habit or focus time.</DialogDescription>
+        <DialogTitle>{t(isEdit ? "timeBlock.editTitle" : "timeBlock.newTitle")}</DialogTitle>
+        <DialogDescription>{t("timeBlock.description")}</DialogDescription>
       </DialogHeader>
 
       <form
@@ -170,7 +232,7 @@ function TimeBlockDialogBody({
         }}
       >
         <div className="grid gap-1.5">
-          <Label htmlFor="time-block-title">Title</Label>
+          <Label htmlFor="time-block-title">{t("timeBlock.field.title")}</Label>
           <Input
             id="time-block-title"
             value={title}
@@ -181,14 +243,14 @@ function TimeBlockDialogBody({
           />
           {errors.title ? (
             <p id="time-block-title-error" className="text-destructive text-sm">
-              {errors.title}
+              {errorText(errors.title)}
             </p>
           ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
-            <Label htmlFor="time-block-start">Start time</Label>
+            <Label htmlFor="time-block-start">{t("timeBlock.field.start")}</Label>
             <Input
               id="time-block-start"
               type="time"
@@ -197,10 +259,12 @@ function TimeBlockDialogBody({
               aria-invalid={errors.start ? true : undefined}
               disabled={busy}
             />
-            {errors.start ? <p className="text-destructive text-sm">{errors.start}</p> : null}
+            {errors.start ? (
+              <p className="text-destructive text-sm">{errorText(errors.start)}</p>
+            ) : null}
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="time-block-kind">Type</Label>
+            <Label htmlFor="time-block-kind">{t("timeBlock.field.kind")}</Label>
             <select
               id="time-block-kind"
               className={SELECT_CLASS}
@@ -210,16 +274,18 @@ function TimeBlockDialogBody({
             >
               {BLOCK_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {k.charAt(0).toUpperCase() + k.slice(1)}
+                  {t(KIND_KEYS[k])}
                 </option>
               ))}
             </select>
-            {errors.kind ? <p className="text-destructive text-sm">{errors.kind}</p> : null}
+            {errors.kind ? (
+              <p className="text-destructive text-sm">{errorText(errors.kind)}</p>
+            ) : null}
           </div>
         </div>
 
         <div className="grid gap-1.5">
-          <Label htmlFor="time-block-duration">Length (minutes)</Label>
+          <Label htmlFor="time-block-duration">{t("timeBlock.field.length")}</Label>
           <div className="flex flex-wrap items-center gap-2">
             <Input
               id="time-block-duration"
@@ -247,14 +313,14 @@ function TimeBlockDialogBody({
             ))}
           </div>
           {errors.durationMinutes ? (
-            <p className="text-destructive text-sm">{errors.durationMinutes}</p>
+            <p className="text-destructive text-sm">{errorText(errors.durationMinutes)}</p>
           ) : null}
         </div>
 
         {isEdit ? null : (
           <>
             <div className="grid gap-1.5">
-              <Label htmlFor="time-block-task">Link a task</Label>
+              <Label htmlFor="time-block-task">{t("timeBlock.field.task")}</Label>
               <select
                 id="time-block-task"
                 className={SELECT_CLASS}
@@ -262,7 +328,7 @@ function TimeBlockDialogBody({
                 onChange={(event) => setTaskId(event.target.value)}
                 disabled={busy}
               >
-                <option value="">No task</option>
+                <option value="">{t("timeBlock.noTask")}</option>
                 {(tasks ?? []).map((task) => (
                   <option key={task._id} value={task._id}>
                     {task.title}
@@ -271,7 +337,7 @@ function TimeBlockDialogBody({
               </select>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="time-block-habit">Link a habit</Label>
+              <Label htmlFor="time-block-habit">{t("timeBlock.field.habit")}</Label>
               <select
                 id="time-block-habit"
                 className={SELECT_CLASS}
@@ -279,7 +345,7 @@ function TimeBlockDialogBody({
                 onChange={(event) => setHabitId(event.target.value)}
                 disabled={busy}
               >
-                <option value="">No habit</option>
+                <option value="">{t("timeBlock.noHabit")}</option>
                 {(habits ?? []).map((habit) => (
                   <option key={habit._id} value={habit._id}>
                     {habit.name}
@@ -292,7 +358,7 @@ function TimeBlockDialogBody({
 
         {serverError ? (
           <p role="alert" className="text-destructive text-sm">
-            {serverError}
+            {t(serverError)}
           </p>
         ) : null}
 
@@ -300,7 +366,7 @@ function TimeBlockDialogBody({
           {isEdit ? (
             confirmingDelete ? (
               <div className="flex items-center gap-2 sm:mr-auto">
-                <span className="text-sm">Delete this block?</span>
+                <span className="text-sm">{t("timeBlock.deleteAsk")}</span>
                 <Button
                   type="button"
                   size="sm"
@@ -308,7 +374,7 @@ function TimeBlockDialogBody({
                   onClick={() => void remove()}
                   disabled={busy}
                 >
-                  Yes, delete
+                  {t("timeBlock.deleteYes")}
                 </Button>
                 <Button
                   type="button"
@@ -317,7 +383,7 @@ function TimeBlockDialogBody({
                   onClick={() => setConfirmingDelete(false)}
                   disabled={busy}
                 >
-                  Keep it
+                  {t("timeBlock.deleteKeep")}
                 </Button>
               </div>
             ) : (
@@ -328,18 +394,22 @@ function TimeBlockDialogBody({
                 onClick={() => setConfirmingDelete(true)}
                 disabled={busy}
               >
-                Delete block
+                {t("timeBlock.delete")}
               </Button>
             )
           ) : null}
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
-            Cancel
+            {t("timeBlock.cancel")}
           </Button>
           <Button type="submit" disabled={busy}>
-            {busy ? "Saving…" : isEdit ? "Save changes" : "Add block"}
+            {t(busy ? "timeBlock.saving" : isEdit ? "timeBlock.save" : "timeBlock.add")}
           </Button>
         </DialogFooter>
       </form>
+      <DialogClose className={CLOSE_CLASS}>
+        <Cross2Icon className="h-4 w-4" />
+        <span className="sr-only">{t("timeBlock.close")}</span>
+      </DialogClose>
     </DialogContent>
   );
 }

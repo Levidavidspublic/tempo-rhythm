@@ -2,10 +2,12 @@
 
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { PANELUI_TOKENS } from "@/components/notes/WeekGlanceView";
+import { type DayCell, DayGrid } from "@/components/panelui/day-grid";
+import { Kpi } from "@/components/panelui/kpi";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
-import { Segmented } from "@/components/you/Controls";
 import {
   RetryRoot,
   StateEmpty,
@@ -18,29 +20,31 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { MessageKey } from "@/lib/i18n";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { formatMinutes } from "@/lib/week-glance";
 import {
   countInWindow,
   derivePatterns,
-  focusMinutesByWeek,
   INSIGHTS_RANGES,
   type InsightPattern,
   type InsightsRange,
   isInsightsRange,
-  isLabelled,
   isoWeek,
-  linePoints,
   needsMoreTime,
   peakIndex,
+  type RangeWindow,
   rangeWindow,
   summarizeWeekdays,
+  type WeekdayBar,
   weekdayBars,
 } from "@/lib/you/insights";
 import { deriveScreenState, fill } from "@/lib/you/screenState";
+import { type InsightsGlance, insightsGlance } from "./insightsState";
 
 /**
- * Insights (docs/design/v3/screens/web/insights.html): gentle patterns and two simple charts
- * from the person's own tasks and focus sessions. Read only. Never streaks, scores or
- * comparisons; a quiet week is described, not judged.
+ * Insights (docs/design/v3/screens/web/insights.html): gentle patterns, then the weeks at a
+ * glance as PanelUI KPI cards and a Day Grid (like a weekly page's glance), from the person's
+ * own tasks and focus sessions. Read only. Never streaks, scores or comparisons; a quiet week
+ * is described, not judged.
  */
 
 const DAY_KEYS = [
@@ -66,6 +70,14 @@ const RANGE_LABEL: Record<InsightsRange, MessageKey> = {
   "4w": "ins.r4w",
   "3m": "ins.r3m",
 };
+/** Each range option's accessible name: its visible label, in full ("Last 2 weeks"). */
+const RANGE_NAME: Record<InsightsRange, MessageKey> = {
+  "2w": "ins.r2w.name",
+  "4w": "ins.r4w.name",
+  "3m": "ins.r3m.name",
+};
+/** Sparklines run with time: in Hebrew the oldest week is on the right, like the Day Grid. */
+const RTL_FLIP = "rtl:-scale-x-100";
 const RANGE_SUB: Record<InsightsRange, MessageKey> = {
   "2w": "ins.sub.2w",
   "4w": "ins.sub.4w",
@@ -92,6 +104,63 @@ function useRange(): [InsightsRange, (next: InsightsRange) => void] {
     window.history.replaceState(window.history.state, "", url);
   };
   return [range, choose];
+}
+
+/**
+ * The range choice: v3's Segmented radiogroup (components/you/Controls.tsx), with each option
+ * named in full, so "Last 2 weeks" finds it by role or by label. Arrow keys move and choose,
+ * wrapping, and swap direction in RTL.
+ */
+function RangePicker({
+  value,
+  onChange,
+}: {
+  value: InsightsRange;
+  onChange: (next: InsightsRange) => void;
+}) {
+  const { t } = useLocale();
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+    const back = event.key === "ArrowLeft" || event.key === "ArrowUp";
+    if (!forward && !back) return;
+    event.preventDefault();
+    const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
+    const horizontal = event.key === "ArrowRight" || event.key === "ArrowLeft";
+    const step = (forward ? 1 : -1) * (horizontal && rtl ? -1 : 1);
+    const next = INSIGHTS_RANGES[(index + step + INSIGHTS_RANGES.length) % INSIGHTS_RANGES.length];
+    if (!next) return;
+    onChange(next);
+    const group = event.currentTarget.parentElement;
+    window.requestAnimationFrame(() =>
+      group?.querySelector<HTMLButtonElement>(`[data-range="${next}"]`)?.focus()
+    );
+  };
+  return (
+    <div
+      className="tp-segmented"
+      role="radiogroup"
+      aria-label={t("ins.range")}
+      data-component="Segmented"
+    >
+      {INSIGHTS_RANGES.map((range, index) => (
+        // biome-ignore lint/a11y/useSemanticElements: one option of the v3 segmented control
+        <button
+          key={range}
+          className="tp-seg__opt"
+          type="button"
+          role="radio"
+          data-range={range}
+          aria-checked={value === range}
+          aria-label={t(RANGE_NAME[range])}
+          tabIndex={value === range ? 0 : -1}
+          onClick={() => onChange(range)}
+          onKeyDown={(event) => onKeyDown(event, index)}
+        >
+          <span>{t(RANGE_LABEL[range])}</span>
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function InsightsScreen() {
@@ -146,12 +215,7 @@ function InsightsContent({ onRetry }: { onRetry: () => void }) {
       <InsightsHead sub={t(RANGE_SUB[range])} />
       {state === "ready" ? (
         <div className="tp-toolbar" data-component="Toolbar">
-          <Segmented
-            label={t("ins.range")}
-            value={range}
-            onChange={setRange}
-            options={INSIGHTS_RANGES.map((value) => ({ value, label: t(RANGE_LABEL[value]) }))}
-          />
+          <RangePicker value={range} onChange={setRange} />
         </div>
       ) : null}
       <StateOffline />
@@ -237,26 +301,7 @@ function InsightsBody({
         )}
       </section>
 
-      <section className="tp-section" aria-labelledby="ins-ch-h">
-        <div className="tp-section__head">
-          <h2 className="tp-section__title" id="ins-ch-h">
-            {t("ins.ch.h")}
-          </h2>
-        </div>
-        <div className="ins-charts">
-          <WeekdayChart tasks={tasks} startMs={win.startMs} endMs={win.endMs} />
-          <FocusChart blocks={blocks} weekStarts={win.weekStarts} endMs={win.endMs} />
-        </div>
-        <div className="tp-notice" data-tone="info" data-component="Notice">
-          <span className="tp-notice__icon">
-            <TpIcon name="heart" size="sm" />
-          </span>
-          <span className="tp-notice__text">
-            <span className="tp-notice__title">{t("ins.nostreak.t")}</span>
-            <span>{t("ins.nostreak.b")}</span>
-          </span>
-        </div>
-      </section>
+      <WeeksGlance tasks={tasks} blocks={blocks} win={win} />
     </>
   );
 }
@@ -301,105 +346,178 @@ function PatternCard({ pattern }: { pattern: InsightPattern }) {
   );
 }
 
-function WeekdayChart({
+/** The weekday sentence the old bar chart carried: which days were fullest (copy unchanged). */
+function weekdaySentence(bars: readonly WeekdayBar[], t: (key: MessageKey) => string): string {
+  const summary = summarizeWeekdays(bars);
+  if (summary.kind === "none") return t("ins.bar.none");
+  if (summary.kind === "even") return t("ins.bar.even");
+  const [a = "", b] = summary.days.map((day) => t(DAYS_PLURAL[day] ?? "ins.dp.0"));
+  const text = b ? fill(t("ins.bar.top2"), { a, b }) : fill(t("ins.bar.top1"), { a });
+  return summary.weekendLight ? `${text} ${t("ins.bar.light")}` : text;
+}
+
+/** The focus sentence the old line chart carried: the fullest week, and a week still going. */
+function focusSentence(
+  minutes: readonly number[],
+  weekStarts: readonly number[],
+  t: (key: MessageKey) => string
+): string {
+  const weeks = weekStarts.map((start) => isoWeek(start));
+  const last = minutes.length - 1;
+  const peak = peakIndex(minutes);
+  if (peak < 0) return t("ins.line.none");
+  const text = fill(t("ins.line.peak"), { m: minutes[peak] ?? 0, w: weeks[peak] ?? "" });
+  return peak === last ? text : `${text} ${fill(t("ins.line.now"), { w: weeks[last] ?? "" })}`;
+}
+
+/**
+ * "Your weeks at a glance": PanelUI KPI cards for tasks finished and focus time, each with a
+ * week-by-week sparkline, and a Day Grid of every day in the range, like a weekly page's
+ * glance (components/notes/WeekGlanceView.tsx). The caption keeps the old charts' sentences.
+ */
+function WeeksGlance({
   tasks,
-  startMs,
-  endMs,
+  blocks,
+  win,
 }: {
   tasks: readonly TaskRow[];
-  startMs: number;
-  endMs: number;
+  blocks: readonly BlockRow[];
+  win: RangeWindow;
 }) {
   const { t } = useLocale();
-  const bars = weekdayBars(tasks, startMs, endMs);
-  const summary = summarizeWeekdays(bars);
-  let text: string;
-  if (summary.kind === "none") text = t("ins.bar.none");
-  else if (summary.kind === "even") text = t("ins.bar.even");
-  else {
-    const [a = "", b] = summary.days.map((day) => t(DAYS_PLURAL[day] ?? "ins.dp.0"));
-    text = b ? fill(t("ins.bar.top2"), { a, b }) : fill(t("ins.bar.top1"), { a });
-    if (summary.weekendLight) text = `${text} ${t("ins.bar.light")}`;
-  }
+  const glance = useMemo(() => insightsGlance(tasks, blocks, win), [tasks, blocks, win]);
+  const minutes = { min: t("wk.min"), hmin: t("wk.hmin") };
   return (
-    <figure className="tp-chart tp-surface" data-component="BarChart" aria-labelledby="ins-bar-t">
-      <div className="tp-chart__title" id="ins-bar-t">
-        {t("ins.bar.t")}
+    <section
+      className="tp-section"
+      data-component="InsightsGlance"
+      aria-labelledby="ins-ch-h"
+      style={PANELUI_TOKENS}
+    >
+      <div className="tp-section__head">
+        <h2 className="tp-section__title" id="ins-ch-h">
+          {t("ins.ch.h")}
+        </h2>
       </div>
-      <ol className="tp-chart__bars">
-        {bars.map((bar) => (
-          <li
-            className="tp-chart__bar"
-            key={bar.day}
-            data-highlight={bar.highlight ? "true" : undefined}
-          >
-            <span className="tp-chart__value">{bar.value}</span>
-            <span className="tp-chart__track">
-              <span className="tp-chart__fill" style={{ "--pct": bar.pct } as CSSProperties} />
-            </span>
-            <span className="tp-chart__label">{t(DAY_KEYS[bar.day] ?? "ins.d.0")}</span>
-          </li>
-        ))}
-      </ol>
-      <figcaption className="tp-chart__summary" data-component="ChartSummary">
-        {text}
-      </figcaption>
-    </figure>
+      <figure className="tp-chart">
+        {/* Phones: the two numbers side by side, the days below. Wide screens: one row. */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Kpi surface data-component="StatCard" data-stat="finished">
+            <Kpi.Header>
+              <Kpi.Title>{t("wk.done")}</Kpi.Title>
+            </Kpi.Header>
+            <Kpi.Content>
+              <Kpi.Value className="tp-num">{glance.finished}</Kpi.Value>
+            </Kpi.Content>
+            <Kpi.Chart
+              data={glance.finishedByWeek}
+              filled
+              aria-label={t("ins.doneTrend")}
+              className={`mt-auto ${RTL_FLIP}`}
+            />
+          </Kpi>
+          <Kpi surface data-component="StatCard" data-stat="focus">
+            <Kpi.Header>
+              <Kpi.Title>{t("wk.focus")}</Kpi.Title>
+            </Kpi.Header>
+            <Kpi.Content>
+              {/* Words and numbers ("6 שע׳ 0 דק׳"): tp-num's left-to-right would read it backwards in Hebrew. */}
+              <Kpi.Value className="tabular-nums">
+                {formatMinutes(glance.focusMinutes, minutes)}
+              </Kpi.Value>
+            </Kpi.Content>
+            <Kpi.Chart
+              data={glance.focusByWeek}
+              color="success"
+              filled
+              aria-label={t("ins.line.t")}
+              className={`mt-auto ${RTL_FLIP}`}
+            />
+          </Kpi>
+          <Kpi surface className="col-span-2" data-component="StatCard" data-stat="days">
+            <Kpi.Header>
+              <Kpi.Title>{t("wk.days")}</Kpi.Title>
+            </Kpi.Header>
+            <DaysGrid glance={glance} weeks={win.weekStarts.length} />
+            <DayGrid.Legend less={t("wk.less")} more={t("wk.more")} />
+          </Kpi>
+        </div>
+        <figcaption className="tp-chart__summary" data-component="ChartSummary">
+          <span className="block">
+            {weekdaySentence(weekdayBars(tasks, win.startMs, win.endMs), t)}
+          </span>
+          <span className="block">{focusSentence(glance.focusByWeek, win.weekStarts, t)}</span>
+        </figcaption>
+      </figure>
+      <div className="tp-notice" data-tone="info" data-component="Notice">
+        <span className="tp-notice__icon">
+          <TpIcon name="heart" size="sm" />
+        </span>
+        <span className="tp-notice__text">
+          <span className="tp-notice__title">{t("ins.nostreak.t")}</span>
+          <span>{t("ins.nostreak.b")}</span>
+        </span>
+      </div>
+    </section>
   );
 }
 
-function FocusChart({
-  blocks,
-  weekStarts,
-  endMs,
-}: {
-  blocks: readonly BlockRow[];
-  weekStarts: readonly number[];
-  endMs: number;
-}) {
-  const { t } = useLocale();
-  const minutes = focusMinutesByWeek(blocks, weekStarts, endMs);
-  const points = linePoints(minutes);
-  const weeks = weekStarts.map((start) => isoWeek(start));
-  const last = points.length - 1;
-  const peak = peakIndex(minutes);
-  let summary = t("ins.line.none");
-  if (peak >= 0) {
-    summary = fill(t("ins.line.peak"), { m: minutes[peak] ?? 0, w: weeks[peak] ?? "" });
-    if (peak !== last) summary = `${summary} ${fill(t("ins.line.now"), { w: weeks[last] ?? "" })}`;
+/**
+ * The Day Grid with the weekday names along it, Monday first. Up to seven weeks read like a
+ * calendar, a row per week; three months get a column per week, so the grid stays short on a
+ * phone. The grid and the names both run right to left in Hebrew.
+ */
+function DaysGrid({ glance, weeks }: { glance: InsightsGlance; weeks: number }) {
+  const { t, lang } = useLocale();
+  const dayName = new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  const cells: DayCell[] = glance.days.map((day) => ({
+    level: day.level,
+    label: fill(t("wk.day"), {
+      day: dayName.format(new Date(day.startMs)),
+      n: day.done,
+      m: day.focusMinutes,
+    }),
+  }));
+  const summary = fill(t("ins.grid.summary"), { a: glance.activeDays, n: glance.days.length });
+  const names = DAY_KEYS.map((key) => t(key));
+  if (weeks <= 7) {
+    return (
+      <div className="grid w-full max-w-sm gap-1" data-component="DayGrid">
+        <div
+          className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground"
+          aria-hidden="true"
+        >
+          {names.map((name) => (
+            <span key={name}>{name}</span>
+          ))}
+        </div>
+        <DayGrid cells={cells} columns={7} label={t("wk.days")} summary={summary} />
+      </div>
+    );
   }
   return (
-    <figure className="tp-chart tp-surface" data-component="LineChart">
-      <div className="tp-chart__title">{t("ins.line.t")}</div>
-      <svg className="tp-chart__svg" viewBox="0 0 400 210" role="img" aria-labelledby="ins-line-s">
-        <line className="tp-chart__grid" x1="30" y1="20" x2="390" y2="20" />
-        <line className="tp-chart__grid" x1="30" y1="100" x2="390" y2="100" />
-        <line className="tp-chart__axis" x1="30" y1="180" x2="390" y2="180" />
-        <polyline
-          className="tp-chart__line"
-          points={points.map((p) => `${p.x},${p.y}`).join(" ")}
-        />
-        {points.map((point, i) => (
-          <g key={weekStarts[i]}>
-            <circle className="tp-chart__point" cx={point.x} cy={point.y} r="5">
-              <title>{fill(t("ins.point"), { w: weeks[i] ?? "", m: point.value })}</title>
-            </circle>
-            {isLabelled(i, points.length) ? (
-              <>
-                <text x={point.x} y={point.y - 14} textAnchor="middle">
-                  {point.value}
-                </text>
-                <text x={point.x} y="202" textAnchor="middle">
-                  {fill(t(i === last ? "ins.wkNow" : "ins.wk"), { n: weeks[i] ?? "" })}
-                </text>
-              </>
-            ) : null}
-          </g>
+    <div className="flex w-full max-w-sm gap-2" data-component="DayGrid">
+      <div
+        className="grid grid-rows-7 gap-1 text-xs leading-none text-muted-foreground"
+        aria-hidden="true"
+      >
+        {names.map((name) => (
+          <span key={name} className="flex items-center">
+            {name}
+          </span>
         ))}
-      </svg>
-      <figcaption className="tp-chart__summary" id="ins-line-s" data-component="ChartSummary">
-        {summary}
-      </figcaption>
-    </figure>
+      </div>
+      <DayGrid
+        className="min-w-0 flex-1"
+        cells={cells}
+        rows={7}
+        label={t("wk.days")}
+        summary={summary}
+      />
+    </div>
   );
 }

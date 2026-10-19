@@ -17,7 +17,8 @@ export function TodayGreeting({ greetingName }: TodayGreetingProps) {
       <h1
         aria-live="polite"
         className={cn(
-          "font-heading text-4xl font-semibold tracking-tight text-foreground md:text-5xl",
+          // A name taken from a long email handle has no spaces: it wraps instead of pushing the page sideways.
+          "font-heading text-4xl font-semibold tracking-tight text-foreground wrap-anywhere md:text-5xl",
         )}
       >
         {name ? (

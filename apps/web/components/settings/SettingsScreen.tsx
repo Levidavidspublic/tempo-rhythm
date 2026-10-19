@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { CoachWebSearchSetting } from "@/components/coach/CoachWebSearchSetting";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, TpIconSprite, type TpIconName } from "@/components/tempo/TpIcon";
 import { ProfileReady } from "@/components/today/ProfileReady";
@@ -21,6 +22,12 @@ import { SettingsStatusContext } from "./status";
  */
 
 export type ScreenNotice = { tone: "info" | "done" | "caution"; icon: TpIconName; title: MessageKey; body: MessageKey };
+
+/**
+ * The Preferences screen's title. That screen also shows the coach's web search switch
+ * (TEMPO-B07-06) as its last section, after the screen's own form.
+ */
+const PREFERENCES_TITLE: MessageKey = "set.prefs.title";
 
 export function SettingsScreen({
   title,
@@ -76,7 +83,16 @@ export function SettingsScreen({
     ) : (
       <StateLoading label={loading} className={stateClassName} />
     );
-  const body = gate ? <ProfileReady fallback={fallback}>{children}</ProfileReady> : children;
+  const content =
+    title === PREFERENCES_TITLE ? (
+      <>
+        {children}
+        <CoachWebSearchSetting />
+      </>
+    ) : (
+      children
+    );
+  const body = gate ? <ProfileReady fallback={fallback}>{content}</ProfileReady> : content;
 
   return (
     <SettingsStatusContext.Provider value={announce}>

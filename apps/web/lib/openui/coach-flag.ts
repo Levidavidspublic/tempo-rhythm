@@ -4,16 +4,13 @@
  * (components/coach/ChatProposal.tsx). Either way the card shows the server's stored proposal,
  * and Accept / Save / Not now / Undo run the same Convex mutations.
  *
- * Default: ON on preview and local builds, OFF on production, so a promotion to tempoflow.dev
- * doesn't switch it on by itself. Per device it can be forced with `?openui=on` or `?openui=off`
- * (kept in localStorage as `tempo-openui`).
+ * Default: ON everywhere (production, preview and local builds, on any host) since 16 Oct 2026,
+ * per Amit's beta brief. Per device, `?openui=off` switches it off and is remembered in
+ * localStorage as `tempo-openui`; `?openui=on` switches it back on.
  */
 
 export const OPENUI_FLAG_PARAM = "openui";
 export const OPENUI_STORAGE_KEY = "tempo-openui";
-
-/** The production domains, for builds where Vercel's environment name isn't available. */
-const PRODUCTION_HOSTS = new Set(["tempoflow.dev", "www.tempoflow.dev"]);
 
 type Choice = "on" | "off";
 
@@ -21,11 +18,12 @@ function asChoice(value: string | null | undefined): Choice | null {
   return value === "on" || value === "off" ? value : null;
 }
 
-/** The default for this build: Vercel's environment name first, then the host. */
-export function openUiDefault(vercelEnv: string | undefined, hostname: string): boolean {
-  if (vercelEnv === "production") return false;
-  if (vercelEnv === "preview" || vercelEnv === "development") return true;
-  return !PRODUCTION_HOSTS.has(hostname.toLowerCase());
+/**
+ * The default for this build: on for every Vercel environment and every host. The arguments
+ * stay so callers don't change if a rollout ever needs to narrow it again.
+ */
+export function openUiDefault(_vercelEnv: string | undefined, _hostname: string): boolean {
+  return true;
 }
 
 /** The URL parameter wins, then this device's stored choice, then the build default. */

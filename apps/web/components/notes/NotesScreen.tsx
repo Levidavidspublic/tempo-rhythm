@@ -5,8 +5,11 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import type { MessageKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import { notePatch, shouldAdoptRemoteTitle } from "@/lib/note-sync";
 import { NoteNotFound } from "./NoteNotFound";
 import { PageEditorView } from "./PageEditorView";
 import { useRegisterCoachPageFlush } from "@/components/coach/CoachPage";
@@ -21,9 +24,6 @@ function sortPinnedFirst(notes: NoteRecord[]): NoteRecord[] {
     return a.pinned ? -1 : 1;
   });
 }
-
-export const PIN_SIGNED_OUT_COPY = "Sign in to pin notes.";
-export const PIN_ERROR_COPY = "We couldn't update that pin. Try again in a moment.";
 
 export type PinToggleOutcome = "toggled" | "signed-out" | "error";
 
@@ -42,9 +42,9 @@ export async function runPinToggle(
 
 export { sortPinnedFirst };
 
-function snippet(body: string): string {
+function snippet(body: string, empty: string): string {
   const trimmed = body.trim();
-  if (!trimmed) return "No content yet.";
+  if (!trimmed) return empty;
   return trimmed.length > 140 ? `${trimmed.slice(0, 140)}…` : trimmed;
 }
 
@@ -69,6 +69,7 @@ export function NotesScreen({ noteId }: NotesScreenProps) {
 
 function NotesList() {
   const router = useRouter();
+  const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   const notes = useQuery(api.notes.list, isAuthenticated ? {} : "skip");
   const createNote = useMutation(api.notes.create);
@@ -82,16 +83,17 @@ function NotesList() {
   const removed = removedStack.at(-1) ?? null;
   const [isCreating, setIsCreating] = useState(false);
   const [pinningId, setPinningId] = useState<string | null>(null);
-  const [pinMessage, setPinMessage] = useState<string | null>(null);
+  const [pinMessage, setPinMessage] = useState<MessageKey | null>(null);
 
   const isLoading = isAuthenticated && notes === undefined;
   const visibleNotes = sortPinnedFirst(notes ?? []);
+  const label = (note: NoteRecord) => note.title || t("notes.untitled");
 
   const handleCreate = async () => {
     if (isCreating) return;
     setIsCreating(true);
     try {
-      const id = await createNote({ title: "Untitled note", body: "" });
+      const id = await createNote({ title: t("notes.untitled"), body: "" });
       router.push(`/notes/${id}`);
     } finally {
       setIsCreating(false);
@@ -104,8 +106,8 @@ function NotesList() {
     setPinningId(id);
     try {
       const outcome = await runPinToggle(isAuthenticated, () => togglePin({ noteId: id }));
-      if (outcome === "signed-out") setPinMessage(PIN_SIGNED_OUT_COPY);
-      else if (outcome === "error") setPinMessage(PIN_ERROR_COPY);
+      if (outcome === "signed-out") setPinMessage("notes.pinSignedOut");
+      else if (outcome === "error") setPinMessage("notes.pinError");
     } finally {
       setPinningId(null);
     }
@@ -129,36 +131,41 @@ function NotesList() {
     setRemovedStack((stack) => stack.filter((r) => r.id !== removed?.id && r.undoUntilMs > now));
   };
 
+  // A div, not a main: the shell's <main id="main"> already holds this screen.
   return (
-    <main className="container mx-auto max-w-4xl px-6 py-12">
+    <div className="container mx-auto max-w-4xl px-6 py-12">
       <div className="space-y-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="font-eyebrow text-muted-foreground">Library</p>
-            <h1 className="font-heading text-4xl font-semibold text-foreground">Notes</h1>
+            <p className="font-eyebrow text-muted-foreground">{t("notes.eyebrow")}</p>
+            <h1 className="font-heading text-4xl font-semibold text-foreground">
+              {t("notes.title")}
+            </h1>
             <p className="mt-2 max-w-2xl text-muted-foreground">
               {isLoading
-                ? "Loading your notes."
+                ? t("notes.loading")
                 : visibleNotes.length === 0
-                  ? "Nothing here yet. A note takes one click."
-                  : `${visibleNotes.length} ${visibleNotes.length === 1 ? "note" : "notes"}, pinned first.`}
+                  ? t("notes.emptyLede")
+                  : visibleNotes.length === 1
+                    ? t("notes.count.one")
+                    : t("notes.count.many").replace("{n}", String(visibleNotes.length))}
             </p>
           </div>
           <Button type="button" disabled={isCreating} onClick={() => void handleCreate()}>
-            New note
+            {t("notes.new")}
           </Button>
         </header>
 
         {pinMessage ? (
           <p role="alert" className="text-sm text-muted-foreground">
-            {pinMessage}
+            {t(pinMessage)}
           </p>
         ) : null}
 
         {visibleNotes.length === 0 && !isLoading ? (
           <div className="rounded-3xl border border-dashed border-border bg-card/70 px-6 py-12 text-center">
-            <p className="text-lg font-medium text-foreground">No notes yet.</p>
-            <p className="mt-2 text-sm text-muted-foreground">Start with whatever is on your mind.</p>
+            <p className="text-lg font-medium text-foreground">{t("notes.none")}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("notes.noneHint")}</p>
           </div>
         ) : (
           <ul className="space-y-3">
@@ -170,47 +177,49 @@ function NotesList() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <Link href={`/notes/${note._id}`} className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-medium text-foreground">{note.title || "Untitled note"}</p>
+                      <p className="text-lg font-medium text-foreground">{label(note)}</p>
                       {note.pinned ? (
                         <span className="rounded-pill bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                          Pinned
+                          {t("notes.pinned")}
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-sm text-muted-foreground">{snippet(note.body)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {snippet(note.body, t("notes.noContent"))}
+                    </p>
                   </Link>
                   <div className="flex shrink-0 items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       disabled={pinningId !== null}
-                      aria-label={note.pinned ? `Unpin ${note.title || "Untitled note"}` : `Pin ${note.title || "Untitled note"}`}
+                      aria-label={`${note.pinned ? t("notes.unpin") : t("notes.pin")} ${label(note)}`}
                       onClick={() => void handleTogglePin(note._id)}
                     >
-                      {note.pinned ? "Unpin" : "Pin"}
+                      {note.pinned ? t("notes.unpin") : t("notes.pin")}
                     </Button>
                     {pendingDeleteId === note._id ? (
                       <>
                         <Button
                           type="button"
                           variant="destructive"
-                          aria-label={`Confirm delete ${note.title || "Untitled note"}`}
+                          aria-label={`${t("notes.confirmDelete")} ${label(note)}`}
                           onClick={() => void handleDelete(note._id)}
                         >
-                          Confirm delete
+                          {t("notes.confirmDelete")}
                         </Button>
                         <Button type="button" variant="outline" onClick={() => setPendingDeleteId(null)}>
-                          Cancel
+                          {t("notes.cancel")}
                         </Button>
                       </>
                     ) : (
                       <Button
                         type="button"
                         variant="outline"
-                        aria-label={`Delete ${note.title || "Untitled note"}`}
+                        aria-label={`${t("notes.delete")} ${label(note)}`}
                         onClick={() => setPendingDeleteId(note._id)}
                       >
-                        Delete
+                        {t("notes.delete")}
                       </Button>
                     )}
                   </div>
@@ -228,7 +237,7 @@ function NotesList() {
           onExpire={handleUndoExpire}
         />
       ) : null}
-    </main>
+    </div>
   );
 }
 
@@ -247,6 +256,7 @@ type NotePageProps = {
 /** Loads one page, saves edits (debounced), and draws it with PageEditorView. Also used by Today. */
 export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const router = useRouter();
+  const { t } = useLocale();
   const { isAuthenticated } = useConvexAuth();
   // notes.getSafe calls requireUser, so wait until the corresponding user row exists.
   // During sign-in getProfile resolves safely while the user record is being created.
@@ -270,6 +280,9 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef("");
   const bodyRef = useRef("");
+  // Which fields were edited here since their last successful save. Saves send only those, so a
+  // failed save is never taken for saved, and another tab's change to the other field survives.
+  const edits = useRef({ title: false, body: false });
 
   useEffect(() => {
     if (note && loadedNoteId.current !== note._id) {
@@ -288,35 +301,42 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
       if (!wasDeleted.current) {
-        void updateNote({ noteId: noteId as Id<"notes">, title: titleRef.current, body: bodyRef.current });
+        void updateNote({ noteId: noteId as Id<"notes">, ...notePatch(edits.current, titleRef.current, bodyRef.current) });
       }
     };
   }, [noteId, updateNote]);
 
-  // True from an edit until a save of that same text succeeds, so a failed save is never taken for saved.
-  const dirty = useRef(false);
-
   // Another writer changed this page while it is open: the coach saving a decision to today's
-  // page. With no unsaved edits here the editor takes the new text, so the next autosave can't
-  // write over it. With unsaved edits (or a save on its way) those edits win, as before.
+  // page, or the same page in another tab. With no unsaved body edit here the editor takes the
+  // new text, so the next autosave can't write over it. Unsaved edits here (or a save on its
+  // way) win, as before.
   const [remoteBody, setRemoteBody] = useState<{ before: string; after: string; seq: number } | null>(null);
   useEffect(() => {
     if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
-    if (note.body === bodyRef.current || dirty.current || saveTimer.current) return;
+    if (note.body === bodyRef.current || edits.current.body || saveTimer.current) return;
     const before = bodyRef.current;
     bodyRef.current = note.body;
     setBody(note.body);
     setRemoteBody((current) => ({ before, after: note.body, seq: (current?.seq ?? 0) + 1 }));
   }, [note]);
+  // The same for the title: a rename saved in another tab shows here instead of being written back.
+  useEffect(() => {
+    if (!note || loadedNoteId.current !== note._id || wasDeleted.current) return;
+    if (!shouldAdoptRemoteTitle(note.title, titleRef.current, edits.current.title, saveTimer.current !== null)) return;
+    titleRef.current = note.title;
+    setTitle(note.title);
+  }, [note]);
   const saveNow = async () => {
     const title = titleRef.current;
     const body = bodyRef.current;
-    await updateNote({ noteId: noteId as Id<"notes">, title, body });
-    if (titleRef.current === title && bodyRef.current === body) dirty.current = false;
+    const patch = notePatch(edits.current, title, body);
+    if (patch.title === undefined && patch.body === undefined) return;
+    await updateNote({ noteId: noteId as Id<"notes">, ...patch });
+    if (titleRef.current === title) edits.current.title = false;
+    if (bodyRef.current === body) edits.current.body = false;
   };
 
   const scheduleSave = () => {
-    dirty.current = true;
     setSaveState("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -337,7 +357,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
     }
-    if (!dirty.current) return;
+    if (!edits.current.title && !edits.current.body) return;
     try {
       await saveNow();
       setSaveState("saved");
@@ -348,15 +368,45 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     }
   });
 
+  // A reload or a closed tab never unmounts this page, so the unmount save above doesn't run and
+  // the timer may never fire. When the tab is hidden or the page goes away, a waiting save is sent
+  // at once, in place of the timer (so the timer can't send it a second time).
+  const sendWaitingSave = useRef(() => {});
+  sendWaitingSave.current = () => {
+    if (!saveTimer.current || wasDeleted.current) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    saveNow().then(
+      () => setSaveState("saved"),
+      () => {
+        // Stays dirty, as when the timer's save fails: the next edit or the coach's flush saves it.
+      }
+    );
+  };
+  useEffect(() => {
+    const onPageHide = () => sendWaitingSave.current();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") sendWaitingSave.current();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
+
   const handleTitleChange = (value: string) => {
     setTitle(value);
     titleRef.current = value;
+    edits.current.title = true;
     scheduleSave();
   };
 
   const handleBodyChange = (value: string) => {
     setBody(value);
     bodyRef.current = value;
+    edits.current.body = true;
     scheduleSave();
   };
 
@@ -370,8 +420,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
       saveTimer.current = null;
       await updateNote({
         noteId: noteId as Id<"notes">,
-        title: titleRef.current,
-        body: bodyRef.current,
+        ...notePatch(edits.current, titleRef.current, bodyRef.current),
       });
     }
     const result = await removeNote({ noteId: noteId as Id<"notes"> });
@@ -413,9 +462,9 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
 
   if (loadState === "loading" && isAuthenticated) {
     return (
-      <main className="container mx-auto max-w-3xl px-6 py-12">
-        <p className="text-muted-foreground">Loading note.</p>
-      </main>
+      <div className="container mx-auto max-w-3xl px-6 py-12">
+        <p className="text-muted-foreground">{t("notes.loadingNote")}</p>
+      </div>
     );
   }
 

@@ -47,6 +47,11 @@ export const en = {
   "gl.draft": "New goal",
   "gl.added": "Goal added",
   "gl.draftwhy": "Write why it matters, when you're ready.",
+  "gl.name.label": "Goal name", // new
+  "gl.name.placeholder": "Something you'd like to be true", // new
+  "gl.name.empty": "Give it a name first. A few words is enough.", // new
+  "gl.count.one": "Showing {n} goal", // new
+  "gl.count.many": "Showing {n} goals", // new
 
   // Goal detail
   "gd.back": "All goals",
@@ -117,6 +122,7 @@ export const en = {
   "pd.empty.title": "This project is just a name for now.",
   "pd.empty.body": "That's a fine start. Add one first task, or write a line about why it matters.",
   "pd.empty.add": "Add a first task",
+  "pd.keptHint": "This project is kept once it has its first task.", // new
   "pd.loading": "Loading this project",
   "pd.error": "Couldn't open this project.",
 
@@ -186,6 +192,11 @@ export const he: Record<keyof typeof en, string> = {
   "gl.draft": "מטרה חדשה",
   "gl.added": "המטרה נוספה",
   "gl.draftwhy": "כתבי למה זה חשוב, כשתהיי מוכנה.",
+  "gl.name.label": "שם המטרה",
+  "gl.name.placeholder": "משהו שהיית רוצה שיתקיים",
+  "gl.name.empty": "קודם צריך לתת למטרה שם. כמה מילים מספיקות.",
+  "gl.count.one": "מוצגת מטרה אחת",
+  "gl.count.many": "מוצגות {n} מטרות",
 
   "gd.back": "כל המטרות",
   "gd.titleLabel": "מטרה",
@@ -251,6 +262,7 @@ export const he: Record<keyof typeof en, string> = {
   "pd.empty.title": "הפרויקט הזה הוא בינתיים רק שם.",
   "pd.empty.body": "זו התחלה טובה. אפשר להוסיף משימה ראשונה, או לכתוב שורה על למה זה חשוב.",
   "pd.empty.add": "הוספת משימה ראשונה",
+  "pd.keptHint": "הפרויקט יישמר ברגע שתהיה בו משימה ראשונה.",
   "pd.loading": "טוען את הפרויקט",
   "pd.error": "לא הצלחנו לפתוח את הפרויקט הזה.",
 

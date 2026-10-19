@@ -59,9 +59,11 @@ function useMinutesNow(): number {
  * Routines (docs/design/v3/screens/web/routines.html). A routine is a Markdown page tagged
  * #routine; its list items are the steps (lib/routines.ts). The one that fits the time of day
  * gets "Fits right now" and the one main Start. New routine makes a tagged page to write in.
+ * A routine with no steps yet offers "Add steps" (its page) instead of Start: there is nothing to run.
  *
  * Left out until a routines backend exists (docs/BACKEND-SCHEMA.md: the owner decides):
- * "Last done" and "Paused at step N" / Resume, since runs are not stored anywhere.
+ * "Last done" and "Paused at step N" / Resume, since a run's place is kept only in the tab that
+ * ran it (RoutineGuide), not stored anywhere.
  */
 export function RoutinesScreen() {
   return (
@@ -147,7 +149,11 @@ function RoutinesContent() {
         }),
     [notes]
   );
-  const fits = routineThatFitsNow(routines, nowMinutes);
+  // Only a routine with steps can be the one main Start.
+  const fits = routineThatFitsNow(
+    routines.filter((routine) => routine.steps.length > 0),
+    nowMinutes
+  );
 
   const newRoutine = async () => {
     if (creating) return;
@@ -278,15 +284,24 @@ function RoutineCard({ routine, fitsNow }: { routine: RoutineCardModel; fitsNow:
         </p>
       ) : null}
       <div className="rt-card__actions">
-        <Link
-          className={`tp-btn ${fitsNow ? "tp-btn--primary" : "tp-btn--secondary"}`}
-          href={href}
-          data-component={fitsNow ? "Button" : undefined}
-        >
-          <TpIcon name="play" size="sm" flip />
-          <span>{t("rt.start")}</span>
-          <span className="tp-sr-only"> {title}</span>
-        </Link>
+        {count === 0 ? (
+          // Nothing to run yet: the same page "Edit the steps" opens.
+          <Link className="tp-btn tp-btn--secondary" href={`/notes/${routine.id}`}>
+            <TpIcon name="plus" size="sm" />
+            <span>{t("rd.addSteps")}</span>
+            <span className="tp-sr-only"> {title}</span>
+          </Link>
+        ) : (
+          <Link
+            className={`tp-btn ${fitsNow ? "tp-btn--primary" : "tp-btn--secondary"}`}
+            href={href}
+            data-component={fitsNow ? "Button" : undefined}
+          >
+            <TpIcon name="play" size="sm" flip />
+            <span>{t("rt.start")}</span>
+            <span className="tp-sr-only"> {title}</span>
+          </Link>
+        )}
       </div>
     </article>
   );
