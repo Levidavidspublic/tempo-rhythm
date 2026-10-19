@@ -149,7 +149,7 @@ import { LocaleProvider } from ${JSON.stringify(join(process.cwd(), "apps/web/co
 import { TpIconSprite } from ${JSON.stringify(join(process.cwd(), "apps/web/components/tempo/TpIcon"))};
 import { NotificationsScreen, Kb70Gallery } from ${JSON.stringify(join(process.cwd(), "apps/web/components/notifications/NotificationsScreen"))};
 const root = createRoot(document.getElementById("root"));
-const render = () => root.render(<LocaleProvider><TpIconSprite />{location.pathname === "/gallery" ? <Kb70Gallery /> : <main><NotificationsScreen /></main>}</LocaleProvider>);
+const render = () => root.render(<LocaleProvider>{location.pathname === "/gallery" ? <Kb70Gallery /> : <><TpIconSprite /><main><NotificationsScreen /></main></>}</LocaleProvider>);
 window.__kb70.render = render;
 render();`);
       const bundle = await Bun.build({
