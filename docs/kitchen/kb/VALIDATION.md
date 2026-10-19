@@ -120,3 +120,7 @@ KB-73 (#1170) fixes a verified 36 px target and English-only accessible action l
 ## KB-74 mobile drawer focus repair
 
 KB-74 (#1171) covers a source-confirmed mobile drawer keyboard/focus defect. All 107 open PR file lists show no active TempoShell writer. Held #858 gates its future workspace navigation feature; this distinct user-authorized repair leaves that ticket and its destinations unchanged and records serialization/rebase for later overlap. Sidebar is not edited (PR #1081/KA #1124 ownership). The queue has 51 tickets and seventeen independent assignments; documentation validation passes.
+
+## Exact existing contracts and sixteenth implementation draft
+
+The ten original polish tickets KB-02/03/04/05/07/08/09/10/44/45 now spell out their existing call-site function names, arguments and return shapes instead of delegating that information to source exports. These are verified integration APIs, not new backend work. KB-06 already received the same correction. Product scope, dependencies, behavior and required gates are unchanged. KB-73 now has draft PR #1173; the implementation index distinguishes sixteen pushed drafts from the 29 primary views and the still-pending KB-74. The 51-ticket documentation validator and diff whitespace check pass; no app checks are repeated for these docs-only changes.
