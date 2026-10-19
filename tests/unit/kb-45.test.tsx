@@ -87,7 +87,7 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
   const reactPath = join(repo, "apps/web/node_modules/react");
   await writeFile(authStub, `export function useAuthActions() { return { signIn: async (_provider: string, args: { email: string }) => { (window as any).__kb45Emails.push(args.email); const mode = (window as any).__kb45Mode; if (mode === "pending") await new Promise(() => {}); if (mode === "error") throw new Error("send failed"); } }; }`);
   await writeFile(linkStub, `import React from ${JSON.stringify(reactPath)}; export default function Link({href,children,...rest}: any) { return React.createElement("a", {href: typeof href === "string" ? href : href.pathname, ...rest}, children); }`);
-  await writeFile(entry, `import React from ${JSON.stringify(reactPath)}; import {createRoot} from ${JSON.stringify(join(repo, "apps/web/node_modules/react-dom/client"))}; import {LocaleProvider,useLocale} from ${JSON.stringify(join(repo, "apps/web/components/providers/LocaleProvider.tsx"))}; import {Kb45Gallery,SignUpForm} from ${JSON.stringify(join(repo, "apps/web/components/auth/SignUpForm.tsx"))}; function ProductionMount(){const {lang}=useLocale();return React.createElement("main",{className:"tp-auth",id:"main",lang,dir:lang==="he"?"rtl":"ltr"},React.createElement(SignUpForm,{variant:"page",nextPath:"/today"}));} const view=new URLSearchParams(location.search).get("mount")==="production"?React.createElement(ProductionMount):React.createElement(Kb45Gallery);createRoot(document.getElementById("root")!).render(React.createElement(LocaleProvider,null,view));`);
+  await writeFile(entry, `import React from ${JSON.stringify(reactPath)}; import {createRoot} from ${JSON.stringify(join(repo, "apps/web/node_modules/react-dom/client"))}; import {LocaleProvider} from ${JSON.stringify(join(repo, "apps/web/components/providers/LocaleProvider.tsx"))}; import {Kb45Gallery,SignUpForm} from ${JSON.stringify(join(repo, "apps/web/components/auth/SignUpForm.tsx"))}; function ProductionMount(){return React.createElement("main",{className:"tp-auth",id:"main",lang:"en",dir:"ltr"},React.createElement(SignUpForm,{variant:"page",nextPath:"/today"}));} const view=new URLSearchParams(location.search).get("mount")==="production"?React.createElement(ProductionMount):React.createElement(Kb45Gallery);createRoot(document.getElementById("root")!).render(React.createElement(LocaleProvider,null,view));`);
   const bundle = await Bun.build({
     entrypoints: [entry], target: "browser", outdir: directory, minify: false,
     plugins: [{ name: "kb45-fixture-stubs", setup(build) {
@@ -134,12 +134,13 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
     if (capture) {
       const production = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
       await production.goto(`http://127.0.0.1:${server.port}/?lang=${lang}&mount=production`);
-      await production.locator(`main[lang="${lang}"]`).waitFor();
+      await production.locator(`.kb45-signup[lang="${lang}"]`).waitFor();
       await production.screenshot({ path: join(capture, `after-${lang}-${width}-default-light.png`), fullPage: true });
       await production.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
       await production.screenshot({ path: join(capture, `after-${lang}-${width}-default-dark.png`), fullPage: true });
       await production.close();
     }
+    if (capture) await page.screenshot({ path: join(capture, `gallery-${lang}-${width}-default-light.png`), fullPage: true });
     const email = page.locator('#sign-up-email');
     expect(await email.inputValue()).toBe("");
     await page.locator('form button[type="submit"]').click();
@@ -170,6 +171,7 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
       expect(await page.locator(`.kb45-gallery__status [data-phase="${phase}"]`).count()).toBe(1);
       expect(await page.locator('.kb45-gallery__status').getByText(kb45t(lang, key)).count()).toBe(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      if (capture && phase === "error") await page.screenshot({ path: join(capture, `gallery-${lang}-${width}-error-light.png`), fullPage: true });
     }
     await page.getByRole("button", { name: kb45t(lang, "signup.gallery.error") }).click();
     await page.getByRole("button", { name: kb45t(lang, "signup.gallery.retry") }).first().click();
@@ -179,6 +181,7 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
     await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
     const darkPaper = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--tp-paper"));
     expect(darkPaper).not.toBe(lightPaper);
+    if (capture) await page.screenshot({ path: join(capture, `gallery-${lang}-${width}-default-dark.png`), fullPage: true });
 
     await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });
     for (const control of await page.locator('.kb45-gallery__controls button, .kb45-signup button, .kb45-privacy a').all()) {

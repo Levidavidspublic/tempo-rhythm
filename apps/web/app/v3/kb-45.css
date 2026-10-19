@@ -74,7 +74,7 @@
 
 .kb45-signup[data-variant="modal"] .kb45-privacy,
 .kb45-signup[data-variant="modal"] .kb45-privacy a {
-  color: var(--tp-ink-muted);
+  color: var(--tp-on-accent);
 }
 
 .kb45-gallery {
