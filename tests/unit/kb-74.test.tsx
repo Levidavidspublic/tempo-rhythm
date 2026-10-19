@@ -69,10 +69,11 @@ if (!childMode) {
   let child: ReturnType<typeof Bun.spawn>;
   let fixtureDir: string;
   let origin: string;
+  const pageErrors: string[] = [];
 
   async function open(width = 390, params = ""): Promise<Page> {
     const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
-    page.on("pageerror", error => console.error("KB-74 fixture page error:", error.message));
+    page.on("pageerror", error => { pageErrors.push(error.message); console.error("KB-74 fixture page error:", error.message); });
     await page.goto(`${origin}/?${params}`, { waitUntil: "load", timeout: 60_000 });
     await page.locator("h1").waitFor({ timeout: 30_000 });
     return page;
@@ -112,12 +113,29 @@ if (!childMode) {
     child?.kill();
     await child?.exited;
     if (fixtureDir) rmSync(fixtureDir, { recursive: true, force: true });
+    expect(pageErrors).toEqual([]);
   });
 
   describe.serial("KB-74 real shell drawer focus", () => {
     test("local copy has English/Hebrew key parity", () => {
       expect(Object.keys(en).sort()).toEqual(Object.keys(he).sort());
       expect(kb74t("he", "kb74.closeNavigation")).toBe(he["kb74.closeNavigation"]);
+    });
+
+    test("fixture hydrates the real three navigation children with v3 CSS", async () => {
+      const page = await open();
+      expect(await page.evaluate(() => {
+        const shell = document.querySelector('[data-component="TempoShell"]');
+        const sidebar = shell?.querySelector<HTMLElement>('[data-component="Sidebar"]');
+        return {
+          topbar: shell?.querySelectorAll('[data-component="Topbar"]').length,
+          sidebar: shell?.querySelectorAll('[data-component="Sidebar"]').length,
+          tabbar: shell?.querySelectorAll('[data-component="TabBar"]').length,
+          railPosition: sidebar && getComputedStyle(sidebar).position,
+          touch: getComputedStyle(document.documentElement).getPropertyValue("--tp-touch").trim(),
+        };
+      })).toEqual({ topbar: 1, sidebar: 1, tabbar: 1, railPosition: "fixed", touch: "44px" });
+      await page.close();
     });
 
     test("topbar opener moves focus into the real Sidebar", async () => {
