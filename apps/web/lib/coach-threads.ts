@@ -88,11 +88,12 @@ export function searchQueryOf(raw: string): string | null {
 }
 
 export type SearchHit = { conversationId: string; messageId: string; content: string; createdAt: number };
-export type SearchResult<Id extends string> = { conversationId: Id; matches: number; content: string; latestAt: number };
+export type SearchResult<Id extends string> = { conversationId: Id; content: string; latestAt: number };
 
 /**
- * Hits grouped per chat, in the chats column's order (newest first). Hits from a chat that is not
+ * One result per chat, in the chats column's order (newest first). Hits from a chat that is not
  * listed (deleted since, or moved to Agent chat) are left out. `content` is the newest match.
+ * No match count: `messages.searchMine` stops at a chat's first match, so a count would always be 1.
  */
 export function groupSearchHits<Id extends string>(
   hits: readonly (SearchHit & { conversationId: Id })[] | null | undefined,
@@ -102,10 +103,9 @@ export function groupSearchHits<Id extends string>(
   for (const hit of hits ?? []) {
     const current = byThread.get(hit.conversationId);
     if (!current) {
-      byThread.set(hit.conversationId, { conversationId: hit.conversationId, matches: 1, content: hit.content, latestAt: hit.createdAt });
+      byThread.set(hit.conversationId, { conversationId: hit.conversationId, content: hit.content, latestAt: hit.createdAt });
       continue;
     }
-    current.matches += 1;
     if (hit.createdAt > current.latestAt) {
       current.content = hit.content;
       current.latestAt = hit.createdAt;

@@ -53,7 +53,8 @@ const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [href], [tabin
 
 /**
  * The chats column on /coach (Kitchen, owner-approved): New chat, a search across every chat
- * (`messages.searchMine`), the list of chats newest first with the open one marked, and delete with
+ * (`messages.searchMine`; a result is the chat's label and the matching line, no count, since the search
+ * stops at a chat's first match), the list of chats newest first with the open one marked, and delete with
  * a confirm step (`conversations.remove`, no undo). The page owns which chat is open and makes and
  * deletes chats; this only asks.
  *
@@ -300,9 +301,6 @@ export function CoachThreads({
                         </time>
                         <span className="tp-chat-row__last" dir="auto">
                           {matchSnippet(result.content, shown?.query ?? "")}
-                        </span>
-                        <span className="tp-coach-threads__matches tp-xs tp-muted">
-                          {countLabel(result.matches, "cc.matches.one", "cc.matches.many", t)}
                         </span>
                       </button>
                     </li>

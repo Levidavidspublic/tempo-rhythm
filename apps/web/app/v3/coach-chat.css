@@ -21,7 +21,6 @@
 .tp-coach-threads__row[aria-current="true"] { background: var(--tp-paper); box-shadow: var(--tp-shadow-card); }
 @media (hover: hover) { .tp-coach-threads__row:hover:not([aria-current="true"]) { background: var(--tp-hover); } }
 .tp-coach-threads__row:focus-visible { border-radius: var(--tp-radius-md); }
-.tp-coach-threads__matches { grid-column: 1 / -1; }
 .tp-coach-threads__delete { position: absolute; inset-block-start: var(--tp-space-1); inset-inline-end: var(--tp-space-1); color: var(--tp-ink-muted); }
 .tp-coach-threads__confirm { display: grid; gap: var(--tp-space-2); margin-block: var(--tp-space-1) var(--tp-space-2); padding: var(--tp-space-3); border-radius: var(--tp-radius-md); background: var(--tp-paper); border: 1px solid var(--tp-line-strong); }
 .tp-coach-threads__confirm-actions { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }

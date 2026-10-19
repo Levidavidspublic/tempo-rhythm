@@ -93,7 +93,7 @@ describe("searchQueryOf", () => {
 
 describe("groupSearchHits", () => {
   const threads = [{ _id: "c3" }, { _id: "c2" }, { _id: "c1" }];
-  test("one row per listed chat, in the column's order, counting matches", () => {
+  test("one row per listed chat, in the column's order, with the newest match and no count", () => {
     const results = groupSearchHits(
       [
         { conversationId: "c1", messageId: "m1", content: "old", createdAt: 1 },
@@ -103,10 +103,11 @@ describe("groupSearchHits", () => {
       ],
       threads,
     );
-    expect(results.map((r) => [r.conversationId, r.matches, r.content])).toEqual([
-      ["c3", 2, "newer"],
-      ["c1", 1, "old"],
+    expect(results.map((r) => [r.conversationId, r.content])).toEqual([
+      ["c3", "newer"],
+      ["c1", "old"],
     ]);
+    expect(results.every((r) => !("matches" in r))).toBe(true);
   });
   test("no hits, no rows", () => {
     expect(groupSearchHits(undefined, threads)).toEqual([]);
