@@ -204,8 +204,9 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     });
     expect(focused.tag).toBe("BUTTON");
     expect(Number.parseFloat(focused.width)).toBeGreaterThanOrEqual(2);
-    // The shared reduced-motion policy uses 0.01ms, reported by CSSOM as 0.00001s.
-    expect(focused.motion.split(",").every(value => Number.parseFloat(value) <= 0.000011)).toBe(true);
+    // The shared policy uses 0.01ms; CSSOM may serialize time in either unit.
+    const seconds = (value: string) => Number.parseFloat(value) * (value.trim().endsWith("ms") ? 0.001 : 1);
+    expect(focused.motion.split(",").every(value => seconds(value) <= 0.000011)).toBe(true);
     await page.close();
   });
   test("new exports render and English/Hebrew keys match", () => {
