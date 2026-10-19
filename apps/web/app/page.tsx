@@ -22,11 +22,11 @@ export const metadata: Metadata = {
 const wrap = "mx-auto w-full max-w-[1240px] px-6 md:px-8";
 
 const ctaPrimary =
-  "inline-flex items-center justify-center rounded-full bg-primary px-6 py-3.5 text-small font-medium text-primary-foreground hover:brightness-105";
+  "inline-flex items-center justify-center whitespace-nowrap rounded-full bg-primary px-6 py-3.5 text-small font-medium text-primary-foreground hover:brightness-105";
 const ctaGradient =
   "inline-flex items-center justify-center rounded-full bg-primary px-6 py-3.5 text-small font-medium text-primary-foreground hover:brightness-105";
 const ctaGhost =
-  "inline-flex items-center justify-center rounded-full px-4 py-2 text-small font-medium text-foreground hover:bg-surface-sunken";
+  "inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-2 text-small font-medium text-foreground hover:bg-surface-sunken";
 const ctaOnDark =
   "inline-flex items-center justify-center rounded-full bg-background px-6 py-3.5 text-small font-semibold text-primary hover:brightness-105";
 
@@ -54,7 +54,7 @@ const WEEK_INCLUDES = [
 ] as const;
 
 const PRO_INCLUDES = [
-  "Everything in the open beta",
+  "Everything in the beta",
   "Unlimited journal + templates",
   "Cloud sync across devices",
   "Email the founder any time",
@@ -88,7 +88,8 @@ export default function LandingPage() {
           <Link href="/sign-in" className={ctaGhost}>
             Sign in
           </Link>
-          <Link href="/sign-up" className={ctaGhost}>
+          {/* Phones: "Join the free beta" next to it already goes to /sign-up. */}
+          <Link href="/sign-up" className={`${ctaGhost} max-sm:hidden`}>
             Sign up
           </Link>
           <Link href="/sign-up" className={`${ctaPrimary} px-4 py-2`}>
@@ -220,7 +221,7 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-10 grid grid-cols-12 gap-6">
-              <article className="relative col-span-12 min-h-[260px] overflow-hidden rounded-xl border border-border bg-[linear-gradient(145deg,var(--color-cream-raised),var(--color-cream-deep))] p-6 lg:col-span-7 lg:min-h-[420px]">
+              <article className="relative col-span-12 min-h-[260px] overflow-hidden rounded-xl border border-border bg-[linear-gradient(145deg,var(--color-card),var(--color-surface-sunken))] p-6 lg:col-span-7 lg:min-h-[420px]">
                 <p className="font-mono text-caption font-semibold uppercase tracking-[0.16em] text-amber">
                   01 — Brain Dump
                 </p>
@@ -351,14 +352,15 @@ export default function LandingPage() {
         <section id="pricing" className="py-16 md:py-20">
           <div className={wrap}>
             <p className={eyebrow}>Pricing</p>
-            <h2 className={sectionTitle}>Free during beta. Open sign-up.</h2>
+            <h2 className={sectionTitle}>Free during beta. Sign up, then Amit lets you in.</h2>
             <p className={sectionLede}>
-              Every new account gets the full app while beta is open. No card, and no trial clock.
+              Amit approves each new account by hand. Once you&apos;re in, you get the whole app
+              while beta lasts. No card, and no trial clock.
             </p>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               <article className="rounded-xl border border-border bg-card p-8">
                 <p className="mb-4 font-mono text-caption uppercase tracking-[0.12em] opacity-70">
-                  Open beta
+                  Beta
                 </p>
                 <p className="font-serif text-[64px] font-medium leading-none">
                   Free
@@ -400,8 +402,8 @@ export default function LandingPage() {
                   </span>
                 </p>
                 <p className="my-6 text-small leading-relaxed">
-                  Journal, templates, and sync are part of the open beta. A paid price is not on
-                  this page, because signup does not charge one.
+                  Journal, templates, and sync are part of the beta. A paid price is not on this
+                  page, because signup does not charge one.
                 </p>
                 <ul className="mb-6 space-y-2 text-small leading-8">
                   {PRO_INCLUDES.map((item) => (

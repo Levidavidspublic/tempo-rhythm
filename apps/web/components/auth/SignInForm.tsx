@@ -235,6 +235,12 @@ function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onR
             <p className="tp-auth-card__lede">
               We sent a sign-in link to <strong>{email}</strong>. Open it on any device to continue.
             </p>
+            {isSignUp ? (
+              <p className="tp-auth-card__lede">
+                The first time, the link opens a short &ldquo;waiting for approval&rdquo; page: Amit
+                approves each new account by hand.
+              </p>
+            ) : null}
           </div>
           <button type="button" className="tp-btn tp-btn--secondary tp-btn--block" onClick={onReset}>
             Use a different email
@@ -246,7 +252,7 @@ function PageCard({ flow, email, setEmail, isLoading, error, sent, onSubmit, onR
             <h1 className="tp-auth-card__title">{isSignUp ? "Create your account" : "Sign in"}</h1>
             <p className="tp-auth-card__lede">
               {isSignUp
-                ? "No password. We'll email you a link that makes your account."
+                ? "No password. We'll email you a link that makes your account, and Amit approves it by hand."
                 : "No password. We'll email you a link that signs you in."}
             </p>
           </div>
