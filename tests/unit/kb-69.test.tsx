@@ -17,7 +17,7 @@ let beforeCss = "";
 const backend = `
 import { useSyncExternalStore } from "react";
 const listeners = new Set();
-const initial = { fullName: "Maya", email: "maya@example.com" };
+const initial = { fullName: "Maya Levin", email: "maya@example.com" };
 const state = { profile: initial, calls: [], saveMode: "resolve", heldSave: [], outMode: "resolve", heldOut: [], outCalls: 0, redirects: [] };
 function emit() { for (const fn of listeners) fn(); }
 window.__kb69 = {
@@ -133,7 +133,7 @@ describe.serial("KB-69 approval waiting", () => {
   test("name prefill uses profile and blank profile stays optional", async () => {
     const page = await pageFor();
     const input = page.getByRole("textbox", { name: /what should tempo call you/i });
-    await pwExpect(input).toHaveValue("Maya");
+    await pwExpect(input).toHaveValue("Maya Levin");
     await page.evaluate(() => (window as any).__kb69.setProfile({ fullName: "User", email: "maya@example.com" }));
     await pwExpect(input).toHaveValue("");
     await page.close();
