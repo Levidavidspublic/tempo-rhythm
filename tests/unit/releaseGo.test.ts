@@ -172,6 +172,13 @@ describe("release-go: candidate comment", () => {
     for (const s of ["pass", "pending", "fail"]) expect(candidateBody(SHA, s)).not.toMatch(/@cursor|bugbot run|cursor review/i);
   });
 
+  test("a commit Vercel skipped can still pass: the comment says acceptance tested the same app build", () => {
+    const skipped = renderCandidate({ sha: SHA, run: RUN, runUrl: "u", state: "pass", checks: {}, vercelSkipped: true, convexChanged: false, masterSha: MASTER });
+    expect(skipped).toContain("same app code");
+    expect(skipped).toContain("Comment `go` to release this commit.");
+    expect(skipped).not.toContain("can't run");
+  });
+
   test("check results: all success = pass; any other job result = fail", () => {
     expect(checkResults({ ci: "success", security: "success", acceptance: "success" }).state).toBe("pass");
     const r = checkResults({ ci: "success", security: "cancelled", acceptance: "failure" });
