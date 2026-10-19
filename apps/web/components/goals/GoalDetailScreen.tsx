@@ -9,13 +9,11 @@ import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { GOAL_STATUSES, type GoalStatus, goalStatus, storedGoalStatus } from "@/lib/goals-projects";
 import type { MessageKey } from "@/lib/i18n";
+import { tKb06 } from "@/lib/i18n-groups/kb-06";
+import "@/app/v3/kb-06.css";
 import {
-  OfflineNotice,
   ScreenBoundary,
   SignedOutState,
-  StateEmpty,
-  StateError,
-  StateLoading,
   StatusBadge,
   useOnline,
   useSignedIn,
@@ -30,13 +28,13 @@ const WHY_SAVE_DELAY_MS = 800;
  * design's "no steps yet" state stands in for them.
  */
 export function GoalDetailScreen({ goalId }: { goalId: string }) {
-  const { t } = useLocale();
+  const { lang } = useLocale();
   return (
     <ScreenBoundary
       fallback={(retry) => (
-        <div className="tp-page gd-stack" data-component="PageLayout">
+        <div className="tp-page gd-stack kb06-goal" data-component="PageLayout">
           <BackLink />
-          <StateError title={t("gd.error")} onRetry={retry} />
+          <GoalDetailState kind="error" lang={lang} onRetry={retry} />
         </div>
       )}
     >
@@ -56,7 +54,7 @@ function BackLink() {
 }
 
 function GoalDetailContent({ goalId }: { goalId: string }) {
-  const { t } = useLocale();
+  const { lang } = useLocale();
   const signedIn = useSignedIn();
   const online = useOnline();
   // goals.list, not a by-id read: an id from the URL that isn't a goal is "not found", not a
@@ -65,7 +63,7 @@ function GoalDetailContent({ goalId }: { goalId: string }) {
 
   if (signedIn === "signedOut") {
     return (
-      <div className="tp-page gd-stack" data-component="PageLayout">
+      <div className="tp-page gd-stack kb06-goal" data-component="PageLayout">
         <BackLink />
         <SignedOutState />
       </div>
@@ -73,25 +71,18 @@ function GoalDetailContent({ goalId }: { goalId: string }) {
   }
   if (goals === undefined) {
     return (
-      <div className="tp-page gd-stack" data-component="PageLayout">
+      <div className="tp-page gd-stack kb06-goal" data-component="PageLayout">
         <BackLink />
-        <StateLoading label={t("gd.loading")} lead="line" rows={2} />
+        <GoalDetailState kind="loading" lang={lang} />
       </div>
     );
   }
   const goal = goals.find((row) => row._id === goalId && row.deletedAt === undefined);
   if (!goal) {
     return (
-      <div className="tp-page gd-stack" data-component="PageLayout">
+      <div className="tp-page gd-stack kb06-goal" data-component="PageLayout">
         <BackLink />
-        <StateError
-          title={t("gd.error")}
-          action={
-            <Link className="tp-btn tp-btn--secondary" href="/goals">
-              <span>{t("gd.back")}</span>
-            </Link>
-          }
-        />
+        <GoalDetailState kind="unavailable" lang={lang} />
       </div>
     );
   }
@@ -99,7 +90,7 @@ function GoalDetailContent({ goalId }: { goalId: string }) {
 }
 
 function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const update = useMutation(api.goals.update);
   const status = goalStatus(goal.status);
   const [title, setTitle] = useState(goal.title);
@@ -172,7 +163,7 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
   };
 
   return (
-    <div className="tp-page gd-stack" data-component="PageLayout">
+    <div className="tp-page gd-stack kb06-goal" data-component="PageLayout">
       <BackLink />
 
       <header className="tp-pagehead" data-component="PageHeader">
@@ -221,7 +212,7 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
         </div>
       </header>
 
-      {online ? null : <OfflineNotice text={t("gx.offline")} />}
+      {online ? null : <GoalDetailState kind="offline" lang={lang} />}
       {saveError ? (
         <p className="tp-notice" data-tone="caution" role="alert">
           <span className="tp-notice__text">{t("gx.saveError")}</span>
@@ -257,8 +248,121 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
           </div>
         </section>
 
-        <StateEmpty icon="flag" title={t("gd.empty.title")} body={t("gd.empty.body")} />
+        <GoalProgressSummary progress={goal.progressPercent} lang={lang} />
+        <section className="tp-section" aria-labelledby="kb06-milestones-h">
+          <div className="tp-section__head">
+            <h2 className="tp-section__title" id="kb06-milestones-h">
+              {tKb06(lang, "kb06.milestones")}
+            </h2>
+          </div>
+          <GoalDetailState kind="empty" lang={lang} />
+        </section>
       </div>
     </div>
+  );
+}
+
+function GoalProgressSummary({ progress, lang }: { progress: number; lang: "en" | "he" }) {
+  const percent = Number.isFinite(progress) ? Math.max(0, Math.min(100, Math.round(progress))) : 0;
+  return (
+    <section className="tp-section kb06-goal__progress" aria-labelledby="kb06-progress-h">
+      <div className="tp-section__head">
+        <h2 className="tp-section__title" id="kb06-progress-h">
+          {tKb06(lang, "kb06.progress")}
+        </h2>
+      </div>
+      <div className="kb06-goal__progress-line">
+        <strong className="kb06-goal__progress-value tp-num">{percent}%</strong>
+        <span>{tKb06(lang, "kb06.complete")}</span>
+      </div>
+      <div
+        className="kb06-goal__progress-track"
+        role="progressbar"
+        aria-label={tKb06(lang, "kb06.progress")}
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <span className="kb06-goal__progress-fill" style={{ inlineSize: `${percent}%` }} />
+      </div>
+    </section>
+  );
+}
+
+type GoalDetailStateKind = "loading" | "unavailable" | "offline" | "empty" | "error";
+
+/** The same state panel is used by the live screen and the browser gallery. */
+export function GoalDetailState({
+  kind,
+  lang,
+  onRetry,
+  retryDisabled = false,
+  asSection = false,
+}: {
+  kind: GoalDetailStateKind;
+  lang: "en" | "he";
+  onRetry?: () => void;
+  retryDisabled?: boolean;
+  asSection?: boolean;
+}) {
+  if (kind === "offline" || kind === "empty") {
+    return (
+      <output className="kb06-goal__state" data-kind={kind}>
+        {tKb06(lang, kind === "offline" ? "kb06.offline" : "kb06.empty")}
+      </output>
+    );
+  }
+  const title = tKb06(lang, `kb06.${kind}`);
+  const Heading = asSection ? "h2" : "h1";
+  return (
+    <section className="kb06-goal__state" data-kind={kind} aria-live={kind === "loading" ? "polite" : undefined} aria-busy={kind === "loading" ? true : undefined}>
+      <Heading>{title}</Heading>
+      {kind === "unavailable" ? <p>{tKb06(lang, "kb06.unavailableHelp")}</p> : null}
+      {kind === "error" && onRetry ? (
+        <button type="button" className="tp-btn tp-btn--secondary" onClick={onRetry} disabled={retryDisabled}>
+          {tKb06(lang, "kb06.retry")}
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
+/** Fictional, controlled states for browser review; no goal is created or saved. */
+export function Kb06Gallery() {
+  const [lang, setLang] = useState<"en" | "he">("en");
+  const [state, setState] = useState<"default" | "empty" | "loading" | "error" | "disabled" | "overflow">("default");
+  const [retryCount, setRetryCount] = useState(0);
+  const states = ["default", "empty", "loading", "error", "disabled", "overflow"] as const;
+  const stateKeys = ["kb06.galleryDefault", "kb06.galleryEmpty", "kb06.galleryLoading", "kb06.galleryError", "kb06.galleryDisabled", "kb06.galleryOverflow"] as const;
+  return (
+    <main className="kb06-gallery" lang={lang} dir={lang === "he" ? "rtl" : "ltr"}>
+      <h1>{tKb06(lang, "kb06.gallery")}</h1>
+      <fieldset className="kb06-gallery__controls">
+        <legend className="tp-sr-only">{tKb06(lang, "kb06.gallery")}</legend>
+        <button type="button" aria-pressed={lang === "en"} onClick={() => setLang("en")}>{tKb06(lang, "kb06.galleryEn")}</button>
+        <button type="button" aria-pressed={lang === "he"} onClick={() => setLang("he")}>{tKb06(lang, "kb06.galleryHe")}</button>
+        {states.map((option, index) => (
+          <button key={option} type="button" aria-pressed={state === option} onClick={() => setState(option)}>
+            {tKb06(lang, stateKeys[index])}
+          </button>
+        ))}
+      </fieldset>
+      <div className="kb06-gallery__sample kb06-goal">
+        {state === "loading" ? <GoalDetailState kind="loading" lang={lang} asSection /> :
+          state === "error" || state === "disabled" ? (
+            <GoalDetailState kind="error" lang={lang} asSection onRetry={() => setRetryCount((count) => count + 1)} retryDisabled={state === "disabled"} />
+          ) : (
+            <div className="tp-page gd-stack">
+              <h2 dir="auto">{tKb06(lang, state === "overflow" ? "kb06.galleryLong" : "kb06.galleryGoal")}</h2>
+              {state !== "empty" ? <GoalProgressSummary progress={35} lang={lang} /> : null}
+              <section className="tp-section">
+                <h2 className="tp-section__title">{tKb06(lang, "kb06.milestones")}</h2>
+                <GoalDetailState kind="empty" lang={lang} />
+              </section>
+            </div>
+          )}
+      </div>
+      <output aria-live="polite">{tKb06(lang, "kb06.galleryRetryCount", retryCount)}</output>
+    </main>
   );
 }
