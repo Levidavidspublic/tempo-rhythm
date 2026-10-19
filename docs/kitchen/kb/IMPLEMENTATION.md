@@ -10,7 +10,7 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-03 | #1157 | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | SearchStatus, SearchFilterSummary; personal-content search |
 | KB-04 | #1141 | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | JournalDayHeading, JournalLoadMore; journal |
 | KB-05 | #1142 | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | GoalProgressLabel, GoalEmptyState; goals list |
-| KB-06 | #1143 | [#1151](https://github.com/Levidavidspublic/tempo-rhythm/pull/1151) | GoalProgressSummary, GoalDetailState; **partial** goal detail ticket |
+| KB-06 | #1143 | [#1151](https://github.com/Levidavidspublic/tempo-rhythm/pull/1151) | GoalProgressSummary, GoalDetailState; existing goal progress/state polish; original milestone request not delivered |
 | KB-07 | #1146 | [#1148](https://github.com/Levidavidspublic/tempo-rhythm/pull/1148) | GoalProgressTable, ProgressRangeCaption; progress chart/table |
 | KB-08 | #1144 | [#1152](https://github.com/Levidavidspublic/tempo-rhythm/pull/1152) | ProjectSummaryRow, ProjectListState; projects list |
 | KB-09 | #1145 | [#1150](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150) | ProjectTaskActions, ProjectDetailNotice; project detail |
@@ -28,7 +28,7 @@ All these implementation assignments use Sol under AGENTS.md's mid-tier rule, in
 - Perplexica/Vane-level web answers are **not delivered** by the personal-search polish PR. KA-24 #1116, KA-43 #1126 and their study dependency PR #1081 were still open on 19 Oct; the KB search contract/UI dependencies remain in force.
 - Full chat Library/history is **not delivered** by these polish PRs. KA-01 #1094 and the KB data contracts are still prerequisites.
 - Better memory/embeddings is **not delivered**. KA-20 #1112 is held for the runtime-model/cost decision; KA-25 #1117 depends on it.
-- KB-06 does not invent milestone storage or goal/task relationships absent from integration. Its PR explicitly delivers only existing-state/progress polish and remains partial.
+- KB-06 does not invent milestone storage or goal/task relationships absent from integration. The lead corrected that unsupported requirement in the specification on 19 Oct; the PR delivers existing-state/progress polish only. Milestones still require a future backend scope. This correction does not turn failing local checks into a pass.
 - Brain dump's existing Save as page path has Undo; its accepted-task path does not have that control. KB-02 does not invent an undo backend or claim that gap is fixed.
 - The existing outer auth modal titles remain English outside KB-10/45 scopes. The scoped inner forms/wrappers are bilingual; complete modal-shell localization remains residual work.
 - No Vane/Open WebUI code was copied. Open WebUI contributes UX comparison only. No new provider, secret, paid call, environment value, label, review-bot request or merge was authorized here.

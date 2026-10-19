@@ -93,3 +93,7 @@ The next lead should read the 48 existing tickets and available implementation e
 ## UNKNOWN
 
 Live feature parity, production service configuration, model billing eligibility, available Codex quota/reset hour, native screen-reader results, rendered compliance of the inventory, unmerged KA implementation details and future Agent-history API. Specific sandbox results and document validation are in [VALIDATION.md](VALIDATION.md). None of these unknowns authorizes a guessed implementation, secret read, scope expansion or paid call.
+
+## Spec correction: KB-06
+
+The first pass incorrectly requested milestone rows and movement even though integration stores only goal progress/status and has no milestone or goal/task relationship API. KB-06 now specifies existing progress/state polish with exact verified API signatures. The implementation did not deliver milestones; that capability remains future backend work. Original validation gates and evidence paths are retained. This is a disclosed correction to a planning error, not a claim that the original feature was completed.

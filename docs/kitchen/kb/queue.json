@@ -130,7 +130,7 @@
   },
   {
     "id": "KB-06",
-    "title": "Goal details show milestones without crowding",
+    "title": "Goal details show progress and clear states",
     "type": "component",
     "lane": "sol",
     "batch": 1,

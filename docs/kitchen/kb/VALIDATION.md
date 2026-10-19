@@ -104,3 +104,7 @@ Documentation checks rerun after this update: queue JSON parses; all 46 tickets 
 The lead expanded the reserved activity and notification titles after reviewing their real callers and existing APIs. KB-66 (#1165) covers final-chunk focus and truthful end-of-current-snapshot copy; KB-70 (#1166) covers delayed read focus and duplicate Mark all read submissions. Other surfaces from those broad titles remain explicitly residual inventory work. Both are component tickets with disjoint scopes, no KA dependency, three implementation files plus one test and evidence.
 
 The queue now has 48 entries, including three expanded components in batch 5. JSON/front-matter identity, scope caps, data-ticket limits, dependency order, KA ownership overlaps, independent scopes and complete inventory checks pass after this update. Original application baseline results above remain unchanged; separate worker PRs report implementation checks.
+
+## KB-06 planning correction
+
+The title, goal, exact existing API contract and steps now match supported goal progress/state data. The unsupported milestone capability is explicitly not delivered and requires a future backend scope. All mandatory checks remain unchanged. The 48-ticket documentation validator and diff whitespace check pass; no application source changed in this planning branch.
