@@ -449,7 +449,9 @@ export function OnboardingStepSummary({ step, total, lang }: {
   readonly total: number;
   readonly lang: Kb44Lang;
 }) {
-  const values = { step: `\u2066${step}\u2069`, total: `\u2066${total}\u2069` };
+  const values = lang === "he"
+    ? { step: `\u2066${step}\u2069`, total: `\u2066${total}\u2069` }
+    : { step: String(step), total: String(total) };
   return <div className="kb44-summary" data-component="OnboardingStepSummary">
     <p className="kb44-summary__text" dir="auto" aria-live="polite">{translateKb44(lang, "summary", values)}</p>
     <progress className="kb44-summary__progress" value={step} max={total} aria-label={translateKb44(lang, "summary.aria", values)} />

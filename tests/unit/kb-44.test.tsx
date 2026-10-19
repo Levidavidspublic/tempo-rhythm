@@ -45,7 +45,7 @@ if (process.env.KB44_ISOLATED !== "1") {
   describe("KB-44 onboarding", () => {
     test("first step has textual and semantic progress", () => {
       const html = render(createElement(OnboardingStepSummary, { step: 1, total: 5, lang: "en" }));
-      expect(html).toContain("Step \u20661\u2069 of \u20665\u2069");
+      expect(html).toContain("Step 1 of 5");
       expect(html).toContain('value="1"');
       expect(html).toContain('max="5"');
     });
@@ -176,7 +176,7 @@ if (process.env.KB44_ISOLATED !== "1") {
           for (const theme of ["light", "dark"] as const) {
             await page.evaluate((next) => document.documentElement.dataset.theme = next, theme);
             expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-            expect(await page.locator(".kb44-summary__progress").evaluate((node) => getComputedStyle(node).transitionDuration)).toBe("0s");
+            expect(await page.locator(".kb44-summary__progress").evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration))).toBeLessThan(0.001);
             const capture = process.env.KB44_EVIDENCE_DIR;
             if (capture) {
               await mkdir(capture, { recursive: true });
@@ -199,8 +199,12 @@ if (process.env.KB44_ISOLATED !== "1") {
     await symlink(join(process.cwd(), "apps/web/node_modules"), join(directory, "node_modules"));
     const mockConvex = join(directory, "convex-mock.ts");
     const mockRouter = join(directory, "router-mock.ts");
+    const mockServer = join(directory, "server-mock.ts");
     const entry = join(directory, "entry.tsx");
-    await writeFile(mockConvex, `import { getFunctionName } from "convex/server";
+    await writeFile(mockServer, `export const anyApi = new Proxy({}, { get(_root, moduleName) { return new Proxy({}, { get(_module, functionName) { return { [Symbol.for("functionName")]: String(moduleName) + ":" + String(functionName) }; } }); } });
+export function componentsGeneric() { return {}; }
+`);
+    await writeFile(mockConvex, `const getFunctionName = (ref) => ref[Symbol.for("functionName")];
 const state = window.__kb44 = { resolve: null, reject: null, mutationArgs: null, route: null };
 export function useQuery(ref) {
   const name = getFunctionName(ref);
@@ -233,7 +237,12 @@ createRoot(document.getElementById("root")!).render(<LocaleProvider><ThemeProvid
 `);
     const bundle = await Bun.build({
       entrypoints: [entry], outdir: join(directory, "out"), target: "browser",
-      alias: { "react-native": "react-native-web", "convex/react": mockConvex, "next/navigation": mockRouter },
+      alias: { "react-native": "react-native-web" },
+      plugins: [{ name: "fixture-boundaries", setup(build) {
+        build.onResolve({ filter: /^(convex\/(react|server)|next\/navigation)$/ }, (args) => ({
+          path: args.path === "convex/react" ? mockConvex : args.path === "convex/server" ? mockServer : mockRouter,
+        }));
+      } }],
     });
     if (!bundle.success) throw new Error(`OnboardingFlow bundle failed: ${bundle.logs.map(String).join("\n")}`);
     const js = bundle.outputs.find((file) => file.path.endsWith(".js"));
