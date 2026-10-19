@@ -2,7 +2,7 @@
 
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. The separate implementation PRs below target `integration` as drafts; none is merged or deployed by this run. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
-The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. This is **27 views across fourteen pushed implementation drafts**, not 150 completed components. KB-67 is in progress. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
+The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. This is **27 views across fourteen pushed implementation drafts**, not 150 completed components. KB-67, KB-73 and KB-74 are in progress. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
 
 | Ticket | Issue | Draft implementation PR | Mounted views / scope |
 |---|---|---|---|
@@ -21,8 +21,10 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-67 | #1169 | In progress; not yet a pushed PR at this snapshot | SelectedNagPhraseForm, NagSuggestionNotice planned; reminder phrases |
 | KB-69 | #1161 | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | ApprovalStatus, WaitingNameFeedback; approval waiting |
 | KB-70 | #1166 | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | NotificationReadFeedback; notification read actions |
+| KB-73 | #1170 | In progress; not yet a pushed PR at this snapshot | Existing ThemeToggle touch target and bilingual action label; zero new primary views |
+| KB-74 | #1171 | In progress; not yet a pushed PR at this snapshot | Existing TempoShell mobile drawer focus; zero new primary views planned |
 
-All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these fifteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
+All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these seventeen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 

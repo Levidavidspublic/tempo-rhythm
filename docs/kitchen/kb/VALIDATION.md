@@ -112,3 +112,11 @@ The title, goal, exact existing API contract and steps now match supported goal 
 ## KB-67 independently scoped follow-up
 
 KB-67 (#1169) now covers a verified cross-reminder draft/async-response defect in the mounted NagsScreen. Its existing API signatures are explicit; legacy unmounted nag modules remain residual work. The queue has 49 tickets, four expanded batch-5 components and fifteen independent jobs. Documentation schema, scope, dependency and full-inventory validation pass. No product source changed in this branch.
+
+## KB-73 existing theme control polish
+
+KB-73 (#1170) fixes a verified 36 px target and English-only accessible action label on the real landing theme button. All 107 open PR file lists were checked for a competing ThemeToggle writer; none was found. It adds no primary production view. The queue has 50 tickets, five expanded batch-5 components and sixteen independent jobs; documentation schema/scope/dependency/inventory checks pass.
+
+## KB-74 mobile drawer focus repair
+
+KB-74 (#1171) covers a source-confirmed mobile drawer keyboard/focus defect. All 107 open PR file lists show no active TempoShell writer. Held #858 gates its future workspace navigation feature; this distinct user-authorized repair leaves that ticket and its destinations unchanged and records serialization/rebase for later overlap. Sidebar is not edited (PR #1081/KA #1124 ownership). The queue has 51 tickets and seventeen independent assignments; documentation validation passes.

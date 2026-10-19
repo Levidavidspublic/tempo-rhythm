@@ -305,6 +305,38 @@
     ]
   },
   {
+    "id": "KB-73",
+    "title": "Landing theme control has a reachable localized name",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/marketing/ThemeToggle.tsx",
+      "apps/web/lib/i18n-groups/kb-73.ts",
+      "apps/web/app/v3/kb-73.css",
+      "tests/unit/kb-73.test.tsx",
+      "docs/polish/evidence/kb-73-landing-theme-control-has-a-reachable-localized-name.md",
+      "docs/polish/evidence/kb-73-landing-theme-control-has-a-reachable-localized-name.jpg"
+    ]
+  },
+  {
+    "id": "KB-74",
+    "title": "Mobile navigation drawer keeps keyboard focus in view",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/tempo/TempoShell.tsx",
+      "apps/web/lib/i18n-groups/kb-74.ts",
+      "apps/web/app/v3/kb-74.css",
+      "tests/unit/kb-74.test.tsx",
+      "docs/polish/evidence/kb-74-mobile-navigation-drawer-keeps-keyboard-focus.md",
+      "docs/polish/evidence/kb-74-mobile-navigation-drawer-keeps-keyboard-focus.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",
