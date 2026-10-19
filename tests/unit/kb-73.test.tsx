@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { createRequire } from "node:module";
 import { basename, join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
-import postcss from "../../apps/web/node_modules/postcss";
-import tailwind from "../../apps/web/node_modules/@tailwindcss/postcss";
 import { en, he, tKb73 } from "../../apps/web/lib/i18n-groups/kb-73";
 
 declare global { interface Window { __kb73Calls: string[] } }
@@ -77,6 +76,9 @@ if (process.env.KB73_ISOLATED !== "1") {
     const cssFiles = [...outputs.keys()].filter(name => name.endsWith(".css"));
     if (!js || cssFiles.length === 0) throw new Error("KB-73 browser bundle must contain JavaScript and scoped CSS");
     const globalsPath = join(web, "app/globals.css");
+    const appRequire = createRequire(join(web, "package.json"));
+    const postcss = appRequire("postcss");
+    const tailwind = appRequire("@tailwindcss/postcss");
     const compiled = await postcss([tailwind()]).process(await Bun.file(globalsPath).text(), { from: globalsPath });
     const styles = `${compiled.css}\n${(await Promise.all(cssFiles.map(name => outputs.get(name)!.text()))).join("\n")}`;
     server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {

@@ -29,10 +29,15 @@
   overflow-wrap: anywhere;
 }
 .kb73-gallery__controls {
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  margin-block: var(--tp-space-4);
+}
+.kb73-gallery__options {
   display: flex;
   flex-wrap: wrap;
   gap: var(--tp-space-2);
-  margin-block: var(--tp-space-4);
 }
 .kb73-gallery__controls button {
   min-height: var(--tp-touch);

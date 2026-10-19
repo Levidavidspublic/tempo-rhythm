@@ -34,17 +34,23 @@ export function Kb73Gallery() {
   return (
     <main className="kb73-gallery" lang={lang} dir={dir}>
       <h1>{tKb73(lang, "galleryTitle")}</h1>
-      <div className="kb73-gallery__controls" role="group" aria-label={tKb73(lang, "galleryLanguage")}>
-        <button type="button" lang="en" aria-pressed={lang === "en"} onClick={() => setLang("en")}>{tKb73(lang, "galleryEnglish")}</button>
-        <button type="button" lang="he" aria-pressed={lang === "he"} onClick={() => setLang("he")}>{tKb73(lang, "galleryHebrew")}</button>
-      </div>
-      <div className="kb73-gallery__controls" role="group" aria-label={tKb73(lang, "galleryPreference")}>
-        {(["system", "light", "dark"] as const).map((choice) => (
-          <button key={choice} type="button" aria-pressed={theme === choice} onClick={() => setTheme(choice)}>
-            {tKb73(lang, choice)}
-          </button>
-        ))}
-      </div>
+      <fieldset className="kb73-gallery__controls">
+        <legend>{tKb73(lang, "galleryLanguage")}</legend>
+        <div className="kb73-gallery__options">
+          <button type="button" lang="en" aria-pressed={lang === "en"} onClick={() => setLang("en")}>{tKb73(lang, "galleryEnglish")}</button>
+          <button type="button" lang="he" aria-pressed={lang === "he"} onClick={() => setLang("he")}>{tKb73(lang, "galleryHebrew")}</button>
+        </div>
+      </fieldset>
+      <fieldset className="kb73-gallery__controls">
+        <legend>{tKb73(lang, "galleryPreference")}</legend>
+        <div className="kb73-gallery__options">
+          {(["system", "light", "dark"] as const).map((choice) => (
+            <button key={choice} type="button" aria-pressed={theme === choice} onClick={() => setTheme(choice)}>
+              {tKb73(lang, choice)}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <p>{tKb73(lang, "galleryResolved")}: {tKb73(lang, resolvedTheme)}</p>
       <ThemeToggle />
     </main>
