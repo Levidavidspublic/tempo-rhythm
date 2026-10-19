@@ -156,11 +156,13 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
       expect(await input.getAttribute("aria-describedby")).toBe("gl-name-hint");
       await input.press("Escape");
       expect(await input.count()).toBe(0);
+      await page.waitForFunction(() => document.activeElement?.id === "kb05-empty-action");
       expect(await page.locator("#kb05-empty-action").evaluate((node) => node === document.activeElement)).toBe(true);
       await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.create") }).click();
       await page.locator("#gl-name").fill(lang === "he" ? "לקרוא יותר ספרים" : "Read more books");
       await page.locator("form button[type=submit]").click();
       expect(await page.getByText(kb05t(lang, "kb05.gallery.saved")).count()).toBe(1);
+      await page.waitForFunction((label) => document.activeElement?.textContent?.trim() === label, kb05t(lang, "kb05.gallery.create"));
       expect(await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.create") }).evaluate((node) => node === document.activeElement)).toBe(true);
       await page.getByRole("button", { name: kb05t(lang, "kb05.gallery.overflow") }).click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
