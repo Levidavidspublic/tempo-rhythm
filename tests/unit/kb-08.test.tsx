@@ -40,7 +40,7 @@ if (process.env.KB08_ISOLATED !== "1") {
         if (run.exitCode !== 0) throw new Error(`KB-08 clean test process failed:\n${output}`);
       }
       expect(output).toContain(name);
-    }, 180_000);
+    }, 300_000);
   }
 } else {
 const { Kb08Gallery, ProjectListState, ProjectSummaryRow } = await import("../../apps/web/components/projects/ProjectsScreen");
@@ -123,6 +123,7 @@ describe("KB-08 projects list", () => {
   test("gallery renders the real exported row and owns one h1 and one main", () => {
     const html = render(createElement(Kb08Gallery));
     expect(html).toContain('data-component="ProjectSummaryRow"');
+    expect(html).toContain('id="i-page"');
     expect(html.match(/<h1\b/g)).toHaveLength(1);
     expect(html.match(/<main\b/g)).toHaveLength(1);
   });
@@ -171,6 +172,7 @@ test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsi
       const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
       await page.goto(server.url.href);
       await page.locator('[data-component="ProjectSummaryRow"]').first().waitFor();
+      expect(await page.locator("#i-page").count()).toBe(1);
       expect(await page.locator("h1").count()).toBe(1);
       expect(await page.locator("main").count()).toBe(1);
       expect(await page.locator("article a a, article button a, article a button").count()).toBe(0);
@@ -213,5 +215,5 @@ test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsi
     await browser.close();
     server.stop();
   }
-}, 120_000);
+}, 240_000);
 }

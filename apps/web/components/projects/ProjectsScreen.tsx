@@ -18,7 +18,7 @@ import {
 } from "@/components/goals/shared";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TaskViewsScreen } from "@/components/tasks/TaskViewsScreen";
-import { TpIcon } from "@/components/tempo/TpIcon";
+import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import {
   filterProjects,
@@ -255,6 +255,7 @@ export function Kb08Gallery() {
   ];
   const states = ["default", "empty", "loading", "error", "disabled", "overflow", "offline"] as const;
   return <main className="kb08-gallery" lang={lang} dir={lang === "he" ? "rtl" : "ltr"} data-component="Kb08Gallery">
+    <TpIconSprite />
     <h1 className="tp-pagehead__title">{translateKb08(lang, "gallery.title")}</h1>
     <fieldset className="kb08-gallery__controls"><legend className="tp-sr-only">{translateKb08(lang, "gallery.language")}</legend>
       <button type="button" className="tp-btn tp-btn--secondary" aria-pressed={lang === "en"} onClick={() => setLang("en")}>English</button>
