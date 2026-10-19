@@ -353,6 +353,22 @@
     ]
   },
   {
+    "id": "KB-75",
+    "title": "Account approval actions keep each row's pending state",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/approval/AdminApprovals.tsx",
+      "apps/web/lib/i18n-groups/kb-75.ts",
+      "apps/web/app/v3/kb-75.css",
+      "tests/unit/kb-75.test.tsx",
+      "docs/polish/evidence/kb-75-admin-approval-actions.md",
+      "docs/polish/evidence/kb-75-admin-approval-actions.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",

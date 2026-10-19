@@ -24,8 +24,9 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-71 | #1175 | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | Existing shared Button phone targets at real callers; zero new primary views planned |
 | KB-73 | #1170 | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | Existing ThemeToggle touch target and bilingual action label; zero new primary views |
 | KB-74 | #1171 | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | Existing TempoShell mobile drawer focus; zero new primary views planned |
+| KB-75 | #1178 | In progress; not yet pushed | AdminStatusSummary, ApprovalRowFeedback planned; existing admin row concurrency/focus |
 
-All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these eighteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
+All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these nineteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 
