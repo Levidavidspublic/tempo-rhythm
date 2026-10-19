@@ -40,7 +40,7 @@ After this draft opens, Claude files each still-unfiled written ticket verbatim 
 
 ## Implementation follow-up
 
-Amit subsequently authorized product implementation and draft PRs. KB-02–10 and KB-44/45 have been filed as implementation issues. Their draft PRs and sandbox checks are work in progress, not a claim of production readiness or feature parity. KB-69 was pulled forward after source review verified that a pending name save can overwrite a newer edit and sign-out rejection has no visible recovery. Its exact scope is [KB-69](tickets/KB-69.md), filed as [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161). It has no KA file overlap and changes no approval policy. Remaining account/approval surfaces move to residual coverage under KB-75; they are not claimed as covered by KB-69.
+Amit subsequently authorized product implementation and draft PRs. [IMPLEMENTATION.md](IMPLEMENTATION.md) maps the separate draft PRs, named production views and remaining delivery boundaries. KB-02–10 and KB-44/45 have been filed as implementation issues. Their draft PRs and sandbox checks are work in progress, not a claim of production readiness or feature parity. KB-69 was pulled forward after source review verified that a pending name save can overwrite a newer edit and sign-out rejection has no visible recovery. Its exact scope is [KB-69](tickets/KB-69.md), filed as [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161). It has no KA file overlap and changes no approval policy. Remaining account/approval surfaces move to residual coverage under KB-75; they are not claimed as covered by KB-69.
 
 ## Next lead pass — remaining titles
 
