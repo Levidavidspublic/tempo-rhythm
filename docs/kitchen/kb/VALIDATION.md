@@ -90,3 +90,10 @@ The first browser attempt could not launch Playwright’s expected binary (1 pas
 ## Publication/owner gates
 
 The draft is not a merge request. No labels, issue closures or review-bot requests are added. Since Claude files the issues after this PR opens, there is no planning issue in a Closes clause; the existing scope-guard may reject that until an owner-approved planning issue exists. This is an acknowledged gate, not a falsely linked KA issue. Future backend tickets require Amit’s convex-arch label; Astra billing eligibility and held KA scopes remain owner decisions. Native accessibility and actual service behavior are UNKNOWN.
+
+
+## Implementation follow-up: KB-69 expansion (19 Oct)
+
+Amit subsequently authorized separate product implementation PRs. This planning branch still changes only `docs/kitchen/kb/`. KB-69 was expanded and filed as #1161 after source review; the other account/approval inventory rows remain explicitly assigned to later work. Independent UI workers use the lead-assigned Sol model under AGENTS; the original Astra planning lane is not an execution exception.
+
+Documentation checks rerun after this update: queue JSON parses; all 46 tickets match the queue and pass the actual scope-guard front-matter parser; required fields, scope caps, component hot-file ban, dependency order, KA overlap dependencies, independent scopes, and all 262 inventory paths pass. Batches 1–3 retain 15 tickets and one data ticket each; batch 5 now includes the single expanded KB-69 component ticket. `git diff --check` passes. The application checks above apply to the unchanged integration product baseline; they were not rerun merely for this documentation update. Implementation PRs carry their own current checks and limitations.

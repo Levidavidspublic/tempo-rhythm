@@ -241,6 +241,22 @@
     ]
   },
   {
+    "id": "KB-69",
+    "title": "Approval waiting stays clear while a name saves",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/approval/WaitingForApproval.tsx",
+      "apps/web/lib/i18n-groups/kb-69.ts",
+      "apps/web/app/v3/kb-69.css",
+      "tests/unit/kb-69.test.tsx",
+      "docs/polish/evidence/kb-69-approval-waiting.md",
+      "docs/polish/evidence/kb-69-approval-waiting.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",
