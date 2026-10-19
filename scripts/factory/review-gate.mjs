@@ -86,6 +86,24 @@ function coderabbitBlockComment(comments) {
   return [...comments].reverse().find((c) => isCoderabbitUser(c.user) && !/summarize by coderabbit\.ai/i.test(c.body || "") && CR_BLOCK_COMMENT.test(c.body || ""));
 }
 
+// HTML-only first lines (a bare <h3>) used to become an empty reason. Walk every line, then the whole body.
+function firstPlainLine(body) {
+  const plain = (s) => String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  for (const raw of String(body || "").split("\n")) {
+    const line = plain(raw);
+    if (line) return line.slice(0, 200);
+  }
+  return plain(body).slice(0, 200);
+}
+
+// Status text such as "Review skipped: 882 files exceed the limit of 300" is the reviewer's reason.
+function coderabbitSkippedDetail(desc) {
+  const text = String(desc || "").replace(/\s+/g, " ").trim().slice(0, 200);
+  if (!text) return "CodeRabbit review skipped: no reason given.";
+  if (/^coderabbit review skipped:/i.test(text)) return text;
+  return `CodeRabbit review skipped: ${text}`;
+}
+
 // "clean"    = CodeRabbit status on the head SHA is success, description says the review completed
 //              (not skipped), and no unresolved non-outdated CodeRabbit review thread.
 // "findings" = unresolved, non-outdated review thread started by coderabbitai.
@@ -97,17 +115,18 @@ export function coderabbitState({ headSha, statuses = [], threads = [], comments
   const findings = threads.filter((t) => !t.isResolved && !t.isOutdated && isCoderabbitUser(t.author));
   if (findings.length) return { state: "findings", findings, detail: `${findings.length} unresolved CodeRabbit thread(s)` };
 
+  // A skipped status (file limit, base branch, draft) is the reason, even when a comment's first line is empty HTML.
+  if (/skipped/i.test(desc)) return { state: "blocked", findings: [], detail: coderabbitSkippedDetail(desc) };
+
   const note = coderabbitBlockComment(comments);
   if (note) {
     const commentAt = Date.parse(note.created_at || 0) || 0;
     const statusAt = Date.parse(status?.updated_at || status?.created_at || 0) || 0;
     if (!isCoderabbitCompletedStatus(status) || commentAt > statusAt) {
-      const line = (note.body || "").split("\n")[0].replace(/<[^>]+>/g, "").slice(0, 120);
-      return { state: "blocked", findings: [], detail: `CodeRabbit couldn't review: ${line}` };
+      const line = firstPlainLine(note.body).replace(/^(?:coderabbit couldn't review:\s*)+/i, "").trim();
+      return { state: "blocked", findings: [], detail: line ? `CodeRabbit couldn't review: ${line}` : "CodeRabbit couldn't review: no reason given." };
     }
   }
-
-  if (/skipped/i.test(desc)) return { state: "blocked", findings: [], detail: `CodeRabbit review skipped: ${desc.slice(0, 140)}` };
   if (isCoderabbitCompletedStatus(status)) return { state: "clean", findings: [], detail: `CodeRabbit review completed on ${String(headSha).slice(0, 7)}` };
   if (status && ["failure", "error"].includes(status.state)) return { state: "blocked", findings: [], detail: `CodeRabbit status ${status.state}: ${desc.slice(0, 120) || "no description"}` };
   return { state: "pending", findings: [], detail: status ? `CodeRabbit ${status.state}: ${desc.slice(0, 120)}` : "no CodeRabbit status for the head commit yet" };
