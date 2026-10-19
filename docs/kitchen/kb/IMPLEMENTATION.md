@@ -40,7 +40,7 @@ All these implementation assignments use Sol under AGENTS.md's mid-tier rule, in
 
 ## Needs Amit
 
-[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don’t make a 4th attempt.” KB-02, KB-04 and KB-44 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
+[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don't make a 4th attempt, and don't widen scope to get it to pass.” KB-02, KB-04 and KB-44 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
 
 Held KA persona/memory/council scopes (#1110/#1112/#1129), runtime model/cost choices, the backend `convex-arch` owner gate when dependencies are ready, search service provisioning, native Hebrew review, and release/device accessibility decisions remain with Amit. These do not block independent scoped UI work. Follow the repository's three-attempt limit on stuck tickets; do not evade it with a duplicate issue or an out-of-scope baseline/config edit.
 

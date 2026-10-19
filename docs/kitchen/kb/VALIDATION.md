@@ -128,3 +128,7 @@ The ten original polish tickets KB-02/03/04/05/07/08/09/10/44/45 now spell out t
 ## KB-71 shared phone button targets
 
 The shared button primitive has 36/40 px variants mounted on real screens. KB-71 (#1175) now scopes a 44 px phone-target repair while preserving public/ref/asChild/form semantics and desktop sizes, with actual AdminApprovals and DayPlanPanel fixtures. All 109 open PR file lists (including complete pagination of four large PRs) and 285 open issue bodies had no competing exact-path owner; KA scopes do not overlap. It adds zero primary views. The queue now has 52 tickets: original45 plus seven batch-5 components; eighteen independent assignments. Documentation schema/scope/dependency/inventory validation passes. KB-74 is now pushed in draft PR #1174, bringing implementation drafts to seventeen.
+
+## Rejected KB-68 candidates and route reachability correction
+
+The lead did not file polish work merely to increase a count. BillingPlan's apparent null-plan spinner is hidden by the existing profile gate, so no visible defect was demonstrated. The legacy PaywallModal does omit accessible selected-plan state, but its only route callers, `/page2` and `/page3`, redirect to `/dashboard` in Next config before rendering; Navbar has no current static importer. The two payment inventory rows now distinguish static imports from an active mount. These modules need a later mount/retirement review, not an orphan gallery presented as live product polish. No payment, routing or source behavior was changed.
