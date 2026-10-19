@@ -194,6 +194,8 @@ export function CoachConversation({
     onChange: (id: Id<"conversations">) => void;
     removed: ReadonlySet<string>;
     holdCreate?: boolean;
+    /** The automatic first chat could not be made, so the page lets New chat make one. */
+    onCreateFailed?: () => void;
   };
 }) {
   const { lang, t } = useLocale();
@@ -219,6 +221,7 @@ export function CoachConversation({
   const setConversationId = selection ? selection.onChange : setOwnConversationId;
   const removed = selection?.removed;
   const holdCreate = selection?.holdCreate === true;
+  const onCreateFailed = selection?.onCreateFailed;
   // Chats being deleted on /coach are never opened again by the pick below.
   const candidates = useMemo(
     () => (conversations && removed && removed.size > 0 ? conversations.filter((c) => !removed.has(c._id)) : conversations),
@@ -261,12 +264,14 @@ export function CoachConversation({
       (id) => {
         if (live) setConversationId(id);
       },
-      () => {},
+      () => {
+        if (live) onCreateFailed?.();
+      },
     );
     return () => {
       live = false;
     };
-  }, [isAuthenticated, profile, candidates, conversationId, createConversation, setConversationId, holdCreate]);
+  }, [isAuthenticated, profile, candidates, conversationId, createConversation, setConversationId, holdCreate, onCreateFailed]);
 
   // The panel puts the cursor in the composer as soon as the conversation can take a message.
   useEffect(() => {
@@ -685,6 +690,8 @@ export function CoachChat() {
   const [holdingDeletes, setHoldingDeletes] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [creatingNew, setCreatingNew] = useState(false);
+  // The automatic first chat failed to be made: New chat makes one instead of waiting for it.
+  const [autoCreateFailed, setAutoCreateFailed] = useState(false);
   const [newError, setNewError] = useState<string | null>(null);
   const [focusComposer, setFocusComposer] = useState(0);
   const chatsButton = useRef<HTMLButtonElement | null>(null);
@@ -718,6 +725,16 @@ export function CoachChat() {
     if (focusComposer > 0) document.getElementById("coach-message")?.focus();
   }, [focusComposer]);
 
+  // Once a chat is open the failed automatic create no longer matters.
+  useEffect(() => {
+    if (selectedId) setAutoCreateFailed(false);
+  }, [selectedId]);
+
+  const onCreateFailed = useCallback(() => {
+    setAutoCreateFailed(true);
+    setNewError(t("cc.newError"));
+  }, [t]);
+
   // The drawer is only a drawer under 1024 px; widening the window puts the column back.
   useEffect(() => {
     if (!narrow) setDrawerOpen(false);
@@ -735,7 +752,7 @@ export function CoachChat() {
 
   const handleNew = async () => {
     setNewError(null);
-    const action = newChatAction(current, selectedId);
+    const action = newChatAction(current, selectedId, autoCreateFailed);
     // The first chat is still being opened or made: making another here would leave two.
     if (action === "wait") return;
     // An empty chat is already a new chat: go to its composer instead of making another.
@@ -789,6 +806,7 @@ export function CoachChat() {
   };
 
   const title = threadTitle(current?.title, t("cc.untitled"));
+  const newChatWaits = newChatAction(current, selectedId, autoCreateFailed) === "wait";
 
   return (
     <div className="tp-page" data-component="PageLayout">
@@ -804,7 +822,7 @@ export function CoachChat() {
           threads={authLoading ? undefined : isAuthenticated ? threads : []}
           selectedId={selectedId}
           searchReady={Boolean(isAuthenticated && profile)}
-          creating={creatingNew || selectedId === null}
+          creating={creatingNew || newChatWaits}
           newError={newError}
           drawer={narrow}
           open={drawerOpen}
@@ -834,7 +852,7 @@ export function CoachChat() {
               type="button"
               aria-label={t("cc.newChat")}
               title={t("cc.newChat")}
-              disabled={creatingNew || selectedId === null}
+              disabled={creatingNew || newChatWaits}
               onClick={() => void handleNew()}
             >
               <TpIcon name="plus" size="sm" />
@@ -847,7 +865,7 @@ export function CoachChat() {
           >
             <CoachConversation
               variant="page"
-              selection={{ id: selectedId, onChange: setSelectedId, removed, holdCreate: holdingDeletes > 0 }}
+              selection={{ id: selectedId, onChange: setSelectedId, removed, holdCreate: holdingDeletes > 0, onCreateFailed }}
             />
           </ThreadBoundary>
         </section>

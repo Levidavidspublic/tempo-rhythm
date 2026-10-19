@@ -95,6 +95,13 @@ describe("newChatAction", () => {
     // Just made and not in the list yet: still a create, never a wait.
     expect(newChatAction(undefined, "c1")).toBe("create");
   });
+  test("when the automatic first chat could not be made, New chat makes one instead of waiting", () => {
+    expect(newChatAction(undefined, null, true)).toBe("create");
+    expect(newChatAction(undefined, null, false)).toBe("wait");
+    // Once a chat is open the failure no longer changes anything.
+    expect(newChatAction({ createdAt: 100, updatedAt: 100 }, "c1", true)).toBe("focus");
+    expect(newChatAction({ createdAt: 100, updatedAt: 200 }, "c1", true)).toBe("create");
+  });
 });
 
 describe("selectionOnDelete", () => {

@@ -84,10 +84,16 @@ export function nextAfterDelete<Id extends string>(threads: readonly { _id: Id }
 /**
  * What New chat does: "wait" while the page has no open chat yet (the first chat is still being
  * opened or made, or the last one is being deleted), so it never makes a second empty chat beside
- * that one; "focus" when the open chat is still empty; else "create".
+ * that one, unless that automatic chat could not be made (`autoCreateFailed`): then "create", so
+ * the person can get past it without a reload. "focus" when the open chat is still empty; else
+ * "create".
  */
-export function newChatAction(open: { createdAt: number; updatedAt: number } | undefined, selectedId: string | null): "wait" | "focus" | "create" {
-  if (selectedId === null) return "wait";
+export function newChatAction(
+  open: { createdAt: number; updatedAt: number } | undefined,
+  selectedId: string | null,
+  autoCreateFailed = false,
+): "wait" | "focus" | "create" {
+  if (selectedId === null) return autoCreateFailed ? "create" : "wait";
   return open && isEmptyThread(open) ? "focus" : "create";
 }
 
