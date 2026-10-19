@@ -47,6 +47,19 @@ describe("focusBlockStats", () => {
     expect(parseBlockMinutes("abc")).toBeNull();
   });
 
+  test("block minutes: ASCII digits only, so a decimal or exponent never logs a wrong duration", () => {
+    expect(parseBlockMinutes("2.5")).toBeNull();
+    expect(parseBlockMinutes("1e2")).toBeNull();
+    expect(parseBlockMinutes("+5")).toBeNull();
+    expect(parseBlockMinutes("0x10")).toBeNull();
+    expect(parseBlockMinutes("25.0")).toBeNull();
+    expect(parseBlockMinutes("٢٥")).toBeNull();
+    // Spaces around the digits are trimmed (a number field drops them itself); inside, they aren't.
+    expect(parseBlockMinutes(" 25 ")).toBe(25);
+    expect(parseBlockMinutes("2 5")).toBeNull();
+    expect(parseBlockMinutes("025")).toBe(25);
+  });
+
   test("range spans seven local days ending at tomorrow's local midnight", () => {
     const now = new Date(2026, 9, 5, 12).getTime();
     const { startMs, endMs } = lastLocalDaysRange(now);

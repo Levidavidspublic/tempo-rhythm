@@ -37,10 +37,17 @@ export function minutesFromMs(durationMs: number): number {
 /** focusBlocks.create accepts a block of up to 8 hours. */
 export const MAX_BLOCK_MINUTES = 8 * 60;
 
-/** Whole minutes from the form's field, or null when the server would refuse the block. */
+/**
+ * Whole minutes from the form's field, or null when the server would refuse the block. Only ASCII
+ * digits count, with spaces around them trimmed: "2.5" or "1e2" would otherwise log 2 or 1 minute,
+ * and "+5" or "0x10" aren't what the field shows. A number field drops spaces itself; the trim
+ * matches TrackingDashboard's own `trim()` check.
+ */
 export function parseBlockMinutes(raw: string): number | null {
-  const minutes = Number.parseInt(raw, 10);
-  return Number.isFinite(minutes) && minutes >= 1 && minutes <= MAX_BLOCK_MINUTES ? minutes : null;
+  const digits = raw.trim();
+  if (!/^[0-9]+$/.test(digits)) return null;
+  const minutes = Number(digits);
+  return minutes >= 1 && minutes <= MAX_BLOCK_MINUTES ? minutes : null;
 }
 
 /** One point per local day that has blocks, oldest first. */
