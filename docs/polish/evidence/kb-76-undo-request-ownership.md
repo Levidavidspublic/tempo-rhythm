@@ -18,21 +18,23 @@ Hebrew is machine-drafted for Amit's native review. Device screen-reader results
 
 ## Test results (cloud agent sandbox)
 
+All required local commands were attempted on the unchanged source/test commit. Non-test checks have no test pass/fail/skip count.
+
 | Command/check | Exit, counts and result |
 |---|---|
 | `bun --version` | exit 0; `1.3.9`. |
 | `bun install --frozen-lockfile` | UNKNOWN: first attempt stalled at dependency resolution and was terminated (143); bounded repeat after cached-directory bootstrap timed out (124). |
 | `bun install --frozen-lockfile --offline` | UNKNOWN: also stalled resolving and was terminated (143). |
-| Cache bootstrap | All ignored node_modules directories linked from KB-75 after byte comparison confirmed identical lockfile and every workspace package.json. Every declared dependency is present and every workspace dependency resolves inside this checkout. **Not an exact-install PASS.** |
-| `bun run lint` | UNKNOWN: queued under the shared validation lock. |
-| `bun run typecheck` | UNKNOWN: queued under the shared validation lock. |
-| `bun run test` | UNKNOWN: queued under the shared validation lock. |
-| `bun run scan:forbidden-tech` | UNKNOWN: queued. |
-| `bun run scan:ram-only-audit` | UNKNOWN: queued. |
-| `bun run scan:design-tokens` | UNKNOWN: queued. |
-| `bun run check:notices` | UNKNOWN: queued. |
-| `CI=1 bunx playwright test --reporter=line` | UNKNOWN: queued; local-only command, expected credential-gated skips must still be counted. |
-| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | UNKNOWN: queued. Planned process-only `TURBO_CACHE=local:r`, no config change. |
+| Cache bootstrap | Ignored node_modules directories linked from KB-75; byte comparison confirmed identical lockfile and every workspace package.json. Every declared dependency is present and every workspace dependency resolves inside this checkout. **Not an exact-install PASS.** |
+| `bun run lint` | exit 0; 5/5 tasks successful, 0 errors; 9 existing web warnings. |
+| `bun run typecheck` | exit 0; 5/5 tasks successful. |
+| `bun run test` | exit 0; **3328 pass, 0 fail, 3 todo**; Ran 3331 tests across 202 files. [119.71s] All 27 KB-76 cases included; 81099 outer suite assertions. |
+| `bun run scan:forbidden-tech` | exit 0; OK. |
+| `bun run scan:ram-only-audit` | exit 0; OK; 6 hard deletes against baseline 10. |
+| `bun run scan:design-tokens` | exit 0; OK; arbitrary hex 4/18, raw hex 2/2. |
+| `bun run check:notices` | exit 0; OK; 66 documented. |
+| `CI=1 bunx playwright test --reporter=line` | exit 1; **26 pass, 2 fail, 89 skipped**. Sign-out visibility and task-title fill time out while Today remains a loading skeleton. Remaining wiring cases completed; credential-gated skips disclosed. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | exit 0; 1/1 task successful, 0 cached. Used process-only `TURBO_CACHE=local:r`; no file/config change. |
 | Final `bun test tests/unit/kb-76.test.tsx` (repair round 3) | exit 0; **27 pass, 0 fail**, 81 outer wrapper assertions, 141.08 s. The isolated child exercises all 27 actual cases once. |
 | Scoped `biome lint` | exit 0; 3 production files checked, no fixes. |
 | Frozen-original regression | expected exit 1; 0 pass/1 fail, 2 wrapper assertions; actual caller expected 1 toast, received 0 after A settled. |
@@ -41,6 +43,10 @@ Hebrew is machine-drafted for Amit's native review. Device screen-reader results
 | Separate pointer diagnostic on round-2 product | exit 0; 1 pass/0 fail, 3 wrapper assertions, 10.67 s. Exact default pointer retry after a 5 s clock jump. Enabled button rect: x33/y763/165.2×44; elementFromPoint belonged to the button. Trace: first click 563 ms, retry 93 ms, no error. Both pointer and keyboard retry remain in the final 27-case suite. |
 
 The initial pointer timeout is preserved as an observed failure; the later trace proves the later diagnostic succeeded, not why the initial timeout happened. Three implementation/check repair rounds have been used; no fourth source/test repair is authorized. Current scoped source/test work is frozen. Required long checks run in AGENTS order, including later steps after any failure. Full validation uses the outer validation lock; embedded browser tests also take fixture then E2E locks. Fixture-only jobs take fixture then E2E locks and launch no Next server. Existing Chromium is used through a process-only browser path.
+
+GitHub CI at first evidence head `13763ab05c4328063a1ef2ac9019892e265425ba` independently reported success for ci, full Test, E2E, e2e-preview, Lint, Typecheck, Build, scans, notices, secrets and scope/config guards ([run](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39354289651)). Detailed remote test counts are UNKNOWN because the Actions log download returned 403. This does not erase the local E2E failures. Any reporting-only later head may queue fresh checks; it is not claimed green before they finish.
+
+Local failure details: `screens/sign-out.spec.ts:13` timed out after 30 seconds waiting for the Sign out button; `task-views-core.spec.ts:22` timed out filling Task title. Both retained screenshots were visually inspected and show the Today loading skeleton, with no UndoToast visible. These observations do not establish a root cause. No unrelated test, route, auth or backend change was made, and no broad repeat was run solely for green.
 
 ## Named final cases
 
@@ -131,11 +137,51 @@ bun install v1.3.9 (cf6cdbbb)
 Resolving dependencies
 ```
 
+
+## Completed local E2E failure tail (last 20 lines)
+
+```text
+[109/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[110/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[111/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[112/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[113/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:201672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:201747) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  2 failed
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  26 passed (3.9m)
+```
+
+Initial exact install (UNKNOWN terminated stall)
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Offline exact install (UNKNOWN terminated stall)
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
 ```text
 status: blocked
 ticket: #1180
-evidence: source 499745a6670d4667d1265997ddb3d6e1f8de9230; final focused browser 27 pass/0 fail; real frozen caller reproduction expected1 toast/received0 before repair; full repository gates queued
-changed: three scoped production files, one test and two scoped evidence artifacts; zero new primary views
-unknowns: exact frozen install stalled; full repository gates/CI queued; device screen reader; live backend writes and deployed persistence
-notes for ticket sync: third repair round exhausted; preserve all original shared APIs, callback arguments and deadline; Hebrew machine-drafted; no scope/backend/config/route change
+evidence: source 499745a6670d4667d1265997ddb3d6e1f8de9230; final focused browser 27 pass/0 fail; full unit 3328 pass/0 fail/3 todo; local E2E 26 pass/2 fail/89 skip; lint/typecheck/four scans/build completed; first-head GitHub CI green
+changed: apps/web/components/goals/shared.tsx; apps/web/lib/i18n-groups/kb-76.ts; apps/web/app/v3/kb-76.css; tests/unit/kb-76.test.tsx; docs/polish/evidence/kb-76-undo-request-ownership.md; docs/polish/evidence/kb-76-undo-request-ownership.jpg (zero new primary views)
+unknowns: exact frozen install stalled; detailed remote test counts (log download 403); device screen reader; live backend writes and deployed persistence
+notes for ticket sync: local E2E loading timeouts remain outside this toast repair; three repair rounds exhausted; no fourth source/test repair; Hebrew machine-drafted; callbacks and deadline unchanged
 ```
