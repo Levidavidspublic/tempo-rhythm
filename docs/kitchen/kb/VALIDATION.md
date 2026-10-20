@@ -168,3 +168,9 @@ KB-76 is pushed in draft #1183 (source 499745a; evidence 13763ab), bringing the 
 ## KB-77 shared Input target follow-up
 
 The queue and exact scope-guard front matter now validate for **57** tickets (54 component, 3 data; 23 polish, 19 history, 15 search; 47 Sol and 10 Astra planning lanes). The full dependency/scope/262-path inventory validator passes. Batch 6 now has two independent component fixes; 20 reserved title-only entries remain, 77 total planned entries. KB-77 is issue #1184 and is active before first push; it polishes an existing mounted Input and adds no primary view. Its audit measured 40px phone geometry and found no owner among 113 open PRs / 3,847 complete file entries. Root changes remain documentation-only.
+
+## Scope-parser correction from the KB-61 remote gate
+
+The KB-61 remote scope gate exposed a lead validation mistake: KB-61/64/77 had valid YAML with indentless lists, but the repository's minimal frontMatter parser requires indented list entries and returned empty scopes. The previous check only asserted that the parser returned an object; its reported acceptance did not prove scope extraction. The three ticket files and issues #1181/#1182/#1184 now use two-space list indentation, with exactly the same six paths and no scope widening. No application, test, config or repair budget changed.
+
+The strengthened check compares every parsed scope and dependency array plus ticket/run/type/lane/wave/browser/hold/overlap flags against queue.json. All **57** tickets now match exactly. The full YAML/schema/dependency/inventory validator also passes. Future leads must compare parsed values, not just parser truthiness. KB-61's next ordinary reporting update lets its scope check reread corrected issue metadata; no check was waived.
