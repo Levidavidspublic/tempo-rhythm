@@ -369,6 +369,22 @@
     ]
   },
   {
+    "id": "KB-76",
+    "title": "A completed Undo cannot dismiss a newer Undo",
+    "type": "component",
+    "lane": "sol",
+    "batch": 6,
+    "deps": [],
+    "scope": [
+      "apps/web/components/goals/shared.tsx",
+      "apps/web/lib/i18n-groups/kb-76.ts",
+      "apps/web/app/v3/kb-76.css",
+      "tests/unit/kb-76.test.tsx",
+      "docs/polish/evidence/kb-76-undo-request-ownership.md",
+      "docs/polish/evidence/kb-76-undo-request-ownership.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",

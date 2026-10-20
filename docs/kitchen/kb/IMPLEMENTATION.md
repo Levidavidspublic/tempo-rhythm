@@ -24,13 +24,13 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-71 | #1175 | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | Existing shared Button phone targets at real callers; zero new primary views planned |
 | KB-73 | #1170 | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | Existing ThemeToggle touch target and bilingual action label; zero new primary views |
 | KB-74 | #1171 | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | Existing TempoShell mobile drawer focus; zero new primary views planned |
-| KB-75 | #1178 | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | AdminStatusSummary, ApprovalRowFeedback; admin row concurrency/focus, current checks pending |
+| KB-75 | #1178 | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | AdminStatusSummary, ApprovalRowFeedback; admin row concurrency/focus, independent row requests; corrective source pushed, local checks pending |
 
 All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these nineteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 
-- Perplexica/Vane-level web answers are **not delivered** by the personal-search polish PR. KA-24 #1116, KA-43 #1126 and their study dependency PR #1081 were still open on 19 Oct; the KB search contract/UI dependencies remain in force.
+- Perplexica/Vane-level web answers are **not delivered** by the personal-search polish PR. KA-24 #1116, KA-43 #1126 and their study dependency PR #1081 were still open at the 20 Oct continuation; the KB search contract/UI dependencies remain in force.
 - Full chat Library/history is **not delivered** by these polish PRs. KA-01 #1094 and the KB data contracts are still prerequisites.
 - Better memory/embeddings is **not delivered**. KA-20 #1112 is held for the runtime-model/cost decision; KA-25 #1117 depends on it.
 - KB-06 does not invent milestone storage or goal/task relationships absent from integration. The lead corrected that unsupported requirement in the specification on 19 Oct; the PR delivers existing-state/progress polish only. Milestones still require a future backend scope. This correction does not turn failing local checks into a pass.
@@ -54,10 +54,16 @@ No rebase, merge or extra source attempt is implied here. PR #728 is an integrat
 
 ## Needs Amit
 
-[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don't make a 4th attempt, and don't widen scope to get it to pass.” KB-02, KB-04 and KB-44 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
+[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don't make a 4th attempt, and don't widen scope to get it to pass.” KB-02, KB-03, KB-04, KB-44, KB-70 and KB-74 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
 
 Held KA persona/memory/council scopes (#1110/#1112/#1129), runtime model/cost choices, the backend `convex-arch` owner gate when dependencies are ready, search service provisioning, native Hebrew review, and release/device accessibility decisions remain with Amit. These do not block independent scoped UI work. Follow the repository's three-attempt limit on stuck tickets; do not evade it with a duplicate issue or an out-of-scope baseline/config edit.
 
 ## UNKNOWN
 
 Live search quality and service configuration, complete Agent-backed chat history, native screen-reader behavior, remaining quota/reset hour and production readiness. Current CI results and sandbox failure causes are recorded per PR, not inferred from this index. Shared-machine timing failures and post-build wrapper hangs are reported as observed; they are not silently counted as successful commands.
+
+## 20 Oct continuation
+
+All nineteen pushed implementation branches passed an exact changed-path audit against their ticket scopes. Overnight validation exposed disk exhaustion and an ignored runner PATH failure; generated caches were removed, the runner environment repaired, and affected checks rerun without changing application or test configuration. Reports preserve initial failures. A separate dependency repair restores missing ignored workspace package links before KB-71 validation.
+
+The fresh ownership audit covered 112 open PRs (3,838 file entries) and 288 active issues. KB-76 now covers a new source-traced race in existing shared UndoToast: a pending request can close a newer toast after its own component unmounts. It is a separate defect, not a retry-budget reset. ResultGroup is reserved by held #850; ProfileForm and HabitCheckInStrip remain owned by #1053. Their residual issues are not competing implementation assignments.
