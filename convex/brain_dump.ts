@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { action, type MutationCtx, mutation } from "./_generated/server";
 import {
@@ -48,7 +48,7 @@ export const prioritize = action({
   handler: async (ctx, args): Promise<BrainDumpPlan> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
-      throw new Error("Sign in to use planning on this device.");
+      throw new ConvexError("Sign in to use planning on this device.");
     }
     // Sign-up approval gate: no model call for pending/revoked accounts.
     await requireApprovedForAi(ctx);
@@ -63,10 +63,11 @@ export const prioritize = action({
 export async function planBrainDump(rawText: string): Promise<BrainDumpPlan> {
   const validated = validateBrainDumpInput(rawText);
   if (!validated.ok) {
-    throw new Error(validated.message);
+    throw new ConvexError(validated.message);
   }
   const raw = validated.raw;
 
+  let content: string;
   try {
     const result = await callLLM({
       tier: "balanced",
@@ -82,24 +83,35 @@ export async function planBrainDump(rawText: string): Promise<BrainDumpPlan> {
       responseFormat: "json_object",
     });
 
-    return parsePlanFromModelContent(result.content);
+    content = typeof result.content === "string" ? result.content : "";
   } catch (err) {
     if (err instanceof AiAuthError) {
-      throw new Error("Planning is not configured here yet. Use local sorting or try again later.");
+      throw new ConvexError("Planning is not configured here yet. Use local sorting or try again later.");
     }
     if (err instanceof AiRateLimitedError) {
-      throw new Error("Too many requests right now. Pause a moment and try again.");
+      throw new ConvexError("Too many requests right now. Pause a moment and try again.");
     }
     if (err instanceof AiContextTooLargeError) {
-      throw new Error("That input is too long for one pass. Try a shorter chunk.");
+      throw new ConvexError("That input is too long for one pass. Try a shorter chunk.");
     }
     if (err instanceof AiUpstreamError) {
-      throw new Error("The planner had a hiccup. Try again in a moment?");
+      throw new ConvexError("The planner had a hiccup. Try again in a moment?");
     }
     if (err instanceof Error && err.message) {
       throw err;
     }
-    throw new Error("Something went wrong while planning. Try again?");
+    throw new ConvexError("Something went wrong while planning. Try again?");
+  }
+
+  try {
+    return parsePlanFromModelContent(content);
+  } catch (err) {
+    // This parser only throws fixed, friendly copy. Provider errors above remain
+    // private unless explicitly mapped to a friendly message.
+    if (err instanceof Error) {
+      throw new ConvexError(err.message);
+    }
+    throw new ConvexError("Something went wrong while planning. Try again?");
   }
 }
 

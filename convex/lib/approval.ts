@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { requireUser } from "./requireUser";
@@ -120,7 +121,7 @@ export function isApproved(
 export async function requireApprovedUser(ctx: QueryCtx | MutationCtx) {
 	const user = await requireUser(ctx);
 	if (!isApproved(user)) {
-		throw new Error(PENDING_APPROVAL_MESSAGE);
+		throw new ConvexError(PENDING_APPROVAL_MESSAGE);
 	}
 	return user;
 }
@@ -129,7 +130,7 @@ export async function requireApprovedUser(ctx: QueryCtx | MutationCtx) {
 export async function requireAdmin(ctx: QueryCtx | MutationCtx) {
 	const user = await requireUser(ctx);
 	if (!isAdminUser(user)) {
-		throw new Error("Access denied");
+		throw new ConvexError("Access denied");
 	}
 	return user;
 }

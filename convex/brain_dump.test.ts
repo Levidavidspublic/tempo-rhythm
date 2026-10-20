@@ -1,5 +1,27 @@
-import { describe, expect, test } from "bun:test";
-import { parsePlanFromModelContent } from "./brain_dump";
+import { describe, expect, mock, test } from "bun:test";
+import { ConvexError } from "convex/values";
+import { parsePlanFromModelContent, planBrainDump } from "./brain_dump";
+
+test("planning exposes friendly configuration copy without a DeepInfra key or network call", async () => {
+  const originalApiKey = process.env.DEEPINFRA_API_KEY;
+  const originalFetch = globalThis.fetch;
+  const fetchMock = mock(() => Promise.reject(new Error("Unexpected network call")));
+  try {
+    delete process.env.DEEPINFRA_API_KEY;
+    globalThis.fetch = fetchMock;
+
+    const error = await planBrainDump("Pay rent and call mom").catch((err: unknown) => err);
+    expect(error).toBeInstanceOf(ConvexError);
+    expect((error as ConvexError<string>).data).toBe(
+      "Planning is not configured here yet. Use local sorting or try again later.",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalApiKey === undefined) delete process.env.DEEPINFRA_API_KEY;
+    else process.env.DEEPINFRA_API_KEY = originalApiKey;
+  }
+});
 
 describe("parsePlanFromModelContent", () => {
   test("parses a clean JSON plan", () => {

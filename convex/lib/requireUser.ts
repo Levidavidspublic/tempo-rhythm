@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { isInactiveAccount } from "./accountDeletion";
@@ -51,18 +52,18 @@ export async function resolveUserFromIdentity(
 export async function requireUser(ctx: QueryCtx | MutationCtx) {
 	const identity = await ctx.auth.getUserIdentity();
 	if (!identity) {
-		throw new Error("Not authenticated");
+		throw new ConvexError("Not authenticated");
 	}
 
 	const user = await resolveUserFromIdentity(ctx, identity);
 	if (!user && !identity.email) {
-		throw new Error("Not authenticated");
+		throw new ConvexError("Not authenticated");
 	}
 	if (!user) {
-		throw new Error("User not found");
+		throw new ConvexError("User not found");
 	}
 	if (isInactiveAccount(user)) {
-		throw new Error("This account is not active");
+		throw new ConvexError("This account is not active");
 	}
 
 	return user;

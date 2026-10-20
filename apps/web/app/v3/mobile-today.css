@@ -1,0 +1,59 @@
+/* Mobile capture and Today. Desktop content and its existing layout stay as authored. */
+.tp-mobile-ask, .tp-mobile-task-list, .tp-mobile-chat-plan { display: none; }
+@media (width < 64rem) {
+  .tp-app[data-rail="open"] .tp-rail .tp-tree-item { min-height: var(--tp-touch); }
+}
+@media (width < 48rem) {
+  .tp-app__main { padding-block-end: calc(var(--tp-tabbar-h) + var(--tp-mobile-ask-h) + var(--tp-space-8) + env(safe-area-inset-bottom, 0)); }
+  .tp-tabbar { bottom: calc(var(--tp-space-2) + env(safe-area-inset-bottom, 0)); }
+  .tp-app .tp-coach-fab { display: none; }
+  .tp-mobile-ask {
+    display: block; position: fixed; z-index: 24; inset-inline: var(--tp-space-2);
+    bottom: calc(var(--tp-tabbar-h) + var(--tp-space-4) + env(safe-area-inset-bottom, 0));
+    min-height: var(--tp-mobile-ask-h); padding: var(--tp-space-1); border-radius: var(--tp-radius-lg);
+  }
+  .tp-mobile-ask__line { display: flex; align-items: center; gap: var(--tp-space-1); min-width: 0; }
+  .tp-mobile-ask__line textarea { width: 0; flex: 1; min-width: 0; min-height: var(--tp-touch); border: 0; background: transparent; color: var(--tp-ink); font: inherit; resize: none; height: var(--tp-touch); padding-block: var(--tp-space-2); white-space: pre; }
+  .tp-mobile-ask__line textarea::placeholder { color: var(--tp-ink-muted); }
+  .tp-mobile-ask .tp-btn { min-height: var(--tp-touch); min-width: var(--tp-touch); padding-inline: var(--tp-space-2); flex: none; }
+  .tp-mobile-ask__notice { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); padding: var(--tp-space-2); margin: 0; font-size: var(--tp-text-xs); }
+  .tp-app[data-coach="open"] .tp-tabbar { display: grid; }
+  .tp-app[data-coach="open"] .tp-coach-panel { inset-block-end: calc(var(--tp-tabbar-h) + var(--tp-mobile-ask-h) + var(--tp-space-8) + env(safe-area-inset-bottom, 0)); }
+  .tp-mobile-today { display: grid; gap: var(--tp-space-3); padding-inline: var(--tp-space-4); min-width: 0; }
+  .tp-mobile-today__header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--tp-space-2); }
+  .tp-mobile-today__header h1 { margin: 0; font-family: var(--tp-font-serif); font-size: var(--tp-text-2xl); }
+  .tp-mobile-today__header time { color: var(--tp-ink-muted); font-size: var(--tp-text-sm); }
+  .tp-mobile-today__next .tp-nextup { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); padding: var(--tp-space-3); }
+  .tp-mobile-today__next .tp-nextup__title { width: 100%; margin: 0; font-size: var(--tp-text-md); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tp-mobile-today__next .tp-nextup__why { display: none; }
+  .tp-mobile-today__next .tp-nextup__meta { margin: 0; margin-inline-start: auto; }
+  .tp-mobile-today__next .tp-nextup__actions { display: flex; width: 100%; gap: var(--tp-space-2); margin: 0; }
+  .tp-mobile-today__next .tp-nextup__actions .tp-btn { min-height: var(--tp-touch); padding-inline: var(--tp-space-2); font-size: var(--tp-text-xs); }
+  .tp-mobile-today__next .tp-nextup__actions .tp-btn--ghost { display: none; }
+  .tp-desktop-task-list { display: none; }
+  .tp-mobile-task-list { display: block; min-width: 0; }
+  .tp-mobile-task-list > header { display: flex; align-items: baseline; justify-content: space-between; padding-block: var(--tp-space-1); }
+  .tp-mobile-task-list h2 { margin: 0; font-size: var(--tp-text-lg); }
+  .tp-mobile-task-list ul { list-style: none; padding: 0; margin: 0; }
+  .tp-mobile-task-list summary, .tp-mobile-disclosure > summary { min-height: var(--tp-touch); align-content: center; cursor: pointer; font-size: var(--tp-text-sm); color: var(--tp-ink-muted); }
+  .tp-compact-task { display: flex; align-items: center; gap: var(--tp-space-1); height: calc(var(--tp-touch) + var(--tp-space-1)); border-block-end: var(--tp-hairline) solid var(--tp-line); min-width: 0; }
+  .tp-compact-task__check { display: grid; place-items: center; width: var(--tp-touch); min-width: var(--tp-touch); height: var(--tp-touch); border: 0; background: transparent; color: var(--tp-done); cursor: pointer; }
+  .tp-compact-task__check > span { display: grid; place-items: center; width: var(--tp-space-5); height: var(--tp-space-5); border: var(--tp-hairline) solid var(--tp-line-control); border-radius: var(--tp-radius-pill); }
+  .tp-compact-task[data-done="true"] .tp-compact-task__title { text-decoration: line-through; color: var(--tp-ink-muted); }
+  .tp-compact-task__title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--tp-text-sm); }
+  .tp-compact-task__project { max-width: 24%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tp-ink-muted); font-size: var(--tp-text-xs); }
+  .tp-compact-task__time { flex: none; color: var(--tp-ink-muted); font-size: var(--tp-text-xs); }
+  .tp-mobile-disclosure { border-block-start: var(--tp-hairline) solid var(--tp-line); min-width: 0; }
+  .tp-mobile-disclosure > :not(summary) { margin-block-start: var(--tp-space-2); }
+  .tp-mobile-chat-plan { display: block; margin: var(--tp-space-4); scroll-margin-block-start: var(--tp-space-4); }
+  .tp-mobile-chat-plan [data-component="TodayBrainDumpPanel"] { border-radius: var(--tp-radius-lg); box-shadow: none; }
+  .tp-mobile-chat-plan [data-component="TodayBrainDumpPanel"] > :first-child { padding: var(--tp-space-4); background: var(--tp-paper); }
+  .tp-mobile-chat-plan [data-component="TodayBrainDumpPanel"] > :first-child p, .tp-mobile-chat-plan [data-component="TodayBrainDumpPanel"] > :first-child .rounded-2xl { display: none; }
+  .tp-mobile-chat-plan textarea { min-height: calc(var(--tp-touch) * 3); }
+}
+
+.tp-mobile-undo { position: fixed; z-index: 30; inset-inline: var(--tp-space-4); bottom: var(--tp-space-4); display: grid; justify-items: center; gap: var(--tp-space-2); pointer-events: none; }
+.tp-mobile-undo .tp-toast-region { position: static; inset: auto; transform: none; padding: 0; pointer-events: auto; }
+@media (width < 48rem) { .tp-mobile-undo { bottom: calc(var(--tp-tabbar-h) + var(--tp-mobile-ask-h) + var(--tp-space-8) + env(safe-area-inset-bottom, 0)); } }
+
+.tp-mobile-undo__receipt { border: 0; padding: 0; margin: 0; display: grid; justify-items: center; gap: var(--tp-space-2); pointer-events: auto; }

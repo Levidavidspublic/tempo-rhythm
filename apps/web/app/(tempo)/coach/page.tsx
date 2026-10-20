@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { TodayBrainDumpPanel } from "@/components/today/TodayBrainDumpPanel";
+import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 import { CoachChat } from "@/components/coach/CoachChat";
 import { CoachControls } from "@/components/coach-controls/CoachControls";
 import { CoachProposalCard } from "@/components/coach-proposal/CoachProposalCard";
@@ -12,6 +15,14 @@ import { ProfileReady } from "@/components/today/ProfileReady";
  * heading in main, which the chat specs select.
  */
 export default function Page() {
+  const bounds = useLocalDayBounds();
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(width < 48rem)");
+    const update = () => setMobile(query.matches);
+    update(); query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   return (
     <>
       <ShellAside>
@@ -27,6 +38,7 @@ export default function Page() {
         </div>
       </ShellAside>
       <CoachChat />
+      {mobile ? <div className="tp-mobile-chat-plan" id="mobile-plan"><ProfileReady fallback={null}><TodayBrainDumpPanel dueAt={bounds.endMs - 1} mobile /></ProfileReady></div> : null}
     </>
   );
 }

@@ -352,6 +352,17 @@ export function CoachConversation({
   // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
   // conversation's turn too: wait for it here, so a newer message can't make its answer be dropped.
   const inFlightUntil = replyInFlightUntil(messages?.at(-1), Date.now());
+  const voiceFocusDone = useRef(false);
+  const [voiceRequested, setVoiceRequested] = useState(false);
+  useEffect(() => {
+    const update = () => { voiceFocusDone.current = false; setVoiceRequested(window.location.hash === "#coach-voice"); };
+    update();
+    const requestVoice = () => { voiceFocusDone.current = false; setVoiceRequested(true); };
+    window.addEventListener("tempo:mobile-voice", requestVoice);
+    window.addEventListener("hashchange", update);
+    window.addEventListener("popstate", update);
+    return () => { window.removeEventListener("tempo:mobile-voice", requestVoice); window.removeEventListener("hashchange", update); window.removeEventListener("popstate", update); };
+  }, []);
   const voice = useVoiceCall({
     conversationId,
     send: sendSpoken,
@@ -558,6 +569,7 @@ export function CoachConversation({
           void handleSend();
         }}
       >
+        {voiceRequested ? <output id="coach-voice" className="tp-notice">{t(voiceAvailability?.available ? "mobile.voiceReady" : "mobile.voiceUnavailable")}</output> : null}
         <div className="tp-composer__box">
           <label className="tp-sr-only" htmlFor={inputId}>
             {t("coachChat.message")}
@@ -595,6 +607,7 @@ export function CoachConversation({
                 disabled={!conversationId || busy || waitingForPage || voice.open}
                 onClick={() => void voice.start()}
                 data-component="VoiceStart"
+                ref={(button) => { if (button && voiceRequested && !button.disabled && !voiceFocusDone.current) { voiceFocusDone.current = true; button.focus(); } }}
               >
                 <TpIcon name="mic" size="sm" />
                 <span>{t("coachChat.talk")}</span>
