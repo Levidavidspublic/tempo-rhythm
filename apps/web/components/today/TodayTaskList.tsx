@@ -4,10 +4,12 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { CheckCircle2, Circle, ListTodo } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { CompactTaskRow, type CompactTask } from "./CompactTaskRow";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 
-type TodayTask = {
+type TodayTask = CompactTask & {
   _id: Id<"tasks">;
   title: string;
   description?: string;
@@ -32,16 +34,25 @@ const priorityLabel: Record<TodayTask["priority"], string> = {
 };
 
 export function TodayTaskList({ tasks }: TodayTaskListProps) {
+  const { t } = useLocale();
   const toggleCompletion = useMutation(api.tasks.toggleCompletion);
 
   const activeTasks = tasks.filter((task) => task.status !== "done");
   const visibleTasks = activeTasks.slice(0, 3);
   const hiddenTaskCount = Math.max(activeTasks.length - visibleTasks.length, 0);
+  const completedTasks = tasks.filter((task) => task.status === "done");
+  const mobileTasks = tasks.filter((task) => task.status === "todo" || task.status === "in_progress");
   const hasCompletedEverything = tasks.length > 0 && activeTasks.length === 0;
 
   return (
+    <>
+    <section className="tp-mobile-task-list" data-component="MobileTodayTaskList" aria-labelledby="mobile-today-tasks">
+      <header><h2 id="mobile-today-tasks">{t("nav.today")}</h2><span className="tp-muted tp-small">{t("mobile.openCount").replace("{n}", String(mobileTasks.length))}</span></header>
+      {mobileTasks.length === 0 ? <p className="tp-muted">{t("mobile.empty")}</p> : <ul>{mobileTasks.map((task) => <CompactTaskRow key={task._id} task={task} onToggle={() => toggleCompletion({ taskId: task._id })} />)}</ul>}
+      {completedTasks.length > 0 ? <details><summary>{t("mobile.doneCount").replace("{n}", String(completedTasks.length))}</summary><ul>{completedTasks.map((task) => <CompactTaskRow key={task._id} task={task} onToggle={() => toggleCompletion({ taskId: task._id })} />)}</ul></details> : null}
+    </section>
     <section
-      className="rounded-3xl border border-border/80 bg-card/90 p-6 shadow-[0_10px_30px_rgba(26,25,23,0.08)]"
+      className="tp-desktop-task-list rounded-3xl border border-border/80 bg-card/90 p-6 shadow-[0_10px_30px_rgba(26,25,23,0.08)]"
       aria-labelledby="today-task-list-heading"
     >
       <div className="mb-6 flex items-center gap-3">
@@ -156,5 +167,6 @@ export function TodayTaskList({ tasks }: TodayTaskListProps) {
         </div>
       )}
     </section>
+    </>
   );
 }

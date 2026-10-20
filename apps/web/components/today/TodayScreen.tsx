@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { NextUpCard } from "./NextUpCard";
 import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { CarryOverStrip } from "@/components/carry-over-strip/CarryOverStrip";
@@ -47,6 +50,15 @@ export function TodayScreen() {
   // on window focus, so quick-add and brain-dump-to-Today never tag tasks with
   // yesterday's `dueAt` after a tab is left open overnight.
   const bounds = useLocalDayBounds();
+  const { t, lang } = useLocale();
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(width < 48rem)");
+    const update = () => setMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
   // Only subscribe after we know the Convex app user exists (getProfile is non-throwing
@@ -116,6 +128,17 @@ export function TodayScreen() {
       </div>
     );
   }
+
+  if (mobile) return (
+    <div className="tp-mobile-today" data-component="MobileToday">
+      <header className="tp-mobile-today__header"><h1>{t("nav.today")}</h1><time dateTime={new Date(bounds.startMs).toISOString()}>{new Intl.DateTimeFormat(lang === "he" ? "he-IL" : "en", { weekday: "short", month: "short", day: "numeric" }).format(bounds.startMs)}</time></header>
+      <div className="tp-mobile-today__next"><NextUpCard tasks={todayTasks} /></div>
+      <TodayTaskList tasks={todayTasks} />
+      <details className="tp-mobile-disclosure"><summary>{t("mobile.agenda")}</summary><TodayAgenda events={mapCalendarEventsToAgenda(calendarEvents)} /></details>
+      <details className="tp-mobile-disclosure"><summary>{t("mobile.dayPlan")}</summary><TodayWiredStrips /></details>
+      <details className="tp-mobile-disclosure"><summary>{t("today.energy.title")}</summary><TodayEnergyRecommendations dueAt={bounds.endMs - 1} todayStartMs={bounds.startMs} todayEndMs={bounds.endMs} /></details>
+    </div>
+  );
 
   return (
     <div className="container mx-auto max-w-5xl px-6 py-12">

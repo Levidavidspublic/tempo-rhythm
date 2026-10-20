@@ -7,6 +7,7 @@
 @import "./v3/settings.css";
 @import "./v3/extras.css";
 @import "./v3/coach-chat.css";
+@import "./v3/mobile-today.css";
 
 /* ==========================================================================
    Tempo Flow — design tokens
@@ -304,6 +305,8 @@
   --tp-coach-w:    400px;
   --tp-topbar-h:   56px;
   --tp-tabbar-h:   64px;
+  --tp-mobile-ask-h: 56px;
+  --tp-hairline: 1px;
   --tp-paper-max:  760px;
   --tp-touch:      44px;
   --tp-focus-w:    2px;

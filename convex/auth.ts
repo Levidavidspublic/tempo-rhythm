@@ -1,6 +1,7 @@
 import Resend from "@auth/core/providers/resend";
 import { convexAuth } from "@convex-dev/auth/server";
 import type { GenericMutationCtx } from "convex/server";
+import { ConvexError } from "convex/values";
 import type { DataModel, Id } from "./_generated/dataModel";
 import { isInactiveAccount, pickSignInUser, signInRestorePatch } from "./lib/accountDeletion";
 import { initialApprovalStatus } from "./lib/approval";
@@ -140,10 +141,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const db = ctx.db as unknown as AppDb;
       const user = await db.get(args.userId);
       if (!user) {
-        throw new Error("We couldn't load your account yet. Please try again.");
+        throw new ConvexError("We couldn't load your account yet. Please try again.");
       }
       if (user.deletedAt !== undefined || user.isActive === false) {
-        throw new Error("This account is not active. Please contact support.");
+        throw new ConvexError("This account is not active. Please contact support.");
       }
     },
   },

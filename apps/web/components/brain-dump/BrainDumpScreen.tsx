@@ -2,7 +2,7 @@
 
 import { useAction, useConvex, useMutation } from "convex/react";
 import Link from "next/link";
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
@@ -11,10 +11,12 @@ import { brainDumpPageBody } from "@/lib/brain-dump-page";
 import {
   type BrainDumpSession,
   clearBrainDumpSession,
-  loadBrainDumpSession,
   saveBrainDumpSession,
   tabSessionStore,
 } from "@/lib/brain-dump-session";
+import { convexErrorMessage } from "@/lib/convex-error";
+import { DraftRecoveryNotice } from "./BrainDumpRecovery";
+import { useKeptBrainDump } from "./useKeptBrainDump";
 import { addedNotice, nowTaskIds } from "@/lib/brain-dump-today";
 import { dayTokens } from "@/lib/editor/markdown-model";
 import { localIsoDate } from "@/lib/period-pages";
@@ -86,6 +88,8 @@ const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon
  * page" keeps the sorted plan as an ordinary Markdown page instead (decision 6).
  */
 export function BrainDumpScreen() {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [recovered, setRecovered] = useState(false);
   const textareaId = `${useId()}-brain-dump`;
   const { t, lang } = useLocale();
   const convex = useConvex();
@@ -124,6 +128,7 @@ export function BrainDumpScreen() {
 
   // Back then Forward, or a reload, brings back the dump, the sorted plan and the choices made.
   const restoreKept = useCallback((kept: BrainDumpSession) => {
+    setRecovered(true);
     setDraft(kept.draft);
     setPlan(kept.plan);
     setAccepted(kept.accepted);
@@ -161,7 +166,7 @@ export function BrainDumpScreen() {
       const kept = { draft, plan: sorted, accepted: [], rejected: [], savedPageId: null };
       saveBrainDumpSession(tabSessionStore(), kept, Date.now());
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
+      setError(convexErrorMessage(err, t("bd.error")));
     } finally {
       setIsSorting(false);
     }
@@ -197,7 +202,7 @@ export function BrainDumpScreen() {
       setAccepted([]);
       setRejected([]);
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : t("bd.error"));
+      setError(convexErrorMessage(err, t("bd.error")));
     } finally {
       setIsAdding(false);
     }
@@ -284,6 +289,7 @@ export function BrainDumpScreen() {
           </label>
           <textarea
             className="tp-textarea"
+            ref={textareaRef}
             id={textareaId}
             rows={7}
             dir="auto"
@@ -297,6 +303,7 @@ export function BrainDumpScreen() {
             {t("bd.help")}
           </p>
         </div>
+        {recovered ? <DraftRecoveryNotice withChoices={Boolean(plan)} disabled={busy} onDismiss={() => { setRecovered(false); textareaRef.current?.focus(); }} /> : null}
         {error ? (
           <p role="alert" className="tp-notice" data-tone="caution">
             <span className="tp-notice__text">{error}</span>
@@ -514,63 +521,4 @@ function SavedPageNotice({
       </span>
     </output>
   );
-}
-
-/** Typing is kept after this pause; a new plan, a choice or a saved page is kept at once. */
-const KEEP_TYPING_MS = 400;
-
-/**
- * Keeps this tab's dump, sorted plan and choices (lib/brain-dump-session.ts). The kept copy is read
- * in a layout effect: after hydration, so the server's HTML still matches, and before the first
- * paint, so the form doesn't flash empty. Leaving the screen or the page during the typing pause
- * still keeps the last change.
- */
-function useKeptBrainDump(session: BrainDumpSession, restore: (kept: BrainDumpSession) => void) {
-  const { draft, plan, accepted, rejected, savedPageId } = session;
-  const [ready, setReady] = useState(false);
-  const last = useRef<BrainDumpSession | null>(null);
-  const pending = useRef<BrainDumpSession | null>(null);
-
-  useLayoutEffect(() => {
-    const kept = loadBrainDumpSession(tabSessionStore(), Date.now());
-    if (kept) restore(kept);
-    last.current = kept;
-    setReady(true);
-  }, [restore]);
-
-  useEffect(() => {
-    if (!ready) return;
-    const prev = last.current;
-    const next = { draft, plan, accepted, rejected, savedPageId };
-    last.current = next;
-    const sameChoices =
-      prev !== null &&
-      prev.plan === plan &&
-      prev.accepted === accepted &&
-      prev.rejected === rejected &&
-      prev.savedPageId === savedPageId;
-    // Just read back: nothing new to keep, and the 2-hour expiry doesn't restart.
-    if (sameChoices && prev.draft === draft) return;
-    pending.current = next;
-    if (!sameChoices) {
-      keepPending(pending);
-      return;
-    }
-    const timer = window.setTimeout(() => keepPending(pending), KEEP_TYPING_MS);
-    return () => window.clearTimeout(timer);
-  }, [ready, draft, plan, accepted, rejected, savedPageId]);
-
-  useEffect(() => {
-    const flush = () => keepPending(pending);
-    window.addEventListener("pagehide", flush);
-    return () => {
-      window.removeEventListener("pagehide", flush);
-      flush();
-    };
-  }, []);
-}
-
-function keepPending(pending: { current: BrainDumpSession | null }) {
-  if (pending.current) saveBrainDumpSession(tabSessionStore(), pending.current, Date.now());
-  pending.current = null;
 }

@@ -3,7 +3,7 @@
 import { useAction, useConvex, useMutation } from "convex/react";
 import { Check, ListChecks, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   acceptedItems,
   canSubmit,
@@ -12,6 +12,11 @@ import {
   toggleItem,
   type Urgency,
 } from "@/components/brain-dump/brainDumpState";
+import { DraftRecoveryNotice } from "@/components/brain-dump/BrainDumpRecovery";
+import { useKeptBrainDump } from "@/components/brain-dump/useKeptBrainDump";
+import { loadBrainDumpSession, tabSessionStore, type BrainDumpSession } from "@/lib/brain-dump-session";
+import { convexErrorMessage } from "@/lib/convex-error";
+import { useMobilePlanUndo } from "@/components/tempo/MobileAskBar";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
@@ -41,6 +46,7 @@ type SortMode = "planner" | "quick";
 export type TodayBrainDumpPanelProps = {
   /** Timestamp inside the local calendar day, so the Now lines appear on Today. */
   dueAt: number;
+  mobile?: boolean;
 };
 
 /**
@@ -49,8 +55,19 @@ export type TodayBrainDumpPanelProps = {
  * then the Now lines go on today while Soon and Later are added without a date.
  * Surfaces, text and buttons use theme tokens only, so the panel follows the light and dark themes.
  */
-export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
+export function TodayBrainDumpPanel({ dueAt, mobile = false }: TodayBrainDumpPanelProps) {
+  const undo = useMobilePlanUndo();
+  const alive = useRef(true);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  const draftVersion = useRef(`${undo?.accountId}:${undo?.draftVersion}`);
+  draftVersion.current = `${undo?.accountId}:${undo?.draftVersion}`;
+  const addInFlight = useRef(false);
+  const sortInFlight = useRef(false);
+  const [keptRejected, setKeptRejected] = useState<number[]>([]);
+  const [keptPageId, setKeptPageId] = useState<string | null>(null);
   const baseId = useId();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [recovered, setRecovered] = useState(false);
   const textareaId = `${baseId}-raw-dump`;
   const helpId = `${baseId}-help`;
   const { t } = useLocale();
@@ -71,6 +88,18 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
   const [sorting, setSorting] = useState<SortMode | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
+  const restoreKept = useCallback((kept: BrainDumpSession) => {
+    setRecovered(true);
+    setDraft(kept.draft);
+    setSubmittedDraft(kept.draft);
+    setPlan(kept.plan);
+    setPlanSource(kept.plan ? "planner" : null);
+    setAccepted(kept.accepted);
+    setKeptRejected(kept.rejected);
+    setKeptPageId(kept.savedPageId);
+  }, []);
+  const kept = useKeptBrainDump({ draft, plan, accepted, rejected: keptRejected, savedPageId: keptPageId }, restoreKept, mobile, undo?.draftVersion ?? 0);
+
   const isPlanning = sorting !== null;
   const busy = isPlanning || isAdding;
   const hasText = canSubmit(draft);
@@ -87,16 +116,21 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
 
   const runSort = useCallback(
     async (mode: SortMode) => {
+      if (sortInFlight.current) return;
       if (!canSubmit(draft)) {
         setError(t("bd.needText"));
         return;
       }
+      const startedVersion = undo?.getDraftIdentity() ?? draftVersion.current;
+      sortInFlight.current = true;
       const text = draft;
       setError("");
       setDoneMessage("");
       setPlan(null);
       setPlanSource(null);
       setAccepted([]);
+      setKeptRejected([]);
+      setKeptPageId(null);
       setCrisisCard(null);
       setSorting(mode);
       try {
@@ -106,6 +140,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
           sort: async (value) =>
             mode === "planner" ? await prioritize({ rawText: value }) : prioritizeBrainDump(value),
         });
+        if (!alive.current || startedVersion !== (undo?.getDraftIdentity() ?? draftVersion.current)) return;
         if (outcome.kind === "crisis") {
           setCrisisCard(outcome.card);
           return;
@@ -113,36 +148,57 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
         setSubmittedDraft(text);
         setPlan(outcome.plan);
         setPlanSource(mode);
-      } catch {
-        setError(t("bd.error"));
+      } catch (err) {
+        if (alive.current && startedVersion === (undo?.getDraftIdentity() ?? draftVersion.current)) setError(convexErrorMessage(err, t("bd.error")));
       } finally {
+        sortInFlight.current = false;
         setSorting(null);
       }
     },
-    [convex, draft, prioritize, t],
+    [convex, draft, prioritize, t, undo],
   );
 
   const handleAddAccepted = useCallback(async () => {
-    if (toAdd.length === 0) return;
+    if (addInFlight.current || toAdd.length === 0) return;
+    const startedVersion = undo?.getDraftIdentity() ?? draftVersion.current;
+    addInFlight.current = true;
     setError("");
     setIsAdding(true);
     try {
-      const { created, onToday } = await addAcceptedToToday(toAdd, {
-        acceptPlan: (items) => acceptPlan({ items }),
-        putOnToday: (taskId) => updateTask({ taskId, dueAt }),
-      });
-      setDoneMessage(addedNotice(created, onToday, t));
+      if (mobile) {
+        if (!undo?.accountId) { setError(t("bd.error")); return; }
+        const result = await acceptPlan({ items: toAdd });
+        const receipt = undo.remember(result.taskIds, dueAt);
+        // Acceptance consumed this proposal: a placement retry only uses the shell receipt IDs.
+        if (startedVersion === undo.getDraftIdentity()) {
+          // An accepted proposal is consumed even if navigation unmounted its panel. A newer
+          // handoff, edited draft or changed plan keeps its session and is never cleared here.
+          const saved = loadBrainDumpSession(tabSessionStore(), Date.now());
+          if (saved?.draft === draft && JSON.stringify(saved.plan) === JSON.stringify(plan)) kept.clear();
+          if (alive.current) { setDraft(""); setSubmittedDraft(""); setPlan(null); setPlanSource(null); setAccepted([]); }
+        }
+        const placed = receipt ? await undo.place(receipt) : false;
+        if (alive.current && startedVersion === (undo?.getDraftIdentity() ?? draftVersion.current)) setDoneMessage(t(placed ? "mobile.planAdded" : "mobile.planSaved"));
+      } else {
+        const { created, onToday } = await addAcceptedToToday(toAdd, {
+          acceptPlan: (items) => acceptPlan({ items }),
+          putOnToday: (taskId) => updateTask({ taskId, dueAt }),
+        });
+        setDoneMessage(addedNotice(created, onToday, t));
+      }
+      if (!alive.current || startedVersion !== (undo?.getDraftIdentity() ?? draftVersion.current)) return;
       setDraft("");
       setSubmittedDraft("");
       setPlan(null);
       setPlanSource(null);
       setAccepted([]);
-    } catch {
-      setError(t("bd.error"));
+    } catch (err) {
+      if (alive.current && startedVersion === (undo?.getDraftIdentity() ?? draftVersion.current)) setError(convexErrorMessage(err, t("bd.error")));
     } finally {
+      addInFlight.current = false;
       setIsAdding(false);
     }
-  }, [acceptPlan, dueAt, t, toAdd, updateTask]);
+  }, [acceptPlan, dueAt, t, toAdd, updateTask, mobile, undo, kept, draft, plan]);
 
   const handleClear = useCallback(() => {
     setDraft("");
@@ -158,6 +214,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
   return (
     <section
       className="overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 shadow-[0_16px_45px_rgba(26,25,23,0.08)]"
+      data-component="TodayBrainDumpPanel"
       aria-labelledby="today-brain-dump-heading"
     >
       <div className="border-b border-border/70 bg-[radial-gradient(circle_at_top_left,var(--color-accent-wash),transparent_40%),linear-gradient(135deg,var(--color-card),var(--color-surface-sunken))] px-6 py-6">
@@ -226,6 +283,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                 {t("bd.label")}
               </label>
               <textarea
+                ref={textareaRef}
                 id={textareaId}
                 dir="auto"
                 value={draft}
@@ -284,6 +342,8 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                 </Button>
               </div>
             </div>
+
+            {recovered ? <DraftRecoveryNotice withChoices={Boolean(plan)} disabled={busy} onDismiss={() => { setRecovered(false); textareaRef.current?.focus(); }} /> : null}
 
             {error ? (
               <div
@@ -386,7 +446,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
                           disabled={toAdd.length === 0 || busy}
                         >
                           {isAdding ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                          {t("bd.add")}
+                          {t(mobile ? "mobile.addToday" : "bd.add")}
                           {toAdd.length > 0 ? <span className="tp-num">({toAdd.length})</span> : null}
                         </Button>
                         <span className="text-xs text-muted-foreground">
@@ -399,6 +459,7 @@ export function TodayBrainDumpPanel({ dueAt }: TodayBrainDumpPanelProps) {
 
                 <ol className="space-y-3">
                   {plan.priorities.map((priority, index) => {
+                    if (keptRejected.includes(index)) return null;
                     const titleId = `${baseId}-line-${index}`;
                     const isAccepted = accepted.includes(index);
                     return (

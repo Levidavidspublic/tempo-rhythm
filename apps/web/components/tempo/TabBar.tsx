@@ -8,10 +8,10 @@ import { isCurrent } from "@/lib/shell";
 import { TpIcon, type TpIconName } from "./TpIcon";
 
 const TABS: readonly { href: string; label: MessageKey; icon: TpIconName }[] = [
+  { href: "/tasks", label: "tab.inbox", icon: "inbox" },
   { href: "/today", label: "nav.today", icon: "today" },
-  { href: "/tasks", label: "tab.tasks", icon: "checklist" },
-  { href: "/notes", label: "rail.pages", icon: "page" },
-  { href: "/plan", label: "tab.cal", icon: "timeblock" },
+  { href: "/plan", label: "tab.upcoming", icon: "calendar-grid" },
+  { href: "/coach", label: "tab.chat", icon: "coach" },
 ];
 
 /** TabBar: glass, under 768 px only (tempo.css hides it above). shadcn target: tabs (nav). */

@@ -2,7 +2,8 @@
 
 import { useMutation } from "convex/react";
 import { Loader2, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
 
@@ -11,21 +12,23 @@ type TodayQuickAddProps = {
   dueAt: number;
 };
 
-export function TodayQuickAdd({ dueAt }: TodayQuickAddProps) {
+export function useTodayQuickAdd(dueAt: number) {
+  const { t } = useLocale();
   const createQuick = useMutation(api.tasks.createQuick);
+  const pending = useRef(false);
   const [title, setTitle] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hint, setHint] = useState("");
 
-  const inputId = useMemo(() => "today-quick-add", []);
-
   const submit = async () => {
+    if (pending.current) return;
     const trimmed = title.trim();
     if (!trimmed) {
-      setHint("Add a few words so you know what this is.");
+      setHint(t("mobile.needTitle"));
       return;
     }
 
+    pending.current = true;
     setIsSubmitting(true);
     setHint("");
 
@@ -36,11 +39,19 @@ export function TodayQuickAdd({ dueAt }: TodayQuickAddProps) {
       });
       setTitle("");
     } catch {
-      setHint("Could not add that right now. Try again?");
+      setHint(t("mobile.addError"));
     } finally {
+      pending.current = false;
       setIsSubmitting(false);
     }
   };
+
+  return { title, setTitle, isSubmitting, hint, setHint, submit };
+}
+
+export function TodayQuickAdd({ dueAt }: TodayQuickAddProps) {
+  const { title, setTitle, isSubmitting, hint, setHint, submit } = useTodayQuickAdd(dueAt);
+  const inputId = useMemo(() => "today-quick-add", []);
 
   return (
     <div className="rounded-2xl border border-border/80 bg-card/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
