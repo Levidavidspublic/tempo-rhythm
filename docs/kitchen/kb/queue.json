@@ -385,6 +385,38 @@
     ]
   },
   {
+    "id": "KB-61",
+    "title": "Habit saves cannot close a newly opened sheet",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/habits/HabitSheet.tsx",
+      "apps/web/lib/i18n-groups/kb-61.ts",
+      "apps/web/app/v3/kb-61.css",
+      "tests/unit/kb-61.test.tsx",
+      "docs/polish/evidence/kb-61-habit-sheet-request-ownership.md",
+      "docs/polish/evidence/kb-61-habit-sheet-request-ownership.jpg"
+    ]
+  },
+  {
+    "id": "KB-64",
+    "title": "Failed note Undo shows a safe retry before its deadline",
+    "type": "component",
+    "lane": "sol",
+    "batch": 5,
+    "deps": [],
+    "scope": [
+      "apps/web/components/notes/UndoDeleteToast.tsx",
+      "apps/web/lib/i18n-groups/kb-64.ts",
+      "apps/web/app/v3/kb-64.css",
+      "tests/unit/kb-64.test.tsx",
+      "docs/polish/evidence/kb-64-note-undo-recovery.md",
+      "docs/polish/evidence/kb-64-note-undo-recovery.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",

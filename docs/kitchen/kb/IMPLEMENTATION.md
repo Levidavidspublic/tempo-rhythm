@@ -2,7 +2,7 @@
 
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. The separate implementation PRs below target `integration` as drafts; none is merged or deployed by this run. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
-The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more and KB-75 adds two. This is **31 views across nineteen pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 also polishes an existing shell and adds no primary view. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
+The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more and KB-75 adds two. This is **31 views across twenty pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 also polishes an existing shell and adds no primary view. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
 
 | Ticket | Issue | Draft implementation PR | Mounted views / scope |
 |---|---|---|---|
@@ -24,9 +24,11 @@ The source audit of the first twelve pushed implementation PRs identifies 24 new
 | KB-71 | #1175 | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | Existing shared Button phone targets at real callers; zero new primary views planned |
 | KB-73 | #1170 | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | Existing ThemeToggle touch target and bilingual action label; zero new primary views |
 | KB-74 | #1171 | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | Existing TempoShell mobile drawer focus; zero new primary views planned |
-| KB-75 | #1178 | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | AdminStatusSummary, ApprovalRowFeedback; admin row concurrency/focus, independent row requests; corrective source pushed, local checks pending |
+| KB-75 | #1178 | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | AdminStatusSummary, ApprovalRowFeedback; admin row concurrency/focus, independent row requests; corrective source and evidence pushed; required GitHub checks pass, local full-suite/E2E failures remain |
 
-All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these nineteen assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
+| KB-76 | #1180 | [#1183](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183) | Existing shared UndoToast request ownership; zero new primary views; 27 focused cases pass, full gates pending |
+
+All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for these twenty pushed assignments. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 
@@ -54,7 +56,7 @@ No rebase, merge or extra source attempt is implied here. PR #728 is an integrat
 
 ## Needs Amit
 
-[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don't make a 4th attempt, and don't widen scope to get it to pass.” KB-02, KB-03, KB-04, KB-44, KB-70 and KB-74 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
+[AGENTS.md](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/AGENTS.md), “Failing and stuck,” says: “After the 3rd failure: stop and report `stuck` with the last error. Don't make a 4th attempt, and don't widen scope to get it to pass.” KB-02, KB-03, KB-04, KB-44, KB-66, KB-70 and KB-74 have reached the repository’s three-attempt repair limit and are reported stuck. Further source/test repair needs an explicit retry-budget exception; this run does not reset attempts or create duplicate tickets. Exact failing checks and evidence remain on their PRs.
 
 Held KA persona/memory/council scopes (#1110/#1112/#1129), runtime model/cost choices, the backend `convex-arch` owner gate when dependencies are ready, search service provisioning, native Hebrew review, and release/device accessibility decisions remain with Amit. These do not block independent scoped UI work. Follow the repository's three-attempt limit on stuck tickets; do not evade it with a duplicate issue or an out-of-scope baseline/config edit.
 
@@ -67,3 +69,7 @@ Live search quality and service configuration, complete Agent-backed chat histor
 All nineteen pushed implementation branches passed an exact changed-path audit against their ticket scopes. Overnight validation exposed disk exhaustion and an ignored runner PATH failure; generated caches were removed, the runner environment repaired, and affected checks rerun without changing application or test configuration. Reports preserve initial failures. A separate dependency repair restores missing ignored workspace package links before KB-71 validation.
 
 The fresh ownership audit covered 112 open PRs (3,838 file entries) and 288 active issues. KB-76 now covers a new source-traced race in existing shared UndoToast: a pending request can close a newer toast after its own component unmounts. It is a separate defect, not a retry-budget reset. ResultGroup is reserved by held #850; ProfileForm and HabitCheckInStrip remain owned by #1053. Their residual issues are not competing implementation assignments.
+
+KB-61 ([#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181)) and KB-64 ([#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182)) narrow two reserved family titles to separate, unowned child components: a late habit save closing a newer sheet, and note Undo rejection without recovery. These two assignments remain active before their first push. KB-76 ([#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180)) is now pushed as draft #1183: the original mounted-caller failure was reproduced, and 27 final focused cases pass, including pointer and keyboard retry. Its remaining mandatory gates are running. All three polish existing controls and add zero primary views. Claude must skip all 22 filed assignments.
+
+KB-75 final local recovery results: lint/typecheck/build/four scans pass and all 22 scoped cases pass. The full-suite rerun retains two page-summary performance failures (3,321 pass, 3 todo, 2 fail); E2E retains one task-view navigation timeout (27 pass, 89 skip, 1 fail). Required GitHub checks pass, but the issue report remains blocked. No extra source repair or test/config relaxation was made.
