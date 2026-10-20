@@ -2,6 +2,8 @@
 
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. The separate implementation PRs below target `integration` as drafts; none is merged or deployed by this run. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
+**QA ownership correction, 20 Oct:** Amit identifies CodeRabbit as the primary QA/review tool and has retired Bugbot for cost. Older factory references naming Bugbot are stale; no worker should invoke or re-enable it. The observed test/build/lint/typecheck and aggregate ci check runs are published by GitHub Actions. Report their execution results alongside CodeRabbit review findings. This correction changes the reviewer assignment, not the existing failing-check evidence or repository repair/scope limits. No review bot was invoked and no factory/config file changed in this correction.
+
 The source audit of the first twelve pushed implementation PRs identifies 24 new named production views, excluding galleries and supporting helpers. KB-70 adds one more and KB-66 adds two. KB-67 adds two more and KB-75 adds two. This is **31 views across twenty-five pushed implementation drafts**, not 150 completed components. KB-73 polishes an existing control and adds no primary view. KB-74 also polishes an existing shell and adds no primary view. Browser fixtures use fictional data; they do not verify live accounts or deployed service behavior. Some mandatory local checks have nonzero results even where GitHub checks pass, and affected reports remain blocked/stuck.
 
 | Ticket | Issue | Draft implementation PR | Mounted views / scope |

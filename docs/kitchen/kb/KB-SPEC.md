@@ -34,6 +34,12 @@ Every ticket repeats: no component edits to convex/hot/route files; no new packa
 
 HARD_RULES §6.3's older confidence auto-apply text conflicts with §1/§6.2 and the explicit brief. The plan follows explicit Accept, as the brief and current v3 §13 require; no automatic mutation is authorized.
 
+## Owner correction — QA and review, 20 Oct
+
+Amit clarified that **CodeRabbit is the primary QA/review tool** and Bugbot was removed because of cost. Follow that current owner decision; references to Bugbot as the active reviewer in AGENTS.md, factory/SLOTS.md and the older batch-loop documentation are stale vendor assignments. Do not invoke or re-enable Bugbot. The original prohibition on manually requesting review-bot runs remains in force; this correction does not authorize a bot invocation.
+
+Keep review findings and execution results distinct in reports. The current `.coderabbit.yaml` configures CodeRabbit review coverage. The inspected `.github/workflows/ci.yml` runs lint, typecheck, tests, scans and build, and the latest KB59 check-run records identify these jobs and aggregate `ci` as owned by `github-actions`. CodeRabbit may assess CI findings as part of QA; this inspection does not establish that it executes those jobs or replaces them. Existing test requirements, known failures, scope limits and repair-attempt limits remain unchanged. Factory/config documentation synchronization is outside this docs/kitchen/kb-only PR; record the stale references for the spec line without editing those files here.
+
 ## Claude handoff
 
 After this draft opens, Claude files each still-unfiled written ticket verbatim as an issue (leading front matter intact), checks the implementation follow-up to avoid duplicate issues, maps TEMPO-KB dependencies to created issue numbers, retains KA issue links, and gives Amit one paste-ready Codex Cloud prompt per issue. A prompt includes repo, integration base, issue URL, lane/code-model rule, the entire ticket, no questions, draft-only/no merge, and AGENTS report instructions. Do not file later title-only entries as runnable issues. Planning PR #1140 links its own administrative lead issue [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176), outside the KB worker queue. This records the actual docs-only work without an owner exception or labels. Do not file a duplicate lead issue or use KA #1135 as a fake Closes target.
