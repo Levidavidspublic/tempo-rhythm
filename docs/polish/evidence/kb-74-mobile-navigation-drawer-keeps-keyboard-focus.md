@@ -44,21 +44,20 @@ The 25 named browser and regression cases are:
 
 ## Test results (cloud agent sandbox)
 
-Bun: **1.3.9**. Final source/test commit: `62c85a6`; earlier source/test commits: `86e7a97`, `3e97fde`. Formal local gates remain queued under the shared validation lock.
+Bun: **1.3.9**. Final source/test commit: `62c85a6`; earlier source/test commits: `86e7a97`, `3e97fde`. Formal local gates have finished: status **stuck**, source/test attempt 3 of 3 exhausted. Local full-test and E2E failures remain despite green remote CI.
 
 | Command | Exit | Result |
-|---|---:|---|
-| `bun --version` | 0 | 1.3.9 |
-| `bun install --frozen-lockfile` | 0 | Checked 1033 installs across 1079 packages, no changes on retry in 319.97s; first attempt stalled at resolution and was interrupted |
-| `bun run lint` | 0 | 5/5 tasks, 0 errors; 9 pre-existing warnings |
-| `bun run typecheck` | pending | Queued under shared validation lock |
-| `bun test tests/unit/kb-74.test.tsx` | 0 | 25 pass, 0 fail, 127 assertions; real hydrated shell, gallery, keyboard, RTL, phone/desktop, light/dark |
-| `bun run test` | pending | Queued under shared validation lock |
-| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK |
-| `CI=1 bunx playwright test --reporter=line` | pending | Queued |
-| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | pending | Queued |
+| --- | ---: | --- |
+| `bun --version` | 0 | PASS: 1.3.9 |
+| `bun install --frozen-lockfile` | 0 | PASS: frozen install, no lock change; 1,079 packages |
+| `bun run lint` | 0 | PASS: 5/5 tasks, 0 errors; existing warnings |
+| `bun run typecheck` | 0 | PASS: 5 successful, 5 total |
+| `bun run test` | 1 | FAIL: 3324 pass, 3 todo, 2 fail |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | PASS: four OK checks (also green on remote evidence head) |
+| `CI=1 bunx playwright test --reporter=line` | 1 | FAIL: 25 pass, 89 skipped, 3 fail |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0 | PASS: 1 successful, 1 total |
 
-Initial CI on `3e97fde` passed Lint, Typecheck, Build, E2E, scans, and scope/config guards. Its Test job reported **3301 pass, 3 todo, 1 fail**: the fixture child bundle returned extensionless absolute paths for `@/` aliases and omitted a fictional `useConvex` stub needed by the real coach hook. The corrected fixture passed a bundle-only smoke and the complete hydrated browser run locally, then was pushed at `62c85a6`. CI on that head is pending. The initial CI failure is a fixture failure, not a product-shell regression result.
+Initial CI on `3e97fde` passed Lint, Typecheck, Build, E2E, scans, and scope/config guards. Its Test job reported **3301 pass, 3 todo, 1 fail**: the fixture child bundle returned extensionless absolute paths for `@/` aliases and omitted a fictional `useConvex` stub needed by the real coach hook. The corrected fixture passed a bundle-only smoke and the complete hydrated browser run locally, then was pushed at `62c85a6`. Remote Test, E2E, Build, lint, typecheck, scans, notices and required checks passed on evidence head `ec45bc3`, with the same source/tests. This does not replace the failed local mandatory checks. The initial CI failure is a fixture failure, not a product-shell regression result.
 
 The first hydrated fixture run reached all 25 cases: 24 passed and one focus-ring assertion failed because the fixture served raw `globals.css`. Its Tailwind `@theme` ring token was unresolved in a standalone browser; the focused control matched `:focus-visible` but showed no outline or box shadow. Both fixture branches now compile the actual global stylesheet through installed PostCSS/Tailwind. On the final fixture, all 25 cases pass; in English and Hebrew the focused Sidebar control has a computed 2 px accent outline. No product CSS override was needed. Frozen-original open-drawer captures log the active Topbar menu trigger, documenting the initial focus issue.
 
@@ -70,4 +69,56 @@ error: File not found ".../apps/web/lib/i18n-groups/kb-74"
 error: No matching export in "kb74:convex/react" for import "useConvex"
 error: KB-74 isolated browser bundle did not start; child exited=true
 3301 pass · 3 todo · 1 fail
+```
+
+## Completed local validation failure evidence
+
+Full unit run: 3324 pass, 3 todo, 2 fail. The out-of-scope page-summary performance checks required <3000 ms and observed 9043.54 ms (`preInItem`) and 7526.09 ms (`tagsOpenOnEveryLine`). Scoped KB-74 cases still passed 25/25. Local E2E: 25 pass, 89 skipped, 3 fail: task-views Home reset visibility, HabitDetail route timeout, and signed-out plan navigation timeout. Typecheck passed 5/5; production build passed 1/1. No fourth source/test repair or check-config change was made.
+
+Last 20 lines of failed `test-full` command:
+```text
+(pass) json-render 0.21.0 behaviour that makes validateBlockSpec necessary > it does reject an element type outside the catalog [0.42ms]
+(pass) module boundary > imports only the pinned json-render entry points, the shared codec, zod and the catalog [0.40ms]
+(pass) module boundary > does not load React, a renderer, state adapters, storage or the network [0.31ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+2 tests failed:
+(fail) pathological bodies stay linear > preInItem [9047.91ms]
+(fail) pathological bodies stay linear > tagsOpenOnEveryLine [7531.42ms]
+
+ 3324 pass
+ 3 todo
+ 2 fail
+ 81145 expect() calls
+Ran 3329 tests across 202 files. [174.04s]
+error: script "test" exited with code 1
+```
+
+Last 20 lines of failed `e2e` command:
+```text
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:149795) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:149882) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  3 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:14:7 › habits, brain dump and search wiring › /habits/[id] mounts HabitDetail
+    [chromium] › tests/e2e/wiring/harness.spec.ts:8:7 › wiring E2E harness › signed-out /plan is not sent to /sign-in under the dev E2E bypass
+  89 skipped
+  25 passed (3.9m)
 ```
