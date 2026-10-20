@@ -1,5 +1,7 @@
 # KB-78 ConfirmSheet pending focus evidence
 
+**Status: stuck.** Candidate 3 exhausted the permitted three review/check candidates. The source-head CI Test job failed two new callback/StrictMode cases even though the 21-case focused run and the full local unit suite passed. No fourth source/test repair was attempted. Local install remains UNKNOWN after its authorized timeout. The draft is reviewable but is not done or merge-ready.
+
 This polishes the existing `ConfirmSheet` in `components/you/Controls.tsx` and adds **zero primary views**. The confirm button remains focusable with `aria-disabled` and an explicit busy guard, while the dialog reports `aria-busy`. Tab containment also recovers focus lost outside the open dialog. The parent still supplies `busy`, owns accepted request lifetime/success/error and decides whether an explicit close proceeds. Confirm and close callbacks receive no arguments. Existing Cancel initial focus, Escape/Close/Cancel behavior and opener restoration remain available. Segmented/Switch source and runtime behavior are unchanged.
 
 ## Baseline and real mount
@@ -67,12 +69,12 @@ Other-export section SHA256 remains `5124c4660af9f99eedd876eec519225125106eefb34
 | `bun install --frozen-lockfile` | UNKNOWN: exit 124 at the authorized 120-second limit, stalled at Resolving dependencies |
 | Scoped Biome check from apps/web | PASS: 3 files, no fixes/errors |
 | `bun test tests/unit/kb-78.test.tsx` | PASS: 21 pass, 0 fail, 24 expectations |
-| `bun run lint` | PENDING |
-| `bun run typecheck` | PENDING |
-| `bun run test` | PENDING |
-| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PENDING |
-| `CI=1 bunx playwright test --reporter=line` | PENDING |
-| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PENDING |
+| `bun run lint` | PASS: exit 0, 5/5 tasks, 9 existing warnings |
+| `bun run typecheck` | PASS: exit 0, 5/5 tasks |
+| `bun run test` | PASS: exit 0, 3322 pass, 3 todo, 0 fail; 81042 expectations, 3325 tests / 202 files, 130.25s |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS: exit 0; all four scans OK, 66 notices documented |
+| `CI=1 bunx playwright test --reporter=line` | FAIL: exit 1; 2 failed, 89 skipped, 26 passed (5.2m) |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS: exit 0; 1/1 tasks |
 
 After the install timeout, bun.lock and all seven root/workspace manifests were verified byte-identical to the existing KB75 worktree; all six ignored dependency directories were copied, with no Turbo archives. The first formatting invocation from repo root could not resolve the app's relative Biome config; the same scoped command passed from apps/web, without a config or product-source correction.
 
@@ -82,4 +84,117 @@ bun install v1.3.9 (cf6cdbbb)
 Resolving dependencies
 ```
 
-Formal gates are pending at the first source push; their exact results and any failure's actual last 20 lines will be added to this evidence and the PR report after they finish. No done/deployment claim is made here.
+All six mandatory formal stages ran on frozen source head `6e66869056df56fde7f5873f946a8cfc054316a7`; SHA256 checks confirm all three implementation files and the scoped test remained byte-identical after every stage completed. Heavy commands were serialized. Build used process-only `TURBO_CACHE=local:r` to avoid cache-archive disk growth; its required command and placeholder Convex URL were otherwise unchanged. No failed gate was rerun. Exact per-stage timings/exits are retained in ignored `work/kb78-validation/results.json`.
+
+## Source-head GitHub checks
+
+At source head `6e66869056df56fde7f5873f946a8cfc054316a7`, [CI run 39365351106](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39365351106) completed with aggregate ci **FAIL**. Test: **3320 pass, 3 todo, 2 fail**, 81042 expectations, 3325 tests / 202 files, 60.89s. The two new failures were:
+
+- `fresh callbacks receive no event arguments`: close callback expected `{version:3,args:0}`, received `{version:2,args:0}`.
+- `StrictMode unmount removes listeners and restores once`: expected close count 1, received 2.
+
+Read-only inspection suggests the tests issue Escape immediately after `evaluate(setState)` without awaiting the React commit. That is an unverified timing hypothesis; neither a product nor a harness cause has been established. Both failures remain unresolved and disclosed, even if a later evidence-only head happens to pass. No rerun or further repair is authorized by the exhausted budget.
+
+All other source-head checks passed: Typecheck 5/5; Build 1/1; E2E 28 pass / 89 credential-gated skips; preview smoke 4 pass (preview job used Bun 1.3.14, while primary CI used 1.3.9); lint; scans/notices; scope/config/secret guards; secret self-tests. Primary CI dependency installs succeeded; that does not replace the local install timeout.
+
+CI failed command actual last 20 lines (trailing whitespace omitted) before job cleanup:
+```text
+2026-10-20T03:39:46.4441919Z
+2026-10-20T03:39:46.4442269Z ##[endgroup]
+2026-10-20T03:39:46.4442444Z
+2026-10-20T03:39:46.4442952Z 3 tests todo:
+2026-10-20T03:39:46.4443578Z (todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+2026-10-20T03:39:46.4444782Z (todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+2026-10-20T03:39:46.4445396Z (todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+2026-10-20T03:39:46.4445676Z
+2026-10-20T03:39:46.4445688Z
+2026-10-20T03:39:46.4445767Z 2 tests failed:
+2026-10-20T03:39:46.4446161Z (fail) KB-78 actual confirm pending focus > fresh callbacks receive no event arguments [1.00ms]
+2026-10-20T03:39:46.4446715Z (fail) KB-78 actual confirm pending focus > StrictMode unmount removes listeners and restores once
+2026-10-20T03:39:46.4446995Z
+2026-10-20T03:39:46.4447069Z  3320 pass
+2026-10-20T03:39:46.4447242Z  3 todo
+2026-10-20T03:39:46.4447420Z  2 fail
+2026-10-20T03:39:46.4447592Z  81042 expect() calls
+2026-10-20T03:39:46.4447836Z Ran 3325 tests across 202 files. [60.89s]
+2026-10-20T03:39:46.4807279Z error: script "test" exited with code 1
+2026-10-20T03:39:46.4817185Z ##[error]Process completed with exit code 1.
+```
+
+Local `CI=1 bunx playwright test --reporter=line` actual last 20 lines (trailing whitespace omitted):
+```text
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[110/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[111/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[112/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[113/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:247475) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:247540) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  2 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  26 passed (5.2m)
+```
+
+Local E2E diagnostics (actual log excerpts):
+```text
+  1) [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('textbox', { name: 'Event title' })
+
+
+      16 |   await page.waitForLoadState("networkidle");
+      17 |
+    > 18 |   await page.getByRole("textbox", { name: "Event title" }).fill("Boundary planning call");
+         |                                                            ^
+      19 |   await page.getByLabel("Event date").fill("2026-08-01");
+      20 |   await page.getByRole("button", { name: "Add event" }).click();
+      21 |
+        at /workspace/work/kb-78/tests/e2e/calendar-views.spec.ts:18:60
+
+    Error Context: test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/trace.zip
+  2) [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
+    Call log:
+      - navigating to "http://localhost:3000/tasks", waiting until "load"
+
+
+      27 |     await expect(page.getByText(taskTitle)).toBeVisible();
+      28 |
+    > 29 |     await page.goto("/tasks");
+         |                ^
+      30 |     await expect(main.getByRole("heading", { name: "Inbox" })).toBeVisible();
+      31 |     await expect(page.getByText(taskTitle)).toBeVisible();
+      32 |
+        at /workspace/work/kb-78/tests/e2e/task-views-core.spec.ts:29:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+```
