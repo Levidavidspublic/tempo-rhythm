@@ -328,7 +328,7 @@ if(child){
       new Response(processChild.stdout).text(),new Response(processChild.stderr).text(),processChild.exited]);
     if(code!==0)throw Error(`KB75 clean child exit ${code}: ${err.slice(-5000)}`);
     results=JSON.parse(out.trim().split("\n").at(-1)??"{}");
-  },240_000);
+  },process.env.KB75_CAPTURE_DIR ? 480_000 : 240_000);
   describe("KB-75 mounted admin approvals",()=>{
     test("dictionary keys match and Hebrew is present",()=>{
       expect(Object.keys(kb75Copy.en).sort()).toEqual(Object.keys(kb75Copy.he).sort());

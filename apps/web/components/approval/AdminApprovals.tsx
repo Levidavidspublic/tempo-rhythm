@@ -122,7 +122,7 @@ export function AdminApprovals() {
   useEffect(() => {
     latestRows.current = rows;
     if (rows) {
-      const visible = new Set(rows.map((row) => row._id));
+      const visible = new Set<string>(rows.map((row) => row._id));
       for (const userId of inFlight.current) {
         if (!visible.has(userId)) invalidated.current.add(userId);
       }
