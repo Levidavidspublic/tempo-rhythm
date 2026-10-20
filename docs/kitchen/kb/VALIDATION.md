@@ -206,3 +206,13 @@ KB-78's original real ExecutorConnection caller reproduces busy Confirm losing f
 KB-61 and KB-77 final reporting heads f8c7cc6 / 7912c5f pass all five required remote checks; their reported local E2E/install limitations remain. KB-77 additionally retains one full-suite history-normalization timing failure. KB-64 has 27 passing focused cases; full unit is 3,327 pass, 1 fail, 3 todo: unchanged page-summary closingTagsOpenOnEveryLine took 3,353.662ms against 3,000ms. E2E/build remain active. KB-76's final reporting head still fails scoped ci/Test after three rounds and remains stuck. No green historical head replaces a current failure.
 
 Exact scope-guard value comparisons and the full schema/dependency/scope/inventory validator pass all 58 tickets. The root diff remains confined to docs/kitchen/kb/. Earlier numbered snapshots above are historical, not current totals.
+
+## KB-59 expansion and KB-64 final report, 20 Oct
+
+Current queue: **59 written**, 56 component / 3 data; 15 search / 19 history / 25 polish; 10 Astra / 49 Sol planning lanes. Batch sizes are 15/15/15/1/10/3; only batches 1–3 have data tickets (one each). Nineteen reserved titles remain, 78 planned entries total. Twenty-five implementation assignments are filed, 23 drafts pushed; KB-59 (#1189) and KB-78 (#1188) are active before first push. New primary-view count remains 31.
+
+KB-59 narrows an existing reserved title after two actual Preferences page FIFO failures and a refreshed ownership audit of 116 PRs / 3,867 file entries / 293 active issues. The candidate is absent from KA-11's exact scope and #1053's 309 current paths. Its inventory row now records only the verified Preferences conditional mount; shared SettingsScreen barrel/reachability did not establish its presence on other routes. Original source and ordered proof traces are retained in its implementation workspace; no production search/provider call was made.
+
+KB-64 final evidence/report head 82cbdaf: all 27 focused cases pass; full unit 3,327 pass, 1 fail, 3 todo (unchanged page-summary 3,353.662ms against 3,000ms); E2E 27 pass, 1 fail, 89 skip (/tasks/energy navigation ERR_ABORTED); lint/typecheck/four scans/build pass; frozen install UNKNOWN124. An interrupted build with no retained exit is UNKNOWN; only that unfinished gate was recovered, naturally exiting0 in2m11.175s. Source/tests stayed frozen after three rounds and the issue report is stuck. Latest remote checks remain a separate observation.
+
+Full schema/scope/dependency/inventory validation and exact repository-parser comparisons pass all59 tickets; root changes remain docs/kitchen/kb only. Earlier snapshots retain their original counts and statuses for chronology.

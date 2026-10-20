@@ -385,6 +385,22 @@
     ]
   },
   {
+    "id": "KB-59",
+    "title": "Web search preference feedback stays with the latest change",
+    "type": "component",
+    "lane": "sol",
+    "batch": 4,
+    "deps": [],
+    "scope": [
+      "apps/web/components/coach/CoachWebSearchSetting.tsx",
+      "apps/web/lib/i18n-groups/kb-59.ts",
+      "apps/web/app/v3/kb-59.css",
+      "tests/unit/kb-59.test.tsx",
+      "docs/polish/evidence/kb-59-web-search-preference-request-ownership.md",
+      "docs/polish/evidence/kb-59-web-search-preference-request-ownership.jpg"
+    ]
+  },
+  {
     "id": "KB-61",
     "title": "Habit saves cannot close a newly opened sheet",
     "type": "component",
