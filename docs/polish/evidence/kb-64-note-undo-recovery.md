@@ -1,5 +1,7 @@
 # KB-64 — safe note Undo recovery
 
+**Status: stuck.** Three source/test repair candidates have been used. Required local failures remain material even when remote CI is green; there will be no fourth repair. The PR body records the evidence/current head and its remote CI snapshot.
+
 A rejected or synchronously thrown note Undo now stays contained in the existing notice, shows a short localized explanation and offers explicit retry within its original absolute deadline. The notice guards duplicate activation, waits for an accepted request to settle before expiring, and leaves successful parent removal/navigation authoritative. Fulfillment alone produces no invented success message.
 
 ![Original caller, current caller and gallery at both widths, languages and themes](kb-64-note-undo-recovery.jpg)
@@ -7,6 +9,7 @@ A rejected or synchronously thrown note Undo now stays contained in the existing
 ## Provenance and scope
 
 - Original integration source: `52bf2803e9105b25c2538aedd81a754a9fbfdedb`; frozen `UndoDeleteToast.tsx` SHA-256: `7923087e19150c3c32bc14faccf735cecb4b6f9b0b64481315c68f1c558db94f`. It was frozen before any scoped edit, and all eight original caller captures and rejection observations completed before applying the implementation.
+- Prior evidence head `18ab10e5582fb49b47e878d5a55947f9512ecabc`: remote checks green (including ci, e2e-preview, secret-scan, config-guard and scope-guard). The PR body records the final evidence head and current-head check snapshot; green remote results do not override the local required failures below.
 - Final source/test commit: `e4303b195cd6dff4ffa0cbdb7a2bf41a8a9175d5`. This is **attempt 3 of 3**. The implementation is unchanged from `4b39f86`; the final test-only candidate scopes the late-success assertion to this toast and discovers already-installed Chromium/Chrome. The cancelled pre-start wrapper had a zero-byte test log and exit 143; no test process started, so it was not another failed run.
 - Both original and current fixtures import the real unchanged `NotesScreen`, including its real detail editor tree. They stub only query/mutation/auth, Next navigation, locale transport and generated API boundaries. Both list and detail restore callbacks are exercised unchanged; their owners #1053/#1081 remain read-only. The styles are the actual globals/v3 CSS compiled through installed PostCSS/Tailwind, plus the scoped ticket CSS.
 - Browser: system Chromium 151 on Linux; Bun 1.3.9. The ticket-authorized isolated Playwright fixture is used because no callable Browser automation tool is available here. All browser work uses loopback and fictional Maya/Dana/Yoni data, with no live account or backend write.
@@ -36,25 +39,34 @@ Authenticated/deployed restoration and data, device VoiceOver/TalkBack, and nati
 
 ## Test results (cloud agent sandbox)
 
+Status: **stuck** after all three source/test repair attempts. The unchanged full-unit performance and task-view E2E failures remain required failures despite the scoped 27/27 pass and green remote CI.
+
 Bun **1.3.9**. Dependency bootstrap followed a frozen-install resolution timeout: all seven root/workspace manifests and bun.lock matched KB75 byte-for-byte before copying all six ignored node_modules trees. No Turbo archives were copied. A fresh exact frozen install after this environment repair is included below. Build uses only tool-side `TURBO_CACHE=local:r`; validation owns the outer lock, full unit also owns fixture.lock, and E2E/build use their inner locks.
 
 | Command | Exit | Counts/result |
 |---|---:|---|
-| `bun --version` | pending | UNKNOWN: queued under shared validation lock |
-| `bun install --frozen-lockfile` | pending | UNKNOWN: queued under shared validation lock |
-| `bun run lint` | pending | UNKNOWN: queued under shared validation lock |
-| `bun run typecheck` | pending | UNKNOWN: queued under shared validation lock |
-| `bun run test` | pending | UNKNOWN: queued under shared validation lock |
-| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | pending | UNKNOWN: queued under shared validation lock |
-| `CI=1 bunx playwright test --reporter=line` | pending | UNKNOWN: queued under shared validation lock |
-| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | pending | UNKNOWN: queued under shared validation lock |
+| `bun --version` | 0 | PASS: 1.3.9 |
+| `bun install --frozen-lockfile` | 124 | UNKNOWN: dependency resolution stalled; 120-second timeout |
+| `bun run lint` | 0 | PASS: 5/5 tasks; 0 errors, 9 existing warnings |
+| `bun run typecheck` | 0 | PASS: 5/5 tasks |
+| `bun run test` | 1 | FAIL: 3327 pass, 3 todo, 1 fail, 0 errors; 81196 assertions |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | PASS: four OK checks |
+| `CI=1 bunx playwright test --reporter=line` | 1 | FAIL: 27 pass, 89 skipped, 1 fail |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0 | PASS: 1/1 tasks |
 
 ## Check history and failure evidence
 
 - Initial baseline harness: 0 pass/1 startup failure before any browser opened, because the frozen copy under ignored work/before could not resolve React. An ignored dependency symlink to the unchanged web node_modules fixed that environment setup; the unchanged original then passed its defect-proof case.
 - First scoped candidate `28b0583`: 24 pass, 1 fail, 171 assertions. The new test incorrectly required exactly 0 s transition duration; the real unchanged global reduced-motion policy measured 0.00001 s (0.01 ms). Production global CSS was not changed.
 - Second scoped candidate `4b39f86`: 21 pass, 6 fail, 1 error. The late-success correction had already returned the real PageEditor, but the new test waited for every output element to detach and matched the editor's unrelated hidden save-status output. Its 30 s timeout caused Bun to kill browser processes, producing five subsequent browser-closure cascades. The final assertion targets only `.kb64-toast` while retaining the restored URL and real-editor checks.
+- First formal build started at 02:28:35 UTC; its 616-byte log last changed at 02:30:03 UTC after successful compilation and `Running TypeScript`. At 03:26:19 UTC, no live build/wrapper/lock owner or retained exit remained. This is **UNKNOWN: interrupted during the environment/session interval**, not a pass or a source failure. The original log/start metadata is retained; only this unfinished build is rerun at the same frozen source/test with validation/build locks, tool-side `TURBO_CACHE=local:r` and a 900-second process bound plus 30-second termination grace. All completed tests/checks remain untouched. The replacement build completed naturally with exit 0, 1/1 task, 2m11.175s; no termination was needed.
 - Final candidate `e4303b1` is frozen; there will be no fourth source/test repair.
+
+Initial frozen install timeout (UNKNOWN environment resolution), last 20 available lines:
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
 
 Initial baseline fixture setup, last 20 available lines:
 ```text
@@ -127,6 +139,82 @@ Second scoped candidate, last 20 available lines:
  49 expect() calls
 Ran 27 tests across 1 file. [67.84s]
 ```
+
+Interrupted formal build (no retained exit; UNKNOWN), last 20 available lines:
+```text
+$ turbo run build
+• turbo 2.9.6
+
+   • Packages in scope: @tempo/config, @tempo/types, @tempo/ui, @tempo/utils, tempo-rhythm-mobile, tempo-rhythm-web
+   • Running build in 6 packages
+   • Remote caching disabled, using shared worktree cache
+
+tempo-rhythm-web:build: cache miss, executing ef6e2100f414ec8a
+tempo-rhythm-web:build: $ next build --turbopack
+tempo-rhythm-web:build: ▲ Next.js 16.2.4 (Turbopack)
+tempo-rhythm-web:build:
+tempo-rhythm-web:build:   Creating an optimized production build ...
+tempo-rhythm-web:build: ✓ Compiled successfully in 82s
+tempo-rhythm-web:build:   Running TypeScript ...
+```
+
+`install` (exit 124), last 20 available lines:
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+`test-full` (exit 1), last 20 available lines:
+```text
+(pass) json-render 0.21.0 behaviour that makes validateBlockSpec necessary > catalog.validate() drops bindings, so it cannot vet actions [0.42ms]
+(pass) json-render 0.21.0 behaviour that makes validateBlockSpec necessary > it does reject an element type outside the catalog [0.27ms]
+(pass) module boundary > imports only the pinned json-render entry points, the shared codec, zod and the catalog [0.21ms]
+(pass) module boundary > does not load React, a renderer, state adapters, storage or the network [0.31ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+1 tests failed:
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [3357.75ms]
+
+ 3327 pass
+ 3 todo
+ 1 fail
+ 81196 expect() calls
+Ran 3331 tests across 202 files. [154.38s]
+error: script "test" exited with code 1
+```
+
+`e2e` (exit 1), last 20 available lines:
+```text
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:230422) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:230617) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  1 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  27 passed (4.1m)
+```
+
+Full-unit failure context: unchanged `packages/utils/src/page-summary.test.ts:1204`, `closingTagsOpenOnEveryLine`, required < 3000 ms; measured 3353.6623449999897 ms. All 27 scoped KB64 cases passed within that full run. This required failure remains material even with green remote CI; no fourth repair or broad repeat.
+
+E2E failure context: unchanged `tests/e2e/task-views-core.spec.ts:50`, core task views, 30-second test timeout while `page.goto("/tasks/energy")` waited for load; `net::ERR_ABORTED`. Screenshot, error-context Markdown and trace were retained under ignored `test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/`.
 
 ## Named scoped cases
 
