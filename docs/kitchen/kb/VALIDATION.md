@@ -174,3 +174,25 @@ The queue and exact scope-guard front matter now validate for **57** tickets (54
 The KB-61 remote scope gate exposed a lead validation mistake: KB-61/64/77 had valid YAML with indentless lists, but the repository's minimal frontMatter parser requires indented list entries and returned empty scopes. The previous check only asserted that the parser returned an object; its reported acceptance did not prove scope extraction. The three ticket files and issues #1181/#1182/#1184 now use two-space list indentation, with exactly the same six paths and no scope widening. No application, test, config or repair budget changed.
 
 The strengthened check compares every parsed scope and dependency array plus ticket/run/type/lane/wave/browser/hold/overlap flags against queue.json. All **57** tickets now match exactly. The full YAML/schema/dependency/inventory validator also passes. Future leads must compare parsed values, not just parser truthiness. KB-61's next ordinary reporting update lets its scope check reread corrected issue metadata; no check was waived.
+
+Reproduce the strengthened parser check from the repository root (Bun 1.3.9):
+
+```sh
+bun -e '
+import { frontMatter } from "./scripts/factory/scope-guard.mjs";
+import fs from "node:fs";
+import assert from "node:assert/strict";
+const root = "docs/kitchen/kb";
+const queue = JSON.parse(fs.readFileSync(`${root}/queue.json`, "utf8"));
+for (const ticket of queue) {
+  const parsed = frontMatter(fs.readFileSync(`${root}/tickets/${ticket.id}.md`, "utf8"));
+  assert.ok(parsed, ticket.id);
+  assert.deepEqual(parsed.scope, ticket.scope, `${ticket.id}: scope`);
+  assert.deepEqual(parsed.depends_on, ticket.deps.map(dep => typeof dep === "number" ? `#${dep}` : `TEMPO-${dep}`), `${ticket.id}: deps`);
+  const expected = { ticket: `TEMPO-${ticket.id}`, batch: "KB", type: ticket.type, lane: ticket.lane, wave: ticket.batch, browser_test: ticket.type === "component", overlap_test: false, hold: false };
+  for (const [key, value] of Object.entries(expected)) assert.equal(parsed[key], String(value), `${ticket.id}: ${key}`);
+  assert.ok(["clean", "small-conflict"].includes(parsed.expected_merge), ticket.id);
+}
+console.log(`${queue.length} exact parser comparisons PASS`);
+'
+```
