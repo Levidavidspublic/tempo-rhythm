@@ -35,7 +35,7 @@ const params=new URLSearchParams(location.search);
 const data=window.__kb64={calls:0,expires:0,mode:"defer",pending:null,removed:false,note:{_id:"maya-note",_creationTime:1,userId:"maya",title:"Maya’s reading list",body:"A few pages to read with Dana and Yoni.",pinned:false,createdAt:1,updatedAt:1},notes:null};
 data.notes=[data.note];
 data.signal=()=>window.dispatchEvent(new Event("kb64:data"));
-data.undo=()=>{data.calls++;if(data.mode==="sync")throw new Error("PRIVATE_BACKEND_DETAIL");if(data.mode==="fulfill")return Promise.resolve();return new Promise((resolve,reject)=>{data.pending={resolve,reject}})};
+data.undo=()=>{data.calls++;if(data.mode==="sync")throw new Error("PRIVATE_BACKEND_DETAIL");if(data.mode==="jumpFulfill"){const now=Date.now();Date.now=()=>now+30001;return Promise.resolve()}if(data.mode==="fulfill")return Promise.resolve();return new Promise((resolve,reject)=>{data.pending={resolve,reject}})};
 data.reject=()=>{data.pending.reject(new Error("PRIVATE_BACKEND_DETAIL"));data.pending=null};
 data.fulfill=(success=true)=>{if(success){data.removed=false;data.signal()}data.pending.resolve({success});data.pending=null};
 function Direct(){const [deadline,setDeadline]=React.useState(()=>Date.now()+30000);const [shown,setShown]=React.useState(true);const [,render]=React.useState(0);data.deadline=deadline;data.changeDeadline=ms=>setDeadline(Date.now()+ms);data.unmount=()=>setShown(false);data.renderAgain=()=>render(n=>n+1);return <main><h1>Maya’s reading list</h1><button id="outside" type="button">Read another note</button>{shown&&<UndoDeleteToast undoUntilMs={deadline} onUndo={()=>data.undo()} onExpire={()=>{data.expires++}}/>}</main>}
@@ -450,6 +450,31 @@ if (!childMode) {
         expect(await page.locator("output").innerText()).not.toContain("Note removed.");
         await page.close();
       }, 30_000);
+      test("an immediate fulfillment crossing the deadline still schedules post-commit expiry", async () => {
+        const page = await open();
+        await page.evaluate(() => {
+          (window as any).__kb64.mode = "jumpFulfill";
+        });
+        await page.locator("output button").click();
+        await page.locator("output").waitFor({ state: "detached" });
+        expect(await page.evaluate(() => (window as any).__kb64.expires)).toBe(1);
+        expect(await page.evaluate(() => (window as any).__kb64.calls)).toBe(1);
+        await page.close();
+      }, 30_000);
+      test("late successful real detail restoration keeps the parent navigation authoritative", async () => {
+        const page = await open("caller=page");
+        await remove(page, "page");
+        await page.locator("output button").click();
+        await page.clock.fastForward(30_001);
+        expect(await page.locator("output button").getAttribute("aria-busy")).toBe("true");
+        await page.evaluate(() => (window as any).__kb64.fulfill(true));
+        await page.locator('[data-component="PageEditor"]').waitFor();
+        await page.locator("output").waitFor({ state: "detached" });
+        expect(new URL(page.url()).pathname).toBe("/notes/maya-note");
+        expect(await page.locator("h1").count()).toBe(1);
+        expect(await page.evaluate(() => (window as any).__rejections)).toEqual([]);
+        await page.close();
+      }, 30_000);
       test("real NotesScreen list callback contains rejection and retries the same note", async () => {
         const page = await open("caller=list");
         await remove(page);
@@ -547,6 +572,9 @@ if (!childMode) {
           (window as any).__kb64.mode = "sync";
           document.documentElement.style.setProperty("--tp-text-md", "32px");
         });
+        const normalSeconds = await page
+          .locator("output")
+          .evaluate((el) => Number.parseFloat(getComputedStyle(el).transitionDuration));
         await page.emulateMedia({ reducedMotion: "reduce" });
         await page.locator("output button").click();
         await page.locator("output button[aria-describedby]").waitFor();
@@ -559,9 +587,16 @@ if (!childMode) {
         expect(
           await page.locator("output").evaluate((el) => getComputedStyle(el).animationName)
         ).toBe("none");
-        expect(
-          await page.locator("output").evaluate((el) => getComputedStyle(el).transitionDuration)
-        ).toBe("0s");
+        expect(await page.locator("output").evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+          "32px"
+        );
+        const reducedSeconds = await page.locator("output").evaluate((el) => {
+          const value = getComputedStyle(el).transitionDuration.split(",")[0].trim();
+          return value.endsWith("ms") ? Number.parseFloat(value) / 1000 : Number.parseFloat(value);
+        });
+        // The unchanged global reduced-motion policy uses 0.01ms !important.
+        expect(reducedSeconds).toBeLessThanOrEqual(0.0000101);
+        if (normalSeconds > 0.0000101) expect(reducedSeconds).toBeLessThan(normalSeconds);
         await page.close();
       }, 30_000);
     });

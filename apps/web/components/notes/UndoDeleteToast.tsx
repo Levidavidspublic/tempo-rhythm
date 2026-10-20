@@ -23,7 +23,12 @@ export function UndoDeleteToast(props: UndoProps) {
 
 function UndoReceipt({ undoUntilMs, onUndo, onExpire }: UndoProps) {
   const { lang, dir } = useLocale();
-  const [phase, setPhase] = useState<"idle" | "busy" | "error" | "expired">("idle");
+  // A fresh feedback object makes every settlement observable after React commits,
+  // including an immediate fulfillment batched with the pending update.
+  const [feedback, setFeedback] = useState<{ phase: "idle" | "busy" | "error" | "expired" }>({
+    phase: "idle",
+  });
+  const { phase } = feedback;
   const mounted = useRef(false);
   const pending = useRef(false);
   const expired = useRef(false);
@@ -44,12 +49,12 @@ function UndoReceipt({ undoUntilMs, onUndo, onExpire }: UndoProps) {
   const expire = useCallback(() => {
     if (!mounted.current || pending.current || expired.current) return;
     expired.current = true;
-    setPhase("expired");
+    setFeedback({ phase: "expired" });
     expireCallback.current();
   }, []);
 
   useEffect(() => {
-    if (isUndoing || expired.current) return;
+    if (feedback.phase === "busy" || expired.current) return;
     let timer: number | undefined;
     const checkDeadline = () => {
       const remaining = undoUntilMs - Date.now();
@@ -60,7 +65,7 @@ function UndoReceipt({ undoUntilMs, onUndo, onExpire }: UndoProps) {
     return () => {
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [expire, isUndoing, undoUntilMs]);
+  }, [expire, feedback, undoUntilMs]);
 
   const undo = async () => {
     if (!mounted.current || pending.current || expired.current) return;
@@ -69,17 +74,18 @@ function UndoReceipt({ undoUntilMs, onUndo, onExpire }: UndoProps) {
       return;
     }
     pending.current = true;
-    setPhase("busy");
+    setFeedback({ phase: "busy" });
     try {
       await onUndo();
       // Fulfillment is not a restore receipt: the caller may have received success:false.
       // Only the parent can remove this notice or navigate after restoration.
-      if (mounted.current) setPhase("idle");
+      if (mounted.current) setFeedback({ phase: "idle" });
     } catch {
-      if (mounted.current) setPhase("error");
+      if (mounted.current) setFeedback({ phase: "error" });
     } finally {
       pending.current = false;
-      if (mounted.current && !isUndoActive(undoUntilMs, Date.now())) expire();
+      // Expiry is checked by the post-commit feedback effect. A successful parent
+      // removal/navigation must commit before this notice can expire itself.
     }
   };
 
