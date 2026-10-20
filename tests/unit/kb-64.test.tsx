@@ -188,12 +188,15 @@ if (!childMode) {
     if (!existsSync(join(dir, "port")))
       throw new Error(`KB64 fixture failed to start (child exited=${exited})`);
     origin = `http://127.0.0.1:${readFileSync(join(dir, "port"), "utf8")}`;
-    browser = await chromium.launch({
-      executablePath: existsSync(chromium.executablePath())
-        ? chromium.executablePath()
-        : "/usr/bin/chromium",
-      args: ["--no-sandbox"],
-    });
+    const executablePath = [
+      chromium.executablePath(),
+      "/usr/bin/chromium",
+      "/usr/bin/google-chrome",
+      "/usr/bin/google-chrome-stable",
+    ].find(existsSync);
+    if (!executablePath)
+      throw new Error("No installed Chromium or Google Chrome is available for the KB64 fixture");
+    browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
   }, 100_000);
   afterAll(async () => {
     await browser?.close();
@@ -469,7 +472,7 @@ if (!childMode) {
         expect(await page.locator("output button").getAttribute("aria-busy")).toBe("true");
         await page.evaluate(() => (window as any).__kb64.fulfill(true));
         await page.locator('[data-component="PageEditor"]').waitFor();
-        await page.locator("output").waitFor({ state: "detached" });
+        await page.locator(".kb64-toast").waitFor({ state: "detached" });
         expect(new URL(page.url()).pathname).toBe("/notes/maya-note");
         expect(await page.locator("h1").count()).toBe(1);
         expect(await page.evaluate(() => (window as any).__rejections)).toEqual([]);
