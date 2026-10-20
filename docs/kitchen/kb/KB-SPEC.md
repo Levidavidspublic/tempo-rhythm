@@ -89,6 +89,7 @@ The next lead should read the 59 existing tickets and available implementation e
 
 ## Needs Amit
 
+- KB-02/03/04/44/59/64/66/70/74/76/78 are stuck after the three-attempt limit in AGENTS.md. Further source/test repair needs an explicit retry-budget exception. KB-59 additionally has a reproduced introduced regression across UTC status-query loading; do not integrate it before repair. [IMPLEMENTATION.md](IMPLEMENTATION.md) records current evidence and limits.
 - Apply `convex-arch` to KB-01/16/31 implementation PRs when reviewed; this lead never labels.
 - Astra billing eligibility remains UNKNOWN. Independent UI implementation uses Sol under AGENTS; no owner exception is needed for those runs.
 - Resolve held KA scopes #1110/#1112/#1129, or have the spec line split/release their reserved files. KB lists them where files overlap; skipping those deps to keep workers busy is forbidden. KA-11 Part A can unblock history without its held Part B when that completion is explicitly recorded by the owner.
