@@ -196,3 +196,13 @@ for (const ticket of queue) {
 console.log(`${queue.length} exact parser comparisons PASS`);
 '
 ```
+
+## KB-78 continuation, 20 Oct
+
+Current counts: **58 written tickets**, 55 component / 3 data; 15 search / 19 history / 24 polish; 10 Astra / 48 Sol planning lanes. The initial three batches retain 15 tickets and one data ticket each. Batch 5 has ten expanded components, batch 6 has KB-76/77/78. Twenty title-only entries remain, 78 planned entries total. There are 24 filed implementation assignments, 23 pushed drafts and active KB-78 (#1188); the audited new-primary-view count remains 31.
+
+KB-78's original real ExecutorConnection caller reproduces busy Confirm losing focus to BODY and Tab reaching the background while the alert dialog stays open, with exactly one fictional disconnect call. Complete file ownership excludes release-promotion #728 and finds no competing implementation owner. The Controls inventory row now records this verified finding. A separate named-import audit corrects six primitive rows whose barrel reachability had implied a /history mount without a named import. All 262 inventory paths remain present. ThemeProvider's source-traced storage-error/DOM-update gap is reserved by #1053 and is not a competing ticket.
+
+KB-61 and KB-77 final reporting heads f8c7cc6 / 7912c5f pass all five required remote checks; their reported local E2E/install limitations remain. KB-77 additionally retains one full-suite history-normalization timing failure. KB-64 has 27 passing focused cases; full unit is 3,327 pass, 1 fail, 3 todo: unchanged page-summary closingTagsOpenOnEveryLine took 3,353.662ms against 3,000ms. E2E/build remain active. KB-76's final reporting head still fails scoped ci/Test after three rounds and remains stuck. No green historical head replaces a current failure.
+
+Exact scope-guard value comparisons and the full schema/dependency/scope/inventory validator pass all 58 tickets. The root diff remains confined to docs/kitchen/kb/. Earlier numbered snapshots above are historical, not current totals.

@@ -433,6 +433,22 @@
     ]
   },
   {
+    "id": "KB-78",
+    "title": "Confirm dialogs keep keyboard focus while an action is pending",
+    "type": "component",
+    "lane": "sol",
+    "batch": 6,
+    "deps": [],
+    "scope": [
+      "apps/web/components/you/Controls.tsx",
+      "apps/web/lib/i18n-groups/kb-78.ts",
+      "apps/web/app/v3/kb-78.css",
+      "tests/unit/kb-78.test.tsx",
+      "docs/polish/evidence/kb-78-confirm-sheet-focus.md",
+      "docs/polish/evidence/kb-78-confirm-sheet-focus.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",
