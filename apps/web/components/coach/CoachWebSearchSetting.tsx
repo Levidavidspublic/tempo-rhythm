@@ -1,13 +1,15 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { Component, type ReactNode, useEffect, useState } from "react";
+import { Component, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SettingsSwitch } from "@/components/settings/controls";
 import { useSettingsStatus } from "@/components/settings/status";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
 import { nextUtcDayStartMs, searchesLeft, utcDayOf } from "@/lib/coach-sources";
+import { kb59Copy } from "@/lib/i18n-groups/kb-59";
+import "@/app/v3/kb-59.css";
 
 /**
  * Today's UTC date, read from the device clock on every render, plus one wake-up when that day
@@ -18,7 +20,10 @@ function useUtcDay(): string {
   const [, setTick] = useState(0);
   useEffect(() => {
     const wait = Math.max(0, nextUtcDayStartMs(day) - Date.now()) + 50;
-    const timer = window.setTimeout(() => setTick((n) => n + 1), Number.isFinite(wait) ? wait : 60_000);
+    const timer = window.setTimeout(
+      () => setTick((n) => n + 1),
+      Number.isFinite(wait) ? wait : 60_000
+    );
     return () => window.clearTimeout(timer);
   }, [day]);
   return day;
@@ -43,42 +48,81 @@ class WebSearchBoundary extends Component<{ children: ReactNode }, { failed: boo
  * works like the rest of the page: it applies at once and the header says "Saved."
  */
 function WebSearchRow() {
-  const { t } = useLocale();
   const announce = useSettingsStatus();
   const utcDay = useUtcDay();
   const preferences = useQuery(api.preferences.get, {});
   const status = useQuery(api.coach.webSearchStatus, { utcDay });
   const update = useMutation(api.preferences.update);
+  if (preferences === undefined || status === undefined) return null;
+  return (
+    <WebSearchPreference
+      available={status.available}
+      stored={preferences.coachWebSearch}
+      usedToday={status.usedToday}
+      dailyLimit={status.dailyLimit}
+      update={(next) => update({ coachWebSearch: next })}
+      announce={announce}
+    />
+  );
+}
+
+/** Shared by the live row and the fictional gallery; each mounted row owns its requests. */
+function WebSearchPreference({
+  available,
+  stored,
+  usedToday,
+  dailyLimit,
+  update,
+  announce,
+}: {
+  available: boolean;
+  stored: boolean;
+  usedToday: number;
+  dailyLimit: number;
+  update: (next: boolean) => Promise<unknown>;
+  announce: (text: string) => void;
+}) {
+  const { t, lang } = useLocale();
+  const copy = kb59Copy[lang];
   const [pending, setPending] = useState<boolean | null>(null);
   const [failed, setFailed] = useState(false);
-
-  if (preferences === undefined || status === undefined) return null;
-
-  const available = status.available;
-  const on = available && (pending ?? preferences.coachWebSearch);
+  const mounted = useRef(false);
+  const request = useRef(0);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      request.current += 1;
+    };
+  }, []);
+  const on = available && (pending ?? stored);
   const count = available
     ? t("coachWeb.left")
-        .replace("{n}", String(searchesLeft(status.usedToday, status.dailyLimit)))
-        .replace("{limit}", String(status.dailyLimit))
+        .replace("{n}", String(searchesLeft(usedToday, dailyLimit)))
+        .replace("{limit}", String(dailyLimit))
     : t("coachWeb.notSetUp");
 
   const save = async (next: boolean) => {
+    if (!available || !mounted.current) return;
+    const mine = ++request.current;
+    const owns = () => mounted.current && request.current === mine;
     setPending(next);
     setFailed(false);
+    // Clear a preceding Saved line (and its delayed announcement) when a newer intent starts.
+    announce("");
     try {
-      await update({ coachWebSearch: next });
-      announce(t("set.saved"));
+      await update(next);
+      if (owns()) announce(t("set.saved"));
     } catch {
-      setFailed(true);
+      if (owns()) setFailed(true);
     } finally {
-      // Back to the stored value, unless a newer change is on its way.
-      setPending((current) => (current === next ? null : current));
+      if (owns()) setPending(null);
     }
   };
 
   return (
     <section
-      className="tp-settings-section"
+      className="tp-settings-section kb59-preference"
       aria-labelledby="web-search-title"
       id="web-search"
       data-component="SettingsSection"
@@ -108,15 +152,19 @@ function WebSearchRow() {
             onChange={(next) => void save(next)}
             locked={!available}
             labelledBy="web-search-l"
-            describedBy="web-search-h web-search-c"
+            describedBy={`web-search-h web-search-c${pending !== null || failed ? " web-search-feedback" : ""}`}
           />
         </div>
       </div>
 
-      {failed ? (
-        <p className="tp-error-text" role="alert" style={{ padding: "0 var(--tp-space-5) var(--tp-space-3)" }}>
+      {pending !== null ? (
+        <output className="kb59-feedback tp-help" id="web-search-feedback" aria-live="polite">
+          {copy.saving}
+        </output>
+      ) : failed ? (
+        <p className="kb59-feedback tp-error-text" id="web-search-feedback" role="alert">
           <TpIcon name="alert" size="sm" />
-          <span>{t("set.prefs.saveError")}</span>
+          <span>{copy.error}</span>
         </p>
       ) : null}
     </section>
@@ -128,5 +176,71 @@ export function CoachWebSearchSetting() {
     <WebSearchBoundary>
       <WebSearchRow />
     </WebSearchBoundary>
+  );
+}
+
+/** Interactive fictional preferences. Uses the same request ownership as the mounted row. */
+export function Kb59Gallery() {
+  const { lang, t } = useLocale();
+  const copy = kb59Copy[lang];
+  const [stored, setStored] = useState(false);
+  const [outcome, setOutcome] = useState("success");
+  const [status, setStatus] = useState("");
+  const timers = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  useEffect(
+    () => () => {
+      for (const timer of timers.current) clearTimeout(timer);
+    },
+    []
+  );
+  const update = (next: boolean) =>
+    new Promise<null>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        timers.current.delete(timer);
+        if (outcome === "error") reject(new Error("fictional-save"));
+        else {
+          setStored(next);
+          resolve(null);
+        }
+      }, 1500);
+      timers.current.add(timer);
+    });
+  return (
+    <main className="tp-page tp-page--narrow kb59-gallery" data-component="Kb59Gallery">
+      <header className="tp-pagehead">
+        <div className="tp-pagehead__text">
+          <h1 className="tp-pagehead__title">{copy.galleryTitle}</h1>
+          <p className="tp-pagehead__sub">{copy.galleryBody}</p>
+          <output className="tp-help" data-kb59-gallery-status>
+            {status}
+          </output>
+        </div>
+      </header>
+      <div className="kb59-gallery-controls">
+        <label className="tp-label" htmlFor="kb59-outcome">
+          {copy.nextSave}
+        </label>
+        <select
+          className="tp-input"
+          id="kb59-outcome"
+          value={outcome}
+          onChange={(event) => setOutcome(event.target.value)}
+        >
+          <option value="success">{copy.success}</option>
+          <option value="error">{copy.showError}</option>
+        </select>
+      </div>
+      <WebSearchPreference
+        available
+        stored={stored}
+        usedToday={2}
+        dailyLimit={5}
+        update={update}
+        announce={setStatus}
+      />
+      <p className="kb59-stored tp-help">
+        {copy.stored} {t(stored ? "set.on" : "set.off")}
+      </p>
+    </main>
   );
 }
