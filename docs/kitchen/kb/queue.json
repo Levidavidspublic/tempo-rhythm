@@ -417,6 +417,22 @@
     ]
   },
   {
+    "id": "KB-77",
+    "title": "Shared inputs have phone-sized targets on real screens",
+    "type": "component",
+    "lane": "sol",
+    "batch": 6,
+    "deps": [],
+    "scope": [
+      "apps/web/components/ui/input.tsx",
+      "apps/web/lib/i18n-groups/kb-77.ts",
+      "apps/web/app/v3/kb-77.css",
+      "tests/unit/kb-77.test.tsx",
+      "docs/polish/evidence/kb-77-input-phone-targets.md",
+      "docs/polish/evidence/kb-77-input-phone-targets.jpg"
+    ]
+  },
+  {
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",
