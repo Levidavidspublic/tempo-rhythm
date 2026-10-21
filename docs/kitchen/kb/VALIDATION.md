@@ -290,7 +290,7 @@ Combined results are pending. Exact causes of the intermittent hosted hangs and 
 <!-- KB-FINISH-LIVE-RESULTS -->
 ### Current combined results
 
-AWAY — Snapshot 2026-10-21T14:54:37.288Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+AWAY — Snapshot 2026-10-21T14:58:49.803Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
 
 | Command | Result | Seconds |
 |---|---|---|
@@ -373,7 +373,7 @@ WALK — KB-10 a4e392d has separately passed its own current-base hosted gates u
 
 WALK — Frozen local-only `9abb12c` combines KB-10 `fe554ba` with final KB-45 `9a5c3fd`; their code/test blobs match the rebased candidates. `bun test tests/unit/kb-10.test.tsx tests/unit/kb-45.test.tsx` exited 1 after 600.81 seconds: **0 pass / 32 fail** parent reports. KB-10 child reported 18 pass / 2 fail (closed-browser errors near its 300-second bound). KB-45 child reported 10 pass / 2 fail / 1 error; its original browser case hit 240 seconds, then the language-boundary case failed its first page creation before assertions. These remain failures; browser closure/latency cause is UNKNOWN. Sign-up is draft at AT-19 after its extra; no fifth source candidate or unchanged retry was made.
 
-The separate budget audit established an unused authorized extra pass for KB-10. That pass is assigned to diagnose cumulative browser-fixture resources without changing its assertions or deadlines. This is not another KB-45 pass and does not erase either failed command.
+The separate budget audit established an unused authorized extra pass for KB-10. A read-only audit disproved the cumulative-page hypothesis: every successful case closes its owned context. No justified in-scope repair was identified, so the extra remains unused and no test was retried. This is not another KB-45 pass and does not erase either failed command.
 
 ```text
 error: boundingBox: Target page, context or browser has been closed
