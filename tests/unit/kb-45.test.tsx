@@ -19,6 +19,7 @@ if (process.env.KB45_ISOLATED !== "1") {
     "English and Hebrew keys stay paired",
     "all new public views are exported",
     "hydrated gallery and mounted modal preserve validation, retry, Hebrew links, contrast, and 44 px controls",
+    "Hebrew page and modal respect fallback and child-owned auth language boundaries",
   ];
   let result: { exitCode: number; output: string } | undefined;
   const verify = (name: string) => {
@@ -33,16 +34,17 @@ if (process.env.KB45_ISOLATED !== "1") {
     }
     // A printed case name never substitutes for the actual child result.
     if (result.exitCode !== 0) throw new Error(`KB-45 clean test process failed:\n${result.output}`);
-    if (!/^\s*11 pass$/m.test(result.output) || !/^\s*0 fail$/m.test(result.output)
-      || !/^Ran 11 tests across 1 file\./m.test(result.output)) {
-      throw new Error(`KB-45 child must complete all eleven cases:\n${result.output}`);
+    if (!/^\s*12 pass$/m.test(result.output) || !/^\s*0 fail$/m.test(result.output)
+      || !/^Ran 12 tests across 1 file\./m.test(result.output)) {
+      throw new Error(`KB-45 child must complete all twelve cases:\n${result.output}`);
     }
     expect(result.output).toContain(name);
   };
   describe("KB-45 sign-up guidance", () => {
-    for (const name of names.slice(0, -1)) test(name, () => verify(name), 300_000);
+    for (const name of names.slice(0, 10)) test(name, () => verify(name), 300_000);
   });
-  test(names[names.length - 1], () => verify(names[names.length - 1]), 240_000);
+  test(names[10], () => verify(names[10]), 240_000);
+  test(names[11], () => verify(names[11]), 60_000);
 } else {
   const { createElement } = await import("../../apps/web/node_modules/react");
   const { renderToStaticMarkup } = await import("../../apps/web/node_modules/react-dom/server");
@@ -292,4 +294,60 @@ if (process.env.KB45_ISOLATED !== "1") {
     }
     for (const ratio of modalContrasts) expect(ratio).toBeGreaterThanOrEqual(4.5);
   }, 240_000);
+
+  test("Hebrew page and modal respect fallback and child-owned auth language boundaries", async () => {
+    if (!browser || !server) throw new Error("KB-45 mounted language regression needs the completed browser fixture");
+    for (const mount of ["production", "modal"]) {
+      const page = await browser.newPage({ viewport: { width: 390, height: 900 }, reducedMotion: "reduce" });
+      try {
+        await page.goto(`http://127.0.0.1:${server.port}/?lang=he&mount=${mount}`);
+        const signup = page.locator('.kb45-signup[lang="he"][dir="rtl"]');
+        await signup.waitFor();
+        const english = signup.locator(':scope > [lang="en"][dir="ltr"]');
+        expect(await english.count()).toBe(1);
+        // KB-10's localized child owns its language; the fallback must let that
+        // nearer boundary override English without freezing future copy to English.
+        const ownedCard = english.locator('[data-component="AuthCard"][lang]');
+        const ownsHebrew = await ownedCard.count() === 1;
+        const authLanguage = ownsHebrew ? { lang: "he", direction: "rtl" } : { lang: "en", direction: "ltr" };
+        const languageOf = (node: Element) => ({
+          lang: node.closest("[lang]")?.getAttribute("lang"),
+          direction: getComputedStyle(node).direction,
+        });
+        if (ownsHebrew) expect(await ownedCard.evaluate(languageOf)).toEqual(authLanguage);
+        expect(await english.locator('label[for="sign-up-email"]').evaluate(languageOf)).toEqual(authLanguage);
+        expect(await english.locator('label[for="sign-up-email"]').textContent()).toMatch(ownsHebrew ? /[\u0590-\u05ff]/ : /^Email$/);
+        expect(await english.locator('button[type="submit"]').textContent()).toMatch(ownsHebrew ? /[\u0590-\u05ff]/ : /^Send magic link$/);
+        const privacy = signup.locator('[data-component="SignUpPrivacyLine"]');
+        expect(await privacy.evaluate(languageOf)).toEqual({ lang: "he", direction: "rtl" });
+        expect(await privacy.locator('a[href="/privacy"]').textContent()).toBe(kb45t("he", "signup.privacy"));
+        const guidance = signup.locator('[data-component="SignUpStatus"]');
+        expect(await guidance.count()).toBe(mount === "production" ? 1 : 0);
+        if (mount === "production") {
+          expect(await guidance.evaluate(languageOf)).toEqual({ lang: "he", direction: "rtl" });
+          expect(await guidance.locator("p").textContent()).toBe(kb45t("he", "signup.nextBody"));
+        }
+        await english.locator("#sign-up-email").fill("maya@example.com");
+        await page.evaluate(() => { (window as any).__kb45Mode = "error"; });
+        await english.locator('button[type="submit"]').click();
+        const error = english.getByRole("alert");
+        await error.waitFor();
+        expect(await error.evaluate(languageOf)).toEqual(authLanguage);
+        expect(await error.textContent()).toMatch(ownsHebrew ? /[\u0590-\u05ff]/ : /couldn't send/);
+        await page.evaluate(() => { (window as any).__kb45Mode = "ok"; });
+        await english.locator('button[type="submit"]').click();
+        const sent = english.locator("strong").filter({ hasText: "maya@example.com" });
+        await sent.waitFor();
+        expect(await sent.evaluate(languageOf)).toEqual(authLanguage);
+        const sentView = ownsHebrew ? english.locator('[data-component="MagicLinkStatus"]') : english;
+        expect(await sentView.textContent()).toMatch(ownsHebrew ? /[\u0590-\u05ff]/ : /We sent a sign-in link/);
+        await sentView.getByRole("button", { name: ownsHebrew ? "שימוש בכתובת דוא״ל אחרת" : "Use a different email" }).click();
+        expect(await english.locator("#sign-up-email").evaluate(languageOf)).toEqual({ lang: authLanguage.lang, direction: "ltr" });
+        expect(await privacy.evaluate(languageOf)).toEqual({ lang: "he", direction: "rtl" });
+        expect(await page.evaluate(() => (window as any).__kb45Emails)).toEqual(["maya@example.com", "maya@example.com"]);
+      } finally {
+        await page.close();
+      }
+    }
+  }, 60_000);
 }

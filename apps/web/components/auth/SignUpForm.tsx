@@ -101,13 +101,15 @@ export function SignUpForm({
   const isPage = variant === "page";
   return (
     <div className={`kb45-signup${isPage ? " tp-auth-stack" : ""}`} data-variant={variant} lang={lang} dir={lang === "he" ? "rtl" : "ltr"}>
-      <SignInForm
-        variant={variant}
-        nextPath={nextPath}
-        flow="sign-up"
-        onSuccess={onSuccess}
-        onSwitch={onSwitchToSignIn}
-      />
+      <div lang="en" dir="ltr">
+        <SignInForm
+          variant={variant}
+          nextPath={nextPath}
+          flow="sign-up"
+          onSuccess={onSuccess}
+          onSwitch={onSwitchToSignIn}
+        />
+      </div>
       {isPage ? <SignUpStatus lang={lang} /> : null}
       <SignUpPrivacyLine lang={lang} />
     </div>
