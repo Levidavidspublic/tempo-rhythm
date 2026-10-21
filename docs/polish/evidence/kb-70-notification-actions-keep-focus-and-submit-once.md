@@ -1,5 +1,55 @@
 # KB-70 notification action and focus evidence
 
+## Authorized v3 focus wait — 2026-10-21
+
+PR open — the matching-row focus wait is corrected and all local validation passes on source `730308b68af3717e7192104cf1721a35bf97d9dc`, continuing draft #1196 for reopened issue #1166. Amit's AT-12 answer authorizes this one scoped further pass. This supersedes the earlier “no further candidate authorized” hold only for the prescribed focus-wait correction.
+
+The reopened issue records hosted jobs `119186508145` and `119199655001`, where the earlier test queried unread rows before React committed the preceding read update. The initial corrective PR waited for named read rows, but CodeRabbit finding [4336607766](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196#discussion_r4336607766) identified a remaining gap: the Dana read-only row exists during the commit, before `NoticeRow`'s `useEffect` focuses it. The prior 13-case local and hosted passes did not disprove that race. No new before-failure count is invented for that static finding.
+
+The test now waits until the exact read-only row containing “Dana has a reminder” is also `document.activeElement`. The original zero-unread wait and active-element assertion immediately afterward remain. All 13 case names, every existing assertion and all setup/test deadlines are unchanged; no fixed sleep or wider timeout was introduced. The existing Playwright wait is sufficient, so this independent timing correction adds no shared-harness dependency. Product code and the original contact sheet are unchanged.
+
+Focused proof: `bun test tests/unit/kb-70.test.tsx` → 13 pass, 0 fail, 13 parent assertions, exit 0 in 4.79 s. The existing parent wrapper requires its isolated child's authoritative exit 0 for every case. This run's parent count is distinct from the historical child 115-assertion receipt below. It covers both delayed-read focus paths, single-flight submission, failure/retry/success and the original gallery matrix.
+
+### Test results (cloud agent sandbox)
+
+Bun 1.3.9, final source `730308b68af3717e7192104cf1721a35bf97d9dc`. Exact frozen install reached only “Resolving dependencies” and was externally terminated at the 120 s bound (exit 124): UNKNOWN. After installer exit, six dependency trees from the verified prior KB-02 worktree were copied preserving relative workspace links. No package, lockfile or environment configuration changed. The original mandatory sequence completed before any further dependency operation. Because earlier worktree installs took roughly 303 s, a separate coordinator-authorized 360 s observation of the same exact frozen-install command follows those checks. Both receipts are retained; no test is rerun and no acceptance condition changes.
+
+| Command | Final-source result |
+|---|---|
+| `bun --version` | PASS, 1.3.9, exit 0. |
+| `bun install --frozen-lockfile`, first observation | UNKNOWN, exit 124 at 120 s, before the fallback dependency copy. |
+| `bun install --frozen-lockfile`, longer final observation | PASS, exit 0 after 301.91 s (Bun reports 301.87 s), checked 1033 installs across 1079 packages, no changes. |
+| `bun run lint` | PASS, 5/5 tasks (cached), 0 errors, 9 existing warnings, exit 0. |
+| `bun run typecheck` | PASS, 5/5 tasks (cached), exit 0. |
+| `bun run test` | PASS, 3493 pass, 0 fail, 3 existing todo, 81526 assertions across 211 files, exit 0 in 267.64 s. All 13 KB-70 cases passed within this run. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, all four OK, exit 0. |
+| `CI=1 bunx playwright test --reporter=line` (serialized with `flock`) | PASS, 28 pass, 0 fail, 89 expected credential-gated skips, exit 0. The unchanged notifications route wiring passed. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, 1/1 task (cached), exit 0. |
+
+On source `730308b`, hosted CI run `39671540331`, preview run `39671540377` and Security run `39671540305` all completed successfully. The final evidence head must still satisfy current CI and every repository guard. CodeRabbit explicitly resolved finding 4336607766 after reviewing the supplied matching-row focus wait; zero unresolved threads were observed. Final current-head review and repository guards remain the coordinator's merge gates; no merge is claimed here.
+
+First frozen-install output (complete output; exit 124):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Longer frozen-install output (complete output; exit 0):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+Resolved, downloaded and extracted [36]
+
+Checked 1033 installs across 1079 packages (no changes) [301.87s]
+```
+
+The longer observation resolves the exact-install UNKNOWN for this final source. The first 120 s termination remains a historical receipt. The successful install reported no dependency changes, and no tests were rerun.
+
+Earlier receipts remain below. Native Hebrew review and physical-device screen-reader checks are required before production; live-account behavior remains UNKNOWN. No production change or deployment occurred.
+
+
 The mounted `/notifications` screen still uses the same profile/list queries and `markRead({ notificationId })` and `markAllRead({})` mutations. A read row now returns focus only when the person stayed on its unread button while a delayed query update arrived. If focus moved to the preferences link or another control, the row leaves it there. “Mark all read” accepts one in-flight submission and shows a short localized pending explanation beside its unchanged button label; its existing success and error copy remain.
 
 The [contact sheet](./kb-70-notification-actions-keep-focus-and-submit-once.jpg) pairs the original checked-in mounted component saved before editing, the updated mount during a delayed “Mark all read” request, and the controlled gallery at 390 and 1280 px in English and Hebrew, light and dark. All 16 mounted before/after frames had one heading and no horizontal overflow: the recorded `scrollWidth` equaled the viewport width. Before, the action remained available with no pending explanation; after, it is disabled and its pending explanation appears beside it. The eight gallery frames show the real row and feedback exports. Screens use fictional Maya, Dana and Yoni notices and mocked auth/query/mutation boundaries. These are component comparisons, not claims about a live account. The original source capture was saved before editing at `/workspace/work/kb-70-evidence/NotificationsScreen.before.tsx`.
