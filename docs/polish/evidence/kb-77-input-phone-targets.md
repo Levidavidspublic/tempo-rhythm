@@ -152,3 +152,57 @@ Frozen-install output at the bound (exit 124):
 bun install v1.3.9 (cf6cdbbb)
 Resolving dependencies
 ```
+
+## Third ordinary fixture repair — 21 Oct 2026
+
+The retained source ledger has two prior candidates: implementation `758a0fc` (rebased `e45b6ff`) and the per-run artifact repair `2c38049` (rebased `c45031d304f4532c5c8663599e2b0b97953bfefe`). The intervening JPEG/Markdown commits changed evidence only. This is the third ordinary source candidate on issue #1184/PR #1186; it does not reset the budget or claim an additional exception.
+
+Hosted head `6ef30b2`, job `119198225194`, reached KB-77's setup deadline after about 480 seconds with no individual case output. Its unchanged retry `119208946400` passed every KB-77 case and failed only the then-baseline KB-67 cleanup hook. Later head `c45031d`, job `119219928829`, repeated KB-77's own setup timeout at 480,026 ms, alongside a separate codec timeout. Those buffered logs cannot identify whether KB-77 stalled during imports, CSS, either build, browser work or cleanup; they do not establish a cause in Input or the codec test.
+
+This fixture now streams timestamped child and parent phases, including CSS/build starts and completions, page navigation/readiness, every original case, independent server/browser release, child exit, pipe EOF, result parsing and parent cleanup. Each original case checks the child's authoritative exit and completed cleanup before using its invocation-token results. The 18 original case names and assertions are retained; setup remains 480,000 ms. As in the established KB-61 lifecycle pattern at `35b1c32`, its final second is reserved for cancellation, killing the owned descendant tree/process group, reaping the child and removing its unique parent-owned directory. A timeout cannot become success.
+
+An outer setup `finally` covers failures before and after server/browser acquisition. Server stop and browser close start independently, so a pending/rejected browser release cannot prevent server release. Each case also releases pages retained by failed navigation/assertions. The frozen/current builds remain sequential in the clean child; no unproven cross-build rewrite, production change, assertion removal, skip or deadline increase is included.
+
+Six added lifecycle regressions check original-result completeness, independent pending release, controlled setup failure, browser-close rejection, cancellation during a stalled close with a detached descendant, and retention of both descendant/process-group cleanup errors. The last regression addresses the fresh KB-61 review finding `4336980389`: both cleanup paths are attempted and aggregated rather than letting a `finally` error overwrite an earlier failure; ESRCH remains the only ignored process-exit error. They use fictional loopback resources. The local focused command was canceled while still a verified childless lock waiter after the hosted result below supplied a narrower failure; no local browser case had started. The prior 18-case result remains historical.
+
+| Command | Exit | Third-candidate result |
+| --- | ---: | --- |
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 124 | UNKNOWN: `Resolving dependencies` at the unchanged 120-second bound |
+| `bun run lint` | 0 | 5 successful, 5 total |
+| `bun run typecheck` | 0 | 5 successful, 5 total |
+| `bun test tests/unit/kb-77.test.tsx` | — | Not executed locally: verified unstarted lock waiter canceled after hosted failure |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK; 66 documented notices |
+| `bun run test` | — | Lead owns broad validation; its currently running immutable checkout still has the earlier KB-77 head |
+| `CI=1 bunx playwright test --reporter=line` | — | Pending lead validation on the integrated final candidate |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | Pending lead validation on the integrated final candidate |
+
+Font provenance, physical-device screen readers, live-account behavior and native Hebrew review retain the UNKNOWN limits above. The lead records the final integrated source SHA and broad command outcomes.
+
+## Owner-authorized extra: child OS exit receipt — 21 Oct 2026
+
+The third source candidate `da491f9bfbab34db9124f2f0cf269cffcf6b523a` ran in hosted run `39607985962`, job `119249084458`. Its streamed trace proves all 18 original browser cases passed. Server stop, browser close and results writing completed at 31,500 ms; both output pipes reached EOF at 31,559 ms. The parent never logged a child exit, canceled at 479,003 ms, and hit its existing 480,000 ms hook deadline. The other failure was KB-59's separate 600,016 ms hook timeout. This isolates KB-77's observed failure to parent exit observation after successful child work; it does not establish a product failure or permit treating JSON/EOF as a successful process exit.
+
+The owner authorized the previously unused extra repair pass. Source `502f0cc9214d6d22680f97df2e12188bdf0a4d55` registers `Bun.spawn`'s OS `onExit` receipt at launch and uses that receipt for completion and reaping. A wait-status error rejects; a signal maps to a failing status; nonzero code still rejects every original wrapper. The fixture does not await the stalled legacy `.exited` promise. Bun 1.3.9 reports signal names at runtime despite the numeric callback declaration, so signal handling accepts the observed runtime names through platform signal constants.
+
+A seventh lifecycle regression launches a real child with all 18 successful-looking results, completed cleanup and exit code 73 while deliberately leaving its legacy `.exited` accessor pending. It must receive actual OS status 73, reject success, observe the dead child/server and remove its owned directory. The existing six lifecycle regressions, 18 original case bodies, parent assertions and all deadlines are retained. There are now 25 focused cases. This consumes the one authorized extra; no further source candidate remains authorized.
+
+Syntax and static preservation checks passed before the source commit. Bun-only primitive probes independently verified a real child exit 73 with a pending legacy accessor and the runtime SIGKILL callback shape. These primitive observations do not substitute for the focused suite or integrated gates.
+
+| Command | Exit | Extra-candidate result |
+| --- | ---: | --- |
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 124 | UNKNOWN: `Resolving dependencies` at the unchanged 120-second bound |
+| `bun run lint` | 0 | 5 successful, 5 total |
+| `bun run typecheck` | 0 | 5 successful, 5 total |
+| `bun test tests/unit/kb-77.test.tsx` | — | NOT RUN: the still-childless local lock waiter was canceled (143) after the exact-source hosted failure; no local browser case started |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK; 66 documented notices |
+| `bun run test` | 1 | Exact-source hosted Test job `119267322831`: KB-77 setup hook failed at 480,001 ms; separate unchanged codec timeout also failed |
+| `CI=1 bunx playwright test --reporter=line` | — | Lead owns broad validation; AT-18 hold after the exact-source hosted failure |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | Lead owns broad validation; AT-18 hold after the exact-source hosted failure |
+
+Hosted [run `39613225865`, Test job `119267322831`](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39613225865/job/119267322831) failed on exact source `502f0cc`. Its child again passed all 18 original browser cases and finished cleanup/results at 20,074 ms. Both pipes reached EOF at 20,122 ms, but no `parent:os-exit` callback was observed. Cancellation occurred at 479,003 ms and the original hook failed at 480,001 ms. The new lifecycle cases were not reached because setup did not complete. The full filtered KB-77 trace is retained locally at `/workspace/work/kb-finish/kb77-extra/hosted-119267322831.log`; the stopped local waiter's receipt is `focused-queue-release.json` in that directory. The local command did not run and is not counted as a focused pass or browser failure.
+
+The underlying cause remains UNKNOWN. Neither the absent `.exited` receipt nor the absent `onExit` callback distinguishes an OS process still alive during runtime teardown from a lost wait-status notification. Results and pipe EOF are insufficient to establish actual OS exit, so the authoritative failure gate remains in place. AT-18 holds this ticket: the third ordinary and one owner-authorized extra source pass are consumed, with no further source change or retry authorized. The missing read-only diagnostic is the child's OS state, wait channel and process start time at EOF, with bounded cleanup; any further code repair needs Amit's authorization.
+
+The font, physical-device, live-account and native Hebrew limits above remain UNKNOWN. The lead owns remote operations and records the final integrated head and broad gate results. No source, package, config, timeout, original assertion or production change followed the failed extra candidate.
