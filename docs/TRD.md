@@ -58,12 +58,12 @@ These are RUNTIME models. They never write Tempo's code.
 |---|---|---|---|
 | **(21 Oct)** Text: coach, tagger reasoning, subagents | DeepInfra `zai-org/GLM-5.3-Flash` (1M context; JSON mode and function calling per DeepInfra; $0.15 in / $0.50 out per 1M, 50% off at the time of reading). Set through the existing Convex env var `TEMPO_AI_MODEL` (`convex/lib/ai_router.ts`); the code default still says DeepSeek and moves to GLM in a backend ticket. | `DEEPINFRA_API_KEY`, `TEMPO_AI_MODEL` | NW |
 | ~~Text, interim~~ | ~~DeepInfra `deepseek-ai/DeepSeek-V4.1-Flash`~~ — replaced 21 Oct by GLM 5.3 Flash. Kept only as a manual fallback value for `TEMPO_AI_MODEL` [EXTRAPOLATED]. | `DEEPINFRA_API_KEY` | — |
-| **(21 Oct)** Tag scores | DeepInfra `Qwen/Qwen3-Reranker-8B` (`POST /v1/inference/Qwen/Qwen3-Reranker-8B`, body `queries` + `documents`, returns `scores`; $0.05/1M; 32k context) | `DEEPINFRA_API_KEY` | MVP |
+| **(21 Oct)** Tag scores | DeepInfra `Qwen/Qwen3-Reranker-8B` (`POST /v1/inference/Qwen/Qwen3-Reranker-8B`, body `queries` + `documents`, returns `scores`; $0.05/1M; 32k context). Model named in Convex env `TEMPO_RERANK_MODEL` [EXTRAPOLATED name]. | `DEEPINFRA_API_KEY`, `TEMPO_RERANK_MODEL` | MVP |
 | **(21 Oct)** Crisis severity | `openai/gpt-oss-safeguard-20b` (policy in the system message, content in the user message; returns the JSON the policy asks for; no confidence score). Not found on DeepInfra or Together on 21 Oct. Groq hosts it ($0.075 in / $0.30 out per 1M, 131k context). Provider and env var name: UNKNOWN until Amit picks. | UNKNOWN | MVP |
 | Text fast | DeepInfra `nvidia/NVIDIA-Nemotron-3.5-Lightning` | `DEEPINFRA_API_KEY` | MVP |
 | Text balanced | DeepInfra `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B` | `DEEPINFRA_API_KEY` | MVP |
 | Text deep | DeepInfra `thinkingmachines/Inkling` | `DEEPINFRA_API_KEY` | MVP |
-| Text failover | Together `zai-org/GLM-5.3-Flash` (listed; "launching soon" on 21 Oct, so availability is UNKNOWN). | `TOGETHER_API_KEY` | NW once the endpoint is live |
+| Text failover | Together `zai-org/GLM-5.3-Flash` (listed; "launching soon" on 21 Oct, so availability is UNKNOWN). Model named in Convex env `TEMPO_AI_FALLBACK_MODEL` [EXTRAPOLATED name]; the code does not read `TOGETHER_API_KEY` yet (21 Oct). | `TOGETHER_API_KEY`, `TEMPO_AI_FALLBACK_MODEL` | NW once the endpoint is live |
 | **(5 Oct)** STT English | Deepgram Flux `flux-general-en`, streaming, with turn detection | `DEEPGRAM_API_KEY` | NW |
 | STT Hebrew | Deepgram Nova-3, language `he`, streaming | `DEEPGRAM_API_KEY` | NW |
 | TTS, both languages | DeepInfra `ResembleAI/chatterbox-multilingual` (Hebrew included) | `DEEPINFRA_API_KEY` | NW **(5 Oct)** English use [EXTRAPOLATED] |
@@ -75,7 +75,7 @@ These are RUNTIME models. They never write Tempo's code.
 **Ticket one (5 Oct).**
 
 - Amit sets `DEEPINFRA_API_KEY` and `DEEPGRAM_API_KEY` on `ceaseless-dog-617`, by name, before the batch runs.
-- **(5 Oct, revised)** The seam is the AI SDK DeepInfra provider: `deepInfra("deepseek-ai/DeepSeek-V4.1-Flash")` as the Agent's `languageModel`, and `deepInfra.embeddingModel("Qwen/Qwen3-Embedding-8B")`, shortened to 1,024 dims, as its `embeddingModel` [EXTRAPOLATED pick, §5]. `convex/lib/ai_router.ts` is replaced by the Agent definition.
+- **(5 Oct, revised)** The seam is the AI SDK DeepInfra provider: `deepInfra("deepseek-ai/DeepSeek-V4.1-Flash")` as the Agent's `languageModel`, and `deepInfra.embeddingModel("Qwen/Qwen3-Embedding-8B")`, shortened to 1,024 dims, as its `embeddingModel` [EXTRAPOLATED pick, §5]. **(21 Oct)** Embedding model named in Convex env `TEMPO_EMBED_MODEL` [EXTRAPOLATED name]. `convex/lib/ai_router.ts` is replaced by the Agent definition.
 - `convex/coach.ts` stops returning fixed technique replies. The coach is one `Agent` with `createTool` tools: `createNote`, `addTaskToToday`, `fillTemplate`, `draftModule`, `searchMemory`, `scheduleJob`. It uses `streamText(..., { saveStreamDeltas: true })`, so replies stream to every open screen through Convex.
 - Module drafts use the Agent's built-in tool approval ("approval-requested" state), which gives the Approve / Discard step without custom code.
 - Nothing calls `api.mistral.ai` any more.
