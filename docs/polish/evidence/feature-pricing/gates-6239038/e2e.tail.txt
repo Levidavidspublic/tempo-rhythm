@@ -1,0 +1,20 @@
+
+    Error Context: test-results/wiring-templates-onboardin-8a6b8-arding-mounts-its-component-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/wiring-templates-onboardin-8a6b8-arding-mounts-its-component-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/wiring-templates-onboardin-8a6b8-arding-mounts-its-component-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  5 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date 
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record 
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component 
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component 
+  89 skipped
+  23 passed (5.3m)

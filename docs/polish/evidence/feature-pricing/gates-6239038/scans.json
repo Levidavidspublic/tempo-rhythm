@@ -1,0 +1,1 @@
+{"command":"bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices","exit":0,"startedAt":"2026-10-21T22:21:37Z","endedAt":"2026-10-21T22:21:38Z","head":"62390387a298d255a4af65a2a8b358902e70203a"}

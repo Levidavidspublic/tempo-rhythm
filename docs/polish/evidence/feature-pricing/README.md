@@ -15,13 +15,39 @@ Only exact `/pricing` is added to the public-route list. The existing unit tests
 | `bun test apps/web/lib/rootEntry.test.ts` | Final candidate: 10 pass / 0 fail, 51 assertions, authoritative exit 0 in 6.05 seconds. Eight existing cases and two new cases; no assertion or deadline changed. |
 | `bun run lint` | Final frozen source: pass, 5/5 tasks, zero errors, nine existing web warnings plus one existing shared-UI warning. Initial run failed the new test's undeclared `Bun` global; explicitly importing the helper corrected it. No lint rule changed. |
 | `bun run typecheck` | Final frozen source: pass, 5/5 tasks, authoritative exit 0 (27.18 seconds). |
-| `bun run test` | Pending serialized lead gate. |
-| Four scans/notices | Pending serialized lead gate. |
+| `bun run test` | Subsequent merged-head result: 3,492 pass / 4 fail / 3 todo, exit 1. Details below. |
+| Four scans/notices | Subsequent merged-head result: all four pass, exit 0. |
 | Local real-route browser checks | Pass: before 4/4, after 8/8, authoritative exit 0 for both commands. Each after case checks both billing intervals. |
-| `CI=1 bunx playwright test --reporter=line` | Pending serialized lead gate. |
-| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Pending serialized lead gate. |
+| `CI=1 bunx playwright test --reporter=line` | Subsequent merged-head result: 23 pass / 5 fail / 89 existing skips, exit 1. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Subsequent merged-head result: pass, 1/1 tasks, exit 0. |
 
 The first focused run failed at module import before any cases ran: the Convex Auth server barrel enforces a React Server Component boundary. The test now resolves that installed package's actual matcher leaf instead; the server-only guard is unchanged. That result was zero pass, one fail, one error. The corrected focused run passed all ten cases. Lint subsequently identified the explicit Bun helper import needed in the scoped test; the subsequent candidate explicitly imports `spawnSync` from Bun. Final lint/typecheck and all ten focused cases pass; both initial failures remain recorded.
+
+## Required checks after integration merge
+
+All checks below ran on unchanged merge head `62390387a298d255a4af65a2a8b358902e70203a`, which normally merges integration `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac` into the pricing branch. This head is distinct from the screenshot source recorded below. The evidence-only commits do not change product or tests.
+
+| Command | Actual result |
+|---|---|
+| `bun --version` | 1.3.9, exit 0 |
+| `bun install --frozen-lockfile` | Exit 0 in 40.22 seconds; checked 1,033 installs across 1,079 packages, no changes. Earlier bounded timeout retained above. |
+| `bun run lint` | Exit 0, 5/5 cached tasks; zero errors and existing warnings. |
+| `bun run typecheck` | Exit 0, 5/5 cached tasks. |
+| `bun run test` | Exit 1: 3,492 pass / 4 fail / 3 todo, 81,525 assertions, 3,499 tests across 211 files, 756.31 seconds. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | Exit 0; every scan and notices check prints OK. Baselines unchanged. |
+| `CI=1 bunx playwright test --reporter=line` | Exit 1: 23 pass / 5 fail / 89 existing skips, 5.3 minutes. Local server only; no account state or preview URL. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Exit 0, 1/1 tasks, 2m32.512s; pricing included in route output. |
+
+Full-test failures, with original limits unchanged:
+
+- `gap-free hash-linked chain > the intervening bound is 256: 256 plan, 257 do not`: exceeded its 5,000 ms limit (observed 10,312.23 ms).
+- `KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls`: `h1` wait timed out at 30,000 ms, in `tests/unit/kb-64.test.tsx:147` called from line 534.
+- `KB64 Undo recovery > large text wraps and reduced motion has no toast animation`: 30,000 ms timeout.
+- The following unnamed KB64 before/after hook: 5,000 ms timeout.
+
+Playwright failures: calendar Day/Week/Month event visibility, sign-out button visibility, core task views, `/templates/editor/[id]` wiring and `/onboarding` wiring. These test files were unchanged by pricing; no cause or baseline attribution is inferred from that fact. They were not retried, skipped or repaired in this ticket. Their full local artifacts remain in `test-results/` and the execution logs in `/workspace/work/overnight/pricing-gates/6239038/`.
+
+Every required step ran despite the failures. The `gates-6239038/` evidence subfolder records exact commands, source head, authoritative exits, and failure tails. After Playwright exited, no server listened on port 3000. Only verified ignored, untracked `apps/web/.next/dev` was removed to recover build space; failure screenshots and traces were preserved. Build then passed, and no owned browser, server or build process remained. These checks do not establish a green merge gate or deployed preview readiness.
 
 ## Browser evidence results
 
