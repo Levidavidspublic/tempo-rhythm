@@ -179,6 +179,7 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     await page.keyboard.press("Enter");
     await page.getByRole("heading", { name: "Maya's next day" }).waitFor();
     expect(await page.locator(".kb04-day").count()).toBe(12);
+    await page.waitForFunction(() => document.activeElement?.textContent?.trim() === "Maya's next day");
     expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe("Maya's next day");
     await page.close();
   });
@@ -201,7 +202,8 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     await firstDay.focus();
     await page.evaluate(() => (window as unknown as { __releaseMore: () => void }).__releaseMore());
     await page.getByRole("heading", { name: "Maya's next day" }).waitFor();
-    await page.waitForTimeout(50);
+    // The label changes to Loading before onReady; wait for the actual button's removal.
+    await page.locator(".kb04-more-wrap > button").waitFor({ state: "detached" });
     expect(await page.evaluate(() => document.activeElement?.textContent?.includes("Maya's quiet morning"))).toBe(true);
     await page.close();
   });
@@ -209,6 +211,7 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     const page = await open(390, "scenario=end");
     await page.getByRole("button", { name: kb04t("en", "kb04.more") }).click();
     await page.getByText(kb04t("en", "kb04.end")).waitFor();
+    await page.waitForFunction(text => document.activeElement?.textContent?.trim() === text, kb04t("en", "kb04.end"));
     expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe(kb04t("en", "kb04.end"));
     await page.close();
   });
@@ -259,6 +262,7 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     await more.focus();
     await page.keyboard.press("Enter");
     await page.getByRole("heading", { name: "One more day" }).waitFor();
+    await page.waitForFunction(() => document.activeElement?.textContent?.trim() === "One more day");
     expect(await page.evaluate(() => document.activeElement?.textContent?.trim())).toBe("One more day");
     await page.close();
   });
