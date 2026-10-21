@@ -1,7 +1,8 @@
 import * as Bun from "bun";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { constants as osConstants } from "node:os";
+import { fixtureCleanup, requireFixtureSuccess, runIsolatedFixture, type FixtureRun } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
 import { basename, dirname, join, resolve } from "node:path";
 import type { Browser, Page } from "@playwright/test";
 
@@ -68,7 +69,7 @@ async function releaseOwned(server: ReturnType<typeof Bun.serve> | undefined, br
   cleanup.complete = true;
 }
 type Payload = { token: string; results: Results; cleanup: typeof cleanup; serverUrl?: string; descendantPid?: number };
-type ChildRun = { code: number; out: string; err: string; timedOut: boolean; directory: string; pid: number };
+type ChildRun = FixtureRun & { directory: string };
 function writeResults(results: Results) {
   writeFileSync(process.env.KB77_RESULTS!, JSON.stringify({ token, results, cleanup, serverUrl, descendantPid }));
   trace("results:written");
@@ -78,96 +79,24 @@ function requireSuccessfulExit(run: ChildRun, payload?: Payload) {
   if (run.code !== 0) throw Error(`KB77 browser child exit ${run.code}:\n${run.err.slice(-6000)}`);
   if (!payload) throw Error(`KB77 child did not return valid invocation results:\n${run.err.slice(-6000)}`);
   if (!payload.cleanup.complete) throw Error("KB77 child did not complete cleanup");
+  requireFixtureSuccess(run);
 }
 async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{ run: ChildRun; payload?: Payload; error?: unknown }> {
   mkdirSync(join(repo, "work"), { recursive: true });
   const directory = checkedDirectory(mkdtempSync(join(repo, "work/kb77-run-")));
   const output = join(directory, "results.json");
   const runToken = crypto.randomUUID();
-  let child: ReturnType<typeof Bun.spawn> | undefined;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let timedOut = false;
-  let receiveExit!: (code: number) => void;
-  let rejectExit!: (error: unknown) => void;
-  // Register the OS wait-status receipt at launch; the lazy .exited promise
-  // stalled after both output pipes closed in hosted job 119249084458.
-  const exited = new Promise<number>((resolve, reject) => { receiveExit = resolve; rejectExit = reject; });
-  const killOwnedTree = () => {
-    const ownedChild = child;
-    if (!ownedChild) return;
-    attemptAll(() => {
-      // Chromium can own a separate process group; include the live child's descendant tree.
-      if (process.platform !== "win32" && ownedChild.exitCode === null) {
-        const snapshot = Bun.spawnSync(["ps", "-e", "-o", "pid=,ppid="]);
-        if (snapshot.exitCode !== 0) throw Error("KB77 could not inspect its child process tree");
-        const rows = snapshot.stdout.toString().trim().split("\n").map((line) => line.trim().split(/\s+/).map(Number));
-        const owned = new Set([ownedChild.pid]);
-        let changed = true;
-        while (changed) {
-          changed = false;
-          for (const [pid, parent] of rows) if (owned.has(parent) && !owned.has(pid)) { owned.add(pid); changed = true; }
-        }
-        attemptAll(...[...owned].reverse().filter((pid) => pid !== ownedChild.pid).map((pid) => () => {
-          try { process.kill(pid, "SIGKILL"); }
-          catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
-        }));
-      }
-    }, () => {
-      try {
-        if (process.platform === "win32") ownedChild.kill("SIGKILL");
-        else process.kill(-ownedChild.pid, "SIGKILL");
-      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
-    });
-  };
   try {
     trace("parent:spawn:start");
-    child = Bun.spawn([process.execPath, import.meta.path], {
-      cwd: repo,
+    // Keep the original cancellation point, leaving its final second for cleanup.
+    // This runner observes OS status independently of Bun's legacy .exited receipt.
+    const child = await runIsolatedFixture({
+      command: [process.execPath, import.meta.path], cwd: repo,
       env: { ...process.env, KB77_FIXTURE_CHILD: "1", KB77_FIXTURE_TOKEN: runToken, KB77_RESULTS: output, KB77_FIXTURE_PROBE: probe ?? "" },
-      stdout: "pipe", stderr: "pipe", detached: process.platform !== "win32",
-      onExit(_process, code, signal, error) {
-        trace(`parent:os-exit code=${code} signal=${signal}`);
-        if (error) rejectExit(error);
-        else if (signal !== null) {
-          // Bun 1.3.9 reports signal names at runtime despite its numeric type.
-          const number = typeof signal === "number" ? signal : osConstants.signals[String(signal) as NodeJS.Signals];
-          if (number === undefined) rejectExit(Error(`KB77 child exited with unknown signal ${signal}`));
-          else receiveExit(128 + number);
-        }
-        else if (code !== null) receiveExit(code);
-        else rejectExit(Error("KB77 child exited without an OS status"));
-      },
+      timeoutMs: Math.max(1, deadline - 1_000), cleanupMs: 250,
     });
-    if (probe === "exit-status") {
-      // Reproduce an unavailable legacy receipt while retaining a real OS exit.
-      Object.defineProperty(child, "exited", { get: () => new Promise<number>(() => {}) });
-      trace("parent:legacy-exited:stalled");
-    }
-    trace(`parent:spawn:done pid=${child.pid}`);
-    // The original 480s hook includes cancellation, reaping and directory cleanup.
-    timer = setTimeout(() => {
-      timedOut = true;
-      trace(`parent:cancel pid=${child!.pid}`);
-      try { killOwnedTree(); } catch (error) { trace("parent:cancel:error"); console.error(error); }
-    }, Math.max(1, deadline - 1_000));
-    const stream = async (pipe: ReadableStream<Uint8Array>, name: string) => {
-      const decoder = new TextDecoder();
-      let text = "";
-      for await (const chunk of pipe) {
-        const part = decoder.decode(chunk, { stream: true });
-        text += part;
-        process.stderr.write(part);
-      }
-      const tail = decoder.decode(); text += tail; if (tail) process.stderr.write(tail);
-      trace(`parent:${name}:eof`);
-      return text;
-    };
-    const [out, err, code] = await Promise.all([
-      stream(child.stdout as ReadableStream<Uint8Array>, "stdout"),
-      stream(child.stderr as ReadableStream<Uint8Array>, "stderr"),
-      exited.then((code) => { trace(`parent:child-exit ${code}`); return code; }),
-    ]);
-    const run = { code, out, err, timedOut, directory, pid: child.pid };
+    trace(`parent:child-exit ${child.code} signal=${child.signal ?? "none"}`);
+    const run = { ...child, directory };
     try {
       trace("parent:results:parse");
       const payload = JSON.parse(readFileSync(output, "utf8")) as Payload;
@@ -175,14 +104,12 @@ async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{
       return { run, payload };
     } catch (error) { return { run, error }; }
   } finally {
-    clearTimeout(timer);
-    await releaseAll(
-      () => { trace("parent:kill:start"); killOwnedTree(); trace("parent:kill:done"); },
-      async () => { trace("parent:reap:start"); if (child) await exited; trace("parent:reap:done"); },
-      () => { trace("parent:directory-remove:start"); rmSync(directory, { recursive: true, force: true }); trace("parent:directory-remove:done"); }
-    );
+    trace("parent:directory-remove:start");
+    rmSync(directory, { recursive: true, force: true });
+    trace("parent:directory-remove:done");
   }
 }
+
 const boundary = `
 export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});
 export function useQuery(ref,args){if(args==="skip")return undefined;switch(ref){
@@ -217,6 +144,7 @@ const mode=params.get("mode");createRoot(document.getElementById("app")).render(
 async function runFixture(results: Results): Promise<Results> {
   let fixtureServer: ReturnType<typeof Bun.serve> | undefined;
   let fixtureBrowser: Browser | undefined;
+  const release = fixtureCleanup({ resources: () => releaseOwned(fixtureServer, fixtureBrowser) }, 1_000);
   try {
   trace("dependencies:start");
   const { chromium, expect: pw } = await import("@playwright/test");
@@ -241,58 +169,27 @@ async function runFixture(results: Results): Promise<Results> {
     const source = join(dir, phase + ".tsx");
     writeFileSync(source, entry(phase));
     console.error(`[KB77 ${Math.round(performance.now() - phaseStart)}ms] build:${phase}:start`);
-    const output = await Bun.build({
-      entrypoints: [source],
-      outdir: dir,
-      target: "browser",
+    const locale = join(dir, "locale.ts");
+    writeFileSync(locale, `import{translate}from${JSON.stringify(join(web, "lib/i18n.ts"))};export const useLocale=()=>{const lang=new URLSearchParams(location.search).get("lang")==="he"?"he":"en";return{lang,dir:lang==="he"?"rtl":"ltr",t:key=>translate(lang,key)}}`);
+    const frozenInput = join(dir, "frozen-input.tsx");
+    writeFileSync(frozenInput, frozen);
+    const outdir = join(dir, `${phase}-bundle`);
+    await isolatedBrowserBuild({
+      cwd: repo, resolveFrom: web, entrypoints: [source], outdir,
       define: { "process.env.NODE_ENV": '"development"' },
-      plugins: [
-        {
-          name: "kb77-fictional-boundaries",
-          setup(b) {
-            b.onResolve(
-              {
-                filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/,
-              },
-              ({ path }) => ({ path: Bun.resolveSync(path, web) })
-            );
-            b.onResolve({ filter: /^convex\/react$/ }, () => ({
-              path: join(dir, "boundary.ts"),
-            }));
-            b.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({
-              path: join(dir, "api.ts"),
-            }));
-            b.onResolve({ filter: /^@\/components\/providers\/LocaleProvider$/ }, () => ({
-              path: "locale",
-              namespace: "kb77",
-            }));
-            b.onLoad({ filter: /.*/, namespace: "kb77" }, () => ({
-              contents: `import{translate}from${JSON.stringify(join(web, "lib/i18n.ts"))};export const useLocale=()=>{const lang=new URLSearchParams(location.search).get("lang")==="he"?"he":"en";return{lang,dir:lang==="he"?"rtl":"ltr",t:key=>translate(lang,key)}}`,
-              loader: "js",
-              resolveDir: web,
-            }));
-            if (phase === "before")
-              b.onLoad({ filter: /components\/ui\/input\.tsx$/ }, () => ({
-                contents: frozen,
-                loader: "tsx",
-                resolveDir: web,
-              }));
-            b.onResolve({ filter: /^@\// }, ({ path }) => ({
-              path: Bun.resolveSync(path, web),
-            }));
-          },
-        },
-      ],
+      aliases: {
+        "convex/react": join(dir, "boundary.ts"),
+        "@/convex/_generated/api": join(dir, "api.ts"),
+        "@/components/providers/LocaleProvider": locale,
+        ...(phase === "before" ? { "@/components/ui/input": frozenInput } : {}),
+      },
+      timeoutMs: 100_000, cleanupMs: 1_000,
     });
-    if (!output.success) throw Error(output.logs.map(String).join("\n"));
     trace(`build:${phase}:compiled`);
+    const outputs = readdirSync(outdir);
     const assets = {
-      js: await output.outputs.find((x) => x.path.endsWith(".js"))!.text(),
-      css: (
-        await Promise.all(
-          output.outputs.filter((x) => x.path.endsWith(".css")).map((x) => x.text())
-        )
-      ).join("\n"),
+      js: readFileSync(join(outdir, outputs.find((name) => name.endsWith(".js"))!), "utf8"),
+      css: outputs.filter((name) => name.endsWith(".css")).map((name) => readFileSync(join(outdir, name), "utf8")).join("\n"),
     };
     trace(`build:${phase}:done`);
     return assets;
@@ -639,7 +536,7 @@ async function runFixture(results: Results): Promise<Results> {
     trace("cases:done");
   }
   } finally {
-    await releaseOwned(fixtureServer, fixtureBrowser);
+    await release();
   }
 }
 async function runProbe(mode: string, results: Results): Promise<void> {
