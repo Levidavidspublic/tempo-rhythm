@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import type { Browser } from "@playwright/test";
+import { cleanupFixture, requireFixtureSuccess, runIsolatedFixture, type FixtureRun } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
 
 const repo = resolve(import.meta.dir, "../..");
 const child = process.env.KB61_FIXTURE_CHILD === "1";
@@ -41,7 +43,7 @@ async function releaseOwned(server: ReturnType<typeof Bun.serve> | undefined, br
   cleanup.complete = true;
 }
 type RecordPayload = { token: string; results: Results; cleanup: typeof cleanup; serverUrl?: string; descendantPid?: number };
-type ChildRun = { code: number; out: string; err: string; timedOut: boolean; directory: string; pid: number };
+type ChildRun = FixtureRun & { directory: string };
 function parseResults(run: ChildRun, expectedToken: string): RecordPayload {
   const lines = run.out.split("\n").filter((line) => line.startsWith(resultMarker));
   if (lines.length !== 1) throw Error(`KB61 child returned ${lines.length} result records: ${run.err.slice(-6000)}`);
@@ -53,78 +55,30 @@ function requireSuccessfulExit(run: ChildRun, payload: RecordPayload) {
   if (run.timedOut) throw Error(`KB61 child exceeded its lifecycle budget: ${run.err.slice(-6000)}`);
   if (run.code !== 0) throw Error(`KB61 clean child exit ${run.code}: ${run.err.slice(-6000)}`);
   if (!payload.cleanup.complete) throw Error("KB61 child did not complete cleanup");
+  requireFixtureSuccess(run);
 }
 async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{ run: ChildRun; payload?: RecordPayload; error?: unknown }> {
+  const end = Date.now() + Math.min(deadline, probe && probe !== "hang" ? 30_000 : deadline);
   const directory = await uniqueDirectory();
   const runToken = crypto.randomUUID();
-  let processChild: ReturnType<typeof Bun.spawn> | undefined;
-  let timedOut = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const killOwnedGroup = () => {
-    if (!processChild) return;
-    try {
-    // Playwright may give Chromium its own process group. Stop the owned descendant tree too.
-    if (process.platform !== "win32" && processChild.exitCode === null) {
-      const snapshot = Bun.spawnSync(["ps", "-e", "-o", "pid=,ppid="]);
-      if (snapshot.exitCode !== 0) throw Error("KB61 could not inspect its child process tree");
-      const rows = snapshot.stdout.toString().trim().split("\n").map((line) => line.trim().split(/\s+/).map(Number));
-      const owned = new Set([processChild.pid]);
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const [pid, parent] of rows) if (owned.has(parent) && !owned.has(pid)) { owned.add(pid); changed = true; }
-      }
-      for (const pid of [...owned].reverse()) {
-        if (pid === processChild.pid) continue;
-        try { process.kill(pid, "SIGKILL"); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
-      }
-    }
-    } finally {
-      try {
-        if (process.platform === "win32") processChild.kill("SIGKILL");
-        else process.kill(-processChild.pid, "SIGKILL");
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
-      }
-    }
-  };
+  let outcome: { run: ChildRun; payload?: RecordPayload; error?: unknown } | undefined;
+  const errors: unknown[] = [];
   try {
-    processChild = Bun.spawn([process.execPath, import.meta.path], {
-      cwd: repo,
-      env: { ...process.env, KB61_FIXTURE_CHILD: "1", KB61_FIXTURE_TOKEN: runToken, KB61_FIXTURE_DIRECTORY: directory, KB61_FIXTURE_PROBE: probe ?? "" },
-      stdout: "pipe", stderr: "pipe", detached: process.platform !== "win32",
+    // Keep the original hook: reserve its last second for shared reap and parent directory cleanup.
+    const lifecycle = await runIsolatedFixture({
+      command: [process.execPath, import.meta.path], cwd: repo,
+      env: { KB61_FIXTURE_CHILD: "1", KB61_FIXTURE_TOKEN: runToken, KB61_FIXTURE_DIRECTORY: directory, KB61_FIXTURE_PROBE: probe ?? "", KB61_FIXTURE_DEADLINE: String(end - 1_000) },
+      timeoutMs: Math.max(1, end - Date.now() - 1_000), cleanupMs: 500,
     });
-    // Keep the original 480s hook. Reserve its final second for kill/reap and directory release.
-    timer = setTimeout(() => {
-      timedOut = true;
-      phase(`parent:cancel pid=${processChild!.pid}`);
-      try { killOwnedGroup(); } catch (error) { phase(`parent:cancel-error ${String(error)}`); }
-    }, Math.max(1, deadline - 1_000));
-    const readErrors = async () => {
-      let text = "";
-      const decoder = new TextDecoder();
-      for await (const chunk of processChild!.stderr as ReadableStream<Uint8Array>) {
-        const part = decoder.decode(chunk, { stream: true });
-        text += part;
-        process.stderr.write(part);
-      }
-      const tail = decoder.decode(); text += tail; if (tail) process.stderr.write(tail);
-      return text;
-    };
-    const [out, err, code] = await Promise.all([
-      new Response(processChild.stdout).text(), readErrors(), processChild.exited,
-    ]);
-    const run = { code, out, err, timedOut, directory, pid: processChild.pid };
-    try { return { run, payload: parseResults(run, runToken) }; }
-    catch (error) { return { run, error }; }
-  } finally {
-    clearTimeout(timer);
-    await releaseAll(
-      async () => { try { killOwnedGroup(); } finally { if (processChild) await processChild.exited; } },
-      () => rm(directory, { recursive: true, force: true })
-    );
-  }
+    const run = { ...lifecycle, directory };
+    try { outcome = { run, payload: parseResults(run, runToken) }; }
+    catch (error) { outcome = { run, error }; }
+  } catch (error) { errors.push(error); }
+  try { await cleanupFixture({ directory: () => rm(directory, { recursive: true, force: true }) }, 500); }
+  catch (error) { errors.push(error); }
+  if (errors.length) throw new AggregateError([...(outcome?.run.cleanupErrors ?? []), ...errors], "KB61 child and parent cleanup failed");
+  if (!outcome) throw Error("KB61 child returned no lifecycle result");
+  return outcome;
 }
 
 // Only the query/mutation boundary is fictional. The caller and its sheet wiring are real.
@@ -199,34 +153,22 @@ createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><T
   ).css;
   phase("css:done");
   phase("bundle:start");
-  const build = await Bun.build({
-    entrypoints: [join(temp, "entry.tsx")],
-    target: "browser",
-    outdir: temp,
-    define: { "process.env.NODE_ENV": '"development"' },
-    plugins: [
-      {
-        name: "kb61-fixture",
-        setup(b) {
-          b.onResolve(
-            { filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/ },
-            ({ path }) => ({ path: Bun.resolveSync(path, web) })
-          );
-          b.onResolve({ filter: /^convex\/react$/ }, () => ({ path: join(temp, "backend.ts") }));
-          b.onResolve({ filter: /^next\/link$/ }, () => ({ path: join(temp, "link.tsx") }));
-          b.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({
-            path: join(temp, "api.ts"),
-          }));
-          if (original)
-            b.onResolve({ filter: /(?:^|\/)HabitSheet$/ }, () => ({
-              path: join(repo, "work/kb61/before.tsx"),
-            }));
-          b.onResolve({ filter: /^@\// }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
-        },
-      },
-    ],
+  const bundleDirectory = join(temp, "bundle");
+  const remaining = Number(process.env.KB61_FIXTURE_DEADLINE ?? Date.now() + beforeAllDeadline) - Date.now();
+  await isolatedBrowserBuild({
+    cwd: repo, resolveFrom: web, entrypoints: [join(temp, "entry.tsx")], outdir: bundleDirectory,
+    define: { "process.env.NODE_ENV": '\"development\"' },
+    timeoutMs: Math.max(1, remaining - 500), cleanupMs: 500,
+    aliases: {
+      "convex/react": join(temp, "backend.ts"), "next/link": join(temp, "link.tsx"),
+      "@/convex/_generated/api": join(temp, "api.ts"),
+      "@/convex/lib/habitStreak": join(repo, "convex/lib/habitStreak.ts"),
+      ...(original ? { "@/components/habits/HabitSheet": join(repo, "work/kb61/before.tsx"), "./HabitSheet": join(repo, "work/kb61/before.tsx") } : {}),
+    },
   });
-  if (!build.success) throw Error(build.logs.map(String).join("\n"));
+  const build = { outputs: (await readdir(bundleDirectory)).map((name) => ({
+    path: join(bundleDirectory, name), text: () => Bun.file(join(bundleDirectory, name)).text(),
+  })) };
   phase("bundle:done");
   const js = (await build.outputs.find((file) => file.path.endsWith(".js"))?.text()) ?? "";
   const css =
@@ -726,6 +668,36 @@ if (child) {
   });
 
   describe.serial("KB-61 fixture lifecycle", () => {
+    test("descendant and process-group cleanup failures both survive in AggregateError", async () => {
+      const proof = await runIsolatedFixture({
+        command: [process.execPath, "-e", `
+          import { runIsolatedFixture, requireFixtureSuccess } from ${JSON.stringify(join(repo, "tests/helpers/kitchen-fixture.ts"))};
+          const nativeKill = process.kill.bind(process);
+          const descendantError = Error("controlled descendant cleanup failure");
+          const groupError = Error("controlled process-group termination failure");
+          let descendantAttempted = false, groupAttempted = false;
+          process.kill = (pid, signal) => {
+            if (pid > 0 && signal === "SIGTERM" && !descendantAttempted) { descendantAttempted = true; throw descendantError; }
+            if (pid < 0 && signal === "SIGKILL" && !groupAttempted) { groupAttempted = true; throw groupError; }
+            return nativeKill(pid, signal);
+          };
+          let run;
+          try {
+            run = await runIsolatedFixture({ command:[process.execPath,"-e","setInterval(()=>{},1000)"], cwd:${JSON.stringify(repo)}, timeoutMs:300, cleanupMs:600 });
+          } finally { process.kill = nativeKill; }
+          let failure;
+          try { requireFixtureSuccess(run); } catch (error) { failure = error; }
+          if (!(failure instanceof AggregateError) || !failure.errors.includes(descendantError) || !failure.errors.includes(groupError)) throw Error("One cleanup error replaced the other");
+          if (!descendantAttempted || !groupAttempted) throw Error("Both cleanup paths must run");
+          console.log("KB61_BOTH_CLEANUP_ERRORS=" + JSON.stringify([descendantError.message,groupError.message]));
+        `],
+        cwd: repo, timeoutMs: 3_500, cleanupMs: 500,
+      });
+      requireFixtureSuccess(proof);
+      expect(proof.out).toContain("controlled descendant cleanup failure");
+      expect(proof.out).toContain("controlled process-group termination failure");
+    });
+
     test("clean child completes every original case and cleanup with authoritative exit", () => {
       if (outcome.error) throw outcome.error;
       if (!outcome.payload) throw Error("KB61 child did not return results");
