@@ -1,11 +1,13 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { chromium, expect as pwExpect, type Browser, type Page } from "@playwright/test";
 import { Kb03Gallery, SearchFilterSummary, SearchStatus } from "../../apps/web/components/global-search/SearchScreen";
 import { en, he } from "../../apps/web/lib/i18n-groups/kb-03";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
+import { fixtureCleanup, fixturePhase } from "../helpers/kitchen-fixture";
 
 const root = join(import.meta.dir, "../..");
 // Resolve from each declaring workspace, regardless of Bun's hoisting layout.
@@ -73,6 +75,7 @@ describe("KB-03 search states", () => {
 let browser: Browser;
 let server: ReturnType<typeof Bun.serve>;
 let directory: string;
+let cleanup: (() => Promise<void>) | undefined;
 
 async function galleryPage(width = 390, probe = false, lang: "en" | "he" = "en"): Promise<Page> {
   const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
@@ -92,6 +95,13 @@ async function galleryPage(width = 390, probe = false, lang: "en" | "he" = "en")
 
 describe("KB-03 hydrated search gallery", () => {
   beforeAll(async () => {
+    const setupDeadline = Date.now() + 120_000;
+    cleanup = fixtureCleanup({
+      browser: () => browser?.close(),
+      server: () => server?.stop(true),
+      directory: () => directory ? rm(directory, { recursive: true, force: true }) : undefined,
+    }, 5_000);
+    fixturePhase("KB-03 fixture files");
     await mkdir(join(root, "work"), { recursive: true });
     directory = await mkdtemp(join(root, "work/kb03-gallery-"));
     const reactPath = webRequire.resolve("react");
@@ -117,36 +127,41 @@ describe("KB-03 hydrated search gallery", () => {
       "@/convex/_generated/api": mockApi,
       "@/components/providers/LocaleProvider": mockLocale,
     };
-    const bundle = await Bun.build({ entrypoints: [entry], target: "browser", minify: false,
-      alias: { "react-native": mobileRequire.resolve("react-native-web") },
-      plugins: [{ name: "kb03-browser-stubs", setup(build) {
-        build.onResolve({ filter: /^(convex\/react|next\/(navigation|link)|@\/convex\/_generated\/api|@\/components\/providers\/LocaleProvider)$/ },
-          ({ path }) => ({ path: mocks[path] ?? path }));
-      } }],
+    const outdir = join(directory, "bundle");
+    await isolatedBrowserBuild({
+      cwd: root, entrypoints: [entry], outdir, resolveFrom: join(root, "apps/web"),
+      aliases: { ...mocks, "react-native": mobileRequire.resolve("react-native-web") },
+      // The shared child's execution and cleanup fit the unchanged setup deadline.
+      timeoutMs: Math.max(1, setupDeadline - Date.now() - 5_000), cleanupMs: 5_000,
     });
-    if (!bundle.success) throw new Error(`KB-03 bundle failed: ${bundle.logs.map(String).join(" | ")}`);
-    const script = await bundle.outputs.find((output) => output.path.endsWith(".js"))?.text();
+    const outputs = await readdir(outdir);
+    const scriptPath = outputs.find((file) => file.endsWith(".js"));
+    const script = scriptPath ? await readFile(join(outdir, scriptPath), "utf8") : undefined;
     if (!script) throw new Error("KB-03 bundle had no JavaScript output");
     const css = await Promise.all([
       "docs/design/v3/tokens.css", "apps/web/app/tempo.css", "apps/web/app/globals.css", "apps/web/app/v3/kb-03.css",
     ].map((file) => readFile(join(root, file), "utf8")));
-    const generatedCss = await Promise.all(bundle.outputs.filter((output) => output.path.endsWith(".css")).map((output) => output.text()));
+    const generatedCss = await Promise.all(outputs.filter((file) => file.endsWith(".css")).map((file) => readFile(join(outdir, file), "utf8")));
     const html = `<!doctype html><html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css.join("\n")}\n${generatedCss.join("\n")}</style></head><body style="margin:0;background:var(--tp-ground);color:var(--tp-ink)"><div id="root" style="max-width:760px;margin:auto;padding:16px"></div><script>window.process={env:{NODE_ENV:"production"}};</script><script src="/bundle.js"></script></body></html>`;
     server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
       const isScript = new URL(request.url).pathname === "/bundle.js";
       const page = new URL(request.url).searchParams.get("lang") === "he" ? html.replace('<html lang="en" dir="ltr">', '<html lang="he" dir="rtl">') : html;
       return new Response(isScript ? script : page, { headers: { "Content-Type": isScript ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8" } });
     } });
+    fixturePhase("KB-03 server ready; browser launch");
     const bundledBrowser = chromium.executablePath();
     const systemBrowser = ["/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
     if (!existsSync(bundledBrowser) && !systemBrowser) throw new Error("No Playwright Chromium or system Chromium is installed for KB-03 gallery");
     browser = await chromium.launch({ ...(existsSync(bundledBrowser) ? {} : { executablePath: systemBrowser }), args: ["--no-sandbox"] });
+    fixturePhase("KB-03 browser ready");
   }, 120_000);
 
+  beforeEach(() => fixturePhase("KB-03 browser case start"));
+
   afterAll(async () => {
-    await browser?.close();
-    server?.stop();
-    if (directory) await rm(directory, { recursive: true, force: true });
+    fixturePhase("KB-03 cleanup start");
+    await cleanup?.();
+    fixturePhase("KB-03 cleanup complete");
   });
 
   test("loading keeps the last settled production results until the new query settles", async () => {
