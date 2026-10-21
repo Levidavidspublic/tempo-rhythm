@@ -15,6 +15,8 @@ const names = baseline
       "same-tick duplicate activation calls Undo once",
       "synchronous callback throw is a safe error",
       "resolution after replacement keeps the new toast",
+      "a queued replacement survives success in the same browser task",
+      "a queued same-id replacement survives success in the same browser task",
       "rejection after replacement leaves the new toast clean",
       "dismissal then replacement ignores the old resolution",
       "expiry during a pending request cannot close a later toast",
@@ -219,6 +221,12 @@ async function runFixture(): Promise<Results> {
   const dismiss = (page: any) => toast(page).locator("button").last();
   const settle = (page: any, label = "A", ok = true) =>
     control(page, `c.settle(${JSON.stringify(label)},${ok})`);
+  const replace = async (page: any, label: string, options: { sameId?: boolean } = {}) => {
+    await control(page, `c.replace(${JSON.stringify(label)},${JSON.stringify(options)})`);
+    // A queued parent update is not a replacement until React commits it.
+    // Observe the new title before completing the previous mounted request.
+    await pw(toast(page)).toContainText(`Change ${label}`);
+  };
   const check = async (name: string, fn: () => Promise<void>) => {
     if (!names.includes(name)) return;
     try {
@@ -330,7 +338,7 @@ async function runFixture(): Promise<Results> {
     await check("resolution after replacement keeps the new toast", async () => {
       const p = await open();
       await undo(p).click();
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await settle(p);
       await pw(toast(p)).toContainText("Change B");
       await pw(undo(p)).toBeEnabled();
@@ -339,17 +347,38 @@ async function runFixture(): Promise<Results> {
     await check("rejection after replacement leaves the new toast clean", async () => {
       const p = await open();
       await undo(p).click();
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await settle(p, "A", false);
       await pw(toast(p)).toContainText("Change B");
       await pw(toast(p).getByRole("alert")).toHaveCount(0);
       await p.close();
     });
+    for (const sameId of [false, true]) {
+      await check(
+        sameId
+          ? "a queued same-id replacement survives success in the same browser task"
+          : "a queued replacement survives success in the same browser task",
+        async () => {
+          const p = await open("direct", "current", 390, "en", "light", sameId ? "sameId" : "");
+          await undo(p).click();
+          // Deliberately settle before React can commit the queued parent update.
+          await control(p, `c.replace("B",{sameId:${sameId}});c.settle("A",true)`);
+          await pw(toast(p)).toContainText("Change B");
+          await pw(undo(p)).toBeEnabled();
+          pw(await control(p, "return c.state.closeCalls")).toBe(0);
+          await undo(p).click();
+          await settle(p, "B");
+          await pw(toast(p)).toHaveCount(0);
+          pw(await control(p, "return c.state.closeCalls")).toBe(1);
+          await p.close();
+        }
+      );
+    }
     await check("dismissal then replacement ignores the old resolution", async () => {
       const p = await open();
       await undo(p).click();
       await dismiss(p).click();
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await settle(p);
       await pw(toast(p)).toContainText("Change B");
       await p.close();
@@ -359,7 +388,7 @@ async function runFixture(): Promise<Results> {
       await undo(p).click();
       await control(p, "c.advance(300000)");
       await pw(toast(p)).toHaveCount(0);
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await settle(p);
       await pw(toast(p)).toContainText("Change B");
       await p.close();
@@ -368,7 +397,7 @@ async function runFixture(): Promise<Results> {
       const p = await open();
       await undo(p).click();
       await dismiss(p).click();
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await settle(p, "A", false);
       await pw(toast(p)).toContainText("Change B");
       await pw(toast(p).getByRole("alert")).toHaveCount(0);
@@ -379,7 +408,7 @@ async function runFixture(): Promise<Results> {
       await undo(p).click();
       await control(p, "c.advance(300000)");
       await pw(toast(p)).toHaveCount(0);
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await settle(p, "A", false);
       await pw(toast(p)).toContainText("Change B");
       await pw(toast(p).getByRole("alert")).toHaveCount(0);
@@ -404,11 +433,11 @@ async function runFixture(): Promise<Results> {
       await undo(p).click();
       await settle(p, "A", false);
       await pw(toast(p).getByRole("alert")).toBeVisible();
-      await control(p, 'c.replace("B",{sameId:true})');
+      await replace(p, "B", { sameId: true });
       await pw(undo(p)).toBeEnabled();
       await pw(toast(p).getByRole("alert")).toHaveCount(0);
       await undo(p).click();
-      await control(p, 'c.replace("C",{sameId:true})');
+      await replace(p, "C", { sameId: true });
       await pw(undo(p)).toBeEnabled();
       await pw(toast(p).getByRole("alert")).toHaveCount(0);
       await p.close();
@@ -429,7 +458,7 @@ async function runFixture(): Promise<Results> {
     await check("same-id replacement ignores the previous request", async () => {
       const p = await open("direct", "current", 390, "en", "light", "sameId");
       await undo(p).click();
-      await control(p, 'c.replace("B",{sameId:true})');
+      await replace(p, "B", { sameId: true });
       await pw(undo(p)).toBeEnabled();
       await settle(p);
       await pw(toast(p)).toContainText("Change B");
@@ -506,7 +535,7 @@ async function runFixture(): Promise<Results> {
       });
       pw(style).toEqual({ focus: true, visible: true });
       await p.keyboard.press("Enter");
-      await control(p, 'c.replace("B")');
+      await replace(p, "B");
       await p.locator("#reader-action").focus();
       await settle(p);
       await pw(p.locator("#reader-action")).toBeFocused();

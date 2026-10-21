@@ -308,7 +308,12 @@ export function makeToast(title: string, onUndo?: () => Promise<unknown>): Toast
 export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
   const { t, lang } = useLocale();
   const [now, setNow] = useState(() => Date.now());
-  const [feedback, setFeedback] = useState({ toast, busy: false, error: false });
+  const [feedback, setFeedback] = useState({
+    toast,
+    busy: false,
+    error: false,
+    completed: null as symbol | null,
+  });
   const busyRef = useRef(false);
   const ownerRef = useRef<{ toast: ToastState; mounted: boolean; request: symbol | null } | null>(
     null
@@ -333,8 +338,29 @@ export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () =
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (left <= 0 && ownerRef.current?.mounted && ownerRef.current.toast === toast) onClose();
+    const owner = ownerRef.current;
+    if (left <= 0 && owner?.mounted && owner.toast === toast) {
+      owner.mounted = false;
+      owner.request = null;
+      onClose();
+    }
   }, [left, onClose, toast]);
+  useEffect(() => {
+    const owner = ownerRef.current;
+    if (
+      feedback.toast !== toast ||
+      !feedback.completed ||
+      !owner?.mounted ||
+      owner.toast !== toast ||
+      owner.request !== feedback.completed
+    )
+      return;
+    // Publish completion locally first. A parent's already queued replacement
+    // can commit and invalidate this owner before it may close anything.
+    owner.mounted = false;
+    owner.request = null;
+    onClose();
+  }, [feedback, onClose, toast]);
 
   const undo = () => {
     const owner = ownerRef.current;
@@ -350,21 +376,17 @@ export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () =
     const request = Symbol();
     owner.request = request;
     busyRef.current = true;
-    setFeedback({ toast, busy: true, error: false });
+    setFeedback({ toast, busy: true, error: false, completed: null });
     const current = () => owner.mounted && ownerRef.current === owner && owner.request === request;
     const run = async () => {
       try {
         await callback();
-        if (current()) onClose();
+        if (current()) setFeedback({ toast, busy: true, error: false, completed: request });
       } catch {
-        if (current()) setFeedback({ toast, busy: false, error: true });
-      } finally {
         if (current()) {
           owner.request = null;
           busyRef.current = false;
-          setFeedback((previous) =>
-            previous.toast === toast ? { ...previous, busy: false } : previous
-          );
+          setFeedback({ toast, busy: false, error: true, completed: null });
         }
       }
     };

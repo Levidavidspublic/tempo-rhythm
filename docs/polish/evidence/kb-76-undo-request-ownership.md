@@ -1,6 +1,6 @@
 # KB-76: a completed Undo cannot dismiss a newer Undo
 
-This polishes the existing `UndoToast` and adds **zero primary views**. Source/test commit: `499745a6670d4667d1265997ddb3d6e1f8de9230`. Integration base and frozen original: `52bf2803e9105b25c2538aedd81a754a9fbfdedb`. The original `shared.tsx` and unchanged `ProjectDetailScreen.tsx` were frozen at **2026-10-20 01:13 UTC**, before any production edit. The initial original-code browser reproduction completed before the repair; later original contact-sheet captures import that exact frozen module. The source/test files remain frozen after repair round 3.
+This polishes the existing `UndoToast` and adds **zero primary views**. Original source/test commit: `499745a6670d4667d1265997ddb3d6e1f8de9230`. Integration base and frozen original: `52bf2803e9105b25c2538aedd81a754a9fbfdedb`. The original `shared.tsx` and unchanged `ProjectDetailScreen.tsx` were frozen at **2026-10-20 01:13 UTC**, before any production edit. The initial original-code browser reproduction completed before the repair; later original contact-sheet captures import that exact frozen module. The 20 Oct three-round freeze and historical results below are preserved; the separately authorized 21 Oct repair is recorded at the end. That repair changes only UndoToast settlement, the scoped test and this evidence; existing captures remain historical evidence of the unchanged appearance.
 
 The [before/after contact sheet](kb-76-undo-request-ownership.jpg) shows the actual unchanged `ProjectDetailScreen` at 390/1280 px, English/Hebrew, light/dark. Its existing checkboxes create toast A and toast B through the real caller callbacks. A's Undo waits, B replaces it, then A resolves. The original loses B; the changed shared toast keeps B and B's own Undo callback. The lower sheet compares the original toast in a standalone fixture with the new interactive gallery; there was no original production gallery. Each full 900 px viewport uses the same compiled app `globals.css`, actual v3 styles and icon sprite, with local font fallback. Desktop captures are scaled to fit their evidence column.
 
@@ -44,11 +44,11 @@ All required local commands were attempted on the unchanged source/test commit. 
 
 The initial pointer timeout is preserved as an observed failure; the later trace proves the later diagnostic succeeded, not why the initial timeout happened. Three implementation/check repair rounds have been used; no fourth source/test repair is authorized. Current scoped source/test work is frozen. Required long checks run in AGENTS order, including later steps after any failure. Full validation uses the outer validation lock; embedded browser tests also take fixture then E2E locks. Fixture-only jobs take fixture then E2E locks and launch no Next server. Existing Chromium is used through a process-only browser path.
 
-GitHub CI at first evidence head `13763ab05c4328063a1ef2ac9019892e265425ba` independently reported success for ci, full Test, E2E, e2e-preview, Lint, Typecheck, Build, scans, notices, secrets and scope/config guards ([run](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39354289651)). Detailed remote test counts are UNKNOWN because the Actions log download returned 403. This does not erase the local E2E failures. Any reporting-only later head may queue fresh checks; it is not claimed green before they finish.
+GitHub CI at first evidence head `13763ab05c4328063a1ef2ac9019892e265425ba` independently reported success for ci, full Test, E2E, e2e-preview, Lint, Typecheck, Build, scans, notices, secrets and scope/config guards ([run](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39354289651)). The later reporting head `6bf810cb3a3c240ae9803588a9287b3c52d93e41` **failed required `ci` and `Test`**, with the scoped KB-76 wrapper assertion expecting an UndoToast containing “Change B” but finding no element within 5,000 ms ([failing Test](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39355394466/job/118408875303)). Its other four required checks passed. Detailed remote counts, the exact failing named case and remote root cause remain UNKNOWN because Actions log retrieval returned 403. The first head's historical green result does not establish that the later head is green and does not erase local E2E failures. Any new repair head requires its own checks.
 
 Local failure details: `screens/sign-out.spec.ts:13` timed out after 30 seconds waiting for the Sign out button; `task-views-core.spec.ts:22` timed out filling Task title. Both retained screenshots were visually inspected and show the Today loading skeleton, with no UndoToast visible. These observations do not establish a root cause. No unrelated test, route, auth or backend change was made, and no broad repeat was run solely for green.
 
-## Named final cases
+## Named 20 Oct cases
 
 1. current success closes once
 2. current rejection retains a reachable retry
@@ -185,3 +185,38 @@ changed: apps/web/components/goals/shared.tsx; apps/web/lib/i18n-groups/kb-76.ts
 unknowns: exact frozen install stalled; detailed remote test counts (log download 403); device screen reader; live backend writes and deployed persistence
 notes for ticket sync: local E2E loading timeouts remain outside this toast repair; three repair rounds exhausted; no fourth source/test repair; Hebrew machine-drafted; callbacks and deadline unchanged
 ```
+
+
+## 21 Oct: explicitly authorized additional repair pass
+
+Amit's **AWAY — KB FINISH** instruction grants one additional repair pass for an exhausted KB ticket, with the existing six-file scope and checks unchanged. This authorizes the repair below; the three failed/historical rounds above remain part of the record. The branch rebased onto `origin/integration` at `52bf280` with no change. A refreshed ownership audit found no competing writer for `goals/shared.tsx`.
+
+The [CodeRabbit review](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183#pullrequestreview-5597556707) raised two valid findings: replacement tests settled A before proving B had committed, and this evidence omitted the latest required CI failure. Both are addressed. No paid review CLI, additional provider or bot run was invoked by the repair worker.
+
+The scheduling concern was also a product defect within the existing callback contract. An isolated diagnostic against the unchanged pre-pass `499745a` product queued `c.replace("B")` and `c.settle("A",true)` in the same browser task. React had not committed B, so A still owned its component and immediately called the parent's parameterless `onClose`. React batched the parent's B update with the later null update, and no toast remained. The child process exited 0 while recording the case as `pass: false`, with the same missing “Change B” / 5,000 ms assertion signature reported by hosted CI. This local proof establishes the demonstrated ordering; the exact hosted case and remote trace remain UNKNOWN because the job logs were unavailable.
+
+Success now publishes a completion token in the toast's local state. A post-commit effect verifies the toast object, mounted owner and request token before consuming that completion and calling the existing `onClose` once. An already queued replacement can commit first and invalidate A. Expiry invalidates the owner before closing so a pending completion cannot close again. Failure still clears the synchronous duplicate guard and exposes retry, with the original deadline and callback arguments unchanged. No caller, public signature, retention policy or other shared export changes.
+
+Committed-replacement tests now explicitly observe the replacement title before settling the old request. Two additional tests deliberately queue the parent replacement and settle A in the **same browser task**, without waiting for a commit, covering different IDs and the same ID. Both prove B remains actionable, A causes zero closes, and B's own successful Undo closes exactly once. The 27 original cases, post-settlement assertions and all existing timeouts remain intact; no configuration, assertion or check was relaxed.
+
+| Additional-pass check | Result |
+|---|---|
+| Diagnostic against pre-pass product | Recorded failure: expected “Change B”, element not found within 5,000 ms; process exit 0 because the child serializes results. |
+| Preliminary synchronization-only `bun test tests/unit/kb-76.test.tsx` | exit 0; **27 pass, 0 fail**, 81 wrapper assertions, 119.49 s. This run predates the additional product repair and two new cases. |
+| Final `bun test tests/unit/kb-76.test.tsx` | exit 0; **29 pass, 0 fail**, 87 wrapper assertions, 135.46 s. Includes both queued-replacement cases and unchanged real ProjectDetail caller. |
+| Scoped `biome lint` from `apps/web` | exit 0; 3 production files checked, no fixes. An earlier root-level invocation could not resolve the existing relative config extension; using the package's working directory resolved it without any config edit. |
+
+Final product source SHA-256: `7b8d9caa48a2b71e5bbd6574216a3cf20a7fa0b605b2095aa300da57e0494863`. Final scoped test SHA-256: `91adcc64d090a412993114d1ebca95bb86d9813c02dee799b942e3dd682694dc`. Existing contact-sheet images describe the historical appearance; no new view or visual styling is added by this pass.
+
+Additional named cases:
+
+28. a queued replacement survives success in the same browser task
+29. a queued same-id replacement survives success in the same browser task
+
+The final mandatory gate outcomes will be recorded below. A new pushed head's required GitHub results are separate from these local results and must be checked on that exact head.
+
+## AWAY — repair draft, validation pending
+
+Root independently completed final typecheck (5/5); lint passes. Frozen installation remains UNKNOWN after its resolver bound. All 29 focused cases pass. The prior failed hosted and local candidates above remain part of the evidence.
+
+The lead owns the remaining full unit suite, scan confirmation, local E2E and build commands. They are queued separately under the shared resource lock; no passing result is claimed for an unfinished command. This repair may be pushed as a draft for hosted CI, but is not yet eligible for integration. No assertions, check configuration, timeout or skip conditions were weakened. The lead will append actual outcomes and failure tails before the merge gate.
