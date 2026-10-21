@@ -151,6 +151,7 @@ async function descendants(pid: number): Promise<ProcessIdentity[]> {
   return result;
 }
 function signalProcess(pid: number, signal: NodeJS.Signals): void {
+  if (!Number.isInteger(pid) || pid === 0) throw new Error("Refusing to signal an unowned process group");
   try { process.kill(pid, signal); }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
 }
@@ -168,6 +169,7 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
   });
   const result: FixtureRun = { pid: child.pid ?? 0, code: null, signal: null, out: "", err: "", timedOut: false, cancelled: false, cleanupErrors: [], outputTruncated: false };
   let exited = false;
+  let supervisorSignal: NodeJS.Signals | null = null;
   let receipt = "";
   let receiptCount = 0;
   let stopping: Promise<void> | undefined;
@@ -180,7 +182,7 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
       exited = true;
       if (supervised) {
         result.supervisorCode = code;
-        if (signal || code !== 0 || receiptCount !== 1) recordError(new Error(`Supervisor exit=${code} signal=${signal} child receipts=${receiptCount}`));
+        supervisorSignal = signal;
       } else {
         result.code = code;
         result.signal = signal;
@@ -209,7 +211,9 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
           if (line.startsWith("KITCHEN_CHILD_EXIT=")) {
             try {
               const record = JSON.parse(line.slice("KITCHEN_CHILD_EXIT=".length));
-              if (record.token !== token || !Number.isInteger(record.code)) throw new Error("Invalid child exit receipt");
+              // Nested isolated builds stream their own receipts through this pipe.
+              if (record.token !== token) continue;
+              if (!Number.isInteger(record.code)) throw new Error("Invalid child exit receipt");
               receiptCount++;
               if (record.code < 0) {
                 result.signal = Object.entries(constants.signals).find(([, value]) => value === -record.code)?.[0] as NodeJS.Signals ?? null;
@@ -242,6 +246,8 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
     catch (error) { recordError(error); }
   };
   const stop = () => stopping ??= (async () => {
+    // Spawn errors have no owned PID; zero would signal our entire process group.
+    if (!Number.isInteger(result.pid) || result.pid <= 0) return;
     fixturePhase(`cancel pid=${result.pid} timeout=${result.timedOut}`);
     // Keep the parent alive briefly so its signal handler can close/reap browser children.
     forceTimer = setTimeout(() => { void killOwned(); }, options.cleanupMs * 0.75);
@@ -264,6 +270,10 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
     if (stopping) await stopping;
     // A descendant holding inherited pipes must not hang result delivery after parent exit.
     await bounded(closed, options.cleanupMs, "fixture output close");
+    // OS exit can arrive before the stderr receipt drains. Validate only after close.
+    if (supervised && (supervisorSignal || result.supervisorCode !== 0 || receiptCount !== 1)) {
+      recordError(new Error(`Supervisor exit=${result.supervisorCode} signal=${supervisorSignal} child receipts=${receiptCount}`));
+    }
   } catch (error) {
     recordError(error);
     await stop();

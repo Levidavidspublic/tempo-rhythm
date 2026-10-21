@@ -126,6 +126,57 @@ describe.serial("shared kitchen fixture lifecycle", () => {
       .rejects.toThrow("Committed transition signal timed out");
   });
 
+  test("nested isolated builds retain separate authoritative child exits", async () => {
+    for (const code of [0, 17]) {
+      const result = await run(`
+        import { runIsolatedFixture, requireFixtureSuccess } from ${JSON.stringify(helper)};
+        const nested = await runIsolatedFixture({ command:[process.execPath,"-e","process.exit(${code})"], cwd:${JSON.stringify(root)}, timeoutMs:1000, cleanupMs:500 });
+        requireFixtureSuccess(nested);
+      `);
+      if (code === 0) requireFixtureSuccess(result);
+      else {
+        expect(result.code).not.toBe(0);
+        expect(() => requireFixtureSuccess(result)).toThrow();
+      }
+      expect(result.cleanupErrors).toEqual([]);
+      expect(result.err.match(/KITCHEN_CHILD_EXIT=/g)?.length).toBe(2);
+    }
+  });
+
+  test("child exit receipt is checked after stderr drains even when OS exit arrives first", async () => {
+    const result = await run(`
+      import { mock } from "bun:test";
+      import { spawn as realSpawn } from "node:child_process";
+      const nativeSpawn = realSpawn;
+      mock.module("node:child_process", () => ({ spawn(...args) {
+        const child = nativeSpawn(...args);
+        child.stderr.pause();
+        child.once("exit", () => queueMicrotask(() => child.stderr.resume()));
+        return child;
+      } }));
+      const { runIsolatedFixture, requireFixtureSuccess } = await import(${JSON.stringify(helper)});
+      const delayed = await runIsolatedFixture({command:[process.execPath,"-e","process.exit(0)"],cwd:${JSON.stringify(root)},timeoutMs:1000,cleanupMs:500});
+      requireFixtureSuccess(delayed);
+      console.log("delayed receipt accepted after close");
+    `);
+    requireFixtureSuccess(result);
+    expect(result.out).toContain("delayed receipt accepted after close");
+  });
+
+  test("spawn failure reports the error without signaling PID zero or the caller group", async () => {
+    const result = await run(`
+      import { runIsolatedFixture, requireFixtureSuccess } from ${JSON.stringify(helper)};
+      const missing = await runIsolatedFixture({command:[process.execPath,"-e","process.exit(0)"],cwd:${JSON.stringify(root)},env:{PATH:"/missing-kitchen-fixture-bin"},timeoutMs:1000,cleanupMs:500});
+      if (missing.pid !== 0 || missing.cleanupErrors.length === 0) throw Error("Expected missing executable evidence");
+      let rejected = false;
+      try { requireFixtureSuccess(missing); } catch { rejected = true; }
+      if (!rejected) throw Error("Spawn failure was accepted");
+      console.log("caller survives spawn failure");
+    `);
+    requireFixtureSuccess(result);
+    expect(result.out).toContain("caller survives spawn failure");
+  });
+
   test("fresh browser builds resolve React scheduler from its actual importing package", async () => {
     const directory = await mkdtemp(join(tmpdir(), "kitchen-build-"));
     try {
