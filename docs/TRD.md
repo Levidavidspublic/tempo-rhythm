@@ -116,3 +116,17 @@ The recorded behavior keeps drafts, validation and suggestion feedback attached 
 Issue #1169 is now closed after PR #1172. This was an independently observed repository change, not an issue action performed by this documentation task.
 
 Source: [KB-67 evidence](https://github.com/Levidavidspublic/tempo-rhythm/blob/c7447ad9ad5a71326b211d1de80d54091a280683/docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.md).
+
+## Default branch snapshot on 2026-10-21: additional recovery and focus work
+
+The pinned default branch snapshot is `542f2cf361a595cc6e4556ba742ff3c4368d0374`. Relative to the preceding snapshot, five changes add the following behavior without changing canonical product contracts or repository instructions:
+
+- KB-61: a submitted habit-sheet save owns only its originating sheet instance. Closing and reopening cannot let an old response close or alter a new draft; closing does not cancel the underlying save.
+- KB-64: note Undo failures stay in the existing notice, with explicit retry inside the original absolute deadline. Duplicate activation is guarded; accepted work can settle after the deadline without overriding successful parent navigation. Fulfillment alone is not a restoration receipt.
+- KB-70: notification actions guard duplicate submissions and preserve focus that has moved away from the pending row.
+- KB-73: the landing theme control has a localized next-action accessible name, a 44 px target and visible keyboard focus.
+- KB-74: the narrow navigation drawer contains keyboard focus, makes the background inert, supports dismissal and restores an appropriate visible opener. Other overlays and route navigation retain their own focus ownership.
+
+The committed evidence reports focused fixture passes, but also failed or unknown local required checks for several changes. Those failures remain material despite reported remote CI success. This documentation task did not repeat the tests. Live persistence, device screen readers and native-language review remain UNKNOWN.
+
+Public evidence is under `docs/polish/evidence/` at the pinned snapshot, in the KB-61, KB-64, KB-70, KB-73 and KB-74 Markdown reports.

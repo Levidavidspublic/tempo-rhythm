@@ -4,7 +4,7 @@ Updated 2026-10-21. Documentation draft for review; implementation and live acce
 
 ## Verdict
 
-NEW 0. Proposed EDIT 13. Proposed CLOSE 0. Current open inventory 294, refreshed 2026-10-21. The earlier 268-issue audit is retained; 26 subsequent open issues preserve their current ownership and are not recast as new work.
+NEW 0. Proposed EDIT 13. Proposed CLOSE 0. Current open inventory 291, refreshed 2026-10-21. The earlier 268-issue audit is retained; 26 subsequent open issues preserve their current ownership and are not recast as new work.
 
 The completed evidence did not establish a new independent ticket that is absent from the current open inventory. Existing tickets already cover page authority, editor fidelity, resources, planning, memory, voice, search, mobile and UI recovery. No duplicate issue should be manufactured simply to populate this packet.
 
@@ -545,15 +545,10 @@ None proposed. An open or old issue is not evidence that it is obsolete or compl
 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | KEEP current ownership; later issue, no duplicate creation |
 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | KEEP current ownership; later issue, no duplicate creation |
 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | KEEP current ownership; later issue, no duplicate creation |
-| [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | KEEP current ownership; later issue, no duplicate creation |
-| [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) | KEEP current ownership; later issue, no duplicate creation |
-| [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) | KEEP current ownership; later issue, no duplicate creation |
 | [#1175](https://github.com/Levidavidspublic/tempo-rhythm/issues/1175) | KEEP current ownership; later issue, no duplicate creation |
 | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | KEEP current ownership; later issue, no duplicate creation |
 | [#1178](https://github.com/Levidavidspublic/tempo-rhythm/issues/1178) | KEEP current ownership; later issue, no duplicate creation |
 | [#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180) | KEEP current ownership; later issue, no duplicate creation |
-| [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | KEEP current ownership; later issue, no duplicate creation |
-| [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | KEEP current ownership; later issue, no duplicate creation |
 | [#1184](https://github.com/Levidavidspublic/tempo-rhythm/issues/1184) | KEEP current ownership; later issue, no duplicate creation |
 | [#1188](https://github.com/Levidavidspublic/tempo-rhythm/issues/1188) | KEEP current ownership; later issue, no duplicate creation |
 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | KEEP current ownership; later issue, no duplicate creation |
@@ -562,3 +557,27 @@ None proposed. An open or old issue is not evidence that it is obsolete or compl
 ## Concurrent repository update
 
 Issue #1169 closed during this run after PR #1172. Its prior KEEP entry was removed from the open inventory; this task did not close it. The 13 amendment targets remain open.
+
+## Final pinned issue snapshot
+
+At 2026-10-21 10:12 UTC, the live inventory has 291 open issues. Issues #1166, #1169, #1170, #1171, #1181 and #1182 closed independently during this task. The 13 proposed amendment targets remain open; none of these concurrent closures changes the amendment set.
+
+- [Proposed edits and closures](https://github.com/Levidavidspublic/tempo-rhythm/issues/1194) records the 13 amendments for review.
+- [Documentation package tracking](https://github.com/Levidavidspublic/tempo-rhythm/issues/1195) tracks this package.
+
+These are coordination issues, not new implementation tickets.
+
+<!-- PUBLICATION-INDEX-BEGIN -->
+## Publication record - 2026-10-21
+
+WALK: The following GitHub issues exist. Implementation tickets carry `docs-sync` and `agent:blocked`; creation does not start implementation. Existing issue edits and closures remain proposals only.
+
+Draft PR: NONE. The prepared documentation branch remains local under the non-CodeRabbit cost exception.
+
+| Planning ID | GitHub issue | Purpose |
+|---|---|---|
+| proposals | [#1194](https://github.com/Levidavidspublic/tempo-rhythm/issues/1194) | proposals |
+| docs-package | [#1195](https://github.com/Levidavidspublic/tempo-rhythm/issues/1195) | docs-sync |
+
+This publication record supersedes earlier preparation-only status text; it does not change ticket acceptance criteria.
+<!-- PUBLICATION-INDEX-END -->

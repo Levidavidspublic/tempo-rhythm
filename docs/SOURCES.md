@@ -11,9 +11,9 @@ Reusable prior baseline, verified initially on 2026-10-21: `52bf2803e9105b25c253
 - Prior organized records: 1,493 source identities. This is not a unique-document count.
 - Current continuation: next queued batch of 22 sources fully covered through new reading and current exact passage comparison with prior read receipts; zero range gaps or mismatched reused passages.
 - Relevant additions confirm the existing v3 design intent, historical five-loop preview target, confirmed-memory handoff boundaries and additive migration/ledger requirements. Generic workflow examples remain historical reference; their instructions were not executed.
-- Remaining small-source candidates: 1,767 in the prepared queue. Historical large-source candidates: 62. These numbers have not been reconciled into unique relevant documents and must not be added into a completion percentage.
-- Raw conversations, attachments and residual large archives remain incomplete. Complete corpus coverage: UNKNOWN.
-- Mid-run GitHub inventory: 295 open issues and 119 open PRs; final issue count is 294 after #1169 closed. PR count is a snapshot, not a final invariant. Metadata collection is not full body reading or runtime evidence. All 13 proposed amendment targets remain open.
+- Historical handoff queue: 1,767 small and 62 large candidates. The reconciled inventory and bounded review below supersede these raw queue counts; they are not a completion percentage.
+- Protected conversations, missing or truncated attachments, and unavailable archive material remain UNKNOWN. Every original inventory identity has a disposition; this is not complete raw-corpus reading.
+- Mid-run GitHub inventory: 295 open issues and 119 open PRs; a later snapshot recorded 294 after #1169 closed. PR count is a snapshot, not a final invariant. Metadata collection is not full body reading or runtime evidence. All 13 proposed amendment targets remain open.
 - No product/browser/provider/device/deployment test was run by this documentation task.
 
 Only public repository pointers are included here. Private provenance, filenames and source copies are intentionally absent from this public packet.
@@ -385,3 +385,59 @@ The recorded behavior keeps drafts, validation and suggestion feedback attached 
 Issue #1169 is now closed after PR #1172. This was an independently observed repository change, not an issue action performed by this documentation task.
 
 Source: [KB-67 evidence](https://github.com/Levidavidspublic/tempo-rhythm/blob/c7447ad9ad5a71326b211d1de80d54091a280683/docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.md).
+
+## Default branch snapshot on 2026-10-21: additional recovery and focus work
+
+The pinned default branch snapshot is `542f2cf361a595cc6e4556ba742ff3c4368d0374`. Relative to the preceding snapshot, five changes add the following behavior without changing canonical product contracts or repository instructions:
+
+- KB-61: a submitted habit-sheet save owns only its originating sheet instance. Closing and reopening cannot let an old response close or alter a new draft; closing does not cancel the underlying save.
+- KB-64: note Undo failures stay in the existing notice, with explicit retry inside the original absolute deadline. Duplicate activation is guarded; accepted work can settle after the deadline without overriding successful parent navigation. Fulfillment alone is not a restoration receipt.
+- KB-70: notification actions guard duplicate submissions and preserve focus that has moved away from the pending row.
+- KB-73: the landing theme control has a localized next-action accessible name, a 44 px target and visible keyboard focus.
+- KB-74: the narrow navigation drawer contains keyboard focus, makes the background inert, supports dismissal and restores an appropriate visible opener. Other overlays and route navigation retain their own focus ownership.
+
+The committed evidence reports focused fixture passes, but also failed or unknown local required checks for several changes. Those failures remain material despite reported remote CI success. This documentation task did not repeat the tests. Live persistence, device screen readers and native-language review remain UNKNOWN.
+
+Public evidence is under `docs/polish/evidence/` at the pinned snapshot, in the KB-61, KB-64, KB-70, KB-73 and KB-74 Markdown reports.
+
+## Continuing source reconciliation
+
+On 2026-10-21 the broader local inventory of 2,854 identities was reconciled against hash-verified completed receipts. The first reconciliation contained 583 exact full-body reuses, 550 generic tool-skill sources outside product scope and 1,721 remaining relevance candidates. Those were intermediate counts. The final dispositions below supersede all remaining-candidate counts. Index and audit material is distinguished from product bodies; no complete-corpus claim is made.
+
+Issue snapshot refresh: 2026-10-21 10:12 UTC, 291 open issues. Six independent closures and two new documentation coordination issues reconcile the initial 295 snapshot. The 13 proposed amendment targets remain open.
+
+## Bounded continuation review closed on 2026-10-21
+
+The designated continuation queue contains 582 standalone or dependency identities: 127 remaining safe bodies had all designated novel passages reviewed; 122 were covered by earlier continuation review and separately recorded exact-reuse dependencies; 50 were scoped out from their titles and opening context as metadata, tool instructions, historical operations or other subjects; 283 were withheld as protected sources. These categories are dispositions, not 582 full raw-body reads. Opaque strings were withheld, and exact reuse is distinct from new reading.
+
+The three large containers have 83 selected logical units: 67 protected units remain UNKNOWN, 14 were excluded by explicit conversation or document scope, and two identical UI-brief copies were reviewed using their verified boundaries. A separately identified frontend-design conversation is also protected UNKNOWN. The archive's declared conversation count does not match its available structural records; missing or truncated originals remain UNKNOWN.
+
+The original broader inventory is now fully dispositioned by the final pass below. Closing the bounded queue and classifying the original inventory do not establish complete raw-source coverage. Historical notes do not replace the pinned default-branch contracts, and this continuation adds no new implementation ticket or public product claim.
+
+## Final original-inventory disposition, 2026-10-21
+
+All 2,854 original candidate identities are tracked. None remains unclassified, and no available safe product body remains pending. The final pass reviewed 478 distinct normalized context groups representing 669 identities; relevant bodies were completed rather than excluded from metadata alone. Whole-source screening preceded prose review. Sources blocked by that screening were withheld as whole documents or verified logical conversations.
+
+| Disposition | Identities |
+|---|---:|
+| Prior verified full-body reuse | 583 |
+| Prior tool/skill scope exclusions | 550 |
+| Protected standalone sources: UNKNOWN | 734 |
+| Prior continuation review with separately recorded exact-reuse dependencies | 130 |
+| Safe designated novel passages reviewed | 135 |
+| Additional safe full-body semantic review | 23 |
+| Additional complete normalized semantic reuse | 5 |
+| Contextual exclusions: reference libraries | 116 |
+| Contextual exclusions: tool and operator workflows | 251 |
+| Contextual exclusions: private planning | 165 |
+| Contextual exclusions: indexes and metadata | 59 |
+| Contextual exclusions: other products | 50 |
+| Earlier bounded contextual exclusions | 50 |
+| Structurally reconciled archive containers | 3 |
+| **Total** | **2,854** |
+
+These are identity dispositions, not a unique-document count or a full-read percentage. The additional full-body review used 17 roots covering 23 identities. Five other identities were compared across their complete normalized lexical content with reviewed roots; pagination and bullet differences were read separately. This is semantic reuse, not byte identity. Opaque strings were withheld throughout.
+
+The three archive containers retain the logical-unit dispositions above: selected protected units and unavailable or truncated originals remain UNKNOWN. The separately identified protected design conversation remains UNKNOWN as well. No newly discovered source outside the original inventory is claimed covered.
+
+The final safe sources confirm page-based planning, explicit proposal acceptance, recovery, manual fallback and user control. Historical launch plans, technology choices and design drafts do not override the pinned repository contracts. No additional product ticket or binding product decision resulted from this pass. Runtime and production acceptance remain UNKNOWN.

@@ -4,7 +4,7 @@ Updated 2026-10-21. Documentation draft for review; implementation and live acce
 
 ## Verified repository baseline
 
-The default branch was rechecked on 2026-10-21 at `c7447ad9ad5a71326b211d1de80d54091a280683`. This table describes the repository, not the deployed environment.
+The default branch was rechecked on 2026-10-21 at `542f2cf361a595cc6e4556ba742ff3c4368d0374`. This table describes the repository, not the deployed environment.
 
 | Layer | Existing choice | Boundary |
 |---|---|---|
