@@ -19,6 +19,8 @@ These five requests are preserved from the separate feature lane; they are not a
 10. AT-25 — Confirm the regular-signup entitlement policy, treatment of existing automatic tester/Max grants, and RevenueCat product/entitlement identifiers mapped to the existing catalog. Protected #1193 owns admission files; public pricing #1208 can proceed with checkout off. No new Premium identifier or paid-access promise is invented.
 11. Hebrew live voice — Supply the approved Hebrew crisis phrase list before that locale is enabled. Existing English voice remains separate; provider-backed behavior is UNKNOWN under this run’s no-spending rule.
 
+12. AT-27 — Authorize one scoped correction for Plan #1211 after its three focused candidates: restore the existing visually hidden Plan heading required by both EN/HE one-h1 tests, retaining all assertions and deadlines. Hosted Test reports 3,492 pass / 2 fail / 3 todo; both failures are this heading regression. No test is weakened and no fourth source candidate is made without authorization.
+
 ## Amit's answers — 2026-10-21
 
 - AT-01: Keep #1110, #1112 and #1129 held. Preserve their reserved files and work around them; do not release them.
