@@ -207,7 +207,12 @@ render();`);
           state.notices = state.notices.map((row) => row._id === "fictional-dana" ? { ...row, readAt: Date.now() } : row);
           state.render(); state.readResolve(null);
         });
-        await page.locator('.tp-list-row[tabindex="-1"]').filter({ hasText: "Dana has a reminder" }).waitFor();
+        // The read-row commit precedes NoticeRow's focus effect.
+        await page.waitForFunction(() => {
+          const row = Array.from(document.querySelectorAll<HTMLElement>('.tp-list-row[tabindex="-1"]'))
+            .find((node) => node.textContent?.includes("Dana has a reminder"));
+          return row !== undefined && document.activeElement === row;
+        });
         await page.locator('button[data-unread="true"]').waitFor({ state: "detached" });
         expect(await page.locator('.tp-list-row[tabindex="-1"]').last().evaluate((node) => document.activeElement === node)).toBe(true);
         await page.evaluate(() => {
