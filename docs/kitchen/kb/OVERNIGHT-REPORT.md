@@ -60,15 +60,16 @@ Earlier focused results (9/1, 10/0, 8/4, 12/0, 13/0, 14/1 and 15/0) remain in th
 | Fresh local baseline, Bun 1.3.9 | 3,473 pass / 20 fail / 3 todo | All 20 failures were KB-64 browser-close cases. |
 | Shared helper local full run, `c5fd530` | Incomplete; observed 1,534 pass / 1 fail / 3 todo, cancelled with exit 143 | Unchanged KB-66 reached its first 240-second timeout; no final aggregate exists. |
 | Shared helper hosted full run, `4d30965` | 3,487 pass / 1 fail / 3 todo, 212 files, 729.37 seconds | Only unchanged KB-61’s 480-second hook failed. Other required checks passed. |
+| Shared helper hosted full run, `2d99c84` | 3,511 pass / 0 fail / 3 todo, 81,579 assertions, 212 files, 193.63 seconds | Job 119449460738 passes, but later consumer cancellation failures on this same source still block merge. |
 | KB-03 adoption full run, earlier shared dependency | 3,520 pass / 0 fail / 3 todo | A passing full run on that source, not proof of every later head. |
 | KB-66 adoption full run | 3,489 pass / 17 fail / 3 todo | All 17 failures were KB-64 browser-close cases. |
-| KB-67 adoption full run, before final parser correction | 3,457 pass / 32 fail / 3 todo | 31 old-parser failures plus KB-61’s original 480-second timeout. Final focused shared + own run passed 46/0. |
+| KB-67 adoption full run, before final parser correction | 3,457 pass / 32 fail / 3 todo | 31 old-parser failures plus KB-61’s original 480-second timeout. Final focused shared + own run on 2d99c84 passed 49 / 0. |
 | KB-05 adoption full run, `87aa138` | 3,479 pass / 22 fail / 3 todo | 21 KB-64 browser-close failures plus KB-61’s 480-second timeout; all 13 own cases passed. |
 | KB-45 adoption full run, `92c20bed` | 3,520 pass / 0 fail / 3 todo | All 12 own cases and the shared helper passed. |
 | KB-75 adoption full run, `52689a4` | 3,510 pass / 1 fail / 3 todo | Only unchanged KB-61’s 480-second hook failed; all 23 own cases passed. |
-| KB-78 adoption full run, `e618a0f` | 3,530 pass / 0 fail / 3 todo | All 22 own cases passed on shared `4d30965`; final shared combined proof is pending. |
+| KB-78 adoption full run, `e618a0f` | 3,530 pass / 0 fail / 3 todo | All 22 own cases passed on shared `4d30965`; final shared combined proof passed 40 / 0. |
 
-The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports, KB-75’s 23, KB-77’s 25 and KB-78’s 22 cases. Final combined proofs on `2d99c84` are being collected. Hosted CI is green on the latest shared head, but the retained local cancellation failure prevents a merge. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
+The shared fix improves focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports, KB-75’s 23, KB-77’s 25 and KB-78’s 22 cases. All nine final combined proofs on `2d99c84` are recorded below. Seven pass; KB-06 and KB-75 retain the cancellation failure while their own cases pass. Hosted CI is green on the latest shared head, but the retained local cancellation failure prevents a merge. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
 
 E2E recovery: the exact command now uses installed Chromium 151 through its local executable-cache path, without repository or configuration changes. Planning baseline: **27 pass / 1 fail / 89 skip** (task-view navigation). KB-67 and KB-45 each separately passed **28 / 0 / 89 skip**. Earlier missing-browser failures and the CDN 403 remain recorded. Existing credential-gated skips were not introduced by this run.
 
@@ -81,22 +82,22 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-31 | — | — | Blocked — prerequisites: KB-01, KB-16, 1094; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-02 | 1153 | 1160 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
 | KB-03 | 1157 | 1162 | PR open — Final shared + own: 33 pass / 0 fail, 80 assertions. Earlier full 3520/0/3 todo; frozen install corrected to PASS (observed exit 0,303.72 s); E2E infrastructure UNKNOWN. Shared #1203 stuck; current guards/review still required. |
-| KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-04 | 1141 | 1147 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-05 | 1142 | 1149 | PR open — Final shared + own: 31 pass / 0 fail, 247 assertions. Earlier full 3479/22/3 todo (KB-64+KB-61); E2E 28/0/89 skip; remaining local gates pass. Shared #1203 stuck; current guards/review still required. |
 | KB-06 | 1143 | 1151 | PR open — Final shared + own: 36 pass / 1 fail, 133 assertions; own 19 pass, shared cancellation fails. Earlier full incomplete 1556/1/3 todo,exit 143; E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
 | KB-09 | 1145 | 1150 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
-| KB-10 | 1155 | 1159 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-44 | 1154 | 1158 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-10 | 1155 | 1159 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
+| KB-44 | 1154 | 1158 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-45 | 1156 | 1163 | PR open — Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition remains unproved. Shared #1203 stuck; current guards/review still required. |
-| KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-69 | 1161 | 1164 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — Final shared + own: 37 pass / 0 fail, 91 assertions. Earlier full 3489/17/3 todo (KB-64); E2E infrastructure UNKNOWN; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
-| KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-70 | 1166 | 1196 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-67 | 1169 | 1197 | PR open — Final shared + own: 49 pass / 0 fail, 144 assertions. Earlier full 3457/32/3 todo (old parser+KB-61); E2E 28/0/89 skip; historical synthetic UUID still fails security scan after redaction. Shared #1203 stuck; current guards/review still required. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
-| KB-74 | 1171 | 1200 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-71 | 1175 | 1177 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-74 | 1171 | 1200 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
+| KB-71 | 1175 | 1177 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-75 | 1178 | 1179 | PR open — Final shared + own: 40 pass / 1 fail, 75 assertions; own 23 pass, shared cancellation fails. Earlier full 3510/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-76 | 1180 | 1183 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
 | KB-59 | 1189 | 1191 | Merged previously; retained. |

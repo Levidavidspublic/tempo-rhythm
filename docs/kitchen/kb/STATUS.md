@@ -2,7 +2,7 @@
 
 WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist) and #1206 (landing motion), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
 
-AWAY — KB is unfinished. Initial census: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem); working results refreshed on 21 October at 20:20 UTC. Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 32 PRs after corrective follow-ups. Current KB heads, checks and review threads are refreshed below.
+AWAY — KB is unfinished. Initial census: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem); working results refreshed throughout 21 October 2026. Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 32 PRs after corrective follow-ups. Current KB heads, checks and review threads are refreshed below.
 
 ## Overnight v3 — 2026-10-21
 
