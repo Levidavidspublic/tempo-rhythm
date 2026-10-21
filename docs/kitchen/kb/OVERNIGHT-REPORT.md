@@ -43,31 +43,31 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-01 | — | — | Blocked — prerequisites: 1094, 1096, 1110, 1112, 1113, 1114, 1115, 1123, 1127; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-16 | — | — | Blocked — prerequisites: KB-01, 1094, 1110, 1112, 1113, 1116; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-31 | — | — | Blocked — prerequisites: KB-01, KB-16, 1094; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
-| KB-02 | 1153 | 1160 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-03 | 1157 | 1162 | PR open — focused15/0; full3,520pass/0fail/3todo on earlier shared dependency; scans/build pass. Final shared+own30/0 at cdd517d; hosted gates/shared merge pending. |
+| KB-02 | 1153 | 1160 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
+| KB-03 | 1157 | 1162 | PR open — Final shared + own: 33 pass / 0 fail, 80 assertions. Earlier full 3520/0/3 todo; frozen install corrected to PASS (observed exit 0,303.72 s); E2E infrastructure UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-05 | 1142 | 1149 | PR open — Final shared + own 31/0, 247 assertions at 28dda16 on shared2d99c84. Earlier full3479/22/3 todo (KB-64 and KB-61); E2E28/0/89 skip, other gates pass. Shared integration and current CI/review block merge. |
-| KB-06 | 1143 | 1151 | PR open — Focused 19/0; full incomplete after unchanged KB-66 240-second timeout (observed 1556/1/3 todo, exit143); E2E 28/0/89 skip; other local gates pass except frozen install UNKNOWN. Shared dependency and current CI/review block merge. |
+| KB-05 | 1142 | 1149 | PR open — Final shared + own: 31 pass / 0 fail, 247 assertions. Earlier full 3479/22/3 todo (KB-64+KB-61); E2E 28/0/89 skip; remaining local gates pass. Shared #1203 stuck; current guards/review still required. |
+| KB-06 | 1143 | 1151 | PR open — Final shared + own: 36 pass / 1 fail, 133 assertions; own 19 pass, shared cancellation fails. Earlier full incomplete 1556/1/3 todo,exit 143; E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
-| KB-09 | 1145 | 1150 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-09 | 1145 | 1150 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
 | KB-10 | 1155 | 1159 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-44 | 1154 | 1158 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-45 | 1156 | 1163 | PR open — Focused 12/0; full 3520/0/3 todo; E2E 28/0/89 skip; lint/typecheck/scans/build pass. Frozen install UNKNOWN; shared dependency, localized KB-10 composition and current CI/review block merge. |
+| KB-45 | 1156 | 1163 | PR open — Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition remains unproved. Shared #1203 stuck; current guards/review still required. |
 | KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — corrective adapter focused child19/0 and parent19/0; full3,489pass/17fail/3todo (KB-64 browser-close baseline), scans/build pass. Final shared+own34/0 at b5a483e; hosted gates/shared merge pending; issue remains reopened. |
+| KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — Final shared + own: 37 pass / 0 fail, 91 assertions. Earlier full 3489/17/3 todo (KB-64); E2E infrastructure UNKNOWN; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-67 | 1169 | 1197 | PR open — final shared + own 46/0 at 7095f66; E2E 28/0/89 skip. Earlier full 3457/32/3 todo includes 31 old-parser failures and KB-61 timeout. Shared dependency, full-suite and current CI/review block merge. Secret scan flags a synthetic receipt UUID in committed evidence; historical scan remains a blocker after redaction. |
+| KB-67 | 1169 | 1197 | PR open — Final shared + own: 49 pass / 0 fail, 144 assertions. Earlier full 3457/32/3 todo (old parser+KB-61); E2E 28/0/89 skip; historical synthetic UUID still fails security scan after redaction. Shared #1203 stuck; current guards/review still required. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
 | KB-74 | 1171 | 1200 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-71 | 1175 | 1177 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-75 | 1178 | 1179 | PR open — non-UTC focused 23/0; mandatory checks active. Shared dependency and current gates block merge. |
-| KB-76 | 1180 | 1183 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-75 | 1178 | 1179 | PR open — Final shared + own: 40 pass / 1 fail, 75 assertions; own 23 pass, shared cancellation fails. Earlier full 3510/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
+| KB-76 | 1180 | 1183 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
 | KB-59 | 1189 | 1191 | Merged previously; retained. |
 | KB-61 | 1181 | 1199 | PR open — Authorized v3 pass active: shared lifecycle adoption, preserve both cleanup errors with controlled regression; all26 existing cases/deadlines retained. Reopened issue stays open. |
 | KB-64 | 1182 | 1187 | Merged previously; retained. |
-| KB-77 | 1184 | 1186 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-78 | 1188 | 1190 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-77 | 1184 | 1186 | PR open — Final shared + own: 43 pass / 0 fail, 163 assertions. Earlier full 3512/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
+| KB-78 | 1188 | 1190 | PR open — Final shared + own: 40 pass / 0 fail, 78 assertions. Earlier full 3530/0/3 todo; E2E 27/1/89 skip (task-view timeout); install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-11 | — | — | Blocked — prerequisites: 1126; issue filing queued after shared fix. |
 | KB-12 | — | — | Blocked — prerequisites: KB-11, 1126; issue filing queued after shared fix. |
 | KB-13 | — | — | Blocked — prerequisites: KB-12, 1126; issue filing queued after shared fix. |
@@ -103,10 +103,11 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 ## Needs Amit (in order)
 
 1. AT-21: additional scoped shared-harness pass after the three-round limit; fix the retained cancellation failure and platform proof without changing deadlines or skipping tests.
-2. AT-02: owner architecture gates for KB-01/16/31 after prerequisites; no agent-added label.
-3. AT-03: existing KA-24 search capability configuration; no environment changes.
-4. AT-04: native Hebrew and real-device checks before production, not preview.
-5. FACTORY_PAUSED=true is Amit’s prerequisite for #1198; never merge it in this run.
+2. AT-22: choose a permitted history-remediation path for KB-67’s historical synthetic UUID scan failure; current-tree redaction is complete, with no force-push or scan bypass.
+3. AT-02: owner architecture gates for KB-01/16/31 after prerequisites; no agent-added label.
+4. AT-03: existing KA-24 search capability configuration; no environment changes.
+5. AT-04: native Hebrew and real-device checks before production, not preview.
+6. FACTORY_PAUSED=true is Amit’s prerequisite for #1198; never merge it in this run.
 
 ## UNKNOWN
 
