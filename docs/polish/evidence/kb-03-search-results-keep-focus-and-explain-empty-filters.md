@@ -28,15 +28,15 @@ The hydrated checks remain mandatory. They use installed Playwright Chromium or 
 
 PR open — shared builder adoption passes all 15 checked-in KB-03 cases. Hosted compatibility and final repository gates remain required. Role: WORKHORSE; issue #1157, PR #1162. Amit's overnight v3 authorization supersedes the earlier AT-05 retry hold for this scoped pass.
 
-Source commit: `aed296c`. Prerequisite: shared harness PR #1203 (issue #1202), merged into this branch through ordinary merge commits. Its files remain owned by that shared ticket; this PR cannot pass scope review or merge until the shared prerequisite is integrated. No force-push or production change was made.
+Source commit: `aed296c`. Prerequisite: shared harness PR #1203 (issue #1202), merged into this PR branch through ordinary merge commits. Target branch integration does not yet contain #1203. Its files remain owned by that shared ticket; target-branch inclusion is required before this PR can pass scope-guard or merge. No force-push or production change was made.
 
 The old fixture built the browser bundle inside the root Bun test process. The new fixture calls `isolatedBrowserBuild`, with exact serializable aliases, separate output directory, workspace React resolution and importer-relative scheduler resolution. The shared runner streams build/exit phases, requires the actual child and supervisor exits, and reaps its descendants. Execution and cleanup fit inside the unchanged 120-second setup hook. Browser launch, case starts and cleanup also emit phase evidence. Independent idempotent cleanup starts browser, server and directory releases together and preserves errors; the existing five-second cleanup deadline stays unchanged.
 
 All 15 test callback bodies and per-case deadlines are byte-for-byte identical to `511578d`; a direct source comparison verified this. The actual source has eight static and seven hydrated cases. The earlier issue comment's 19-case claim does not match this file and is not repeated as a result. No test was weakened, skipped or deleted. Browser absence still fails explicitly; the review suggestion to skip mandatory browser coverage conflicts with Amit's instruction. Bundled Chromium or the existing system Chromium satisfies the fixture's provisioning requirement.
 
-Before: hosted Test on `511578d` failed with scheduler/index.js EISDIR, 3,434 pass / 1 fail / 3 todo (job119166696931). After: focused local KB-03 passes15/0 with27 assertions in8.37s, shared build child exits0, supervisor exits0 and cleanup completes. These are different environments, so the local result does not itself prove hosted EISDIR is fixed.
+Before: hosted Test on `511578d` failed with scheduler/index.js EISDIR, 3,434 pass / 1 fail / 3 todo (job 119166696931). After: focused local KB-03 passes 15 / 0 with 27 assertions in 8.37 s, shared build child exits 0, supervisor exits 0 and cleanup completes. These are different environments, so the local result does not itself prove hosted EISDIR is fixed.
 
-An initial local launch occurred before the copied verified dependency tree was ready and reported0pass/1fail/1error (`react/jsx-dev-runtime` missing). After the runtime copy completed, the same source passed15/0. Both receipts are retained; the earlier infrastructure failure is not concealed. Frozen install resolution stalled and was terminated at120seconds; install remains UNKNOWN. No dependency or lockfile changed.
+An initial local launch occurred before the copied verified dependency tree was ready and reported 0 pass / 1 fail / 1 error (`react/jsx-dev-runtime` missing). After the runtime copy completed, the same source passed 15 / 0. Both receipts are retained; the earlier infrastructure failure is not concealed. The exact frozen install also stalled during dependency resolution. The controller attempted cancellation at its intended 120-second bound, but that was not the observed termination time: the retained command completed with exit 0 after 303.72 seconds. The earlier UNKNOWN verdict was provisional and was incorrectly retained after completion. No manifest or lockfile changed.
 
 ### Test results (cloud agent sandbox)
 
@@ -45,7 +45,7 @@ Bun 1.3.9. Mandatory sequence against own source `aed296c` and shared helper `1e
 | Command | Result |
 |---|---|
 | `bun --version` | PASS: 1.3.9 |
-| `bun install --frozen-lockfile` | UNKNOWN: resolution stalled at 120 seconds; verified dependency trees copied locally, no lockfile change |
+| `bun install --frozen-lockfile` | PASS: exit 0, completed after 303.72 seconds; checked 1033 installs across 1079 packages with no changes. The earlier stall/cancellation attempt is retained below; verified dependency trees had been copied locally, no lockfile change |
 | `bun run lint` | PASS: 5/5 tasks, zero errors |
 | `bun run typecheck` | PASS: 5/5 tasks |
 | `bun test tests/unit/kb-03.test.tsx` | PASS: 15/0, 27 assertions, 8.37 seconds |
@@ -73,6 +73,8 @@ error: Cannot find module 'react/jsx-dev-runtime' from '/workspace/kb03/apps/web
  1 error
 Ran 1 test across 1 file. [235.00ms]
 ```
+
+`kb03-install.log` belongs to the same exact `bun install --frozen-lockfile` command, not a separate non-frozen install. The execution session completed with exit 0; the log below records 303.72 seconds. The intended 120-second controller cancellation did not establish a terminated command. This validates the copied dependency tree against the frozen lockfile; it is not a claim of an empty-directory installation.
 
 Last 20 lines — kb03-install.log
 ```text
@@ -111,4 +113,10 @@ Last 20 lines — kb03-4.log
 
 After merging the central review corrections at shared `4d30965`, source head `83155ef` passes `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-03.test.tsx`: **30 pass / 0 fail, 72 assertions, 10.30 seconds** (15 shared lifecycle cases plus all 15 KB-03 cases). The shared fix covers nested exit receipts, receipt validation after pipe drainage, and missing-supervisor spawn failure without signaling the parent process group. No KB-03 case or product file changed during this dependency update.
 
-The mandatory full-suite receipt above is explicitly for shared `1e18455`; the final combined focused receipt is for shared `4d30965`. Current-head hosted CI and CodeRabbit review remain pending. Scope still depends on #1203 landing; no merge is claimed. The CodeRabbit browser-availability thread is retained for lead review: mandatory browser coverage and explicit missing-browser failure remain intentional under Amit's no-skip instruction.
+The mandatory full-suite receipt above is explicitly for shared `1e18455`; the final combined focused receipt is for shared `4d30965`. Current-head hosted CI and CodeRabbit review remain pending. The PR branch includes #1203, but integration does not yet; scope-guard remains blocked until that prerequisite lands. No merge of KB-03 is claimed. The CodeRabbit browser-availability thread is retained for lead review: mandatory browser coverage and explicit missing-browser failure remain intentional under Amit's no-skip instruction.
+
+### Final shared-source refresh — 2026-10-21
+
+PR open — source `5bed8ebfe24142e8de8f885ff4ade1d95b315c93` includes shared `2d99c84a365c6ead0009715012b0cdd908b570aa` by ordinary merge. `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-03.test.tsx` passes **33 / 0, 80 assertions, 15.97 seconds**: 18 shared cases plus all 15 unchanged KB-03 cases. The earlier full-suite and E2E receipts remain on their explicitly named source; they were not rerun for this shared refresh.
+
+Shared #1203 remains blocked: a separate KB-75 combined proof exposed a cleanup race in which the supervisor was killed before the authoritative child receipt, leaving that child exit unknown. This passing KB-03 proof does not erase that failure or clear the shared prerequisite. The lead records the exhausted shared repair budget and remaining owner decision. No merge, skip, timeout relaxation or further local source repair is claimed.
