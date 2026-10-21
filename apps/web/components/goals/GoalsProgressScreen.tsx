@@ -277,7 +277,7 @@ function WeeklyChart({ points, lang, captionId }: ProgressValuesProps & { readon
 }
 
 const galleryPoints: readonly WeekPoint[] = [0, 2, 1, 4, 0, 3, 2, 5].map((count, index) => ({
-  startMs: Date.UTC(2026, 7, 31 + index * 7),
+  startMs: new Date(2026, 7, 31 + index * 7).getTime(),
   week: 36 + index,
   count,
 }));

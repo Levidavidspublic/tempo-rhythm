@@ -17,3 +17,9 @@ The **after** images come from a hydrated loopback gallery that imports the actu
 - English/Hebrew switching changes the gallery direction and copy. Numbers remain isolated left-to-right. The fixture checks both 390 and 1280 px, 44 px phone targets, one `h1`, one `main`, large text, reduced motion, and no viewport overflow.
 
 The checked-in browser test uses Bun's bundler and an isolated local server. The `react-native` alias applies only to that fixture. Device VoiceOver/TalkBack results and the authenticated backend route remain **UNKNOWN**; native Hebrew copy is machine-drafted and needs Amit's read.
+
+## AWAY — repair draft, validation pending
+
+Gallery weeks now start on local Mondays. Fixture imports resolve from the workspaces that declare them. America/Los_Angeles browser coverage checks exact dates, date range and ISO week labels at both widths. Focused: 9 pass, 0 fail, 36 assertions. Lint and typecheck pass; frozen install UNKNOWN after 120 seconds at dependency resolution. Production aggregation is unchanged.
+
+The lead owns the remaining full unit suite, scan confirmation, local E2E and build commands. They are queued separately under the shared resource lock; no passing result is claimed for an unfinished command. This repair may be pushed as a draft for hosted CI, but is not yet eligible for integration. No assertions, check configuration, timeout or skip conditions were weakened. The lead will append actual outcomes and failure tails before the merge gate.

@@ -1,6 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { createElement } from "../../apps/web/node_modules/react";
-import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { GoalProgressTable, Kb07Gallery, ProgressRangeCaption } from "../../apps/web/components/goals/GoalsProgressScreen";
@@ -8,8 +6,12 @@ import { en, he } from "../../apps/web/lib/i18n-groups/kb-07";
 import type { WeekPoint } from "../../apps/web/lib/goals-projects";
 
 const root = join(import.meta.dir, "../..");
+const webWorkspace = join(root, "apps/web");
+// Resolve from the declaring workspace, whether Bun hoists or isolates dependencies.
+const { createElement } = await import(Bun.resolveSync("react", webWorkspace));
+const { renderToStaticMarkup } = await import(Bun.resolveSync("react-dom/server", webWorkspace));
 const point = (count: number, index = 0): WeekPoint => ({
-  startMs: Date.UTC(2026, 8, 28 + 7 * index), week: 40 + index, count,
+  startMs: new Date(2026, 8, 28 + 7 * index).getTime(), week: 40 + index, count,
 });
 const render = (component: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(component);
 
@@ -69,16 +71,16 @@ describe("KB-07 progress values", () => {
 // Hydrated browser fixture, not an authenticated route. Bun bundles the real exported gallery.
 // react-native is aliased only in this fixture, never in product/config files.
 describe("KB-07 hydrated gallery", () => {
-  test("disclosure keyboard, callbacks, RTL, reduced motion, large text and narrow width", async () => {
+  test("local Monday weeks, disclosure keyboard, callbacks, RTL, reduced motion, large text and narrow width", async () => {
     const { chromium, expect: pwExpect } = await import("@playwright/test");
     const { mkdir, mkdtemp, readFile, rm, writeFile } = await import("node:fs/promises");
     await mkdir(join(root, "work"), { recursive: true });
     const directory = await mkdtemp(join(root, "work/kb07-gallery-"));
     const entry = join(directory, "entry.tsx");
-    await writeFile(entry, `import React from ${JSON.stringify(join(root, "apps/web/node_modules/react"))};\nimport {createRoot} from ${JSON.stringify(join(root, "apps/web/node_modules/react-dom/client"))};\nimport {Kb07Gallery} from ${JSON.stringify(join(root, "apps/web/components/goals/GoalsProgressScreen.tsx"))};\ncreateRoot(document.getElementById("root")!).render(React.createElement(Kb07Gallery));`);
+    await writeFile(entry, `import React from ${JSON.stringify(Bun.resolveSync("react", webWorkspace))};\nimport {createRoot} from ${JSON.stringify(Bun.resolveSync("react-dom/client", webWorkspace))};\nimport {Kb07Gallery} from ${JSON.stringify(join(root, "apps/web/components/goals/GoalsProgressScreen.tsx"))};\ncreateRoot(document.getElementById("root")!).render(React.createElement(Kb07Gallery));`);
     const bundle = await Bun.build({
       entrypoints: [entry], target: "browser", minify: false,
-      alias: { "react-native": join(root, "apps/web/node_modules/react-native-web") },
+      alias: { "react-native": Bun.resolveSync("react-native-web", join(root, "apps/mobile")) },
     });
     expect(bundle.success).toBe(true);
     const script = await bundle.outputs.find((output) => output.path.endsWith(".js"))?.text();
@@ -97,7 +99,7 @@ describe("KB-07 hydrated gallery", () => {
     const browser = await chromium.launch({ ...(systemBrowser ? { executablePath: systemBrowser } : {}), args: ["--no-sandbox"] });
     try {
       for (const width of [390, 1280]) {
-        const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+        const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce", timezoneId: "America/Los_Angeles" });
         const pageErrors: string[] = [];
         page.on("pageerror", (error) => pageErrors.push(error.message));
         page.on("console", (message) => { if (message.type() === "error") pageErrors.push(message.text()); });
@@ -109,6 +111,11 @@ describe("KB-07 hydrated gallery", () => {
           throw new Error(`Gallery did not hydrate: ${pageErrors.join(" | ")}`);
         }
         await pwExpect(page.locator("h1")).toHaveCount(1);
+        // UTC-midnight fixtures incorrectly turn these Monday weeks into Sundays here.
+        expect(await page.locator("time").evaluateAll((elements) => elements.map((element) => element.getAttribute("datetime"))))
+          .toEqual(["2026-08-31", "2026-09-07", "2026-09-14", "2026-09-21"]);
+        await pwExpect(page.locator(".kb07-range")).toHaveText("Aug 31, 2026 – Sep 27, 2026");
+        expect(await page.locator("svg text").allTextContents()).toEqual(["0", "2", "1", "4", "Wk 36", "Wk 37", "Wk 38", "Wk 39"]);
         await page.screenshot({ path: join(root, "work", `gallery-${width}-en-light.png`), fullPage: true });
         await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
         await page.screenshot({ path: join(root, "work", `gallery-${width}-en-dark.png`), fullPage: true });
