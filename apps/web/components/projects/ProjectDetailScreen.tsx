@@ -165,6 +165,8 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
       setTitle(name);
       return;
     }
+    // Match the stored canonical name without discarding the raw text needed after an error.
+    renameDraft.current = next;
     if (waitsForFirstTask(projectId, rows.length, next, name)) {
       // Opening the first-task field focuses it. One already open takes focus only when the name
       // was left with Enter, not when the person moved somewhere else.
@@ -427,12 +429,23 @@ export function ProjectDetailNotice({
   kind,
   lang,
 }: Readonly<{ id?: string; kind: "idle" | "pending" | "saved" | "error" | "firstTask"; lang: "en" | "he" }>) {
-  if (kind === "idle") return null;
-  const key = kind === "firstTask" ? "firstTask" : (`rename.${kind}` as const);
+  const text = kind === "idle" ? "" : kb09t(lang, kind === "firstTask" ? "firstTask" : (`rename.${kind}` as const));
+  const statusVisible = kind !== "idle" && kind !== "error";
   return (
-    <p className="kb09-notice" data-component="ProjectDetailNotice" data-kind={kind} id={id} role={kind === "error" ? "alert" : "status"}>
-      {kb09t(lang, key)}
-    </p>
+    <>
+      <p className={statusVisible ? "kb09-notice" : "tp-sr-only"} data-kind={kind}>
+        <output
+          data-component="ProjectDetailNotice"
+          data-kind={kind}
+          id={kind === "error" ? undefined : id}
+        >
+          {statusVisible ? text : ""}
+        </output>
+      </p>
+      {kind === "error" ? (
+        <p className="kb09-notice" data-kind="error" id={id} role="alert">{text}</p>
+      ) : null}
+    </>
   );
 }
 

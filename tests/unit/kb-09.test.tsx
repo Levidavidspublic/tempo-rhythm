@@ -14,6 +14,20 @@ if (process.env.KB09_ISOLATED !== "1") {
   const names = [...(await readFile(import.meta.path, "utf8")).matchAll(/\btest\("([^"\n]+)"/g)].map((match) => match[1]);
   const decode = (value: string) => value.replace(/&(quot|apos|lt|gt|amp);/g, (_, key: string) =>
     ({ quot: '"', apos: "'", lt: "<", gt: ">", amp: "&" })[key] ?? key);
+  const parseCases = (xml: string): ChildCase[] => [...xml.matchAll(/<testcase\b([^>]*?)(?:\/>|>([\s\S]*?)<\/testcase>)/g)].map((match) => {
+    const name = decode(match[1].match(/\bname="([^"]*)"/)?.[1] ?? "");
+    const details = match[2] ?? "";
+    const status = /<(?:failure|error)\b/.test(details) ? "failed" : /<skipped\b/.test(details) ? "skipped" : "passed";
+    return { name, status, details };
+  });
+  const parserName = "isolated KB-09 preserves passed failed and skipped child report statuses";
+  test(parserName, () => {
+    const xml = '<testsuite><testcase name="before" /><testcase name="failed"><failure>real failure</failure></testcase><testcase name="after" /><testcase name="skipped"><skipped /></testcase></testsuite>';
+    expect(parseCases(xml).map(({ name, status }) => ({ name, status }))).toEqual([
+      { name: "before", status: "passed" }, { name: "failed", status: "failed" },
+      { name: "after", status: "passed" }, { name: "skipped", status: "skipped" },
+    ]);
+  });
   let child: ReturnType<typeof Bun.spawn> | undefined;
   let reportDir: string | undefined;
   let result: Promise<ChildResult> | undefined;
@@ -35,12 +49,7 @@ if (process.env.KB09_ISOLATED !== "1") {
       let reportError: string | undefined;
       try { xml = await readFile(reportPath, "utf8"); }
       catch (error) { reportError = String(error); }
-      const cases: ChildCase[] = [...xml.matchAll(/<testcase\b([^>]*)(?:\/>|>([\s\S]*?)<\/testcase>)/g)].map((match) => {
-        const name = decode(match[1].match(/\bname="([^"]*)"/)?.[1] ?? "");
-        const details = match[2] ?? "";
-        const status = /<(?:failure|error)\b/.test(details) ? "failed" : /<skipped\b/.test(details) ? "skipped" : "passed";
-        return { name, status, details };
-      });
+      const cases = parseCases(xml);
       return { code, output, cases, reportError };
     } finally {
       if (reportDir) await rm(reportDir, { recursive: true, force: true });
@@ -125,6 +134,7 @@ const api = `export const api = { users: { getProfile: "users:getProfile" }, tas
 const entry = `
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { TpIconSprite } from "@/components/tempo/TpIcon";
 import { Kb09Gallery, ProjectDetailScreen } from "@/components/projects/ProjectDetailScreen";
@@ -132,6 +142,7 @@ const params = new URLSearchParams(location.search);
 const lang = params.get("lang") === "he" ? "he" : "en";
 const mode = params.get("mode") || "gallery";
 const root = createRoot(document.getElementById("app"));
+window.__kb09.flush = () => flushSync(() => {});
 root.render(<LocaleProvider><TpIconSprite />{mode === "screen" ? <main><ProjectDetailScreen projectSlug="project-maya1" /></main> : <Kb09Gallery lang={lang} />}</LocaleProvider>);
 `;
 
@@ -150,7 +161,7 @@ async function buildFixture() {
     entrypoints: [entrypoint], target: "browser", outdir: temp,
     define: { "process.env.NODE_ENV": '"test"', "process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS": '"0"' },
     plugins: [{ name: "kb09-fixture", setup(build) {
-      build.onResolve({ filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/ }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
+      build.onResolve({ filter: /^(react|react-dom|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/ }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
       build.onResolve({ filter: /^next\/link$/ }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
       build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: join(temp, "backend.ts") }));
       build.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({ path: join(temp, "api.ts") }));
@@ -255,9 +266,110 @@ describe.serial("KB-09 project detail", () => {
     await input.fill("Old draft"); await input.press("Enter");
     await input.fill("New draft");
     await page.evaluate(() => (window as any).__kb09.settleRename(true));
+    await page.waitForFunction(() => (window as any).__kb09.state.rows[0]?.projectName === "Old draft");
+    await page.evaluate(() => (window as any).__kb09.flush());
     await pwExpect(input).toHaveValue("New draft");
     await pwExpect(page.getByText(en["rename.saved"])).toHaveCount(0);
     await page.close();
+  });
+
+  test("acknowledged padded rename accepts later stored names and task creation", async () => {
+    for (const lang of ["en", "he"] as const) {
+      const page = await pageFor("screen", lang);
+      try {
+        const input = page.locator(".gx-title-input");
+        await page.evaluate(() => (window as any).__kb09.state.renameMode = "hold");
+        await input.fill("  Maya and Dana  "); await input.press("Enter");
+        expect(await page.evaluate(() => (window as any).__kb09.state.calls.filter((call: any) => call.ref === "tasks:renameProject")))
+          .toEqual([{ ref: "tasks:renameProject", args: { projectId: "project-maya1", name: "Maya and Dana" } }]);
+        await page.evaluate(() => (window as any).__kb09.settleRename(true));
+        await page.waitForFunction(() => (window as any).__kb09.state.rows[0]?.projectName === "Maya and Dana");
+        await page.evaluate(() => (window as any).__kb09.flush());
+        await pwExpect(input).toHaveValue("Maya and Dana");
+        await page.evaluate(() => {
+          const fixture = (window as any).__kb09;
+          fixture.setRows(fixture.state.rows.map((row: any) => ({ ...row, projectName: "Yoni's updated project", updatedAt: Date.now() + 1 })));
+        });
+        await pwExpect(input).toHaveValue("Yoni's updated project");
+        await page.locator(".tp-section > button").click();
+        await page.locator("#pd-add").fill("Read with Dana");
+        await page.locator("#pd-add").press("Enter");
+        await page.waitForFunction(() => (window as any).__kb09.state.calls.some((call: any) => call.ref === "tasks:create"));
+        expect(await page.evaluate(() => (window as any).__kb09.state.calls.find((call: any) => call.ref === "tasks:create")?.args))
+          .toEqual({ title: "Read with Dana", projectId: "project-maya1", projectName: "Yoni's updated project" });
+      } finally { await page.close(); }
+    }
+  });
+
+  test("padded rename settlement preserves a genuinely newer raw draft", async () => {
+    const page = await pageFor();
+    try {
+      const input = page.locator(".gx-title-input");
+      await page.evaluate(() => (window as any).__kb09.state.renameMode = "hold");
+      await input.fill("  Old draft  "); await input.press("Enter");
+      await input.fill("  New unsaved draft  "); await input.press("Enter");
+      await pwExpect(input).not.toBeFocused();
+      expect(await page.evaluate(() => (window as any).__kb09.state.held.length)).toBe(2);
+      await page.evaluate(() => (window as any).__kb09.settleRename(true));
+      await page.waitForFunction(() => (window as any).__kb09.state.rows[0]?.projectName === "Old draft");
+      await page.evaluate(() => (window as any).__kb09.flush());
+      await pwExpect(input).toHaveValue("  New unsaved draft  ");
+      await pwExpect(page.getByText(en["rename.saved"])).toHaveCount(0);
+    } finally { await page.close(); }
+  });
+
+  test("task accessible names contain their visible localized action and title", async () => {
+    for (const lang of ["en", "he"] as const) for (const mode of ["screen", "gallery"] as const) {
+      const page = await pageFor(mode, lang);
+      try {
+        await pwExpect(page.locator("html")).toHaveAttribute("lang", lang);
+        const toggle = page.getByRole("checkbox").first();
+        const title = mode === "gallery" ? kb09t(lang, "gallery.initialTask") : "Plan with Dana";
+        for (const done of [false, true]) {
+          const action = kb09t(lang, done ? "task.reopen" : "task.complete");
+          await pwExpect(toggle.locator(".kb09-task-actions__text")).toHaveText(action);
+          const name = await toggle.getAttribute("aria-label");
+          expect(name).toContain(action);
+          expect(name).toContain(title);
+          await pwExpect(toggle).toHaveAccessibleName(name!);
+          await pwExpect(toggle).toHaveAttribute("aria-checked", String(done));
+          if (!done) await toggle.click();
+        }
+      } finally { await page.close(); }
+    }
+  });
+
+  test("rename status stays mounted through idle saving saved and separate error", async () => {
+    for (const lang of ["en", "he"] as const) {
+      const page = await pageFor("screen", lang);
+      try {
+        await pwExpect(page.locator("html")).toHaveAttribute("lang", lang);
+        const input = page.locator(".gx-title-input");
+        const status = page.locator('output[data-component="ProjectDetailNotice"]').first();
+        await pwExpect(status).toHaveCount(1);
+        await pwExpect(status).toHaveRole("status");
+        await pwExpect(status).toHaveText("");
+        await page.evaluate(() => { (window as any).__kb09.statusNode = document.querySelector('output[data-component="ProjectDetailNotice"]'); });
+        expect(await status.evaluate((node: HTMLElement) => !node.hidden && node.getAttribute("aria-hidden") !== "true" && getComputedStyle(node).display !== "none" && getComputedStyle(node).visibility !== "hidden")).toBe(true);
+        await page.evaluate(() => (window as any).__kb09.state.renameMode = "hold");
+        await input.fill("Maya and Dana"); await input.press("Enter");
+        await pwExpect(status).toHaveText(kb09t(lang, "rename.pending"));
+        await page.evaluate(() => (window as any).__kb09.settleRename(true));
+        await pwExpect(status).toHaveText(kb09t(lang, "rename.saved"));
+        await input.fill("Keep this name");
+        await pwExpect(status).toHaveText("");
+        await page.evaluate(() => (window as any).__kb09.state.renameMode = "reject");
+        await input.press("Enter");
+        const alert = page.getByRole("alert").filter({ hasText: kb09t(lang, "rename.error") });
+        await pwExpect(alert).toHaveCount(1);
+        await pwExpect(input).toHaveValue("Keep this name");
+        await pwExpect(input).toHaveAttribute("aria-describedby", (await alert.getAttribute("id"))!);
+        await pwExpect(status).toHaveText("");
+        expect(await page.evaluate(() => document.querySelector('output[data-component="ProjectDetailNotice"]') === (window as any).__kb09.statusNode)).toBe(true);
+        const ids = await page.locator("[id]").evaluateAll((nodes) => nodes.map((node) => node.id));
+        expect(new Set(ids).size).toBe(ids.length);
+      } finally { await page.close(); }
+    }
   });
 
   test("task toggle updates checked state and action text", async () => {

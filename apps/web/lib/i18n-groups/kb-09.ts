@@ -2,7 +2,7 @@
 export const en = {
   "task.complete": "Mark done",
   "task.reopen": "Reopen",
-  "task.completeNamed": "Mark {title} done",
+  "task.completeNamed": "Mark done: {title}",
   "task.reopenNamed": "Reopen {title}",
   "rename.pending": "Saving project name…",
   "rename.saved": "Project name saved.",
@@ -32,7 +32,7 @@ export const en = {
 export const he: Record<keyof typeof en, string> = {
   "task.complete": "סימון כהושלמה",
   "task.reopen": "פתיחה מחדש",
-  "task.completeNamed": "סימון {title} כהושלמה",
+  "task.completeNamed": "סימון כהושלמה: {title}",
   "task.reopenNamed": "פתיחה מחדש של {title}",
   "rename.pending": "שומרים את שם הפרויקט…",
   "rename.saved": "שם הפרויקט נשמר.",
