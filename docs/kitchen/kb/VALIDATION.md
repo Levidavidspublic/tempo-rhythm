@@ -290,7 +290,7 @@ Combined results are pending. Exact causes of the intermittent hosted hangs and 
 <!-- KB-FINISH-LIVE-RESULTS -->
 ### Current combined results
 
-AWAY — Snapshot 2026-10-21T14:58:49.803Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+AWAY — Snapshot 2026-10-21T15:06:43.394Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
 
 | Command | Result | Seconds |
 |---|---|---|
@@ -397,3 +397,18 @@ Ran 12 tests across 1 file. [289.25s]
  32 fail
 Ran 32 tests across 2 files. [600.81s]
 ```
+
+### KB-66 post-merge fixture regression
+
+WALK — Reopened for corrective fixture work. Original PR#1168 passed its own hosted checks/review and merge queue, then merged as39b564e. Later hosted jobs119278684404 (KB44) and119279342909 (KB69) on that integration base each reported eight successive240-second KB66 wrapper timeouts; root cancelled the stalled runs after35/34minutes to retain logs. They are cancelled/incomplete, never reported as passes.
+
+The merged test is byte-identical to e7d5b52. Each parent wrapper awaits the same cached promise; a wrapper timeout neither settles it nor owns child cleanup, so subsequent cases wait another240seconds. Buffered stdout/stderr and child.exited hide the child phase. No activity behavior failure is established.
+
+AT-20 — Authorize a further scoped KB-66 fixture lifecycle repair after reopening #1165? Two later integration-based hosted runs showed eight successive240s timeouts each in its cached child promise before cancellation. Settle one bounded shared lifecycle, fail later reports immediately, stream phase evidence and clean up owned resources while preserving authoritative exit and all cases/assertions/deadlines. Three ordinary candidates and the extra isolation pass are consumed. No product behavior failure is proved; child phase is UNKNOWN. No fifth source change was made.
+
+status: stuck
+ticket: #1165
+evidence: jobs119278684404/119279342909 ->8named KB66 timeouts each before cancellation; full-suite totals unavailable.
+changed: no new source; issue reopened and status/evidence corrected. Original source candidates8ef54ea/4db1691/6dd62d5 exhausted the normal budget; FINISHce8659a (originalfa0599e), evidencee7d5b52, consumed the authorized extra.
+unknowns: child stalled phase and which process Bun killed; product regression not established.
+notes for ticket sync: AT-20. No fifth candidate, check weakening, unchanged retry or production deployment.
