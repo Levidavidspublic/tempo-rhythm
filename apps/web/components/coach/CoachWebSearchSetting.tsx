@@ -53,13 +53,13 @@ function WebSearchRow() {
   const preferences = useQuery(api.preferences.get, {});
   const status = useQuery(api.coach.webSearchStatus, { utcDay });
   const update = useMutation(api.preferences.update);
-  if (preferences === undefined || status === undefined) return null;
   return (
     <WebSearchPreference
-      available={status.available}
-      stored={preferences.coachWebSearch}
-      usedToday={status.usedToday}
-      dailyLimit={status.dailyLimit}
+      loading={preferences === undefined || status === undefined}
+      available={status?.available ?? false}
+      stored={preferences?.coachWebSearch ?? false}
+      usedToday={status?.usedToday ?? 0}
+      dailyLimit={status?.dailyLimit ?? 0}
       update={(next) => update({ coachWebSearch: next })}
       announce={announce}
     />
@@ -68,6 +68,7 @@ function WebSearchRow() {
 
 /** Shared by the live row and the fictional gallery; each mounted row owns its requests. */
 function WebSearchPreference({
+  loading = false,
   available,
   stored,
   usedToday,
@@ -75,6 +76,7 @@ function WebSearchPreference({
   update,
   announce,
 }: {
+  loading?: boolean;
   available: boolean;
   stored: boolean;
   usedToday: number;
@@ -102,6 +104,7 @@ function WebSearchPreference({
         .replace("{limit}", String(dailyLimit))
     : t("coachWeb.notSetUp");
 
+  /** Only the latest request in this mounted controller may publish its outcome. */
   const save = async (next: boolean) => {
     if (!available || !mounted.current) return;
     const mine = ++request.current;
@@ -119,6 +122,9 @@ function WebSearchPreference({
       if (owns()) setPending(null);
     }
   };
+
+  // Query loading hides the view, while this controller keeps accepted requests alive.
+  if (loading) return null;
 
   return (
     <section
@@ -171,6 +177,7 @@ function WebSearchPreference({
   );
 }
 
+/** Keep a failed optional web-search read inside the existing preferences-page boundary. */
 export function CoachWebSearchSetting() {
   return (
     <WebSearchBoundary>
@@ -193,6 +200,7 @@ export function Kb59Gallery() {
     },
     []
   );
+  /** Simulate a fictional save without invoking a backend or search provider. */
   const update = (next: boolean) =>
     new Promise<null>((resolve, reject) => {
       const timer = setTimeout(() => {

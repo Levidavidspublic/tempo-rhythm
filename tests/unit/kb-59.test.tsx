@@ -31,6 +31,7 @@ const names = [
   "caller and gallery render English Hebrew responsive theme matrix",
   "gallery shares production save and recover behavior",
   "fixture interactions avoid uncaught app errors and extra operations",
+  "request settlement during either query loading retains feedback ownership",
 ];
 
 const backend = `
@@ -39,20 +40,20 @@ let preferences={theme:'light',locale:'en',weekStartsOn:1,timeZone:'UTC',emailRe
 let status={available:true,enabled:false,usedToday:0,dailyLimit:5};
 const profile={_id:'fictional-user'},coach={dial:4};
 const listeners=new Set();const subscribe=fn=>{listeners.add(fn);return()=>listeners.delete(fn)};
-const state={calls:[],held:[],settlements:[],days:[],readyPreferences:true,readyStatus:true,throwNext:false,queryError:false};const updates={};
+const state={calls:[],held:[],settlements:[],days:[],readyPreferences:true,readyStatus:true,readyProfile:true,loadNewDay:false,throwNext:false,queryError:false};const updates={};
 const notify=()=>{for(const f of listeners)f()};
 window.__kb59={state,stored:()=>preferences.coachWebSearch,
  configure(patch){if('stored' in patch)preferences={...preferences,coachWebSearch:patch.stored};
   for(const key of ['available','usedToday','dailyLimit'])if(key in patch)status={...status,[key]:patch[key]};
-  for(const key of ['readyPreferences','readyStatus','queryError','throwNext'])if(key in patch)state[key]=patch[key];notify()},
+  for(const key of ['readyPreferences','readyStatus','readyProfile','loadNewDay','queryError','throwNext'])if(key in patch)state[key]=patch[key];notify()},
  settle(index,ok){const task=state.held[index];if(!task||task.done)throw Error('No pending request '+index);task.done=true;state.settlements.push({index,ok});
   if(ok){preferences={...preferences,...task.args};status={...status,enabled:preferences.coachWebSearch};notify();task.resolve(null)}else task.reject(Error('FICTIONAL_UPDATE_FAILED'));}};
 export function useConvexAuth(){return {isAuthenticated:true,isLoading:false}}
 export function useQuery(ref,args){
- if(ref==='coach.webSearchStatus'&&!state.days.includes(args.utcDay))state.days.push(args.utcDay);
+ if(ref==='coach.webSearchStatus'&&!state.days.includes(args.utcDay)){if(state.loadNewDay&&state.days.length)state.readyStatus=false;state.days.push(args.utcDay);}
  return useSyncExternalStore(subscribe,()=>{
   if(ref==='coach.webSearchStatus'&&state.queryError)throw Error('FICTIONAL_QUERY_ERROR');
-  return ref==='preferences.get'?(state.readyPreferences?preferences:undefined):ref==='users.getProfile'?profile:
+  return ref==='preferences.get'?(state.readyPreferences?preferences:undefined):ref==='users.getProfile'?(state.readyProfile?profile:undefined):
    ref==='coach.webSearchStatus'?(state.readyStatus?status:undefined):ref==='coach.getSettings'?coach:null})}
 export function useMutation(ref){return updates[ref]??(updates[ref]=args=>{state.calls.push({ref,args});
  if(state.throwNext){state.throwNext=false;throw Error('FICTIONAL_SYNC_ERROR')}
@@ -96,7 +97,7 @@ import Page from '@/app/(tempo)/settings/preferences/page';
 import {LocaleProvider} from '@/components/providers/LocaleProvider';import {ThemeProvider} from '@/components/providers/ThemeProvider';import {TpIconSprite} from '@/components/tempo/TpIcon';
 ${original ? "" : "import {Kb59Gallery} from '@/components/coach/CoachWebSearchSetting';"}
 function Caller(){const [removed,setRemoved]=useState(false);
- window.__kb59.removeInCommit=()=>{window.__kb59.configure({readyStatus:false});setRemoved(true)};
+ window.__kb59.removeInCommit=()=>{window.__kb59.configure({readyProfile:false});setRemoved(true)};
  useLayoutEffect(()=>{if(removed)window.__kb59.settle(0,true)},[removed]);
  return <main id='main'><Page/></main>}
 const gallery=new URLSearchParams(location.search).get('mode')==='gallery';
@@ -220,15 +221,30 @@ const root=createRoot(document.getElementById('app'));window.__kb59.unmountRoot=
     await page.evaluate(async () => {
       await document.fonts.ready;
     });
-    expect(
-      await page.evaluate(
-        (lang: string) =>
-          document.fonts.check('500 42px "KB59 Newsreader"') &&
-          document.fonts.check('400 17px "Source Sans 3"') &&
-          (lang !== "he" || document.fonts.check('500 42px "Frank Ruhl Libre"', "העדפות")),
-        options.lang ?? "en"
-      )
-    ).toBe(true);
+    // Assert the faces actually rendered for this locale, including embedded-font use.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("DOM.enable");
+    await cdp.send("CSS.enable");
+    const { root } = await cdp.send("DOM.getDocument");
+    for (const [selector, family] of [
+      ["h1", options.lang === "he" ? "Frank Ruhl Libre" : "Newsreader"],
+      ["#web-search-l", options.lang === "he" ? "Assistant" : "Source Sans 3"],
+    ]) {
+      const node = page.locator(selector);
+      expect(
+        await node.evaluate((element: Element) =>
+          getComputedStyle(element).fontFamily.split(",")[0].replaceAll('"', "")
+        )
+      ).toBe(family === "Newsreader" ? "KB59 Newsreader" : family);
+      const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector });
+      const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+      expect(
+        fonts.some(
+          (font) => font.familyName.startsWith(family) && font.isCustomFont && font.glyphCount > 0
+        )
+      ).toBe(true);
+    }
+    await cdp.detach();
     return page;
   };
   const toggle = (p: any) => p.locator("#pref-coach-web-search");
@@ -442,7 +458,7 @@ const root=createRoot(document.getElementById('app'));window.__kb59.unmountRoot=
       await check(names[13], async () => {
         const p = await open();
         await toggle(p).click();
-        await configure(p, { readyStatus: false });
+        await configure(p, { readyProfile: false });
         await expect(toggle(p)).toHaveCount(0);
         await settle(p, 0, true);
         await expect(status(p)).toHaveText("");
@@ -451,9 +467,9 @@ const root=createRoot(document.getElementById('app'));window.__kb59.unmountRoot=
       await check(names[14], async () => {
         const p = await open();
         await toggle(p).click();
-        await configure(p, { readyStatus: false });
+        await configure(p, { readyProfile: false });
         await expect(toggle(p)).toHaveCount(0);
-        await configure(p, { readyStatus: true });
+        await configure(p, { readyProfile: true });
         await toggle(p).click();
         await settle(p, 0, false);
         await expect(alert(p)).toHaveCount(0);
@@ -499,6 +515,7 @@ const root=createRoot(document.getElementById('app'));window.__kb59.unmountRoot=
       });
       await check(names[19], async () => {
         const p = await open({ midnight: true });
+        await configure(p, { loadNewDay: true });
         await toggle(p).click();
         expect((await state(p)).days).toEqual(["2026-10-20"]);
         await p.evaluate(() => {
@@ -519,8 +536,17 @@ const root=createRoot(document.getElementById('app'));window.__kb59.unmountRoot=
         });
         await p.clock.fastForward(61_000);
         expect((await state(p)).days).toEqual(["2026-10-20", "2026-10-21"]);
+        await expect(toggle(p)).toHaveCount(0);
+        await expect(status(p)).toHaveText("");
+        await configure(p, { readyStatus: true });
+        expect((await state(p)).stored).toBe(false);
         await expect(toggle(p)).toHaveAttribute("aria-checked", "true");
         await expect(feedback(p)).toContainText("Saving");
+        await settle(p, 0, true);
+        await p.clock.fastForward(100);
+        await expect(status(p)).toHaveText("Saved.");
+        await expect(feedback(p)).toHaveCount(0);
+        expect((await state(p)).calls).toHaveLength(1);
         await expect
           .poll(() => p.evaluate(() => (window as any).__kb59.dayTimers.length))
           .toBeGreaterThan(0);
@@ -638,6 +664,25 @@ const root=createRoot(document.getElementById('app'));window.__kb59.unmountRoot=
         await expect(status(p)).toHaveText("Saved.", { timeout: 6000 });
         await expect(alert(p)).toHaveCount(0);
         expect((await state(p)).calls).toHaveLength(0);
+      });
+      await check(names[25], async () => {
+        for (const query of ["readyStatus", "readyPreferences"]) {
+          for (const success of [true, false]) {
+            const p = await open();
+            await toggle(p).click();
+            await configure(p, { [query]: false });
+            await expect(toggle(p)).toHaveCount(0);
+            await settle(p, 0, success);
+            if (success) await expect(status(p)).toHaveText("Saved.");
+            else await expect(status(p)).toHaveText("");
+            await configure(p, { [query]: true });
+            await expect(toggle(p)).toHaveAttribute("aria-checked", String(success));
+            await expect(feedback(p)).toHaveCount(success ? 0 : 1);
+            if (!success) await expect(alert(p)).toBeVisible();
+            expect((await state(p)).calls).toHaveLength(1);
+            await p.close();
+          }
+        }
       });
       await check(names[24], async () => {
         expect(errors).toEqual([]);
