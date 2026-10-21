@@ -1,10 +1,62 @@
 # KB-02 brain dump evidence
 
-Source commits: first production change `1dd30ac53dcb6463ca93b1e5bfea9b203e79f749`, latest source/test revision `adf589515a8276a8c66b161d6cd14cc8c68cc3cb` (`t/1153-kb-02`). The [contact sheet](kb-02-brain-dump-keeps-the-draft-and-makes-the-next-step-clear.jpg) compares the original mounted `BrainDumpScreen` saved before editing with the changed mounted screen at 390 and 1280 px, English and Hebrew, light and dark. Each image uses fictional Maya, Dana and Yoni data. The screen, its pure helpers, i18n, icons, and v3 styles are production modules; Convex data/actions/mutations, locale context and Next link are fixture stubs. The fixture uses local font fallback. No real account or backend is exercised, and labels appear only on the evidence sheet.
+Source commits: first production change `1dd30ac53dcb6463ca93b1e5bfea9b203e79f749`, previous source/test revision `adf589515a8276a8c66b161d6cd14cc8c68cc3cb` (`t/1153-kb-02`). The [contact sheet](kb-02-brain-dump-keeps-the-draft-and-makes-the-next-step-clear.jpg) compares the original mounted `BrainDumpScreen` saved before editing with the changed mounted screen at 390 and 1280 px, English and Hebrew, light and dark. Each image uses fictional Maya, Dana and Yoni data. The screen, its pure helpers, i18n, icons, and v3 styles are production modules; Convex data/actions/mutations, locale context and Next link are fixture stubs. The fixture uses local font fallback. No real account or backend is exercised, and labels appear only on the evidence sheet.
+
+## Authorized extra repair — 2026-10-21
+
+The owner authorized one additional cohesive repair pass without changing the acceptance checks. Fixture/test source commit: `3093bb44abb2ae1fd68ff49bc1b02c08d0ad1f61`; production logic, dictionaries and CSS remain at the previously recorded revision. This pass addresses CodeRabbit discussions [4335174361](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160#discussion_r4335174361) and [4335174381](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160#discussion_r4335174381).
+
+The original assertions were reproduced before repair: 0 pass, 2 fail, 9 filtered. The focused button matched `:focus-visible`, but its computed outline was `none`, its box shadow was `none`, and `--color-ring` was empty while `--tp-accent` was defined. The fixture served raw Tailwind `@theme` declarations, which browsers ignore. Compiling the existing application CSS with the installed application PostCSS/Tailwind pipeline restores the real application's resolved focus token; no production focus CSS was added. Fixture bundles and HTML now stay under ignored `work/`, as the ticket requires.
+
+The repaired test keeps the keyboard assertion and strengthens it to require an opaque, visible, solid outline at least 2 px wide with a 2 px gap and measured contrast of at least 3:1. All eight width/language/theme combinations pass. Computed light focus is `rgb(163, 70, 31)` against `rgb(243, 238, 228)`, 5.2593:1; dark focus is `rgb(238, 148, 104)` against `rgb(22, 20, 18)`, 7.9370:1. The 390 px English/light and Hebrew/dark gallery captures were visually inspected: the focused Empty control has a clear ring, and the phone layout and RTL controls remain within the viewport.
+
+The global reduced-motion rule intentionally sets an important `0.01ms` duration, serialized by Chromium as `1e-05s`. The new assertions normalize units and require that exact duration for both the capture status and recovery notice. They also require `transition-property: none`, `animation-name: none`, iteration count 1, and zero active animations. This preserves instant reduced-motion behavior without accepting a broad tolerance or removing motion coverage.
+
+The existing clean-child isolation is preserved: a normal full-suite import defines wrapper cases, spawns exactly this test file with `KB02_ISOLATED=1`, and fails the suite on a nonzero child exit. All `Bun.build`, `Bun.serve` and browser setup stays inside that child. The standalone original-screen capture uses its own dedicated process. No assertions, CI configuration or other ticket fixtures were removed or changed to obtain these results.
+
+Fresh screenshots and measured JSON are under `/workspace/work/kb-finish/kb02/after/`; corrected original-screen screenshots are under `before/`. The scoped contact sheet was regenerated from both compiled-CSS fixtures at 390/1280 px, en/he, light/dark. No real account, backend action or runtime model was exercised. Hebrew remains machine-drafted for native review; device screen-reader verification remains UNKNOWN.
+
+### Test results (cloud agent sandbox) — authorized repair
+
+| Command | Exit and result |
+|---|---|
+| `bun --version` | exit 0; `1.3.9`, reconfirmed 2026-10-21 UTC. |
+| `bun install --frozen-lockfile` | UNKNOWN; bounded at 120 seconds, exit 124, still at registry resolution. |
+| `bun run lint` | exit 0; 5/5 tasks, 0 errors; 9 existing web warnings. |
+| `bun run typecheck` | exit 0; 5/5 tasks. |
+| `bun test tests/unit/kb-02.test.tsx` | exit 0; 11 pass, 0 fail, 11 outer assertions. The isolated child completed successfully; all eight focus/motion metric files and 16 screen/gallery captures were produced. |
+| Original-screen capture case | exit 0; 1 pass, 0 fail, 10 filtered, 24 assertions; all eight original-screen captures produced. |
+| `bun run test` | Pending in the root-owned validation runner. |
+| `bun run scan:forbidden-tech` | Pending in the root-owned validation runner. |
+| `bun run scan:ram-only-audit` | Pending in the root-owned validation runner. |
+| `bun run scan:design-tokens` | Pending in the root-owned validation runner. |
+| `bun run check:notices` | Pending in the root-owned validation runner. |
+| `CI=1 bunx playwright test --reporter=line` | Pending in the root-owned validation runner; unchanged route wiring is included. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Pending in the root-owned validation runner. |
+
+The root agent owns remaining mandatory validation and will append its exact outcomes before integration. This evidence records a successful scoped repair, not completed integration or production verification. Root review/CI/merge gates remain required.
+
+```text
+status: blocked
+ticket: #1153
+evidence: focused KB-02 fixture 11 pass/0 fail; eight cells prove 2px focus at 5.2593:1 light and 7.9370:1 dark, exact 0.01ms reduced durations with no active animations; broad validation pending
+changed: scoped KB-02 test and evidence artifacts in this authorized pass
+unknowns: exact frozen install; pending broad gates and current CI/review; signed-in backend; device screen reader
+notes for ticket sync: one extra repair pass authorized by owner; no acceptance checks waived; accepted-task Undo remains outside this ticket; Hebrew machine-drafted for native review
+```
+
+Frozen-install output (the complete output, fewer than 20 lines):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+The earlier evidence and failures below are retained as historical records; the successful focus/motion results above supersede those two earlier failures only.
 
 The original screen preserved a draft and showed the sorted proposal but left the recovery and sorting state implicit. The changed screen mounts `CaptureStatus` beside the draft, adds a quiet `DraftRecoveryNotice` only for genuinely restored content, and returns focus to the draft when it is dismissed. A pending sort keeps the draft visible and temporarily disables dismissal until focus can return. Before accepting an idea, a person can edit its title locally; Save, Cancel and Escape restore focus to the Edit control. The existing Sort, Accept, Add, Save as a page and page Undo mutation calls and argument expressions are unchanged. Open and Undo for a saved page remain keyboard reachable while its removal request is pending. The proposal has one primary Add action, while Sort becomes secondary once a proposal exists.
 
-The interactive `Kb02Gallery` uses the same production views with controlled fictional values for Default, Empty, Loading, Error, Offline, Disabled and Long text. Its controls, language switch, retry callback, disabled action and focus return were exercised in a hydrated browser before the last two assertions were added. All eight after gallery screenshots (390/1280, en/he, light/dark) remain temporary fixture outputs under `/workspace/work/kb-02-capture/after`, not a product route. At 390 px the previously tested controls were at least 44 px high and long text fit without horizontal scrolling. Both the screen and gallery have one `main` and one `h1` in the isolated fixture. Hebrew direction is RTL and user text retains `dir="auto"`; light/dark use v3 tokens. The final focus-style and exact reduced-motion duration assertions failed in CI, so those details are not verified by this evidence.
+The interactive `Kb02Gallery` uses the same production views with controlled fictional values for Default, Empty, Loading, Error, Offline, Disabled and Long text. Its controls, language switch, retry callback, disabled action and focus return were exercised in a hydrated browser before the last two assertions were added. All eight after gallery screenshots (390/1280, en/he, light/dark) remain temporary fixture outputs under `/workspace/work/kb-02-capture/after`, not a product route. At 390 px the previously tested controls were at least 44 px high and long text fit without horizontal scrolling. Both the screen and gallery have one `main` and one `h1` in the isolated fixture. Hebrew direction is RTL and user text retains `dir="auto"`; light/dark use v3 tokens. In that earlier pass, the final focus-style and exact reduced-motion duration assertions failed in CI, so those details were unverified at that point.
 
 New named cases in `tests/unit/kb-02.test.tsx`:
 
@@ -20,7 +72,7 @@ New named cases in `tests/unit/kb-02.test.tsx`:
 10. English and Hebrew new keys match
 11. mounted screen and gallery fit phone and desktop in both languages and themes
 
-## Test results (cloud agent sandbox)
+## Previous test results (cloud agent sandbox) — before the authorized extra pass
 
 Validation completed on unchanged source/test revision `adf589515a8276a8c66b161d6cd14cc8c68cc3cb`. Counts distinguish the outer suite from its isolated browser child; wrapper cases after the first one do not rerun the browser cases. Non-test checks have no test pass/fail/skip count.
 
