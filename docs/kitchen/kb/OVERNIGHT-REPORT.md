@@ -13,7 +13,11 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 PR open — [shared ticket #1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), [draft #1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). No existing test is removed, skipped or weakened. The helper isolates Bun browser builds, streams child phases, bounds cancellation and cleanup, reaps owned descendants, preserves the authoritative child exit, and waits on committed browser signals.
 
-At `4d30965`, all **15 focused helper cases pass**, with 45 assertions in 2.96 seconds. The earlier 9/1, 10/0, 8/4, 12/0, 13/0 and 14/1 receipts remain in the scoped evidence. CodeRabbit’s two major findings (early receipt validation and PID-zero signaling) were fixed with isolated regressions. Its next review identified two minor corrections: recompute the deadline after the dynamic import, and relabel an earlier 13-case evidence row. Those corrections are pending. KB-03’s hosted run also exposed a 5-second timeout in the new delayed-stderr regression (3,522 pass / 1 fail / 3 todo); the wrapper’s event ordering is under investigation without increasing its deadline.
+Current source is `2d99c84`: **18 focused helper cases pass**, with 53 assertions in 4.33 seconds, and scoped TypeScript compilation passes. All original 15 cases, assertions and deadlines remain. The three added regressions cover a missing runtime exit event using an owned native child, receipt framing after a partial stderr line, and parent cancellation signal propagation.
+
+The fallback accepts only a matching nonblocking `waitpid` return after verifying the direct child’s parent, PID start time and zombie state. That supplies the real OS exit status and proves reaping; both streams must also finish draining. EOF, a printed receipt and zombie state alone cannot pass. A controlled nonzero exit remains a failure. CodeRabbit’s earlier receipt-order, PID-zero, transition-budget and evidence-label findings are addressed. New current-head CI and review remain pending.
+
+Earlier focused results (9/1, 10/0, 8/4, 12/0, 13/0, 14/1 and 15/0) remain in the scoped evidence. KB-03’s hosted run exposed the missed exit event in the new delayed-stderr regression (3,522 pass / 1 fail / 3 todo); this led to the OS-wait correction rather than a longer timeout.
 
 | Run | Result | Meaning |
 |---|---|---|
@@ -26,7 +30,7 @@ At `4d30965`, all **15 focused helper cases pass**, with 45 assertions in 2.96 s
 | KB-05 adoption full run, `87aa138` | 3,479 pass / 22 fail / 3 todo | 21 KB-64 browser-close failures plus KB-61’s 480-second timeout; all 13 own cases passed. |
 | KB-45 adoption full run, `92c20bed` | 3,520 pass / 0 fail / 3 todo | All 12 own cases and the shared helper passed. |
 
-The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports and KB-75’s 23 cases. It has not yet produced a green shared PR. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
+The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports, KB-75’s 23, KB-77’s 25 and KB-78’s 22 cases. Final combined proofs on `2d99c84` are being collected. It has not yet produced a green shared PR. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
 
 E2E recovery: the exact command now uses installed Chromium 151 through its local executable-cache path, without repository or configuration changes. Planning baseline: **27 pass / 1 fail / 89 skip** (task-view navigation). KB-67 and KB-45 each separately passed **28 / 0 / 89 skip**. Earlier missing-browser failures and the CDN 403 remain recorded. Existing credential-gated skips were not introduced by this run.
 
