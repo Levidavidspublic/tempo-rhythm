@@ -1,13 +1,13 @@
 # KB finish status
 
-AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 12:13 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
+AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 12:31 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
 
 ## Counts
 
 - KB issues: **0 closed / 26 open**, including the administrative lead issue #1176.
 - KB PRs: **0 merged / 26 open**; includes planning #1140.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **5 question lines**.
+- NEEDS-AMIT.md: **4 question lines**.
 
 ## Authority and gates
 
@@ -17,36 +17,38 @@ AT — Resolved in this conversation: the owner confirms automatic paid checks a
 
 AWAY — For each eligible PR: verify all dependencies on integration; rebase onto the latest integration head; retain scope; require green CI and an actual CodeRabbit review with addressed findings; mark ready and merge one PR at a time. Then close its issue with “KB done: <one line>”, refresh this file and commit it on docs/kitchen-kb-plan. Overlapping files are never edited/merged concurrently. A green CodeRabbit status with “Draft PR not reviewed” is not a review.
 
+AT — Resolved in this conversation: the owner authorized one additional repair pass for each KB draft that exhausted its retry budget. Scope and all checks remain unchanged. This supersedes the prior retry-budget question; it is not unlimited retries.
+
 ## Every filed KB issue and PR
 
 | Ticket | Issue | PR | Head | CI | Review | Current gate |
 |---|---|---|---|---|---|---|
-| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `41939d9` | FAILURE | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `cb85d1a` | SUCCESS | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-04 | [#1141](https://github.com/Levidavidspublic/tempo-rhythm/issues/1141) | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | `643bbda` | FAILURE | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-05 | [#1142](https://github.com/Levidavidspublic/tempo-rhythm/issues/1142) | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | `bf04e97` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-06 | [#1143](https://github.com/Levidavidspublic/tempo-rhythm/issues/1143) | [#1151](https://github.com/Levidavidspublic/tempo-rhythm/pull/1151) | `fbe81b6` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-07 | [#1146](https://github.com/Levidavidspublic/tempo-rhythm/issues/1146) | [#1148](https://github.com/Levidavidspublic/tempo-rhythm/pull/1148) | `4cda44c` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-08 | [#1144](https://github.com/Levidavidspublic/tempo-rhythm/issues/1144) | [#1152](https://github.com/Levidavidspublic/tempo-rhythm/pull/1152) | `ca120ce` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-09 | [#1145](https://github.com/Levidavidspublic/tempo-rhythm/issues/1145) | [#1150](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150) | `31d5cf5` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-10 | [#1155](https://github.com/Levidavidspublic/tempo-rhythm/issues/1155) | [#1159](https://github.com/Levidavidspublic/tempo-rhythm/pull/1159) | `39c5819` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-44 | [#1154](https://github.com/Levidavidspublic/tempo-rhythm/issues/1154) | [#1158](https://github.com/Levidavidspublic/tempo-rhythm/pull/1158) | `cd6909c` | SUCCESS | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-45 | [#1156](https://github.com/Levidavidspublic/tempo-rhythm/issues/1156) | [#1163](https://github.com/Levidavidspublic/tempo-rhythm/pull/1163) | `6c0c71c` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-59 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) | `da6aff3` | FAILURE | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) | `f8c7cc6` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `82cbdaf` | SUCCESS | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) | `6e0d2b9` | SUCCESS | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | `bc6c4d4` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-69 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | `77e225d` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | `0df8649` | SUCCESS | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-71 | [#1175](https://github.com/Levidavidspublic/tempo-rhythm/issues/1175) | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | `afff777` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-73 | [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | `6e7d41a` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-74 | [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | `6875a13` | SUCCESS | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-75 | [#1178](https://github.com/Levidavidspublic/tempo-rhythm/issues/1178) | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | `b9d2b51` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-76 | [#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180) | [#1183](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183) | `6bf810c` | FAILURE | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-77 | [#1184](https://github.com/Levidavidspublic/tempo-rhythm/issues/1184) | [#1186](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186) | `7912c5f` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
-| KB-78 | [#1188](https://github.com/Levidavidspublic/tempo-rhythm/issues/1188) | [#1190](https://github.com/Levidavidspublic/tempo-rhythm/pull/1190) | `3feeb6b` | FAILURE | Draft skipped; no review | Repair budget exhausted; AT-01 |
-| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | `cb2a807` | SUCCESS | Draft skipped; no review | Await actual review and final checks |
+| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `41939d9` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `cb85d1a` | SUCCESS | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-04 | [#1141](https://github.com/Levidavidspublic/tempo-rhythm/issues/1141) | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | `643bbda` | FAILURE | Review posted; 1 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-05 | [#1142](https://github.com/Levidavidspublic/tempo-rhythm/issues/1142) | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | `bf04e97` | SUCCESS | Review posted; 0 unresolved threads | Address review and final checks |
+| KB-06 | [#1143](https://github.com/Levidavidspublic/tempo-rhythm/issues/1143) | [#1151](https://github.com/Levidavidspublic/tempo-rhythm/pull/1151) | `fbe81b6` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-07 | [#1146](https://github.com/Levidavidspublic/tempo-rhythm/issues/1146) | [#1148](https://github.com/Levidavidspublic/tempo-rhythm/pull/1148) | `4cda44c` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-08 | [#1144](https://github.com/Levidavidspublic/tempo-rhythm/issues/1144) | [#1152](https://github.com/Levidavidspublic/tempo-rhythm/pull/1152) | `ca120ce` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-09 | [#1145](https://github.com/Levidavidspublic/tempo-rhythm/issues/1145) | [#1150](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150) | `31d5cf5` | SUCCESS | Review posted; 1 unresolved threads | Address review and final checks |
+| KB-10 | [#1155](https://github.com/Levidavidspublic/tempo-rhythm/issues/1155) | [#1159](https://github.com/Levidavidspublic/tempo-rhythm/pull/1159) | `39c5819` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-44 | [#1154](https://github.com/Levidavidspublic/tempo-rhythm/issues/1154) | [#1158](https://github.com/Levidavidspublic/tempo-rhythm/pull/1158) | `cd6909c` | SUCCESS | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-45 | [#1156](https://github.com/Levidavidspublic/tempo-rhythm/issues/1156) | [#1163](https://github.com/Levidavidspublic/tempo-rhythm/pull/1163) | `6c0c71c` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-59 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) | `da6aff3` | FAILURE | Review posted; 4 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) | `f8c7cc6` | SUCCESS | Review requested; awaiting publication | Address review and final checks |
+| KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `82cbdaf` | SUCCESS | Review posted; 1 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) | `6e0d2b9` | SUCCESS | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | `bc6c4d4` | SUCCESS | Review posted; 1 unresolved threads | Address review and final checks |
+| KB-69 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | `77e225d` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | `0df8649` | SUCCESS | Review requested; awaiting publication | One extra repair pass authorized; checks unchanged |
+| KB-71 | [#1175](https://github.com/Levidavidspublic/tempo-rhythm/issues/1175) | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | `afff777` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-73 | [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | `6e7d41a` | SUCCESS | Review requested; awaiting publication | Address review and final checks |
+| KB-74 | [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | `6875a13` | SUCCESS | Review requested; awaiting publication | One extra repair pass authorized; checks unchanged |
+| KB-75 | [#1178](https://github.com/Levidavidspublic/tempo-rhythm/issues/1178) | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | `b9d2b51` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
+| KB-76 | [#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180) | [#1183](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183) | `6bf810c` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-77 | [#1184](https://github.com/Levidavidspublic/tempo-rhythm/issues/1184) | [#1186](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186) | `7912c5f` | SUCCESS | Review posted; 1 unresolved threads | Address review and final checks |
+| KB-78 | [#1188](https://github.com/Levidavidspublic/tempo-rhythm/issues/1188) | [#1190](https://github.com/Levidavidspublic/tempo-rhythm/pull/1190) | `3feeb6b` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | `cb2a807` | SUCCESS | Review posted; 12 unresolved threads | Address review and final checks |
 
 ## Written tickets without a PR, in dependency order
 
@@ -128,7 +130,7 @@ AWAY — The 25 current implementation PRs each change their six ticket-scoped p
 
 ## Older non-KB drafts
 
-AWAY — No non-KB draft was modified, rebased, reviewed, closed or merged. Historical claims of supersession are not proof that an entire draft is redundant. #1053 itself is unmerged and overlaps KB work; #1081 targets its branch and is still prerequisite work. #1193 is unfinished mobile work, not a KB completion. A complete verified superseded-only list is pending the read-only audit; uncertain cases are not marked superseded.
+AWAY — No non-KB draft was modified, rebased, reviewed, closed or merged. Historical claims of supersession are not proof that an entire draft is redundant. #1053 itself is unmerged and overlaps KB work; #1081 targets its branch and is still prerequisite work. #1193 is unfinished mobile work, not a KB completion. #1053 explicitly calls #964/#965/#967/#968/#969/#970 superseded and #1026 partially superseded, but #1053 is itself unmerged; these are historical claims, not permission to close those drafts. A local ancestry audit could examine only two open-draft heads; 76 objects were unavailable. Their complete redundancy remains UNKNOWN.
 
 ## Merge receipts
 
