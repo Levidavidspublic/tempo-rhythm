@@ -23,6 +23,10 @@ These requests are preserved from the separate feature lane; they are not additi
 
 13. AT-28 — Authorize one scoped regression-test correction for hero #1210 after its three implementation candidates: assert the desktop examples' initial animation state and stable geometry directly in `tests/e2e/landing-motion.spec.ts`, before awaiting the copy animation. Actual EN/HE supplementary observations pass, but CodeRabbit on `204bb59` retains the committed-test gap. Preserve every existing case, assertion and deadline; no product change or fourth source/test candidate is made without authorization.
 
+14. AT-29 — Authorize one scoped page-save correction in draft [#1250](https://github.com/Levidavidspublic/tempo-rhythm/pull/1250) after three source candidates: make dirty-field clearing revision-owned and add a deferred A → B → A regression. Source inspection finds the race in both baseline and current `4d183cd`; executed comparison is pending. It limits the promised newer-draft guarantee, so completion/merge is blocked. Preserve existing 30 cases, assertions and deadlines. The first two source designs' distinct outgoing-write/reopen review failures remain recorded.
+
+The retry boundary comes from [AGENTS.md — Failing and stuck](https://github.com/Levidavidspublic/tempo-rhythm/blob/integration/AGENTS.md): “A ticket gets 3 attempts in total, including review-fix rounds” and “Don't make a 4th attempt.” The feature requests above ask only for the named additional correction; no general exception is inferred.
+
 WALK — Applicability correction: the earlier extra label hold for feature #1246 was lead-inferred, not an owner requirement. Amit explicitly authorized payment-provider wiring behind an OFF flag; #1246 is a scoped data ticket. AGENTS rule 4 and the unchanged scope-guard require the architecture exception for component/backend edits, not this data ticket. KB-01/16/31 retain their explicit owner gates. All payment validation, review and repository guards remain required; activation remains separate.
 
 ## Amit's answers — 2026-10-21
