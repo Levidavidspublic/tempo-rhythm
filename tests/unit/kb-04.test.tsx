@@ -1,11 +1,61 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { chromium, type Browser, type Page } from "@playwright/test";
-import { en, he, kb04t } from "../../apps/web/lib/i18n-groups/kb-04";
-import { JournalDayHeading, JournalLoadMore, Kb04Gallery } from "../../apps/web/components/journal/JournalScreen";
-import { createElement } from "../../apps/web/node_modules/react";
-import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
+import type { Browser, Page } from "@playwright/test";
+
+// Bun's bundler, HTTP server and module mocks share process state with other files.
+// Keep every real assertion in a clean child, and fail the parent on any child failure.
+if (process.env.KB04_FIXTURE_CHILD !== "1") {
+  const names = [
+    "no entries has one calm empty state",
+    "one day has a semantic heading and a quiet end",
+    "untitled row links announce each date once in English and Hebrew",
+    "multiple chunks load by keyboard and focus the first new day",
+    "StrictMode replay keeps focus on a delayed chunk when it arrives",
+    "moving focus away during loading is respected",
+    "end after a full chunk retains focus on the end message",
+    "loading stays distinct from the end message",
+    "Hebrew dates use LTR isolates in an RTL page",
+    "large text remains readable with 44 px phone controls",
+    "overflow titles and tags wrap without horizontal scrolling",
+    "gallery empty, loading, error, retry and disabled are interactive",
+    "gallery Load more calls back and returns focus to the added heading",
+    "keyboard focus is visible and reduced motion removes transitions",
+    "new exports render and English/Hebrew keys match",
+    "mounted screenshots cover 390/1280, en/he and light/dark",
+    "hydrated gallery works at phone and desktop widths in both locales and themes",
+  ] as const;
+  let child: ReturnType<typeof Bun.spawn> | undefined;
+  let result: Promise<{ output: string; exitCode: number }> | undefined;
+  const run = () => result ??= (async () => {
+    const spawned = Bun.spawn([process.execPath, "test", import.meta.path], {
+      cwd: process.cwd(), env: { ...process.env, KB04_FIXTURE_CHILD: "1" },
+      stdout: "pipe", stderr: "pipe",
+    });
+    child = spawned;
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(spawned.stdout).text(), new Response(spawned.stderr).text(), spawned.exited,
+    ]);
+    const output = `${stdout}${stderr}`;
+    console.info(output);
+    return { output, exitCode };
+  })();
+  for (const name of names) {
+    test(`KB-04 isolated: ${name}`, async () => {
+      const { output, exitCode } = await run();
+      if (exitCode !== 0) throw new Error(`KB-04 child exited ${exitCode}:\n${output}`);
+      expect(output).toContain(name);
+    }, 300_000);
+  }
+  afterAll(async () => {
+    if (child && child.exitCode === null) { child.kill(); await child.exited; }
+  });
+} else {
+const { chromium } = await import("@playwright/test");
+const { en, he, kb04t } = await import("../../apps/web/lib/i18n-groups/kb-04");
+const { JournalDayHeading, JournalLoadMore, Kb04Gallery } = await import("../../apps/web/components/journal/JournalScreen");
+const { createElement } = await import("../../apps/web/node_modules/react");
+const { renderToStaticMarkup } = await import("../../apps/web/node_modules/react-dom/server");
 
 const repo = process.cwd();
 const web = join(repo, "apps/web");
@@ -102,6 +152,25 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     expect(await page.getByText(kb04t("en", "kb04.end")).count()).toBe(1);
     expect(await page.locator("time[dir=ltr]").count()).toBe(1);
     await page.close();
+  });
+  test("untitled row links announce each date once in English and Hebrew", async () => {
+    for (const lang of ["en", "he"] as const) for (const view of ["scenario=multiple", "gallery=1"]) {
+      const page = await open(390, `${view}&lang=${lang}`);
+      const untitled = page.locator(".kb04-day").nth(3);
+      await untitled.waitFor();
+      const headingDate = untitled.locator("h2 time");
+      const date = (await headingDate.textContent())?.trim() ?? "";
+      expect(date).toBeTruthy();
+      expect(await headingDate.getAttribute("dir")).toBe("ltr");
+      expect(await untitled.locator("time").count()).toBe(1);
+      expect(await untitled.getByRole("link", { name: date, exact: true }).count()).toBe(1);
+      const titled = page.locator(".kb04-day").first();
+      expect(await titled.getByRole("heading", { name: "Maya's quiet morning", exact: true }).count()).toBe(1);
+      expect(await titled.locator("h2 time").count()).toBe(0);
+      expect(await titled.locator(".kb04-day-meta time").count()).toBe(1);
+      expect(await titled.locator(".tp-tag").textContent()).toBe("Reflection");
+      await page.close();
+    }
   });
   test("multiple chunks load by keyboard and focus the first new day", async () => {
     const page = await open(390, "scenario=multiple");
@@ -243,3 +312,5 @@ describe.serial("KB-04 mounted journal and gallery", () => {
     }
   }, 300_000);
 });
+
+}

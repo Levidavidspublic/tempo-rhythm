@@ -47,7 +47,7 @@ function JournalRows({ rows, lang, firstHeadingRef }: Readonly<{
           <JournalDayHeading date={row.date} title={row.title} lang={lang}
             headingRef={index === 0 ? firstHeadingRef : undefined} />
           <span className="kb04-day-meta">
-            <time dateTime={row.date} dir="ltr">{journalDate(row.date, lang)}</time>
+            {row.title ? <time dateTime={row.date} dir="ltr">{journalDate(row.date, lang)}</time> : null}
             {row.tags.map((tag) => <span className="tp-tag" key={tag} dir="auto">{tag}</span>)}
           </span>
         </span>
