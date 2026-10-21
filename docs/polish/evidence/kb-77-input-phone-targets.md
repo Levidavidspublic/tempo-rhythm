@@ -206,3 +206,71 @@ Hosted [run `39613225865`, Test job `119267322831`](https://github.com/Levidavid
 The underlying cause remains UNKNOWN. Neither the absent `.exited` receipt nor the absent `onExit` callback distinguishes an OS process still alive during runtime teardown from a lost wait-status notification. Results and pipe EOF are insufficient to establish actual OS exit, so the authoritative failure gate remains in place. AT-18 holds this ticket: the third ordinary and one owner-authorized extra source pass are consumed, with no further source change or retry authorized. The missing read-only diagnostic is the child's OS state, wait channel and process start time at EOF, with bounded cleanup; any further code repair needs Amit's authorization.
 
 The font, physical-device, live-account and native Hebrew limits above remain UNKNOWN. The lead owns remote operations and records the final integrated head and broad gate results. No source, package, config, timeout, original assertion or production change followed the failed extra candidate.
+
+## Overnight v3 shared fixture correction — 21 October 2026
+
+Draft; final gates pending. The owner authorized a further scoped fixture pass after the shared Step 0 repair. Role: WORKHORSE. This continues issue #1184 and draft #1186 on its existing branch, retaining prior implementation, screenshots and failed-attempt evidence. Shared prerequisite: #1203 at `4d30965`; scoped source: `3f0145b`.
+
+The parent now uses the shared bounded process runner instead of the bespoke Bun `.exited`/`onExit` observer and hand-written process-tree teardown. It streams phase evidence, retains the actual fixture OS exit and signal, validates completed invocation-token results, and removes the owned directory after the shared supervisor reaps descendants. The original cancellation point remains `deadline - 1_000`; bounded cleanup fits inside the original final second. The 480,000 ms setup deadline and all existing lifecycle-test deadlines remain unchanged.
+
+Frozen and current browser builds use the shared isolated builder in separate owned output directories. The exact frozen Input source and existing fake auth/query/mutation/locale boundaries are preserved; neither actual caller is replaced. Normal and canceled fixture paths share independent server/browser cleanup. All 18 original browser cases, seven existing lifecycle cases, and all 91 original Playwright/Bun assertion lines remain. The entire seven-test lifecycle block is byte-identical. No product, caller, dictionary, stylesheet, screenshot, package or config changed.
+
+The historical test name referring to the stalled legacy exit promise remains. Its original actual exit-73 probe and every assertion remain; the obsolete Bun accessor injection is removed together with the old Bun process observer. The shared runner never consults that legacy receipt and must still reject all-success result data paired with actual OS exit 73. No printed case result or EOF is accepted as an exit.
+
+Before: hosted job `119267322831` printed all 18 browser passes and completed cleanup at 20.074 seconds, then reached stdout/stderr EOF without a received OS exit. Cancellation at 479 seconds and the 480-second setup failure remain the authoritative failed receipt. Its lifecycle regressions never ran; the full run also had an unrelated codec failure.
+
+After: `bun test tests/unit/kb-77.test.tsx`, Bun 1.3.9, exited 0 with **25 pass / 0 fail / 110 assertions in 32.71 seconds**. All 18 real-caller/browser checks and all seven existing lifecycle regressions passed. Main fixture actual exit 0, independent browser/server cleanup, invocation-result validation and parent directory removal were observed. The negative probe returned actual exit 73 despite successful-looking results; cancellation of the deliberately stalled close returned a failing signal, reaped its detached descendant, refused the stopped server and removed the directory. Log: `/workspace/kb-run-logs/kb77-focused.log`.
+
+`bun install --frozen-lockfile` stalled at resolution until the unchanged 120-second external bound, exit 124: UNKNOWN. Dependency directories were copied from the preceding worktree only after byte equality of the lockfile and every root/workspace package manifest was checked. Relative workspace links remain local. No install success is claimed.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Test results (cloud agent sandbox), scoped source `3f0145b` with shared `4d30965`:
+
+| Required command | Exit | Result |
+|---|---|---|
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 124 | UNKNOWN: stalled at resolution for 120 seconds |
+| `bun run lint` | 0 | PASS: 5/5, zero errors; existing warnings retained |
+| `bun run typecheck` | 0 | PASS: 5/5 |
+| `bun run test` | 1 | FAIL: 3,512 pass / 1 fail / 3 todo, 3,516 tests across 213 files, 81,660 assertions, 759.11 seconds |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | PASS: all four |
+| `CI=1 bunx playwright test --reporter=line` | 0 | PASS: 28 passed / 0 failed / 89 existing gated skips; 1.2 minutes; shared browser lock held |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0 | PASS: 1/1, 32.143 seconds |
+
+The sole full-suite failure was unchanged KB-61’s 480-second setup hook. Its child was observed as an exited zombie under the full-suite parent while the existing Bun exit promise remained pending. No active test was canceled or deadline changed. The failed hook prevented KB-61’s cases from executing, which explains the lower executed count; no cases were removed. All 25 KB-77 cases and all 15 shared cases at that revision passed inside this full run. These failed broad-check receipts remain tied to `4d30965`, not the later shared update.
+
+Last 20 lines of `/workspace/kb-run-logs/kb77-full.log`:
+```text
+(pass) react-dom inside @tempo/ui > the manifest pins react-dom exactly like apps/web and declares it as a peer [0.09ms]
+(pass) react-dom inside @tempo/ui > react-dom resolves here at the pinned version, the same install apps/web uses [0.28ms]
+(pass) react-dom inside @tempo/ui > react-dom/server renders a React element from inside packages/ui [0.83ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+1 tests failed:
+(fail) (unnamed) [480016.99ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3512 pass
+ 3 todo
+ 1 fail
+ 81660 expect() calls
+Ran 3516 tests across 213 files. [759.11s]
+error: script "test" exited with code 1
+```
+
+After the mandatory sequence completed, shared `2d99c84` was merged normally for a final combined focused proof. The coordinating worker subsequently reported a separate cleanup race in KB-75’s combined proof: supervisor SIGKILL preceded the child receipt, leaving actual exit unknown. The shared ticket is held for its exhausted repair budget; no local private workaround or repeated retry is authorized. A passing local KB-77 proof cannot clear that prerequisite blocker.
+
+The existing font provenance, native Hebrew, physical-device and live-account limitations remain unchanged.
+
+Final combined proof on merge `e33d9a4` (own source `3f0145b`, shared `2d99c84`): `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-77.test.tsx` exited 0 with **43 pass / 0 fail / 163 assertions in 29.95 seconds**. This is shared 18 plus existing KB-77 25. KB-77's main fixture had actual exit 0; setup-failure/close-rejection probes exited 1; the all-success-data probe exited 73; the intentionally stalled child returned SIGTERM with timeout recorded. Shared waitpid recovery reaped the owned supervisors. All existing lifecycle assertions passed. Log: `/workspace/kb-run-logs/kb77-final-focused.log`.
+
+Hosted CI and actual CodeRabbit coverage of the pushed head remain pending. The shared prerequisite's separately observed cleanup race and the failed mandatory broad run remain blockers; no merge is claimed or requested.
