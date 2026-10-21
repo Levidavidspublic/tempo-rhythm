@@ -26,7 +26,7 @@ Source head: `1551b5fbaae6a15b82d645c82029286631a2ae41`. The evidence commit cha
 | Full unit suite | exit 0; 3328 pass, 3 todo, 0 fail; 81132 assertions; 3331 tests across 202 files |
 | Focused KB-67 hydrated fixture | exit 0; 27 pass, 0 fail; 114 assertions; 66.46s |
 | Four scans/notices | four OK; 66 dependencies documented |
-| Local E2E | exit 1; 26 pass, 89 credential-gated skip, 2 unrelated failures (`task-views-core` and notifications wiring) |
+| Local E2E | exit 1; 26 pass, 89 credential-gated skip, 2 unrelated failures (`tests/e2e/task-views-core.spec.ts:14:7` and `tests/e2e/wiring/settings-account.spec.ts:16:9`) |
 | Build | exit 0; 1/1 task; 2m4.221s |
 
 Repeated Add submits produce exactly one `nags:addPhrase` call; repeated Suggest clicks produce exactly one read-only `nags:proposePhrases` call. Before explicit Accept there are zero add/decide writes. Accept produces exactly one derived `addPhrase` followed by one `decidePhrase(accept)`. Reject makes zero writes. A held A rejection preserves B textarea focus; on the same nag it preserves focus moved to the New nag input. Current validation/current save failure returns focus to the matching phrase input. Newer same-A edits remain current and unlabelled by the earlier response.
