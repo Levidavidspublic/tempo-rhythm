@@ -17,17 +17,30 @@ Only exact `/pricing` is added to the public-route list. The existing unit tests
 | `bun run typecheck` | Final frozen source: pass, 5/5 tasks, authoritative exit 0 (27.18 seconds). |
 | `bun run test` | Pending serialized lead gate. |
 | Four scans/notices | Pending serialized lead gate. |
-| Local real-route browser checks | Pending shared browser slot. |
+| Local real-route browser checks | Pass: before 4/4, after 8/8, authoritative exit 0 for both commands. Each after case checks both billing intervals. |
 | `CI=1 bunx playwright test --reporter=line` | Pending serialized lead gate. |
 | `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Pending serialized lead gate. |
 
 The first focused run failed at module import before any cases ran: the Convex Auth server barrel enforces a React Server Component boundary. The test now resolves that installed package's actual matcher leaf instead; the server-only guard is unchanged. That result was zero pass, one fail, one error. The corrected focused run passed all ten cases. Lint subsequently identified the explicit Bun helper import needed in the scoped test; the subsequent candidate explicitly imports `spawnSync` from Bun. Final lint/typecheck and all ten focused cases pass; both initial failures remain recorded.
 
-## Browser evidence plan
+## Browser evidence results
 
-Before captures use unchanged hero branch `6b2ca7c48a815530af8865b886b34fa59707da31`, whose pricing route is still absent. That source is integration plus the independent hero animation; no pricing source is edited to stage a screenshot. After captures use this ticket's real local Next route. Servers run one at a time under the lead's shared browser slot. No preview/live URL is used.
+Before captures use unchanged hero branch `6b2ca7c48a815530af8865b886b34fa59707da31`, whose pricing route is still absent. That source is integration plus the independent hero animation; no pricing source was edited to stage a screenshot. After captures use this ticket's real local Next route at frozen source `e1cf9871113d3a0a8a80b55f75b4aa6614610077`. Servers ran one at a time under the lead's shared browser slot. No preview/live URL or auth bypass was used.
 
-Required captures are 390/1280 widths, English/Hebrew, and both light/dark themes for the new page. Browser checks exercise monthly/yearly controls, unchanged trial duration, keyboard focus, RTL, phone targets, one main/h1, overflow, protected routes and the absence of payment or mutation requests. Only a successfully completed run may be reported as proof.
+Twenty PNG captures are saved here: four light baseline redirects at 390/1280 widths and English/Hebrew locale selections, plus sixteen pricing captures covering both widths, languages, light/dark themes and monthly/yearly intervals. The baseline Hebrew locale still displays the existing English-only sign-in page; it is not represented as translated pricing. All data are public catalog values; no account was used.
+
+All eight after cases pass exact prices, unchanged trial duration, one main/h1, RTL, no horizontal overflow, visible keyboard focus, correct direction-aware arrow selection and minimum 44-pixel control dimensions. The protected settings route still redirects to sign-in. All cases recorded zero page errors and no payment/provider, POST or Convex mutation/action traffic. EN phone light/monthly and HE desktop dark/yearly images were also visually inspected without clipping or overflow. Screenshots include the local Next development indicator.
+
+Commands, both authoritative exit 0:
+
+```sh
+PATH=/workspace/work/kb/bin:$PATH PLAYWRIGHT_BROWSERS_PATH=/workspace/work/kb/browsers bun /workspace/work/overnight/pricing-browser-evidence.ts before
+PATH=/workspace/work/kb/bin:$PATH PLAYWRIGHT_BROWSERS_PATH=/workspace/work/kb/browsers bun /workspace/work/overnight/pricing-browser-evidence.ts after
+```
+
+The bounded scratch script is retained as `browser-evidence-script.txt`, with pre-execution setup review and result logs. It uses installed Chromium and local Next port 3108 with a placeholder Convex URL. It preserves assertion and timeout bounds. The before command also verified the independent hero examples at EN/HE 1280 with reduced motion: visible, no animations, identity transform, full opacity, unchanged bounds across two animation frames and zero page errors (`hero-examples-reduced.json`).
+
+Disk filled after the successful baseline. The after phase remained unstarted until the lead recovered capacity; it then passed on its first run. Both commands closed their browser and server, and the port had no listener afterward. This evidence does not establish hosted CI, full-suite success, authenticated flows or deployed preview behavior.
 
 AT — New Hebrew text is machine-drafted in plural or impersonal forms and needs Amit's native read before production. No production release is authorized.
 
