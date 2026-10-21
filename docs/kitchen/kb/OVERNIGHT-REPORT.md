@@ -29,6 +29,8 @@ Earlier focused results (9/1, 10/0, 8/4, 12/0, 13/0, 14/1 and 15/0) remain in th
 | KB-67 adoption full run, before final parser correction | 3,457 pass / 32 fail / 3 todo | 31 old-parser failures plus KB-61’s original 480-second timeout. Final focused shared + own run passed 46/0. |
 | KB-05 adoption full run, `87aa138` | 3,479 pass / 22 fail / 3 todo | 21 KB-64 browser-close failures plus KB-61’s 480-second timeout; all 13 own cases passed. |
 | KB-45 adoption full run, `92c20bed` | 3,520 pass / 0 fail / 3 todo | All 12 own cases and the shared helper passed. |
+| KB-75 adoption full run, `52689a4` | 3,510 pass / 1 fail / 3 todo | Only unchanged KB-61’s 480-second hook failed; all 23 own cases passed. |
+| KB-78 adoption full run, `e618a0f` | 3,530 pass / 0 fail / 3 todo | All 22 own cases passed on shared `4d30965`; final shared combined proof is pending. |
 
 The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports, KB-75’s 23, KB-77’s 25 and KB-78’s 22 cases. Final combined proofs on `2d99c84` are being collected. It has not yet produced a green shared PR. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
 
@@ -44,7 +46,7 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-02 | 1153 | 1160 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-03 | 1157 | 1162 | PR open — focused15/0; full3,520pass/0fail/3todo on earlier shared dependency; scans/build pass. Final shared+own30/0 at cdd517d; hosted gates/shared merge pending. |
 | KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-05 | 1142 | 1149 | PR open — Focused 13/0; full 3479/22/3 todo (21 KB-64 failures, one KB-61 timeout); E2E 28/0/89 skip, other local gates pass. Shared dependency and current CI/review block merge. |
+| KB-05 | 1142 | 1149 | PR open — Final shared + own 31/0, 247 assertions at 28dda16 on shared2d99c84. Earlier full3479/22/3 todo (KB-64 and KB-61); E2E28/0/89 skip, other gates pass. Shared integration and current CI/review block merge. |
 | KB-06 | 1143 | 1151 | PR open — Focused 19/0; full incomplete after unchanged KB-66 240-second timeout (observed 1556/1/3 todo, exit143); E2E 28/0/89 skip; other local gates pass except frozen install UNKNOWN. Shared dependency and current CI/review block merge. |
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
@@ -62,7 +64,7 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-75 | 1178 | 1179 | PR open — non-UTC focused 23/0; mandatory checks active. Shared dependency and current gates block merge. |
 | KB-76 | 1180 | 1183 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-59 | 1189 | 1191 | Merged previously; retained. |
-| KB-61 | 1181 | 1199 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-61 | 1181 | 1199 | PR open — Authorized v3 pass active: shared lifecycle adoption, preserve both cleanup errors with controlled regression; all26 existing cases/deadlines retained. Reopened issue stays open. |
 | KB-64 | 1182 | 1187 | Merged previously; retained. |
 | KB-77 | 1184 | 1186 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-78 | 1188 | 1190 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
