@@ -497,3 +497,62 @@ Before: retained historical non-UTC run above reported zero named results and tw
 Bun 1.3.9. Frozen install remained at Resolving dependencies and reached the external 120-second bound, exit 124: UNKNOWN. Its bun.lock SHA256 matches the successfully installed shared worktree (`35da413125508b8d1fbbaff0fc48b01dd8db7a437dd3439dc7d2f2edfbfcd1f7`); installed trees were copied locally with workspace links preserved. No manifest/lockfile/environment/configuration changed. Mandatory lint/typecheck/full suite/scans/E2E/build are running in order, with E2E serialized under the shared browser lock.
 
 Logs are `/workspace/kb-run-logs/kb75-install.log`, `kb75-parent-zone.log`, `kb75-focused.log`, `kb75-0.log` through `kb75-5.log` and `kb75-results.json`. Final command results follow below. The required PR attachment tool call was attempted separately, but host completion is UNKNOWN after it hung. Live administrative writes, native Hebrew and physical-device checks remain UNKNOWN.
+
+
+### Mandatory sequence and final shared revision
+
+The mandatory sequence on source `52689a4` (shared `4d30965`) finished before the final shared merge. Lint and typecheck each passed 5/5 (exit 0). Full `bun run test`: **3510 pass / 1 fail / 3 todo**, 81,574 assertions, 3,514 tests across 213 files, 800.50 seconds, exit 1. All 23 KB-75 cases passed in that run; its only failure was the unchanged KB-61 unnamed hook at its original 480-second bound. No outside cancellation occurred. The four scans/notices passed (exit 0). Exact E2E passed **28 / 0 failed / 89 skipped** in 65.31 seconds (exit 0), using the installed system browser and shared port lock. Build passed **1/1**, uncached, exit 0 in 71.52 seconds. No final-head full-suite pass is inferred from this run.
+
+Shared revision `2d99c84` was then merged normally. `TZ=America/Los_Angeles bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-75.test.tsx` returned exit 1: **40 pass / 1 fail**, 75 assertions, 49.64 seconds. KB-75 again passed all **23 / 0** cases, including the UTC browser assertions under the non-UTC parent; child exit 0, supervisor exit 0, all 22 named browser records and cleanup complete. The shared suite had **17 / 1**: its unchanged cancellation-deadline regression expected the child's SIGKILL receipt, but got null after the supervisor itself was killed and reaped without a child receipt. This failure is reported to the shared-ticket owner; no assertion or timeout is weakened and no worker-local helper change is made. All 24 recorded runner PIDs were absent afterward; the failed shared cancellation case does not prove its missing child receipt. No unique KB-75 fixture directory remained.
+
+Log: `/workspace/kb-run-logs/kb75-final-focused.log`. The final shared regression outcome must be resolved or explicitly retained as a merge blocker; KB-75's passing case count does not mask it. Generated invocation identifiers are omitted from published evidence because they are synthetic protocol identifiers, not credentials, and raw copies can trigger the generic secret scanner.
+
+Mandatory full-suite failure, last 20 lines:
+
+```text
+(pass) react-dom inside @tempo/ui > the manifest pins react-dom exactly like apps/web and declares it as a peer [0.22ms]
+(pass) react-dom inside @tempo/ui > react-dom resolves here at the pinned version, the same install apps/web uses [0.66ms]
+(pass) react-dom inside @tempo/ui > react-dom/server renders a React element from inside packages/ui [0.31ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+1 tests failed:
+(fail) (unnamed) [480014.13ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3510 pass
+ 3 todo
+ 1 fail
+ 81574 expect() calls
+Ran 3514 tests across 213 files. [800.50s]
+error: script "test" exited with code 1
+```
+
+Combined shared proof failure, last 20 lines:
+
+```text
+(pass) KB-75 mounted admin approvals > raw backend error never appears
+(pass) KB-75 mounted admin approvals > removed-row completion is discarded
+(pass) KB-75 mounted admin approvals > query controls status and reordering
+(pass) KB-75 mounted admin approvals > focus recovers when initiating button disappears
+(pass) KB-75 mounted admin approvals > late completion never steals moved focus
+(pass) KB-75 mounted admin approvals > English and Hebrew date labels and copy
+(pass) KB-75 mounted admin approvals > long email is isolated and wraps in RTL
+(pass) KB-75 mounted admin approvals > phone and desktop matrix has one main h1 and 44 px actions
+(pass) KB-75 mounted admin approvals > visible focus and reduced motion
+(pass) KB-75 mounted admin approvals > both named views render in interactive gallery
+(pass) KB-75 mounted admin approvals > language endonyms declare their own language through both switches
+[kitchen-fixture] EOF OS pid=149537 stat=149537 (python3) Z 148989 149537 149537 0 -1 4227340 2674 2231031 0 2 4 0 4198 1067 20 0 1 0 345810 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 2 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+
+1 tests failed:
+(fail) shared kitchen fixture lifecycle > deadline bounds a child ignoring cancellation and reaps its real exit [398.92ms]
+
+ 40 pass
+ 1 fail
+ 75 expect() calls
+Ran 41 tests across 2 files. [49.64s]
+```
