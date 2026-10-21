@@ -1,0 +1,4 @@
+git diff --check: PASS after removing trailing whitespace from rendered failure-tail copies. Exact raw command receipts remain lossless compressed.
+All recovery changes confined to docs/polish/evidence/feature-payment-gate/.
+Validated implementation/test SHA256 values unchanged.
+All expected authoritative gate exits verified.

@@ -1,6 +1,6 @@
 # Payment webhook OFF guard
 
-WALK — Issue #1246, Lane 2. Integration base: `39b564ec329705587df5262ed5a061bbec9a1e8f`. Captured 21 October 2026 using Bun 1.3.9. This is local proof of disabled behavior, not provider operation, paid admission or deployed preview proof.
+WALK — Issue #1246, Lane 2. Validated source: `d2b259b062dd4649b598370265caf490be78ec89`; actual integration parent: `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac` (the initial code-map audit used `39b564e`). Captured 21 October 2026 using Bun 1.3.9. This is local proof of disabled behavior, not provider operation, paid admission or deployed preview proof.
 
 ## Behavior
 
@@ -25,19 +25,82 @@ The tests use fresh Bun children with `--no-env-file` and an explicit synthetic 
 
 | Command/check | Result |
 |---|---|
-| `bun --version` | 1.3.9 |
-| Initial focused `bun test convex/lib/revenuecat_events.test.ts` | 9 pass / 0 fail, 120 assertions, exit 0, 2.47 seconds |
-| Final focused same command, adding native body-consumption assertion | 9 pass / 0 fail, 129 assertions, exit 0, 4.35 seconds |
+| `bun --version` | 1.3.9; exit 0 |
+| Final focused `bun test convex/lib/revenuecat_events.test.ts` | 9 pass / 0 fail, 129 assertions, exit 0, 4.35 seconds; also all 9 passed within the full suite |
 | Scoped Biome lint, all three changed TypeScript files | Passed, exit 0, no fixes |
-| Scoped strict TypeScript compilation | Passed, exit 0; before the additional test-only native-body assertion; final mandatory typecheck pending |
-| `git diff --check` | Passed |
-| `bun install --frozen-lockfile` | In progress at this commit; no completed install claimed |
-| Mandatory `bun run lint`, `bun run typecheck` | Queued after install in the authorized CPU slot |
-| Mandatory full tests, four scans/notices, local Playwright and build | Pending the lead's serialized heavy-validation slot |
+| Scoped strict TypeScript compilation | Passed, exit 0; final mandatory typecheck below covers the final source |
+| `bun install --frozen-lockfile` | Passed, exit 0; checked 1033 installs across 1079 packages, no changes |
+| `bun run lint` | Passed, exit 0; 5/5 Turbo tasks cached; existing web output has 9 warnings, no fixes |
+| `bun run typecheck` | Passed, exit 0; 5/5 Turbo tasks cached |
+| `bun run test` | FAIL, exit 1; 3486 pass / 14 fail / 3 todo, 81499 assertions, 3503 tests across 211 files, 1243.63 seconds |
+| `bun run scan:forbidden-tech` | Passed, exit 0 |
+| `bun run scan:ram-only-audit` | Passed, exit 0; baseline unchanged |
+| `bun run scan:design-tokens` | Passed, exit 0; baseline unchanged |
+| `bun run check:notices` | Passed, exit 0; 66 documented runtime dependencies |
+| First `CI=1 bunx playwright test --reporter=line` | UNKNOWN: environment handoff interrupted the runner; no authoritative exit. Original log preserved as `playwright.interrupted.log.gz` |
+| Resumed exact `CI=1 bunx playwright test --reporter=line` | FAIL, exit 1; 25 passed / 3 failed / 89 skipped, 4.7 minutes; local mock dev server and existing system Chromium only |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Passed, exit 0; 1/1 Turbo task, 2m23.608s |
+| `git diff --check` | Passed before implementation commit; evidence-only follow-up checked separately |
 | Current-head hosted CI, CodeRabbit, guards, architecture approval | UNKNOWN until independently observed by the lead |
-| Preview/provider behavior | UNKNOWN; no real endpoint or account was exercised |
+| Preview/provider behavior | UNKNOWN; no real endpoint or account exercised |
 
-The final focused log is included in this folder. No candidate failure occurred during the scoped implementation. Later broad results belong in the PR report with authoritative exit and any failure tails; this table does not substitute for those gates.
+The full-suite failures are 13 named KB64 Undo recovery timeouts and one unnamed beforeEach/afterEach hook timeout, reported adjacent to `tests/unit/kb-64.test.tsx`. That file is unchanged by this payment commit. The E2E failures are `calendar-views.spec.ts:7` (`page.goto` timeout), `task-views-core.spec.ts:14` (`locator.fill` timeout), and `wiring/coach.spec.ts:8` (`page.screenshot` timeout); those files are also unchanged. Their causes and whether they reproduce on the integration base remain UNKNOWN: no baseline comparison or rerun was performed, and these are not described as proven baseline defects. Full-suite payment cases all passed.
+
+Authoritative command logs and exit files are in `gates-d2b259b/`; logs are losslessly gzip-compressed to preserve their exact bytes; failure tails below reproduce the final 20 lines. `prior-attempt/` retains the original focused/static receipts, including an earlier install timeout (exit 124) before the later completed frozen install. No failed or interrupted receipt was replaced by a passing claim. The first interrupted E2E log was preserved before the exact rerun, with no timeout/configuration change. Bun 1.3.9 and the already-provisioned `/usr/bin/chromium` were used; no preview/live URL or `PLAYWRIGHT_BASE_URL` was used. Owned server/build groups have no active processes; only inert zombies adopted by PID 1 remain. Before build, only verified gitignored non-symlink realpath `apps/web/.next/dev` was removed after its server exited.
+
+The implementation, tests, check configuration, baselines and dependencies remain exactly as at the validated source SHA. This follow-up adds evidence only. Full-suite and browser failures block DONE and integration admission; keep PR #1248 draft. No secrets or environment files were read or changed, no paid provider called, and no deployment or remote mutation performed by this worker.
+
+### Failure tails
+
+`bun run test` (exit 1):
+
+```text
+  ^ this test timed out after 30000ms.
+(fail) KB64 Undo recovery > real NotesScreen list callback contains rejection and retries the same note [30020.47ms]
+  ^ this test timed out after 30000ms.
+(fail) KB64 Undo recovery > real NotesScreen page callback contains rejection and leaves false fulfillment neutral [30000.42ms]
+  ^ this test timed out after 30000ms.
+(fail) KB64 Undo recovery > gallery reuses the notice and supports reject retry expiration and language [30077.49ms]
+  ^ this test timed out after 30000ms.
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [120000.90ms]
+  ^ this test timed out after 120000ms.
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [30000.94ms]
+  ^ this test timed out after 30000ms.
+(fail) (unnamed) [5000.80ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3486 pass
+ 3 todo
+ 14 fail
+ 81499 expect() calls
+Ran 3503 tests across 211 files. [1243.63s]
+error: script "test" exited with code 1
+```
+
+`CI=1 bunx playwright test --reporter=line` (resumed run, exit 1):
+
+```text
+[110/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[111/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[112/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[113/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:234654) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:234707) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  3 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/coach.spec.ts:8:7 › coach wiring › /coach renders dial/panic and proposal markers next to Coach chat
+  89 skipped
+  25 passed (4.7m)
+```
 
 ## Limits and reconciliation
 
