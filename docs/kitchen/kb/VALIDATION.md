@@ -290,7 +290,7 @@ Combined results are pending. Exact causes of the intermittent hosted hangs and 
 <!-- KB-FINISH-LIVE-RESULTS -->
 ### Current combined results
 
-AWAY — Snapshot 2026-10-21T13:47:00.508Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+AWAY — Snapshot 2026-10-21T14:09:29.455Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
 
 | Command | Result | Seconds |
 |---|---|---|
@@ -303,8 +303,39 @@ AWAY — Snapshot 2026-10-21T13:47:00.508Z. These results apply only to local co
 | e2e | Pending | — |
 | build | Pending | — |
 
-AT — KB-09 was subsequently held at AT-14 after two verified fresh review findings. Its unchanged input remains in this immutable validation checkout; a passing test does not approve those defects. KB-75 is using its one authorized extra pass for a deterministic browser time zone. KB-77 is using ordinary source candidate three for bounded child lifecycle diagnostics after its own hosted fixture again timed out. KB-45 is using its extra for an English fallback language boundary that preserves a localized child’s own semantics. KB-74 was reopened for a separate modal-dialog correction using its unused extra; the manifest contains only its older integration baseline. These later repairs are not covered by this older manifest.
+AT — KB-09 was subsequently held at AT-14 after two verified fresh review findings. Its unchanged input remains in this immutable validation checkout; a passing test does not approve those defects. KB-75 used its one extra for a deterministic browser time zone. Hosted CI passed, but local non-UTC validation failed with 0 named cases reported and 2 hook failures; the buffered child phase remains UNKNOWN. The PR is draft at AT-16 and its source remains unchanged in evidence-only b7196b6. KB-77 ordinary candidate three streamed all 18 browser passes and cleanup completion, then its parent failed to observe child exit before the unchanged 480-second deadline. Hosted job119249084458 failed that hook and the baseline KB-59 600-second hook. Its unused extra is now reserved for authoritative exit observation, preserving all cases and failure checks. KB-45 is using its extra for an English fallback language boundary that preserves a localized child’s own semantics. KB-74 was reopened for a separate modal-dialog correction using its unused extra; the manifest contains only its older integration baseline. These later repairs are not covered by this older manifest.
 
 WALK — Hosted follow-up #1199 (KB-61 input35b1c32) passed all required hosted checks, then actual CodeRabbit review found cleanup error loss. The follow-up was returned to draft at AT-15; documentation-only72f6302 clarifies prior versus final validation and does not change its tested source. Latest KB-71 job119219800967 failed only the integration-baseline KB-61 480-second fixture, which #1199 repairs. KB-77 job119219928829 failed its own 480-second fixture plus the unchanged shared codec 30-second bundle check. KB-44 job119219282273 and KB-69 job119219667179 failed only that codec check. These failures remain failures.
 
 UNKNOWN — A read-only codec audit found unchanged codec files and a still-in-process baseline KB-67 native build/server fixture sharing the full-suite process with global module mocks. That is a possible interaction, not a proven cause. KB-44 already isolates its builds; its subsequent-build/server proof passed11/11. No shared codec change, timeout increase or scan/config weakening is authorized or made.
+
+### test: retained failure tail
+
+```text
+(fail) pathological bodies stay linear > dashes [3772.04ms]
+(fail) pathological bodies stay linear > preInItem [3533.31ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [5865.80ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [6811.21ms]
+(fail) pathological bodies stay linear > deepQuoteLines [3329.63ms]
+(fail) pathological bodies stay linear > deepListLines [6705.14ms]
+(fail) pathological bodies stay linear > blocksInHtmlBlocks [4779.49ms]
+(fail) pathological bodies stay linear > definitionStarts [15363.78ms]
+(fail) pathological bodies stay linear > labelOverLines [9054.41ms]
+(fail) pathological bodies stay linear > definitionsWithTitles [3151.29ms]
+(fail) OnboardingFlow > going back and changing the brain dump updates the same page [6556.73ms]
+  ^ this test timed out after 5000ms.
+
+ 3585 pass
+ 3 todo
+ 30 fail
+ 2 errors
+ 81807 expect() calls
+Ran 3618 tests across 219 files. [3873.85s]
+error: script "test" exited with code 1
+```
+
+### Individual PR assessment
+
+WALK — KB-07 (f0dae9f) and KB-66 (e7d5b52) were assessed separately from the optional eleven-input combined checkout. Each has green current-head hosted Test, Build, E2E, CI and required guards; addressed actual CodeRabbit review; unchanged scoped blobs; no unmet dependency; and passing isolated and combined ticket fixtures (9 and19 cases respectively). A read-only source audit found neither in the failing fixture product import graphs, and neither introduces parent-process mocks or shared timeout changes. The combined failure remains a failure; absence of import overlap is not proof of its cause. The integration merge queue must run its checks again. All remaining mandatory local commands continue before final handoff; no repository check is removed, relaxed or declared passed on the basis of this assessment.
+
+WALK — KB-10 is not included in that assessment because the failed KB-45 fixture mounts its sign-in form. KB-44 and KB-71 also appear in failing onboarding/notes product graphs. A separate local-only frozen composition of KB-10 fe554ba and new KB-45 9a5c3fd is prepared to test the changed auth boundary after the mandatory sequence; it is not yet a passing result.
