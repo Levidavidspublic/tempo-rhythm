@@ -31,7 +31,10 @@ async function makeFixture(setupDeadline: number) {
   temp = mkdtempSync(join(fixtureParent, "kb06-"));
   symlinkSync(join(web, "node_modules"), join(temp, "node_modules"), "dir");
   writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{TpIconSprite}from"${web}/components/tempo/TpIcon.tsx";import{GoalDetailScreen,GoalProgressSummary,Kb06Gallery}from"${component}";window.__kbCalls=[];const params=new URLSearchParams(location.search);const gallery=params.has("gallery");createRoot(document.getElementById("root")!).render(<><TpIconSprite/>{gallery?<Kb06Gallery/>:params.has("summary")?<main><h1>Progress fixture</h1><GoalProgressSummary progress={Number(params.get("progress"))} lang={document.documentElement.lang==="he"?"he":"en"}/></main>:<main><GoalDetailScreen goalId="fictional-goal"/></main>}</>);`);
-  const aliases: Record<string, string> = {};
+  const aliases: Record<string, string> = {
+    // Preserve the existing web tsconfig alias to the real shared constant.
+    "@/convex/lib/softDelete": join(repo, "convex/lib/softDelete.ts"),
+  };
   for (const [index, [specifier, contents]] of Object.entries(stubs).entries()) {
     const path = join(temp, `stub-${index}.tsx`);
     writeFileSync(path, contents);
