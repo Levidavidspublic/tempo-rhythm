@@ -1,0 +1,27 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-page-error-recovery.test.tsx:
+(pass) page action recovery > failed autosave retains both edited fields and offers explicit recovery [6050.09ms]
+(pass) page action recovery > explicit retry saves the current draft once and clears its own error [5485.04ms]
+(pass) page action recovery > older success cannot mark a newer draft saved and writes stay ordered [7622.00ms]
+(pass) page action recovery > old-note failure cannot alter another note's current state [4891.95ms]
+(pass) page action recovery > pin failure is caught and repeated pending clicks submit once [5236.27ms]
+(pass) page action recovery > failed dirty flush prevents deletion even after the old timer cleared [8369.49ms]
+(pass) page action recovery > failed removal preserves URL, editor and confirmation without an Undo receipt [10616.18ms]
+(pass) page action recovery > successful explicit deletion retry starts the unchanged Undo and restores [6618.20ms]
+(pass) page action recovery > cancelling confirmation during its dirty flush prevents a later remove [8228.68ms]
+(pass) page action recovery > the real coach flush rejects failed persistence without any action request [4075.76ms]
+(pass) page action recovery > coach flush joins an in-flight failure without silently retrying it [4645.91ms]
+(pass) page action recovery > pagehide rejection offers recovery and does not leave a duplicate timer [4405.74ms]
+(pass) page action recovery > a hidden document exposes save failure and retains the editable body [3299.98ms]
+(pass) page action recovery > plain page retains its exact Markdown through failed save and recovery [4290.86ms]
+(pass) page action recovery > daily page retains its exact Markdown through failed save and recovery [5590.41ms]
+(pass) page action recovery > weekly page retains its exact Markdown through failed save and recovery [4077.66ms]
+(pass) page action recovery > project page retains its exact Markdown through failed save and recovery [5209.54ms]
+(pass) page action recovery > template page retains its exact Markdown through failed save and recovery [4967.08ms]
+(pass) page action recovery > after EN/HE recovery screenshots at both widths and themes [73532.04ms]
+
+ 19 pass
+ 0 fail
+ 83 expect() calls
+Ran 19 tests across 1 file. [191.67s]
