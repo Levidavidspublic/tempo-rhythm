@@ -184,3 +184,41 @@ Ran 12 tests across 1 file. [301.86s]
  12 fail
 Ran 12 tests across 1 file. [309.34s]
 ```
+
+## Overnight v3 shared fixture correction — 21 October 2026
+
+PR open; required gates pending. The owner authorized one further scoped fixture pass after the shared Step 0 repair. Role: WORKHORSE. This continues issue #1156 and draft #1163 on its existing branch, retaining all previous implementation, screenshot and failed-attempt evidence. Shared prerequisite: #1203 at `4d30965`; scoped source commit: `92c20bed37de1e9fc7094561d1988f77078c702b`.
+
+The parent now awaits one cached, bounded shared child result with streamed phase output and authoritative OS exit, instead of buffering synchronous child output. Later reports reuse its settled result. The existing exact 12-pass / 0-fail / 12-executed-case checks remain, and each report additionally requires its own successful case receipt. The browser build runs through the shared isolated resolver in a separate temporary bundle directory. Independent cleanup handlers close the browser, stop the server and remove the owned temporary directory; the shared supervisor reaps descendants.
+
+All 12 original cases and all 75 original child assertion lines are preserved, as are the 240-second browser case, 60-second language case, 30-second cleanup hook and original parent deadlines. The new total execution budget is 285 seconds plus bounded process cleanup within the original first wrapper's 300 seconds. No product, auth, language, route, CSS, dictionary, package, config or screenshot changed. No test was skipped or weakened.
+
+Before: the historical independent final candidate reported child 10 pass / 2 fail and parent 0 pass / 12 fail after browser closure. The frozen KB-10/KB-45 composition separately reported parent 0 pass / 32 fail, with KB-45 child 10 pass / 2 fail / 1 error. Those failures remain valid receipts.
+
+After: `bun test tests/unit/kb-45.test.tsx` exited 0 on the scoped source above, using Bun 1.3.9 and installed Chromium. Parent 12 pass / 0 fail / 24 reporting assertions in 31.38 seconds; isolated child 12 pass / 0 fail / 420 assertions in 31.21 seconds. Both the nested build and test child returned actual exit 0; cleanup completed and the supervisors reaped their descendants. Log: `/workspace/kb-run-logs/kb45-focused.log`. This proves the existing English shared child in this worktree. It does not establish the separate KB-10 localized composition.
+
+Dependency setup: `bun install --frozen-lockfile` remained at `Resolving dependencies` and was interrupted after at least 120 seconds, exit 143; result UNKNOWN. Validation used copied dependency directories from the preceding worktree after verifying byte equality of the lockfile and root/web/mobile manifests. Relative workspace dependency links remain local. No install success is claimed.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Test results (cloud agent sandbox), source `92c20bed` with shared `4d30965`. Exact logs and exits are stored outside the repository under `/workspace/kb-run-logs/kb45-*` and `kb45-results.json`.
+
+| Required command | Exit | Result |
+|---|---|---|
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 143 | UNKNOWN: resolution stalled, interrupted after at least 120 seconds |
+| `bun run lint` | 0 | PASS: 5/5 tasks, zero errors, 9 existing warnings |
+| `bun run typecheck` | 0 | PASS: 5/5 tasks |
+| `bun run test` | 0 | PASS: 3,520 pass / 0 fail / 3 existing todo; 3,523 tests across 213 files; 81,595 assertions; 322.39 seconds |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | PASS: all four |
+| `CI=1 bunx playwright test --reporter=line` | 0 | PASS: 28 passed / 0 failed / 89 existing gated skips; 1.3 minutes |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0 | PASS: 1/1 task |
+
+E2E was serialized with `/workspace/kb-run-logs/browser-validation.lock`. The coordinating worker made the installed system Chromium discoverable at the missing local Playwright cache executable path; no repository config or package changed. The earlier KB-66 missing-browser receipt remains unchanged and is not replaced by this later KB-45 run.
+
+The planning baseline was 3,473 pass / 20 fail / 3 todo, with all 20 failures in KB-64. This run adds 15 shared-runner cases and 12 KB-45 cases, and all existing KB-64 cases passed. That variability is not attributed to a KB-45 product correction. The shared-runner focused regression and this full run prove only their stated source revisions.
+
+Hosted CI, repository guards, current CodeRabbit coverage and the separate localized KB-10 composition remain pending. This draft is not merge-ready. Hebrew native read and physical-device accessibility remain pre-production checks; preview validation may proceed.
