@@ -17,3 +17,9 @@ The **after** frames use the actual changed `SearchScreenBody` inside a hydrated
 - The hydrated gallery exercises initial, results, no-match, loading, error, disabled and long-result states, plus language switching and retry. Browser checks cover reduced motion, 44 px phone targets, large text, one `h1`, one `main`, and no viewport overflow at both widths.
 
 The fixture aliases `react-native` to the installed `react-native-web` only for its bundle and replaces backend/navigation imports only inside the loopback harness. Device VoiceOver/TalkBack and authenticated `/search` results remain **UNKNOWN**. Hebrew is machine-drafted and needs Amit's native read.
+
+## Fixture portability review
+
+The test resolves React and the server/client renderers from `apps/web/package.json`, and `react-native-web` from its declaring `apps/mobile/package.json`. The generated browser entry and React-using mocks share the resolved web React entry, so neither isolated nor hoisted installs require a particular nested `node_modules` path. No dependency or configuration changes are needed.
+
+The hydrated checks remain mandatory. They use installed Playwright Chromium or `/usr/bin/chromium` or `/usr/bin/google-chrome`; a missing browser produces the explicit `No Playwright Chromium or system Chromium is installed for KB-03 gallery` failure. Provision a browser before running the suite, as required by the ticket's browser fixture contract and the repository's cloud setup instructions.

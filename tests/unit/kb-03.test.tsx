@@ -1,14 +1,18 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { createElement } from "../../apps/web/node_modules/react";
-import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import { chromium, expect as pwExpect, type Browser, type Page } from "@playwright/test";
 import { Kb03Gallery, SearchFilterSummary, SearchStatus } from "../../apps/web/components/global-search/SearchScreen";
 import { en, he } from "../../apps/web/lib/i18n-groups/kb-03";
 
 const root = join(import.meta.dir, "../..");
+// Resolve from each declaring workspace, regardless of Bun's hoisting layout.
+const webRequire = createRequire(join(root, "apps/web/package.json"));
+const mobileRequire = createRequire(join(root, "apps/mobile/package.json"));
+const { createElement } = webRequire("react");
+const { renderToStaticMarkup } = webRequire("react-dom/server");
 const render = (element: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(element);
 
 describe("KB-03 search states", () => {
@@ -90,7 +94,8 @@ describe("KB-03 hydrated search gallery", () => {
   beforeAll(async () => {
     await mkdir(join(root, "work"), { recursive: true });
     directory = await mkdtemp(join(root, "work/kb03-gallery-"));
-    const reactPath = join(root, "apps/web/node_modules/react");
+    const reactPath = webRequire.resolve("react");
+    const reactClientPath = webRequire.resolve("react-dom/client");
     const source = join(root, "apps/web/components/global-search/SearchScreen.tsx");
     const localeLib = join(root, "apps/web/lib/i18n.ts");
     const mockQuery = join(directory, "mock-query.tsx");
@@ -104,7 +109,7 @@ describe("KB-03 hydrated search gallery", () => {
     await writeFile(mockLink, `import React from ${JSON.stringify(reactPath)};export default function Link({href,children,...rest}){return React.createElement("a",{href,...rest},children)}`);
     await writeFile(mockApi, `export const api={search:{all:"search.all"}};`);
     const entry = join(directory, "entry.tsx");
-    await writeFile(entry, `import React from ${JSON.stringify(reactPath)};import{createRoot}from ${JSON.stringify(join(root,"apps/web/node_modules/react-dom/client"))};import{TpIconSprite}from ${JSON.stringify(join(root,"apps/web/components/tempo/TpIcon.tsx"))};import{Kb03Gallery,SearchHeader,SearchScreenBody}from ${JSON.stringify(source)};const probe=new URLSearchParams(location.search).has("probe");createRoot(document.getElementById("root")).render(React.createElement(React.Fragment,null,React.createElement(TpIconSprite),probe?React.createElement("main",{className:"tp-page"},React.createElement(SearchHeader),React.createElement(SearchScreenBody)):React.createElement(Kb03Gallery)));`);
+    await writeFile(entry, `import React from ${JSON.stringify(reactPath)};import{createRoot}from ${JSON.stringify(reactClientPath)};import{TpIconSprite}from ${JSON.stringify(join(root,"apps/web/components/tempo/TpIcon.tsx"))};import{Kb03Gallery,SearchHeader,SearchScreenBody}from ${JSON.stringify(source)};const probe=new URLSearchParams(location.search).has("probe");createRoot(document.getElementById("root")).render(React.createElement(React.Fragment,null,React.createElement(TpIconSprite),probe?React.createElement("main",{className:"tp-page"},React.createElement(SearchHeader),React.createElement(SearchScreenBody)):React.createElement(Kb03Gallery)));`);
     const mocks: Record<string, string> = {
       "convex/react": mockQuery,
       "next/navigation": mockNext,
@@ -113,7 +118,7 @@ describe("KB-03 hydrated search gallery", () => {
       "@/components/providers/LocaleProvider": mockLocale,
     };
     const bundle = await Bun.build({ entrypoints: [entry], target: "browser", minify: false,
-      alias: { "react-native": join(root, "apps/web/node_modules/react-native-web") },
+      alias: { "react-native": mobileRequire.resolve("react-native-web") },
       plugins: [{ name: "kb03-browser-stubs", setup(build) {
         build.onResolve({ filter: /^(convex\/react|next\/(navigation|link)|@\/convex\/_generated\/api|@\/components\/providers\/LocaleProvider)$/ },
           ({ path }) => ({ path: mocks[path] ?? path }));
