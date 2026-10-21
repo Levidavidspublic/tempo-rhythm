@@ -22,6 +22,7 @@ The contact sheet `kb-05-goals-list-has-clear-progress-and-a-calm-empty-state.jp
 - Production name form has a labelled field.
 - English and Hebrew keys stay paired.
 - Hydrated gallery exercises the real name form, focus return, RTL, and 44 px actions.
+- Production GoalsScreen focuses the newly created goal after the query includes it.
 
 ## Checks
 
@@ -32,4 +33,24 @@ Bun 1.3.9. Final command outcomes and failure tails are recorded in the draft PR
 
 The review has one body nitpick and no inline threads. Its successful-create example corresponds to the existing `GoalsScreen.test.tsx`, which is outside this ticket's scope. The scoped KB-05 test now adds a hydrated `GoalsScreen` regression instead. Only the Convex React boundary is stubbed; the real locale provider, shared controls, name form, mutation handler, goal card and focus effect run in Chromium. English and Hebrew each submit a padded goal name, verify the exact trimmed create argument and pending submit state, insert the newly created goal into the query result before resolving the deferred mutation, and assert the actual new goal link receives focus. Starting with the completed filter also verifies creation reveals the active new goal and clears the filter. The gallery remains a separate behavioral test. No production behavior or check configuration changed.
 
-Validation for this review follow-up is pending the shared heavy-check lock; final command results will be recorded after the runner completes. Earlier results above describe the preceding source revision only.
+Review-follow-up test source: `fa1dd4c424df085b2d4a40413614f113c64bb1fc`. Bun 1.3.9 and installed system Chromium were used. The new fixture uses a unique directory under ignored `work/`, removed in `finally`; React, the React DOM client and both JSX runtimes resolve from the web workspace's installed packages.
+
+| Command | Exit | Pass / fail / filtered | Assertions | Result |
+| --- | --- | --- | --- | --- |
+| `bun test tests/unit/kb-05.test.tsx` (initial fixture at `9438a5d`) | 1 | 12 / 1 / 0 | 174 | Existing cases passed; new fixture could not resolve JSX runtime before product behavior ran. |
+| `bun test tests/unit/kb-05.test.tsx -t 'production GoalsScreen'` (repaired fixture) | 0 | 1 / 0 / 12 | 20 | Production create focus passed in English and Hebrew; 17.61 seconds total. |
+
+The filtered diagnostic selects only the new case; all existing tests remain enabled under the standard command. The full required gate sequence for this source is still pending root-owned validation. Earlier results above describe the preceding source revision only. No timeout, configuration, assertion or test-skip change was used.
+
+Initial fixture failure tail (preserved in the root validation log):
+
+```text
+error: Could not resolve: "react/jsx-dev-runtime". Maybe you need to "bun install"?
+    at /tmp/tempo-kb05-create-7t2EJG/entry.tsx
+(fail) production GoalsScreen focuses the newly created goal after the query includes it [42.91ms]
+
+ 12 pass
+ 1 fail
+ 174 expect() calls
+Ran 13 tests across 1 file. [32.92s]
+```
