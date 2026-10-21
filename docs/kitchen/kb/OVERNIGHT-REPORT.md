@@ -4,7 +4,7 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 ## Second-lane steer — 21 October, evening
 
-External lane report — preserved from planning commit `31aa5a9`. Its feature work and environment observations were reported by that lane and are not independently verified by the KB worker run.
+External lane report — preserved from planning commits `31aa5a9` and `1c5a697`. Its feature work and environment observations were reported by that lane and are not independently verified by the KB worker run.
 
 WALK — Amit added a parallel feature lane. Lane 1 retains the shared test fix first, followed by the existing KB repairs. Lane 2 has separate file ownership; no writer edits Lane 1 files or protected PRs #1193/#1198. Four live worktrees are allocated: the planning register, page editor, landing feature and unified Plan. The shared-harness proposal is frozen and archived intact at its retry boundary. The 31 older clean checkouts were archived locally with all contents and commit references preserved; their branches and PRs were not changed.
 
@@ -13,7 +13,6 @@ WALK — Amit added a parallel feature lane. Lane 1 retains the shared test fix 
 | 1 | Shared harness #1202 / PR #1203 | `tests/helpers/kitchen-fixture.ts`, `tests/helpers/kitchen-browser.ts`, `tests/unit/kitchen-fixture.test.ts` | Source `2d99c84` has green hosted checks; current review identifies portable OS-exit assertions and child signal propagation. The newer handoff records an exhausted three-round limit and retained cancellation failure: AT-21 blocks another source candidate. Proposed portability/signal changes are preserved locally, uncommitted and unpushed; no fourth pass is credited or merged. |
 | 2 | [Checkbox #1205](https://github.com/Levidavidspublic/tempo-rhythm/issues/1205) | `apps/web/components/editor/live-preview.ts`, `tests/unit/tempo-pages-checkbox.test.tsx` | Draft [#1209](https://github.com/Levidavidspublic/tempo-rhythm/pull/1209), head `f23f324`: eight mounted cases pass (39 assertions); 57 existing editor cases pass (272 assertions). Actual before/after screenshots committed. Broad gates running; no preview claim. |
 | 2 | [Hero #1206](https://github.com/Levidavidspublic/tempo-rhythm/issues/1206) | `apps/web/components/marketing-pages/LandingPage.tsx`, `apps/web/app/v3/landing-motion.css`, `tests/e2e/landing-motion.spec.ts` | Draft [#1210](https://github.com/Levidavidspublic/tempo-rhythm/pull/1210), head `6b2ca7c`: eight real-route Playwright cases pass, EN/HE, 390/1280, motion/reduced motion. Earlier 4/4 and 7/1 attempts retained. Frozen install unresolved after 120 seconds; other broad gates pending. |
-
 | 2 | [Plan #1207](https://github.com/Levidavidspublic/tempo-rhythm/issues/1207) | `apps/web/app/(tempo)/plan/PlanScreen.tsx`, `apps/web/components/calendar/CalendarViews.tsx`, `apps/web/components/tasks/TaskKanbanBoard.tsx`, `tests/unit/tempo-plan-views.test.tsx` | Mixed task/event day-week-month agenda and all-project board implemented; focused browser proof running. Midnight follows Today until explicit date selection. No route entry/backend edits. |
 | 2 | [Public pricing #1208](https://github.com/Levidavidspublic/tempo-rhythm/issues/1208) | `apps/web/app/pricing/page.tsx`, `apps/web/components/marketing-pages/PublicPricing.tsx`, `apps/web/lib/rootEntry.ts`, `tests/e2e/public-pricing.spec.ts` | Fully scoped routing-only data ticket; queued for next free worktree. Existing catalog and auth links, payments flag remains off. |
 
@@ -116,7 +115,7 @@ The five earlier merge receipts remain historical. These issues stay open until 
 | KB-74 | 1171 | 1200 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-71 | 1175 | 1177 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-75 | 1178 | 1179 | PR open — Final shared + own: 40 pass / 1 fail, 75 assertions; own 23 pass, shared cancellation fails. Earlier full 3510/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
-| KB-76 | 1180 | 1183 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
+| KB-76 | 1180 | 1183 | PR open — commit-window fixes: before 29 pass / 2 fail, after 31 pass / 0 fail (93 assertions). Full incomplete after unchanged KB-66 timeout; observed 1,571 pass lines / 1 fail / 3 todo. E2E 28 pass / 0 fail / 89 skip; lint/typecheck/scans/build pass; install UNKNOWN. Shared dependency stuck. |
 | KB-59 | 1189 | 1191 | Merged previously; retained. |
 | KB-61 | 1181 | 1199 | PR open — final focused 27 pass / 0 fail, 51 assertions on 4a52c9c; evidence head 0d86653. Both cleanup errors survive the acceptance gate. Earlier full incomplete (1,545 observed pass lines / 2 fail / 3 todo); E2E 27 pass / 1 fail / 89 skip. Shared dependency stuck; current CI/review required. |
 | KB-64 | 1182 | 1187 | Merged previously; retained. |
