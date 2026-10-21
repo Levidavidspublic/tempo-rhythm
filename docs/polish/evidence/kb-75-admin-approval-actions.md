@@ -404,3 +404,79 @@ After-repair focused result:
 24 expect() calls
 Ran 23 tests across 1 file. [113.46s]
 ```
+
+
+## Single owner-authorized extra pass — UTC fixture dates, 21 Oct 2026
+
+Test source commit: `7f928273de78fe0814c2666a10294c5c435bad50`, based on `f35d7ac416b2538764bf5c5647b7be10ad6f5772`. This pass changes only the scoped test and this evidence. Production `Intl.DateTimeFormat` behavior and all implementation files are unchanged. The root-owned consolidated checkout remains untouched.
+
+### Attempt ledger
+
+| Candidate | Source receipt | Scope |
+| --- | --- | --- |
+| Normal 1 | Original `947e49f1b1bf06f7d63468881e48ce72d1e62b18`, now rebased as `4b28e41` | Initial row-owned approval behavior and fixture |
+| Normal 2 | Original `b9d2b51c48933f4f65772760a6e3477d9eaaa1f5`, now `b0b3055`; `/workspace/work/kb-finish/kb75-review/pr-body-before.md:7` explicitly records attempt 2 | Visible-row ID type correction and initial capture completion |
+| Normal 3 | Original `a67d8d12fd396940a75b8447ed501e2be39d0336`, now `8477103`; review `handoff.md` and `summary.json` retain the source/result receipt | Endonym language declarations, fixture dependency resolution and child cleanup |
+| Single extra, fourth/final | `7f928273de78fe0814c2666a10294c5c435bad50` | Browser timezone pin and assertions below |
+
+The owner's existing one-extra-pass authorization applies here and root explicitly assigned it after the read-only audit established three normal candidates and no previous extra use. The evidence-only commits do not consume repair rounds. Wrapper/disk/install command failures on an unchanged candidate are retained historical outcomes, not separate source candidates. This consumes KB-75's sole extra; no fifth source/test candidate is authorized.
+
+### Verified finding and bounded repair
+
+[CodeRabbit 4336897182](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179#discussion_r4336897182) is valid: production formats join dates in the browser's default time zone, while the fixture uses a UTC-midnight timestamp and requires exact 19 October strings. An unpinned west-of-UTC browser can instead show 18 October. The fixture now supplies `timezoneId: "UTC"` in its existing `browser.newPage` call. The existing English/Hebrew date case additionally checks each actual browser's `Intl.DateTimeFormat().resolvedOptions().timeZone` equals `UTC`, while retaining the exact `10/19/2024` and `19.10.2024` assertions.
+
+All 23 named cases, their existing assertions, the 240-second normal setup limit and the 480-second optional-capture limit remain unchanged. No case, timeout, configuration, skip, production date policy, dependency or backend was changed. No pre-repair fixture rerun was performed in this pass. The historical contact sheet remains applicable because this is test-environment determinism and introduces no rendered product change.
+
+### Test results (cloud agent sandbox)
+
+The source/test hash set was frozen before the focused run and checked afterward. The scoped command uses Bun **1.3.9**, an installed Chromium and the existing real local dependency cache/workspace links. It holds `/workspace/work/kb-finish/heavy-check.lock` separately from root's other commands. Parent-zone preflight actually resolved `America/Los_Angeles`; the entire fixture command runs under that same non-UTC parent `TZ`, while each browser page is explicitly UTC.
+
+| Command | Fresh result |
+| --- | --- |
+| `bun --version` | PASS, exit 0: `1.3.9` |
+| `TZ=America/Los_Angeles bun -e 'const zone=Intl.DateTimeFormat().resolvedOptions().timeZone; console.log(JSON.stringify({parentTimezone:zone})); if(zone!=="America/Los_Angeles")process.exit(1)'` | PASS, exit 0: `{"parentTimezone":"America/Los_Angeles"}` |
+| `TZ=America/Los_Angeles bun test tests/unit/kb-75.test.tsx` | FAIL, exit 1: 0 pass / 2 hook failures, 245.95s; no named browser results reported (tail below) |
+| `bun install --frozen-lockfile` | UNKNOWN: not rerun in this scoped pass; prior resolver timeout remains above; root owns final validation |
+| `bun run lint` | UNKNOWN: not rerun in this test-only pass; root owns consolidated validation |
+| `bun run typecheck` | UNKNOWN: not rerun in this test-only pass; root owns consolidated validation |
+| `bun run test` | UNKNOWN for this input: root owns consolidated validation and exact compatible input commits |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | UNKNOWN: not rerun in this scoped pass; root owns consolidated validation |
+| `CI=1 bunx playwright test --reporter=line` | UNKNOWN: root owns the complete E2E gate |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | UNKNOWN: root owns the build gate |
+
+The 23 Bun cases comprise the dictionary case and 22 named browser-result reports. The Bun expectation count is the parent’s dictionary/report assertions; the two new Playwright timezone assertions execute inside the existing browser date case. `work/kb75-extra/preservation.json` records unchanged browser case names, exact date assertions and deadline literals, plus byte-identical production files.
+
+Frozen SHA-256 receipts (including unchanged implementation files):
+
+```text
+f65f6f3b4e44ff0a73ab5f4c8ae44b01ac07f2e32948217760ee371ae2dcc37c  apps/web/components/approval/AdminApprovals.tsx
+a5be0cde0a73c99885a5ce6f730cc036b2c0aeaaf438cd870633e5e2d65ad8ae  apps/web/lib/i18n-groups/kb-75.ts
+b500c602978a968299e1fbb10320329ab5bd4c4e89d00fa844616e98dd496ba7  apps/web/app/v3/kb-75.css
+323dd41c9eed4d1508869af9ed3d09b1541992fed84006cfdfdcb02426605587  tests/unit/kb-75.test.tsx
+```
+
+Fresh logs are `/workspace/work/kb-finish/kb75-extra/version.log`, `parent-zone.log`, and `focused.log`; the frozen baseline and hash receipts remain in ignored `work/kb75-extra/`. Historical failed/unknown gates and tails remain above. Root owns rebases, remote checks/review/queue, push and merge. No deployment, live-account write, physical screen-reader or native Hebrew validation is claimed.
+
+
+Final local outcome for the frozen extra-pass candidate:
+
+```text
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/kb-75.test.tsx:
+killed 1 dangling process
+(fail) (unnamed) [240028.44ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) (unnamed) [5028.86ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 0 pass
+ 2 fail
+Ran 2 tests across 1 file. [245.95s]
+```
+
+This is all available local output. Setup hit its existing 240-second deadline, then cleanup hit its existing five-second deadline. The fixture buffers child stdout/stderr and exit before parsing results; no named browser results were reported. It is UNKNOWN which child phase was waiting or whether individual browser cases executed. The parent-process non-UTC preflight passed, but the actual browser UTC assertions and exact-date checks were not proven by this local invocation. No retry or source/test repair followed. Root holds the local gate pending a scoped diagnostic; KB-75's sole extra remains consumed.
+
+After the runner ended, an owned child was briefly observed as PID 140695, PPID 1, PGID 121772. A subsequent exact-PID inspection found it exited before any cleanup signal was sent. Final `/proc` inspection reports that PID as zombie state `Z`, empty command line, and no live scoped Bun/flock processes (`/workspace/work/kb-finish/kb75-extra/cleanup-final.json`). No worker runner remains active. The unknown waiting phase is not inferred from the timeout.
+
+Root separately reported current-source hosted CI **PASS** for `7f928273de78fe0814c2666a10294c5c435bad50`, [run 39607557790](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39607557790). This hosted result is separate evidence and does not replace the failed local non-UTC focused gate or establish that the hosted environment used a non-UTC parent. Remote review/queue and final validation remain root-owned.
