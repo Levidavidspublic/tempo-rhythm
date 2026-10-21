@@ -1,13 +1,13 @@
 # KB finish status
 
-AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 13:52 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
+AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 13:53 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
 
 ## Counts
 
 - KB issues: **7 closed / 19 open**, including the administrative lead issue #1176.
 - KB PRs: **7 merged / 19 open**; includes planning #1140.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **6 question lines**.
+- NEEDS-AMIT.md: **7 question lines**.
 
 ## Authority and gates
 
@@ -23,7 +23,7 @@ AT — Resolved in this conversation: the owner authorized one additional repair
 
 | Ticket | Issue | PR | Head | CI | Review | Current gate |
 |---|---|---|---|---|---|---|
-| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `407f2e1` | SUCCESS | Review posted; 1 unresolved threads | Repair pushed; remaining local gates and latest review checked before queueing |
+| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `407f2e1` | SUCCESS | Review posted; 1 unresolved threads | Refreshed review found rejected-edit dead end; AT-07 before further repair |
 | KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `511578d` | FAILURE | Review posted; 1 unresolved threads | Extra pass failed hosted fixture setup; AT-05 before another repair |
 | KB-04 | [#1141](https://github.com/Levidavidspublic/tempo-rhythm/issues/1141) | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | `70dc7c3` | SUCCESS | Review posted; 0 unresolved threads | Repair pushed; remaining local gates and latest review checked before queueing |
 | KB-05 | [#1142](https://github.com/Levidavidspublic/tempo-rhythm/issues/1142) | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | `2e87b65` | FAILURE | Review posted; 0 unresolved threads | Repair pushed; remaining local gates and latest review checked before queueing |
