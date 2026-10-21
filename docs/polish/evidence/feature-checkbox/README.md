@@ -151,3 +151,16 @@ Resolving dependencies
 Resolved, downloaded and extracted [36]
 error: NoSpaceLeft creating node-gyp tempdir
 ```
+
+## Browser prerequisite for a fresh checkout
+
+WALK — A checkout without a supported installed browser cannot run this mounted regression through `bun run test` alone. After installing the repository dependencies with Bun 1.3.9, provision Chromium using the existing command from `.github/workflows/ci.yml`'s Playwright job, then run the root suite:
+
+```sh
+bunx playwright install --with-deps chromium
+bun run test
+```
+
+The fixture checks Playwright's configured Chromium executable first, then `/usr/bin/chromium` and `/usr/bin/google-chrome`. It fails explicitly when none exists. This prerequisite also applies to existing browser-backed unit fixtures; the CI Test job itself does not run the provisioning command above. This paragraph documents setup and the browserless-checkout limitation; it does not claim automated provisioning was added or repaired.
+
+If the browser CDN is blocked, including a 403 response, AGENTS.md permits an already-installed Chromium fallback. If no supported browser is available, report the infrastructure limitation as UNKNOWN; do not skip the mounted cases or treat them as passing. No test hook, workflow, dependency, package script or product file changed for this clarification, and no browser command was run for this evidence-only update.
