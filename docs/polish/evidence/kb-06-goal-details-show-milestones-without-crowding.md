@@ -1,5 +1,7 @@
 # KB-06 goal detail evidence
 
+Blocked — final shared-harness refresh passes all 19 KB-06 cases but fails a shared cancellation test (36 pass / 1 fail combined). Shared #1203 remains blocked by that cleanup race. Earlier receipts below are preserved with their source commits; no merge is claimed.
+
 Source commits: product `8897308`, corrected test and contact sheet `ae04bf1` (`t/1143-kb-06`). The [contact sheet](kb-06-goal-details-show-milestones-without-crowding.jpg) compares the checked-in `GoalDetailScreen` before and after this change at 390 and 1280 px, English and Hebrew, light and dark. Every screenshot mounts the actual component in an isolated hydrated browser fixture with fictional Maya, Dana and Yoni data. The pure goal status mapping, `StatusBadge`, `TpIcon` and `TpIconSprite` are production modules; Convex reads and writes, locale context, and the Next link are fixture stubs. The standalone CSS fixture uses local font fallback. No real account or backend is exercised. Labels appear only on this evidence sheet.
 
 The original screen showed title, status and the editable “why”, then an empty state for steps. The changed screen keeps those controls and adds the stored progress value with a labelled bar and a plain milestone-empty message. At 390 px the status control fills the available width and tested title/select targets reach 44 px. Long goal text and large text mode have no horizontal overflow. Hebrew follows RTL page direction while user text keeps `dir="auto"`. Light and dark views share the v3 tokens. Both states contain one `main` and one `h1` in the isolated mounted fixture.
@@ -180,3 +182,37 @@ Terminated
 The exact E2E command uses the installed system Chromium through the local Playwright cache fallback established by the lead, as allowed by AGENTS.md. No repository or browser configuration was edited.
 
  Shared #1203, current-head CI, repository guards and CodeRabbit clearance remain merge prerequisites. Hebrew native reading and real-device checks are required before production and do not block preview.
+
+
+## Final shared-source refresh — 2026-10-21
+
+Blocked — source `ed249aed055934af959ce0162ad5710bd785505d` includes shared `2d99c84a365c6ead0009715012b0cdd908b570aa` through an ordinary merge. The final command `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-06.test.tsx` exited **1**, with **36 pass / 1 fail, 133 assertions, 28.45 s**. All 19 unchanged KB-06 cases passed and their cleanup completed. The failing shared test was `deadline bounds a child ignoring cancellation and reaps its real exit`: expected child signal `SIGKILL`, received `null`. The supervisor itself was reaped with status 9 before the authoritative child receipt was emitted, leaving the child's exit unknown.
+
+This is the same shared cleanup-race class already recorded from KB-75. Shared #1203 is frozen as blocked after its authorized repair budget; this ticket does not retry it, weaken its assertion or claim that earlier passing proofs erase the failure. The lead owns the remaining decision. The earlier full/E2E/build receipts remain on `441370c` with shared `4d30965`, and are not results from this later dependency.
+
+The PR branch contains #1203, but target integration does not yet; its four shared files remain a scope-guard dependency owned by #1202. No scope expansion, production change or merge is claimed.
+
+Final failed command, last 20 lines (synthetic receipt identifier normalized):
+
+```text
+[kitchen-fixture] build start
+[kitchen-fixture] build complete outputs=1
+
+KITCHEN_CHILD_EXIT={"token": "<synthetic receipt identifier>", "code": 0}
+[kitchen-fixture] supervisor reaped all descendants
+[kitchen-fixture] stderr EOF pid=171036 exit-observed=false
+[kitchen-fixture] waitpid reaped owned supervisor pid=171036 status=0
+[kitchen-fixture] exit pid=171036 code=0 signal=none
+[kitchen-fixture] EOF OS pid=171036 stat=171036 (python3) Z 168627 171036 171036 0 -1 4227340 2675 8447 0 0 2 3 7 3 20 0 1 0 386054 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 4 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+[kitchen-fixture] stdout EOF pid=171036 exit-observed=true
+(pass) shared kitchen fixture lifecycle > fresh browser builds resolve React scheduler from its actual importing package [498.19ms]
+(pass) shared kitchen fixture lifecycle > committed focus and settled transition use browser signals [924.74ms]
+
+1 tests failed:
+(fail) shared kitchen fixture lifecycle > deadline bounds a child ignoring cancellation and reaps its real exit [387.92ms]
+
+ 36 pass
+ 1 fail
+ 133 expect() calls
+Ran 37 tests across 2 files. [28.45s]
+```
