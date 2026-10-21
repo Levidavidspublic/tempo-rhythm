@@ -1,6 +1,8 @@
 # Kitchen run KB — plan, 19 Oct 2026
 
-This draft is the plan. No product code is changed or represented as shipped. Base: `integration` at `52bf2803e9105b25c2538aedd81a754a9fbfdedb`. No prior KB-SPEC or tickets existed in this checkout. The first three batches contain **45 fully specified tickets**: 15 search, 19 history, 11 polish; 10 Astra and 35 Sol; 42 component and 3 data. The next two reserved batches plus the verified KB-76/77/78 follow-ups bring the planned total to 78, within the requested 60–80 range. The implementation follow-up has also expanded KB-59/61/64/66/67/69/70/71/73/74/75: **59 written tickets total**, including KB-59/61/64/76/77/78 (15 search, 19 history, 25 polish; 10 Astra planning lanes and 49 Sol; 56 component and 3 data).
+Current execution authority: overnight v3, 2026-10-21. See NEEDS-AMIT.md and STATUS.md. Use at most four ticket worktrees; shared harness #1202 first. Historical scheduling and retry questions below do not override those decisions.
+
+This draft is the plan. No product code is changed or represented as shipped. Base: `integration` at `52bf2803e9105b25c2538aedd81a754a9fbfdedb`. No prior KB-SPEC or tickets existed in this checkout. The first three batches contain **45 fully specified tickets**: 15 search, 19 history, 11 polish; 10 FRONTIER and 35 WORKHORSE; 42 component and 3 data. The next two reserved batches plus the verified KB-76/77/78 follow-ups bring the planned total to 78, within the requested 60–80 range. The implementation follow-up has also expanded KB-59/61/64/66/67/69/70/71/73/74/75: **59 written tickets total**, including KB-59/61/64/76/77/78 (15 search, 19 history, 25 polish; 10 FRONTIER planning lanes and 49 WORKHORSE; 56 component and 3 data).
 
 ## Inventory and boundaries
 
@@ -16,7 +18,7 @@ The three groups are search answers above KA-24/43, full history above KA-01/04/
 - **Batch 2 (KB-16–30):** bounded search contract; modes, sources, domains, images/video, suggestions, widgets, Discover, answer actions/progress; history tags/archive and message queue.
 - **Batch 3 (KB-31–45):** bulk/export/Undo contract; bulk actions, delete, Markdown/JSON, long transcripts, old-text matches, phone/native parity; onboarding/sign-up polish.
 
-Start 19–20 Oct with Astra slots on KB-02/03 and seven Sol slots on KB-04–10, **subject to the code-model rule below**. KB-44/45 have no product dependency and can be pulled forward when a slot frees; batch numbers are packaging, not global barriers. Then take the first ready ticket matching a free lane; never wait on a blocked ticket when another is ready. After the allowance reset on **23 Oct (Asia/Jerusalem)**, resume the same queue at the first incomplete ready entry. No worker is instructed to call a paid API merely to consume allowance. Remaining quota, exact reset time and all-day utilization are UNKNOWN; nine permanently busy slots cannot be promised while KA holds reserve shared files.
+Start 19–20 Oct with FRONTIER slots on KB-02/03 and seven WORKHORSE slots on KB-04–10, **subject to the code-model rule below**. KB-44/45 have no product dependency and can be pulled forward when a slot frees; batch numbers are packaging, not global barriers. Then take the first ready ticket matching a free lane; never wait on a blocked ticket when another is ready. After the allowance reset on **23 Oct (Asia/Jerusalem)**, resume the same queue at the first incomplete ready entry. No worker is instructed to call a paid API merely to consume allowance. Remaining quota, exact reset time and all-day utilization are UNKNOWN; nine permanently busy slots cannot be promised while KA holds reserve shared files.
 
 ## Data and privacy
 
@@ -29,7 +31,7 @@ Every ticket repeats: no component edits to convex/hot/route files; no new packa
 1. **Three implementation files + one test**, not about six. Each component ticket changes one already-mounted module, one new i18n group and one new CSS file; its gallery export stays in the module and its isolated browser fixture stays in the test. Copy and CSS register directly in that module, not shared `i18n.ts`/`globals.css`. Native tickets use the pure dictionary directly and register web CSS only in their scoped react-native-web gallery; native runtime styles use existing tokens. Data-only tickets add no unused CSS/copy/gallery files. Evidence files are outputs, not extra implementation files.
 2. **Front matter comes before the title.** The inspected `scripts/factory/scope-guard.mjs:frontMatter` regex requires `---` at the start. Putting the brief's heading first would fail. Claude must preserve the leading block when filing issues.
 3. **Sandbox checks still apply to this docs PR.** AGENTS has no docs-only exemption. Results are recorded in VALIDATION.md; missing infrastructure is UNKNOWN, not a pass. No product/check configuration is changed to make checks green.
-4. **Code models must be mid-tier by billing** (AGENTS rule 10), while Amit requested Astra/Sol. During the explicitly authorized implementation follow-up, the lead assigned the independent UI tickets to Sol, including KB-02/03/44, and recorded that choice in their executable issues. Planning lane intent is retained for the other tickets; no Astra billing exception is assumed.
+4. **Code models must be mid-tier by billing** (AGENTS rule 10), while Amit requested FRONTIER/WORKHORSE. During the explicitly authorized implementation follow-up, the lead assigned the independent UI tickets to WORKHORSE, including KB-02/03/44, and recorded that choice in their executable issues. Planning lane intent is retained for the other tickets; no FRONTIER billing exception is assumed.
 5. The single-branch/single-ticket rule applies to future worker implementation PRs. This requested lead artifact is one spec-line docs PR containing ticket definitions; it is not 45 implementation PRs. No issue is falsely closed, no labels or review bots are invoked, and nothing is merged.
 
 HARD_RULES §6.3's older confidence auto-apply text conflicts with §1/§6.2 and the explicit brief. The plan follows explicit Accept, as the brief and current v3 §13 require; no automatic mutation is authorized.
@@ -93,11 +95,11 @@ Batch 6 (verified follow-up):
 
 The next lead should read the 59 existing tickets and available implementation evidence first, refresh this inventory against integration, then expand the next three batches only if enough distinct work remains. There are 19 title-only tickets left across two reserved batches; batch 6 begins with independently verified KB-76 Undo ownership, KB-77 Input target and KB-78 pending-dialog focus defects; further entries require newly verified gaps, never duplicate tickets invented to hit a count. Keep at most one data ticket per new batch and use evidence to narrow broad family titles into compliant scopes.
 
-## Needs Amit
+## Historical owner questions (superseded by NEEDS-AMIT.md on 2026-10-21)
 
 - KB-02/03/04/44/59/64/66/70/74/76/78 are stuck after the three-attempt limit in AGENTS.md. Further source/test repair needs an explicit retry-budget exception. KB-59 additionally has a reproduced introduced regression across UTC status-query loading; do not integrate it before repair. [IMPLEMENTATION.md](IMPLEMENTATION.md) records current evidence and limits.
 - Apply `convex-arch` to KB-01/16/31 implementation PRs when reviewed; this lead never labels.
-- Astra billing eligibility remains UNKNOWN. Independent UI implementation uses Sol under AGENTS; no owner exception is needed for those runs.
+- FRONTIER billing eligibility remains UNKNOWN. Independent UI implementation uses WORKHORSE under AGENTS; no owner exception is needed for those runs.
 - Resolve held KA scopes #1110/#1112/#1129, or have the spec line split/release their reserved files. KB lists them where files overlap; skipping those deps to keep workers busy is forbidden. KA-11 Part A can unblock history without its held Part B when that completion is explicitly recorded by the owner.
 - Provision/enable KA-24 services outside these worker scopes if live search is wanted; no environment values are set here.
 - Native-read the machine-drafted Hebrew. Device VoiceOver/TalkBack checks remain a release responsibility, not a fabricated sandbox result.

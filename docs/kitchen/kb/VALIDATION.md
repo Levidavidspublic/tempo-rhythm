@@ -6,12 +6,12 @@ Only `docs/kitchen/kb/` changes in this draft. Source snapshot: `52bf2803e9105b2
 
 - PASS: `bun -e "JSON.parse(require('fs').readFileSync('docs/kitchen/kb/queue.json','utf8'))"` on Bun 1.3.9.
 - PASS: all 45 ticket files parse with the repository’s actual `frontMatter` export from `scripts/factory/scope-guard.mjs`; leading front matter preserves scope-guard compatibility.
-- PASS: all required front-matter keys and ticket sections, exact queue/front-matter scope and dependency equality, 45 unique IDs, three batches of 15, one data ticket per batch, Astra data lanes.
+- PASS: all required front-matter keys and ticket sections, exact queue/front-matter scope and dependency equality, 45 unique IDs, three batches of 15, one data ticket per batch, FRONTIER data lanes.
 - PASS: at most three implementation files and one test per ticket; no component backend/hot/route scope; one new copy group and CSS file per component ticket. Evidence outputs are separate and uniquely named.
 - PASS: dependency graph is acyclic, queue order is topological, every KA file overlap is an explicit issue dependency, independent tickets have disjoint scopes.
 - PASS: all 262 files under packages/ui and apps/web/components are present in the inventory (162 component modules and 100 supporting files). This proves census completeness, not visual conformance.
 - PASS: `git diff --check`; changed-path assertion restricts every change to docs/kitchen/kb/.
-- Planned count: 15 search / 19 history / 11 polish; 10 Astra / 35 Sol; 42 component / 3 data. Eleven entries have no unmerged product dependency.
+- Planned count: 15 search / 19 history / 11 polish; 10 FRONTIER / 35 WORKHORSE; 42 component / 3 data. Eleven entries have no unmerged product dependency.
 
 These validations used temporary scripts under the execution workspace’s work directory; no validation tooling or product source was added outside the requested folder.
 
@@ -89,12 +89,12 @@ The first browser attempt could not launch Playwright’s expected binary (1 pas
 
 ## Publication/owner gates
 
-The draft is not a merge request. No labels, issue closures or review-bot requests are added. The initial PR had no linked lead issue, so scope-guard rejected it. The implementation follow-up now links a dedicated administrative planning issue #1176, whose scope is exactly docs/kitchen/kb/. No owner exception, label, rule change or false KA closure was needed. It is outside the KB-NN worker queue and authorizes no product implementation. Future backend tickets require Amit’s convex-arch label; Astra billing eligibility and held KA scopes remain owner decisions. Native accessibility and actual service behavior are UNKNOWN.
+The draft is not a merge request. No labels, issue closures or review-bot requests are added. The initial PR had no linked lead issue, so scope-guard rejected it. The implementation follow-up now links a dedicated administrative planning issue #1176, whose scope is exactly docs/kitchen/kb/. No owner exception, label, rule change or false KA closure was needed. It is outside the KB-NN worker queue and authorizes no product implementation. Future backend tickets require Amit’s convex-arch label; FRONTIER billing eligibility and held KA scopes remain owner decisions. Native accessibility and actual service behavior are UNKNOWN.
 
 
 ## Implementation follow-up: KB-69 expansion (19 Oct)
 
-Amit subsequently authorized separate product implementation PRs. This planning branch still changes only `docs/kitchen/kb/`. KB-69 was expanded and filed as #1161 after source review; the other account/approval inventory rows remain explicitly assigned to later work. Independent UI workers use the lead-assigned Sol model under AGENTS; the original Astra planning lane is not an execution exception.
+Amit subsequently authorized separate product implementation PRs. This planning branch still changes only `docs/kitchen/kb/`. KB-69 was expanded and filed as #1161 after source review; the other account/approval inventory rows remain explicitly assigned to later work. Independent UI workers use the lead-assigned WORKHORSE model under AGENTS; the original FRONTIER planning lane is not an execution exception.
 
 Documentation checks rerun after this update: queue JSON parses; all 46 tickets match the queue and pass the actual scope-guard front-matter parser; required fields, scope caps, component hot-file ban, dependency order, KA overlap dependencies, independent scopes, and all 262 inventory paths pass. Batches 1–3 retain 15 tickets and one data ticket each; batch 5 now includes the single expanded KB-69 component ticket. `git diff --check` passes. The application checks above apply to the unchanged integration product baseline; they were not rerun merely for this documentation update. Implementation PRs carry their own current checks and limitations.
 
@@ -167,7 +167,7 @@ KB-76 is pushed in draft #1183 (source 499745a; evidence 13763ab), bringing the 
 
 ## KB-77 shared Input target follow-up
 
-The queue and exact scope-guard front matter now validate for **57** tickets (54 component, 3 data; 23 polish, 19 history, 15 search; 47 Sol and 10 Astra planning lanes). The full dependency/scope/262-path inventory validator passes. Batch 6 now has two independent component fixes; 20 reserved title-only entries remain, 77 total planned entries. KB-77 is issue #1184 and is active before first push; it polishes an existing mounted Input and adds no primary view. Its audit measured 40px phone geometry and found no owner among 113 open PRs / 3,847 complete file entries. Root changes remain documentation-only.
+The queue and exact scope-guard front matter now validate for **57** tickets (54 component, 3 data; 23 polish, 19 history, 15 search; 47 WORKHORSE and 10 FRONTIER planning lanes). The full dependency/scope/262-path inventory validator passes. Batch 6 now has two independent component fixes; 20 reserved title-only entries remain, 77 total planned entries. KB-77 is issue #1184 and is active before first push; it polishes an existing mounted Input and adds no primary view. Its audit measured 40px phone geometry and found no owner among 113 open PRs / 3,847 complete file entries. Root changes remain documentation-only.
 
 ## Scope-parser correction from the KB-61 remote gate
 
@@ -199,7 +199,7 @@ console.log(`${queue.length} exact parser comparisons PASS`);
 
 ## KB-78 continuation, 20 Oct
 
-Current counts: **58 written tickets**, 55 component / 3 data; 15 search / 19 history / 24 polish; 10 Astra / 48 Sol planning lanes. The initial three batches retain 15 tickets and one data ticket each. Batch 5 has ten expanded components, batch 6 has KB-76/77/78. Twenty title-only entries remain, 78 planned entries total. There are 24 filed implementation assignments, 23 pushed drafts and active KB-78 (#1188); the audited new-primary-view count remains 31.
+Current counts: **58 written tickets**, 55 component / 3 data; 15 search / 19 history / 24 polish; 10 FRONTIER / 48 WORKHORSE planning lanes. The initial three batches retain 15 tickets and one data ticket each. Batch 5 has ten expanded components, batch 6 has KB-76/77/78. Twenty title-only entries remain, 78 planned entries total. There are 24 filed implementation assignments, 23 pushed drafts and active KB-78 (#1188); the audited new-primary-view count remains 31.
 
 KB-78's original real ExecutorConnection caller reproduces busy Confirm losing focus to BODY and Tab reaching the background while the alert dialog stays open, with exactly one fictional disconnect call. Complete file ownership excludes release-promotion #728 and finds no competing implementation owner. The Controls inventory row now records this verified finding. A separate named-import audit corrects six primitive rows whose barrel reachability had implied a /history mount without a named import. All 262 inventory paths remain present. ThemeProvider's source-traced storage-error/DOM-update gap is reserved by #1053 and is not a competing ticket.
 
@@ -209,7 +209,7 @@ Exact scope-guard value comparisons and the full schema/dependency/scope/invento
 
 ## KB-59 expansion and KB-64 final report, 20 Oct
 
-Current queue: **59 written**, 56 component / 3 data; 15 search / 19 history / 25 polish; 10 Astra / 49 Sol planning lanes. Batch sizes are 15/15/15/1/10/3; only batches 1–3 have data tickets (one each). Nineteen reserved titles remain, 78 planned entries total. Twenty-five implementation assignments are filed, 23 drafts pushed; KB-59 (#1189) and KB-78 (#1188) are active before first push. New primary-view count remains 31.
+Current queue: **59 written**, 56 component / 3 data; 15 search / 19 history / 25 polish; 10 FRONTIER / 49 WORKHORSE planning lanes. Batch sizes are 15/15/15/1/10/3; only batches 1–3 have data tickets (one each). Nineteen reserved titles remain, 78 planned entries total. Twenty-five implementation assignments are filed, 23 drafts pushed; KB-59 (#1189) and KB-78 (#1188) are active before first push. New primary-view count remains 31.
 
 KB-59 narrows an existing reserved title after two actual Preferences page FIFO failures and a refreshed ownership audit of 116 PRs / 3,867 file entries / 293 active issues. The candidate is absent from KA-11's exact scope and #1053's 309 current paths. Its inventory row now records only the verified Preferences conditional mount; shared SettingsScreen barrel/reachability did not establish its presence on other routes. Original source and ordered proof traces are retained in its implementation workspace; no production search/provider call was made.
 
@@ -225,7 +225,7 @@ All **25 dependency-free assignments now have pushed drafts**: KB-59 is #1191 at
 
 At 03:56 UTC all **25 filed implementation assignments** have open draft PRs targeting integration. Each PR changes exactly its six ticket-scoped paths, with no missing expected paths or scope violations. Twenty have all five required GitHub checks passing. PRs #1147, #1160, #1183, #1190 and #1191 fail `ci`; their other four required checks pass. Green remote checks do not erase the mandatory local failures retained in their reports. Integration remains `52bf2803e9105b25c2538aedd81a754a9fbfdedb`; KA #1094/#1112/#1116/#1126 and study PR #1081 remain open. This snapshot includes KB59's initial source/evidence head; its final reporting head must be checked separately.
 
-The 59-ticket JSON/schema/dependency/inventory check and exact repository scope-parser comparison pass. The planning branch's 65 changed paths are all under `docs/kitchen/kb/`. Counts remain 56 component / 3 data, 15 search / 19 history / 25 polish, 10 Astra / 49 Sol planning lanes; 19 reserved titles and 31 new primary views in draft implementation code. The final bounded readiness audit found no additional verified ready candidate; its per-title blockers are in IMPLEMENTATION.md.
+The 59-ticket JSON/schema/dependency/inventory check and exact repository scope-parser comparison pass. The planning branch's 65 changed paths are all under `docs/kitchen/kb/`. Counts remain 56 component / 3 data, 15 search / 19 history / 25 polish, 10 FRONTIER / 49 WORKHORSE planning lanes; 19 reserved titles and 31 new primary views in draft implementation code. The final bounded readiness audit found no additional verified ready candidate; its per-title blockers are in IMPLEMENTATION.md.
 
 KB78 final evidence-only head `3feeb6b` is source/test-identical to `6e66869`. Local lint/typecheck/scans/build pass, full unit 3,322 pass / 0 fail / 3 todo; E2E 26 pass / 2 fail / 89 skip; frozen install UNKNOWN. Both source and final CI fail the same two scoped callback/StrictMode cases; final Test is 3,320 pass / 2 fail / 3 todo in 54.59s. Its final preview check succeeded through an ignored evidence-only build skip, not a new browser run; source-head preview ran four passing cases. Its final issue report is stuck after three candidates.
 
@@ -417,6 +417,6 @@ notes for ticket sync: AT-20. No fifth candidate, check weakening, unchanged ret
 
 WALK — A fresh paginated listing on 21 October scanned 114 open PRs and 292 open non-PR issues. All 21 open KB issues and 20 open KB PRs were already registered; no omitted KB work was found. The full Bun YAML/JSON validator passed all59 ticket schemas/fields, scope caps, hot-file exclusions, data-batch limits, dependency order, recorded KA overlaps, independent scopes and the complete current262-path inventory. Exact scope-guard parsing and diff whitespace also passed. No product file changed in the planning PR.
 
-WALK — Planning commit f129286 passed hosted CI runs39622868301 and39624032527. Its required preview guard passed through the existing “Canceled by Ignored Build Step” status; no new deployment was invoked. The PR was marked ready, but CodeRabbit’s visible coverage still points to older4dc7fb9 and does not establish current review. The refreshed documentation remains unmerged until its current checks, actual review and the integration queue pass.
+WALK — Planning commit f129286 passed hosted CI runs39622868301 and39624032527. Its required preview guard passed through the existing “Canceled by Ignored Build Step” status; no new deployment was invoked. The PR was marked ready, but CodeRabbit’s visible coverage still points to older4dc7fb9 and does not establish current review. That historical ready transition is reversed in overnight v3: planning #1140 stays draft and is excluded from ready, merge and issue-closure operations. Only separately authorized worker PRs may proceed through current checks, actual review and the integration queue.
 
 WALK — KB-45 review comment4338293275 was verified and fixed with evidence-only65afd95: “zombie processes adopted by PID1.” The review thread is resolved. Production/test source, failed validation and AT-19 remain unchanged; documentation does not consume or authorize a fifth source repair.

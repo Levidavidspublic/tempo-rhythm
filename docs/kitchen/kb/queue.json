@@ -3,7 +3,7 @@
     "id": "KB-01",
     "title": "Every chat can be paged, searched, tagged and archived",
     "type": "data",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 1,
     "deps": [
       1094,
@@ -28,7 +28,7 @@
     "id": "KB-16",
     "title": "Coach search has bounded modes, source choices and media lookups",
     "type": "data",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 2,
     "deps": [
       "KB-01",
@@ -50,7 +50,7 @@
     "id": "KB-31",
     "title": "Chat exports and bulk deletion have bounded receipts and Undo",
     "type": "data",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 3,
     "deps": [
       "KB-01",
@@ -68,7 +68,7 @@
     "id": "KB-02",
     "title": "Brain dump keeps the draft and makes the next step clear",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -84,7 +84,7 @@
     "id": "KB-03",
     "title": "Search results keep focus and explain empty filters",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -100,7 +100,7 @@
     "id": "KB-04",
     "title": "Journal entries read comfortably and keep their place",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -116,7 +116,7 @@
     "id": "KB-05",
     "title": "Goals list has clear progress and a calm empty state",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -132,7 +132,7 @@
     "id": "KB-06",
     "title": "Goal details show progress and clear states",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -148,7 +148,7 @@
     "id": "KB-07",
     "title": "Goal progress has a readable table beside the chart",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -164,7 +164,7 @@
     "id": "KB-08",
     "title": "Projects list makes names and counts easy to scan",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -180,7 +180,7 @@
     "id": "KB-09",
     "title": "Project details keep task actions in reach",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -196,7 +196,7 @@
     "id": "KB-10",
     "title": "Sign-in stays clear while a magic link is on its way",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [],
     "scope": [
@@ -212,7 +212,7 @@
     "id": "KB-44",
     "title": "Onboarding shows one clear step and preserves input",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 3,
     "deps": [],
     "scope": [
@@ -228,7 +228,7 @@
     "id": "KB-45",
     "title": "Sign-up explains approval and keeps the form accessible",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [],
     "scope": [
@@ -244,7 +244,7 @@
     "id": "KB-69",
     "title": "Approval waiting stays clear while a name saves",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -260,7 +260,7 @@
     "id": "KB-66",
     "title": "Activity load more keeps the reader's place",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -276,7 +276,7 @@
     "id": "KB-70",
     "title": "Notification actions keep focus and submit once",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -292,7 +292,7 @@
     "id": "KB-67",
     "title": "Phrase drafts stay with the selected nag",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -308,7 +308,7 @@
     "id": "KB-73",
     "title": "Landing theme control has a reachable localized name",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -324,7 +324,7 @@
     "id": "KB-74",
     "title": "Mobile navigation drawer keeps keyboard focus in view",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -340,7 +340,7 @@
     "id": "KB-71",
     "title": "Shared buttons have phone-sized targets on real screens",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -356,7 +356,7 @@
     "id": "KB-75",
     "title": "Account approval actions keep each row's pending state",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -372,7 +372,7 @@
     "id": "KB-76",
     "title": "A completed Undo cannot dismiss a newer Undo",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 6,
     "deps": [],
     "scope": [
@@ -388,7 +388,7 @@
     "id": "KB-59",
     "title": "Web search preference feedback stays with the latest change",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 4,
     "deps": [],
     "scope": [
@@ -404,7 +404,7 @@
     "id": "KB-61",
     "title": "Habit saves cannot close a newly opened sheet",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -420,7 +420,7 @@
     "id": "KB-64",
     "title": "Failed note Undo shows a safe retry before its deadline",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 5,
     "deps": [],
     "scope": [
@@ -436,7 +436,7 @@
     "id": "KB-77",
     "title": "Shared inputs have phone-sized targets on real screens",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 6,
     "deps": [],
     "scope": [
@@ -452,7 +452,7 @@
     "id": "KB-78",
     "title": "Confirm dialogs keep keyboard focus while an action is pending",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 6,
     "deps": [],
     "scope": [
@@ -468,7 +468,7 @@
     "id": "KB-11",
     "title": "Search sources show a site icon with a safe fallback",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [
       1126
@@ -486,7 +486,7 @@
     "id": "KB-12",
     "title": "Citations open readable source cards with keyboard and touch",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [
       "KB-11",
@@ -505,7 +505,7 @@
     "id": "KB-13",
     "title": "Long search answers stay readable across code, tables and quotes",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [
       "KB-12",
@@ -524,7 +524,7 @@
     "id": "KB-14",
     "title": "History becomes a Library of every saved chat",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 1,
     "deps": [
       "KB-01",
@@ -543,7 +543,7 @@
     "id": "KB-15",
     "title": "The Library filters by date, folder, tag and pin",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 1,
     "deps": [
       "KB-01",
@@ -563,7 +563,7 @@
     "id": "KB-17",
     "title": "The coach offers Speed, Balanced and Quality with source choices",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-16",
@@ -586,7 +586,7 @@
     "id": "KB-18",
     "title": "Search can stay within chosen domains",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-16",
@@ -610,7 +610,7 @@
     "id": "KB-19",
     "title": "A search answer can show image results with attribution",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-13",
@@ -630,7 +630,7 @@
     "id": "KB-20",
     "title": "Video results open with clear source and duration",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-16",
@@ -650,7 +650,7 @@
     "id": "KB-21",
     "title": "Related questions use the answer sources without another model call",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-20",
@@ -669,7 +669,7 @@
     "id": "KB-22",
     "title": "Typing in the coach suggests previous queries privately",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-16",
@@ -693,7 +693,7 @@
     "id": "KB-23",
     "title": "Calculation widgets show the expression and its result",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-21",
@@ -712,7 +712,7 @@
     "id": "KB-24",
     "title": "Quick lookup cards show source and freshness honestly",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-16",
@@ -732,7 +732,7 @@
     "id": "KB-25",
     "title": "Discover offers chosen topics without background tracking",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-03",
@@ -751,7 +751,7 @@
     "id": "KB-26",
     "title": "Answer actions copy, share and export with a clear preview",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-24",
@@ -770,7 +770,7 @@
     "id": "KB-27",
     "title": "Search progress reports only phases that actually happened",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-16",
@@ -794,7 +794,7 @@
     "id": "KB-28",
     "title": "Chats can be tagged from the Library",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-01",
@@ -814,7 +814,7 @@
     "id": "KB-29",
     "title": "Chats can be archived and brought back",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 2,
     "deps": [
       "KB-01",
@@ -834,7 +834,7 @@
     "id": "KB-30",
     "title": "The coach queues messages while an answer is arriving",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 2,
     "deps": [
       "KB-27",
@@ -857,7 +857,7 @@
     "id": "KB-32",
     "title": "The Library selects chats for bulk actions",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-29",
@@ -877,7 +877,7 @@
     "id": "KB-33",
     "title": "Deleting a chat offers Undo for five minutes",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-31",
@@ -897,7 +897,7 @@
     "id": "KB-34",
     "title": "Chats export to Markdown with their source links",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-31",
@@ -917,7 +917,7 @@
     "id": "KB-35",
     "title": "Chats export to versioned JSON without hidden metadata",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-31",
@@ -937,7 +937,7 @@
     "id": "KB-36",
     "title": "Long chat transcripts load completely without jumping",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-01",
@@ -957,7 +957,7 @@
     "id": "KB-37",
     "title": "Library search finds old message text and opens the match",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-01",
@@ -977,7 +977,7 @@
     "id": "KB-38",
     "title": "The Library works as a phone-sized list and detail view",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-37",
@@ -996,7 +996,7 @@
     "id": "KB-39",
     "title": "The native coach opens the complete chat Library",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 3,
     "deps": [
       "KB-01",
@@ -1016,7 +1016,7 @@
     "id": "KB-40",
     "title": "Native Library filters and tags match the web",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-01",
@@ -1037,7 +1037,7 @@
     "id": "KB-41",
     "title": "Native chats support archive, selection and delete Undo",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-31",
@@ -1058,7 +1058,7 @@
     "id": "KB-42",
     "title": "Native chats share Markdown or JSON exports explicitly",
     "type": "component",
-    "lane": "sol",
+    "lane": "WORKHORSE",
     "batch": 3,
     "deps": [
       "KB-31",
@@ -1079,7 +1079,7 @@
     "id": "KB-43",
     "title": "Native Library can queue follow-up messages safely",
     "type": "component",
-    "lane": "astra",
+    "lane": "FRONTIER",
     "batch": 3,
     "deps": [
       "KB-30",

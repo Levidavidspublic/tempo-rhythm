@@ -2,12 +2,16 @@
 
 AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 30 PRs after corrective follow-ups. Current KB heads, checks and review threads are refreshed below.
 
+## Overnight v3 — 2026-10-21
+
+In progress — Amit has authorized the shared harness fix first, then the nine fixture reruns, then seven scoped bug/timing passes. Earlier AT-05–AT-20 budget holds below are historical and superseded by that sequence, not an unlimited retry grant. Shared harness issue: [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), work in progress. Current actions and results are recorded in OVERNIGHT-REPORT.md. AT-01 holds remain; AT-02/03 backend gates remain unanswered. #1193 is excluded and #1198 cannot merge.
+
 ## Counts
 
 - KB issues: **5 closed / 21 open**, including the administrative lead issue #1176.
 - KB PRs: **10 merged / 20 open**; includes planning #1140.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **20 question lines**.
+- NEEDS-AMIT.md: **4 remaining owner actions**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
 
 ## Authority and gates
 
@@ -15,11 +19,13 @@ AWAY — The owner's KB FINISH instruction authorizes KB-only ready/merge/close 
 
 AT — Resolved in this conversation: the owner confirms automatic paid checks are paused and the existing CodeRabbit review is authorized. The pause-setting API returned 403, so dashboard state is not independently verified. No pause setting was written. Do not invoke release-go, preview-acceptance, release, codegen or deployment workflows.
 
-AWAY — For each eligible PR: verify all dependencies on integration; rebase onto the latest integration head; retain scope; require green CI and an actual CodeRabbit review with addressed findings; mark ready, await refreshed checks, then enqueue through the required integration merge queue. Disjoint PRs may wait in the queue together; overlapping writers are serialized. Then close its issue with “KB done: <one line>”, refresh this file and commit it on docs/kitchen-kb-plan. Overlapping files are never edited/merged concurrently. A green CodeRabbit status with “Draft PR not reviewed” is not a review.
+AWAY — For each separately authorized worker PR (excluding planning #1140): verify all dependencies on integration; rebase onto the latest integration head; retain scope; require green CI and an actual CodeRabbit review with addressed findings; mark ready, await refreshed checks, then enqueue through the required integration merge queue. Disjoint PRs may wait in the queue together; overlapping writers are serialized. Then close its issue with “KB done: <one line>”, refresh this file and commit it on docs/kitchen-kb-plan. Overlapping files are never edited/merged concurrently. A green CodeRabbit status with “Draft PR not reviewed” is not a review.
 
 AT — Resolved in this conversation: the owner authorized one additional repair pass for each KB draft that exhausted its retry budget. Scope and all checks remain unchanged. This supersedes the prior retry-budget question; it is not unlimited retries.
 
-## Every filed KB issue and PR
+Planning #1140 remains draft and is excluded from ready, merge and issue-closure operations. Its documentation does not itself authorize product merges.
+
+## Current PR for each filed KB issue (historical PRs are in Merge receipts)
 
 | Ticket | Issue | PR | Head | CI | Review | Current gate |
 |---|---|---|---|---|---|---|

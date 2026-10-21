@@ -34,7 +34,7 @@ Historical pre-FINISH source audit: the first twelve pushed implementation PRs c
 | KB-77 | #1184 | [#1186](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186) | Existing Input 44px phone targets at Today/Plan callers; zero new primary views; 18 focused cases pass; full unit 3,318 pass/1 fail/3 todo, E2E 27 pass/1 fail/89 skip; lint/typecheck/scans/build pass, install UNKNOWN |
 | KB-78 | #1188 | [#1190](https://github.com/Levidavidspublic/tempo-rhythm/pull/1190) | Existing ConfirmSheet pending focus containment; zero new primary views; 21 focused cases pass; lint/typecheck/scans/build and local full unit pass; E2E 26 pass/2 fail/89 skip; original CI two scoped failures; stuck |
 
-All these implementation assignments use Sol under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for the 25 filed assignments: these twenty-five pushed drafts. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
+All these implementation assignments use WORKHORSE under AGENTS.md's mid-tier rule, including the explicitly reassigned KB-02/03/44 planning lanes. Claude must not file duplicate issues or prompts for the 25 filed assignments: these twenty-five pushed drafts. The remaining written and title-only tickets stay in KB-SPEC/queue; read their dependencies before starting.
 
 ## Boundaries that remain
 
