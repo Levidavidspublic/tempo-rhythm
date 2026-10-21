@@ -1,0 +1,17 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/revenuecat_events.test.ts:
+(pass) mapRevenueCatEventToUserType > maps purchase lifecycle events to paid [0.33ms]
+(pass) mapRevenueCatEventToUserType > maps churn events to free [0.04ms]
+(pass) mapRevenueCatEventToUserType > defaults unknown or missing events to free [0.03ms]
+(pass) payment webhook stays off > missing or empty configuration keeps the existing 503 response [599.97ms]
+(pass) payment webhook stays off > missing or wrong authorization keeps the existing 401 response [1033.03ms]
+(pass) payment webhook stays off > authenticated processing-off requests explicitly return disabled [639.82ms]
+(pass) payment webhook stays off > disabled malformed and throwing request bodies are never read [522.93ms]
+(pass) payment webhook stays off > client query, body, headers and environment flags cannot enable processing [896.73ms]
+(pass) payment webhook stays off > the actual registered action stays off without writes, provider calls or payload logs [537.50ms]
+
+ 9 pass
+ 0 fail
+ 129 expect() calls
+Ran 9 tests across 1 file. [4.35s]
