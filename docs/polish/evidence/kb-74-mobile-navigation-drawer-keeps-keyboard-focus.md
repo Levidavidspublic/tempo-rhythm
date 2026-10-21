@@ -191,3 +191,59 @@ Last 20 lines of the failed targeted local red command (full log retained):
  7 expect() calls
 Ran 2 tests across 1 file. [227.42s]
 ```
+
+
+## Overnight v3 authorized settled-transition pass — 21 October 2026
+
+Draft; focused proof passes, but the full suite has unrelated failures and current-head hosted gates remain required. Role: WORKHORSE. The owner authorized the one AT-17 timing correction for reopened #1171 / corrective #1200. Source `c801bc1` normally merges integration at `9583e91`; no shared fixture prerequisite was added. The original merged #1174 and all failure/attempt receipts above remain historical.
+
+The existing correction supplies the named modal boundary while retaining the real navigation landmark and nonmodal desktop layout. This pass changes only the scoped test: before the two exact geometry comparisons, it waits until the real Sidebar has computed `transform: none` and no active Web Animations. Browser animation-frame polling observes the actual transition state; there is no fixed delay, CSS override or animation disabling. Geometry expectations remain exact, including modal rectangle equality, desktop leading edge/height and sticky y=0. Product source, CSS, dictionary and all APIs remain unchanged by this timing pass.
+
+All 27 existing cases, 70 original assertion lines and five explicit timeout/deadline lines are retained exactly. The two geometry checks retain their English and Hebrew loops. Focused command `bun test tests/unit/kb-74.test.tsx` now returns **27 pass / 0 fail**, **163 assertions**, **32.78 seconds**, exit **0**, compared with the prior exact-head hosted **25 pass / 2 fail**. Both previously failing cases completed, including the previously unreached Hebrew modal/name and desktop/sticky assertions. The mounted languages/themes/widths matrix also passes. The actual test process exited after its existing browser/server cleanup; printed passes alone were not used as the result.
+
+Environment receipts: Bun **1.3.9**, installed Chromium. The first frozen install was interrupted during the environment refresh after printing `Resolving dependencies`; no exit receipt exists, so its outcome is UNKNOWN. The recovery `bun install --frozen-lockfile` reached its external 120-second bound, exit124: UNKNOWN. After that exit, dependency directories were copied from the preceding worktree only after byte equality of `bun.lock` and every root/workspace manifest (eight files) was verified. No package/config/lockfile changed and no install success is claimed.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Mandatory sequence on `c801bc1`:
+
+| Command | Result |
+|---|---|
+| `bun run lint` | PASS, exit 0; 5/5 tasks. |
+| `bun run typecheck` | PASS, exit 0; 5/5 tasks. |
+| `bun run test` | FAIL, exit 1; **3,472 pass / 23 fail / 3 todo**, 3,498 tests in 211 files, 81,393 assertions, 243.35 seconds. All 27 KB-74 cases passed. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0; all four checks. |
+| `CI=1 bunx playwright test --reporter=line` | PASS, exit 0; **28 pass / 0 fail / 89 existing configuration-gated skips**, 58.0 seconds. Serialized with the shared localhost lock. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0; 1/1 task, 59.599 seconds. |
+
+All 23 broad failures belong to the unchanged KB-64 fixture, with `Target page, context or browser has been closed` when the fixture attempts browser operations. This matches the previously recorded baseline failure class; the exact reason its browser closed is not established by this run. No KB-64 source or test was changed and no failure was reclassified as a pass. The suite completed naturally with exit 1; it was not cancelled. Full logs are `/workspace/kb-run-logs/kb74-{focused,full,lint,typecheck,scans,e2e,build}.log` and `kb74-results.json`.
+
+Last 20 lines of the failed full-suite command:
+
+```text
+(fail) KB64 Undo recovery > fulfillment makes no invented success claim and does not expire early [16.02ms]
+(fail) KB64 Undo recovery > unmount fences a stale rejected request and cancels expiry [16.03ms]
+(fail) KB64 Undo recovery > changed deadline fences an old rejection without leaking error or busy state [16.03ms]
+(fail) KB64 Undo recovery > changed deadline fences an old fulfilled request after the old deadline [15.94ms]
+(fail) KB64 Undo recovery > new inline callback identities do not reset an active request [16.02ms]
+(fail) KB64 Undo recovery > Hebrew recovery has RTL direction and localized action copy [16.02ms]
+(fail) KB64 Undo recovery > an immediate fulfillment crossing the deadline still schedules post-commit expiry [16.00ms]
+(fail) KB64 Undo recovery > late successful real detail restoration keeps the parent navigation authoritative [16.02ms]
+(fail) KB64 Undo recovery > real NotesScreen list callback contains rejection and retries the same note [16.02ms]
+(fail) KB64 Undo recovery > real NotesScreen page callback contains rejection and leaves false fulfillment neutral [15.96ms]
+(fail) KB64 Undo recovery > gallery reuses the notice and supports reject retry expiration and language [7.02ms]
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [8.83ms]
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [16.02ms]
+
+ 3472 pass
+ 3 todo
+ 23 fail
+ 81393 expect() calls
+Ran 3498 tests across 211 files. [243.35s]
+error: script "test" exited with code 1
+```
+
+ Existing screenshots retain their original provenance; this timing-only test pass adds no visual design and claims no new screenshot. Current-head hosted gates and actual CodeRabbit coverage are required before integration. Native Hebrew and real-device screen-reader checks remain required before production; live accounts remain unverified. No deployment was performed.
