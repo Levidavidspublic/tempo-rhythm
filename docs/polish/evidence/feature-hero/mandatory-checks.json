@@ -1,0 +1,65 @@
+{
+  "staticHead": "ee1fd5caca0307df3608a21a702a957359de2aa4",
+  "executionHead": "204bb59ee3ffd4d60cde76a4941afbf9be264ec7",
+  "bun": "1.3.9",
+  "install": {
+    "command": "bun install --frozen-lockfile",
+    "exit": 0,
+    "seconds": 333.27,
+    "packages": 1079,
+    "installsChecked": 1033,
+    "changes": false,
+    "prior120SecondAttempt": {
+      "exit": 124,
+      "result": "UNKNOWN: dependency resolution had not completed at the execution bound"
+    }
+  },
+  "lint": {
+    "command": "bun run lint",
+    "exit": 0,
+    "tasksPassed": 5,
+    "tasksTotal": 5,
+    "notes": "Existing warnings retained; no fixes applied"
+  },
+  "typecheck": {
+    "command": "bun run typecheck",
+    "exit": 0,
+    "tasksPassed": 5,
+    "tasksTotal": 5
+  },
+  "tests": {
+    "command": "bun run test",
+    "exit": 1,
+    "passed": 3488,
+    "failed": 5,
+    "todo": 3,
+    "assertions": 81407,
+    "files": 211,
+    "seconds": 1298.71
+  },
+  "scans": {
+    "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
+    "exit": 0
+  },
+  "e2e": {
+    "command": "CI=1 bunx playwright test --reporter=line",
+    "exit": 1,
+    "passed": 32,
+    "failed": 4,
+    "skipped": 89,
+    "reportedDuration": "7.3m",
+    "ownCaseFailure": "landing hero390he no-preference: functional assertions completed; screenshot capture and after-hook exceeded unchanged30-second deadline"
+  },
+  "build": {
+    "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
+    "exit": 0,
+    "tasksPassed": 1,
+    "tasksTotal": 1,
+    "reportedDuration": "2m14.804s"
+  },
+  "cleanup": {
+    "afterE2E": "Owned browser exited; owned Bun/Next were stopped PID1 zombies with no live server. Removed only ignored apps/web/.next/dev after realpath and no-symlink verification; source, tests, screenshots, traces and logs retained.",
+    "afterBuild": "No active Bun, Next or Chromium process remained at slot release."
+  },
+  "limits": "Local checks only. No preview or production proof. No failure rerun, changed assertion, deadline or source/test candidate."
+}
