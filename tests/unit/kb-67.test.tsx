@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Browser, Page } from "@playwright/test";
+import { cleanupFixture, fixtureCleanup, fixturePhase, requireFixtureSuccess, runIsolatedFixture, type FixtureRun } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
 import { en, he, kb67t } from "../../apps/web/lib/i18n-groups/kb-67";
 
 const root = join(import.meta.dir, "../..");
@@ -12,7 +14,7 @@ const resultMarker = "KB67_FIXTURE_RESULTS=";
 const runToken = fixtureChild ? process.env.KB67_FIXTURE_TOKEN! : crypto.randomUUID();
 type CaseResult = { pass: true } | { pass: false; error: string };
 type FixtureResults = { token: string; cases: Record<string, CaseResult>; cleanupComplete: boolean };
-type ChildRun = { code: number; out: string; err: string };
+type ChildRun = Pick<FixtureRun, "code" | "out" | "err">;
 const caseResults: Record<string, CaseResult> = {};
 const caseNames: string[] = [];
 let cleanupComplete = false;
@@ -32,12 +34,12 @@ async function releaseFixture(
   closeBrowser: () => unknown,
   removeDirectory: () => unknown
 ): Promise<void> {
-  // Start every release independently: a stuck/rejected browser close cannot block server/temp cleanup.
-  const releases = await Promise.allSettled(
-    [stopServer, closeBrowser, removeDirectory].map((release) => Promise.resolve().then(release))
-  );
-  const errors = releases.flatMap((release) => release.status === "rejected" ? [release.reason] : []);
-  if (errors.length) throw new AggregateError(errors, "KB-67 fixture cleanup failed");
+  // Preserve the existing 60-second cleanup deadline and every release error.
+  try {
+    await cleanupFixture({ server: stopServer, browser: closeBrowser, directory: removeDirectory }, 60_000);
+  } catch (error) {
+    throw new AggregateError(error instanceof AggregateError ? error.errors : [error], "KB-67 fixture cleanup failed");
+  }
 }
 
 function resultsFrom(run: ChildRun, token: string): FixtureResults {
@@ -65,25 +67,39 @@ function requireSuccessfulExit(run: ChildRun, results: FixtureResults, names: st
   }
 }
 
-// Original deadlines remain authoritative inside Bun's child runner. Awaiting it at module load
-// adds no larger aggregate deadline and does not turn a failed hook into a successful fixture.
+// Preserve all original per-case/hook deadlines. This finite outer bound contains their
+// worst-case total (120s setup, thirty 60s slots, 300s capture and 60s cleanup),
+// without extending or replacing any individual deadline inside the child runner.
 let childRun: ChildRun | undefined;
 let childResults: FixtureResults | undefined;
 let resultError: unknown;
 if (!fixtureChild) {
-  const child = Bun.spawn([process.execPath, "test", import.meta.path], {
+  const run = await runIsolatedFixture({
+    command: [process.execPath, "test", import.meta.path],
     cwd: root,
     env: { ...process.env, KB67_FIXTURE_CHILD: "1", KB67_FIXTURE_TOKEN: runToken },
-    stdout: "pipe", stderr: "pipe",
+    timeoutMs: 120_000 + 30 * 60_000 + 300_000,
+    cleanupMs: 60_000,
   });
-  const [out, err, code] = await Promise.all([
-    new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
-  ]);
-  childRun = { code, out, err };
-  try { childResults = resultsFrom(childRun, runToken); } catch (error) { resultError = error; }
-  console.info(`KB-67 isolated child exit ${code}; ${Object.keys(childResults?.cases ?? {}).length} named results; cleanup ${childResults?.cleanupComplete ?? false}`);
-  console.info(`KB-67 child assertion summary:\n${err.trim().split("\n").slice(-5).join("\n")}`);
+  childRun = run;
+  try {
+    requireFixtureSuccess(run);
+    childResults = resultsFrom(run, runToken);
+  } catch (error) { resultError = error; }
+  fixturePhase(`KB-67 result exit=${run.code} supervisor=${run.supervisorCode}; ${Object.keys(childResults?.cases ?? {}).length} named results; cleanup=${childResults?.cleanupComplete ?? false}`);
 }
+const releaseOwned = fixtureChild ? fixtureCleanup({
+  resources: async () => {
+    fixturePhase("KB-67 cleanup start");
+    await releaseFixture(
+      () => server?.stop(true),
+      () => browser?.close(),
+      () => temp ? rm(temp, { recursive: true, force: true }) : undefined
+    );
+    cleanupComplete = true;
+    fixturePhase("KB-67 cleanup complete");
+  },
+}, 60_000) : undefined;
 
 function test(name: string, run: () => unknown | Promise<unknown>, timeout?: number): void {
   caseNames.push(name);
@@ -98,7 +114,9 @@ function test(name: string, run: () => unknown | Promise<unknown>, timeout?: num
       return;
     }
     try {
+      fixturePhase(`KB-67 case start: ${name}`);
       await run();
+      fixturePhase(`KB-67 case complete: ${name}`);
       caseResults[name] = { pass: true };
     } catch (error) {
       caseResults[name] = { pass: false, error: error instanceof Error ? error.stack ?? error.message : String(error) };
@@ -190,47 +208,31 @@ async function buildFixture() {
     writeFile(join(temp, "link.ts"), link),
     writeFile(join(temp, "entry.tsx"), entry),
   ]);
-  const buildEntry = (path: string) =>
-    Bun.build({
-      entrypoints: [path],
-      target: "browser",
-      outdir: temp,
+  const buildEntry = async (path: string, output: string) => {
+    fixturePhase(`KB-67 build start: ${output}`);
+    const outdir = join(temp, output);
+    await isolatedBrowserBuild({
+      cwd: root, entrypoints: [path], outdir, resolveFrom: web,
       define: { "process.env.NODE_ENV": '"test"' },
-      plugins: [
-        {
-          name: "kb67-fixture",
-          setup(build) {
-            build.onResolve(
-              {
-                filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/,
-              },
-              ({ path }) => ({ path: Bun.resolveSync(path, web) })
-            );
-            build.onResolve({ filter: /^(convex\/react|next\/navigation)$/ }, () => ({
-              path: join(temp, "backend.ts"),
-            }));
-            build.onResolve({ filter: /^next\/link$/ }, () => ({
-              path: join(temp, "link.ts"),
-            }));
-            build.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({
-              path: join(temp, "api.ts"),
-            }));
-            build.onResolve({ filter: /^@\// }, ({ path }) => ({
-              path: Bun.resolveSync(path, web),
-            }));
-          },
-        },
-      ],
+      aliases: {
+        "convex/react": join(temp, "backend.ts"),
+        "next/navigation": join(temp, "backend.ts"),
+        "next/link": join(temp, "link.ts"),
+        "@/convex/_generated/api": join(temp, "api.ts"),
+      },
+      timeoutMs: 120_000, cleanupMs: 60_000,
     });
-  const built = await buildEntry(join(temp, "entry.tsx"));
-  if (!built.success) throw new Error(built.logs.map(String).join("\n"));
-  const js = await built.outputs.find((file) => file.path.endsWith(".js"))?.text();
+    const filename = path.endsWith("before-entry.tsx") ? "before-entry" : "entry";
+    const js = await readFile(join(outdir, `${filename}.js`), "utf8");
+    const cssPath = join(outdir, `${filename}.css`);
+    const css = existsSync(cssPath) ? await readFile(cssPath, "utf8") : "";
+    fixturePhase(`KB-67 build complete: ${output}`);
+    return { js, css };
+  };
+  const built = await buildEntry(join(temp, "entry.tsx"), "current");
+  const js = built.js;
   if (!js) throw new Error("KB-67 fixture did not bundle JS");
-  const bundleCss = (
-    await Promise.all(
-      built.outputs.filter((file) => file.path.endsWith(".css")).map((file) => file.text())
-    )
-  ).join("\n");
+  const bundleCss = built.css;
   const baseCss = (
     await Promise.all(
       ["docs/design/v3/tokens.css", "apps/web/app/tempo.css", "apps/web/app/v3/you.css"].map(
@@ -251,15 +253,11 @@ async function buildFixture() {
       function Screen(){const {lang}=useLocale();return <><TpIconSprite/><main id="main" lang={lang} dir={lang==="he"?"rtl":"ltr"}><NagsScreen/></main></>}
       createRoot(document.getElementById("app")).render(<LocaleProvider><Screen/></LocaleProvider>);`
     );
-    const before = await buildEntry(join(temp, "before-entry.tsx"));
-    if (!before.success) throw new Error(before.logs.map(String).join("\n"));
-    beforeJs = (await before.outputs.find((file) => file.path.endsWith(".js"))?.text()) ?? null;
-    beforeCss = (
-      await Promise.all(
-        before.outputs.filter((file) => file.path.endsWith(".css")).map((file) => file.text())
-      )
-    ).join("\n");
+    const before = await buildEntry(join(temp, "before-entry.tsx"), "before");
+    beforeJs = before.js;
+    beforeCss = before.css;
   }
+  fixturePhase("KB-67 server start");
   server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
@@ -302,10 +300,12 @@ async function buildFixture() {
   ].find(existsSync);
   if (!browserPath)
     throw new Error("KB-67 fixture needs installed Playwright Chromium or system Chrome/Chromium");
+  fixturePhase("KB-67 browser launch");
   browser = await chromium.launch({
     executablePath: browserPath,
     args: ["--no-sandbox"],
   });
+  fixturePhase("KB-67 browser ready");
 }
 async function pageFor(
   mode: "screen" | "gallery" | "before" = "screen",
@@ -351,12 +351,7 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
   beforeAll(async () => { if (fixtureChild) await buildFixture(); }, 120_000);
   afterAll(async () => {
     if (!fixtureChild) return;
-    await releaseFixture(
-      () => server?.stop(true),
-      () => browser?.close(),
-      () => temp ? rm(temp, { recursive: true, force: true }) : undefined
-    );
-    cleanupComplete = true;
+    await releaseOwned!();
   });
 
   test("English and Hebrew keys match and named views mount", async () => {
@@ -870,13 +865,11 @@ describe.serial("KB-67 fixture lifecycle", () => {
   test("successful case records cannot hide a real child exit failure", async () => {
     const token = crypto.randomUUID();
     const results: FixtureResults = { token, cases: { completed: { pass: true } }, cleanupComplete: true };
-    const child = Bun.spawn([process.execPath, "-e", `console.log(${JSON.stringify(resultMarker + JSON.stringify(results))}); process.exit(1);`], {
-      cwd: root, stdout: "pipe", stderr: "pipe",
+    const run = await runIsolatedFixture({
+      command: [process.execPath, "-e", `console.log(${JSON.stringify(resultMarker + JSON.stringify(results))}); process.exit(1);`],
+      cwd: root, timeoutMs: 60_000, cleanupMs: 60_000,
     });
-    const [out, err, code] = await Promise.all([
-      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
-    ]);
-    const run = { code, out, err };
+    const { code } = run;
     expect(code).toBe(1);
     expect(() => requireSuccessfulExit(run, resultsFrom(run, token), ["completed"])).toThrow("exited 1");
     expect(() => resultsFrom(run, "different invocation")).toThrow("another invocation");
