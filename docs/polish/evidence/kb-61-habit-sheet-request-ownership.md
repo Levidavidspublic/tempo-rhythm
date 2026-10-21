@@ -211,3 +211,87 @@ After proof, no executing processes with this fixture worktree as cwd and no uni
 ## Review after the fourth candidate
 
 AT — Hosted CI passed for35b1c32, then CodeRabbit4336980389 verified diagnostic error loss: a final process-group kill error can replace an earlier descendant cleanup error. Three ordinary rounds plus the single owner-authorized extra are consumed. The follow-up remains draft pending AT-15; no fifth source edit is made. This documentation-only clarification addresses4336980354 without changing source, tests, assertions, timeouts or the historical validation records. The ongoing combined checkout still uses the exact35b1c32 source/evidence input named in its manifest.
+
+
+## Overnight authorized error-preservation pass — 2026-10-21
+
+PR open — all 26 existing cases remain, with one added cleanup-error regression. Role: WORKHORSE. The owner's overnight AT-15 authorization permits this scoped pass after the historical hold above. It changes only this test and evidence. Shared prerequisite #1203 is frozen at `2d99c84` on a separate cancellation-proof failure; this consumer remains dependency-blocked.
+
+The unsafe duplicate `Bun.spawn`/`killOwnedGroup` runner is replaced by the shared lifecycle. It streams bounded output, verifies the actual fixture exit separately from the supervisor, and owns cancellation and reaping. Parent directory cleanup stays within the original 480000 ms hook, with its last second reserved for shared and directory cleanup. Browser bundling uses the shared clean-process resolver; exact backend-boundary aliases and the frozen-original proof remain available. The entire original browser-case region, the 21-case parent list/equality assertion, and every existing lifecycle assertion are preserved. The original 480000 ms hook and 30000 ms test deadlines remain.
+
+An additional fresh-child fault injects an error requesting descendant cleanup and a later error terminating the process group. Both operations are attempted and both exact error objects must survive in an AggregateError. Native signaling remains available for real cleanup. The preliminary source `82a4c1f` passed 27 tests, 0 failures and 49 assertions in 34.05 seconds, including this controlled proof. The old conditional descendant-state assertion still permits an absent, fully reaped PID, so runtime assertion totals depend on whether that original branch executes.
+
+Bun 1.3.9. The frozen install stalled in dependency resolution and was stopped with exit 143 after about three minutes; this is UNKNOWN, not a successful install. The lockfile and all workspace manifests were byte-identical to the prepared KB-05 checkout; only ignored dependency directories were copied to allow validation. No manifest, lockfile, package version or configuration changed.
+
+The complete mandatory command sequence ran once in order on `82a4c1f`. It is not represented as validation of a later acceptance-gate correction.
+
+| Check | Result on `82a4c1f` |
+| --- | --- |
+| Frozen install | UNKNOWN, exit 143 after dependency-resolution stall; exact dependency cache provenance above |
+| Lint / typecheck | PASS, exit 0, 5/5 tasks each |
+| Full unit suite | INCOMPLETE, cancelled exit 143: observed 1545 pass lines, 2 fail lines and 3 todos; these are not final suite totals |
+| Four scans/notices | PASS, exit 0 |
+| Exact mandatory E2E under localhost lock | FAIL, exit 1: 27 passed, 1 failed, 89 expected skips, 2.4 minutes; installed Chromium |
+| Build | PASS, exit 0, 1/1 shared-cache task, 830 ms |
+
+The full run received all 21 passing browser results, but the KB-61 authoritative-exit case correctly failed: its outer Python supervisor exited with OS code 120, no own fixture-exit receipt, and no stderr EOF. Successful-looking result records were not accepted as success. The later unchanged KB-66 cached child promise exceeded its first original 240000 ms deadline at 240012.53 ms; no descendants remained under that test runner. The entire run was then cancelled rather than repeatedly waiting on the same pending lifecycle. No original timeout or test was changed. The actual cause of the missing KB-61 receipt is UNKNOWN and no shared-harness workaround is made.
+
+E2E's sole failure was unchanged `task-views-core.spec.ts:44`: navigation to `/tasks/priority` exceeded the existing 30000 ms test timeout and ended with `net::ERR_ABORTED`. This is retained as FAIL, not an infrastructure skip or a KB-61 product attribution.
+
+Full-run final 20 lines:
+
+```text
+
+tests/unit/kb-08.test.tsx:
+(pass) KB-08 isolated: empty projects offer one deliberate start action [4818.90ms]
+(pass) KB-08 isolated: one project renders a named summary with distinct safe destinations [0.01ms]
+(pass) KB-08 isolated: count labels distinguish 0/1, 1/1 and multiple tasks
+(pass) KB-08 isolated: long user names retain auto direction and a wrapping class
+(pass) KB-08 isolated: actions are peers, never nested interactive controls
+(pass) KB-08 isolated: disabled navigation has no href or keyboard target
+(pass) KB-08 isolated: Hebrew count has RTL copy and isolated LTR digits
+(pass) KB-08 isolated: offline state stays a notice and does not create a project
+(pass) KB-08 isolated: filtered state only exposes the supplied reset callback [0.02ms]
+(pass) KB-08 isolated: error and loading states render separately
+(pass) KB-08 isolated: gallery renders the real exported row and owns one h1 and one main
+(pass) KB-08 isolated: English and Hebrew dictionaries have exact key parity
+(pass) KB-08 isolated: hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-width rows
+
+tests/unit/kb-66.test.tsx:
+(fail) load-more view names the currently visible count and preserves LTR numerals [240012.53ms]
+  ^ this test timed out after 240000ms.
+error: script "test" was terminated by signal SIGTERM (Polite quit request)
+```
+
+E2E final 20 lines:
+
+```text
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:200442) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:200657) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  1 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  27 passed (2.4m)
+```
+
+## Final acceptance-gate proof
+
+PASS — final source `4a52c9c` checks the collected cleanup errors before timeout or nonzero-exit diagnostics, so the KB-61 acceptance gate itself cannot replace either original error. The controlled fresh-child proof still verifies both actual cleanup attempts preserve their exact error objects; its parent also exercises the real acceptance function with both errors alongside a timed-out/unknown exit and verifies both object references remain in the AggregateError.
+
+Final `bun test tests/unit/kb-61.test.tsx`: **27 passed, 0 failed, 51 assertions, 88.72 seconds**, exit 0. Scoped TypeScript compilation passed, exit 0. Every original browser case, lifecycle case, assertion and deadline remains. This completes the same authorized error-preservation correction; the broader `82a4c1f` receipts above remain explicitly historical and were not rerun on this final gate ordering. Current-head CI and CodeRabbit verification remain required.
+
+Status: blocked by frozen shared prerequisite #1203, current-head gates, the retained full-run lifecycle failure/incompleteness and local task-view E2E failure. Native Hebrew and real-device checks remain pre-production needs; no product, backend, environment, dependency, configuration or deployment changes were made.
