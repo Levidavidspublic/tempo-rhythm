@@ -290,7 +290,7 @@ Combined results are pending. Exact causes of the intermittent hosted hangs and 
 <!-- KB-FINISH-LIVE-RESULTS -->
 ### Current combined results
 
-AWAY — Snapshot 2026-10-21T14:42:56.286Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+AWAY — Snapshot 2026-10-21T14:54:37.288Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
 
 | Command | Result | Seconds |
 |---|---|---|
@@ -367,4 +367,33 @@ error: script "test" exited with code 1
 
 WALK — KB-07 (f0dae9f) and KB-66 (e7d5b52) were assessed separately from the optional eleven-input combined checkout. Each has green current-head hosted Test, Build, E2E, CI and required guards; addressed actual CodeRabbit review; unchanged scoped blobs; no unmet dependency; and passing isolated and combined ticket fixtures (9 and19 cases respectively). A read-only source audit found neither in the failing fixture product import graphs, and neither introduces parent-process mocks or shared timeout changes. The combined failure remains a failure; absence of import overlap is not proof of its cause. The integration merge queue must run its checks again. All remaining mandatory local commands continue before final handoff; no repository check is removed, relaxed or declared passed on the basis of this assessment.
 
-WALK — KB-10 a4e392d has separately passed its own current-base hosted gates using the existing integration SignUpForm, with unchanged CodeRabbit-reviewed scoped files and no unresolved threads. A read-only independent reviewer found no concrete KB-10 defect: the failed combined fixture also included a separate unmerged KB-45 patch. Ready-triggered checks and the merge queue must still pass. KB-44 and KB-71 appear in failing onboarding/notes product graphs and require their own current-head green gates; KB-71 fresh hosted job119279435491 failed only the unchanged codec bundle deadline (3515 pass,1 fail). A local-only frozen composition of KB-10 fe554ba and new KB-45 9a5c3fd is now testing the changed auth boundary; it is not yet a passing result.
+WALK — KB-10 a4e392d has separately passed its own current-base hosted gates using the existing integration SignUpForm, with unchanged CodeRabbit-reviewed scoped files and no unresolved threads. A read-only independent reviewer found no concrete KB-10 defect: the failed combined fixture also included a separate unmerged KB-45 patch. Its subsequent ready-triggered job119285878110 failed the existing KB-67 60-second hook (3513 pass,1 fail). It was returned to draft and cannot queue; the earlier independent assessment does not waive that newer failure. KB-44 and KB-71 appear in failing onboarding/notes product graphs and require their own current-head green gates; KB-71 fresh hosted job119279435491 failed only the unchanged codec bundle deadline (3515 pass,1 fail). A local-only frozen composition of KB-10 fe554ba and new KB-45 9a5c3fd has completed with failure; the final results follow.
+
+### Completed auth composition
+
+WALK — Frozen local-only `9abb12c` combines KB-10 `fe554ba` with final KB-45 `9a5c3fd`; their code/test blobs match the rebased candidates. `bun test tests/unit/kb-10.test.tsx tests/unit/kb-45.test.tsx` exited 1 after 600.81 seconds: **0 pass / 32 fail** parent reports. KB-10 child reported 18 pass / 2 fail (closed-browser errors near its 300-second bound). KB-45 child reported 10 pass / 2 fail / 1 error; its original browser case hit 240 seconds, then the language-boundary case failed its first page creation before assertions. These remain failures; browser closure/latency cause is UNKNOWN. Sign-up is draft at AT-19 after its extra; no fifth source candidate or unchanged retry was made.
+
+The separate budget audit established an unused authorized extra pass for KB-10. That pass is assigned to diagnose cumulative browser-fixture resources without changing its assertions or deadlines. This is not another KB-45 pass and does not erase either failed command.
+
+```text
+error: boundingBox: Target page, context or browser has been closed
+ log: [],
+
+      at /workspace/work/kb-auth-compat/tests/unit/kb-45.test.tsx:255:35
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+
+ 10 pass
+ 2 fail
+ 1 error
+ 190 expect() calls
+Ran 12 tests across 1 file. [289.25s]
+
+      at verify (/workspace/work/kb-auth-compat/tests/unit/kb-45.test.tsx:36:100)
+(fail) Hebrew page and modal respect fallback and child-owned auth language boundaries [4.22ms]
+
+ 0 pass
+ 32 fail
+Ran 32 tests across 2 files. [600.81s]
+```
