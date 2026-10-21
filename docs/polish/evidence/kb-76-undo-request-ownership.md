@@ -220,3 +220,66 @@ The final mandatory gate outcomes will be recorded below. A new pushed head's re
 Root independently completed final typecheck (5/5); lint passes. Frozen installation remains UNKNOWN after its resolver bound. All 29 focused cases pass. The prior failed hosted and local candidates above remain part of the evidence.
 
 The lead owns the remaining full unit suite, scan confirmation, local E2E and build commands. They are queued separately under the shared resource lock; no passing result is claimed for an unfinished command. This repair may be pushed as a draft for hosted CI, but is not yet eligible for integration. No assertions, check configuration, timeout or skip conditions were weakened. The lead will append actual outcomes and failure tails before the merge gate.
+
+## Overnight v3 authorized completion/expiry correction — 21 October 2026
+
+Draft; broad test run incomplete and required hosted gates pending. The owner authorized the prescribed AT-06 repair under issue #1180 / existing draft #1183. Role: WORKHORSE. Scoped source commit: `1db6752`; shared fixture prerequisite: #1203 at `2d99c84`. All earlier product, screenshot, failure and review evidence remains above.
+
+The remaining [CodeRabbit thread](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183#discussion_r4335705519) describes a real window: A's completion or expiry render commits, then the parent queues B before React flushes passive effects; A's parameterless close can enqueue null after B. The product correction is exactly two lines: completion and expiry use `useLayoutEffect`. Toast-object, mounted-owner and request-token guards, all callers and public APIs, expiry policy and every unrelated export are unchanged.
+
+Two new meaningful cases use React Profiler's commit callback in the existing fixture Harness to enqueue B after A's completion/expiry commit and before passive effects. This is a committed signal, not a sleep or a replacement queued before the completion render. Each case verifies B remains reachable, that A's one close already occurred before replacement was queued, stale completion cannot close B, and B's own successful Undo closes exactly once. All 29 original cases and all 74 original assertion lines are retained in order; every existing timeout/deadline remains unchanged. No existing case or assertion was skipped or weakened.
+
+The fixture now uses the shared isolated builder and bounded runner instead of another bespoke observer, with per-run directories, streamed phases, authoritative exit, independent browser/server cleanup and process-tree reaping. The existing pure `convex/lib/softDelete.ts` import resolves through an explicit fixture alias; no backend file or behavior changed. The existing title/countdown, locale, real ProjectDetail caller and screenshot provenance remain intact. No new screenshot is needed for this effect-timing-only product change.
+
+Before/after proof, Bun 1.3.9 and installed Chromium:
+
+- Setup candidate: 0 pass / 1 setup-hook failure in 1.94 seconds because the shared resolver initially treated `@/convex/lib/softDelete` as a web-local module. No behavioral case ran. The corrected explicit alias points to the same existing root module the original fixture resolves. Log: `/workspace/kb-run-logs/kb76-build-alias-failure.log`.
+- Unchanged product with the new regression and corrected fixture: **29 pass / 2 fail**, 91 reporting assertions, 41.76 seconds. Only the new completion/expiry commit-window cases failed: expected `Change B`, but the toast was absent within the unchanged 5,000 ms assertion bound. Log: `/workspace/kb-run-logs/kb76-before-focused.log`.
+- Exactly the two prescribed product effect changes: **31 pass / 0 fail**, 93 reporting assertions, 38.44 seconds. Real fixture and build exits were 0; browser/server cleanup and supervisor reaping completed. Log: `/workspace/kb-run-logs/kb76-focused.log`.
+
+`bun install --frozen-lockfile` stalled at resolution and reached the unchanged external 120-second bound, exit124: UNKNOWN. Validation used copied dependency directories with byte-identical lockfile and every root/workspace manifest; relative links remain local. No install success is claimed.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Mandatory sequence on `1db6752` / shared `2d99c84`, Bun 1.3.9:
+
+| Command | Actual result |
+|---|---|
+| `bun run lint` | PASS, exit 0; 5/5 tasks. |
+| `bun run typecheck` | PASS, exit 0; 5/5 tasks. |
+| `bun run test` | **INCOMPLETE**, terminated with SIGTERM (exit -15) after 802.88 seconds. Observed 1,571 pass lines / 1 failure / 3 todo before cancellation; these are partial observations, not final suite totals. All 31 KB-76 cases passed in this run. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0; all four checks. |
+| `CI=1 bunx playwright test --reporter=line` | PASS, exit 0; 28 pass / 0 fail / 89 existing configuration-gated skips, 1.4 minutes. Serialized with the shared localhost lock. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0; 1/1 task, 1 minute 21.092 seconds. |
+
+The broad run reached the unchanged integration KB-66 wrapper, whose cached raw child-exit promise never resolved. Its first original 240,000 ms deadline failed at 240,033.49 ms. After that actual failure, the coordinator ended the incomplete run gracefully instead of waiting for the same promise across 19 wrappers. No case, assertion, timeout, deadline or test source was changed. Final broad totals and subsequent tests are UNKNOWN. The separate KB-66 correction is #1204; it was not imported as a product dependency here. Logs and cancellation receipt remain under `/workspace/kb-run-logs/kb76-*`.
+
+Last 20 lines of the failed/incomplete command:
+
+```text
+
+tests/unit/kb-08.test.tsx:
+(pass) KB-08 isolated: empty projects offer one deliberate start action [9827.15ms]
+(pass) KB-08 isolated: one project renders a named summary with distinct safe destinations [0.02ms]
+(pass) KB-08 isolated: count labels distinguish 0/1, 1/1 and multiple tasks
+(pass) KB-08 isolated: long user names retain auto direction and a wrapping class
+(pass) KB-08 isolated: actions are peers, never nested interactive controls
+(pass) KB-08 isolated: disabled navigation has no href or keyboard target
+(pass) KB-08 isolated: Hebrew count has RTL copy and isolated LTR digits
+(pass) KB-08 isolated: offline state stays a notice and does not create a project
+(pass) KB-08 isolated: filtered state only exposes the supplied reset callback
+(pass) KB-08 isolated: error and loading states render separately
+(pass) KB-08 isolated: gallery renders the real exported row and owns one h1 and one main
+(pass) KB-08 isolated: English and Hebrew dictionaries have exact key parity
+(pass) KB-08 isolated: hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-width rows
+
+tests/unit/kb-66.test.tsx:
+(fail) load-more view names the currently visible count and preserves LTR numerals [240033.49ms]
+  ^ this test timed out after 240000ms.
+error: script "test" was terminated by signal SIGTERM (Polite quit request)
+```
+
+ Shared #1203 remains held after a separately observed cleanup race in another fixture proof; this local pass cannot clear that prerequisite. Current hosted gates and CodeRabbit coverage remain required. Hebrew native review, physical-device accessibility and live backend writes retain their prior limits.
