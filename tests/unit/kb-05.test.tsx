@@ -186,3 +186,106 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
     }
   }
 }, 240_000);
+
+
+type CreateFixtureWindow = Window & {
+  __kb05Create: { calls: { title: string }[]; finishCreate(): void };
+};
+
+test("production GoalsScreen focuses the newly created goal after the query includes it", async () => {
+  const fixtureDirectory = await mkdtemp(join(tmpdir(), "tempo-kb05-create-"));
+  let fixtureServer: ReturnType<typeof Bun.serve> | undefined;
+  let fixtureBrowser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
+  try {
+    const reactPath = join(repo, "apps/web/node_modules/react");
+    const shim = join(fixtureDirectory, "convex-react.ts");
+    // Stub only the backend boundary. GoalsScreen, its shared controls, locale provider,
+    // mutation handler, rendered GoalCard, and focus effect remain the production code.
+    await writeFile(shim, `
+      import { getFunctionName } from "${join(repo, "node_modules/convex/server")}";
+      const fixture = window.__kb05Create = {
+        goals: [{ _id: "goals_existing", _creationTime: 1, title: "Read with Maya", status: "completed", progressPercent: 100 }],
+        calls: [], resolveCreate: null,
+        finishCreate() {
+          const title = this.calls[0].title;
+          this.goals = [{ _id: "goals_new", _creationTime: 2, title, status: "active", progressPercent: 0 }, ...this.goals];
+          this.resolveCreate("goals_new");
+        },
+      };
+      export const useConvexAuth = () => ({ isAuthenticated: true, isLoading: false });
+      export function useQuery(reference, args) {
+        if (args === "skip") return undefined;
+        const name = getFunctionName(reference);
+        if (name === "users:getProfile") return { _id: "users_fictional", greetingName: "Maya" };
+        if (name === "goals:list") return fixture.goals;
+        throw new Error("Unexpected query: " + name);
+      }
+      export function useMutation(reference) {
+        const name = getFunctionName(reference);
+        if (name === "goals:create") return (args) => {
+          fixture.calls.push(args);
+          return new Promise((resolve) => { fixture.resolveCreate = resolve; });
+        };
+        if (name === "goals:remove") return async () => ({ success: true });
+        throw new Error("Unexpected mutation: " + name);
+      }
+    `);
+    const entry = join(fixtureDirectory, "entry.tsx");
+    await writeFile(entry, `
+      import React from "${reactPath}";
+      import { createRoot } from "${join(repo, "apps/web/node_modules/react-dom/client")}";
+      import { GoalsScreen } from "${join(repo, "apps/web/components/goals/GoalsScreen.tsx")}";
+      import { LocaleProvider } from "${join(repo, "apps/web/components/providers/LocaleProvider.tsx")}";
+      createRoot(document.getElementById("root")).render(<LocaleProvider><GoalsScreen /></LocaleProvider>);
+    `);
+    const result = await Bun.build({
+      entrypoints: [entry], target: "browser", outdir: fixtureDirectory,
+      plugins: [{ name: "kb05-backend-boundary", setup(build) {
+        build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: shim }));
+      } }],
+    });
+    expect(result.success).toBe(true);
+    const assets = new Map<string, Uint8Array>();
+    for (const output of result.outputs) assets.set(`/${output.path.split("/").at(-1)}`, new Uint8Array(await output.arrayBuffer()));
+    const script = [...assets.keys()].find((name) => name.endsWith(".js"));
+    expect(script).toBeDefined();
+    fixtureServer = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
+      const path = new URL(request.url).pathname;
+      if (path === "/") return new Response(`<!doctype html><html><body><div id="root"></div><script>window.process={env:{NODE_ENV:"production"}};</script><script src="${script}"></script></body></html>`, { headers: { "content-type": "text/html" } });
+      const asset = assets.get(path);
+      return asset ? new Response(asset, { headers: { "content-type": "text/javascript" } }) : new Response("missing", { status: 404 });
+    } });
+    const browserPath = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(existsSync);
+    if (!browserPath) throw new Error("KB-05 production fixture needs Playwright Chromium or an installed chromium/google-chrome binary");
+    fixtureBrowser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--no-sandbox"] });
+    for (const lang of ["en", "he"] as const) {
+      const page = await fixtureBrowser.newPage();
+      await page.goto(`http://127.0.0.1:${fixtureServer.port}/?lang=${lang}&status=done`);
+      await page.waitForFunction((language) => document.documentElement.lang === language, lang);
+      const copy = lang === "he" ? "לקרוא יותר ספרים" : "Read more books";
+      await page.locator("#gl-new").click();
+      const input = page.locator("#gl-name");
+      await input.fill(`  ${copy}  `);
+      await input.press("Enter");
+      await page.waitForFunction(() => (window as CreateFixtureWindow).__kb05Create.calls.length === 1);
+      expect(await page.locator("form button[type=submit]").isDisabled()).toBe(true);
+      expect(await page.locator("#goal-goals_new-link").count()).toBe(0);
+      expect(await page.evaluate(() => (window as CreateFixtureWindow).__kb05Create.calls)).toEqual([{ title: copy }]);
+      // The query result must contain the new row before the mutation resolves.
+      await page.evaluate(() => (window as CreateFixtureWindow).__kb05Create.finishCreate());
+      await page.waitForFunction(() => document.activeElement?.id === "goal-goals_new-link");
+      const createdLink = page.locator("#goal-goals_new-link");
+      expect(await createdLink.textContent()).toBe(copy);
+      expect(await createdLink.getAttribute("href")).toBe("/goals/goals_new");
+      expect(await createdLink.evaluate((node) => node === document.activeElement)).toBe(true);
+      expect(await input.count()).toBe(0);
+      expect(new URL(page.url()).searchParams.has("status")).toBe(false);
+      expect(await page.evaluate(() => (window as CreateFixtureWindow).__kb05Create.calls.length)).toBe(1);
+      await page.close();
+    }
+  } finally {
+    await fixtureBrowser?.close();
+    fixtureServer?.stop(true);
+    await rm(fixtureDirectory, { recursive: true, force: true });
+  }
+}, 30_000);
