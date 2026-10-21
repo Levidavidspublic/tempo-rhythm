@@ -337,7 +337,7 @@ export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () =
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const owner = ownerRef.current;
     if (left <= 0 && owner?.mounted && owner.toast === toast) {
       owner.mounted = false;
@@ -345,7 +345,7 @@ export function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () =
       onClose();
     }
   }, [left, onClose, toast]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const owner = ownerRef.current;
     if (
       feedback.toast !== toast ||

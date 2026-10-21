@@ -1,6 +1,9 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+
+import { fixtureCleanup, fixturePhase, requireFixtureSuccess, runIsolatedFixture } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
 
 const repo = resolve(import.meta.dir, "../..");
 const childMode = process.env.KB76_FIXTURE_CHILD === "1";
@@ -17,6 +20,8 @@ const names = baseline
       "resolution after replacement keeps the new toast",
       "a queued replacement survives success in the same browser task",
       "a queued same-id replacement survives success in the same browser task",
+      "completion commit closes A before a replacement queued ahead of passive effects",
+      "expiry commit closes A before a replacement queued ahead of passive effects",
       "rejection after replacement leaves the new toast clean",
       "dismissal then replacement ignores the old resolution",
       "expiry during a pending request cannot close a later toast",
@@ -67,7 +72,7 @@ export function useMutation(ref){const run=async args=>{state.calls.push({ref,ar
 `;
 const api = `export const api={users:{getProfile:"users.getProfile"},tasks:{list:"tasks.list",create:"tasks.create",remove:"tasks.remove",update:"tasks.update",renameProject:"tasks.renameProject",toggleCompletion:"tasks.toggleCompletion"}};`;
 const entry = (phase: "before" | "current") => `
-import React,{StrictMode,useEffect,useState} from "react";import{createRoot}from"react-dom/client";
+import React,{Profiler,StrictMode,useEffect,useState} from "react";import{createRoot}from"react-dom/client";
 import{LocaleProvider}from"@/components/providers/LocaleProvider";
 import{TpIconSprite}from"@/components/tempo/TpIcon";
 import{ProjectDetailScreen}from"@/components/projects/ProjectDetailScreen";
@@ -78,7 +83,8 @@ function create(label,options={}){return{id:options.sameId?7:nextId++,title:opti
  undoUntilMs:Date.now()+(options.deadline??300000),onUndo:options.noUndo?undefined:(...args)=>control.invoke(label,args)}}
 function Harness(){const[toast,setToast]=useState(()=>create("A",{sameId:params.has("sameId"),noUndo:params.has("noUndo"),deadline:params.has("deadline")?0:300000}));
  useEffect(()=>{Object.assign(control,{replace(label,options={}){setToast(create(label,options))},dismiss(){setToast(null)},ready:true})},[]);
- return <main><h1>Shared Undo fixture</h1><button id="reader-action">Reader action</button>{toast?<Shared.UndoToast key={toast.id} toast={toast} onClose={()=>{control.state.closeCalls++;setToast(null)}}/>:null}</main>}
+ function afterCommit(){const replace=control.replaceOnCommit;if(!replace)return;control.replaceOnCommit=null;control.commitWindow={closeCalls:control.state.closeCalls,title:document.querySelector('[data-component="UndoToast"]')?.textContent};setToast(create("B"))}
+ return <main><h1>Shared Undo fixture</h1><button id="reader-action">Reader action</button>{toast?<Profiler id="undo-commit" onRender={afterCommit}><Shared.UndoToast key={toast.id} toast={toast} onClose={()=>{control.state.closeCalls++;setToast(null)}}/></Profiler>:null}</main>}
 function Screen(){useEffect(()=>{control.ready=true},[]);return <main className="tp-page tp-page--narrow"><ProjectDetailScreen projectSlug="maya-project"/></main>}
 const mode=params.get("mode"),content=mode==="screen"?<Screen/>:mode==="gallery"?${phase === "current" && !baseline ? "<Shared.Kb76Gallery/>" : "<Harness/>"}:<Harness/>;
 createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><TpIconSprite/>{content}</LocaleProvider></StrictMode>);
@@ -90,7 +96,7 @@ async function runFixture(): Promise<Results> {
   const require = createRequire(join(web, "package.json"));
   const postcss = require("postcss");
   const tailwind = require("@tailwindcss/postcss");
-  const dir = join(repo, "work/kb76-fixture");
+  const dir = join(dirname(process.env.KB76_RESULTS!), "fixture");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "backend.ts"), backend);
   writeFileSync(join(dir, "api.ts"), api);
@@ -104,52 +110,35 @@ async function runFixture(): Promise<Results> {
   const build = async (phase: "before" | "current") => {
     const source = join(dir, `${phase}.tsx`);
     writeFileSync(source, entry(phase));
-    const output = await Bun.build({
-      entrypoints: [source],
-      outdir: dir,
-      target: "browser",
+    const link = join(dir, "link.tsx");
+    writeFileSync(link, 'import React from "react";export default function Link({children,href,...rest}){return <a href={href} {...rest}>{children}</a>}');
+    const outdir = join(dir, `${phase}-bundle`);
+    await isolatedBrowserBuild({
+      cwd: repo, resolveFrom: web, entrypoints: [source], outdir,
       define: { "process.env.NODE_ENV": '"development"' },
-      plugins: [
-        {
-          name: "kb76-fictional-boundaries",
-          setup(b) {
-            b.onResolve(
-              { filter: /^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/ },
-              ({ path }) => ({ path: Bun.resolveSync(path, web) })
-            );
-            b.onResolve({ filter: /^convex\/react$/ }, () => ({ path: join(dir, "backend.ts") }));
-            b.onResolve({ filter: /^next\/link$/ }, () => ({ path: "link", namespace: "kb76" }));
-            b.onLoad({ filter: /.*/, namespace: "kb76" }, () => ({
-              contents:
-                'import React from "react";export default function Link({children,href,...rest}){return <a href={href} {...rest}>{children}</a>}',
-              loader: "tsx",
-              resolveDir: web,
-            }));
-            b.onResolve({ filter: /^@\/convex\/_generated\/api$/ }, () => ({
-              path: join(dir, "api.ts"),
-            }));
-            b.onResolve({ filter: /^@\/components\/goals\/shared$/ }, () => ({
-              path: phase === "before" ? frozen : join(web, "components/goals/shared.tsx"),
-            }));
-            b.onResolve({ filter: /^@\// }, ({ path }) => ({ path: Bun.resolveSync(path, web) }));
-          },
-        },
-      ],
+      aliases: {
+        "convex/react": join(dir, "backend.ts"), "next/link": link,
+        "@/convex/_generated/api": join(dir, "api.ts"),
+        "@/convex/lib/softDelete": join(repo, "convex/lib/softDelete.ts"),
+        "@/components/goals/shared": phase === "before" ? frozen : join(web, "components/goals/shared.tsx"),
+      },
+      timeoutMs: 100_000, cleanupMs: 1_000,
     });
-    if (!output.success) throw Error(output.logs.map(String).join("\n"));
+    const outputs = readdirSync(outdir);
     return {
-      js: await output.outputs.find((item) => item.path.endsWith(".js"))!.text(),
-      css: (
-        await Promise.all(
-          output.outputs.filter((item) => item.path.endsWith(".css")).map((item) => item.text())
-        )
-      ).join("\n"),
+      js: readFileSync(join(outdir, outputs.find((name) => name.endsWith(".js"))!), "utf8"),
+      css: outputs.filter((name) => name.endsWith(".css")).map((name) => readFileSync(join(outdir, name), "utf8")).join("\n"),
     };
   };
   const current = await build("current");
   const before = existsSync(frozen) ? await build("before") : current;
   if (process.env.KB76_BUNDLE_ONLY === "1")
     return { bundle: { pass: Boolean(current.js && before.js && baseCss) } };
+  let fixtureBrowser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
+  const release = fixtureCleanup({
+    browser: () => fixtureBrowser?.close(),
+    server: () => server.stop(true),
+  }, 1_000);
   const server = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
@@ -171,6 +160,7 @@ async function runFixture(): Promise<Results> {
       );
     },
   });
+  try {
   const executablePath = [
     chromium.executablePath(),
     "/usr/bin/chromium",
@@ -179,6 +169,7 @@ async function runFixture(): Promise<Results> {
   ].find(existsSync);
   if (!executablePath) throw Error("KB76 requires an installed Chromium browser");
   const browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
+  fixtureBrowser = browser;
   const results: Results = {};
   const errors: string[] = [];
   const open = async (
@@ -230,6 +221,7 @@ async function runFixture(): Promise<Results> {
   const check = async (name: string, fn: () => Promise<void>) => {
     if (!names.includes(name)) return;
     try {
+      fixturePhase(`KB-76 case: ${name}`);
       await fn();
       results[name] = { pass: true };
     } catch (error) {
@@ -373,6 +365,28 @@ async function runFixture(): Promise<Results> {
           await p.close();
         }
       );
+    }
+    for (const trigger of ["completion", "expiry"] as const) {
+      await check(`${trigger} commit closes A before a replacement queued ahead of passive effects`, async () => {
+        const p = await open();
+        await undo(p).click();
+        await pw(undo(p)).toBeDisabled();
+        // Profiler's commit callback follows child layout effects and precedes
+        // passive effects. Queue B here, not before A's completion/expiry commit.
+        await control(p, `c.replaceOnCommit=true;${trigger === "completion" ? 'c.settle("A",true)' : "c.advance(300000)"}`);
+        await pw.poll(() => control(p, "return c.commitWindow !== undefined")).toBe(true);
+        await pw(toast(p)).toContainText("Change B");
+        await pw(undo(p)).toBeEnabled();
+        pw(await control(p, "return c.commitWindow.closeCalls")).toBe(1);
+        pw(await control(p, "return c.state.closeCalls")).toBe(1);
+        if (trigger === "expiry") await settle(p);
+        await pw(toast(p)).toContainText("Change B");
+        await undo(p).click();
+        await settle(p, "B");
+        await pw(toast(p)).toHaveCount(0);
+        pw(await control(p, "return c.state.closeCalls")).toBe(2);
+        await p.close();
+      });
     }
     await check("dismissal then replacement ignores the old resolution", async () => {
       const p = await open();
@@ -629,8 +643,11 @@ async function runFixture(): Promise<Results> {
       results[names[0]] = { pass: false, detail: "Browser errors: " + errors.join(" | ") };
     return results;
   } finally {
-    await browser.close();
-    server.stop(true);
+    fixturePhase("KB-76 browser cases complete");
+  }
+  } finally {
+    await release();
+    fixturePhase("KB-76 cleanup complete");
   }
 }
 
@@ -643,19 +660,19 @@ if (childMode) {
   beforeAll(async () => {
     const dir = join(repo, "work");
     mkdirSync(dir, { recursive: true });
-    const output = join(dir, "kb76-results.json");
-    const child = Bun.spawn([process.execPath, import.meta.path], {
-      cwd: repo,
-      env: { ...process.env, KB76_FIXTURE_CHILD: "1", KB76_RESULTS: output },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const stdout = new Response(child.stdout).text();
-    const stderr = new Response(child.stderr).text();
-    const exit = await child.exited;
-    const logs = await Promise.all([stdout, stderr]);
-    if (exit !== 0) throw Error(`KB76 browser child exit ${exit}:\n${logs.join("\n")}`);
-    results = JSON.parse(readFileSync(output, "utf8"));
+    const directory = mkdtempSync(join(dir, "kb76-run-"));
+    const output = join(directory, "results.json");
+    try {
+      const child = await runIsolatedFixture({
+        command: [process.execPath, import.meta.path], cwd: repo,
+        env: { ...process.env, KB76_FIXTURE_CHILD: "1", KB76_RESULTS: output },
+        timeoutMs: 350_000, cleanupMs: 2_000,
+      });
+      requireFixtureSuccess(child);
+      results = JSON.parse(readFileSync(output, "utf8"));
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
     for (const [name, result] of Object.entries(results))
       if (!result.pass) console.error(name, result.detail);
   }, 360_000);
