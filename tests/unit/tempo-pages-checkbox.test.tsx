@@ -211,9 +211,10 @@ describe.serial("editable page checkboxes", () => {
 		expect(await text()).toBe("- [x] Read one page");
 		await browserExpect(p.getByRole("checkbox")).toBeChecked();
 		await p.locator(".cm-content").focus();
-		await p.keyboard.press("Control+z");
+		const isMac = await p.evaluate(() => /Mac/.test(navigator.platform));
+		await p.keyboard.press(isMac ? "Meta+z" : "Control+z");
 		expect(await text()).toBe("- [ ] Read one page");
-		await p.keyboard.press("Control+Shift+z");
+		await p.keyboard.press(isMac ? "Meta+Shift+z" : "Control+y");
 		expect(await text()).toBe("- [x] Read one page");
 	}, 15_000);
 

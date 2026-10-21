@@ -20,7 +20,7 @@ Real mounts remain `DailyPage → NotePage → PageEditorView → LivePreviewEdi
 | Scoped product lint | Passed |
 | Scoped test TypeScript compilation | Passed |
 | New mounted browser tests | 8 pass / 0 fail; 39 assertions; 56.19 seconds; authoritative exit 0 |
-| Mandatory broad gates | Pending lead's serialized checks |
+| Mandatory broad gates | Source-specific results are recorded below; current-head merge gates remain with the lead |
 | Preview behavior | UNKNOWN; no preview deployment or real account was exercised |
 
 The first before-image capture hit its unchanged 60-second matrix deadline after seven images. Bun reported 0 pass / 1 fail / 1 error, with seven other cases filtered out. That was a screenshot-fixture run before the product fix, not a passing regression run. The failing operation was a screenshot after its browser was closed by the deadline. Fixture setup now reuses its page and inserts the screenshot text in one input operation; the actual typing regression still types the exact prefix. The deadline is unchanged. The offline stylesheet loader also now removes the complete one-line font import, including URL semicolons.
@@ -68,3 +68,86 @@ After images at both widths were also captured in dark mode. The before run capt
 KA-08/#1101 and older drafts #1081/#1053 also touch `live-preview.ts`. They were not changed. Their future merges need reconciliation with this narrow fix. No Lane 1 files, #1193 or #1198 were edited. The test builds browser code through a bounded fresh Bun CLI process, avoiding inherited process-global mocks; it has no dependency on the unmerged shared harness.
 
 AT — Hebrew fixture labels need native review before production. No production release is authorized.
+
+## Review correction and source-specific broad results
+
+WALK — CodeRabbit identified that the Undo test used a Control shortcut on every platform. The installed CodeMirror history keymap binds Undo to Mod-z; Redo is Mod-y, overridden by Mod-Shift-z on macOS. Its extra Ctrl-Shift-z binding is Linux-only. The test now reads the actual browser platform and uses Meta+z / Meta+Shift+z on Mac, Control+z / Control+y elsewhere. All eight cases, assertions and deadlines are retained; product source is unchanged. Mac and Windows execution remain UNKNOWN: this environment verified Linux only.
+
+Integration commit `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac` was merged normally as `1c40f6e11e6f54e7b93ed6f2f67f350679e730a8`; it changes the KB-70 test and its evidence. With the shortcut correction applied, focused browser validation passed **8 / 0**, 39 assertions, authoritative exit 0 in 87.87 seconds. The screenshot matrix passed within its unchanged 60-second deadline. The owned Bun/server/browser exited before the next browser slot was released. Lint passed 5/5; scoped test TypeScript compilation and whitespace checks passed. Full current-head validation and hosted CI/review remain with the lead.
+
+The following broader results are explicitly for earlier product head `f23f324`, before that integration merge and test correction. They are not a passing current-head gate.
+
+| Command | Result on f23f324 |
+|---|---|
+| Bun version | 1.3.9 |
+| Frozen install, initial observation | UNKNOWN: execution bound reached at120s, exit124 during resolution |
+| Frozen install, longer observation | Exit1 after314s: NoSpaceLeft creating node-gyp tempdir; retained as infrastructure failure |
+| Frozen install, after capacity recovery | Exit0 in324.06s;1033 installs/1079 packages checked, no changes; lockfiles unchanged |
+| Lint | Exit0,5/5; existing warnings |
+| Typecheck | Exit0,5/5 |
+| Full test, first run | UNKNOWN: environment restart interrupted the process before a terminal receipt |
+| Full test, recovery run | Exit1;3464pass/37fail/3todo/1error;81388assertions,212files,1426.08s. Failures in unchanged KB-74,KB-64,KB-66; all8checkbox cases passed |
+| Four scans/notices | Exit0 for forbidden-tech,ram-only-audit,design-tokens,check:notices |
+| Exact local Playwright | Exit1;25pass/3fail/89existing credential-gated skips,4.3minutes |
+| Placeholder build | Authoritative exit0;1/1build job successful. Bun/Turbo's later real exit was observed before crediting success |
+
+No earlier failure was removed or retried unchanged. The first install timeout, later disk error and interrupted suite remain in the lead's command ledger. Capacity recovery justified the final install observation, which completed without dependency or lockfile changes. The full test and E2E failures remain blockers until the lead's required gates pass; fixture success is not preview proof.
+
+Full-suite failure tail:
+
+```text
+(fail) no entries retain the mounted empty view and no paging control [0.10ms]
+(fail) exactly 20 items show a current-snapshot end without a button [0.11ms]
+(fail) 21 items focus the new row after final-button removal [0.03ms]
+(fail) 30 exactly completes in one chunk and keeps the new row in view [0.06ms]
+(fail) 31 items require two chunks and focus rows 21 then 31 [0.03ms]
+(fail) focus moved elsewhere during a load remains there [0.17ms]
+(fail) Hebrew direction, time and counts remain readable [0.40ms]
+(fail) StrictMode announces each loaded count once and transfers focus once [0.05ms]
+(fail) reactive insertion alone does not steal focus and next chunk uses its stable boundary [0.03ms]
+(fail) pending load keeps its older boundary when the anchor disappears beside a new top row [0.22ms]
+(fail) gallery controls and retry callback remain operable [2.06ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [1.19ms]
+
+ 3464 pass
+ 3 todo
+ 37 fail
+ 1 error
+ 81388 expect() calls
+Ran 3504 tests across 212 files. [1426.08s]
+error: script "test" exited with code 1
+```
+
+Playwright failure tail:
+
+```text
+(node:179578) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:179838) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:179886) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  3 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  89 skipped
+  25 passed (4.3m)
+```
+
+Failed install tail:
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+Resolved, downloaded and extracted [36]
+error: NoSpaceLeft creating node-gyp tempdir
+```
