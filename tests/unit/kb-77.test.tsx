@@ -1,7 +1,8 @@
 import * as Bun from "bun";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import type { Browser, Page } from "@playwright/test";
 
 const repo = resolve(import.meta.dir, "../..");
 const childMode = process.env.KB77_FIXTURE_CHILD === "1";
@@ -31,6 +32,134 @@ const names = beforeOnly
       "browser identity content and console stay healthy",
     ];
 type Results = Record<string, { pass: boolean; detail?: string }>;
+const beforeAllDeadline = 480_000;
+const token = process.env.KB77_FIXTURE_TOKEN ?? crypto.randomUUID();
+const cleanup = { server: false, browser: false, complete: false };
+const phaseStart = performance.now();
+let serverUrl: string | undefined;
+let descendantPid: number | undefined;
+function trace(name: string) {
+  console.error(`[KB77 ${Math.round(performance.now() - phaseStart)}ms] ${name}`);
+}
+function checkedDirectory(path: string): string {
+  const directory = resolve(path);
+  if (dirname(directory) !== join(repo, "work") || !basename(directory).startsWith("kb77-run-"))
+    throw Error("KB77 refusing an unowned fixture directory");
+  return directory;
+}
+async function releaseAll(...releases: (() => unknown)[]): Promise<void> {
+  const settled = await Promise.allSettled(releases.map((release) => Promise.resolve().then(release)));
+  const errors = settled.flatMap((entry) => entry.status === "rejected" ? [entry.reason] : []);
+  if (errors.length) throw new AggregateError(errors, "KB77 fixture cleanup failed");
+}
+function attemptAll(...releases: (() => void)[]): void {
+  const errors: unknown[] = [];
+  for (const release of releases) {
+    try { release(); } catch (error) { errors.push(error); }
+  }
+  if (errors.length) throw new AggregateError(errors, "KB77 owned process cleanup failed");
+}
+async function releaseOwned(server: ReturnType<typeof Bun.serve> | undefined, browser: Pick<Browser, "close"> | undefined) {
+  await releaseAll(
+    async () => { trace("server-stop:start"); await server?.stop(true); cleanup.server = true; trace("server-stop:done"); },
+    async () => { trace("browser-close:start"); await browser?.close(); cleanup.browser = true; trace("browser-close:done"); }
+  );
+  cleanup.complete = true;
+}
+type Payload = { token: string; results: Results; cleanup: typeof cleanup; serverUrl?: string; descendantPid?: number };
+type ChildRun = { code: number; out: string; err: string; timedOut: boolean; directory: string; pid: number };
+function writeResults(results: Results) {
+  writeFileSync(process.env.KB77_RESULTS!, JSON.stringify({ token, results, cleanup, serverUrl, descendantPid }));
+  trace("results:written");
+}
+function requireSuccessfulExit(run: ChildRun, payload?: Payload) {
+  if (run.timedOut) throw Error(`KB77 child exceeded its lifecycle budget:\n${run.err.slice(-6000)}`);
+  if (run.code !== 0) throw Error(`KB77 browser child exit ${run.code}:\n${run.err.slice(-6000)}`);
+  if (!payload) throw Error(`KB77 child did not return valid invocation results:\n${run.err.slice(-6000)}`);
+  if (!payload.cleanup.complete) throw Error("KB77 child did not complete cleanup");
+}
+async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{ run: ChildRun; payload?: Payload; error?: unknown }> {
+  mkdirSync(join(repo, "work"), { recursive: true });
+  const directory = checkedDirectory(mkdtempSync(join(repo, "work/kb77-run-")));
+  const output = join(directory, "results.json");
+  const runToken = crypto.randomUUID();
+  let child: ReturnType<typeof Bun.spawn> | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
+  const killOwnedTree = () => {
+    const ownedChild = child;
+    if (!ownedChild) return;
+    attemptAll(() => {
+      // Chromium can own a separate process group; include the live child's descendant tree.
+      if (process.platform !== "win32" && ownedChild.exitCode === null) {
+        const snapshot = Bun.spawnSync(["ps", "-e", "-o", "pid=,ppid="]);
+        if (snapshot.exitCode !== 0) throw Error("KB77 could not inspect its child process tree");
+        const rows = snapshot.stdout.toString().trim().split("\n").map((line) => line.trim().split(/\s+/).map(Number));
+        const owned = new Set([ownedChild.pid]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const [pid, parent] of rows) if (owned.has(parent) && !owned.has(pid)) { owned.add(pid); changed = true; }
+        }
+        attemptAll(...[...owned].reverse().filter((pid) => pid !== ownedChild.pid).map((pid) => () => {
+          try { process.kill(pid, "SIGKILL"); }
+          catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
+        }));
+      }
+    }, () => {
+      try {
+        if (process.platform === "win32") ownedChild.kill("SIGKILL");
+        else process.kill(-ownedChild.pid, "SIGKILL");
+      } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
+    });
+  };
+  try {
+    trace("parent:spawn:start");
+    child = Bun.spawn([process.execPath, import.meta.path], {
+      cwd: repo,
+      env: { ...process.env, KB77_FIXTURE_CHILD: "1", KB77_FIXTURE_TOKEN: runToken, KB77_RESULTS: output, KB77_FIXTURE_PROBE: probe ?? "" },
+      stdout: "pipe", stderr: "pipe", detached: process.platform !== "win32",
+    });
+    trace(`parent:spawn:done pid=${child.pid}`);
+    // The original 480s hook includes cancellation, reaping and directory cleanup.
+    timer = setTimeout(() => {
+      timedOut = true;
+      trace(`parent:cancel pid=${child!.pid}`);
+      try { killOwnedTree(); } catch (error) { trace("parent:cancel:error"); console.error(error); }
+    }, Math.max(1, deadline - 1_000));
+    const stream = async (pipe: ReadableStream<Uint8Array>, name: string) => {
+      const decoder = new TextDecoder();
+      let text = "";
+      for await (const chunk of pipe) {
+        const part = decoder.decode(chunk, { stream: true });
+        text += part;
+        process.stderr.write(part);
+      }
+      const tail = decoder.decode(); text += tail; if (tail) process.stderr.write(tail);
+      trace(`parent:${name}:eof`);
+      return text;
+    };
+    const [out, err, code] = await Promise.all([
+      stream(child.stdout as ReadableStream<Uint8Array>, "stdout"),
+      stream(child.stderr as ReadableStream<Uint8Array>, "stderr"),
+      child.exited.then((code) => { trace(`parent:child-exit ${code}`); return code; }),
+    ]);
+    const run = { code, out, err, timedOut, directory, pid: child.pid };
+    try {
+      trace("parent:results:parse");
+      const payload = JSON.parse(readFileSync(output, "utf8")) as Payload;
+      if (payload.token !== runToken) throw Error("KB77 child results belong to another invocation");
+      return { run, payload };
+    } catch (error) { return { run, error }; }
+  } finally {
+    clearTimeout(timer);
+    await releaseAll(
+      () => { trace("parent:kill:start"); killOwnedTree(); trace("parent:kill:done"); },
+      async () => { trace("parent:reap:start"); if (child) await child.exited; trace("parent:reap:done"); },
+      () => { trace("parent:directory-remove:start"); rmSync(directory, { recursive: true, force: true }); trace("parent:directory-remove:done"); }
+    );
+  }
+}
 const boundary = `
 export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});
 export function useQuery(ref,args){if(args==="skip")return undefined;switch(ref){
@@ -62,25 +191,33 @@ function Native(){const[value,setValue]=useState("Maya"),ref=useRef(null);useEff
 const mode=params.get("mode");createRoot(document.getElementById("app")).render(mode==="today"?<Today/>:mode==="plan"?<Plan/>:mode==="gallery"?${phase === "current" && !beforeOnly ? "<Inputs.Kb77Gallery lang={lang}/>" : "<Native/>"}:<Native/>);
 `;
 
-async function runFixture(): Promise<Results> {
+async function runFixture(results: Results): Promise<Results> {
+  let fixtureServer: ReturnType<typeof Bun.serve> | undefined;
+  let fixtureBrowser: Browser | undefined;
+  try {
+  trace("dependencies:start");
   const { chromium, expect: pw } = await import("@playwright/test");
   const web = join(repo, "apps/web"),
     require = createRequire(join(web, "package.json"));
   const postcss = require("postcss"),
     tailwind = require("@tailwindcss/postcss");
-  const dir = join(dirname(process.env.KB77_RESULTS!), "fixture");
+  trace("dependencies:done");
+  const dir = join(checkedDirectory(dirname(process.env.KB77_RESULTS!)), "fixture");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "boundary.ts"), boundary);
   writeFileSync(join(dir, "api.ts"), api);
   const globals = join(web, "app/globals.css");
+  trace("css:start");
   const baseCss = (
     await postcss([tailwind({ base: repo })]).process(readFileSync(globals, "utf8"), {
       from: globals,
     })
   ).css;
+  trace("css:done");
   const build = async (phase: string) => {
     const source = join(dir, phase + ".tsx");
     writeFileSync(source, entry(phase));
+    console.error(`[KB77 ${Math.round(performance.now() - phaseStart)}ms] build:${phase}:start`);
     const output = await Bun.build({
       entrypoints: [source],
       outdir: dir,
@@ -125,7 +262,8 @@ async function runFixture(): Promise<Results> {
       ],
     });
     if (!output.success) throw Error(output.logs.map(String).join("\n"));
-    return {
+    trace(`build:${phase}:compiled`);
+    const assets = {
       js: await output.outputs.find((x) => x.path.endsWith(".js"))!.text(),
       css: (
         await Promise.all(
@@ -133,6 +271,8 @@ async function runFixture(): Promise<Results> {
         )
       ).join("\n"),
     };
+    trace(`build:${phase}:done`);
+    return assets;
   };
   const original = await build("before"),
     current = beforeOnly ? original : await build("current");
@@ -159,24 +299,24 @@ async function runFixture(): Promise<Results> {
       );
     },
   });
-  let browser: Awaited<ReturnType<typeof chromium.launch>>;
-  try {
+  fixtureServer = server;
+  serverUrl = server.url.href;
+  trace(`server:ready ${serverUrl}`);
     const executablePath = [
       chromium.executablePath(),
       "/usr/bin/chromium",
       "/usr/bin/google-chrome",
     ].find(existsSync);
     if (!executablePath) throw Error("Installed Chromium unavailable");
-    browser = await chromium.launch({
+    trace(`browser-launch:start ${executablePath}`);
+    const browser = await chromium.launch({
       executablePath,
       args: ["--no-sandbox"],
     });
-  } catch (error) {
-    await server.stop(true);
-    throw error;
-  }
-  const results: Results = {},
-    errors: string[] = [];
+  fixtureBrowser = browser;
+  trace("browser-launch:done");
+  const pages = new Set<Page>();
+  const errors: string[] = [];
   const open = async (
     mode: string,
     phase = "current",
@@ -184,10 +324,14 @@ async function runFixture(): Promise<Results> {
     lang = "en",
     theme = "light"
   ) => {
+    trace(`page:open ${mode}/${phase}/${width}/${lang}/${theme}`);
     const page = await browser.newPage({
       viewport: { width, height: 1100 },
       reducedMotion: "reduce",
     });
+    trace(`page:created ${mode}/${phase}`);
+    pages.add(page);
+    page.on("close", () => pages.delete(page));
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (m) => {
       if (m.type() === "error") errors.push(m.text());
@@ -195,20 +339,29 @@ async function runFixture(): Promise<Results> {
     await page.goto(
       `http://127.0.0.1:${server.port}/?mode=${mode}&phase=${phase}&lang=${lang}&theme=${theme}`
     );
+    console.error(`[KB77 ${Math.round(performance.now() - phaseStart)}ms] page:navigated ${mode}/${phase}`);
     await page
       .locator(
         mode === "today" ? "#day-plan-intention" : mode === "plan" ? "#time-block-title" : "input"
       )
       .first()
       .waitFor();
+    console.error(`[KB77 ${Math.round(performance.now() - phaseStart)}ms] page:ready ${mode}/${phase}`);
     return page;
   };
   const check = async (name: string, fn: () => Promise<void>) => {
+    trace(`case:start ${name}`);
     try {
       await fn();
       results[name] = { pass: true };
+      trace(`case:pass ${name}`);
     } catch (error) {
       results[name] = { pass: false, detail: String(error) };
+      trace(`case:fail ${name}: ${String(error)}`);
+    } finally {
+      trace(`case:pages-close:start ${pages.size}`);
+      await releaseAll(...[...pages].map((page) => () => page.close()));
+      trace("case:pages-close:done");
     }
   };
   const height = async (page: any, id: string) =>
@@ -460,43 +613,147 @@ async function runFixture(): Promise<Results> {
             }
     return results;
   } finally {
-    try {
-      await browser.close();
-    } finally {
-      await server.stop(true);
-    }
+    trace("cases:done");
+  }
+  } finally {
+    await releaseOwned(fixtureServer, fixtureBrowser);
+  }
+}
+async function runProbe(mode: string, results: Results): Promise<void> {
+  let server: ReturnType<typeof Bun.serve> | undefined;
+  let browser: Pick<Browser, "close"> | undefined;
+  try {
+    server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: () => new Response("KB77 cleanup probe") });
+    serverUrl = server.url.href;
+    if (await (await fetch(serverUrl)).text() !== "KB77 cleanup probe") throw Error("KB77 probe server did not respond");
+    results.probe = { pass: true };
+    trace(`probe:${mode}:server-ready ${serverUrl}`);
+    if (mode === "setup-failure") throw Error("KB77 controlled launch failure");
+    if (mode === "close-rejection") {
+      browser = { close: () => Promise.reject(Error("KB77 controlled browser close rejection")) };
+    } else if (mode === "hang") {
+      const descendant = Bun.spawn([process.execPath, "-e", "setInterval(() => {}, 1000)"], { detached: true, stdout: "ignore", stderr: "ignore" });
+      descendantPid = descendant.pid;
+      browser = { close: () => new Promise<void>(() => {}) };
+      // Keep the controlled stalled close alive after its independent server release completes.
+      setInterval(() => {}, 1_000);
+      // Retain the probe's owned endpoint/PID even when cancellation prevents final results.
+      writeResults(results);
+    } else throw Error("KB77 unknown lifecycle probe");
+  } finally {
+    await releaseOwned(server, browser);
   }
 }
 if (childMode) {
-  writeFileSync(process.env.KB77_RESULTS!, JSON.stringify(await runFixture(), null, 2));
+  const results: Results = {};
+  try {
+    trace(`child:start pid=${process.pid}`);
+    if (process.env.KB77_FIXTURE_PROBE) await runProbe(process.env.KB77_FIXTURE_PROBE, results);
+    else await runFixture(results);
+    if (Object.values(results).some((result) => !result.pass)) process.exitCode = 1;
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
+  }
+  writeResults(results);
 } else {
-  const { beforeAll, test, expect } = await import("bun:test");
-  let results: Results;
+  const { beforeAll, describe, test, expect } = await import("bun:test");
+  let results: Results = {};
+  let outcome: Awaited<ReturnType<typeof runChild>>;
   beforeAll(async () => {
-    mkdirSync(join(repo, "work"), { recursive: true });
-    const runDir = mkdtempSync(join(repo, "work/kb77-run-"));
-    const output = join(runDir, "results.json");
-    try {
-      const child = Bun.spawn([process.execPath, import.meta.path], {
-        cwd: repo,
-        env: { ...process.env, KB77_FIXTURE_CHILD: "1", KB77_RESULTS: output },
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      const stdout = new Response(child.stdout).text(),
-        stderr = new Response(child.stderr).text();
-      const exit = await child.exited;
-      const logs = await Promise.all([stdout, stderr]);
-      if (exit !== 0) throw Error(`KB77 browser child exit ${exit}:\n${logs.join("\n")}`);
-      results = JSON.parse(readFileSync(output, "utf8"));
-    } finally {
-      rmSync(runDir, { recursive: true, force: true });
-    }
+    outcome = await runChild();
+    results = outcome.payload?.results ?? {};
   }, 480_000);
   for (const name of names)
     test(`KB-77: ${name}`, () => {
+      requireSuccessfulExit(outcome.run, outcome.payload);
+      if (outcome.error) throw outcome.error;
       expect(results[name], name).toBeDefined();
       expect(results[name].detail || "").toBe("");
       expect(results[name].pass).toBe(true);
     });
+
+  describe.serial("KB-77 fixture lifecycle", () => {
+    test("descendant and process-group cleanup failures are both retained", () => {
+      const attempted: string[] = [];
+      const descendantFailure = Error("KB77 controlled descendant cleanup failure");
+      const groupFailure = Error("KB77 controlled process-group cleanup failure");
+      let caught: unknown;
+      try {
+        attemptAll(
+          () => { attempted.push("descendants"); throw descendantFailure; },
+          () => { attempted.push("group"); throw groupFailure; }
+        );
+      } catch (error) { caught = error; }
+      expect(attempted).toEqual(["descendants", "group"]);
+      expect(caught).toBeInstanceOf(AggregateError);
+      expect((caught as AggregateError).errors).toEqual([descendantFailure, groupFailure]);
+    });
+
+    test("clean child retains every original case and completes owned cleanup", () => {
+      requireSuccessfulExit(outcome.run, outcome.payload);
+      if (outcome.error) throw outcome.error;
+      expect(Object.keys(results).sort()).toEqual([...names].sort());
+      expect(outcome.payload!.cleanup).toEqual({ server: true, browser: true, complete: true });
+      expect(existsSync(outcome.run.directory)).toBe(false);
+    });
+
+    test("pending browser release cannot block server release", async () => {
+      const released: string[] = [];
+      let finish!: () => void;
+      const pending = new Promise<void>((resolve) => { finish = resolve; });
+      const release = releaseAll(() => { released.push("server"); }, () => pending);
+      try { await Promise.resolve(); expect(released).toEqual(["server"]); }
+      finally { finish(); await release; }
+    });
+
+    test("launch failure stops its real server and removes its owned directory", async () => {
+      const failed = await runChild("setup-failure", 30_000);
+      if (failed.error) throw failed.error;
+      const payload = failed.payload!;
+      expect(payload.results.probe).toEqual({ pass: true });
+      expect(failed.run.code).not.toBe(0);
+      expect(failed.run.timedOut).toBe(false);
+      expect(payload.cleanup).toEqual({ server: true, browser: true, complete: true });
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(failed.run.directory)).toBe(false);
+      expect(() => requireSuccessfulExit(failed.run, payload)).toThrow("browser child exit");
+    }, 30_000);
+
+    test("browser close rejection releases server and cannot report success", async () => {
+      const failed = await runChild("close-rejection", 30_000);
+      if (failed.error) throw failed.error;
+      const payload = failed.payload!;
+      expect(payload.results.probe).toEqual({ pass: true });
+      expect(failed.run.code).not.toBe(0);
+      expect(failed.run.timedOut).toBe(false);
+      expect(payload.cleanup).toEqual({ server: true, browser: false, complete: false });
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(failed.run.directory)).toBe(false);
+      expect(() => requireSuccessfulExit(failed.run, payload)).toThrow("browser child exit");
+      expect(() => requireSuccessfulExit({ ...failed.run, code: 0 }, payload)).toThrow("did not complete cleanup");
+    }, 30_000);
+
+    test("deadline cancellation reaps its child tree after browser close stalls", async () => {
+      const cancelled = await runChild("hang", 5_000);
+      if (cancelled.error) throw cancelled.error;
+      const payload = cancelled.payload!;
+      expect(payload.results.probe).toEqual({ pass: true });
+      expect(cancelled.run.timedOut).toBe(true);
+      expect(cancelled.run.code).not.toBe(0);
+      expect(cancelled.run.err).toContain("browser-close:start");
+      expect(cancelled.run.err).toContain("server-stop:done");
+      expect(() => requireSuccessfulExit(cancelled.run, payload)).toThrow("exceeded its lifecycle budget");
+      expect(() => process.kill(cancelled.run.pid, 0)).toThrow();
+      if (!payload.descendantPid) throw Error("KB77 hang probe did not launch its detached descendant");
+      try {
+        const stat = readFileSync(`/proc/${payload.descendantPid}/stat`, "utf8");
+        expect(stat.slice(stat.lastIndexOf(")") + 2).split(" ")[0]).toBe("Z");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(cancelled.run.directory)).toBe(false);
+    }, 30_000);
+  });
 }
