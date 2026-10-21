@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -139,7 +140,9 @@ describe.serial("shared kitchen fixture lifecycle", () => {
 
   test("committed focus and settled transition use browser signals", async () => {
     const { chromium } = await import("@playwright/test");
-    const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, args: ["--no-sandbox"] });
+    const executablePath = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(existsSync);
+    if (!executablePath) throw new Error("No installed Chromium or Google Chrome is available for the shared fixture proof");
+    const browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
     try {
       const page = await browser.newPage();
       await page.setContent('<button id="target">Ready</button>');
