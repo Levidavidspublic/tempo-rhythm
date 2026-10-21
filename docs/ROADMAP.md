@@ -82,6 +82,7 @@ Amit's Bagrut maths studies start Sunday 11 Oct; the factory should be set up be
 | **P1** Expo shell | The click-path runs on an Android APK | `eas build -p android --profile preview` yields an APK; FD-01 passes on the phone; no diff in core/convex for the phase | Expo shell (newest stable SDK) · native block registry · EAS `preview` profile |
 | **P2** Unified surface | Day / week / month from the same pages | inelastic event stays fixed while elastic tasks reflow; Lighthouse 90+ | `schedule.ts` reflow · day timeline · starting template set |
 | **P3a** Coach, memory, pacing, nags | The coach answers at the dial, remembers, paces, nags in the user's words | memory contract test passes; recall works across sessions but never across users; crisis words return the fixed card with no model call | memory port · nag authoring + validator · nag cron (in-app) |
+| **P3c** (21 Oct) Context tags, crisis ladder, subagents | Every message and memory is tagged; severity picks a fixed card; multi-lane asks fan out | a Hebrew and an English message each get lane, area and state tags; `contextTags` appear in no UI or export; edited memory tags survive a re-tag; each severity level shows its fixed card and a word-list hit still needs no model call; a three-project brain dump returns one merged proposal from three subagents | GLM 5.3 Flash as the `TEMPO_AI_MODEL` default · tag fields + tagger action (`convex-arch`) · crisis ladder with `crisisResources` |
 | **P3b** Connectors | A commitment verified from real data via Executor | partial credit shown, never "failed"; every external write asks first | Executor adapter (read-only) · partial-credit check · one confirmed calendar write |
 | **P4** Voice | A Hebrew voice turn end to end | per PRD ticket #7 | Deepgram STT · Chatterbox TTS · `voiceTurn` |
 | **P5** Study track | Lecture → notes → deck → test, separate mode | per PRD ticket #8 | `sm2.ts` · `lectureToDeck` · study screens |
@@ -93,7 +94,7 @@ How the #546 planner work and the weekend goals fit these phases: they are V0 fi
 
 ## 6. Parked
 
-An outside memory engine (EverOS, Mega Memory; the port allows it later) · Jev ideas · the PRD's LATER list · closing the 46 stale PRs (Amit decides) · payments this weekend · store submissions this weekend.
+An outside memory engine (EverOS, Mega Memory; the port allows it later) · Jev ideas (**21 Oct:** the tagging part is no longer parked; it moved to P3c using open models) · the PRD's LATER list · closing the 46 stale PRs (Amit decides) · payments this weekend · store submissions this weekend.
 
 ## 7. Conflicts resolved by newer decisions
 
@@ -105,3 +106,5 @@ An outside memory engine (EverOS, Mega Memory; the port allows it later) · Jev 
 | 20 Sep: review gate not chosen; "factory on" waits for it | 1–2 Oct: Greptile. 3 Oct 15:25: Bugbot replaces Greptile, set up after the org move. Automations wait for PLAN-FINAL step 7 gates. |
 | 20 Sep P-1: deploy in the 18:00 window | Live deploys are Amit's, no fixed window stated. |
 | 1–2 Oct: router dispatches on the `ready` label | 3 Oct: router = GitHub-side automation using GitHub's own inference (Copilot plan); built but off until step 7. |
+| 5 Oct: DeepSeek V4.1 Flash interim; 13 Oct: keep DeepSeek | 21 Oct: GLM 5.3 Flash on DeepInfra is the runtime text model. |
+| §6: Jev ideas parked | 21 Oct: context tagging with open models is P3c. |

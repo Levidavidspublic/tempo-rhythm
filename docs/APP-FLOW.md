@@ -134,6 +134,11 @@ Order and tickets: [Roadmap](./ROADMAP.md) §3. Schema: [Backend schema](./BACKE
 **Template flow:** New page → the app proposes one template (daily / weekly / monthly pages get theirs on first open) → code copies the body, resolves tokens like `{{next_monday}}`, gives every block a fresh id → **Make this page a template** works on any page. Whether the app picks silently or always shows its pick: UNKNOWN.
 
 **Memory flow:** "What Tempo remembers": view, forget one, forget all, export as markdown. The coach calls `context` before replying and `remember` after.
+**(21 Oct) Memory tags:** each memory shows its tags as chips (lanes, life areas, state). **Advanced settings → Tags** lets the user edit, add or remove a memory's tags and set how much each lane matters. Chat never shows tags. (EXTRAPOLATED placement: `/settings/memory`.)
+
+**(21 Oct) Crisis ladder:** a message → word-list check (instant) → classifier severity → one fixed card in the chat in place of a coach reply: breathing exercise (low) · "contact your therapist" with the contact the user saved (medium) · the country hotline, e.g. ERAN in Israel (high, coaching stops). Settings holds the user's country and optional therapist contact (EXTRAPOLATED placement: `/settings/safety`).
+
+**(21 Oct) Split request:** a brain dump or message that spans several projects shows "Working on 3 projects…", then one proposal card with a section per project. Accept applies all; each section can be dropped first; Undo for 5 minutes.
 
 **Coach:** opens at the current dial (0–10). Bad-day words lower the dial by two and say so. Panic → grounding card + one 10-second action.
 

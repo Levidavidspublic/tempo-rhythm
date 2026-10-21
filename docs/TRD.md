@@ -13,6 +13,7 @@
 - **(5 Oct)** Voice streams from the browser to Deepgram with a 30-second token.
 - **(5 Oct)** Modules are validated data.
 - **(5 Oct)** Language direction comes from the user's locale.
+- **(21 Oct)** The runtime text model is GLM 5.3 Flash on DeepInfra. A context tagger (Qwen3-Reranker-8B scores + a safety classifier) tags every message and memory; the crisis ladder only ever picks fixed cards; multi-lane requests fan out to one subagent per lane (§5e).
 
 ## 1. Stack
 
@@ -55,11 +56,14 @@ These are RUNTIME models. They never write Tempo's code.
 
 | Lane | Provider and model | Env var name | Horizon |
 |---|---|---|---|
-| **(5 Oct)** Text, interim | DeepInfra `deepseek-ai/DeepSeek-V4.1-Flash` (1M context; OpenAI-compatible; function calling) | `DEEPINFRA_API_KEY` | NW |
+| **(21 Oct)** Text: coach, tagger reasoning, subagents | DeepInfra `zai-org/GLM-5.3-Flash` (1M context; JSON mode and function calling per DeepInfra; $0.15 in / $0.50 out per 1M, 50% off at the time of reading). Set through the existing Convex env var `TEMPO_AI_MODEL` (`convex/lib/ai_router.ts`); the code default still says DeepSeek and moves to GLM in a backend ticket. | `DEEPINFRA_API_KEY`, `TEMPO_AI_MODEL` | NW |
+| ~~Text, interim~~ | ~~DeepInfra `deepseek-ai/DeepSeek-V4.1-Flash`~~ — replaced 21 Oct by GLM 5.3 Flash. Kept only as a manual fallback value for `TEMPO_AI_MODEL` [EXTRAPOLATED]. | `DEEPINFRA_API_KEY` | — |
+| **(21 Oct)** Tag scores | DeepInfra `Qwen/Qwen3-Reranker-8B` (`POST /v1/inference/Qwen/Qwen3-Reranker-8B`, body `queries` + `documents`, returns `scores`; $0.05/1M; 32k context). Model named in Convex env `TEMPO_RERANK_MODEL` [EXTRAPOLATED name]. | `DEEPINFRA_API_KEY`, `TEMPO_RERANK_MODEL` | MVP |
+| **(21 Oct)** Crisis severity | `openai/gpt-oss-safeguard-20b` (policy in the system message, content in the user message; returns the JSON the policy asks for; no confidence score). Not found on DeepInfra or Together on 21 Oct. Groq hosts it ($0.075 in / $0.30 out per 1M, 131k context). Provider and env var name: UNKNOWN until Amit picks. | UNKNOWN | MVP |
 | Text fast | DeepInfra `nvidia/NVIDIA-Nemotron-3.5-Lightning` | `DEEPINFRA_API_KEY` | MVP |
 | Text balanced | DeepInfra `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B` | `DEEPINFRA_API_KEY` | MVP |
 | Text deep | DeepInfra `thinkingmachines/Inkling` | `DEEPINFRA_API_KEY` | MVP |
-| Text failover | Together. Model on Together for the DeepSeek interim: UNKNOWN. | `TOGETHER_API_KEY` | NW if the model exists there |
+| Text failover | Together `zai-org/GLM-5.3-Flash` (listed; "launching soon" on 21 Oct, so availability is UNKNOWN). Model named in Convex env `TEMPO_AI_FALLBACK_MODEL` [EXTRAPOLATED name]; the code does not read `TOGETHER_API_KEY` yet (21 Oct). | `TOGETHER_API_KEY`, `TEMPO_AI_FALLBACK_MODEL` | NW once the endpoint is live |
 | **(5 Oct)** STT English | Deepgram Flux `flux-general-en`, streaming, with turn detection | `DEEPGRAM_API_KEY` | NW |
 | STT Hebrew | Deepgram Nova-3, language `he`, streaming | `DEEPGRAM_API_KEY` | NW |
 | TTS, both languages | DeepInfra `ResembleAI/chatterbox-multilingual` (Hebrew included) | `DEEPINFRA_API_KEY` | NW **(5 Oct)** English use [EXTRAPOLATED] |
@@ -71,7 +75,7 @@ These are RUNTIME models. They never write Tempo's code.
 **Ticket one (5 Oct).**
 
 - Amit sets `DEEPINFRA_API_KEY` and `DEEPGRAM_API_KEY` on `ceaseless-dog-617`, by name, before the batch runs.
-- **(5 Oct, revised)** The seam is the AI SDK DeepInfra provider: `deepInfra("deepseek-ai/DeepSeek-V4.1-Flash")` as the Agent's `languageModel`, and `deepInfra.embeddingModel("Qwen/Qwen3-Embedding-8B")`, shortened to 1,024 dims, as its `embeddingModel` [EXTRAPOLATED pick, §5]. `convex/lib/ai_router.ts` is replaced by the Agent definition.
+- **(5 Oct, revised)** The seam is the AI SDK DeepInfra provider: `deepInfra("deepseek-ai/DeepSeek-V4.1-Flash")` as the Agent's `languageModel`, and `deepInfra.embeddingModel("Qwen/Qwen3-Embedding-8B")`, shortened to 1,024 dims, as its `embeddingModel` [EXTRAPOLATED pick, §5]. **(21 Oct)** Embedding model named in Convex env `TEMPO_EMBED_MODEL` [EXTRAPOLATED name]. `convex/lib/ai_router.ts` is replaced by the Agent definition.
 - `convex/coach.ts` stops returning fixed technique replies. The coach is one `Agent` with `createTool` tools: `createNote`, `addTaskToToday`, `fillTemplate`, `draftModule`, `searchMemory`, `scheduleJob`. It uses `streamText(..., { saveStreamDeltas: true })`, so replies stream to every open screen through Convex.
 - Module drafts use the Agent's built-in tool approval ("approval-requested" state), which gives the Approve / Discard step without custom code.
 - Nothing calls `api.mistral.ai` any more.
@@ -144,6 +148,33 @@ No public Hebrew-specific embedding benchmark was found (searched 5 Oct). The pi
 
 Hebrew quality is UNKNOWN for all of these. Before locking one, run a check on 20 Hebrew + 20 English questions against about 200 of Amit's own notes. Compare Qwen3-Embedding-8B, bge-m3 and multilingual-e5-large-instruct on top-3 hit rate. Changing the model later means re-embedding everything.
 
+## 5e. Context tagger, crisis ladder, auto-subagents (21 Oct) [MVP, EXTRAPOLATED mechanics]
+
+**Tagger.**
+- Runs as a scheduled Convex action after each user message, each `remember`, each brain dump and each memory import. It never blocks the coach reply, except for the severity check below.
+- Labels: **lane** = the user's own projects and goals (from `entities` of kind `project` / `goal`, plus any lane the user adds); **area** and **state** = the PRD §10a starting lists. Each label has an English and a Hebrew description.
+- Scoring: one Qwen3-Reranker-8B call per item, with each label description as a query and the item text as the document. A label is kept when its score clears its threshold. Thresholds: UNKNOWN until calibrated on about 100 messages Amit labels himself.
+- Lane weight = reranker score × the user's importance for that lane (Advanced settings; default 1.0).
+- Stored on `memories.tags` and `messages.contextTags` (schema §4.7). Each tag records `kind`, `key`, `score`, `source` (`auto` / `user`) and `taggedAt`.
+- A tag with `source: "user"` is never overwritten or removed by the tagger.
+- `messages.contextTags` never reaches any UI, any chat export (KB-35 already excludes hidden metadata) or the Library tag filter (`conversations.tags`, KB-01). Memory export includes memory tags.
+- The coach gets the current message's tags and the top lanes as a hidden context block.
+
+**Crisis ladder (F-24a).**
+1. `isCrisisText` (fixed word list, no model call) runs first, as today. A hit shows the hotline card at once.
+2. Otherwise the safety classifier runs before the coach replies, with a Tempo-written crisis policy (Instructions, Definitions, Criteria, Examples, about 400–600 tokens, English and Hebrew examples). It returns `{ severity: none | low | medium | high, category }`.
+3. Severity maps to a **fixed** card from a `crisisResources` table (schema §4.7): `low` → breathing card; `medium` → therapist card if `users.therapistContact` is set, else the hotline card; `high` → the country hotline card, and the coach turn is replaced by the card.
+4. The card text is fixed data, never model text (Security RULE 7). Country is taken from the user's locale or settings; a missing country falls back to an international directory card [EXTRAPOLATED].
+5. If the classifier errors or times out, the word list result stands and the coach replies normally. Every severity decision is logged without message text.
+- Thresholds and the policy wording need clinical sign-off before deploy (PRD §10 Q13).
+
+**Auto-subagents (F-29).**
+- When an item's tags carry two or more lanes above threshold, or the user sends a brain dump, the coach calls a `splitByLane` tool.
+- Each lane runs as one AI SDK `ToolLoopAgent` inside a Convex action, in parallel, on GLM 5.3 Flash. Its context is only that lane: pages and memories whose tags include the lane.
+- Each subagent returns a proposal (tasks, notes, plan steps) as validated blocks. It never writes.
+- The coach merges the proposals into one card. The user Accepts; writes carry the 5-minute Undo.
+- At most 8 subagents per turn [EXTRAPOLATED cap]; extra lanes are grouped into the last one.
+
 ## 5d. Scheduled jobs (5 Oct)
 
 - **NW:** the coach tool `scheduleJob({ cron, task, targetPageType })` needs approval. It registers a job with `@convex-dev/crons`, and each run writes into a page (e.g. Today). Jobs list with on/off in the Modules screen. Times are stored in UTC and shown in the user's time zone [EXTRAPOLATED].
@@ -194,7 +225,7 @@ Executor (executor.sh) behind an adapter: reads plus light writes, heavy writes 
 4. Every query and mutation checks `ctx.auth` and filters by `userId`.
 5. Soft delete everywhere, 30-day grace (notes already do this).
 6. BYOK keys are encrypted per user and never returned to the client. No Anthropic key in third-party code, ever.
-7. Crisis card text is fixed content, never written by a model.
+7. Crisis card text is fixed content, never written by a model. **(21 Oct)** Classifiers may only choose which fixed card shows; the word-list check never depends on a model call.
 8. **(5 Oct, revised)** Data modules use only catalog components and actions and are validated before going live. Code written into a page runs only in a sandbox (an iframe without same-origin, or a Vercel Sandbox micro-VM). It never runs in the app's own process, never gets environment variables or user keys, and never runs before the user approves it.
 9. **(5 Oct)** Magic link only. Remove the passkeys flag (`NEXT_PUBLIC_ENABLE_PASSKEYS`) and the `/settings/passkeys` page.
 
@@ -240,6 +271,9 @@ Diagrams and Graphify: Graphify 0.9.74 runs on push to `integration`.
 4. **(5 Oct)** Does Together host DeepSeek V4.1 Flash for failover?
 5. **(5 Oct)** NVIDIA Voicechat: its env var name, its licence for paid use, and Hebrew.
 6. **(5 Oct)** The exact ChatGPT and Claude memory export formats.
+7. **(21 Oct)** The safety classifier's provider and env var name (PRD §10 Q14).
+8. **(21 Oct)** Tagger thresholds and the crisis ladder thresholds (PRD §10 Q13).
+9. **(21 Oct)** Whether DeepInfra accepts an instruction field for Qwen3-Reranker; its API page lists only `queries` and `documents`.
 
 ## Sources
 
@@ -251,6 +285,7 @@ Diagrams and Graphify: Graphify 0.9.74 runs on push to `integration`.
 - Claude Code docs: Mods overview, Create a mod (read 5 Oct 2026)
 - Via Context7, 5 Oct: `/get-convex/agent` (agent usage, context, streaming, tool approval, RAG); Convex vector search docs; `/websites/ai-sdk_dev` DeepInfra provider; `/vercel-labs/json-render` (catalog prompt, generation modes, skills)
 - DeepInfra embeddings catalogue; Graphify, Understand Anything and Hindsight READMEs (read 5 Oct)
+- **(21 Oct)** DeepInfra GLM-5.3-Flash page; Together GLM-5.3-Flash page; DeepInfra Qwen3-Reranker-8B API page; Groq gpt-oss-safeguard-20b model page; repo `integration` at `58844f0`: `convex/lib/ai_router.ts`, `convex/crisis.ts`, `convex/coach.ts`
 
 
 ---

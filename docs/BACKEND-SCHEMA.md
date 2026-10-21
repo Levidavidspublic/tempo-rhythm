@@ -1,6 +1,6 @@
 # Tempo Flow: Backend Schema
 
-> **Last updated 2026-10-03** (IDT) · Written by Grok Bot from the sources below · Decisions are Amit's.
+> **Last updated 2026-10-03** (IDT); §4.7 added 2026-10-21 by Claude from Amit's decisions of that day · Written by Grok Bot from the sources below · Decisions are Amit's.
 > **Sources:** the repo on `integration` at `5b9675e` (3 Oct): [`convex/schema.ts`](https://github.com/Division6066/tempo-rhythm/blob/integration/convex/schema.ts) (11 app tables + Convex Auth tables), `convex/*.ts`, `convex/lib/accountDeletion.ts`, `convex/lib/requireUser.ts`, `convex/MIGRATIONS.md`, `docs/HARD_RULES.md` · factory-v2 product docs v2 (20 Sep 2026): `05-BACKEND-SCHEMA.md` (block model) · the 3 Oct schema proposal (compile-checked with `tsc` on a scratch copy, no Convex command run) and umbrella [#546](https://github.com/Division6066/tempo-rhythm/issues/546) with its children #526–#545 · Basic Memory `Weekend factory plan 2026-10-02` (sign-up cap).
 > **Markers:** UNKNOWN = not known or not decided. (EXTRAPOLATED) = Grok Bot's own fill, not a decision. Newer Amit decisions win over older sources; conflicts are listed in §7.
 > **Deployments:** dev/preview `ceaseless-dog-617`; prod `precious-wildcat-890` (agents never touch it). See [TRD](./TRD.md) §2.
@@ -122,6 +122,24 @@ Slept badly. Keep today small. See [[Thesis outline]].
 
 ### 4.6 json-render points still UNKNOWN
 Read the installed version first: the import path of `schema`; whether the providers are required when no state is used; whether `children: []` may be omitted; whether one catalog serves both registries; the native provider names; API stability before 1.0.
+
+### 4.7 Context tags and crisis ladder (21 Oct, design only, nothing built) (EXTRAPOLATED shapes)
+
+Additive fields and tables for PRD F-24a, F-29, F-56–F-58 and TRD §5e. Every change goes through one backend ticket with the `convex-arch` label and is logged in `convex/MIGRATIONS.md`.
+
+| Where | Field / table | Shape | Who writes · who reads |
+|---|---|---|---|
+| `memories` | `tags?` | `array<{ kind: "lane" \| "area" \| "state" \| "severity", key: string, score: number, source: "auto" \| "user", taggedAt: number }>` | tagger action + the user's edits · memory screen, coach context, export |
+| `memories` | `embedding?` + vector index | 1,024 dims (TRD §5, unchanged) | memory port · recall |
+| `messages` | `contextTags?` | same shape as `memories.tags` | tagger action · coach context only; **never** any UI, chat export or Library filter |
+| `conversations` | `tags?` (KB-01) | user-typed strings | **unchanged and separate**: never filled by the tagger |
+| `users` | `lanePrefs?` | `array<{ key: string, label: string, importance: number }>` | the user (Advanced settings) · tagger |
+| `users` | `therapistContact?` | `{ label: string, detail: string }`, entered by the user | the user · crisis ladder only |
+| `users` | `country?` | ISO code; default from locale | the user · crisis ladder |
+| new `crisisResources` | `country`, `level` (`low` / `medium` / `high`), `title`, `body`, `resources[]`, `verifiedAt` | fixed content, edited only by an admin path | admin seed · crisis ladder |
+| new `crisisEvents` | `userId`, `severity`, `source` (`words` / `classifier`), `cardLevel`, `createdAt` — **no message text** | crisis ladder · Amit's aggregate view only (UNKNOWN) |
+
+Indexes (EXTRAPOLATED): `crisisResources.by_country_level`; `crisisEvents.by_userId_createdAt`. Tag search by lane uses the existing `by_userId` read plus an in-action filter until volume says otherwise (UNKNOWN).
 
 ## 5. The open architecture question
 
