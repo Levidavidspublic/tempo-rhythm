@@ -120,3 +120,35 @@ changed: apps/web/components/ui/input.tsx; apps/web/lib/i18n-groups/kb-77.ts; ap
 unknowns: frozen install resolver timed out (124); production-font geometry (fixture font URLs return HTML and system fallbacks are used); device screen-reader and native device behavior; live account/deployed writes; exact evidence-head remote CI recorded in PR
 notes for ticket sync: existing Input polish adds zero primary views; Hebrew machine draft needs Amit's native read; existing KA-owned callers remain read-only; no retry budget reset or backend/caller changes
 ```
+
+## Owner-authorized fixture repair — 21 Oct 2026
+
+The [current CodeRabbit finding](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186#discussion_r4335089440) is valid for concurrent-run collisions: the fixture sources/builds and result JSON previously used shared fixed paths. In this workspace, `work/` is already ignored by `.git/info/exclude`; this repair uses that existing location without changing ignore/config files.
+
+Each parent run now owns a unique `work/kb77-run-*` directory. Its browser child writes fixture sources/builds inside `fixture/` and results to `results.json` in that same owned directory. The parent removes its directory in `finally`, including child spawn failure, unsuccessful child exit, invalid results, and success. Chromium executable/launch failure stops the loopback server; browser-close failure still reaches server shutdown. The existing nonzero-child-exit check remains before result parsing. All 18 case names, browser/native assertions, 54 parent assertions, and the 480,000 ms setup timeout are retained. Static comparisons of the case-name block, assertion calls, and timeout matched the prior head.
+
+A controlled launch-failure probe used a disposable executable in a separate temporary browser cache. It wrote plausible successful results for all 18 names, then exited 73. The browser child and its parent test failed as expected (test command exit 1), so the successful-looking JSON could not bypass child failure. The probe verified that the unique run directory had been removed; its disposable cache/audit files were also removed. The probe harness exited 0. This exercised the final launch-failure cleanup path without a real browser or live writes.
+
+The earlier table records the original implementation. Current repair checks use Bun 1.3.9:
+
+| Command | Exit | Repair result |
+| --- | ---: | --- |
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 124 | UNKNOWN: resolver remained at `Resolving dependencies` after the authorized 120-second bound. Existing worktree `.bun` is a real directory; workspace dependencies resolve inside this worktree. |
+| `bun run lint` | 0 | 5 successful, 5 total |
+| `bun run typecheck` | 0 | 5 successful, 5 total |
+| `bun test tests/unit/kb-77.test.tsx` | 0 | Final-tree replay: 18 passed, 0 failed, 54 parent assertions; 215.75 seconds |
+| `python3 /workspace/work/kb-finish/kb77/check-launch-failure.py` | 0 | Controlled negative probe passed: injected test exit 1, fake browser exit 73, authoritative child failure retained, owned artifacts removed |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK; 66 documented notices |
+| `bun run test` | — | Pending lead validation on the integrated candidate |
+| `CI=1 bunx playwright test --reporter=line` | — | Pending lead validation on the integrated candidate |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | Pending lead validation on the integrated candidate |
+
+The fixture still builds frozen and current phases in its existing clean child. No cross-build collision was reproduced in the focused run or controlled probe. Production Input/callers, copy, styling, and the existing contact sheet retain their prior source and provenance. The font/device/live-write limitations above remain UNKNOWN. The lead records the final integrated source commit with the remaining command results.
+
+Frozen-install output at the bound (exit 124):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```

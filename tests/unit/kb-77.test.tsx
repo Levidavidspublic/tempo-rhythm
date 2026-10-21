@@ -1,7 +1,7 @@
 import * as Bun from "bun";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const repo = resolve(import.meta.dir, "../..");
 const childMode = process.env.KB77_FIXTURE_CHILD === "1";
@@ -68,7 +68,7 @@ async function runFixture(): Promise<Results> {
     require = createRequire(join(web, "package.json"));
   const postcss = require("postcss"),
     tailwind = require("@tailwindcss/postcss");
-  const dir = join(repo, "work/kb77-fixture");
+  const dir = join(dirname(process.env.KB77_RESULTS!), "fixture");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "boundary.ts"), boundary);
   writeFileSync(join(dir, "api.ts"), api);
@@ -159,17 +159,23 @@ async function runFixture(): Promise<Results> {
       );
     },
   });
-  const executablePath = [
-    chromium.executablePath(),
-    "/usr/bin/chromium",
-    "/usr/bin/google-chrome",
-  ].find(existsSync);
-  if (!executablePath) throw Error("Installed Chromium unavailable");
-  const browser = await chromium.launch({
+  let browser: Awaited<ReturnType<typeof chromium.launch>>;
+  try {
+    const executablePath = [
+      chromium.executablePath(),
+      "/usr/bin/chromium",
+      "/usr/bin/google-chrome",
+    ].find(existsSync);
+    if (!executablePath) throw Error("Installed Chromium unavailable");
+    browser = await chromium.launch({
       executablePath,
       args: ["--no-sandbox"],
-    }),
-    results: Results = {},
+    });
+  } catch (error) {
+    await server.stop(true);
+    throw error;
+  }
+  const results: Results = {},
     errors: string[] = [];
   const open = async (
     mode: string,
@@ -454,8 +460,11 @@ async function runFixture(): Promise<Results> {
             }
     return results;
   } finally {
-    await browser.close();
-    server.stop(true);
+    try {
+      await browser.close();
+    } finally {
+      await server.stop(true);
+    }
   }
 }
 if (childMode) {
@@ -465,19 +474,24 @@ if (childMode) {
   let results: Results;
   beforeAll(async () => {
     mkdirSync(join(repo, "work"), { recursive: true });
-    const output = join(repo, "work/kb77-results.json");
-    const child = Bun.spawn([process.execPath, import.meta.path], {
-      cwd: repo,
-      env: { ...process.env, KB77_FIXTURE_CHILD: "1", KB77_RESULTS: output },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const stdout = new Response(child.stdout).text(),
-      stderr = new Response(child.stderr).text();
-    const exit = await child.exited;
-    const logs = await Promise.all([stdout, stderr]);
-    if (exit !== 0) throw Error(`KB77 browser child exit ${exit}:\n${logs.join("\n")}`);
-    results = JSON.parse(readFileSync(output, "utf8"));
+    const runDir = mkdtempSync(join(repo, "work/kb77-run-"));
+    const output = join(runDir, "results.json");
+    try {
+      const child = Bun.spawn([process.execPath, import.meta.path], {
+        cwd: repo,
+        env: { ...process.env, KB77_FIXTURE_CHILD: "1", KB77_RESULTS: output },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const stdout = new Response(child.stdout).text(),
+        stderr = new Response(child.stderr).text();
+      const exit = await child.exited;
+      const logs = await Promise.all([stdout, stderr]);
+      if (exit !== 0) throw Error(`KB77 browser child exit ${exit}:\n${logs.join("\n")}`);
+      results = JSON.parse(readFileSync(output, "utf8"));
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
   }, 480_000);
   for (const name of names)
     test(`KB-77: ${name}`, () => {
