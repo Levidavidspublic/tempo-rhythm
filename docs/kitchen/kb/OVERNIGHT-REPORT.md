@@ -49,6 +49,7 @@ UNKNOWN — Executor is not exposed as a callable connector here; its supplied M
 ## Done
 
 - Filed all 34 remaining written specifications in dependency order, verified their full remote bodies and kitchen-kb labels, and mapped all 59 specifications in ISSUES.json. All 34 remain blocked by their real prerequisites.
+- Proved the exact KB-10/KB-45 composition: 32 original cases pass, plus the explicit Hebrew AuthCard probe in both real mounts.
 - Completed the nine fixture reruns and seven authorized scoped bug/timing passes; exact results and retained failures are below.
 - Read the repo rules, planning PR, previous status and all twenty owner questions. Recorded Amit’s v3 decisions in NEEDS-AMIT.md.
 - Preserved held KA scopes #1110/#1112/#1129, excluded #1193, and kept #1198 unmerged.
@@ -113,16 +114,16 @@ The five earlier merge receipts remain historical. These issues stay open until 
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
 | KB-09 | 1145 | 1150 | PR open — logical-title and literal-interpolation fixes pass 20 child / 22 parent cases. Full 3,515 pass / 0 fail / 3 todo; E2E 27 pass / 1 fail / 89 skip (task-view navigation). Install UNKNOWN; lint/typecheck/scans/build pass. Independent of shared harness; E2E blocks merge. |
-| KB-10 | 1155 | 1159 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
-| KB-44 | 1154 | 1158 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
-| KB-45 | 1156 | 1163 | PR open — Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition remains unproved. Shared #1203 stuck; current guards/review still required. |
-| KB-69 | 1161 | 1164 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
+| KB-10 | 1155 | 1159 | PR open — read-only audit completed. Current hosted full 3,513 pass / 1 fail / 3 todo (KB-67 teardown hook). Combined KB-10/45 now passes 32 cases and the explicit localized AuthCard probe; no full-suite pass inferred. One extra scoped pass remains unused; no demonstrated product defect or unchanged retry. |
+| KB-44 | 1154 | 1158 | PR open — read-only audit completed. Current hosted Test was cancelled after eight unchanged KB-66 240-second deadlines; no complete aggregate. Waits for fixture prerequisites; no unchanged retry. |
+| KB-45 | 1156 | 1163 | PR open — Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition passes 32 original cases plus the explicit Hebrew AuthCard probe. Shared #1203 stuck; current guards/review still required. |
+| KB-69 | 1161 | 1164 | PR open — read-only audit completed. Current hosted Test was cancelled after eight unchanged KB-66 240-second deadlines; no complete aggregate. Waits for fixture prerequisites; no assumed retry-budget extension. |
 | KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — Final shared + own: 37 pass / 0 fail, 91 assertions. Earlier full 3489/17/3 todo (KB-64); E2E infrastructure UNKNOWN; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
-| KB-70 | 1166 | 1196 | PR open — actual matching-row focus wait passes 13 cases. Full 3,493 pass / 0 fail / 3 todo; E2E 28 pass / 0 fail / 89 skip. Lint/typecheck/scans/build pass; final install observation pending. Hosted source CI green; final-head review and queue gates remain. |
+| KB-70 | 1166 | 1196 | PR open — all local mandatory gates pass: focused 13 / 0; full 3,493 / 0 / 3 todo; E2E 28 / 0 / 89 existing skips; exact frozen install exit 0 in 301.91 seconds; lint/typecheck/scans/build pass. Final evidence head bf63acc passes hosted CI. Marked ready; refreshed checks and actual review must finish before the integration queue. |
 | KB-67 | 1169 | 1197 | PR open — Final shared + own: 49 pass / 0 fail, 144 assertions. Earlier full 3457/32/3 todo (old parser+KB-61); E2E 28/0/89 skip; historical synthetic UUID still fails security scan after redaction. Shared #1203 stuck; current guards/review still required. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
 | KB-74 | 1171 | 1200 | PR open — settled-transition proof improves 25 pass / 2 fail to 27 pass / 0 fail. Full 3,472 pass / 23 fail / 3 todo, all failures in unchanged KB-64; all 27 own cases pass. E2E 28 pass / 0 fail / 89 skip; lint/typecheck/scans/build pass; install UNKNOWN. Independent of shared harness; full-suite failures block merge. |
-| KB-71 | 1175 | 1177 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
+| KB-71 | 1175 | 1177 | PR open — read-only audit completed. Current hosted full 3,515 pass / 1 fail / 3 todo at the unchanged codec browser-bundle 30-second deadline. Cause UNKNOWN; one extra scoped pass remains unused. No speculative codec edit or unchanged retry. |
 | KB-75 | 1178 | 1179 | PR open — Final shared + own: 40 pass / 1 fail, 75 assertions; own 23 pass, shared cancellation fails. Earlier full 3510/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-76 | 1180 | 1183 | PR open — commit-window fixes: before 29 pass / 2 fail, after 31 pass / 0 fail (93 assertions). Full incomplete after unchanged KB-66 timeout; observed 1,571 pass lines / 1 fail / 3 todo. E2E 28 pass / 0 fail / 89 skip; lint/typecheck/scans/build pass; install UNKNOWN. Shared dependency stuck. |
 | KB-59 | 1189 | 1191 | Merged previously; retained. |
@@ -173,6 +174,8 @@ The five earlier merge receipts remain historical. These issues stay open until 
 
 ## UNKNOWN
 
-- Final shared-fix and worker validation results; current-head CodeRabbit coverage and required checks until observed.
+- Incomplete full-suite exits and bounded install attempts remain UNKNOWN only where specifically recorded per ticket; no passing aggregate is inferred.
+- KB-45 and KB-78 final hosted Test jobs are still running at this observation; their shared dependency remains blocked regardless.
+- Final CodeRabbit coverage and required checks remain unverified for PRs already blocked by retained local failures or dependencies.
 - Production behavior, live search service quality, real-device accessibility and complete Agent transcript coverage.
 - No production readiness or unattended completion claim.

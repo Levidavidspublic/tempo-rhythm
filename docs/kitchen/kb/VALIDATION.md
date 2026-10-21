@@ -484,3 +484,26 @@ Last20lines — plan-4.log
 Partial — The exact E2E command can run without repository or test-configuration changes. The installed system browser is Chromium 151.0.7922.173, the same major as Playwright's requested 151 browser. The missing local Playwright headless executable cache path points to `/usr/bin/chromium`; the blocked CDN and initial missing-browser run remain recorded above. This uses AGENTS.md's explicit allowance for installed Chromium, without changing assertions, timeouts, skips or deadlines.
 
 `CI=1 bunx playwright test --reporter=line` on the planning branch: **27 pass / 1 fail / 89 skip**, 1.3 minutes, exit 1. The remaining failure is the unchanged `tests/e2e/task-views-core.spec.ts:14` persisted-task navigation flow. This result replaces the launch limitation with actual browser evidence, not an all-green claim. Other worktrees' results belong to their own source heads.
+
+## Final KB-10 and KB-45 composition — 21 October 2026
+
+Passed composition; merge prerequisites remain blocked.
+
+Immutable local-only detached head: 8972a7608f1f4e83a9e6830127bf544e86aec93b.
+Base: 39b564ec329705587df5262ed5a061bbec9a1e8f.
+KB-10: a4e392d81c580212308565d0ebf59ea3d34887ac.
+KB-45: ef4fb042e7065013325fa14fe6a087341b36a3e7.
+Shared prerequisite: 2d99c84a365c6ead0009715012b0cdd908b570aa.
+
+All16 ticket/shared source,test,evidence blobs matched the exact input commits before and after both checks. No tracked source edit, PR branch merge/push, assertion/deadline change, or unchanged retry. KB-10 extra pass remains unused.
+
+Bun1.3.9. Frozen install reached120s bound, exit124 (UNKNOWN). Identical-lock installed trees fromKB45 used; lock SHA25635da413125508b8d1fbbaff0fc48b01dd8db7a437dd3439dc7d2f2edfbfcd1f7, no manifest/config changes.
+
+Original command: bun test tests/unit/kb-10.test.tsx tests/unit/kb-45.test.tsx
+Actual exit0;32pass0fail,64 parent assertions,30.10s Bun/30.11s wrapper. All20 KB10 parent cases verified its child exit0 and every named pass; that unchanged adapter buffers child output on success. KB45 child12pass0fail430assertions,13.46s, explicit build/browser/server/directory cleanup phases and child/supervisor exit0. The parent32pass are20KB10+12KB45, not44cases. The external900s bound did not activate.
+
+Supplemental read-only browser diagnostic: /workspace/kb-run-logs/kb-auth-localized-probe.ts, outside repository, exit0 in2.90s, two actual mounts. Each explicitly required exactly one AuthCard with lang=he and computed direction=rtl inside the English/LTR fallback. Actual SignUpModal had one dialog; production had none. Both had Hebrew email label, Hebrew send-error and sent state, Hebrew privacy, LTR email input, reset focus returning to retained fictional address, two expected mocked Resend calls, no pageerrors. Production retained redirectTo=/today; modal retained no redirectTo. This explicitly proves the localized child rather than merely allowing the fallback branch. Browser/server/temp directory cleanup settled. No live email/account/device/native Hebrew claim.
+
+Prior failed frozen composition9abb12c remains0pass32fail parents after600.81s; KB10child18/2 andKB45child10/2/1error remain in historical evidence. The new composition differs by KB45 shared fixture migration; no prior failure is overwritten. This targeted success does not clear the frozen shared cancellation failure, KB10's latest hosted KB67-hook failure, local historical E2E failures, or each PR's final hosted guards/review. No full-suite/build/E2E pass is inferred from these two targeted files.
+
+Logs and manifests: kb-auth-composition-manifest.json; kb-auth-composition-install.log; kb-auth-composition-focused.log; kb-auth-composition-result.json; kb-auth-localized-probe.log; kb-auth-localized-probe-result.json; kb-auth-localized-probe-exit.json; kb-auth-composition-final-receipt.json. Synthetic receipt identifiers are redacted while phases/counts/exits remain.
