@@ -171,3 +171,39 @@ Contact sheet: `kb-61-habit-sheet-request-ownership.jpg`, 1880 × 6354, 1,072,04
 ## Scope metadata and disposition
 
 The lead corrected indentation only in the canonical ticket and issue scope lists (planning commit `2bd19f3`); the actual scope parser now reads all six approved paths. This did not widen scope or change source/test. The final report uses those corrected issue scopes. Source/test remain at the reviewed three-round implementation; no fourth repair is authorized. Status: **blocked**, pending the failed/unknown required gates and independent validation limits disclosed above.
+
+## Fourth/final candidate — owner-authorized additional fixture repair
+
+The historical source ledger above explicitly records three implemented rounds, although they were consolidated into source commit `59311cf`. Round 1 implemented the main ownership fix; round 2 repaired the parent-removal lifecycle edge; round 3 corrected gallery fieldset/CSS lint. The later validation/font-serving commits (`4224035`, `f7566af`, and the equivalent pre-rebase `f8c7cc6`) changed evidence only. Merged fixture `ba23a58` retains test SHA-256 `5f9cf113aeff3f2a141725ac6c14b8fd4b56710519eb1bd34cc3382f6eb9f413`. No earlier additional pass was recorded.
+
+After this audit, root explicitly applied the owner's existing KB FINISH authorization for one additional repair pass to exhausted KB drafts. This follow-up is that fourth and final source candidate; no fifth is authorized or presumed. This later explicit authorization supersedes the older "no fourth repair is authorized" source-freeze report above. Root owns reopening issue #1181, the follow-up draft PR because merged PR #1185 cannot be amended, all broad mandatory gates and remote operations. Only the existing test and this evidence Markdown change; product, configuration, dependencies and contact sheet remain unchanged.
+
+Hosted receipt: KB-71 Test job `119200451115`, run `39593624101`, reported KB-61's 480-second hook timeout with 3454 pass, 3 todo and 1 fail. The retained earlier receipt `/workspace/work/kb-finish/hosted-1158-rebased-failure.log` shows the same KB-61 timeout, `killed 1 dangling process`, and a separate historical KB-67 cleanup failure (3441 pass, 3 todo, 2 fail overall). Root also identified KB-44 job `119189735929`. The old hook wrapped CSS compilation, bundling, browser startup, every case and browser cleanup while buffering child stderr until exit. These receipts establish an unfinished child, not its stalled internal stage; no native-stall root cause is claimed.
+
+Static audit found a concrete leak path: the server was created before browser discovery/launch, while its cleanup block began afterward. A missing executable or rejected launch could bypass server cleanup, set only `process.exitCode = 1`, and leave the parent waiting on a still-live server. Browser cleanup also preceded server stop, and temporary output used a fixed undeleted directory. The repair starts cleanup coverage before imports/build/server/launch and releases server, browser and the unique owned directory independently. Browser discovery now includes already-installed supported Google Chrome/Chromium paths; it still fails explicitly if none exist. There are no browser downloads or new packages.
+
+Child phases now stream immediately to stderr for dependencies, CSS, bundling, server readiness, executable availability, browser launch, each named case and each release. Fresh invocation tokens and one result record prevent another run's output from satisfying a case. Each original parent case retains its exact equality assertion, while a separate lifecycle case requires the exact 21-case set, completed cleanup and authoritative exit 0. A failed callback is recorded by name and causes child exit 1.
+
+The original `beforeAll(..., 480_000)` deadline, all 21 behavioral callbacks/assertions and their existing Playwright waits are preserved. The owned child is cancelled at 479 seconds, reserving the final second of that unchanged hook for process-tree termination/reaping and parent-owned directory removal. Descendants are included even if they created a separate process group. Parent directory release starts independently of termination/reaping. The short controlled hang probe uses the same cancellation path with a five-second process budget; this does not increase any original deadline.
+
+Added lifecycle regressions exercise pending browser release, a controlled setup throw after a real server starts, a controlled browser-close rejection, and a hanging child with a detached descendant. They require real post-stop fetch rejection and directory removal, reject successful-looking records from nonzero exits, reject incomplete cleanup and another invocation's token, and verify cancellation/reaping. These are controlled failures, not claims that the intermittent hosted native stall has reproduced.
+
+Fourth/final candidate validation is retained in `/workspace/work/kb-finish/kb61-final/`:
+
+| Check | Fourth/final local result |
+| --- | --- |
+| Bun | PASS: 1.3.9 |
+| Frozen install | UNKNOWN: exit 124 after the 120-second confirmation bound; only `bun install v1.3.9 (cf6cdbbb)` and `Resolving dependencies` were printed |
+| Lint | PASS: exit 0; 5/5 cached tasks; 1.571s; existing warning results retained |
+| Typecheck | PASS: exit 0; 5/5 cached tasks; 1.215s |
+| `bun test tests/unit/kb-61.test.tsx` under its individual heavy lock | PASS: exit 0; 26 pass, 0 fail, 48 assertions; 228.86s. All 21 original case phases passed, followed by complete server/browser/directory cleanup and the five added lifecycle cases. |
+| Full suite, scans/notices, E2E and build | Pending root-owned mandatory gates; no local pass claimed |
+
+The source-preservation check compares the entire original browser case region and original parent case list/equality assertion byte for byte, verifies the existing 480-second hook and compiles TSX syntax. It passes. Root owns full suite, scans/notices, E2E and build; this agent runs focused and light checks only.
+
+
+Final scoped disposition: the single authorized additional candidate passes focused and light checks; broader mandatory gates remain root-owned and pending. In this run, dependencies, actual PostCSS/Tailwind compilation, Bun bundling and system Chromium launch completed. All 21 original cases passed. Normal child server stop completed at 221859ms, unique directory removal at 221868ms and browser close at 222133ms. These phase timings confirm a successful local path, not the cause of the earlier hosted timeout.
+
+The controlled setup throw and close rejection intentionally printed child errors and exited nonzero; their parent regression cases passed only after checking real post-stop URL rejection, directory removal and rejection of false success. The hanging-child probe reached its real server, was cancelled through the same owned process-tree path, and passed reaping, detached-descendant nonexecution, post-stop URL rejection and parent-directory-removal checks. No original 480-second hang was reproduced, so no native-stall root-cause claim is made.
+
+After proof, no executing processes with this fixture worktree as cwd and no unique fixture directories remained. Two recorded Chromium descendants were already exited PID-1-owned zombies; the cancellation regression separately confirmed its detached descendant was absent or an exited zombie. No executing child/browser job or agent-owned runner remains. No broad suite, remote mutation, package/configuration change or contact-sheet modification was launched by this handoff. This consumes the owner-authorized fourth/final source candidate; no fifth is presumed.

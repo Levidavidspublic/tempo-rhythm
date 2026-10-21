@@ -1,10 +1,131 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
+import type { Browser } from "@playwright/test";
 
 const repo = resolve(import.meta.dir, "../..");
 const child = process.env.KB61_FIXTURE_CHILD === "1";
 type Results = Record<string, { pass: boolean; detail?: string }>;
+const resultMarker = "KB61_FIXTURE_RESULTS=";
+const beforeAllDeadline = 480_000;
+const directoryRoot = join(repo, "work/kb61");
+const token = process.env.KB61_FIXTURE_TOKEN ?? crypto.randomUUID();
+const cleanup = { server: false, browser: false, directory: false, complete: false };
+let serverUrl: string | undefined;
+let descendantPid: number | undefined;
+const phaseStart = performance.now();
+function phase(name: string) {
+  console.error(`[KB61 ${Math.round(performance.now() - phaseStart)}ms] ${name}`);
+}
+async function uniqueDirectory(): Promise<string> {
+  await mkdir(directoryRoot, { recursive: true });
+  return mkdtemp(join(directoryRoot, "fixture-"));
+}
+function checkedDirectory(path: string): string {
+  const resolved = resolve(path);
+  if (dirname(resolved) !== directoryRoot || !basename(resolved).startsWith("fixture-"))
+    throw Error("KB61 refusing an unowned fixture directory");
+  return resolved;
+}
+async function releaseAll(...releases: (() => unknown)[]): Promise<void> {
+  const settled = await Promise.allSettled(releases.map((release) => Promise.resolve().then(release)));
+  const errors = settled.flatMap((entry) => entry.status === "rejected" ? [entry.reason] : []);
+  if (errors.length) throw new AggregateError(errors, "KB61 fixture cleanup failed");
+}
+async function releaseOwned(server: ReturnType<typeof Bun.serve> | undefined, browser: Pick<Browser, "close"> | undefined, directory: string) {
+  await releaseAll(
+    async () => { phase("server-stop:start"); await server?.stop(true); cleanup.server = true; phase("server-stop:done"); },
+    async () => { phase("browser-close:start"); await browser?.close(); cleanup.browser = true; phase("browser-close:done"); },
+    async () => { phase("directory-remove:start"); await rm(directory, { recursive: true, force: true }); cleanup.directory = true; phase("directory-remove:done"); }
+  );
+  cleanup.complete = true;
+}
+type RecordPayload = { token: string; results: Results; cleanup: typeof cleanup; serverUrl?: string; descendantPid?: number };
+type ChildRun = { code: number; out: string; err: string; timedOut: boolean; directory: string; pid: number };
+function parseResults(run: ChildRun, expectedToken: string): RecordPayload {
+  const lines = run.out.split("\n").filter((line) => line.startsWith(resultMarker));
+  if (lines.length !== 1) throw Error(`KB61 child returned ${lines.length} result records: ${run.err.slice(-6000)}`);
+  const payload = JSON.parse(lines[0].slice(resultMarker.length)) as RecordPayload;
+  if (payload.token !== expectedToken) throw Error("KB61 child results belong to another invocation");
+  return payload;
+}
+function requireSuccessfulExit(run: ChildRun, payload: RecordPayload) {
+  if (run.timedOut) throw Error(`KB61 child exceeded its lifecycle budget: ${run.err.slice(-6000)}`);
+  if (run.code !== 0) throw Error(`KB61 clean child exit ${run.code}: ${run.err.slice(-6000)}`);
+  if (!payload.cleanup.complete) throw Error("KB61 child did not complete cleanup");
+}
+async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{ run: ChildRun; payload?: RecordPayload; error?: unknown }> {
+  const directory = await uniqueDirectory();
+  const runToken = crypto.randomUUID();
+  let processChild: ReturnType<typeof Bun.spawn> | undefined;
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const killOwnedGroup = () => {
+    if (!processChild) return;
+    try {
+    // Playwright may give Chromium its own process group. Stop the owned descendant tree too.
+    if (process.platform !== "win32" && processChild.exitCode === null) {
+      const snapshot = Bun.spawnSync(["ps", "-e", "-o", "pid=,ppid="]);
+      if (snapshot.exitCode !== 0) throw Error("KB61 could not inspect its child process tree");
+      const rows = snapshot.stdout.toString().trim().split("\n").map((line) => line.trim().split(/\s+/).map(Number));
+      const owned = new Set([processChild.pid]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const [pid, parent] of rows) if (owned.has(parent) && !owned.has(pid)) { owned.add(pid); changed = true; }
+      }
+      for (const pid of [...owned].reverse()) {
+        if (pid === processChild.pid) continue;
+        try { process.kill(pid, "SIGKILL"); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
+      }
+    }
+    } finally {
+      try {
+        if (process.platform === "win32") processChild.kill("SIGKILL");
+        else process.kill(-processChild.pid, "SIGKILL");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      }
+    }
+  };
+  try {
+    processChild = Bun.spawn([process.execPath, import.meta.path], {
+      cwd: repo,
+      env: { ...process.env, KB61_FIXTURE_CHILD: "1", KB61_FIXTURE_TOKEN: runToken, KB61_FIXTURE_DIRECTORY: directory, KB61_FIXTURE_PROBE: probe ?? "" },
+      stdout: "pipe", stderr: "pipe", detached: process.platform !== "win32",
+    });
+    // Keep the original 480s hook. Reserve its final second for kill/reap and directory release.
+    timer = setTimeout(() => {
+      timedOut = true;
+      phase(`parent:cancel pid=${processChild!.pid}`);
+      try { killOwnedGroup(); } catch (error) { phase(`parent:cancel-error ${String(error)}`); }
+    }, Math.max(1, deadline - 1_000));
+    const readErrors = async () => {
+      let text = "";
+      const decoder = new TextDecoder();
+      for await (const chunk of processChild!.stderr as ReadableStream<Uint8Array>) {
+        const part = decoder.decode(chunk, { stream: true });
+        text += part;
+        process.stderr.write(part);
+      }
+      const tail = decoder.decode(); text += tail; if (tail) process.stderr.write(tail);
+      return text;
+    };
+    const [out, err, code] = await Promise.all([
+      new Response(processChild.stdout).text(), readErrors(), processChild.exited,
+    ]);
+    const run = { code, out, err, timedOut, directory, pid: processChild.pid };
+    try { return { run, payload: parseResults(run, runToken) }; }
+    catch (error) { return { run, error }; }
+  } finally {
+    clearTimeout(timer);
+    await releaseAll(
+      async () => { try { killOwnedGroup(); } finally { if (processChild) await processChild.exited; } },
+      () => rm(directory, { recursive: true, force: true })
+    );
+  }
+}
 
 // Only the query/mutation boundary is fictional. The caller and its sheet wiring are real.
 const backend = `
@@ -22,15 +143,21 @@ export function useMutation(ref){return args=>{state.calls.push({ref,args});
 `;
 const api = `export const api={users:{getProfile:"users.getProfile"},habits:{list:"habits.list",create:"habits.create",remove:"habits.remove"},habitCheckIns:{listForDate:"habitCheckIns.listForDate",check:"habitCheckIns.check",undo:"habitCheckIns.undo"}};`;
 
-async function runFixture(): Promise<Results> {
+async function runFixture(results: Results): Promise<Results> {
+  const temp = process.env.KB61_FIXTURE_DIRECTORY
+    ? checkedDirectory(process.env.KB61_FIXTURE_DIRECTORY)
+    : await uniqueDirectory();
+  let fixtureServer: ReturnType<typeof Bun.serve> | undefined;
+  let fixtureBrowser: Browser | undefined;
+  try {
+  phase("dependencies:start");
   const { chromium, expect: expectBrowser } = await import("@playwright/test");
   const postcss = (await import("../../apps/web/node_modules/postcss/lib/postcss.mjs")).default;
   const tailwind = (await import("../../apps/web/node_modules/@tailwindcss/postcss/dist/index.mjs"))
     .default;
   const web = join(repo, "apps/web");
-  const temp = join(repo, "work/kb61/fixture");
   const original = process.env.KB61_ORIGINAL_PROOF === "1";
-  await mkdir(temp, { recursive: true });
+  phase("dependencies:done");
   await Promise.all([
     writeFile(join(temp, "backend.ts"), backend),
     writeFile(join(temp, "api.ts"), api),
@@ -64,11 +191,14 @@ createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><T
     ),
   ]);
   const cssPath = join(web, "app/globals.css");
+  phase("css:start");
   const baseCss = (
     await postcss([tailwind({ base: repo })]).process(await readFile(cssPath, "utf8"), {
       from: cssPath,
     })
   ).css;
+  phase("css:done");
+  phase("bundle:start");
   const build = await Bun.build({
     entrypoints: [join(temp, "entry.tsx")],
     target: "browser",
@@ -97,6 +227,7 @@ createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><T
     ],
   });
   if (!build.success) throw Error(build.logs.map(String).join("\n"));
+  phase("bundle:done");
   const js = (await build.outputs.find((file) => file.path.endsWith(".js"))?.text()) ?? "";
   const css =
     baseCss +
@@ -125,10 +256,17 @@ createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><T
       );
     },
   });
-  const executable = ["/usr/bin/chromium", chromium.executablePath()].find(existsSync);
+  fixtureServer = server;
+  serverUrl = server.url.href;
+  phase(`server:ready ${serverUrl}`);
+  const candidates = ["/usr/bin/chromium", chromium.executablePath(), "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium-browser", "/opt/google/chrome/chrome"];
+  phase(`browser:candidates ${JSON.stringify(candidates.map((path) => ({ path, installed: existsSync(path) })))}`);
+  const executable = candidates.find(existsSync);
   if (!executable) throw Error("Installed Chromium required");
+  phase(`browser-launch:start ${executable}`);
   const browser = await chromium.launch({ executablePath: executable, args: ["--no-sandbox"] });
-  const results: Results = {};
+  fixtureBrowser = browser;
+  phase("browser-launch:done");
   const errors: string[] = [];
   const open = async (mode = "sheet", lang = "en", width = 390, theme = "light") => {
     const page = await browser.newPage({
@@ -167,11 +305,14 @@ createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><T
   const state = (page: any) => page.evaluate(() => (window as any).__kb61.state);
   const check = async (key: string, fn: () => Promise<void>) => {
     if (process.env.KB61_CASE && key !== process.env.KB61_CASE) return;
+    phase(`case:start ${key}`);
     try {
       await fn();
       results[key] = { pass: true };
+      phase(`case:pass ${key}`);
     } catch (error) {
       results[key] = { pass: false, detail: String(error) };
+      phase(`case:fail ${key}: ${String(error)}`);
     }
   };
   const race = async (page: any, ok: boolean) => {
@@ -504,40 +645,60 @@ createRoot(document.getElementById("app")).render(<StrictMode><LocaleProvider><T
             }
     }
   } finally {
-    await browser.close();
-    server.stop(true);
+    phase("cases:done");
   }
   return results;
+  } finally {
+    await releaseOwned(fixtureServer, fixtureBrowser, temp);
+  }
+}
+
+async function runProbe(mode: string, results: Results): Promise<void> {
+  const directory = checkedDirectory(process.env.KB61_FIXTURE_DIRECTORY!);
+  let server: ReturnType<typeof Bun.serve> | undefined;
+  try {
+    server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: () => new Response("KB61 cleanup probe") });
+    serverUrl = server.url.href;
+    if (await (await fetch(serverUrl)).text() !== "KB61 cleanup probe") throw Error("Probe server did not respond");
+    results.probe = { pass: true };
+    phase(`probe:${mode}:server-ready ${serverUrl}`);
+    if (mode === "hang") {
+      const descendant = Bun.spawn([process.execPath, "-e", "setInterval(() => {}, 1000)"], { detached: true, stdout: "ignore", stderr: "ignore" });
+      descendantPid = descendant.pid;
+      console.log(resultMarker + JSON.stringify({ token, results, cleanup, serverUrl, descendantPid }));
+      await new Promise<void>(() => {});
+    }
+    if (mode === "setup-failure") throw Error("KB61 controlled launch failure");
+    if (mode !== "close-rejection") throw Error("KB61 unknown lifecycle probe");
+  } finally {
+    await releaseOwned(server, mode === "close-rejection"
+      ? { close: () => Promise.reject(Error("KB61 controlled browser close rejection")) }
+      : undefined, directory);
+  }
 }
 
 if (child) {
+  const results: Results = {};
   try {
-    console.log(JSON.stringify(await runFixture()));
+    phase(`child:start pid=${process.pid}`);
+    if (process.env.KB61_FIXTURE_PROBE) await runProbe(process.env.KB61_FIXTURE_PROBE, results);
+    else await runFixture(results);
+    if (Object.values(results).some((result) => !result.pass)) process.exitCode = 1;
   } catch (error) {
     console.error(error);
     process.exitCode = 1;
   }
+  console.log(resultMarker + JSON.stringify({ token, results, cleanup, serverUrl, descendantPid }));
 } else {
   const { beforeAll, describe, expect, test } = await import("bun:test");
   let results: Results = {};
+  let outcome: Awaited<ReturnType<typeof runChild>>;
   beforeAll(async () => {
-    // Fresh process avoids process-wide mock.module contamination from unrelated root tests.
-    const processChild = Bun.spawn([process.execPath, import.meta.path], {
-      cwd: repo,
-      env: { ...process.env, KB61_FIXTURE_CHILD: "1" },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const [out, err, code] = await Promise.all([
-      new Response(processChild.stdout).text(),
-      new Response(processChild.stderr).text(),
-      processChild.exited,
-    ]);
-    if (code !== 0) throw Error(`KB61 clean child exit ${code}: ${err.slice(-6000)}`);
-    results = JSON.parse(out.trim().split("\n").at(-1) ?? "{}");
+    // Original 480s hook contains the fresh child, cancellation/reap and parent-owned cleanup.
+    outcome = await runChild();
+    results = outcome.payload?.results ?? {};
   }, 480_000);
-  describe("KB-61 HabitSheet request ownership", () => {
-    for (const key of [
+  const expectedCases = [
       "trimmed name and weekly cadence reach callback exactly",
       "name length and empty validation are preserved",
       "synchronous repeated submit starts one request",
@@ -558,7 +719,76 @@ if (child) {
       "English Hebrew responsive theme matrix keeps usable sheet",
       "focus ring and reduced motion are rendered",
       "all browser interactions avoid uncaught errors",
-    ])
+    ];
+  describe("KB-61 HabitSheet request ownership", () => {
+    for (const key of expectedCases)
       test(key, () => expect(results[key]).toEqual({ pass: true }));
+  });
+
+  describe.serial("KB-61 fixture lifecycle", () => {
+    test("clean child completes every original case and cleanup with authoritative exit", () => {
+      if (outcome.error) throw outcome.error;
+      if (!outcome.payload) throw Error("KB61 child did not return results");
+      requireSuccessfulExit(outcome.run, outcome.payload);
+      expect(Object.keys(outcome.payload.results).sort()).toEqual([...expectedCases].sort());
+      expect(existsSync(outcome.run.directory)).toBe(false);
+    });
+
+    test("pending browser release cannot block server or directory release", async () => {
+      const released: string[] = [];
+      let finish!: () => void;
+      const pending = new Promise<void>((resolve) => { finish = resolve; });
+      const release = releaseAll(() => { released.push("server"); }, () => pending, () => { released.push("directory"); });
+      try { await Promise.resolve(); expect(released).toEqual(["server", "directory"]); }
+      finally { finish(); await release; }
+    });
+
+    test("launch failure stops its real server and removes its unique directory", async () => {
+      const failed = await runChild("setup-failure");
+      if (failed.error) throw failed.error;
+      const payload = failed.payload!;
+      expect(payload.results.probe).toEqual({ pass: true });
+      expect(failed.run.code).not.toBe(0);
+      expect(failed.run.timedOut).toBe(false);
+      expect(payload.cleanup).toEqual({ server: true, browser: true, directory: true, complete: true });
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(failed.run.directory)).toBe(false);
+      expect(() => requireSuccessfulExit(failed.run, payload)).toThrow("clean child exit");
+      expect(() => parseResults(failed.run, "different invocation")).toThrow("another invocation");
+    }, 30_000);
+
+    test("browser close rejection releases server and directory and cannot report success", async () => {
+      const failed = await runChild("close-rejection");
+      if (failed.error) throw failed.error;
+      const payload = failed.payload!;
+      expect(payload.results.probe).toEqual({ pass: true });
+      expect(failed.run.code).not.toBe(0);
+      expect(failed.run.timedOut).toBe(false);
+      expect(payload.cleanup).toEqual({ server: true, browser: false, directory: true, complete: false });
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(failed.run.directory)).toBe(false);
+      expect(() => requireSuccessfulExit(failed.run, payload)).toThrow("clean child exit");
+      expect(() => requireSuccessfulExit({ ...failed.run, code: 0 }, payload)).toThrow("did not complete cleanup");
+    }, 30_000);
+
+    test("deadline cancellation kills and reaps its child tree and removes parent-owned output", async () => {
+      const cancelled = await runChild("hang", 5_000);
+      if (cancelled.error) throw cancelled.error;
+      const payload = cancelled.payload!;
+      expect(payload.results.probe).toEqual({ pass: true });
+      expect(cancelled.run.timedOut).toBe(true);
+      expect(cancelled.run.code).not.toBe(0);
+      expect(() => requireSuccessfulExit(cancelled.run, payload)).toThrow("exceeded its lifecycle budget");
+      expect(() => process.kill(cancelled.run.pid, 0)).toThrow();
+      if (!payload.descendantPid) throw Error("KB61 hang probe did not launch its detached descendant");
+      try {
+        const stat = await readFile(`/proc/${payload.descendantPid}/stat`, "utf8");
+        expect(stat.slice(stat.lastIndexOf(")") + 2).split(" ")[0]).toBe("Z");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(cancelled.run.directory)).toBe(false);
+    }, 30_000);
   });
 }
