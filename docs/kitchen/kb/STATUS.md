@@ -8,8 +8,8 @@ In progress — Amit has authorized the shared harness fix first, then the nine 
 
 ## Counts
 
-- KB issues: **5 closed / 21 open**, including the administrative lead issue #1176.
-- KB PRs: **10 merged / 20 open**; includes planning #1140.
+- KB issues: **5 closed / 22 open**, including the administrative lead issue #1176.
+- KB PRs: **10 merged / 22 open**; includes planning #1140, shared harness #1203 and corrective #1204.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
 - NEEDS-AMIT.md: **4 remaining owner actions**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
 
@@ -30,7 +30,7 @@ Planning #1140 remains draft and is excluded from ready, merge and issue-closure
 | Ticket | Issue | PR | Head | CI | Review | Current gate |
 |---|---|---|---|---|---|---|
 | KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `07877d6` | SUCCESS | Review posted; 2 unresolved threads | Refreshed review found rejected-edit dead end; AT-07 before further repair |
-| KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `511578d` | FAILURE | Review posted; 1 unresolved threads | Extra pass failed hosted fixture setup; AT-05 before another repair |
+| KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `cdd517d` | Pending | Previous finding addressed; current coverage pending | V3 shared build adopted: own15/0, full3520/0/3todo, final shared+own30/0; shared merge and hosted gates pending |
 | KB-04 | [#1141](https://github.com/Levidavidspublic/tempo-rhythm/issues/1141) | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | `70dc7c3` | SUCCESS | Review posted; 2 unresolved threads | Fresh review found focus-test races; AT-08 before further repair |
 | KB-05 | [#1142](https://github.com/Levidavidspublic/tempo-rhythm/issues/1142) | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | `2e87b65` | FAILURE | Review posted; 0 unresolved threads | Further fixture-isolation repair needs AT-09 budget authority |
 | KB-06 | [#1143](https://github.com/Levidavidspublic/tempo-rhythm/issues/1143) | [#1151](https://github.com/Levidavidspublic/tempo-rhythm/pull/1151) | `931d987` | FAILURE | Review posted; 0 unresolved threads | Explicit round3+extra ledger exhausted; AT-10 before isolation repair |
@@ -43,7 +43,7 @@ Planning #1140 remains draft and is excluded from ready, merge and issue-closure
 | KB-59 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) | `711aefd` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue 190d5fd; issue closed |
 | KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1199](https://github.com/Levidavidspublic/tempo-rhythm/pull/1199) | `72f6302` | SUCCESS | Review posted; 1 unresolved threads | Reopened: follow-up1199 CI passed; cleanup error-loss review finding requires AT-15 before fifth candidate |
 | KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `2a2e9df` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue ba337ab; issue closed |
-| KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) | `e7d5b52` | SUCCESS | Review posted; 0 unresolved threads | Reopened: merged fixture cached child promise repeats240s timeouts; AT-20 before fifth source repair |
+| KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | `b5a483e` | Pending | Current review pending | Corrective shared lifecycle: child19/0, final shared+own34/0; full3489/17/3todo (KB64 baseline); shared merge and hosted gates pending |
 | KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1197](https://github.com/Levidavidspublic/tempo-rhythm/pull/1197) | `8a0bb70` | SUCCESS | Review requested; awaiting publication | Reopened: follow-up #1197 stalled in hosted isolated child after extra pass; AT-13 before further repair |
 | KB-69 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | `b20729b` | FAILURE | Review posted; 0 unresolved threads | Cancelled after34minutes: eight KB66 fixture deadlines; no full-suite result or pass |
 | KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1196](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196) | `a7f6fa7` | SUCCESS | Review posted; 1 unresolved threads | Reopened: follow-up #1196 review found a focus-effect race; AT-12 before any fifth candidate |

@@ -20,6 +20,8 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 Shared #1202 is PR open: [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), waiting for current green CI and CodeRabbit. KB-05 adoption has started.
 
+CodeRabbit found and verified two shared-helper blockers (early receipt validation and PID-zero signaling on spawn failure). Both are fixed at4d30965 with two isolated regressions: **15/0**,45assertions,2.96s. The failed new regression scaffolding run14/1 is retained; its binding correction was part of the same scoped review pass. Current hosted checks/review are pending; no merge.
+
 ## Per ticket
 
 | Ticket | Issue | PR | Verdict |
@@ -28,7 +30,7 @@ Shared #1202 is PR open: [#1203](https://github.com/Levidavidspublic/tempo-rhyth
 | KB-16 | — | — | Blocked — prerequisites: KB-01, 1094, 1110, 1112, 1113, 1116; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-31 | — | — | Blocked — prerequisites: KB-01, KB-16, 1094; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-02 | 1153 | 1160 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-03 | 1157 | 1162 | PR open — shared build adapter focused15/0; mandatory checks and hosted gates pending. |
+| KB-03 | 1157 | 1162 | PR open — focused15/0; full3,520pass/0fail/3todo on earlier shared dependency; scans/build pass. Final shared+own30/0 at cdd517d; hosted gates/shared merge pending. |
 | KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-05 | 1142 | 1149 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-06 | 1143 | 1151 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
@@ -39,7 +41,7 @@ Shared #1202 is PR open: [#1203](https://github.com/Levidavidspublic/tempo-rhyth
 | KB-44 | 1154 | 1158 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-45 | 1156 | 1163 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-66 | 1165 | 1168 (historical) | PR pending — corrective adapter focused child19/0 and parent19/0; mandatory checks running; original merged issue remains reopened. |
+| KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — corrective adapter focused child19/0 and parent19/0; full3,489pass/17fail/3todo (KB-64 browser-close baseline), scans/build pass. Final shared+own34/0 at b5a483e; hosted gates/shared merge pending; issue remains reopened. |
 | KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-67 | 1169 | 1197 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
