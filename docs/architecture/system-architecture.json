@@ -10,7 +10,7 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "d52a527ebaaf57394cca882533c79010236d9866"
     }
   },
   "components": [
@@ -162,7 +162,7 @@
       "id": "convex",
       "type": "backend",
       "label": "Convex functions",
-      "sublabel": "queries, mutations, http, /mcp",
+      "sublabel": "queries, mutations, http, /mcp, cron",
       "pos": [
         560,
         240
@@ -189,6 +189,35 @@
           "line": 20,
           "end_line": 24,
           "label": "MCP route"
+        }
+      ]
+    },
+    {
+      "id": "executor",
+      "type": "external",
+      "label": "Executor",
+      "sublabel": "OAuth connection",
+      "pos": [
+        1080,
+        246
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "callback into Convex",
+      "sources": [
+        {
+          "path": "convex/http.ts",
+          "line": 27,
+          "end_line": 28,
+          "label": "executor OAuth callback route"
+        },
+        {
+          "path": "convex/connectionsHttp.ts",
+          "line": 1,
+          "end_line": 13,
+          "label": "callback handler"
         }
       ]
     },
@@ -408,6 +437,13 @@
       "to": "convex",
       "label": "webhook POST",
       "variant": "security"
+    },
+    {
+      "id": "executor-convex",
+      "from": "executor",
+      "to": "convex",
+      "label": "GET callback",
+      "variant": "security"
     }
   ],
   "cards": [
@@ -426,7 +462,8 @@
       "items": [
         "Registry: dev tremendous-bass-443, staging ceaseless-dog-617, prod precious-wildcat-890.",
         "Workflows call ceaseless-dog-617 the test deployment. ENVIRONMENTS.md also allows a personal dev slug.",
-        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow."
+        "convex-deploy-test pushes integration convex/ to the test deployment. Prod (precious-wildcat-890) deploys only from the Amit-only Release to production workflow.",
+        "convex/convex.config.ts registers one component, the pinned @convex-dev/agent Agent component (components.agent). No model provider or key is set there. convex/crons.ts runs one cleanup job every 5 minutes."
       ]
     },
     {
@@ -442,8 +479,8 @@
       "dot": "rose",
       "title": "Trust boundary",
       "items": [
-        "People, Vercel, Polar, DeepInfra, MCP clients, and RevenueCat sit outside the Convex security group.",
-        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook and token-authenticated /mcp are the crossings into Convex.",
+        "People, Vercel, Polar, DeepInfra, MCP clients, RevenueCat, and Executor sit outside the Convex security group.",
+        "Convex Auth, functions, and data sit inside it. The RevenueCat webhook, token-authenticated /mcp, and the Executor OAuth callback (redirects to a fixed SITE_URL page; tokens never reach the browser) are the crossings into Convex.",
         "Web checkout calls Polar from the Next.js route. The access token stays in server env."
       ]
     }
