@@ -65,3 +65,69 @@ The mounted-layout regression failed against the old CSS before the repair, then
 Ran 3317 tests across 202 files. [161.37s]
 error: script "test" exited with code 1
 ```
+
+<!-- KB-FINISH-COMPLETED-ROOT-GATES -->
+## AWAY — completed root-owned validation
+
+Bun 1.3.9. Commands below ran on the repaired ticket branch with the existing checks, assertions, skips and timeouts unchanged. These local results are separate from hosted CI and CodeRabbit. Earlier scoped results, failures and installation UNKNOWN remain above.
+
+| Command | Result |
+|---|---|
+| `CI=1 bunx playwright test --reporter=line` | **FAIL**, exit 1; 7 failed; 89 skipped; 21 passed (8.9m) |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | **PASS**, exit 0; Tasks:    1 successful, 1 total |
+
+Last 20 lines — `CI=1 bunx playwright test --reporter=line`:
+
+```text
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/wiring-templates-onboardin-8a6b8-arding-mounts-its-component-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/wiring-templates-onboardin-8a6b8-arding-mounts-its-component-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  7 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/fix/calendar-add.spec.ts:26:7 › calendar add event › local mode: form renders and adds without a sign-in message
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  89 skipped
+  21 passed (8.9m)
+```
+
+No production release, live-account validation, native Hebrew review or real-device screen-reader verification is claimed.
+
+### AWAY — earlier local E2E setup failure
+
+The first root E2E attempt exited 1 before any test executed: ignored dependency links pointed outside this worktree, so Turbopack could not resolve Next. The links were repaired to the identical cached packages inside this checkout; no package, lockfile or config changed. The subsequent actual E2E result is the 21 pass / 7 fail / 89 credential-gated skips above. Neither attempt is reported as a pass.
+
+Last 20 lines of the initial setup failure:
+
+```text
+
+[WebServer] (node:74591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:74603) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] Error: Turbopack build failed with 1 errors:
+[WebServer] ./apps/web/app
+[WebServer] Error: Next.js inferred your workspace root, but it may not be correct.
+[WebServer]     We couldn't find the Next.js package (next/package.json) from the project directory: /workspace/work/kb-08/apps/web/app
+[WebServer]      To fix this, set turbopack.root in your Next.js config, or ensure the Next.js package is resolvable from this directory.
+[WebServer]     Note: For security and performance reasons, files outside of the project directory will not be compiled.
+[WebServer]     See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+[WebServer]
+[WebServer]     at ignore-listed frames
+
+[WebServer] error: script "dev" exited with code 1
+
+Error: Process from config.webServer was not able to start. Exit code: 1
+```
