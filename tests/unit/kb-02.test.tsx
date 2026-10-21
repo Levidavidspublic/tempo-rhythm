@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { basename, join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import * as bun from "bun";
@@ -75,7 +75,13 @@ function executable(): string {
 }
 
 async function makeFixture() {
-  temp = mkdtempSync(join(tmpdir(), "tempo-kb02-work-"));
+  mkdirSync(join(repo, "work"), { recursive: true });
+  temp = mkdtempSync(join(repo, "work/kb02-fixture-"));
+  // Match the app's CSS pipeline: browsers ignore raw Tailwind @theme declarations.
+  const require = createRequire(join(web, "package.json"));
+  const globals = join(web, "app/globals.css");
+  const baseCss = (await require("postcss")([require("@tailwindcss/postcss")({ base: repo })])
+    .process(readFileSync(globals, "utf8"), { from: globals })).css;
   symlinkSync(join(web, "node_modules"), join(temp, "node_modules"), "dir");
   writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{TpIconSprite}from"${web}/components/tempo/TpIcon.tsx";import{BrainDumpScreen${beforeMode ? "" : ",Kb02Gallery"}}from"${source}";window.__kbCalls=[];const gallery=new URLSearchParams(location.search).has("gallery");createRoot(document.getElementById("root")!).render(<><TpIconSprite/>${beforeMode ? "<main><BrainDumpScreen/></main>" : "{gallery?<Kb02Gallery/>:<main><BrainDumpScreen/></main>}"}</>);`);
   const result = await bun.build({
@@ -104,7 +110,8 @@ async function makeFixture() {
       const theme = url.searchParams.get("theme") === "dark" ? "dark" : "light";
       return new Response(`<!doctype html><html lang="${lang}" dir="${dir}" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/globals.css">${css.map(file => `<link rel="stylesheet" href="/${file}">`).join("")}</head><body><div id="root"></div><script type="module" src="/entry.js"></script></body></html>`, { headers: { "content-type": "text/html" } });
     }
-    const path = url.pathname === "/globals.css" ? join(web, "app/globals.css") : outputs.includes(url.pathname.slice(1)) ? join(temp, url.pathname) : join(web, "app", url.pathname);
+    if (url.pathname === "/globals.css") return new Response(baseCss, { headers: { "content-type": "text/css" } });
+    const path = outputs.includes(url.pathname.slice(1)) ? join(temp, url.pathname) : join(web, "app", url.pathname);
     const file = bun.file(path);
     return file.exists().then(exists => exists ? new Response(file, { headers: { "content-type": path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "text/javascript" : "application/octet-stream" } }) : new Response("not found", { status: 404 }));
   } });
@@ -126,6 +133,44 @@ async function open(width = 390, params = "", kept?: object): Promise<Page> {
 
 async function noOverflow(page: Page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+}
+async function visibleKeyboardFocus(page: Page) {
+  const focus = await page.evaluate(() => {
+    const node = document.activeElement!;
+    const style = getComputedStyle(node);
+    const rgba = (color: string) => {
+      const values = color.match(/[\d.]+/g)?.map(Number);
+      if (!values || values.length < 3) throw new Error("Unresolved focus/background colour: " + color);
+      return [...values.slice(0, 3), values[3] ?? 1];
+    };
+    let parent = node.parentElement;
+    while (parent && rgba(getComputedStyle(parent).backgroundColor)[3] === 0) parent = parent.parentElement;
+    if (!parent) throw new Error("No opaque background behind keyboard focus");
+    const background = getComputedStyle(parent).backgroundColor;
+    const luminance = (color: string) => rgba(color).slice(0, 3).map(channel => {
+      const srgb = channel / 255;
+      return srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+    }).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+    const ring = luminance(style.outlineColor);
+    const surface = luminance(background);
+    return {
+      focusVisible: node.matches(":focus-visible"), outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth), outlineOffset: Number.parseFloat(style.outlineOffset),
+      outlineColor: style.outlineColor, background, alpha: rgba(style.outlineColor)[3],
+      backgroundAlpha: rgba(background)[3], opacity: style.opacity, visibility: style.visibility,
+      contrast: (Math.max(ring, surface) + 0.05) / (Math.min(ring, surface) + 0.05),
+    };
+  });
+  expect(focus.focusVisible).toBe(true);
+  expect(focus.outlineStyle).toBe("solid");
+  expect(focus.outlineWidth).toBeGreaterThanOrEqual(2);
+  expect(focus.outlineOffset).toBeGreaterThanOrEqual(2);
+  expect(focus.alpha).toBe(1);
+  expect(focus.backgroundAlpha).toBe(1);
+  expect(focus.opacity).toBe("1");
+  expect(focus.visibility).toBe("visible");
+  expect(focus.contrast).toBeGreaterThanOrEqual(3);
+  return focus;
 }
 async function capture(page: Page, name: string) {
   const dir = process.env.KB02_EVIDENCE_DIR;
@@ -248,8 +293,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     expect(minHeight).toBeGreaterThanOrEqual(44);
     await page.getByRole("button", { name: tKb02("en", "kb02.galleryDefault") }).focus();
     await page.keyboard.press("Tab");
-    expect(await page.evaluate(() => document.activeElement?.matches(":focus-visible"))).toBe(true);
-    expect(await page.evaluate(() => getComputedStyle(document.activeElement!).outlineStyle)).not.toBe("none");
+    await visibleKeyboardFocus(page);
     await page.close();
   }, 90_000);
 
@@ -275,7 +319,34 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
       expect(await gallery.locator("h1").count()).toBe(1);
       expect(await gallery.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
       expect(await noOverflow(gallery)).toBe(true);
-      expect(await gallery.locator(".kb02-capture-status").evaluate(node => getComputedStyle(node).transitionDuration)).toBe("0s");
+      await gallery.getByRole("button", { name: tKb02(lang, "kb02.galleryDefault") }).focus();
+      await gallery.keyboard.press("Tab");
+      const focus = await visibleKeyboardFocus(gallery);
+      expect(await gallery.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
+      const motion = await gallery.locator(".kb02-capture-status, .kb02-recovery").evaluateAll(nodes => nodes.map(node => {
+        const style = getComputedStyle(node);
+        const seconds = (value: string) => value.split(",").map(time => Number.parseFloat(time) / (time.trim().endsWith("ms") ? 1000 : 1));
+        return {
+          transitionProperty: style.transitionProperty, transitionSeconds: seconds(style.transitionDuration),
+          animationName: style.animationName, animationSeconds: seconds(style.animationDuration),
+          animationIterations: style.animationIterationCount, activeAnimations: node.getAnimations().length,
+        };
+      }));
+      expect(motion).toHaveLength(2);
+      for (const style of motion) {
+        expect(style.transitionProperty).toBe("none");
+        expect(style.animationName).toBe("none");
+        // Global !important reduced-motion durations intentionally retain 0.01ms.
+        expect(style.transitionSeconds).toEqual([0.00001]);
+        expect(style.animationSeconds).toEqual([0.00001]);
+        expect(style.animationIterations).toBe("1");
+        expect(style.activeAnimations).toBe(0);
+      }
+      const evidenceDir = process.env.KB02_EVIDENCE_DIR;
+      if (evidenceDir) {
+        mkdirSync(evidenceDir, { recursive: true });
+        writeFileSync(join(evidenceDir, "checks-" + width + "-" + lang + "-" + theme + ".json"), JSON.stringify({ focus, motion }, null, 2));
+      }
       await capture(gallery, `gallery-${width}-${lang}-${theme}.png`);
       await gallery.close();
     }
