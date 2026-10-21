@@ -4,7 +4,7 @@ AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 18:25 (Asia/Je
 
 ## Overnight v3 — 2026-10-21
 
-In progress — Amit has authorized the shared harness fix first, then the nine fixture reruns, then seven scoped bug/timing passes. Earlier AT-05–AT-20 budget holds below are historical and superseded by that sequence, not an unlimited retry grant. Shared harness issue: [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), work in progress. Current actions and results are recorded in OVERNIGHT-REPORT.md. AT-01 holds remain; AT-02/03 backend gates remain unanswered. #1193 is excluded and #1198 cannot merge.
+In progress — Amit has authorized the shared harness fix first, then the nine fixture reruns, then seven scoped bug/timing passes. Earlier AT-05–AT-20 budget holds below are historical and superseded by that sequence, not an unlimited retry grant. Fresh baseline: Bun1.3.9, lint/typecheck5/5; full tests3,473pass/20fail/3todo (KB-64 browser closes). No new completion claim. Shared harness issue: [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), work in progress. Current actions and results are recorded in OVERNIGHT-REPORT.md. AT-01 holds remain; AT-02/03 backend gates remain unanswered. #1193 is excluded and #1198 cannot merge.
 
 ## Counts
 

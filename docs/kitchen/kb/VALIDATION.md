@@ -420,3 +420,60 @@ WALK — A fresh paginated listing on 21 October scanned 114 open PRs and 292 op
 WALK — Planning commit f129286 passed hosted CI runs39622868301 and39624032527. Its required preview guard passed through the existing “Canceled by Ignored Build Step” status; no new deployment was invoked. The PR was marked ready, but CodeRabbit’s visible coverage still points to older4dc7fb9 and does not establish current review. That historical ready transition is reversed in overnight v3: planning #1140 stays draft and is excluded from ready, merge and issue-closure operations. Only separately authorized worker PRs may proceed through current checks, actual review and the integration queue.
 
 WALK — KB-45 review comment4338293275 was verified and fixed with evidence-only65afd95: “zombie processes adopted by PID1.” The review thread is resolved. Production/test source, failed validation and AT-19 remain unchanged; documentation does not consume or authorize a fifth source repair.
+
+
+## Overnight v3 baseline — 2026-10-21
+
+Incomplete — Planning source77f25bc plus documentation-only role wording. Bun1.3.9 installed through the npm distribution after the official release download returned403. Frozen install passes (2,000 packages). Lint5/5, typecheck5/5, four scans/notices and build1/1 pass. All mandatory commands ran in order. No test/configuration/timeout was changed.
+
+Full test:3,473pass/20fail/3todo,211files,173.45s. The twenty failures are KB-64 browser-close cases; this is a fresh baseline failure, not a proved product regression and not a failure of the new shared harness (absent here).
+
+E2E:1pass/28fail/88skip; the failures cannot launch the missing Playwright browser. Browser download then returned403 Domain forbidden from cdn.playwright.dev. UNKNOWN:e2e(Playwright CDN blocked). System Chromium remains available for scoped browser fixtures.
+
+Last20lines — plan-2.log
+```text
+(fail) KB64 Undo recovery > fulfillment makes no invented success claim and does not expire early [16.05ms]
+(fail) KB64 Undo recovery > unmount fences a stale rejected request and cancels expiry [16.02ms]
+(fail) KB64 Undo recovery > changed deadline fences an old rejection without leaking error or busy state [16.02ms]
+(fail) KB64 Undo recovery > changed deadline fences an old fulfilled request after the old deadline [16.02ms]
+(fail) KB64 Undo recovery > new inline callback identities do not reset an active request [16.06ms]
+(fail) KB64 Undo recovery > Hebrew recovery has RTL direction and localized action copy [16.03ms]
+(fail) KB64 Undo recovery > an immediate fulfillment crossing the deadline still schedules post-commit expiry [16.03ms]
+(fail) KB64 Undo recovery > late successful real detail restoration keeps the parent navigation authoritative [16.03ms]
+(fail) KB64 Undo recovery > real NotesScreen list callback contains rejection and retries the same note [16.04ms]
+(fail) KB64 Undo recovery > real NotesScreen page callback contains rejection and leaves false fulfillment neutral [16.03ms]
+(fail) KB64 Undo recovery > gallery reuses the notice and supports reject retry expiration and language [16.02ms]
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [16.03ms]
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [16.06ms]
+
+ 3473 pass
+ 3 todo
+ 20 fail
+ 81363 expect() calls
+Ran 3496 tests across 211 files. [173.45s]
+error: script "test" exited with code 1
+```
+
+Last20lines — plan-4.log
+```text
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/harness.spec.ts:8:7 › wiring E2E harness › signed-out /plan is not sent to /sign-in under the dev E2E bypass
+    [chromium] › tests/e2e/wiring/harness.spec.ts:14:7 › wiring E2E harness › a route outside the wiring list still redirects
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  88 skipped
+  1 passed (13.3s)
+```
