@@ -73,6 +73,18 @@ The shared fix improves focused migrations, including KB-03’s 15, KB-05’s 13
 
 E2E recovery: the exact command now uses installed Chromium 151 through its local executable-cache path, without repository or configuration changes. Planning baseline: **27 pass / 1 fail / 89 skip** (task-view navigation). KB-67 and KB-45 each separately passed **28 / 0 / 89 skip**. Earlier missing-browser failures and the CDN 403 remain recorded. Existing credential-gated skips were not introduced by this run.
 
+## Reopened tickets
+
+The five earlier merge receipts remain historical. These issues stay open until their corrective PRs pass every gate.
+
+| Ticket | Why reopened | Linked correction and current result |
+|---|---|---|
+| KB-61 | The merged fixture reached its 480-second setup deadline and could leave its server alive after launch failure. | [#1199](https://github.com/Levidavidspublic/tempo-rhythm/pull/1199) adopts the shared lifecycle and preserves both cleanup errors. Final focused 27 / 0; shared dependency and broader failures remain. |
+| KB-66 | A cached unresolved child promise caused eight successive 240-second wrapper timeouts in later hosted runs. | [#1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) streams and bounds one shared child lifecycle; final combined 37 / 0. Shared prerequisite remains stuck. |
+| KB-67 | Browser teardown could stall before server cleanup; hosted jobs passed named cases then failed the 60-second teardown hook. | [#1197](https://github.com/Levidavidspublic/tempo-rhythm/pull/1197) independently cleans owned resources and validates each child result; final combined 49 / 0. Shared prerequisite and historical scan finding remain. |
+| KB-70 | The unread-row locator matched before the committed read state; the wrapper also checked child exit only on its first case. | [#1196](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196) carries the correction; the v3 pass will wait for the matching row’s actual focus. |
+| KB-74 | Late review found a focus-trapping narrow drawer without a named modal-dialog boundary. | [#1200](https://github.com/Levidavidspublic/tempo-rhythm/pull/1200) adds modal semantics; the v3 pass will synchronize the exact geometry checks with the settled transition. |
+
 ## Per ticket
 
 | Ticket | Issue | PR | Verdict |
