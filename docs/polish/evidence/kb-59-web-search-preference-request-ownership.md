@@ -430,3 +430,39 @@ Frozen install output (all available lines before timeout):
 bun install v1.3.9 (cf6cdbbb)
 Resolving dependencies
 ```
+
+## AWAY — completed root-owned validation on rebased repair
+
+Source head: `1dd3a80bd2ca044affa5054cbb8b837632760a7f`, based on integration `542f2cf`. The rebase retained the scoped source/test patch. Bun 1.3.9; no assertion, timeout, skip, config, environment or dependency-version change.
+
+| Remaining command | Actual result |
+|---|---|
+| `CI=1 bunx playwright test --reporter=line` | **FAIL**, exit 1: 17 pass / 89 credential-dependent skips / 11 fail in 10.1 minutes. The corrected local dependency setup started Next and ran all scheduled cases; this does not convert the earlier startup failure to a pass. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | **PASS**, exit 0: 1 successful / 1 total, 2m56.91s. |
+
+The 26-case focused pass, local full-unit failures, frozen-install UNKNOWN, successful lint/typecheck/scans and image provenance remain above. Hosted Test, E2E, Build and all five required checks passed on this exact source head; CodeRabbit's completed review covered it and reported no actionable comments. Hosted results are separate from the local failures. No production or live-account validation is claimed.
+
+Last 20 lines of the completed local E2E failure:
+
+```text
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:51187) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  11 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/fix/calendar-add.spec.ts:26:7 › calendar add event › local mode: form renders and adds without a sign-in message
+    [chromium] › tests/e2e/fix/insights-loads.spec.ts:5:5 › /insights leaves the loading placeholders within 8 s
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/coach.spec.ts:8:7 › coach wiring › /coach renders dial/panic and proposal markers next to Coach chat
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:8:7 › habits, brain dump and search wiring › /habits mounts the habits screen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:14:7 › habits, brain dump and search wiring › /habits/[id] mounts HabitDetail
+    [chromium] › tests/e2e/wiring/harness.spec.ts:8:7 › wiring E2E harness › signed-out /plan is not sent to /sign-in under the dev E2E bypass
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+  89 skipped
+  17 passed (10.1m)
+```
