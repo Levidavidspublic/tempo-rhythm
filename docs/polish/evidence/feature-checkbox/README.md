@@ -164,3 +164,9 @@ bun run test
 The fixture checks Playwright's configured Chromium executable first, then `/usr/bin/chromium` and `/usr/bin/google-chrome`. It fails explicitly when none exists. This prerequisite also applies to existing browser-backed unit fixtures; the CI Test job itself does not run the provisioning command above. This paragraph documents setup and the browserless-checkout limitation; it does not claim automated provisioning was added or repaired.
 
 If the browser CDN is blocked, including a 403 response, AGENTS.md permits an already-installed Chromium fallback. If no supported browser is available, report the infrastructure limitation as UNKNOWN; do not skip the mounted cases or treat them as passing. No test hook, workflow, dependency, package script or product file changed for this clarification, and no browser command was run for this evidence-only update.
+
+## Final current-source local gates
+
+WALK — On `f653de8`, the full suite exited 1 (3496 pass / 5 fail / 3 todo / 1 error), exact local Playwright exited 1 (23 pass / 5 fail / 89 existing skips), all four scans exited 0, and the placeholder build exited 0. The checkbox group passed all eight cases inside the full suite. The aggregate failures remain blockers; this is not preview or production proof.
+
+[Complete current failure lists, uncaught error, command tails and preserved earlier failures](f653de8-gates.md). [Authoritative source-specific command receipts](gate-receipts.json). Earlier install, lint, typecheck and focused results retain their original source attribution. No source/test changes or unchanged failing-command reruns were made during this final gate pass.

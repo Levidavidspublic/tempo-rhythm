@@ -1,0 +1,95 @@
+{
+  "currentSource": "f653de8bb84738404c3b701e4d1b422490a6f9b3",
+  "current": {
+    "test": {
+      "command": "bun run test",
+      "exit": 1,
+      "startedAt": "2026-10-21T22:30:50Z",
+      "endedAt": "2026-10-21T22:48:31Z",
+      "head": "f653de8bb84738404c3b701e4d1b422490a6f9b3"
+    },
+    "scans": {
+      "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
+      "exit": 0,
+      "startedAt": "2026-10-21T22:48:31Z",
+      "endedAt": "2026-10-21T22:48:32Z",
+      "head": "f653de8bb84738404c3b701e4d1b422490a6f9b3"
+    },
+    "e2e": {
+      "command": "CI=1 bunx playwright test --reporter=line",
+      "exit": 1,
+      "startedAt": "2026-10-21T22:48:32Z",
+      "endedAt": "2026-10-21T22:53:36Z",
+      "head": "f653de8bb84738404c3b701e4d1b422490a6f9b3"
+    },
+    "build": {
+      "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
+      "exit": 0,
+      "startedAt": "2026-10-21T22:54:03Z",
+      "endedAt": "2026-10-21T22:56:17Z",
+      "head": "f653de8bb84738404c3b701e4d1b422490a6f9b3"
+    }
+  },
+  "earlier": {
+    "install-observation": {
+      "command": "bun install --frozen-lockfile",
+      "executionBoundSeconds": 360,
+      "exit": 1,
+      "startedAt": "2026-10-21T21:06:20Z",
+      "endedAt": "2026-10-21T21:11:34Z",
+      "head": "f23f324b10c57defc23da5018cb4e4ccb055215c"
+    },
+    "install-recovery": {
+      "command": "bun install --frozen-lockfile",
+      "executionBoundSeconds": 360,
+      "exit": 0,
+      "startedAt": "2026-10-21T21:16:46Z",
+      "endedAt": "2026-10-21T21:22:10Z",
+      "head": "f23f324b10c57defc23da5018cb4e4ccb055215c",
+      "reason": "Capacity recovered after prior NoSpaceLeft"
+    },
+    "review-focused": {
+      "command": "bun test tests/unit/tempo-pages-checkbox.test.tsx",
+      "exit": 0,
+      "startedAt": "2026-10-21T21:26:39Z",
+      "endedAt": "2026-10-21T21:28:08Z",
+      "baseHead": "1c40f6e11e6f54e7b93ed6f2f67f350679e730a8",
+      "candidate": "approved platform shortcut correction"
+    },
+    "test": {
+      "command": "bun run test",
+      "exit": 1,
+      "startedAt": "2026-10-21T20:31:52Z",
+      "endedAt": "2026-10-21T20:55:38Z",
+      "head": "f23f324b10c57defc23da5018cb4e4ccb055215c"
+    },
+    "scans": {
+      "command": "bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices",
+      "exit": 0,
+      "startedAt": "2026-10-21T20:55:38Z",
+      "endedAt": "2026-10-21T20:55:39Z",
+      "head": "f23f324b10c57defc23da5018cb4e4ccb055215c"
+    },
+    "e2e": {
+      "command": "CI=1 bunx playwright test --reporter=line",
+      "exit": 1,
+      "startedAt": "2026-10-21T20:55:39Z",
+      "endedAt": "2026-10-21T21:00:01Z",
+      "head": "f23f324b10c57defc23da5018cb4e4ccb055215c"
+    },
+    "build": {
+      "command": "NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build",
+      "exit": 0,
+      "startedAt": "2026-10-21T21:00:01Z",
+      "endedAt": "2026-10-21T21:05:35Z",
+      "head": "f23f324b10c57defc23da5018cb4e4ccb055215c"
+    },
+    "typecheck": {
+      "command": "bun run typecheck",
+      "exit": 0,
+      "startedAt": "2026-10-21T21:34:29Z",
+      "endedAt": "2026-10-21T21:34:31Z",
+      "head": "97528b162a743c83ea5d1d364d0b46792e92a4e0"
+    }
+  }
+}
