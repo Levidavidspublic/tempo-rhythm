@@ -54,3 +54,67 @@ The initial scoped lint run rejected a redundant `role="status"` on a div under 
 The final source uses a language-independent sent-email assertion for compatibility with KB-10. Root independently completed final typecheck (5/5). The 11-case capture pass and all earlier failed diagnostics above remain distinct from the remaining full repository gates.
 
 The lead owns the remaining full unit suite, scan confirmation, local E2E and build commands. They are queued separately under the shared resource lock; no passing result is claimed for an unfinished command. This repair may be pushed as a draft for hosted CI, but is not yet eligible for integration. No assertions, check configuration, timeout or skip conditions were weakened. The lead will append actual outcomes and failure tails before the merge gate.
+
+
+## Third candidate: clean process isolation, 21 October 2026
+
+Budget audit uses coherent candidate rounds rather than command or commit counts. The initial submission ended at old `6c0c71c` / rebased `d088ad3`, including implementation and capture follow-up; the latter also changed a modal token and fixture capture setup, so it is not a docs-only commit. The one recorded subsequent review repair is old `2c996e2` / rebased `d4ac160`, covering focus, live-region semantics and contrast. Multiple failures and gates within that candidate do not create new rounds. The exhausted-ticket list in current `IMPLEMENTATION.md` does not list KB-45, and available evidence/reflog/review records contain no explicit third-round or extra-pass consumption. This isolation change is the third ordinary candidate on that ledger; it does not grant another repair round.
+
+Starting source: `d4ac16043e8af501b96cc68f353d3415404f77fc`. Hosted full-suite evidence on that candidate recorded 3,436 pass, 3 todo, 1 fail, 81,532 assertions in 178.97 seconds: the scoped browser fixture failed building scheduler (`EISDIR`) and resolving a Radix entry after other integration fixtures. The ten static cases passed. The excerpt is retained as `work/kb45-isolation/hosted-before.log`; no new full-suite baseline is claimed locally.
+
+Only the scoped test and this evidence change. All eleven original cases now run in a clean child containing the sole Bun build/server and the actual React, Playwright, PostCSS, Tailwind, dictionary and product imports. The full-suite parent imports none of those runtime modules, builds/serves nothing, and reports each original case name. Every parent case first validates the actual child exit, then requires exactly eleven passes, zero failures and eleven executed cases before its supplementary name assertion. This rejects incomplete/skipped child runs as well as nonzero exits.
+
+An audit proves the **entire original test body** is byte-identical after indentation: all 58 underlying `expect` sites, loops, native build inputs, styles, browser assertions, 240-second browser deadline and 30-second cleanup deadline are preserved. Parent static wrappers allow time for the full child; the child deadlines are unchanged. The product's retry-focus guard, polite/atomic live region and legal contrast fixes remain unchanged, as do its dictionary, CSS and existing JPG. No new screenshot or live-account result is claimed. Repaired test SHA-256: `29eab6c560f7265b316f3c9b70dfd79fdb845d5347396dd291957e1048c0424a`.
+
+Final checks for this third candidate are recorded below after completion. Full repository Test, E2E, build, hosted CI and remote review remain with the coordinating agent. No push, rebase, config, backend, route or product mutation is included.
+
+
+### Test results (cloud agent sandbox), third candidate
+
+| Command | Exit | Result |
+| --- | --- | --- |
+| `bun --version` | 0 | 1.3.9 |
+| `timeout 120s bun install --frozen-lockfile` | 124 | UNKNOWN: stalled at dependency resolution for 120.45 seconds. Existing dependencies were used; no installation success or network diagnosis claimed. |
+| `bun run lint` | 0 | 5 successful tasks, 0 errors; 10 existing warnings (UI 1, web 9). |
+| `bun run typecheck` | 0 | 5 successful, 5 total; 103.20 seconds. |
+| `flock /workspace/work/kb-finish/heavy-check.lock bun test tests/unit/kb-45.test.tsx` | 0 | **11 pass, 0 fail, 11 wrapper assertions**, 124.23 seconds of test execution. The first wrapper runs the complete child; every wrapper validates its successful eleven-case result. The locked command's 1,052.64 seconds includes queue time. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK. |
+| `bun run test` on this third candidate | — | UNKNOWN: full repository gate remains with the coordinating agent. |
+| `CI=1 bunx playwright test --reporter=line` | — | UNKNOWN: E2E gate remains with the coordinating agent. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | UNKNOWN: build gate remains with the coordinating agent. |
+
+The eleven wrapper assertions are supplementary to the child's exit and exact executed-case checks. The original 58 assertion sites and browser loops execute in that child; its complete body is unchanged. The historical 386-assertion capture above remains a separate recorded run, not a newly observed count here. No source edit followed this successful focused run. Lock and all manifests still match main byte for byte; own `node_modules/.bun` is a real directory and workspace links remain local. No dependency setup changes were made.
+
+Frozen-install failure output (entire log, fewer than 20 lines):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Historical hosted Test failure, last 20 command lines before CI cleanup (full excerpt retained in `hosted-before.log`):
+
+```text
+2026-10-21T10:19:38.8257313Z (pass) the MCP client > a network failure, a timeout and an oversized answer each have their kind [23.00ms]
+2026-10-21T10:19:55.4086099Z
+2026-10-21T10:19:55.4086568Z ##[endgroup]
+2026-10-21T10:19:55.4097446Z
+2026-10-21T10:19:55.4098020Z 3 tests todo:
+2026-10-21T10:19:55.4099444Z (todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+2026-10-21T10:19:55.4100998Z (todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+2026-10-21T10:19:55.4102075Z (todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+2026-10-21T10:19:55.4102474Z
+2026-10-21T10:19:55.4102481Z
+2026-10-21T10:19:55.4102578Z 1 tests failed:
+2026-10-21T10:19:55.4103203Z (fail) hydrated gallery and mounted modal preserve validation, retry, Hebrew links, contrast, and 44 px controls [38.00ms]
+2026-10-21T10:19:55.4103673Z
+2026-10-21T10:19:55.4103761Z  3436 pass
+2026-10-21T10:19:55.4103965Z  3 todo
+2026-10-21T10:19:55.4104149Z  1 fail
+2026-10-21T10:19:55.4104352Z  81532 expect() calls
+2026-10-21T10:19:55.4104659Z Ran 3440 tests across 208 files. [178.97s]
+2026-10-21T10:19:55.4628426Z error: script "test" exited with code 1
+2026-10-21T10:19:55.4651560Z ##[error]Process completed with exit code 1.
+```
+
+Exact logs/exits, `checks.json`, `coverage-audit.json`, the frozen baseline, source SHA manifests and budget ledger remain under ignored `work/kb45-isolation/`. Root handoff: `/workspace/work/kb-finish/kb45/HANDOFF.md`. Hosted CI, final review and integration eligibility remain unverified here. No push, remote mutation, deployment or additional broad check was performed by this worker.
