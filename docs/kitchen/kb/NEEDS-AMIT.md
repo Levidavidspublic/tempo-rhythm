@@ -21,6 +21,8 @@ These requests are preserved from the separate feature lane; they are not additi
 
 12. AT-27 — Authorize one scoped correction for Plan #1211 after its three focused candidates: restore the existing visually hidden Plan heading required by both EN/HE one-h1 tests, retaining all assertions and deadlines. Hosted Test reports 3,492 pass / 2 fail / 3 todo; both failures are this heading regression. No test is weakened and no fourth source candidate is made without authorization.
 
+13. AT-28 — Authorize one scoped regression-test correction for hero #1210 after its three implementation candidates: assert the desktop examples' initial animation state and stable geometry directly in `tests/e2e/landing-motion.spec.ts`, before awaiting the copy animation. Actual EN/HE supplementary observations pass, but CodeRabbit on `204bb59` retains the committed-test gap. Preserve every existing case, assertion and deadline; no product change or fourth source/test candidate is made without authorization.
+
 WALK — Applicability correction: the earlier extra label hold for feature #1246 was lead-inferred, not an owner requirement. Amit explicitly authorized payment-provider wiring behind an OFF flag; #1246 is a scoped data ticket. AGENTS rule 4 and the unchanged scope-guard require the architecture exception for component/backend edits, not this data ticket. KB-01/16/31 retain their explicit owner gates. All payment validation, review and repository guards remain required; activation remains separate.
 
 ## Amit's answers — 2026-10-21
