@@ -287,3 +287,14 @@ Additional-pass E2E actual last 20 lines (trailing whitespace omitted):
 ```
 
 At root’s explicit request, the active E2E finished naturally and the next build was handed back without starting, so the shared slot could serve other scoped diagnostics. The additional-pass build is PENDING, owned by root; the historical successful build above does not substitute for it. No push, PR metadata, merge or deployment was performed by this repair worker. Source/test SHA256 remained frozen through the mandatory full-unit, scan and E2E stages.
+
+<!-- KB-FINISH-COMPLETED-ROOT-GATES -->
+## AWAY — completed root-owned validation
+
+Bun 1.3.9. Commands below ran on the repaired ticket branch with the existing checks, assertions, skips and timeouts unchanged. These local results are separate from hosted CI and CodeRabbit. Earlier scoped results, failures and installation UNKNOWN remain above.
+
+| Command | Result |
+|---|---|
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | **PASS**, exit 0; Tasks:    1 successful, 1 total |
+
+No production release, live-account validation, native Hebrew review or real-device screen-reader verification is claimed.
