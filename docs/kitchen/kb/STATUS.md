@@ -1,6 +1,6 @@
 # KB finish status
 
-WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist, draft #1209), #1206 (landing motion, draft #1210), #1207 (unified Plan, draft #1211) and #1208 (public pricing, implementing), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
+WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist, PR #1209), #1206 (landing motion, PR #1210), #1207 (unified Plan, draft #1211) and #1208 (public pricing, implementing), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
 
 AWAY — KB is unfinished. Initial census: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem); working results refreshed throughout 21 October 2026. Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 32 PRs after corrective follow-ups. Current KB heads, checks and review threads are refreshed below.
 
@@ -13,11 +13,11 @@ In progress — Amit authorized the shared harness first, then nine fixture reru
 - KB issues: **5 closed / 56 open**, including the administrative lead issue #1176.
 - KB PRs: **10 merged / 22 open**; includes planning #1140, shared harness #1203 and corrective #1204.
 - Written worker specifications: **59**, all mapped to filed issues in [ISSUES.json](ISSUES.json); **34 newly filed issues remain dependency-blocked without PRs**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **6 KB owner actions plus separately reported feature-lane requests**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
+- NEEDS-AMIT.md: **6 KB owner actions plus 6 separately reported feature-lane requests**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
 
 ## Lane 2 counts
 
-WALK — Four feature issues filed; three feature PRs open (two draft, hero ready for automatic review), none merged or closed. Checkbox has 8 focused mounted cases and 57 existing editor cases passing. Hero has 8 real-route cases passing. Broad checks and actual CodeRabbit reviews remain pending. Plan passes 13 focused child cases; pricing now occupies the fourth worktree. Hosted hero CI/guards pass; actual review remains pending. These counts are separate from KB above.
+WALK — Four feature issues filed; three feature PRs open (Plan draft; checkbox and hero ready for automatic review), none merged or closed. Checkbox has 8 focused mounted cases and 57 existing editor cases passing. Hero has 8 real-route cases passing. Broad checks and actual CodeRabbit reviews remain pending. Plan passes 13 focused child cases; pricing now occupies the fourth worktree. Hosted checkbox and hero CI/guards pass; actual reviews remain pending. Plan hosted CI fails both existing EN/HE visually-hidden-heading assertions (3,492 pass / 2 fail / 3 todo); AT-27 records its retry boundary. These counts are separate from KB above.
 
 ## Authority and gates
 
