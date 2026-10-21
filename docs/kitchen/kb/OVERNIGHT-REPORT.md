@@ -41,7 +41,7 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-03 | 1157 | 1162 | PR open — focused15/0; full3,520pass/0fail/3todo on earlier shared dependency; scans/build pass. Final shared+own30/0 at cdd517d; hosted gates/shared merge pending. |
 | KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-05 | 1142 | 1149 | PR open — Focused 13/0; full 3479/22/3 todo (21 KB-64 failures, one KB-61 timeout); E2E 28/0/89 skip, other local gates pass. Shared dependency and current CI/review block merge. |
-| KB-06 | 1143 | 1151 | PR open — focused 19/0; full suite active. Shared dependency and current gates block merge. |
+| KB-06 | 1143 | 1151 | PR open — Focused 19/0; full incomplete after unchanged KB-66 240-second timeout (observed 1556/1/3 todo, exit143); E2E 28/0/89 skip; other local gates pass except frozen install UNKNOWN. Shared dependency and current CI/review block merge. |
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
 | KB-09 | 1145 | 1150 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
