@@ -1,0 +1,95 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-plan-views.test.tsx:
+
+tests/unit/tempo-plan-views.test.tsx:
+(pass) Plan calendar boundaries > groups mixed entries chronologically and does not collide on task/event IDs [8.20ms]
+(pass) Plan calendar boundaries > excludes absent/non-finite dates, cancelled tasks and the range's next midnight [0.91ms]
+(pass) Plan calendar boundaries > day/week/month preserve local DST boundaries across supported browser zones [8.86ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/390 [3922.96ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/1280 [3796.55ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/390 [3718.59ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/1280 [4956.11ms]
+(pass) all-task Board persists movement and Undo without assigning a project [4593.85ms]
+(pass) existing project Board stays filtered and has its original back link [2285.27ms]
+(pass) changing the selected day updates both the mixed agenda and time-block target [2361.35ms]
+(pass) Today rolls over at midnight while an explicitly selected other day stays selected [3003.13ms]
+294 |     const page = await browser.newPage();
+295 |     try {
+296 |       await page.goto(server.url.href);
+297 |       await page.getByRole("button", { name: translate("en", "cal.row.editName").replace("{title}", "Planning call"), exact: true }).click();
+298 |       const row = page.locator('[data-component="EventRow"][data-editing="true"]');
+299 |       await row.getByRole("textbox").fill("Updated planning call");
+                                           ^
+error: fill: Error: strict mode violation: locator('[data-component="EventRow"][data-editing="true"]').getByRole('textbox') resolved to 2 elements:
+    1) <input dir="auto" class="tp-input" value="Planning call"/> aka getByTestId('plan-agenda').getByRole('textbox', { name: 'Title' })
+    2) <input type="date" value="2026-10-21" class="tp-input tp-num"/> aka getByTestId('plan-agenda').getByRole('textbox', { name: 'Date' })
+
+Call log:
+[2m  - waiting for locator('[data-component="EventRow"][data-editing="true"]').getByRole('textbox')[22m
+
+  log: [ "  - waiting for locator('[data-component=\"EventRow\"][data-editing=\"true\"]').getByRole('textbox')" ],
+
+      at /workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx:299:38
+      at processTicksAndRejections (native:7:39)
+(fail) mixed agenda keeps event editing and a failed save keeps the draft [3510.86ms]
+(pass) signed-out, loading and empty Plan states stay distinct [4132.89ms]
+
+ 12 pass
+ 1 fail
+ 183 expect() calls
+Ran 13 tests across 1 file. [51.32s]
+ 5 | import { join } from "node:path";
+ 6 | 
+ 7 | // Other suites mock React and Convex process-wide. The mounted proof owns a clean process.
+ 8 | if (process.env.TEMPO_PLAN_ISOLATED !== "1") {
+ 9 |   test("Plan mounted and calendar-boundary regressions in a clean process", () => {
+10 |     const output = execFileSync(process.execPath, ["test", import.meta.path], {
+                        ^
+error: Command failed: /workspace/work/kb/bun139 test /workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx
+
+tests/unit/tempo-plan-views.test.tsx:
+(pass) Plan calendar boundaries > groups mixed entries chronologically and does not collide on task/event IDs [8.20ms]
+(pass) Plan calendar boundaries > excludes absent/non-finite dates, cancelled tasks and the range's next midnight [0.91ms]
+(pass) Plan calendar boundaries > day/week/month preserve local DST boundaries across supported browser zones [8.86ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/390 [3922.96ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/1280 [3796.55ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/390 [3718.59ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/1280 [4956.11ms]
+(pass) all-task Board persists movement and Undo without assigning a project [4593.85ms]
+(pass) existing project Board stays filtered and has its original back link [2285.27ms]
+(pass) changing the selected day updates both the mixed agenda and time-block target [2361.35ms]
+(pass) Today rolls over at midnight while an explicitly selected other day stays selected [3003.13ms]
+294 |     const page = await browser.newPage();
+295 |     try {
+296 |       await page.goto(server.url.href);
+297 |       await page.getByRole("button", { name: translate("en", "cal.row.editName").replace("{title}", "Planning call"), exact: true }).click();
+298 |       const row = page.locator('[data-component="EventRow"][data-editing="true"]');
+299 |       await row.getByRole("textbox").fill("Updated planning call");
+                                           ^
+error: fill: Error: strict mode violation: locator('[data-component="EventRow"][data-editing="true"]').getByRole('textbox') resolved to 2 elements:
+    1) <input dir="auto" class="tp-input" value="Planning call"/> aka getByTestId('plan-agenda').getByRole('textbox', { name: 'Title' })
+    2) <input type="date" value="2026-10-21" class="tp-input tp-num"/> aka getByTestId('plan-agenda').getByRole('textbox', { name: 'Date' })
+
+Call log:
+[2m  - waiting for locator('[data-component="EventRow"][data-editing="true"]').getByRole('textbox')[22m
+
+  log: [ "  - waiting for locator('[data-component=\"EventRow\"][data-editing=\"true\"]').getByRole('textbox')" ],
+
+      at /workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx:299:38
+      at processTicksAndRejections (native:7:39)
+(fail) mixed agenda keeps event editing and a failed save keeps the draft [3510.86ms]
+(pass) signed-out, loading and empty Plan states stay distinct [4132.89ms]
+
+ 12 pass
+ 1 fail
+ 183 expect() calls
+Ran 13 tests across 1 file. [51.32s]
+
+      at execFileSync (node:child_process:271:14)
+      at <anonymous> (/workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx:10:20)
+(fail) Plan mounted and calendar-boundary regressions in a clean process [51391.12ms]
+
+ 0 pass
+ 1 fail
+Ran 1 test across 1 file. [51.59s]

@@ -1,0 +1,29 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-plan-views.test.tsx:
+
+tests/unit/tempo-plan-views.test.tsx:
+(pass) Plan calendar boundaries > groups mixed entries chronologically and does not collide on task/event IDs [19.02ms]
+(pass) Plan calendar boundaries > excludes absent/non-finite dates, cancelled tasks and the range's next midnight [10.21ms]
+(pass) Plan calendar boundaries > day/week/month preserve local DST boundaries across supported browser zones [12.25ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/390 [5355.36ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/1280 [9207.47ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/390 [7504.18ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/1280 [9997.86ms]
+(pass) all-task Board persists movement and Undo without assigning a project [2784.91ms]
+(pass) existing project Board stays filtered and has its original back link [4075.83ms]
+(pass) changing the selected day updates both the mixed agenda and time-block target [12067.59ms]
+(pass) Today rolls over at midnight while an explicitly selected other day stays selected [9156.68ms]
+(pass) mixed agenda keeps event editing and a failed save keeps the draft [4078.69ms]
+(pass) signed-out, loading and empty Plan states stay distinct [5123.56ms]
+
+ 13 pass
+ 0 fail
+ 185 expect() calls
+Ran 13 tests across 1 file. [101.80s]
+(pass) Plan mounted and calendar-boundary regressions in a clean process [102014.01ms]
+
+ 1 pass
+ 0 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [102.31s]
