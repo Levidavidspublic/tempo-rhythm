@@ -1,6 +1,7 @@
 [
   {
-    "head": "6b2ca7c48a815530af8865b886b34fa59707da31",
+    "head": "ee1fd5caca0307df3608a21a702a957359de2aa4",
+    "capturedAt": "2026-10-21T21:31:49.980Z",
     "lang": "en",
     "width": 1280,
     "motion": "reduce",
@@ -8,7 +9,13 @@
     "animations": 0,
     "identity": true,
     "opacity": "1",
-    "box": {
+    "initialBox": {
+      "x": 785.609375,
+      "y": 98.390625,
+      "width": 614.390625,
+      "height": 783.828125
+    },
+    "settledBox": {
       "x": 785.609375,
       "y": 98.390625,
       "width": 614.390625,
@@ -17,7 +24,8 @@
     "pageErrors": []
   },
   {
-    "head": "6b2ca7c48a815530af8865b886b34fa59707da31",
+    "head": "ee1fd5caca0307df3608a21a702a957359de2aa4",
+    "capturedAt": "2026-10-21T21:32:07.922Z",
     "lang": "he",
     "width": 1280,
     "motion": "reduce",
@@ -25,7 +33,13 @@
     "animations": 0,
     "identity": true,
     "opacity": "1",
-    "box": {
+    "initialBox": {
+      "x": -120,
+      "y": 98.390625,
+      "width": 614.390625,
+      "height": 695.046875
+    },
+    "settledBox": {
       "x": -120,
       "y": 98.390625,
       "width": 614.390625,
