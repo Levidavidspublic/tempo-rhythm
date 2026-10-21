@@ -11,11 +11,11 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 ## Shared test fix
 
-- Ticket #1202: implementation in progress, no pass or merge claimed.
+- Ticket [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), draft [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), sourcec5fd530: focused **12 pass / 0 fail**,37assertions,3.03s. Prior focused candidates9/1,10/0 and8/4 are retained in the shared evidence. The supervisor fix responds to observed empty /proc task children data by using PPID enumeration and verifies detached descendant reaping. Full validation/review pending; no merge claim.
 - Before (current local baseline, Bun 1.3.9): `bun run test` finished with **3,473 pass / 20 fail / 3 todo** across 211 files in 173.45s; failures are KB-64 browser-close cases. Lint and typecheck pass 5/5. This fresh baseline does not reproduce every historical hosted failure.
 - Before: historical combined validation recorded 3,585 pass / 30 fail / 3 todo / 2 errors (VALIDATION.md); later KB-66 affected two cancelled hosted runs, each with eight 240-second timeouts. These are different candidates and must not be added together or treated as a controlled comparison.
 - Baseline remaining gates: four scans/notices and build pass. E2E is UNKNOWN because the required browser is missing and its CDN download returns403 (actual run1pass/28fail/88skip).
-- After: UNKNOWN until shared helper and affected fixtures run. Hosted EISDIR and intermittent teardown hangs must be distinguished from locally reproduced failures.
+- After: shared focused12/0; affected fixture results and hosted EISDIR reproduction remain pending. Hosted EISDIR and intermittent teardown hangs must be distinguished from locally reproduced failures.
 
 ## Per ticket
 
