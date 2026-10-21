@@ -267,7 +267,7 @@ Before product correction, the new regressions failed against `e39ac6b` product 
 
 After correction: `bun test tests/unit/kb-09.test.tsx` → exit 0; child **20 pass / 0 fail**, 45 assertions, 18.61 seconds; parent **22 pass / 0 fail**, 24 assertions, 19.37 seconds. Both locales, both screen/gallery label paths and both complete/reopen states passed. No original case was skipped or weakened.
 
-Bun 1.3.9. Frozen install remained at Resolving dependencies and reached the external 120-second bound (exit 124): UNKNOWN. The lockfile matches the installed shared-worktree cache; installed trees were copied locally with workspace links preserved. No package or lockfile changed. Mandatory checks are running in order; final receipts follow below.
+Bun 1.3.9. Frozen install remained at Resolving dependencies and reached the external 120-second bound (exit 124): UNKNOWN. The lockfile matches the installed shared-worktree cache; installed trees were copied locally with workspace links preserved. No package or lockfile changed. Mandatory checks completed in order on source b67700e; final receipts follow below.
 
 Logs: `/workspace/kb-run-logs/kb09-install.log`, `kb09-before-focused.log`, `kb09-after-focused.log`, `kb09-0.log` through `kb09-5.log`, and `kb09-results.json`. Required PR attachment was attempted separately but host completion is UNKNOWN after the tool hung. Device, live-account and native Hebrew checks remain UNKNOWN.
 
@@ -294,4 +294,47 @@ Received: 1
  3 fail
  20 expect() calls
 Ran 22 tests across 1 file. [26.07s]
+```
+
+
+### Final mandatory receipts for the prescribed pass
+
+Blocked — both title defects are fixed, but the required local E2E command failed. Source `b67700e6e1fb7a4c8c697648d73bfb5bb0f4ce69` was frozen throughout validation; this final update changes evidence only. No shared harness merge is present. No unchanged retry or unrelated task-view correction was attempted.
+
+| Command | Actual result |
+| --- | --- |
+| `bun run lint` | PASS, exit 0, 5/5 tasks, 1.07s |
+| `bun run typecheck` | PASS, exit 0, 5/5 tasks, 18.91s |
+| `bun run test` | PASS, exit 0, 3515 pass / 0 fail / 3 existing todo; 3518 tests across 212 files, 81550 assertions, 463.27s |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0; all four checks OK |
+| `CI=1 bunx playwright test --reporter=line` | FAIL, exit 1; 27 pass / 1 fail / 89 credential-gated skips, 126.13s; serialized with the shared browser lock |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0, 1/1 task, 0 cached, 66.51s wrapper / 65.523s task |
+
+The E2E failure is `core task views > today, inbox, project, priority, and energy views share one persisted task record`: the existing 30000ms test deadline expired at `tests/e2e/task-views-core.spec.ts:50`, `page.goto("/tasks/energy")`, with `net::ERR_ABORTED; maybe frame was detached?`. It is outside this correction's scope; its cause remains UNKNOWN. The full unit suite's successful KB-61 run does not erase KB-61 failures on other branches. Likewise, all hosted checks observed green on b67700e do not erase this local E2E failure.
+
+Existing CodeRabbit findings 4336923463 and 4336923476 received fix/evidence replies and were resolved after the red/green proof. At final evidence preparation there were zero open review threads, but the requested new source review had not yet posted. Final-head hosted guards and actual review coverage remain required. This pass is frozen and the PR stays draft; no merge, ready transition or issue closure was performed.
+
+E2E failure, actual last 20 lines:
+
+```text
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:219586) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:219911) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  1 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record 
+  89 skipped
+  27 passed (2.1m)
 ```
