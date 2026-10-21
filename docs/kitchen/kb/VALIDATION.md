@@ -242,7 +242,7 @@ AWAY — Validation is in progress. This temporary, unpushed checkout will combi
 
 ### Candidate inputs
 
-These inputs are selected, not yet claimed assembled or validated. The final manifest will record exact commits, changed paths and the combined local commit before execution. Held KB-02/03/04/05/06/70/76/78 are excluded. KB-09 and KB-61 wait for final scoped proof; KB-67 is a test-only follow-up with separate failures disclosed below.
+These inputs are selected, not yet claimed assembled or validated. The final manifest will record exact commits, changed paths and the combined local commit before execution. Held KB-02/03/04/05/06/67/70/76/78 are excluded. KB-09 and KB-61 wait for final scoped proof; KB-67 is excluded after its exhausted extra pass and hosted child stall (AT-13); its earlier independent failures remain below.
 
 | Ticket | Selected head | State |
 |---|---|---|
@@ -273,11 +273,11 @@ Source `677116a878d8ef2c01182438224d0d57289d2f0b`, based on integration `190d5fd
 | Scoped KB-67 | PASS, 31 parent tests; 30 child tests including all 27 original cases |
 | Full test | FAIL: 3,447 pass, 3 todo, 9 fail, 1 error; 81,339 assertions; 1,389.75 seconds |
 | Four scans/notices | PASS |
-| E2E / build | Had not started; transferred to the combined validation sequence |
+| E2E / build | Had not started; initially transferred, then KB-67 was excluded at the AT-13 repair gate |
 
 The full run failed two KB-67 fixture-readiness waits plus its authoritative child-exit gate; KB-74's responsive matrix and reduced-motion case; KB-64's responsive focus check; KB-59's matrix; an existing history-normalization timing check; and an existing pathological-body timing check. One additional browser-closed error was reported. These are actual failures, not passes or inferred infrastructure exceptions. The KB-67 child completed cleanup and exited 1, so failed cases were propagated.
 
-A queued E2E process was verified to have no child process before being stopped; no executing check was interrupted. Full test and scan logs remain retained. KB-09 and KB-61 focused runs keep their existing positions in the shared browser-test queue.
+A queued E2E process was verified to have no child process before being stopped; no executing check was interrupted. Full test and scan logs remain retained. KB-67 later stopped at AT-13; the combined run does not claim to validate that excluded follow-up. KB-09 and KB-61 focused runs keep their existing positions in the shared browser-test queue.
 
 ### UNKNOWN
 
