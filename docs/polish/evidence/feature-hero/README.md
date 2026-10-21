@@ -32,3 +32,11 @@ After images are from the four passing normal-motion cases in this final run. Th
 - `bunx playwright test tests/e2e/landing-motion.spec.ts --reporter=line --workers=1`: 8 passed / 0 failed (1.7 minutes), exit 0; existing Chromium cache, no browser download. All original eight cases and 30-second deadlines retained.
 - Mandatory lint/typecheck/test/scans/E2E/build: pending the lead's serialized gate. No all-green claim.
 - Preview deployment and authenticated product behavior: UNKNOWN; this evidence is local public-route proof only.
+
+## Supplemental desktop reduced-motion check
+
+WALK — CodeRabbit review `5605920217` on source `6b2ca7c48a815530af8865b886b34fa59707da31` identified a valid coverage gap: the committed Playwright suite directly asserts the copy container, but not the desktop examples container. Both containers currently share the only hero animation declaration, inside `prefers-reduced-motion: no-preference`. That source inspection does not replace independent browser evidence or future regression coverage.
+
+A supplemental actual-route Chromium check measured `.tempo-hero__examples` at width 1280 in English and Hebrew with reduced motion, before awaiting any copy animation. Both cases passed visibility, `animationName: none`, zero animations, identity transform, opacity `1`, an exactly unchanged bounding box after two animation frames, and zero page errors. The [captured states](examples-reduced-motion.json) identify the tested source commit. The bounded scratch browser tool asserted visibility and stable geometry before writing those states; the JSON stores the initial box, rather than a second duplicate box. No real account, preview URL, provider call or paid request was used.
+
+No product defect was demonstrated by this check. The committed regression suite still lacks direct examples assertions; this supplemental proof does not claim to close that test-maintenance gap or to be a fourth source/test candidate. CodeRabbit's review state is `COMMENTED`, not `APPROVED`. Product source, tests, assertions and deadlines are unchanged. The lead owns the review response and merge decision after the remaining gates.
