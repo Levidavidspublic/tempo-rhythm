@@ -177,6 +177,94 @@ describe.serial("shared kitchen fixture lifecycle", () => {
     expect(result.out).toContain("caller survives spawn failure");
   });
 
+  test("owned OS wait status recovers a missing runtime exit event after both pipes drain", async () => {
+    const result = await run(`
+      import { mock } from "bun:test";
+      import { dlopen, ptr } from "bun:ffi";
+      import { createReadStream } from "node:fs";
+      import { EventEmitter } from "node:events";
+      const libc = dlopen("libc.so.6", {
+        pipe:{args:["ptr"],returns:"i32"}, close:{args:["i32"],returns:"i32"},
+        posix_spawn_file_actions_init:{args:["ptr"],returns:"i32"},
+        posix_spawn_file_actions_adddup2:{args:["ptr","i32","i32"],returns:"i32"},
+        posix_spawn_file_actions_addclose:{args:["ptr","i32"],returns:"i32"},
+        posix_spawn_file_actions_destroy:{args:["ptr"],returns:"i32"},
+        posix_spawnp:{args:["ptr","ptr","ptr","ptr","ptr","ptr"],returns:"i32"},
+      });
+      const check = (code) => { if (code !== 0) throw Error("Native spawn failed: " + code); };
+      // This real child is deliberately absent from Bun's process watcher: no
+      // synthetic exit/close event is emitted. Only OS waitpid can reap it.
+      mock.module("node:child_process", () => ({ spawn(command, args, options) {
+        const strings = [command,...args].map(value => Buffer.from(value + "\\0"));
+        const argv = new BigUint64Array([...strings.map(value => BigInt(ptr(value))),0n]);
+        const environment = Object.entries(options.env).map(([key,value]) => Buffer.from(key + "=" + value + "\\0"));
+        const envp = new BigUint64Array([...environment.map(value => BigInt(ptr(value))),0n]);
+        const actions = new Uint8Array(512);
+        const pid = new Int32Array(1);
+        const stdout = new Int32Array(2), stderr = new Int32Array(2);
+        check(libc.symbols.posix_spawn_file_actions_init(ptr(actions)));
+        for (const [fds, target] of [[stdout,1],[stderr,2]]) {
+          check(libc.symbols.pipe(ptr(fds)));
+          check(libc.symbols.posix_spawn_file_actions_adddup2(ptr(actions),fds[1],target));
+          check(libc.symbols.posix_spawn_file_actions_addclose(ptr(actions),fds[0]));
+          check(libc.symbols.posix_spawn_file_actions_addclose(ptr(actions),fds[1]));
+        }
+        check(libc.symbols.posix_spawnp(ptr(pid),ptr(strings[0]),ptr(actions),null,ptr(argv),ptr(envp)));
+        check(libc.symbols.posix_spawn_file_actions_destroy(ptr(actions)));
+        libc.symbols.close(stdout[1]); libc.symbols.close(stderr[1]);
+        return Object.assign(new EventEmitter(), {
+          pid:pid[0], stdout:createReadStream("",{fd:stdout[0],autoClose:true}),
+          stderr:createReadStream("",{fd:stderr[0],autoClose:true}), unref() {},
+        });
+      } }));
+      const { runIsolatedFixture, requireFixtureSuccess } = await import(${JSON.stringify(helper)});
+      const recovered = await runIsolatedFixture({command:[process.execPath,"-e","process.stderr.write('tail without newline'); process.exitCode=23"],cwd:${JSON.stringify(root)},timeoutMs:1000,cleanupMs:500});
+      if (recovered.code !== 23 || recovered.supervisorCode !== 0 || recovered.cleanupErrors.length || recovered.timedOut) throw Error("Lost authoritative OS status");
+      let alive = true; try { process.kill(recovered.pid,0); } catch { alive = false; }
+      if (alive) throw Error("Owned supervisor was not reaped");
+      if (!recovered.err.includes("tail without newline") || !recovered.err.includes("supervisor reaped all descendants")) throw Error("Both streams did not drain");
+      let rejected = false; try { requireFixtureSuccess(recovered); } catch { rejected = true; }
+      if (!rejected) throw Error("Actual fixture failure was masked");
+      libc.close();
+      console.log("owned OS status recovered and reaped after drain");
+    `);
+    requireFixtureSuccess(result);
+    expect(result.out).toContain("owned OS status recovered and reaped after drain");
+    expect(result.err).toContain("waitpid reaped owned supervisor");
+  });
+
+  test("stderr without a final newline cannot hide the authoritative receipt", async () => {
+    const result = await run('process.stderr.write("no trailing newline")');
+    requireFixtureSuccess(result);
+    expect(result.err).toContain("no trailing newline\nKITCHEN_CHILD_EXIT=");
+  });
+
+  test("parent termination is restored after owned cleanup unless another listener owns it", async () => {
+    for (const otherOwner of [false, true]) {
+      let signalled = false;
+      const result = await run(`
+        import { runIsolatedFixture } from ${JSON.stringify(helper)};
+        ${otherOwner ? 'process.on("SIGTERM", () => console.log("other listener owns termination"));' : ""}
+        const pending = runIsolatedFixture({command:[process.execPath,"-e","setInterval(()=>{},1000)"],cwd:${JSON.stringify(root)},timeoutMs:1000,cleanupMs:500});
+        console.log("SIGNAL_PARENT=" + process.pid);
+        const result = await pending;
+        if (!result.cancelled) throw Error("Cancellation was lost");
+        console.log("caller retained by other listener");
+      `, { onOutput(_stream, chunk) {
+        const match = chunk.match(/SIGNAL_PARENT=(\d+)/);
+        if (match && !signalled) { signalled = true; process.kill(Number(match[1]), "SIGTERM"); }
+      } });
+      expect(signalled).toBe(true);
+      if (otherOwner) {
+        requireFixtureSuccess(result);
+        expect(result.out).toContain("caller retained by other listener");
+      } else {
+        expect(result.signal).toBe("SIGTERM");
+        expect(result.out).not.toContain("caller retained by other listener");
+      }
+    }
+  });
+
   test("fresh browser builds resolve React scheduler from its actual importing package", async () => {
     const directory = await mkdtemp(join(tmpdir(), "kitchen-build-"));
     try {
