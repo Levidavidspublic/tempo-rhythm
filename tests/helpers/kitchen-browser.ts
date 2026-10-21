@@ -37,9 +37,9 @@ export async function waitForSettledTransition(locator: Locator, committed: Prom
       timer = setTimeout(() => reject(new Error("Committed transition signal timed out")), timeoutMs);
     })]);
   } finally { clearTimeout(timer); }
+  const { expect } = await import("@playwright/test");
   const remaining = deadline - Date.now();
   if (remaining <= 0) throw new Error("Committed transition signal timed out");
-  const { expect } = await import("@playwright/test");
   await expect.poll(() => locator.evaluate((element) => {
     // Force style resolution so a committed class change creates its CSS transitions before inspection.
     void getComputedStyle(element).transform;
