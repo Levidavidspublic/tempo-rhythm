@@ -13,7 +13,7 @@ In progress — Amit authorized the shared harness first, then nine fixture reru
 - KB issues: **5 closed / 22 open**, including the administrative lead issue #1176.
 - KB PRs: **10 merged / 22 open**; includes planning #1140, shared harness #1203 and corrective #1204.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **6 KB owner actions plus 1 parallel-lane connection request**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
+- NEEDS-AMIT.md: **6 KB owner actions plus 5 separately reported feature-lane requests**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
 
 ## Lane 2 counts
 
@@ -35,7 +35,7 @@ Planning #1140 remains draft and is excluded from ready, merge and issue-closure
 
 | Ticket | Issue | PR | Head | CI | Review | Current gate |
 |---|---|---|---|---|---|---|
-| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `c78d863` | Current CI pending; local full incomplete / E2E fail | Two addressed findings replied; resolution pending | PR open — rejected edit reset and truthful child-case mapping pass 12 child / 14 parent cases. Full incomplete: observed 1,565 pass lines / 2 fail / 3 todo (shared cancellation and KB-66 timeout), exit 143. E2E 27 pass / 1 fail / 89 skip; install UNKNOWN; lint/typecheck/scans/build pass. Shared prerequisite stuck. |
+| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `c78d863` | Current CI pending; local full incomplete / E2E fail | Both addressed findings replied and resolved | PR open — rejected edit reset and truthful child-case mapping pass 12 child / 14 parent cases. Full incomplete: observed 1,565 pass lines / 2 fail / 3 todo (shared cancellation and KB-66 timeout), exit 143. E2E 27 pass / 1 fail / 89 skip; install UNKNOWN; lint/typecheck/scans/build pass. Shared prerequisite stuck. |
 | KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `4c88785` | Shared scope blocked; current checks tracked on PR | Current findings/coverage tracked on PR | Final shared + own: 33 pass / 0 fail, 80 assertions. Earlier full 3520/0/3 todo; frozen install corrected to PASS (observed exit 0,303.72 s); E2E infrastructure UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-04 | [#1141](https://github.com/Levidavidspublic/tempo-rhythm/issues/1141) | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | `70dc7c3` | SUCCESS | Review posted; 2 unresolved threads | Authorized v3 committed-focus/onReady correction active; all assertions and deadlines preserved. |
 | KB-05 | [#1142](https://github.com/Levidavidspublic/tempo-rhythm/issues/1142) | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | `28dda16` | Shared scope blocked; current checks tracked on PR | Current findings/coverage tracked on PR | Final shared + own: 31 pass / 0 fail, 247 assertions. Earlier full 3479/22/3 todo (KB-64+KB-61); E2E 28/0/89 skip; remaining local gates pass. Shared #1203 stuck; current guards/review still required. |
