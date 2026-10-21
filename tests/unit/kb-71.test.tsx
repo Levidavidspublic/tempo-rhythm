@@ -300,6 +300,35 @@ createRoot(document.getElementById("root")).render(view);`
         document.querySelectorAll("main").length === 1 &&
         document.querySelectorAll("h1").length === 1
     );
+    for (const width of [390, 320]) for (const font of [16, 32]) {
+      await admin.setViewportSize({ width, height: 900 });
+      await admin.evaluate(size => document.documentElement.style.fontSize = size + "px", font);
+      await admin.waitForFunction(size =>
+        getComputedStyle(document.documentElement).fontSize === `${size}px` &&
+        [...document.querySelectorAll("button")].every(button =>
+          getComputedStyle(button).fontSize === `${size * 0.875}px`), font);
+      results[`admin-labels-${width}-${font}`] = JSON.stringify(await admin.locator("button").evaluateAll(nodes => nodes.map(node => {
+        const broken: string[] = [];
+        const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+        let text: Node | null;
+        while ((text = walker.nextNode())) for (const match of (text.textContent ?? "").matchAll(/\S+/g)) {
+          const range = document.createRange();
+          range.setStart(text, match.index!);
+          range.setEnd(text, match.index! + match[0].length);
+          if (range.getClientRects().length > 1) broken.push(match[0]);
+        }
+        const hit = node.getBoundingClientRect();
+        const row = node.closest("li")!.getBoundingClientRect();
+        return { label: node.textContent, fontSize: getComputedStyle(node).fontSize,
+          width: hit.width, height: hit.height, broken,
+          insideRow: hit.left >= row.left && hit.right <= row.right,
+          noOverflow: document.documentElement.scrollWidth <= innerWidth };
+      })));
+      if (captureDir) {
+        await admin.screenshot({ path: join(captureDir, `after-admin-en-${width}-text-${font}.png`), fullPage: true });
+        await admin.locator('li[data-status="revoked"]').screenshot({ path: join(captureDir, `after-admin-row-en-${width}-text-${font}.png`) });
+      }
+    }
     await admin.close();
     const dayCommitted = await open("after", "day", "en", 390, "light", "committed");
     await dayCommitted.getByRole("button", { name: "Edit plan" }).waitFor();
@@ -377,6 +406,10 @@ createRoot(document.getElementById("root")).render(view);`
     );
     await primitive.close();
     const gallery = await open("after", "gallery", "he", 390, "dark");
+    for (const index of [0, 1, 2, 3, 4, 5, 6, 8]) {
+      await gallery.locator("button").nth(index).click();
+    }
+    results.galleryActions = await gallery.evaluate(() => JSON.stringify(window.__kb71.events));
     results.small = (await measure(gallery, "button")).h;
     results.galleryDir = (await gallery.locator("main").getAttribute("dir")) ?? "";
     results.galleryOneMainH1 = await gallery.evaluate(
@@ -475,6 +508,7 @@ createRoot(document.getElementById("root")).render(view);`
     server.stop(true);
     await rm(directory, { recursive: true, force: true });
   }
+  if (captureDir) await writeFile(join(captureDir, "checks.json"), JSON.stringify(results, null, 2));
   return results;
 }
 
@@ -528,6 +562,22 @@ if (child) {
       expect(r.adminActions).toContain("Back to pending");
       expect(r.adminCalls).toBe('["approved","revoked","pending"]');
     });
+    test("actual AdminApprovals keeps whole labels inside phone rows at large text", () => {
+      for (const width of [390, 320]) for (const font of [16, 32]) {
+        const buttons = JSON.parse(String(r[`admin-labels-${width}-${font}`])) as Array<{
+          fontSize: string; width: number; height: number; broken: string[]; insideRow: boolean; noOverflow: boolean;
+        }>;
+        expect(buttons).toHaveLength(5);
+        for (const button of buttons) {
+          expect(button.fontSize).toBe(`${font * 0.875}px`);
+          expect(button.width).toBeGreaterThanOrEqual(44);
+          expect(button.height).toBeGreaterThanOrEqual(44);
+          expect(button.broken).toEqual([]);
+          expect(button.insideRow).toBe(true);
+          expect(button.noOverflow).toBe(true);
+        }
+      }
+    });
     test("actual DayPlanPanel Edit Commit and Retry have phone targets", () => {
       expect(r.dayEdit).toBeGreaterThanOrEqual(44);
       expect(r.dayEditOpens).toBe(true);
@@ -566,6 +616,19 @@ if (child) {
       expect(renderToStaticMarkup(createElement(Kb71Gallery, { lang: "he" }))).toContain(
         "כפתורים בטלפון"
       );
+    });
+    test("pure gallery omits event functions when callbacks are absent", () => {
+      for (const lang of ["en", "he"] as const) {
+        const samples = Kb71Gallery({ lang }).props.children[2].props.children;
+        expect(samples.every((sample: { props: { onClick?: unknown } }) => sample.props.onClick === undefined)).toBe(true);
+        expect(samples.at(-1).props.children.props.onClick).toBeUndefined();
+      }
+      const onLink = () => {};
+      const samples = Kb71Gallery({ lang: "en", onLink }).props.children[2].props.children;
+      expect(samples.at(-1).props.children.props.onClick).toBe(onLink);
+    });
+    test("mounted gallery preserves every supplied sample action", () => {
+      expect(r.galleryActions).toBe('["small","default","large","icon","destructive","ghost","linkStyle","long"]');
     });
     test("all gallery phone controls have 44 px hit areas", () =>
       expect(r.galleryMin).toBeGreaterThanOrEqual(44));

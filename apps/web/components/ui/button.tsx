@@ -59,6 +59,7 @@ export function Kb71Gallery({
   readonly onLink?: () => void;
 }) {
   const t = (key: Parameters<typeof kb71t>[1]) => kb71t(lang, key);
+  const act = (sample: string) => (onAction ? () => onAction(sample) : undefined);
   return (
     <main
       className="kb71-gallery"
@@ -69,34 +70,34 @@ export function Kb71Gallery({
       <h1 className="kb71-gallery__title">{t("title")}</h1>
       <p className="kb71-gallery__lede">{t("lede")}</p>
       <div className="kb71-gallery__samples">
-        <Button size="sm" onClick={() => onAction?.("small")}>
+        <Button size="sm" onClick={act("small")}>
           {t("small")}
         </Button>
-        <Button onClick={() => onAction?.("default")}>{t("default")}</Button>
-        <Button size="lg" variant="secondary" onClick={() => onAction?.("large")}>
+        <Button onClick={act("default")}>{t("default")}</Button>
+        <Button size="lg" variant="secondary" onClick={act("large")}>
           {t("large")}
         </Button>
         <Button
           size="icon"
           variant="outline"
           aria-label={t("iconName")}
-          onClick={() => onAction?.("icon")}
+          onClick={act("icon")}
         >
           <span aria-hidden="true">＋</span>
         </Button>
-        <Button variant="destructive" onClick={() => onAction?.("destructive")}>
+        <Button variant="destructive" onClick={act("destructive")}>
           {t("destructive")}
         </Button>
-        <Button variant="ghost" onClick={() => onAction?.("ghost")}>
+        <Button variant="ghost" onClick={act("ghost")}>
           {t("ghost")}
         </Button>
-        <Button variant="link" onClick={() => onAction?.("linkStyle")}>
+        <Button variant="link" onClick={act("linkStyle")}>
           {t("linkStyle")}
         </Button>
-        <Button disabled onClick={() => onAction?.("disabled")}>
+        <Button disabled onClick={act("disabled")}>
           {t("disabled")}
         </Button>
-        <Button className="kb71-gallery__long" onClick={() => onAction?.("long")}>
+        <Button className="kb71-gallery__long" onClick={act("long")}>
           {t("long")}
         </Button>
         <Button asChild variant="outline">

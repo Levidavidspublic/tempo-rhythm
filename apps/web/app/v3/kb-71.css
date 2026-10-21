@@ -4,6 +4,12 @@
     min-block-size: var(--tp-touch);
     min-inline-size: var(--tp-touch);
     max-inline-size: 100%;
+    flex-shrink: 0;
+  }
+
+  /* Let shared-button action rows wrap when labels need their full width. */
+  :where(.flex:not(.flex-nowrap)):has(> .kb71-button) {
+    flex-wrap: wrap;
   }
 
   /* Built-in fixed heights become content-sized when labels wrap. A caller's explicit height class remains in charge. */
