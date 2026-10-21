@@ -1,10 +1,10 @@
 "use client";
 
 import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, type RefObject, useRef, useState } from "react";
 import { canEnable } from "@/components/nags/nagRules";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { TpIcon } from "@/components/tempo/TpIcon";
+import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { Switch } from "@/components/you/Controls";
 import {
   LiveMessage,
@@ -20,6 +20,7 @@ import { UndoToast } from "@/components/you/UndoToast";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { MessageKey } from "@/lib/i18n";
+import { type Kb67Key, type Kb67Lang, kb67t } from "@/lib/i18n-groups/kb-67";
 import {
   checkNagLabel,
   checkPhrase,
@@ -29,6 +30,7 @@ import {
   type WordsProblem,
 } from "@/lib/you/nags";
 import { deriveScreenState, fill, UNDO_WINDOW_MS } from "@/lib/you/screenState";
+import "@/app/v3/kb-67.css";
 
 /**
  * Nags (docs/design/v3/screens/web/nags.html): nudges in the person's own words. A nag can
@@ -49,6 +51,8 @@ type Nag = {
 };
 type Suggestion = { key: string; text: string };
 type Toast = { title: string; untilMs: number; onUndo?: () => Promise<unknown> };
+type PhraseFeedback = { kind: "saving" | "saved" | "error" | "earlierError"; revision: number };
+export type NagSuggestionNote = { kind: "pending" | "needOwn" | "empty" | "error"; label?: string };
 
 const LABEL_PROBLEM: Record<WordsProblem, MessageKey> = {
   empty: "ng.new.empty",
@@ -60,6 +64,17 @@ const PHRASE_PROBLEM: Record<WordsProblem, MessageKey> = {
   long: "ng.add.long",
   emoji: "ng.add.emoji",
 };
+
+function labelledMessage(lang: Kb67Lang, key: Kb67Key, label: string) {
+  const [before, after] = kb67t(lang, key).split("{label}");
+  return (
+    <>
+      {before}
+      <bdi dir="auto">{label}</bdi>
+      {after}
+    </>
+  );
+}
 
 function NagsHead() {
   const { t } = useLocale();
@@ -98,7 +113,7 @@ export function NagsScreen() {
 }
 
 function NagsContent({ onRetry }: { onRetry: () => void }) {
-  const { t } = useLocale();
+  const { t, lang } = useLocale();
   const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
   // nags.list calls requireUser: wait for the users row.
   const profile = useQuery(api.users.getProfile, isAuthenticated ? {} : "skip");
@@ -117,46 +132,62 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
   const [labelProblem, setLabelProblem] = useState<WordsProblem | null>(null);
   const [labelFailed, setLabelFailed] = useState(false);
   const [chosenId, setChosenId] = useState<Id<"nags"> | null>(null);
-  const [phrase, setPhrase] = useState("");
-  const [phraseProblem, setPhraseProblem] = useState<WordsProblem | null>(null);
+  const [phraseDrafts, setPhraseDrafts] = useState<Record<string, string>>({});
+  const [phraseProblems, setPhraseProblems] = useState<Record<string, WordsProblem | null>>({});
+  const [phraseFeedback, setPhraseFeedback] = useState<Record<string, PhraseFeedback | null>>({});
   const [suggestions, setSuggestions] = useState<Record<string, Suggestion[]>>({});
-  const [note, setNote] = useState<{ text: string; alert: boolean } | null>(null);
+  const [notesByNag, setNotesByNag] = useState<Record<string, NagSuggestionNote | null>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [rowError, setRowError] = useState<{ nagId: string; text: string } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [live, setLive] = useState("");
   const keyRef = useRef(0);
+  const busyRef = useRef(false);
+  const phraseRevisions = useRef<Record<string, number>>({});
+  const selectedIdRef = useRef<string | null>(null);
   const phraseRef = useRef<HTMLTextAreaElement>(null);
   const labelRef = useRef<HTMLInputElement>(null);
 
   const list: Nag[] = nags ?? [];
   const chosen = list.find((nag) => nag._id === chosenId) ?? list[0] ?? null;
+  selectedIdRef.current = chosen?._id ?? null;
   // The latest list, for an Undo that runs minutes after the render that offered it.
   const latest = useRef(list);
   latest.current = list;
 
   /** One action at a time; failures land next to the nag they belong to. */
-  async function run(key: string, nagId: string | null, work: () => Promise<void>) {
-    if (busy) return;
+  async function run(
+    key: string,
+    nagId: string | null,
+    work: () => Promise<void>,
+    onFailure?: (error: unknown) => void
+  ) {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(key);
     setRowError(null);
     try {
       await work();
     } catch (error) {
+      if (onFailure) {
+        onFailure(error);
+        return;
+      }
       const raw = error instanceof Error ? error.message : "";
       const text = raw.includes("Add a phrase you accept first.")
         ? t("ng.why")
         : t("you.saveError");
       if (nagId) setRowError({ nagId, text });
-      else setNote({ text, alert: true });
+      else setLabelFailed(true);
     } finally {
+      busyRef.current = false;
       setBusy(null);
     }
   }
 
   const announceIfNowOn = (nag: Nag) => {
-    if (!canEnable(nag)) setLive(t("ng.nowOn"));
+    if (!canEnable(nag)) setLive(kb67t(lang as Kb67Lang, "phrase.canEnable", { label: nag.label }));
   };
 
   const onCreate = (event: FormEvent<HTMLFormElement>) => {
@@ -184,44 +215,92 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
   const onAddPhrase = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!chosen) return;
-    const check = checkPhrase(phrase);
+    const nag = chosen;
+    const id = nag._id;
+    if (busyRef.current) return;
+    const check = checkPhrase(phraseDrafts[id] ?? "");
     if (!check.ok) {
-      setPhraseProblem(check.problem);
+      setPhraseProblems((all) => ({ ...all, [id]: check.problem }));
       phraseRef.current?.focus();
       return;
     }
-    setPhraseProblem(null);
-    setNote(null);
-    const nag = chosen;
-    void run("add", nag._id, async () => {
-      await addPhrase({ nagId: nag._id, text: check.text, source: "user" });
-      setPhrase("");
-      setLive(t("ng.added"));
-      announceIfNowOn(nag);
+    const submittedRevision = phraseRevisions.current[id] ?? 0;
+    const submitFocus = document.activeElement;
+    let focusMoved = false;
+    const markMoved = () => {
+      focusMoved = true;
+    };
+    const markFocusMoved = (focusEvent: FocusEvent) => {
+      if (focusEvent.target !== submitFocus) focusMoved = true;
+    };
+    document.addEventListener("pointerdown", markMoved);
+    document.addEventListener("keydown", markMoved);
+    document.addEventListener("focusin", markFocusMoved);
+    setPhraseProblems((all) => ({ ...all, [id]: null }));
+    setPhraseFeedback((all) => ({ ...all, [id]: { kind: "saving", revision: submittedRevision } }));
+    void run(
+      "add",
+      id,
+      async () => {
+        await addPhrase({ nagId: id, text: check.text, source: "user" });
+        if ((phraseRevisions.current[id] ?? 0) === submittedRevision) {
+          setPhraseDrafts((all) => ({ ...all, [id]: "" }));
+          setPhraseFeedback((all) => ({
+            ...all,
+            [id]: { kind: "saved", revision: submittedRevision },
+          }));
+        } else {
+          setPhraseFeedback((all) => ({ ...all, [id]: null }));
+        }
+        setNotesByNag((all) => ({ ...all, [id]: null }));
+        if (!canEnable(nag)) announceIfNowOn(nag);
+        else setLive(kb67t(lang as Kb67Lang, "phrase.addedTo", { label: nag.label }));
+      },
+      () => {
+        if ((phraseRevisions.current[id] ?? 0) !== submittedRevision) {
+          setPhraseFeedback((all) => ({
+            ...all,
+            [id]: { kind: "earlierError", revision: submittedRevision },
+          }));
+          return;
+        }
+        setPhraseFeedback((all) => ({
+          ...all,
+          [id]: { kind: "error", revision: submittedRevision },
+        }));
+        if (selectedIdRef.current === id && !focusMoved) phraseRef.current?.focus();
+      }
+    ).finally(() => {
+      document.removeEventListener("pointerdown", markMoved);
+      document.removeEventListener("keydown", markMoved);
+      document.removeEventListener("focusin", markFocusMoved);
     });
   };
 
   const onSuggest = () => {
-    if (!chosen || busy) return;
+    if (!chosen || busyRef.current) return;
     const nag = chosen;
+    const id = nag._id;
     const hasOwn = nag.phrases.some((p) => p.source === "user" && p.status === "accepted");
     if (!hasOwn) {
-      setNote({ text: t("ng.suggest.needOwn"), alert: false });
+      setNotesByNag((all) => ({ ...all, [id]: { kind: "needOwn" } }));
       return;
     }
-    setNote(null);
-    setBusy("suggest");
-    proposePhrases({ nagId: nag._id })
-      .then((result) => {
+    setNotesByNag((all) => ({ ...all, [id]: { kind: "pending", label: nag.label } }));
+    void run(
+      "suggest",
+      id,
+      async () => {
+        const result = await proposePhrases({ nagId: id });
         const next = result.proposals.map((text) => {
           keyRef.current += 1;
           return { key: `s${keyRef.current}`, text };
         });
-        setSuggestions((all) => ({ ...all, [nag._id]: next }));
-        setNote(next.length === 0 ? { text: t("ng.suggest.none"), alert: false } : null);
-      })
-      .catch(() => setNote({ text: t("ng.suggest.error"), alert: true }))
-      .finally(() => setBusy(null));
+        setSuggestions((all) => ({ ...all, [id]: next }));
+        setNotesByNag((all) => ({ ...all, [id]: next.length === 0 ? { kind: "empty" } : null }));
+      },
+      () => setNotesByNag((all) => ({ ...all, [id]: { kind: "error" } }))
+    );
   };
 
   const dropSuggestion = (nagId: string, key: string) =>
@@ -291,7 +370,12 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
     : labelFailed
       ? t("you.saveError")
       : null;
-  const phraseError = phraseProblem ? t(PHRASE_PROBLEM[phraseProblem]) : null;
+  const onPhraseDraftChange = (id: Id<"nags">, text: string) => {
+    phraseRevisions.current[id] = (phraseRevisions.current[id] ?? 0) + 1;
+    setPhraseDrafts((all) => ({ ...all, [id]: text }));
+    setPhraseProblems((all) => ({ ...all, [id]: null }));
+    setPhraseFeedback((all) => ({ ...all, [id]: all[id]?.kind === "saving" ? all[id] : null }));
+  };
 
   return (
     <div
@@ -365,94 +449,24 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
           </section>
 
           {chosen ? (
-            <section className="tp-surface" aria-labelledby="ng-add-title">
-              <h2 className="tp-section__title" id="ng-add-title">
-                {t("ng.add.title")}
-              </h2>
-              <form className="tp-form" data-component="Form" noValidate onSubmit={onAddPhrase}>
-                <div className="tp-field" data-component="Field">
-                  <label className="tp-label" htmlFor="ng-add-nag">
-                    {t("ng.add.for")}
-                  </label>
-                  <div className="tp-select" data-component="Select">
-                    <select
-                      className="tp-select__input tp-input"
-                      id="ng-add-nag"
-                      value={chosen._id}
-                      onChange={(event) => {
-                        setChosenId(event.target.value as Id<"nags">);
-                        setNote(null);
-                      }}
-                    >
-                      {list.map((nag) => (
-                        // The label attribute keeps the name out of the page text, so the name
-                        // shows once (on its card) for finders and screen readers alike.
-                        <option key={nag._id} value={nag._id} label={nag.label} />
-                      ))}
-                    </select>
-                    <TpIcon name="down" size="sm" className="tp-select__icon" />
-                  </div>
-                </div>
-                <div className="tp-field" data-component="Field">
-                  <label className="tp-label" htmlFor="ng-add-text">
-                    {t("ng.add.label")}
-                  </label>
-                  <textarea
-                    ref={phraseRef}
-                    className="tp-textarea"
-                    id="ng-add-text"
-                    rows={2}
-                    dir="auto"
-                    placeholder={t("ng.add.ph")}
-                    value={phrase}
-                    aria-invalid={phraseError ? true : undefined}
-                    aria-describedby={phraseError ? "ng-add-help ng-add-error" : "ng-add-help"}
-                    data-component="Textarea"
-                    onChange={(event) => {
-                      setPhrase(event.target.value);
-                      setPhraseProblem(null);
-                    }}
-                  />
-                  <p className="tp-help" id="ng-add-help">
-                    {t("ng.add.help")}
-                  </p>
-                  {phraseError ? (
-                    <p className="tp-error-text" id="ng-add-error" role="alert">
-                      {phraseError}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="tp-form__actions">
-                  <button
-                    className="tp-btn tp-btn--primary"
-                    type="submit"
-                    disabled={busy === "add"}
-                  >
-                    <TpIcon name="plus" size="sm" />
-                    <span>{t("ng.add.btn")}</span>
-                  </button>
-                  <button
-                    className="tp-btn tp-btn--secondary"
-                    type="button"
-                    disabled={busy === "suggest"}
-                    aria-describedby={note ? "ng-suggest-note" : undefined}
-                    onClick={onSuggest}
-                  >
-                    <TpIcon name="sparkle" size="sm" />
-                    <span>{busy === "suggest" ? t("ng.suggesting") : t("ng.suggest")}</span>
-                  </button>
-                </div>
-                {note ? (
-                  <p
-                    className={note.alert ? "tp-error-text" : "tp-help"}
-                    id="ng-suggest-note"
-                    role={note.alert ? "alert" : "status"}
-                  >
-                    {note.text}
-                  </p>
-                ) : null}
-              </form>
-            </section>
+            <SelectedNagPhraseForm
+              nags={list}
+              selectedNag={chosen}
+              draft={phraseDrafts[chosen._id] ?? ""}
+              problem={phraseProblems[chosen._id] ?? null}
+              feedback={phraseFeedback[chosen._id] ?? null}
+              revision={phraseRevisions.current[chosen._id] ?? 0}
+              note={notesByNag[chosen._id] ?? null}
+              busy={busy}
+              phraseRef={phraseRef}
+              onSelect={(id) => {
+                selectedIdRef.current = id;
+                setChosenId(id);
+              }}
+              onDraftChange={(text) => onPhraseDraftChange(chosen._id, text)}
+              onSubmit={onAddPhrase}
+              onSuggest={onSuggest}
+            />
           ) : null}
 
           <section className="tp-section" aria-labelledby="ng-list-title" data-component="Section">
@@ -506,6 +520,332 @@ function NagsContent({ onRetry }: { onRetry: () => void }) {
         />
       ) : null}
     </div>
+  );
+}
+
+/** The selected nag's status stays beside Suggest even when another nag is opened. */
+export function NagSuggestionNotice({
+  note,
+  id = "ng-suggest-note",
+}: {
+  note: NagSuggestionNote | null;
+  id?: string;
+}) {
+  const { t, lang } = useLocale();
+  if (!note) return null;
+  const text =
+    note.kind === "pending"
+      ? kb67t(lang as Kb67Lang, "suggest.pending", { label: note.label ?? "" })
+      : note.kind === "needOwn"
+        ? t("ng.suggest.needOwn")
+        : note.kind === "empty"
+          ? t("ng.suggest.none")
+          : t("ng.suggest.error");
+  return note.kind === "error" ? (
+    <p
+      className="kb67-suggest-notice tp-error-text"
+      id={id}
+      role="alert"
+      data-component="NagSuggestionNotice"
+      data-kind={note.kind}
+    >
+      {text}
+    </p>
+  ) : (
+    <output
+      className="kb67-suggest-notice tp-help"
+      id={id}
+      data-component="NagSuggestionNotice"
+      data-kind={note.kind}
+    >
+      {note.kind === "pending"
+        ? labelledMessage(lang as Kb67Lang, "suggest.pending", note.label ?? "")
+        : text}
+    </output>
+  );
+}
+
+/** The real selected-nag editor; drafts and revisions are owned by NagsContent. */
+export function SelectedNagPhraseForm({
+  nags,
+  selectedNag,
+  draft,
+  problem,
+  feedback,
+  revision,
+  note,
+  busy,
+  phraseRef,
+  onSelect,
+  onDraftChange,
+  onSubmit,
+  onSuggest,
+}: {
+  nags: readonly Nag[];
+  selectedNag: Nag;
+  draft: string;
+  problem: WordsProblem | null;
+  feedback: PhraseFeedback | null;
+  revision: number;
+  note: NagSuggestionNote | null;
+  busy: string | null;
+  phraseRef?: RefObject<HTMLTextAreaElement | null>;
+  onSelect: (id: Id<"nags">) => void;
+  onDraftChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSuggest: () => void;
+}) {
+  const { t, lang } = useLocale();
+  const activeFeedback =
+    feedback?.revision === revision
+      ? feedback.kind
+      : feedback?.kind === "saving"
+        ? "savingEarlier"
+        : feedback?.kind === "earlierError"
+          ? "earlierError"
+          : null;
+  const phraseError = problem
+    ? t(PHRASE_PROBLEM[problem])
+    : activeFeedback === "error"
+      ? kb67t(lang as Kb67Lang, "phrase.error")
+      : null;
+  const earlierError = activeFeedback === "earlierError";
+  const status =
+    activeFeedback === "saving"
+      ? kb67t(lang as Kb67Lang, "phrase.saving")
+      : activeFeedback === "savingEarlier"
+        ? kb67t(lang as Kb67Lang, "phrase.savingEarlier")
+        : activeFeedback === "saved"
+          ? kb67t(lang as Kb67Lang, "phrase.saved", { label: selectedNag.label })
+          : null;
+  return (
+    <section
+      className="tp-surface kb67-composer"
+      aria-labelledby="ng-add-title"
+      data-component="SelectedNagPhraseForm"
+    >
+      <h2 className="tp-section__title" id="ng-add-title">
+        {t("ng.add.title")}
+      </h2>
+      <form className="tp-form" data-component="Form" noValidate onSubmit={onSubmit}>
+        <div className="tp-field" data-component="Field">
+          <label className="tp-label" htmlFor="ng-add-nag">
+            {t("ng.add.for")}
+          </label>
+          <div className="tp-select" data-component="Select">
+            <select
+              className="tp-select__input tp-input"
+              id="ng-add-nag"
+              value={selectedNag._id}
+              onChange={(event) => onSelect(event.target.value as Id<"nags">)}
+            >
+              {nags.map((nag) => (
+                <option key={nag._id} value={nag._id} label={nag.label} />
+              ))}
+            </select>
+            <TpIcon name="down" size="sm" className="tp-select__icon" />
+          </div>
+        </div>
+        <div className="tp-field" data-component="Field">
+          <label className="tp-label" htmlFor="ng-add-text">
+            {t("ng.add.label")}
+          </label>
+          <textarea
+            ref={phraseRef}
+            className="tp-textarea"
+            id="ng-add-text"
+            rows={2}
+            dir="auto"
+            placeholder={t("ng.add.ph")}
+            value={draft}
+            aria-invalid={phraseError ? true : undefined}
+            aria-describedby={
+              phraseError
+                ? "ng-add-help ng-add-error"
+                : status
+                  ? "ng-add-help ng-add-feedback"
+                  : "ng-add-help"
+            }
+            data-component="Textarea"
+            onChange={(event) => onDraftChange(event.target.value)}
+          />
+          <p className="tp-help" id="ng-add-help">
+            {t("ng.add.help")}
+          </p>
+          {phraseError ? (
+            <p className="tp-error-text" id="ng-add-error" role="alert">
+              {phraseError}
+            </p>
+          ) : null}
+          {earlierError ? (
+            <p
+              className="kb67-phrase-feedback tp-error-text"
+              id="ng-add-earlier-error"
+              role="alert"
+              data-kind="earlierError"
+            >
+              {labelledMessage(lang as Kb67Lang, "phrase.earlierError", selectedNag.label)}
+            </p>
+          ) : null}
+          {status ? (
+            <output
+              className="kb67-phrase-feedback tp-help"
+              id="ng-add-feedback"
+              data-kind={activeFeedback}
+            >
+              {activeFeedback === "saved"
+                ? labelledMessage(lang as Kb67Lang, "phrase.saved", selectedNag.label)
+                : status}
+            </output>
+          ) : null}
+        </div>
+        <div className="tp-form__actions">
+          <button className="tp-btn tp-btn--primary" type="submit" disabled={busy !== null}>
+            <TpIcon name="plus" size="sm" />
+            <span>{t("ng.add.btn")}</span>
+          </button>
+          <button
+            className="tp-btn tp-btn--secondary"
+            type="button"
+            disabled={busy !== null}
+            aria-describedby={note ? "ng-suggest-note" : undefined}
+            onClick={onSuggest}
+          >
+            <TpIcon name="sparkle" size="sm" />
+            <span>{busy === "suggest" ? t("ng.suggesting") : t("ng.suggest")}</span>
+          </button>
+        </div>
+        <NagSuggestionNotice note={note} />
+      </form>
+    </section>
+  );
+}
+
+type Kb67GalleryState =
+  | "default"
+  | "empty"
+  | "pending"
+  | "success"
+  | "error"
+  | "disabled"
+  | "overflow";
+/** Fictional interactive states using the same form and notice as /settings/nags. */
+export function Kb67Gallery() {
+  const { lang, setLang } = useLocale();
+  const [state, setState] = useState<Kb67GalleryState>("default");
+  const [selectedId, setSelectedId] = useState<Id<"nags">>("gallery-maya" as Id<"nags">);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [revisions, setRevisions] = useState<Record<string, number>>({});
+  const [feedback, setFeedback] = useState<Record<string, PhraseFeedback | null>>({});
+  const [notes, setNotes] = useState<Record<string, NagSuggestionNote | null>>({});
+  const nags: Nag[] = [
+    {
+      _id: "gallery-maya" as Id<"nags">,
+      label:
+        state === "overflow"
+          ? "Maya's very long fictional morning routine with extra words for a narrow phone"
+          : "Maya's morning",
+      enabled: true,
+      phrases: [
+        {
+          id: "gallery-own",
+          text: "Take a small stretch break",
+          source: "user",
+          status: "accepted",
+        },
+      ],
+    },
+    { _id: "gallery-dana" as Id<"nags">, label: "Dana's water break", enabled: false, phrases: [] },
+    { _id: "gallery-yoni" as Id<"nags">, label: "Yoni's reading", enabled: false, phrases: [] },
+  ];
+  const selectedNag = nags.find((nag) => nag._id === selectedId) ?? nags[0];
+  const choices: readonly Kb67GalleryState[] = [
+    "default",
+    "empty",
+    "pending",
+    "success",
+    "error",
+    "disabled",
+    "overflow",
+  ];
+  const chooseState = (next: Kb67GalleryState) => {
+    setState(next);
+    const revision = revisions[selectedId] ?? 0;
+    setFeedback((all) => ({
+      ...all,
+      [selectedId]:
+        next === "pending"
+          ? { kind: "saving", revision }
+          : next === "success"
+            ? { kind: "saved", revision }
+            : next === "error"
+              ? { kind: "error", revision }
+              : null,
+    }));
+    setNotes((all) => ({
+      ...all,
+      [selectedId]:
+        next === "empty"
+          ? { kind: "empty" }
+          : next === "pending"
+            ? { kind: "pending", label: selectedNag.label }
+            : next === "error"
+              ? { kind: "error" }
+              : null,
+    }));
+  };
+  return (
+    <main
+      className="kb67-gallery"
+      lang={lang}
+      dir={lang === "he" ? "rtl" : "ltr"}
+      data-component="Kb67Gallery"
+    >
+      <TpIconSprite />
+      <h1>{kb67t(lang as Kb67Lang, "gallery.title")}</h1>
+      <fieldset className="kb67-gallery__controls">
+        <legend className="tp-sr-only">{kb67t(lang as Kb67Lang, "gallery.controls")}</legend>
+        <button type="button" lang="en" aria-pressed={lang === "en"} onClick={() => setLang("en")}>
+          English
+        </button>
+        <button type="button" lang="he" aria-pressed={lang === "he"} onClick={() => setLang("he")}>
+          עברית
+        </button>
+        {choices.map((choice) => (
+          <button
+            key={choice}
+            type="button"
+            aria-pressed={state === choice}
+            onClick={() => chooseState(choice)}
+          >
+            {kb67t(lang as Kb67Lang, `gallery.${choice}`)}
+          </button>
+        ))}
+      </fieldset>
+      <SelectedNagPhraseForm
+        nags={nags}
+        selectedNag={selectedNag}
+        draft={drafts[selectedId] ?? ""}
+        problem={null}
+        feedback={feedback[selectedId] ?? null}
+        revision={revisions[selectedId] ?? 0}
+        note={notes[selectedId] ?? null}
+        busy={state === "disabled" ? "gallery" : null}
+        onSelect={setSelectedId}
+        onDraftChange={(text) => {
+          setDrafts((all) => ({ ...all, [selectedId]: text }));
+          setRevisions((all) => ({ ...all, [selectedId]: (all[selectedId] ?? 0) + 1 }));
+          setFeedback((all) => ({ ...all, [selectedId]: null }));
+        }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!(drafts[selectedId] ?? "").trim()) return;
+          setDrafts((all) => ({ ...all, [selectedId]: "" }));
+          chooseState("success");
+        }}
+        onSuggest={() => chooseState("pending")}
+      />
+    </main>
   );
 }
 
