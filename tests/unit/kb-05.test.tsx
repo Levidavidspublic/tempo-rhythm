@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createElement, type ReactElement } from "../../apps/web/node_modules/react";
@@ -187,17 +187,24 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
   }
 }, 240_000);
 
-
 type CreateFixtureWindow = Window & {
   __kb05Create: { calls: { title: string }[]; finishCreate(): void };
 };
 
 test("production GoalsScreen focuses the newly created goal after the query includes it", async () => {
-  const fixtureDirectory = await mkdtemp(join(tmpdir(), "tempo-kb05-create-"));
+  const fixtureRoot = join(repo, "work");
+  await mkdir(fixtureRoot, { recursive: true });
+  const fixtureDirectory = await mkdtemp(join(fixtureRoot, "tempo-kb05-create-"));
   let fixtureServer: ReturnType<typeof Bun.serve> | undefined;
   let fixtureBrowser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   try {
-    const reactPath = join(repo, "apps/web/node_modules/react");
+    const webRoot = join(repo, "apps/web");
+    const reactPaths = {
+      react: Bun.resolveSync("react", webRoot),
+      "react/jsx-runtime": Bun.resolveSync("react/jsx-runtime", webRoot),
+      "react/jsx-dev-runtime": Bun.resolveSync("react/jsx-dev-runtime", webRoot),
+    };
+    const reactClientPath = Bun.resolveSync("react-dom/client", webRoot);
     const shim = join(fixtureDirectory, "convex-react.ts");
     // Stub only the backend boundary. GoalsScreen, its shared controls, locale provider,
     // mutation handler, rendered GoalCard, and focus effect remain the production code.
@@ -232,8 +239,8 @@ test("production GoalsScreen focuses the newly created goal after the query incl
     `);
     const entry = join(fixtureDirectory, "entry.tsx");
     await writeFile(entry, `
-      import React from "${reactPath}";
-      import { createRoot } from "${join(repo, "apps/web/node_modules/react-dom/client")}";
+      import React from "${reactPaths.react}";
+      import { createRoot } from "${reactClientPath}";
       import { GoalsScreen } from "${join(repo, "apps/web/components/goals/GoalsScreen.tsx")}";
       import { LocaleProvider } from "${join(repo, "apps/web/components/providers/LocaleProvider.tsx")}";
       createRoot(document.getElementById("root")).render(<LocaleProvider><GoalsScreen /></LocaleProvider>);
@@ -242,6 +249,9 @@ test("production GoalsScreen focuses the newly created goal after the query incl
       entrypoints: [entry], target: "browser", outdir: fixtureDirectory,
       plugins: [{ name: "kb05-backend-boundary", setup(build) {
         build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: shim }));
+        build.onResolve({ filter: /^react(?:\/jsx(?:-dev)?-runtime)?$/ }, ({ path }) => ({
+          path: reactPaths[path as keyof typeof reactPaths],
+        }));
       } }],
     });
     expect(result.success).toBe(true);
