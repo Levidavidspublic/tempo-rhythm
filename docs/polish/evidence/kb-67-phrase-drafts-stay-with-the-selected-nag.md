@@ -140,3 +140,101 @@ The first adoption proof used shared head `1e18455`. Child: **30 pass / 0 fail**
 Bun 1.3.9. Frozen install stayed at Resolving dependencies and was terminated after approximately 120 seconds (exit143); result UNKNOWN, not a successful install. The bun.lock SHA256 exactly matches the successfully installed shared worktree: `35da413125508b8d1fbbaff0fc48b01dd8db7a437dd3439dc7d2f2edfbfcd1f7`. Its installed dependency trees were copied locally, preserving relative workspace links. No repository package or lock file changed. Local lint and typecheck pass 5/5; the initial full test run is still active, and remaining mandatory gates/results will be appended below.
 
 Logs: `/workspace/kb-run-logs/kb67-focused.log`, `kb67-0.log` through `kb67-5.log`, and `kb67-results.json`. Prior failure receipts above remain unchanged. Live account/model behavior, physical devices and native Hebrew read remain UNKNOWN. The pre-existing derived-Accept Undo gap remains out of scope.
+
+
+### Final shared-helper proof and retained mandatory checks
+
+PR open — focused proof passes; merge gates remain pending. Shared review correction `4d30965` was merged normally at `cc6efc6`. It includes the nested supervisor-receipt fix, drain-before-validation fix and failed-spawn PID guard. The first proof on that shared correction passed all 15 shared cases and all 30 KB-67 child cases, but the parent failed 31 reports: the controlled nonzero-exit regression now streamed its own `KB67_FIXTURE_RESULTS` record as well. This scoped adapter collision is distinct from the earlier shared parser failure. The adapter now selects the exact invocation token while still requiring exactly one matching record; missing, duplicate and wrong-token results remain errors. All pre-existing assertions remain unchanged.
+
+Final command: `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-67.test.tsx` → exit 0, **46 pass / 0 fail**, 136 assertions, 49.75 seconds: 15 shared cases plus 31 KB-67 parent reports. KB-67 child: **30 pass / 0 fail**, 110 assertions, 45.17 seconds. Actual child exit 0, supervisor exit 0, all 30 named results present, cleanup complete. Every original 27 behavioral case and three controlled lifecycle regression cases passed. All 18 recorded runner PIDs were absent after completion; no unique `work/kb67-*` directories remained. Logs stream phase and authoritative exit evidence, including the deliberate nested child exit 1; successful case records do not hide it.
+
+| Command | Actual result |
+| --- | --- |
+| `bun --version` | 1.3.9 |
+| `bun install --frozen-lockfile` | UNKNOWN: resolving dependencies stalled; terminated after approximately 120 seconds, exit 143; matching-lock installed trees copied as documented above |
+| `bun run lint` | PASS, exit 0, 5/5 tasks; final adapter recheck also 5/5 |
+| `bun run typecheck` | PASS, exit 0, 5/5 tasks; final adapter recheck also 5/5 |
+| `bun run test` on `7729613` / shared `1e18455` | FAIL, exit 1, 3457 pass / 32 fail / 3 todo, 81,452 assertions, 3,492 tests across 212 files, 814.71 seconds. Failures: 31 old shared-parser KB-67 parent reports plus one unnamed unchanged KB-61 hook at its original 480-second deadline. No external cancellation. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0, four checks |
+| `CI=1 bunx playwright test --reporter=line` | PASS, exit 0, 28 passed / 0 failed / 89 skipped, 68.33 seconds, serialized under shared browser lock. Runtime uses already installed system Chromium via local browser-cache executable link; no repository or test configuration changed. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0, 1/1 task, cached |
+| Final shared + KB-67 focused proof | PASS as above on shared `4d30965` plus scoped token-selection correction |
+
+The broad run, scans, E2E and build completed before the final shared merge and scoped token-selection correction. No final-head broad-suite pass is claimed. CI and actual CodeRabbit coverage on the pushed head remain required. The initial full failure and two focused failure receipts are retained; the reduction to zero applies to the final focused KB-67 and shared cases, not to the entire repository.
+
+Final logs: `/workspace/kb-run-logs/kb67-final-focused.log` (retained collision failure), `kb67-corrected-focused.log` (final pass), `kb67-final-lint.log`, `kb67-final-typecheck.log`, and the original mandatory logs listed above. PR attachment tool completion remains UNKNOWN after the host call hung; the required call was attempted separately. No approval or owner configuration is needed for this test adapter; repo gates and independent KB-61 diagnosis remain pending.
+
+Initial focused failure, last 20 lines:
+
+```text
+      at processTicksAndRejections (unknown:7:39)
+207 |           const line = receipt.slice(0, newline);
+208 |           receipt = receipt.slice(newline + 1);
+209 |           if (line.startsWith("KITCHEN_CHILD_EXIT=")) {
+210 |             try {
+211 |               const record = JSON.parse(line.slice("KITCHEN_CHILD_EXIT=".length));
+212 |               if (record.token !== token || !Number.isInteger(record.code)) throw new Error("Invalid child exit receipt");
+                                                                                            ^
+error: Invalid child exit receipt
+      at <anonymous> (/workspace/kb67/tests/helpers/kitchen-fixture.ts:212:87)
+      at emit (node:events:95:22)
+      at addChunk (internal:streams/readable:265:47)
+      at readableAddChunkPushByteMode (internal:streams/readable:243:18)
+      at handleNumberResult (internal:streams/native-readable:69:18)
+      at <anonymous> (internal:streams/native-readable:43:68)
+(fail) KB-67 fixture lifecycle > successful case records cannot hide a real child exit failure [0.02ms]
+
+ 0 pass
+ 31 fail
+Ran 31 tests across 1 file. [55.14s]
+```
+
+Shared-corrected adapter collision, last 20 lines:
+
+```text
+[kitchen-fixture] exit pid=76167 code=0 signal=none
+(pass) shared kitchen fixture lifecycle > spawn failure reports the error without signaling PID zero or the caller group [103.45ms]
+[kitchen-fixture] EOF OS pid=76167 stat=76167 (python3) Z 73450 76167 76167 0 -1 4227340 2698 3295 0 0 2 1 2 0 20 0 1 0 207085 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+[kitchen-fixture] EOF OS pid=76167 stat=76167 (python3) Z 73450 76167 76167 0 -1 4227340 2698 3295 0 0 2 1 2 0 20 0 1 0 207085 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+[kitchen-fixture] start pid=76177
+[kitchen-fixture] build start
+[kitchen-fixture] build complete outputs=1
+KITCHEN_CHILD_EXIT={"token": "363e962c-1d98-4e76-8392-8d3cf7aa5807", "code": 0}
+[kitchen-fixture] supervisor reaped all descendants
+[kitchen-fixture] stderr EOF pid=76177 exit-observed=false
+[kitchen-fixture] stdout EOF pid=76177 exit-observed=false
+[kitchen-fixture] exit pid=76177 code=0 signal=none
+[kitchen-fixture] EOF OS pid=76177 stat=76177 (python3) Z 73450 76177 76177 0 -1 4227340 2665 8403 0 0 2 1 4 3 20 0 1 0 207096 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+(pass) shared kitchen fixture lifecycle > fresh browser builds resolve React scheduler from its actual importing package [163.50ms]
+(pass) shared kitchen fixture lifecycle > committed focus and settled transition use browser signals [1914.56ms]
+
+ 15 pass
+ 31 fail
+ 45 expect() calls
+Ran 46 tests across 2 files. [42.34s]
+```
+
+Mandatory full-suite failure, last 20 lines:
+
+```text
+(fail) KB-67 selected-nag phrase editing > Reject removes a local suggestion without a write [0.03ms]
+(fail) KB-67 selected-nag phrase editing > existing phrase removal still offers five-minute Undo [0.03ms]
+(fail) KB-67 selected-nag phrase editing > Hebrew form and email-free labels are RTL without horizontal overflow [0.03ms]
+(fail) KB-67 selected-nag phrase editing > phone targets and keyboard focus remain visible with reduced motion [0.03ms]
+(fail) KB-67 selected-nag phrase editing > gallery changes real form and notice views with A/B selection [0.03ms]
+(fail) KB-67 selected-nag phrase editing > long fictional nag text fits phone and desktop [0.06ms]
+(fail) KB-67 selected-nag phrase editing > source-derived before and mounted after evidence covers widths, locales and themes [0.03ms]
+(fail) KB-67 fixture lifecycle > isolated fixture exits successfully after every named case and cleanup [0.15ms]
+(fail) KB-67 fixture lifecycle > pending browser close cannot delay server or directory release [0.03ms]
+(fail) KB-67 fixture lifecycle > browser close rejection still stops the real server and removes its unique directory [0.02ms]
+(fail) KB-67 fixture lifecycle > successful case records cannot hide a real child exit failure [0.02ms]
+(fail) (unnamed) [480006.30ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3457 pass
+ 3 todo
+ 32 fail
+ 81452 expect() calls
+Ran 3492 tests across 212 files. [814.71s]
+error: script "test" exited with code 1
+```

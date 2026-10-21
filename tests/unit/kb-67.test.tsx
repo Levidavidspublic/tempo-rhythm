@@ -43,9 +43,14 @@ async function releaseFixture(
 }
 
 function resultsFrom(run: ChildRun, token: string): FixtureResults {
-  const records = run.out.split("\n").filter((line) => line.startsWith(resultMarker));
+  // Nested lifecycle regressions stream their own receipts; require exactly one
+  // record for this invocation without accepting another child's successful cases.
+  const allRecords = run.out.split("\n").filter((line) => line.startsWith(resultMarker))
+    .map((line) => JSON.parse(line.slice(resultMarker.length)) as FixtureResults);
+  const records = allRecords.filter((record) => record.token === token);
+  if (allRecords.length && !records.length) throw new Error("KB-67 child returned results from another invocation");
   if (records.length !== 1) throw new Error(`KB-67 child returned ${records.length} result records`);
-  const results = JSON.parse(records[0].slice(resultMarker.length)) as FixtureResults;
+  const results = records[0];
   if (results.token !== token) throw new Error("KB-67 child returned results from another invocation");
   return results;
 }
