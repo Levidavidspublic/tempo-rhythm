@@ -1,11 +1,11 @@
 # KB finish status
 
-AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 12:31 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
+AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 12:41 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
 
 ## Counts
 
-- KB issues: **0 closed / 26 open**, including the administrative lead issue #1176.
-- KB PRs: **0 merged / 26 open**; includes planning #1140.
+- KB issues: **1 closed / 25 open**, including the administrative lead issue #1176.
+- KB PRs: **1 merged / 25 open**; includes planning #1140.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
 - NEEDS-AMIT.md: **4 question lines**.
 
@@ -15,7 +15,7 @@ AWAY — The owner's KB FINISH instruction authorizes KB-only ready/merge/close 
 
 AT — Resolved in this conversation: the owner confirms automatic paid checks are paused and the existing CodeRabbit review is flat-fee. The pause-setting API returned 403, so dashboard state is not independently verified. No pause setting was written. Do not invoke release-go, preview-acceptance, release, codegen or deployment workflows.
 
-AWAY — For each eligible PR: verify all dependencies on integration; rebase onto the latest integration head; retain scope; require green CI and an actual CodeRabbit review with addressed findings; mark ready and merge one PR at a time. Then close its issue with “KB done: <one line>”, refresh this file and commit it on docs/kitchen-kb-plan. Overlapping files are never edited/merged concurrently. A green CodeRabbit status with “Draft PR not reviewed” is not a review.
+AWAY — For each eligible PR: verify all dependencies on integration; rebase onto the latest integration head; retain scope; require green CI and an actual CodeRabbit review with addressed findings; mark ready, await refreshed checks, then enqueue and merge one PR at a time through the required integration merge queue. Then close its issue with “KB done: <one line>”, refresh this file and commit it on docs/kitchen-kb-plan. Overlapping files are never edited/merged concurrently. A green CodeRabbit status with “Draft PR not reviewed” is not a review.
 
 AT — Resolved in this conversation: the owner authorized one additional repair pass for each KB draft that exhausted its retry budget. Scope and all checks remain unchanged. This supersedes the prior retry-budget question; it is not unlimited retries.
 
@@ -36,9 +36,9 @@ AT — Resolved in this conversation: the owner authorized one additional repair
 | KB-45 | [#1156](https://github.com/Levidavidspublic/tempo-rhythm/issues/1156) | [#1163](https://github.com/Levidavidspublic/tempo-rhythm/pull/1163) | `6c0c71c` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
 | KB-59 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) | `da6aff3` | FAILURE | Review posted; 4 unresolved threads | One extra repair pass authorized; checks unchanged |
 | KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) | `f8c7cc6` | SUCCESS | Review requested; awaiting publication | Address review and final checks |
-| KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `82cbdaf` | SUCCESS | Review posted; 1 unresolved threads | One extra repair pass authorized; checks unchanged |
+| KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `82cbdaf` | SUCCESS | Review posted; 0 unresolved threads | One extra repair pass authorized; checks unchanged |
 | KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) | `6e0d2b9` | SUCCESS | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
-| KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | `bc6c4d4` | SUCCESS | Review posted; 1 unresolved threads | Address review and final checks |
+| KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | `f8514d7` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue c7447ad; issue closed |
 | KB-69 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | `77e225d` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
 | KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | `0df8649` | SUCCESS | Review requested; awaiting publication | One extra repair pass authorized; checks unchanged |
 | KB-71 | [#1175](https://github.com/Levidavidspublic/tempo-rhythm/issues/1175) | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | `afff777` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
@@ -48,7 +48,7 @@ AT — Resolved in this conversation: the owner authorized one additional repair
 | KB-76 | [#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180) | [#1183](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183) | `6bf810c` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
 | KB-77 | [#1184](https://github.com/Levidavidspublic/tempo-rhythm/issues/1184) | [#1186](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186) | `7912c5f` | SUCCESS | Review posted; 1 unresolved threads | Address review and final checks |
 | KB-78 | [#1188](https://github.com/Levidavidspublic/tempo-rhythm/issues/1188) | [#1190](https://github.com/Levidavidspublic/tempo-rhythm/pull/1190) | `3feeb6b` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
-| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | `cb2a807` | SUCCESS | Review posted; 12 unresolved threads | Address review and final checks |
+| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | `cb2a807` | SUCCESS | Review posted; 8 unresolved threads | Address review and final checks |
 
 ## Written tickets without a PR, in dependency order
 
@@ -118,7 +118,7 @@ AWAY — KB-01 lacks KA pin/folder prerequisites and its five Library/history AP
 
 ## File overlap and merge order
 
-AWAY — The 25 current implementation PRs each change their six ticket-scoped paths; their current changed-path sets are pairwise disjoint. Shared imported controls still require regression checks after each integration merge. Planning #1140 changes only docs/kitchen/kb/.
+AWAY — The 25 current implementation PRs each change their six ticket-scoped paths; their current changed-path sets are pairwise disjoint among KB implementation PRs only. Shared imported controls still require regression checks after each integration merge. Planning #1140 changes only docs/kitchen/kb/.
 
 - Future data writers: KB-01 → KB-16 → KB-31, respecting all external dependencies first.
 - Future SearchAnswer writers: KB-11 → 12 → 13 → 19 → 20 → 21 → 23 → 24 → 26.
@@ -132,9 +132,11 @@ AWAY — The 25 current implementation PRs each change their six ticket-scoped p
 
 AWAY — No non-KB draft was modified, rebased, reviewed, closed or merged. Historical claims of supersession are not proof that an entire draft is redundant. #1053 itself is unmerged and overlaps KB work; #1081 targets its branch and is still prerequisite work. #1193 is unfinished mobile work, not a KB completion. #1053 explicitly calls #964/#965/#967/#968/#969/#970 superseded and #1026 partially superseded, but #1053 is itself unmerged; these are historical claims, not permission to close those drafts. A local ancestry audit could examine only two open-draft heads; 76 objects were unavailable. Their complete redundancy remains UNKNOWN.
 
+AWAY — Live branch rules now require integration’s merge queue. The first direct PR merge request was rejected; no bypass was used. KB-67 entered the queue with its expected head SHA and merged only after all five queue workflows passed.
+
 ## Merge receipts
 
-AWAY — None yet. No KB issue was closed in this pass.
+- AWAY — KB-67: [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) merged c7447ad9ad5a71326b211d1de80d54091a280683; [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) closed; 2026-10-21T09:39:59Z.
 
 ## UNKNOWN
 
