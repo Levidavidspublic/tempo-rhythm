@@ -116,7 +116,7 @@ async function runFixture(): Promise<Results> {
   const browser=await chromium.launch({executablePath:executable,args:["--no-sandbox"]});
   const results:Results={};
   const open=async(mode:"screen"|"gallery"|"before"="screen",lang:"en"|"he"="en",width=390,theme:"light"|"dark"="light",initial:"admin"|"nonadmin"="admin")=>{
-    const page=await browser.newPage({viewport:{width,height:844},reducedMotion:"reduce"});
+    const page=await browser.newPage({viewport:{width,height:844},reducedMotion:"reduce",timezoneId:"UTC"});
     const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
     await page.goto(`http://127.0.0.1:${server.port}/?mode=${mode}&lang=${lang}&initial=${initial}`);
     await page.locator("h1").waitFor({state:"visible",timeout:15_000}).catch(async()=>{throw Error("No hydrated h1: "+errors.join(" | "))});
@@ -247,6 +247,8 @@ async function runFixture(): Promise<Results> {
     });
     await check("English and Hebrew date labels and copy",async()=>{
       const en=await open();const he=await open("screen","he");
+      pwExpect(await en.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("UTC");
+      pwExpect(await he.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("UTC");
       await pwExpect(en.getByText(/Joined/).first()).toBeVisible();
       await pwExpect(he.getByText(/תאריך הצטרפות/).first()).toBeVisible();
       await pwExpect(he.getByRole("heading",{name:"אישורי חשבונות"})).toBeVisible();
