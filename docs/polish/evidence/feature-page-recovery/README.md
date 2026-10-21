@@ -1,6 +1,6 @@
 # Page action recovery — #1249
 
-WALK — Candidate 3 addresses two independent review findings. Frozen install, mandatory lint and mandatory typecheck pass; its 30-case focused browser run is pending the lead's shared slot. Full tests, scans, repository Playwright/build, remote CI and CodeRabbit remain pending. This is not a production or preview completion claim.
+WALK — BLOCKED for completion/merge: source review identifies a pre-existing A→B→A dirty-field race that this change does not fix. Candidate 3 addresses the two introduced ordering findings. Frozen install, mandatory lint and mandatory typecheck pass; its 30-case focused browser run is pending the lead's shared slot. Full tests, scans, repository Playwright/build, remote CI and CodeRabbit remain pending. This is not a production or preview completion claim.
 
 Captured 2026-10-21 UTC with Bun 1.3.9. Base: `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`. Original NotesScreen blob: `b9435f54157cc49a746aa07944f6fe615bf96708` (unchanged between the saved original base and this base). Candidate 1 tested NotesScreen blob: `ae6cab36d00cbae11109f6440e3229d952a8e258`. Candidate 1 test blob: `743d928492dc2140acda5720402f5a63a4e4d4a6`. Source, test and evidence are committed together; no provider, account or deployed environment was called.
 
@@ -13,6 +13,20 @@ The fixture mounts the actual NotePage, PageEditorView, CodeMirror editor and Co
 3. Candidate 3: a private per-note promise queue registers immutable snapshots immediately across remounts; owner and queue cleanup compare request identity. UI/ref settlement remains ownership-fenced. Pending-debounce cleanup uses the same writer, and clean reopened coach/delete paths wait for outgoing writes. The independent reviewer found both prior defects resolved and no further blocking introduced defect. Thirty focused cases preserve the original nineteen and add navigation/unmount, rejected predecessors, same-note A→B→C→D ordering, distinct-note independence, and clean coach/delete waits. No fourth repair candidate is authorized after a failing focused run.
 
 Current source blob: `fef2920792d718dd07c8855556450014b31413af`. Current test blob: `46617ece5085285b2a49910400dae1c9d9d4dff8`. The scratch static log filenames initially said candidate2; this ledger uses the corrected conservative candidate3 count.
+
+## Pre-existing A→B→A limit — execution pending
+
+Source comparison found the following edge in both the saved original and candidate 3:
+
+1. Save title A and keep its mutation pending.
+2. Edit title B and let its debounce run. The original submits B immediately; candidate 3 enqueues B behind A.
+3. Edit back to A, leaving the final debounce pending.
+4. Resolve the first A save. Both implementations clear the title dirty flag solely because the current value equals the old snapshot, without checking its edit revision.
+5. The final debounce can see no dirty patch and submit no final A. The outstanding B write can leave B stored while the last typed value was A; a Saved indicator or reactive adoption can then conceal the missed edit.
+
+This is a pre-existing value-equality clearing defect, not a newly introduced queue defect. It still limits the ticket's stated newer-draft guarantee. No source/test repair was made after this finding and no fourth candidate is authorized. The minimum proposed correction would require the successful snapshot's edit revision to still be current before clearing dirty fields or showing Saved, with an A→B→A regression; this is a proposal only.
+
+UNKNOWN: execution of the scratch-only baseline/current ABA comparison. The diagnostic is prepared outside the checkout, uses the same actual editor fixture, preserves all thirty committed cases and does not replace an acceptance check. Candidate 3's thirty-case focused run is also unexecuted. Keep the draft blocked for merge until the unresolved limitation and remaining gates are addressed through the authorized workflow.
 
 ## Results
 
