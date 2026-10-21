@@ -1,321 +1,182 @@
-# Tempo Flow — PRD
+# Tempo Flow product requirements
 
-> **Version:** 5 Oct 2026. **Owner:** Amit Levin. Replaces the April verbatim copy of this file (Phase 06 Step 2).
-> **Built from:** `04-PRD-TEMPO-FLOW.md` (16 Sep), `01-PRD-PATCH.md` (20 Sep, with the 30 Sep decision update), and Amit's interview of 5 Oct 2026. Where they disagree, this file wins.
-> Items in the April master document that none of these carry forward count as superseded.
-> **Precedence:** HARD_RULES > ticket > PRD > chat prompt.
-> **Tags:** every feature carries one horizon: **[NW]** next week · **[MVP]** · **[END]** end product. `[EXTRAPOLATED]` = filled in by Claude, for Amit to confirm. `UNKNOWN` = not verifiable from the sources or official docs.
+Updated 2026-10-21. Documentation draft for review; implementation and live acceptance are separate.
 
-## 0. Verdict
+## Verdict and authority
 
-Tempo Flow is an executive-function coach and daily planner: an agent-first, modifiable markdown note taker with a coach chat beside it, plus scheduled jobs.
-Every page is markdown with JSON blocks inside it. json-render draws each block as its own element, and the user never sees JSON.
-The coach talks (live voice, English and Hebrew), reads your pages and memory, and changes the app for you.
-It writes notes, adds tasks to Today, and builds new templates and modules, the way Claude Code writes its own mods (§5).
+Tempo Flow is a planner built around user-owned Markdown pages. It should make capturing, choosing and completing a next step understandable and reversible. The default-branch product contracts govern; a newer branch report can show work or a proposal without changing an accepted rule.
 
-**Next week's target:** a real person opens `preview.tempoflow.dev`, signs in with a magic link, writes a note, and talks or types to the coach. This works in English or Hebrew, right-to-left or left-to-right, and the coach can act on their notes and Today. It is built in 2–3 days and polished for the rest of the week.
+## Main journeys
 
-## 1. Vision and positioning
-
-- **Canonical line (Vision Lock, 10 Aug):** "An executive function aid for adults with ADHD, autism, or learning disabilities. It is a coach, not a therapist or counselor."
-- **Tagline:** "Tempo Flow — your brain's operating system." **Short form:** "A starter for your brain."
-- **Closest product:** today.ai (memory, acts before it is asked, to-dos, notes). It is built for neurotypical users. Tempo is that for a neurodivergent user: it **paces** and **nags**.
-- **What Tempo is at its core:** markdown + built-in templates + a chat with memory that can modify the app itself. "Kind of like how Claude Code can now modify itself. That's basically what Tempo Flow is with the chat and memory." (Amit, 5 Oct)
-- **Design references:** Memos (design and behaviour only, no code), with Joplin secondary. The UX bar is NotePlan + StudyFetch, and parity means features, not look.
-- **Look:** the Anthropic colour palette and taxonomy, because Amit finds them calming. It must look polished, not vibe-coded.
-- **Language:** English first. Hebrew is fully supported, and the layout works right-to-left and left-to-right (§4.7).
-
-## 2. Users
-
-| | |
-|---|---|
-| Primary | Adults with ADHD, autism or learning disabilities whose executive dysfunction is the root cause. Design target: diagnosed and medicated. |
-| Anti-persona | Dysfunction downstream of bipolar disorder, personality disorders, PTSD, addiction recovery, or anxiety/depression as the primary condition. Said plainly in-app; downloads are not gatekept. |
-| First user | Amit. |
-| Next-week test | The "mom test": Amit sends the preview link, the person signs up and uses Tempo as a chatbot or a planner, and it works. |
-| Other testers | UNKNOWN. |
-| Escalation | Three nights without sleep, severe distress or an escalating crisis → show real resources for the user's country, stop coaching. |
-
-## 3. Horizons
-
-### 3.1 Next week [NW]
-
-**Goal.** Sign in with a magic link → write a note → chat with the coach by text or live voice, in English or Hebrew. The coach can create a note, add a task to Today, fill a template, and build a new template on request.
-
-**Build window.** Built in 2–3 days, then polished for the rest of the week.
-
-**Exit check (all on `preview.tempoflow.dev`):**
-
-1. The existing preview smoke test passes.
-2. A Playwright run creates a note with a task block; no JSON is visible anywhere on the page.
-3. A typed coach message gets a reply from the live runtime model, not a canned reply.
-4. "Add 'call the bank' to today" puts a task on today's page, and Undo removes it.
-5. Asking the coach for a template shows a preview card. Approving it makes the template usable at once, and it can be turned off.
-6. Pasting a memory export shows a review list, and kept items are saved.
-7. Switching to Hebrew flips the layout to right-to-left, and the copy is Hebrew.
-8. Asking the coach "every weekday at 8, write my plan into Today" creates a scheduled job after approval. It shows in the Modules list and can be switched off.
-9. **Manual check:** one live voice round trip in English and one in Hebrew, each including one interruption and one action ("add X to today").
-
-**Not next week:** the native app, billing, nags, the study track and connectors.
-
-### 3.2 MVP [MVP] — the minimum real product [EXTRAPOLATED boundary]
-
-This is the web PWA as a product people can pay for: the next-week build plus the following.
-
-- The full planning surface: daily, weekly and monthly views, events, habits and brain dump.
-- The adaptive coach and crisis handling.
-- Nags in the user's own words.
-- View modules.
-- Memory view, forget and export.
-- English speech-to-speech on NVIDIA once its licence is verified.
-- Visible billing on Polar (web).
-- Runtime models back on the Nemotron + Inkling ladder.
-
-The boundary is Claude's reading of "V0.5 polished" in the 16 Sep PRD plus the patch's "nags are core".
-
-### 3.3 End product [END]
-
-- **Gen 1 (V1), the remainder:** the one-to-one Expo native shell (Android APK, iOS TestFlight), the study track, connectors through Executor, MCP server + CLI + REST, and BYOK.
-- **V1.5:** store-grade native, meaning push notifications and the camera, shipped on the App Store and Google Play (family-friendly).
-- **V2 "Tempo Max":** a Rust desktop app (Tauri 2), plus a minimal VPS that spawns the real `claude` binary on the user's own OAuth.
-- **Later (Gen 2+):** the plugin SDK and marketplace, and the rest of §4.12.
-
-## 4. Feature list
-
-### 4.1 Pages, notes and templates
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-01 | Sign-in by magic link only (Resend), plus sign-out. No password, no passkeys. | NW (on `integration`) | 1 Oct ruling; repo |
-| F-01a | **Approval-gated sign-up:** a new person enters their email and becomes a pending request. Only after Amit approves it does Resend send them a magic link. An unapproved email can never sign in. **Every approved user gets the premium tier.** Where Amit approves (admin screen, Convex dashboard, or an email link): UNKNOWN. | NW | Amit 5 Oct |
-| F-02 | Every page is one markdown document. Tasks, events, habits, nags and templates are JSON blocks inside it, drawn by json-render. **The JSON is never shown on any screen.** | NW | patch 1; 20 Sep ruling |
-| F-03 | Note editor: write markdown; blocks draw as their own elements; a broken block draws as a quiet card with Undo. | NW | patch 1; 20 Sep app flow (EXTRAPOLATED there) |
-| F-04 | Built-in templates: Daily page, Weekly page, Project page, Plain note [EXTRAPOLATED set]. Starting content is adapted from popular public Joplin, Notesnook, Notion and Obsidian templates: structure only, never copied text. | NW (Daily + Plain note); MVP (rest) [EXTRAPOLATED split] | Amit 5 Oct; patch 4 |
-| F-05 | **Today** is today's daily page. It is made from the Daily template on first open, and its tasks are task blocks. | NW | Amit 5 Oct; 05-SCHEMA |
-| F-06 | When a page is created, the app proposes the right template and one tap accepts. The user never hand-builds a template. | MVP [EXTRAPOLATED timing] | patch 4 |
-| F-07 | Daily, weekly and monthly views from the same markdown; elastic vs inelastic events (a fixed class stays put while a flexible walk bends around it). | MVP | 16 Sep §4 |
-| F-08 | Project/folder tree, structured tags, calendar tokens (`{{next_monday}}`). | MVP | 16 Sep §4 |
-| F-09 | Brain dump → ordered plan → add to Today. | MVP | 16 Sep ticket #2 |
-| F-10 | Events and habits as blocks (no streak counters as pressure). | MVP | 05-SCHEMA |
-
-### 4.2 Coach
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-20 | Coach chat beside the editor, replying live from the runtime model (§7). This replaces today's fixed technique replies. It is built on Convex's official Agent component, which provides chat threads, tool calls and live streaming of replies, so the coach is configuration plus tools, not hand-written backend code. | NW | Amit 5 Oct; repo `convex/coach.ts`; Convex Agent docs |
-| F-21 | The coach reads the user's pages and memory for context. | NW [EXTRAPOLATED] | implied by F-22 |
-| F-22 | **Coach actions:** create a note, add a task to Today, fill a template. Each action shows in the chat with a 5-minute Undo. | NW | Amit 5 Oct; 16 Sep undo rule |
-| F-23 | The coach builds and edits templates and modules on request (§5). | NW | Amit 5 Oct |
-| F-24 | Fixed crisis card: when a user signals crisis, the coach stops coaching and shows real resources. The card text is fixed, never model-written. | NW minimal [EXTRAPOLATED horizon]; per-country data MVP | 16 Sep §2; 20 Sep |
-| F-25 | Adaptive coach: dial 0–10, panic button, bad-day detection, 10-second action, realism checker, forgiveness contract, graduated load 2→4. | MVP | 16 Sep §4 |
-| F-26 | Anti-slop verification; Socratic questioning on the ADHD-tax category. | END | 16 Sep SHOULD |
-| F-27 | Cron accountability with partial credit; self-rules (trial → lock → cooldown). | END | 16 Sep SHOULD |
-| F-28 | **Coach artifacts:** the coach can make interactive pieces, such as flashcards, a quiz, a checklist or a small tracker, drawn by json-render from Tempo's catalog only. Each one is saved into a page as a block, and the user never sees JSON. Flashcards made here feed the study track later (F-90). | MVP [EXTRAPOLATED horizon] | Amit 5 Oct; json-render docs |
-
-### 4.3 Voice
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-30 | **Live voice mode with the coach** is the number-one feature. It is a hands-free conversation where you can interrupt the coach mid-sentence, and every spoken reply is also shown as text (read-back). | NW | Amit 5 Oct |
-| F-31 | Voice can do everything the text coach does: new note, task added to Today, template filled or built. | NW | Amit 5 Oct ("all of the above") |
-| F-32 | English: Deepgram Flux streaming speech-to-text → runtime model → text-to-speech. | NW [EXTRAPOLATED pipeline] | Amit 5 Oct ("the Deepgram new model") |
-| F-33 | Hebrew: Deepgram Nova-3 `he` → runtime model → Chatterbox multilingual (Hebrew verified). | NW | Known facts; 16 Sep §7 |
-| F-34 | English speech-to-speech on NVIDIA Nemotron 3 Voicechat. Its licence for a paid product and its language list (Hebrew) are UNKNOWN. | MVP, once verified | Known facts; Amit 5 Oct |
-| F-35 | Walkie-talkie push-to-talk on every tier. Live conversation on Pro/Max at 90/180 minutes a day. | MVP (with billing) | 16 Sep §4 |
-| F-36 | Audio recap of a note set; screen sharing with the coach. | END | 16 Sep SHOULD |
-
-### 4.4 Modules: Tempo changes itself
-
-The full model is in §5.
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-40 | Ask the coach in plain words, by text or voice, for a template or module, and it writes it. | NW | Amit 5 Oct |
-| F-41 | Before anything goes live, a preview shows the module plus a plain-language "what this module does" card, with Approve and Discard. | NW | modelled on Claude Code's mod approval and validation |
-| F-42 | An approved module is live at once. Later edits made through the chat apply in place. | NW | modelled on mod hot reload |
-| F-43 | Modules list: turn one off. **Plain mode** turns every user module off. Built-in templates appear as built-in modules: they can be turned off but not deleted. | NW | modelled on `/plugin`, `--safe-mode` and built-in mods |
-| F-44 | View modules change how a page type lays out its blocks, using only Tempo's catalog components. | MVP [EXTRAPOLATED split] | Amit 5 Oct |
-| F-45 | Plugin SDK + marketplace, where authors keep 100%. | END | 16 Sep LATER |
-| F-46 | **Pages can hold code as well as markdown.** A page or module may include a code block (a small widget or a script) that the coach or the user writes. It only ever runs isolated: widgets in a sandboxed frame in the browser, scripts in a Vercel Sandbox micro-VM. Never inside the app itself, never with the user's keys, and only after the user approves it. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
-| F-47 | **Scheduled jobs (cron):** the user asks the coach "every weekday at 8, write my plan into Today" and the coach registers a recurring job, after approval. Jobs appear in the Modules list with an on/off switch, and each run's output lands in a page. | NW (one job type: write into a page) [EXTRAPOLATED scope]; MVP (any agent task) | Amit 5 Oct |
-| F-48 | Ready-made open-source building blocks for calendar, tasks and widgets, wrapped as Tempo catalog components so the coach and modules can use them (TRD §1). | MVP | Amit 5 Oct |
-
-### 4.5 Memory
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-50 | One memory adapter on Convex (remember, recall, context, forget, export) over the existing `memories` table. No outside memory engine. Recall searches by meaning and by keyword, and the coach can also search the user's past chats (Convex Agent component, hybrid search across threads). | NW (recall used by the coach) | 20 Sep ruling; Amit 5 Oct; Convex Agent docs |
-| F-51 | **Memory import:** upload or paste your ChatGPT or Claude memory. Tempo shows each item to keep, edit or drop, and saves the kept items. | NW | Amit 5 Oct |
-| F-52 | See and forget memories; export all memories as markdown. | MVP | 04f spec; patch 7 |
-| F-53 | Import of ChatGPT, Claude or Markdown content (not just memory). | END | 16 Sep SHOULD |
-| F-54 | **Life graph:** people, projects, goals, places and habits, linked. Links the user wrote (`[[links]]`, blocks) are kept apart from links the AI guessed, which are marked as guesses. Search by meaning + keyword + links + time. This is a Graphify / Understand Anything-style graph, but for life projects instead of code, built on Convex. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
-| F-55 | **Reflect:** a scheduled pass turns many memories into observations ("gym slips after late nights"), the way Hindsight's reflect step does. Observations are shown to the user and can be deleted. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
-
-### 4.6 Nags
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-60 | Nags are in the user's own words or derived from them. No stock copy, no emoji. A nag with no accepted phrase cannot be switched on. | MVP | patch 3 |
-| F-61 | Nag delivery beyond in-app. Channel: UNKNOWN. | MVP / END | patch C6 |
-
-### 4.7 Language and direction
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-70 | Website copy and app copy in English and Hebrew. | NW | Amit 5 Oct |
-| F-71 | The layout switches left-to-right / right-to-left with the language, built so other right-to-left languages (Arabic, Persian and others) work without redesign. | NW | Amit 5 Oct |
-| F-72 | Mixed Hebrew and English inside one note renders each paragraph in its own direction. | NW [EXTRAPOLATED] | follows F-71 |
-| F-73 | The coach and voice answer in the user's chosen language. | NW [EXTRAPOLATED] | follows F-30, F-70 |
-
-### 4.8 Look
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-80 | Polished look on the Anthropic palette and taxonomy. | NW | 20 Sep ruling; Amit 5 Oct "quite polished" |
-| F-81 | Per-component animations; chat button at the bottom right; avatar in the top header (inspiration "Taby"; link UNKNOWN). | MVP [EXTRAPOLATED horizon] | 2 Oct ruling |
-| F-82 | Typeface: Atkinson Hyperlegible vs Anthropic type (patch C3) is UNKNOWN. The Hebrew typeface is UNKNOWN. | — | patch C3 |
-
-### 4.9 Study track
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-90 | Record → notes → flashcards → test; SM-2; recall quiz; Anki export; scoped RAG. It is a separate mode, never mixed into Today. | END (Gen 1) [EXTRAPOLATED: after MVP] | 16 Sep §3–4 |
-
-### 4.10 Connectors and access
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-100 | Connectors through Executor (executor.sh) behind an adapter: reads plus light writes, heavy writes hard-refused, every external write confirmed. A commitment verified from real data. | END (Gen 1) | patch 6 |
-| F-101 | MCP server + CLI + REST. | END (Gen 1) | 16 Sep §4 |
-| F-102 | Key vault: BYOK with any OpenAI-compatible key plus local endpoints, encrypted per user. | END (Gen 1) | 16 Sep §4 |
-| F-103 | Bring-your-own ChatGPT subscription sign-in, only in the shape that passes the first-party test. Terms of service: UNKNOWN. | END | 3 Oct |
-
-### 4.11 Billing, platforms, account
-
-| ID | Feature | Horizon | Source |
-|---|---|---|---|
-| F-110 | Billing visible, never hidden. Polar on web, RevenueCat on mobile, no Stripe. Trial $1 / 3 weeks → Basic $10 → Pro $20 → Max $40; annual = two months free; notices at 3 days, 1 day and 1 hour before conversion. | MVP (web); END (mobile) | 16 Sep §8; 5 Oct |
-| F-120 | Web PWA on Vercel (`tempo-web`). | NW | Known facts |
-| F-121 | One-to-one Expo native shell (not a WebView), Android APK, iOS TestFlight. | END (Gen 1) | 16 Sep §3 |
-| F-122 | Store-grade native: push notifications, camera; App Store + Google Play. | END (V1.5) | 16 Sep §3 |
-| F-123 | Rust desktop (Tauri 2) + VPS spawning the real `claude` binary. | END (V2) | 16 Sep §3 |
-| F-130 | Per-user isolation, `/api/health`, Playwright smoke tests. | NW (merged) | Known facts |
-| F-131 | Soft delete with 30-day grace; Undo for 5 minutes on internal changes; confirmation before any external write. | NW (rule) | 16 Sep §4 |
-
-### 4.12 Later (Gen 2+)
-
-- Dispatch B, dispatched to Agentwright instead of rebuilt.
-- Two-way calendar sync, course platforms, WhatsApp and Telegram bridges.
-- Offline inference, local-first sync, Inkling distillation.
-- Regional inference, SOC 2 Type II, family plans.
-
-## 5. Modules — how Tempo changes itself
-
-**Model.** In Claude Code you describe a feature in plain words, and Claude writes a mod, which is a plugin that changes how Claude Code looks and behaves. You approve it, it loads at the end of the turn and reloads on every change, and you can turn it off. Some of Claude Code's own features are built the same way (`/diff`).
-
-Tempo does the same for a daily planner, with one deliberate difference: **data modules run in the app; anything written as code runs only in a sandbox** (F-46).
-
-| Claude Code mods | Tempo modules |
-|---|---|
-| Describe a mod in a session; Claude writes it using its built-in `plugin-authoring` skill | Describe a template or module to the coach (text or voice). The coach writes it from a module-authoring instruction set generated from Tempo's catalog and block schemas, so it only writes things Tempo can draw |
-| Claude Code asks you to approve before a mod Claude wrote loads | Preview + Approve / Discard before a module goes live (F-41) |
-| `claude plugin validate` lists which events a mod handles and what it calls | Tempo validates every module against its schemas and shows "what this module does": which page types it shapes, which blocks it adds, and what it changes (F-41) |
-| Hot reload at the end of each turn that changes the mod | Live at once on approval; chat edits apply in place (F-42) |
-| Turn one mod off in `/plugin`; `--safe-mode` turns off every installed mod | Turn one module off; Plain mode turns every user module off (F-43) |
-| Built-in mods (`/diff`, `agents-md`) | Built-in templates are built-in modules (F-43) |
-| A mod runs with your permissions and isn't sandboxed | **RULE:** a data module uses only Tempo's catalog components and actions. Code in a page (F-46) runs only in an isolated sandbox, never in the app's own process. Neither can read secrets or touch another user's data |
-| Share through a marketplace | Plugin SDK + marketplace, END (F-45) |
-
-**Module kinds.**
-
-1. **Template module [NW]:** a page shape, meaning headings, checklists, prompts and starting blocks, stored as a page with a `template` block.
-2. **View module [MVP]:** how a page type lays out its blocks, built only from catalog components.
-3. **Code module [MVP]:** a widget or script written as code, run only in a sandbox (F-46).
-4. **Scheduled job [NW, minimal]:** a recurring agent task (F-47).
-
-**RULES.**
-
-- A module that fails validation never goes live.
-- A module that breaks after going live falls back to the built-in layout. One bad module never breaks a page.
-- The JSON stays hidden in modules too.
-
-## 6. Rules (locks)
-
-- Stack: Convex + Next.js 16 PWA on Vercel + Expo, on Bun + Turborepo. pnpm is not adopted.
-- Markdown with JSON blocks, rendered with json-render.
-- Sign-in by magic link only.
-- Tailwind v4 on web; shadcn primitives; native `fetch` only.
-- Executor, never Composio. Details: `docs/TRD.md`.
-- **Never:** OpenRouter or any gateway · Anthropic keys in third-party code · Electron · Firebase, Supabase · Auth0, Clerk, NextAuth, BetterAuth · Stripe · Redux, Zustand, Jotai, Recoil, MobX · axios, ky, got · Tailwind v3 on web · Notion, Linear, Airtable as product integrations · code from Memos or Joplin · image generation · stock nag copy or emoji in nags · JSON shown to the user · code running outside a sandbox.
-- **The Vercel AI SDK is permitted (Amit 5 Oct)**, together with Convex's official components (Agent, RAG). Single-vendor AI SDKs stay banned.
-- Runtime models (what Tempo runs) and code models (what writes Tempo) are different. Every ticket says which it means.
-- Agents merge into `integration` when every machine check passes. **Only Amit deploys to live.**
-- "Preview" = internal testing; "deploy" = live to end users.
-
-## 7. Runtime models and voice
-
-| Use | Model | Horizon |
+| Journey | Expected result | Acceptance boundary |
 |---|---|---|
-| Text, interim | DeepSeek V4.1 Flash on DeepInfra, "in the meantime". When it ends is UNKNOWN. | NW |
-| Text, target ladder | Nemotron 3.5 Lightning (fast) · Nemotron 3 Super (balanced) · Inkling (deep), on DeepInfra; Together as failover | MVP |
-| Speech-to-text, English | Deepgram Flux | NW |
-| Speech-to-text, Hebrew | Deepgram Nova-3 `he` (Flux has no Hebrew) | NW |
-| Text-to-speech, both | Chatterbox multilingual on DeepInfra (Hebrew included) | NW [EXTRAPOLATED for English] |
-| Speech-to-speech, English | NVIDIA Nemotron 3 Voicechat (licence and languages UNKNOWN) | MVP |
-| Embeddings (memory search by meaning) | `Qwen/Qwen3-Embedding-8B` on DeepInfra: the top open-weight model on the multilingual MTEB board available on DeepInfra, Apache-2.0, 100+ languages, output shortened to 1,024 dimensions. No public Hebrew-specific benchmark was found, so a Hebrew test against `BAAI/bge-m3` and `intfloat/multilingual-e5-large-instruct` decides before lock-in [EXTRAPOLATED pick] | NW |
+| Enter the app | An approved session reaches Today; pending access is explained | Exercise the actual sign-in and approval path, not a bypass |
+| Capture and plan | A brain dump becomes reviewable task/page proposals | Reject changes nothing; accepted results survive reload |
+| Write a page | Edit Markdown with inline rendered blocks and backlinks | Exact source fidelity, failed-save recovery and no hidden payload exposure |
+| Plan the day | Choose intention, top three, capacity and time blocks | Local-day calculations, conflicts and unplaced work remain visible |
+| Ask for help | Chat beside the page produces inspectable proposals | Accept/Edit/Reject and a five-minute Undo; no silent state change |
+| Resume later | Pages, tasks and conversations remain findable | Honest empty/loading/error/offline states and bounded pagination |
 
-**Gate:** DeepInfra requires a written Service Order before any paid tier (16 Sep §7). Dev and beta are fine.
+The assistant's tone is calm and specific. Empty states offer a next action; interruptions and skipped days must not be framed as failure. English and Hebrew share the same product contract.
 
-## 8. Billing and distribution
+## Scope and proof
 
-Tiers, prices and unit economics are as in `04-PRD-TEMPO-FLOW.md` §8 (16 Sep), unchanged: every tier passes the 30% floor; the $1 trial is knowingly priced as acquisition spend.
+MVP and Gen 1 are defined in ROADMAP.md. A listed capability is a requirement or dated source report, never a claim of a running release. Read acceptance by exact revision, environment and user-visible result.
 
-Changed on 5 Oct: Polar on web, RevenueCat on mobile, no Stripe (Amit can't get Stripe as an Israeli seller).
+## Beta entry and approval gap
 
-Channels: web PWA first (MVP), then APK + TestFlight (Gen 1), then the stores (V1.5).
+- What: Free manually approved beta, email magic link, waiting page and reactive transition to Today are documented; all approved beta users get access. Evidence status: AUTHOR_REPORTED_PREVIEW_AND_DEFAULT_IMPLEMENTATION.
+- When: decided UNKNOWN (first seen 2026-10-05)
+- Why: EXTRAPOLATED synthesis: Offer a comprehensible first-use loop without implying paid-product readiness.
+- How: Default implementation permits pending users to receive a link and sign in before waiting, whereas PRD says approval before sending the link. October 19 demo still requires preview walk and owner release; some auth copy remains English. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S124](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/ops/APPROVAL-GATE.md), [S95](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/demo/DEMO-SCRIPT.md), [S69](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/PRD.md), [S129](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/sprint/RUN-LOG.md)
 
-## 9. Environments
+## Markdown is page truth
 
-| | Preview (internal testing) | Live |
-|---|---|---|
-| URL | `preview.tempoflow.dev` | `www.tempoflow.dev` |
-| Branch | `integration` | `master` |
-| Convex | test `ceaseless-dog-617` | live `precious-wildcat-890` |
-| Who ships | agents merge when checks pass | only Amit |
+- What: notes.body is the sole persisted page-content truth; CodeMirror live preview and GFM reading, canonical notes route, wiki links/picker/backlinks, and page-based daily/weekly/journal/template content. Evidence status: OWNER_DECISIONS_RECORDED_IN_DEFAULT_SPEC.
+- When: decided 2026-10-12 (first seen 2026-10-12)
+- Why: EXTRAPOLATED synthesis: Preserve a modifiable, exportable document without competing stored representations.
+- How: Decorations and disposable derived indexes are allowed. Plain Markdown checkboxes remain prose. Source records October 12 settlement; implementation and mixed-line-ending browser proof remain separate. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S91](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/CORE-WEB-EDITOR-MODES.md), [S92](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/CORE-WEB-NOTES.md), [S103](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/design/v3/OVERNIGHT-RUN.md)
 
-## 10. Open questions (UNKNOWN)
+## Protected blocks and safe editing
 
-1. When the DeepSeek interim ends and Nemotron + Inkling return.
-2. Whether Together hosts DeepSeek V4.1 Flash.
-3. NVIDIA Nemotron 3 Voicechat: its licence for a paid product, and whether it speaks Hebrew.
-4. Which languages Deepgram Flux TTS supports.
-5. The typeface (patch C3) and the Hebrew typeface.
-6. The "Taby" link.
-7. The nag channel beyond in-app.
-8. Hard vs soft delete for `forget` (patch C4).
-9. ~~Open signup~~ Closed 5 Oct: sign-up is approval-gated (F-01a), and approved users get the premium tier. Where Amit approves: UNKNOWN.
-10. Testers beyond Amit and the mom test.
-11. How a Playwright run receives the magic link on preview.
-12. The DeepInfra Service Order.
+- What: Valid and broken structured blocks are protected cards; no internal payload leakage through UI, selection, accessibility text, logs or safe readers. Evidence status: SETTLED_REQUIREMENTS_AND_PROPOSED_ENGINEERING.
+- When: decided UNKNOWN (first seen 2026-10-12)
+- Why: EXTRAPOLATED synthesis: Prevent content corruption and hidden structured-data exposure while preserving ordinary user code.
+- How: Occurrence-bound byte/order guards, serialized revision-aware saves, retained drafts on failures, five-minute recovery and explicit oversized-body download are specified. Whole-page export interpretation is EXTRAPOLATED; IME/bidi/clipboard and backend-size feasibility require proof. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S91](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/CORE-WEB-EDITOR-MODES.md)
 
-## 11. Ideas to ask me about later (Claude's own — NOT in scope)
+## Stable task indexes and lifecycle
 
-- A per-user daily voice-minute cap during preview, so testers can't run up API spend.
-- Module triggers ("when a task is ticked, do X"), like Claude Code's event hooks.
-- Export and import a module as a markdown file, for sharing before the marketplace exists.
-- A "what changed" timeline per module, like Claude Code's `/diff`.
-- A sample-page check for each module, like `claude plugin test`.
+- What: Task blocks are authoritative; linked typed tasks retain stable IDs across removal and return. Ordinary unlinked tasks remain separate. Evidence status: SETTLED_REQUIREMENTS_NOT_RUNTIME_PROOF.
+- When: decided 2026-10-12 (first seen 2026-10-12)
+- Why: EXTRAPOLATED synthesis: Keep planner, coach, focus and MCP references valid without a second content authority.
+- How: Canonical body writer re-derives indexes atomically. Trashed source notes leave linked tasks read-only; account deletion differs. Five-minute Undo, inclusive thirty-day restore and physical purge are distinct. Nested tags remain held. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S92](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/CORE-WEB-NOTES.md), [S87](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/B01.md), [S88](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/B02.md)
 
-## 12. Sources
+## Daily planner core
 
-- `04-PRD-TEMPO-FLOW.md` (16 Sep)
-- `tempo-flow-v2-2026-09-20/` `01-PRD-PATCH.md`, `02-TRD.md`, `05-BACKEND-SCHEMA.md`, `00-CHECKLIST.md` (with the 30 Sep decision update)
-- Repo `Division6066/tempo-rhythm`, branch `integration` at `e781c67` (5 Oct): `convex/coach.ts`, `convex/auth.ts`, `convex/schema.ts`, `factory/SLOTS.md`
-- Claude Code docs: Mods overview and Create a mod (code.claude.com, read 5 Oct)
-- Via Context7, 5 Oct: Convex Agent component docs (agent usage, context, streaming, tool approval, RAG); Convex vector search docs; AI SDK DeepInfra provider; json-render docs (catalog prompt, generation modes, skills)
-- DeepInfra embeddings catalogue; Graphify, Understand Anything and Hindsight READMEs (read 5 Oct)
-- Deepgram changelog, models-and-languages page and token-auth guide; NVIDIA Nemotron Voicechat model card; DeepInfra DeepSeek V4.1 Flash and Chatterbox pages (read 5 Oct)
-- Amit's interview, 5 Oct 2026
+- What: Day plans, intention/top-three/energy, carry-over, local-day habits, fixed/flexible time, calendar and focus tracking form the planner loop. Evidence status: DEFAULT_CONTRACTS_AND_LATER_BRANCH_BUILD_REPORTS.
+- When: decided UNKNOWN (first seen 2026-10-18)
+- Why: EXTRAPOLATED synthesis: Fit planned work to capacity without shame or false streak pressure.
+- How: Default B01-B04 contracts specify typed ownership and mounting; later branch reports deadline-back planning, week/month grids and re-planning with conflict/unplaced previews. A ticket or component does not prove the route is wired. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S87](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/B01.md), [S88](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/B02.md), [S89](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/B03.md), [S90](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/B04.md), [S130](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/tickets/B01/TEMPO-B01-01.md), [S131](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/tickets/B01/TEMPO-B01-02.md), [S260](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/RUN-LOG.md)
 
+## Coach actions and approval
 
----
+- What: Coach should show exact proposed changes with Accept/Edit/Reject and five-minute Undo; fixed fixed safety handling stops model coaching. Evidence status: DEFAULT_RULE_WITH_INTERNAL_CONFLICT.
+- When: decided UNKNOWN (first seen 2026-10-05)
+- Why: EXTRAPOLATED synthesis: Keep user control, recovery and predictable safety boundaries.
+- How: Default rules also retain high-confidence auto-apply wording, creating a contradiction. Later kitchen plans explicitly require acceptance. No blanket policy resolution is invented here. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S63](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/CURSOR_RULES.md), [S66](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/HARD_RULES.md), [S69](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/PRD.md), [S2](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/KB-SPEC.md), [S95](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/demo/DEMO-SCRIPT.md)
+
+## Memory and life graph
+
+- What: Visible recall/import/edit/forget/export and private cross-thread context are targets; inferred links must remain distinct from explicit links. Evidence status: DEFAULT_TARGET_AND_PARTIAL_BUILD_REPORTS.
+- When: decided UNKNOWN (first seen 2026-10-05)
+- Why: EXTRAPOLATED synthesis: Make contextual assistance inspectable and controllable.
+- How: Default adapter/life-graph/Reflect design is not table/runtime proof. Confirmed-memory and branch manager reports coexist with held semantic-index/provider/cost work; imports save only kept/edited information. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S69](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/PRD.md), [S80](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/TRD.md), [S231](https://github.com/Levidavidspublic/tempo-rhythm/issues/1117), [S236](https://github.com/Levidavidspublic/tempo-rhythm/issues/1112), [S260](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/RUN-LOG.md), [S313](https://github.com/Levidavidspublic/tempo-rhythm/issues/821), [S315](https://github.com/Levidavidspublic/tempo-rhythm/pull/899)
+
+## Study branch capabilities
+
+- What: PR1081 reports flashcards, adaptive quiz, review hub/SM-2, practice tests, scoring, Turn into previews, typed recall, editing, Anki/Markdown sharing and quote-only Ask this set. Evidence status: AUTHOR_REPORTED_BRANCH_BUILD.
+- When: decided UNKNOWN (first seen 2026-10-18)
+- Why: EXTRAPOLATED synthesis: Turn owned content into study material while retaining source evidence and learning history.
+- How: Study remains separate from Today. Explicit acceptance and Undo are reported; typed matching is local rather than semantic grading. Notes autosave/version races and runtime/provider proof remain unresolved. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: Gen 1
+- From: [S260](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/RUN-LOG.md), [S263](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/study/T3-SPEC.md), [S265](https://github.com/Levidavidspublic/tempo-rhythm/pull/1081)
+
+## Recording and client extraction
+
+- What: Recording consent, transient live transcript/pins and explicit notes/tasks save; later branch adds local photo OCR, PDF text and DOCX extraction before review. Evidence status: AUTHOR_REPORTED_BRANCH_BUILD.
+- When: decided UNKNOWN (first seen 2026-10-12)
+- Why: EXTRAPOLATED synthesis: Preserve useful words while avoiding raw audio/file retention and cross-account leakage.
+- How: Account pinning, cancellation and parser/size bounds are reported. Real browser parsing, PDF Hebrew order, photo rotation and OCR CDN/self-host choice remain unverified. This temporary ingest path differs from retained resource uploads. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S257](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/THIRD-PARTY-NOTICES.md), [S260](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/RUN-LOG.md), [S264](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/study/T8-T10-SPEC.md), [S265](https://github.com/Levidavidspublic/tempo-rhythm/pull/1081), [S93](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/contracts/CORE-WEB-RESOURCES.md)
+
+## Modules and sandboxed widgets
+
+- What: Modules require preview and approval, with off/Plain mode and built-in fallbacks; code execution is bounded and isolated. Evidence status: DEFAULT_TARGET_WITH_UNMOUNTED_BRANCH_FRAME.
+- When: decided UNKNOWN (first seen 2026-10-05)
+- Why: EXTRAPOLATED synthesis: Allow user-shaped planning without silent arbitrary execution.
+- How: Default template/view/job/script targets are broader than reported branch frame. PR1081 frame approval binds exact code but frame was not mounted in product pages. Security claims remain within authored test scope. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: MVP
+- From: [S69](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/PRD.md), [S80](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/TRD.md), [S106](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/design/v3/components.md), [S260](https://github.com/Levidavidspublic/tempo-rhythm/blob/684c07fd436d9079f74492c3d74abd6a2670a263/docs/kitchen/RUN-LOG.md)
+
+## Private search and Library expansion
+
+- What: KB proposes full paginated Library, tags/archive, message search, bulk deletion/Undo, exports, serial queue, phone/native parity and a broad polish pass. Evidence status: OCTOBER_19_DRAFT_PLAN.
+- When: decided UNKNOWN (first seen 2026-10-19)
+- Why: EXTRAPOLATED synthesis: Remove old lifetime ceilings and make retained conversations reachable without confusing partial Agent history with complete transcripts.
+- How: 45 written tickets plus 30 title-only later placeholders. Owner-scoped cursors, bounded scans and versioned receipts are specified; complete Agent bridge and dependency releases remain held. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: Later
+- From: [S2](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/KB-SPEC.md), [S5](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-01.md), [S18](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-14.md), [S19](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-15.md), [S34](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-30.md), [S35](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-31.md), [S37](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-33.md), [S38](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-34.md), [S39](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-35.md), [S40](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-36.md), [S41](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-37.md), [S45](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-41.md), [S46](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-42.md), [S47](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-43.md)
+
+## Bounded web search
+
+- What: Speed/Balanced/Quality, source/domain controls, explicit media lookups, citations, suggestions, Discover and deterministic calculator are proposed. Evidence status: OCTOBER_19_DRAFT_CONTRACT.
+- When: decided UNKNOWN (first seen 2026-10-19)
+- Why: EXTRAPOLATED synthesis: Improve evidence access within existing request, model and token budgets.
+- How: No silent provider fallback or automatic typeahead/Discover refresh. Quality permits at most two safe page reads; external payloads stay transient. Comparator research is pattern evidence, not implemented parity or licensing clearance. Current runtime is UNKNOWN; cited source claims were not rerun.
+- Status: Later
+- From: [S3](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/RESEARCH.md), [S20](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-16.md), [S21](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-17.md), [S22](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-18.md), [S23](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-19.md), [S24](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-20.md), [S25](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-21.md), [S26](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-22.md), [S27](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-23.md), [S28](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-24.md), [S29](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-25.md), [S30](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-26.md), [S31](https://github.com/Levidavidspublic/tempo-rhythm/blob/e7a120e2a07011768d04ea080d443448ee760dbb/docs/kitchen/kb/tickets/KB-27.md)
+
+## Notebooks and grounded study proposals
+
+- What: October 19 tickets propose topic notebooks with user-selected source text, bounded source pieces, cited Ask/Find, summaries and accepted study previews.
+- When: decided UNKNOWN (first seen 2026-10-19)
+- Why: Keep generated answers and study materials grounded in the chosen notebook.
+- How: Private stored chunks, limits, credit requirements and source terms need the stated dependency resolution. No saved answers or general parity is inferred; mobile is a separate proposed port.
+- Status: Later
+- From: [S212](https://github.com/Levidavidspublic/tempo-rhythm/issues/1131), [S213](https://github.com/Levidavidspublic/tempo-rhythm/issues/1130), [S216](https://github.com/Levidavidspublic/tempo-rhythm/issues/1127), [S218](https://github.com/Levidavidspublic/tempo-rhythm/issues/1125), [S219](https://github.com/Levidavidspublic/tempo-rhythm/issues/1124), [S220](https://github.com/Levidavidspublic/tempo-rhythm/issues/1123)
+
+## Day context and optional utilities
+
+- What: Opt-in rounded place/day context, dictionary lookup, focus radio and a disabled-by-default quote interface are proposed.
+- When: decided UNKNOWN (first seen 2026-10-19)
+- Why: Add useful context without intrusive or unconsented location behavior.
+- How: Retain server cache/credit/terms gates and explicit radio IP disclosure. No personal place, schedule or calendar data is included in this master.
+- Status: Later
+- From: [S208](https://github.com/Levidavidspublic/tempo-rhythm/issues/1096), [S227](https://github.com/Levidavidspublic/tempo-rhythm/issues/1121), [S233](https://github.com/Levidavidspublic/tempo-rhythm/issues/1115), [S243](https://github.com/Levidavidspublic/tempo-rhythm/issues/1105)
+
+## Held personas and council
+
+- What: Named personas and multi-model council remain held proposals; council is production-off and lacks a settled backend in the captured ticket.
+- When: decided UNKNOWN (first seen 2026-10-19)
+- Why: Preserve the current dial-only contract and spending boundaries.
+- How: Do not turn the proposal into a ready task until the recorded owner/policy/dependency gates resolve. Role names belong in future executable tickets.
+- Status: Later
+- From: [S214](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129), [S238](https://github.com/Levidavidspublic/tempo-rhythm/issues/1110), [S66](https://github.com/Levidavidspublic/tempo-rhythm/blob/52bf2803e9105b25c2538aedd81a754a9fbfdedb/docs/HARD_RULES.md)
+## Additional product requirements
+
+Voice is an alternative input/output mode and must preserve the same explicit action approval, interruption and recovery rules as text. Current end-to-end device acceptance is UNKNOWN. Fixed safety responses are deterministic and independent of the generative assistant; activation requires the existing reviewed contract.
+
+Templates help create daily, weekly, journal and project pages. Generated templates or modules need preview and acceptance. A read-only canvas must distinguish saved content from proposed changes. Reminders use editable wording and explicit channel controls.
+
+Document resources are distinct from transient import processing. User-selected retained files follow their separate quota, access, deletion and export contract; a scanner must not silently acquire retention rights.
+
+## Exclusions and unresolved outcomes
+
+No competing persisted page format, automatically retained raw import, unapproved executable module, silent external action or automatic promotion to live is adopted. Comparative-product parity is UNKNOWN; pattern research does not establish parity. Desktop/extension delivery and native store acceptance remain separately gated. Calendar dates for launch and Gen 1 are UNKNOWN.
+
+Commercial and sensitive background material is outside this public packet. Its omission does not decide product policy.
+
+## Latest default-branch change checked during this run
+
+On 2026-10-21 the default branch advanced to `c7447ad9ad5a71326b211d1de80d54091a280683`. The six changed paths implement KB-67 selected-reminder phrase editing plus styles, localized copy, tests and evidence. No canonical contract or repository instruction changed in that delta.
+
+The recorded behavior keeps drafts, validation and suggestion feedback attached to the selected reminder ID; delayed responses cannot clear another draft or overwrite newer text. Suggestions persist only after explicit acceptance. The committed evidence reports 27 hydrated fixture passes and 3,328 unit passes, with two unrelated local E2E failures and 89 credential-gated skips. These are author-reported fixture results, not new tests in this run or live-account proof. The pre-existing derived-suggestion acceptance path still lacks its own Undo toast; native review and live behavior remain UNKNOWN.
+
+Issue #1169 is now closed after PR #1172. This was an independently observed repository change, not an issue action performed by this documentation task.
+
+Source: [KB-67 evidence](https://github.com/Levidavidspublic/tempo-rhythm/blob/c7447ad9ad5a71326b211d1de80d54091a280683/docs/polish/evidence/kb-67-phrase-drafts-stay-with-the-selected-nag.md).
