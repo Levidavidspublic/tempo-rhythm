@@ -5,7 +5,7 @@ import { constants } from "node:os";
 // Linux CI supplies Python 3. A subreaper owns Chromium descendants even if they
 // start separate sessions or their fixture parent exits before its pipes close.
 const linuxSupervisor = String.raw`
-import ctypes, json, os, signal, subprocess, sys, time
+import ctypes, json, os, signal, subprocess, sys
 if ctypes.CDLL(None, use_errno=True).prctl(36, 1, 0, 0, 0) != 0:
     raise OSError(ctypes.get_errno(), "PR_SET_CHILD_SUBREAPER")
 grace = float(sys.argv[1]) / 1000
@@ -33,27 +33,26 @@ def terminate_tree(pid, signum):
 
 def cancel(signum, frame):
     global stopping
-    if stopping is None: stopping = time.monotonic()
+    if stopping is None:
+        stopping = True
+        signal.setitimer(signal.ITIMER_REAL, grace / 2)
     terminate_tree(os.getpid(), signal.SIGTERM)
 
+signal.signal(signal.SIGALRM, lambda signum, frame: terminate_tree(os.getpid(), signal.SIGKILL))
 signal.signal(signal.SIGTERM, cancel)
 signal.signal(signal.SIGINT, cancel)
 while True:
     try:
-        pid, status = os.waitpid(-1, os.WNOHANG)
+        pid, status = os.waitpid(-1, 0)
     except ChildProcessError:
         break
     if pid:
         if pid == child.pid:
             main_status = os.waitstatus_to_exitcode(status)
             print("KITCHEN_CHILD_EXIT=" + json.dumps({"token":token,"code":main_status}), file=sys.stderr, flush=True)
-            if stopping is None: stopping = time.monotonic()
-            terminate_tree(os.getpid(), signal.SIGTERM)
+            cancel(signal.SIGTERM, None)
         continue
-    if stopping is not None and time.monotonic() - stopping >= grace / 2:
-        terminate_tree(os.getpid(), signal.SIGKILL)
-    # This is an OS reap loop, not a browser/readiness sleep. It never advances an assertion.
-    time.sleep(0.005)
+signal.setitimer(signal.ITIMER_REAL, 0)
 if main_status is None:
     raise RuntimeError("fixture child exit was not reaped")
 print("[kitchen-fixture] supervisor reaped all descendants", file=sys.stderr, flush=True)
@@ -245,7 +244,7 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
   const stop = () => stopping ??= (async () => {
     fixturePhase(`cancel pid=${result.pid} timeout=${result.timedOut}`);
     // Keep the parent alive briefly so its signal handler can close/reap browser children.
-    forceTimer = setTimeout(() => { void killOwned(); }, options.cleanupMs);
+    forceTimer = setTimeout(() => { void killOwned(); }, options.cleanupMs * 0.75);
     try { if (!supervised) owned.push(...await descendants(result.pid)); } catch (error) { recordError(error); }
     try { if (!exited) signalProcess(result.pid, "SIGTERM"); } catch (error) { recordError(error); }
     try { await bounded(exit, options.cleanupMs, "child exit after cancellation"); }

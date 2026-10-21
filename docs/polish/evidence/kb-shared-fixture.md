@@ -10,7 +10,7 @@ Controlled tests established a sandbox detail: `/proc/PID/task/PID/children` ret
 
 `isolatedBrowserBuild` constructs the resolver in a fresh Bun process. React resolves from the web workspace; scheduler resolves from the actual importing package, because Bun's isolated dependency layout does not expose scheduler at the web root. Fixture-specific exact aliases and defines are serializable. No code/plugin closure or module mock is shared with the parent. Hosted EISDIR reproduction remains UNKNOWN until the existing KB fixtures adopt this helper and run CI.
 
-`waitForCommittedFocus` awaits the active element using the caller's existing assertion timeout. `waitForSettledTransition` first awaits a supplied real committed signal and then checks browser animation state, sharing one deadline. No fixed sleep advances a browser assertion. The supervisor's 5 ms OS reap poll only collects process status.
+`waitForCommittedFocus` awaits the active element using the caller's existing assertion timeout. `waitForSettledTransition` first awaits a supplied real committed signal and then checks browser animation state, sharing one deadline. No fixed sleep advances a browser assertion. The supervisor blocks on actual OS child-exit signals; SIGALRM escalates cleanup within its deadline. There are no fixed sleeps.
 
 ## Adoption contract
 
@@ -35,7 +35,7 @@ Bun 1.3.9. The official Bun release download returned 403; the same version was 
 | Focused test, importer-relative resolver | 10 pass / 0 fail |
 | Focused test, initial Linux supervisor | 8 pass / 4 fail / 1 error; empty task-children listing prevented cleanup |
 | Focused test, stat-parent enumeration | PASS; 12 pass / 0 fail, 37 assertions, 3.03 s |
-| Scoped TypeScript compile | PASS before final supervisor enumeration correction; current final rerun pending |
+| Scoped TypeScript compile | PASS before final supervisor enumeration correction; final supervisor enumeration correction PASS |
 | `bun run test` | Pending |
 | Four scans/notices | Pending |
 | `CI=1 bunx playwright test --reporter=line` | Pending |
