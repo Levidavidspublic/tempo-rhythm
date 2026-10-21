@@ -1,5 +1,7 @@
 # KB-78 ConfirmSheet pending focus evidence
 
+PR open — v3 fixture continuation passes all 22 KB-78 cases and the final shared harness (40 combined passes). The earlier-source full unit suite passes; mandatory E2E retains one existing task-view timeout. Shared #1203, current-head CI and CodeRabbit remain merge gates. The dated v3 section below contains exact receipts; prior sections are historical.
+
 **Status: authorized additional repair handed to root for remaining build and latest-head CI (2026-10-21).** The original three-candidate run stopped with two scoped CI failures. Amit subsequently granted exactly one additional repair pass for exhausted KB tickets, with scopes and checks unchanged. The new pass repairs React commit synchronization in the scoped browser fixture; historical failures below remain evidence. Both CodeRabbit findings are addressed and all 22 focused cases pass. Fresh full unit and E2E failures are disclosed below; root owns the remaining build and latest-head required checks. Local frozen install remains UNKNOWN after its fresh 120-second timeout.
 
 This polishes the existing `ConfirmSheet` in `components/you/Controls.tsx` and adds **zero primary views**. The confirm button remains focusable with `aria-disabled` and an explicit busy guard, while the dialog reports `aria-busy`. Tab containment also recovers focus lost outside the open dialog. The parent still supplies `busy`, owns accepted request lifetime/success/error and decides whether an explicit close proceeds. Confirm and close callbacks receive no arguments. Existing Cancel initial focus, Escape/Close/Cancel behavior and opener restoration remain available. Segmented/Switch source and runtime behavior are unchanged.
@@ -298,3 +300,69 @@ Bun 1.3.9. Commands below ran on the repaired ticket branch with the existing ch
 | `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | **PASS**, exit 0; Tasks:    1 successful, 1 total |
 
 No production release, live-account validation, native Hebrew review or real-device screen-reader verification is claimed.
+
+
+## 2026-10-21 — v3 AT-11 shared fixture continuation
+
+PR open — WORKHORSE replaced the buffered parent wait with the shared supervised fixture lifecycle from #1203. All 22 existing cases, assertions, 7,000 ms browser operation timeout, and original 240,000 ms setup deadline (480,000 ms for optional captures) remain intact. All 21 browser callback bodies and the full parent case/assertion block were compared byte-for-byte with `99d216f`. The product, prior screenshots, frozen original source and committed-state waits are unchanged.
+
+Initial validation source `e618a0fb6ac6da7d06e4f6a14c591277583750b9` includes shared `4d30965` and integration via ordinary merges. The whole fixture was already isolated, so its existing Bun builds continue inside that clean child. Build, stylesheet, browser, case and cleanup phases now stream immediately. The shared parent runner reserves cancellation and receipt delivery within the unchanged outer deadline. Cleanup is registered before imports or resource allocation, and browser, loopback server and the unique temporary directory release independently. Diagnostic traces remain at `work/kb78-fixture-traces.json`; optional captures remain at their requested external directory. Successful result JSON is emitted only after teardown. Setup/cleanup failures retain their actual nonzero exit; per-case results keep their existing exact parent assertions.
+
+Before: integration merge-queue run 39592295303, Test job 119196005071, reported 3452 pass / 1 fail / 3 todo; KB-78 setup hit its original 240-second deadline with buffered child phase UNKNOWN. After, initial local focused run on `e618a0f` with shared `4d30965`: `bun test tests/unit/kb-78.test.tsx` exits 0, 22 pass / 0 fail, 25 assertions, 25.35 s. All child phases and cleanup are visible, with authoritative child exit 0 and supervisor descendant reap. These environments differ; the initial local pass does not replace final hosted validation or the shared exit-event correction under review.
+
+Bun 1.3.9. Frozen install is UNKNOWN: the exact command stalled at resolution and exited 124 after an external 120-second bound. Local validation uses the verified installed dependency tree copied from KB-06 after the installer exited; relative workspace links are preserved and no manifest/lockfile changes were made.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Mandatory sequence on `e618a0f` with shared `4d30965`, in repository order:
+
+| Command | Result |
+|---|---|
+| `bun --version` | 0; 1.3.9 |
+| `bun install --frozen-lockfile` | 124; UNKNOWN resolution stall at external 120-second bound |
+| `bun run lint` | 0; PASS, 5/5 tasks |
+| `bun run typecheck` | 0; PASS, 5/5 tasks |
+| `bun run test` | 0; PASS, 3530 pass / 0 fail / 3 todo, 81,596 assertions, 213 files, 280.28 s; all 22 KB-78 cases pass |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0; PASS, all four |
+| `CI=1 bunx playwright test --reporter=line` | 1; FAIL, 27 pass / 1 fail / 89 credential-gated skips, 1.9 min; shared lock used |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0; PASS, 1/1 tasks |
+
+The full-suite receipt deliberately identifies the earlier shared source. The final combined proof below covers the subsequent shared exit-event correction.
+
+ Current-head CI, CodeRabbit coverage, shared #1203 and every repository guard remain merge prerequisites. Hebrew native reading and physical-device checks remain pre-production work.
+
+
+The mandatory E2E failed the existing `task-views-core.spec.ts` case at its original 30,000 ms timeout. Its cause is unconfirmed and its files are outside this scoped fixture correction. No rerun, test edit or timeout change was made.
+
+Last 20 lines of the failed E2E command:
+
+```text
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:150577) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:151098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  1 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  27 passed (1.9m)
+```
+
+
+Final shared-source proof: ordinary merge source `58d469827eb88a7ba09989263678659f9c123d59` includes shared `2d99c84a365c6ead0009715012b0cdd908b570aa`. The command `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-78.test.tsx` exited 0: **40 pass / 0 fail, 78 assertions, 45.04 s** (18 shared cases plus all 22 unchanged KB-78 cases). The shared owned-waitpid regression and receipt/signal handling pass. Its log includes actual owned supervisor reap rather than assuming a delayed Bun exit event will arrive. The mandatory full-run receipt above remains on `e618a0f`/`4d30965`; it is not presented as a full run of the later dependency.
+
+This branch includes the shared fix for validation, but shared #1203 has not yet landed in integration. Its helper paths therefore remain in this PR diff and are a prerequisite for scope-guard clearance; the issue's allowed scope is not widened. Synthetic receipt identifiers are omitted from evidence; real exit/count/phase/error evidence is retained. No production or deployment action was taken.
