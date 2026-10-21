@@ -15,7 +15,8 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 - Before (current local baseline, Bun 1.3.9): `bun run test` finished with **3,473 pass / 20 fail / 3 todo** across 211 files in 173.45s; failures are KB-64 browser-close cases. Lint and typecheck pass 5/5. This fresh baseline does not reproduce every historical hosted failure.
 - Before: historical combined validation recorded 3,585 pass / 30 fail / 3 todo / 2 errors (VALIDATION.md); later KB-66 affected two cancelled hosted runs, each with eight 240-second timeouts. These are different candidates and must not be added together or treated as a controlled comparison.
 - Baseline remaining gates: four scans/notices and build pass. E2E is UNKNOWN because the required browser is missing and its CDN download returns403 (actual run1pass/28fail/88skip).
-- After: shared focused12/0; affected fixture results and hosted EISDIR reproduction remain pending. Hosted EISDIR and intermittent teardown hangs must be distinguished from locally reproduced failures.
+- After (latest shared source511065b): **13 pass / 0 fail**,43assertions,2.50s, including nested build-supervisor receipts. Actual fixture adoption: KB-03 **15/0**,27assertions,8.37s at aed296c; KB-66 child **19/0**,32assertions,12.60s and parent **19/0**,38assertions,12.99s at b190b2b. Original case bodies/assertions/deadlines retained. These focused improvements do not claim the historical hosted EISDIR has been reproduced locally.
+- Shared full-suite c5fd530: incomplete, cancelled with exit143 after unchanged KB-66’s first240,017.58ms timeout, before repeating the cached wait. No final pass/fail count exists. KB-64 and all12 then-present helper cases passed. This distinguishes a remaining consumer migration from helper proof; mandatory remaining commands continue. Hosted EISDIR and intermittent teardown hangs must be distinguished from locally reproduced failures.
 
 ## Per ticket
 
@@ -25,7 +26,7 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 | KB-16 | — | — | Blocked — prerequisites: KB-01, 1094, 1110, 1112, 1113, 1116; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-31 | — | — | Blocked — prerequisites: KB-01, KB-16, 1094; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-02 | 1153 | 1160 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-03 | 1157 | 1162 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-03 | 1157 | 1162 | PR open — shared build adapter focused15/0; mandatory checks and hosted gates pending. |
 | KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-05 | 1142 | 1149 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-06 | 1143 | 1151 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
@@ -36,7 +37,7 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 | KB-44 | 1154 | 1158 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-45 | 1156 | 1163 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-66 | 1165 | 1168 | Blocked — original #1168 merged; #1165 reopened for fixture lifecycle regression; corrective PR follows shared harness. |
+| KB-66 | 1165 | 1168 (historical) | PR pending — corrective adapter focused child19/0 and parent19/0; mandatory checks running; original merged issue remains reopened. |
 | KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-67 | 1169 | 1197 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
