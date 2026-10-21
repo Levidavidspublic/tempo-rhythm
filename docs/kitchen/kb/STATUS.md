@@ -1,11 +1,11 @@
 # KB finish status
 
-AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 12:53 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
+AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 12:58 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Enumerated all 686 PRs and 506 non-PR issues across paginated GitHub REST responses; checked each KB head's CI, reviews, comments and review threads.
 
 ## Counts
 
-- KB issues: **2 closed / 24 open**, including the administrative lead issue #1176.
-- KB PRs: **2 merged / 24 open**; includes planning #1140.
+- KB issues: **6 closed / 20 open**, including the administrative lead issue #1176.
+- KB PRs: **6 merged / 20 open**; includes planning #1140.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
 - NEEDS-AMIT.md: **4 question lines**.
 
@@ -35,20 +35,20 @@ AT — Resolved in this conversation: the owner authorized one additional repair
 | KB-44 | [#1154](https://github.com/Levidavidspublic/tempo-rhythm/issues/1154) | [#1158](https://github.com/Levidavidspublic/tempo-rhythm/pull/1158) | `cd6909c` | SUCCESS | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
 | KB-45 | [#1156](https://github.com/Levidavidspublic/tempo-rhythm/issues/1156) | [#1163](https://github.com/Levidavidspublic/tempo-rhythm/pull/1163) | `6c0c71c` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
 | KB-59 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) | `da6aff3` | FAILURE | Review posted; 4 unresolved threads | One extra repair pass authorized; checks unchanged |
-| KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) | `f7566af` | PENDING | Completed in bot comment; no actionable findings | CI repair required |
+| KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) | `f7566af` | SUCCESS | Completed in bot comment; no actionable findings | Merged via queue ba23a58; issue closed |
 | KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `2a2e9df` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue ba337ab; issue closed |
 | KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) | `6e0d2b9` | SUCCESS | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
 | KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) | `f8514d7` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue c7447ad; issue closed |
 | KB-69 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | `77e225d` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
-| KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | `0e929b6` | SUCCESS | Completed in bot comment; no actionable findings | One extra repair pass authorized; checks unchanged |
+| KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) | `0e929b6` | SUCCESS | Completed in bot comment; no actionable findings | Merged via queue 1b9f0a4; issue closed |
 | KB-71 | [#1175](https://github.com/Levidavidspublic/tempo-rhythm/issues/1175) | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | `afff777` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
-| KB-73 | [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | `8ef35d3` | PENDING | Completed in bot comment; no actionable findings | CI repair required |
-| KB-74 | [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | `59aa17c` | PENDING | Completed in bot comment; no actionable findings | One extra repair pass authorized; checks unchanged |
+| KB-73 | [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | `8ef35d3` | SUCCESS | Completed in bot comment; no actionable findings | Address review and final checks |
+| KB-74 | [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) | [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) | `59aa17c` | SUCCESS | Completed in bot comment; no actionable findings | One extra repair pass authorized; checks unchanged |
 | KB-75 | [#1178](https://github.com/Levidavidspublic/tempo-rhythm/issues/1178) | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | `b9d2b51` | SUCCESS | Review posted; 2 unresolved threads | Address review and final checks |
 | KB-76 | [#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180) | [#1183](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183) | `6bf810c` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
 | KB-77 | [#1184](https://github.com/Levidavidspublic/tempo-rhythm/issues/1184) | [#1186](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186) | `7912c5f` | SUCCESS | Review posted; 1 unresolved threads | Address review and final checks |
 | KB-78 | [#1188](https://github.com/Levidavidspublic/tempo-rhythm/issues/1188) | [#1190](https://github.com/Levidavidspublic/tempo-rhythm/pull/1190) | `3feeb6b` | FAILURE | Review posted; 2 unresolved threads | One extra repair pass authorized; checks unchanged |
-| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | `2ef273b` | SUCCESS | Review posted; 0 unresolved threads | Address review and final checks |
+| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | `99432fd` | SUCCESS | Review posted; 0 unresolved threads | Address review and final checks |
 
 ## Written tickets without a PR, in dependency order
 
@@ -138,6 +138,8 @@ AWAY — Live branch rules now require integration’s merge queue. The first di
 
 - AWAY — KB-67: [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) merged c7447ad9ad5a71326b211d1de80d54091a280683; [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) closed; 2026-10-21T09:39:59Z.
 - AWAY — KB-64: [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) merged ba337ab53873424f9886398e62b2ef59969ef8c0; [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) closed; 2026-10-21T09:50:22Z.
+- AWAY — KB-61: [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) merged ba23a58b68a93c6ac02064c8cffdf928dcdd6d93; [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) closed; 2026-10-21T09:56:27Z.
+- AWAY — KB-70: [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) merged 1b9f0a4e13bfe07e1d8596897c3e28b2118909f0; [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) closed; 2026-10-21T09:56:27Z.
 
 ## UNKNOWN
 
