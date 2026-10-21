@@ -199,7 +199,7 @@ Shared-corrected adapter collision, last 20 lines:
 [kitchen-fixture] start pid=76177
 [kitchen-fixture] build start
 [kitchen-fixture] build complete outputs=1
-KITCHEN_CHILD_EXIT={"token": "363e962c-1d98-4e76-8392-8d3cf7aa5807", "code": 0}
+KITCHEN_CHILD_EXIT={"token": "[synthetic invocation identifier omitted]", "code": 0}
 [kitchen-fixture] supervisor reaped all descendants
 [kitchen-fixture] stderr EOF pid=76177 exit-observed=false
 [kitchen-fixture] stdout EOF pid=76177 exit-observed=false
@@ -238,3 +238,12 @@ Mandatory full-suite failure, last 20 lines:
 Ran 3492 tests across 212 files. [814.71s]
 error: script "test" exited with code 1
 ```
+
+
+### Final reviewed shared revision and evidence redaction
+
+Shared `2d99c84` was merged normally at `70bf796`; the KB-67 adapter and assertions were unchanged. `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-67.test.tsx` → exit 0, **49 pass / 0 fail**, 144 assertions, 26.22 seconds: shared 18 plus KB-67 parent 31. Child: **30 pass / 0 fail**, 110 assertions, 21.47 seconds; actual child and supervisor exit 0, all named results and cleanup complete. All 25 recorded runner PIDs and unique KB-67 fixture directories were absent afterward. Log: `/workspace/kb-run-logs/kb67-reviewed-shared-focused.log`.
+
+This passing run does not erase the same shared revision's retained KB-75 combined-proof failure: shared deadline test expected an authoritative child SIGKILL receipt but received null after the supervisor itself was killed. The actual child's signal remained UNKNOWN. Root froze shared #1203 after its authorized attempt budget; any further shared correction needs the owner's additional-pass decision. No extra shared edit or test weakening is included here.
+
+CodeRabbit's receipt-redaction finding is addressed by replacing one generated synthetic invocation identifier in the retained failure tail with an explicit omission marker. The identifier was never a credential. All exit values, counts and failure meaning remain. The historical commit `7095f66` still contains the synthetic receipt, and the historical-range gitleaks guard can still fail on it; this documentation-only correction does not claim to clear that guard. No history rewrite, baseline exception or force push is made. No final-head full-suite rerun/pass is claimed; earlier broad receipts above remain the applicable prior-source results.
