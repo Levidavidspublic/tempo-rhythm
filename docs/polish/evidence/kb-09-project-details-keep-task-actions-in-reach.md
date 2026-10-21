@@ -111,3 +111,140 @@ The last 20 lines of the retained hosted failure excerpt are:
 2026-10-21T10:16:13.5953478Z Temporarily overriding HOME='/home/runner/work/_temp/dd740c1f-12c4-4b01-9079-5a03c6957c72' before making global git config changes
 2026-10-21T10:16:13.5955038Z Adding repository directory to the temporary git global config as a safe directory
 ```
+
+
+## Final owner-authorized extra repair — 21 Oct 2026
+
+Source/test commit: `29c21c10be6c7abf395681848c50ef33d0a9e3a8`, based on `d16aa69f3cc913028574ce2300f63a3d8aa7582b`. The owner confirmed that the existing one-extra-pass authorization covers KB-09; its initial exhausted-ticket examples were not a closed permission list. The three normal candidates recorded above remain consumed. This is the single extra, fourth/final cohesive repair candidate. Lint corrections made during this implementation, before final commit/handoff, remain within that same pass; no additional review-fix round is claimed.
+
+### Verified review findings and repair
+
+| Finding | Verified cause and scoped repair |
+| --- | --- |
+| [Codex 4336341625](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150#discussion_r4336341625) | The draft ref held raw whitespace while the submitted/query name was trimmed, so acknowledgment never released the guard. A nonempty blur records the canonical name in the acknowledgment ref while preserving raw input text, revision ownership and genuinely newer edits. Later authoritative names can sync and newly created tasks use that latest name. |
+| [CodeRabbit 4336367703](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150#discussion_r4336367703) | Both completion-name templates split the visible label around the task title. English now uses `Mark done: {title}` and Hebrew `סימון כהושלמה: {title}`. Reopen names and visible labels are unchanged. Hebrew remains machine-drafted for native review. |
+| [CodeRabbit 4336367722](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150#discussion_r4336367722) | Idle returned no status node. A native `output` retains its implicit status role and node identity across idle/pending/saved/error; empty states use the existing visually-hidden utility. A separate alert retains error copy, unique identifier and field association. The paragraph wrapper preserves the notice’s existing block layout. Actual assistive-technology announcement delivery remains UNKNOWN. |
+| [Review-body stale-result nitpick](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150#pullrequestreview-5599128383) | The existing negative assertions could run before the held mutation reached the query/render. The test now waits for the mock’s real query acknowledgment and flushes pending React commits through the fixture’s installed React DOM before keeping both original assertions. |
+
+The new named child regressions are:
+
+- `acknowledged padded rename accepts later stored names and task creation`: English/Hebrew mounted screen; exact trimmed mutation payload, normalized acknowledgment, subsequent external query name, and exact create payload using that newest name.
+- `padded rename settlement preserves a genuinely newer raw draft`: submits a second padded draft, leaves the field unfocused, then settles the older request; the newer raw text remains and no stale Saved notice appears.
+- `task accessible names contain their visible localized action and title`: English/Hebrew actual screen and shared gallery, both complete/reopen states, computed accessible name and unchanged completion state.
+- `rename status stays mounted through idle saving saved and separate error`: English/Hebrew native status semantics, empty idle accessibility exposure, stable node identity through pending/saved/idle/error, exact localized copy, raw error draft, correct alert association and unique IDs.
+
+All original 14 child cases, assertions and deadlines remain. The child now has 18 cases. The parent has 18 case reports plus a distinct mixed-report parser regression and the authoritative child-exit/report gate; these are not 20 additional functional cases.
+
+### Frozen red proof and reporting correction
+
+Before any production edit, the unchanged `d16aa69` product ran the added regressions. Child result: **15 pass, 3 fail, 24 Bun assertions, 133.32 s**. The failures were exactly the three verified product defects: expected `Maya and Dana` but received `  Maya and Dana  `; expected accessible-name substring `Mark done` but received `Mark Plan with Dana done`; expected one idle status node but received zero. The original 14 cases and the newer-draft case passed. Frozen baseline source, hashes and the red test snapshot remain in ignored `work/kb09-extra/`; the actual log is `/workspace/work/kb-finish/kb09-extra/red.log`. The later unfocused/newer-draft strengthening retained all three red assertions.
+
+That deliberately failing child exposed an additional reporting defect: the old greedy JUnit attribute pattern could absorb a self-closing passed case into a later failed case. It failed closed but misreported individual outcomes: the initial parent showed **9 pass / 10 fail**, rather than faithfully reflecting the child. The pattern now ends attributes at the first matching tag boundary. The distinct parent regression covers passed/failed/passed/skipped XML results and prevents both lost passing cases and a failed result becoming passed. The single cached child result, exact named-case checks and nonzero-exit failure gate remain mandatory.
+
+The intermediate browser verification within this cohesive pass passed **18 child cases / 0 failures / 49 Bun assertions in 265.35 s**; its parent passed **20 reports / 0 failures / 22 metadata assertions in 271.27 s**. Its lint failed because a paragraph with an explicit status role must use native output. The first native-output correction retained an explicit redundant role and lint rejected that too. Both original failures remain at `lint.log` and `lint-final.log`; the final native output uses its implicit status role, and the test explicitly checks `toHaveRole("status")` instead of depending on a redundant HTML attribute. No lint suppression or rule/configuration change was used.
+
+### Test results (cloud agent sandbox)
+
+Bun **1.3.9**, system Chromium, worktree-local workspace links and the existing installed dependencies. Each browser command separately held `/workspace/work/kb-finish/heavy-check.lock`. Final source/test hashes were frozen before verification and checked afterward. The contact sheet remains applicable to the initial layout: visible labels/styles are unchanged and the persistent empty region has no visible layout.
+
+| Command | Final result |
+| --- | --- |
+| `bun --version` | PASS, exit 0: `1.3.9` |
+| `bun install --frozen-lockfile` | UNKNOWN: not rerun in this scoped extra pass; previous resolver timeout remains recorded above |
+| `bun run lint` | PASS, exit 0: 5/5 tasks, 10 existing warnings, no errors |
+| `bun run typecheck` | PASS, exit 0: 5/5 tasks, 58.984 s |
+| `bun test tests/unit/kb-09.test.tsx` | PASS, exit 0: child 18 pass, 0 fail, 0 skip, 49 Bun assertions, 202.73 s; parent 18 case reports plus parser/exit-report gates, 20 pass, 0 fail, 22 metadata assertions, 206.31 s |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0: all four OK |
+| `bun run test` | UNKNOWN: root owns the final integrated full-suite gate; no full-suite result is inferred from scoped proof |
+| `CI=1 bunx playwright test --reporter=line` | UNKNOWN: root owns the complete E2E gate |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | UNKNOWN: root owns the build gate |
+
+Final frozen source/test (including unchanged CSS) SHA-256:
+
+```text
+b38e92b16389cf4b4e83bde5db55029c5ae25799a546ee4eb5e28266b6598560  apps/web/components/projects/ProjectDetailScreen.tsx
+ace4cdbfafd48b4fcc7bb35f390d37732a517f256127ba011e28bd8b292e1a78  apps/web/lib/i18n-groups/kb-09.ts
+6e3ca5a93e981fb887c5937142b7dd80414acb53c41ff03d62233b1004d2b1c1  apps/web/app/v3/kb-09.css
+038dc21bb481a5592c42c603d2f4ade2dc537fcb489c6f94f4b802fb452eb251  tests/unit/kb-09.test.tsx
+```
+
+Root owns the planned consolidated mandatory validation in `/workspace/work/kb-validation`, recording compatible final ticket input commits. Per-PR hosted CI, review and queue outcomes remain separate; none is inferred from this scoped proof.
+
+Final logs: `/workspace/work/kb-finish/kb09-extra/version.log`, `lint-verified.log`, `typecheck-verified.log`, `scans-verified.log`, and `focused-verified.log`. The preceding red/semantic-lint runs are retained separately. No caller, backend, API contract, route, dependency, configuration, CSS or screenshot artifact changed. Root owns final ordered mandatory gates, rebase and all remote actions. No live backend/device/production claim is made. Final verification left no per-run fixture/report/capture directories or active worker runners.
+
+### Retained failure tails from this pass
+
+Deliberate red command, exit 1, actual final 20 lines (parent reporting defect disclosed above):
+
+```text
+(pass) browser evidence covers widths, locales, and themes [0.01ms]
+56 |     }, 300_000);
+57 |   }
+58 |   const gateName = "isolated KB-09 child exits successfully and reports every case";
+59 |   test(gateName, async () => {
+60 |     const completed = await run();
+61 |     expect(completed.code).toBe(0);
+                                ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/workspace/work/kb-09/tests/unit/kb-09.test.tsx:61:28)
+(fail) isolated KB-09 child exits successfully and reports every case [0.97ms]
+
+ 9 pass
+ 10 fail
+ 10 expect() calls
+Ran 19 tests across 1 file. [135.50s]
+```
+
+Initial paragraph/status lint, exit 1, actual final 20 lines:
+
+```text
+tempo-rhythm-web:lint:     443 │         {statusVisible ? text : ""}
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i For examples and more information, see WAI-ARIA Roles
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   × Some errors were emitted while running checks.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: error: script "lint" exited with code 1
+ ERROR  tempo-rhythm-web#lint: command (/workspace/work/kb-09/apps/web) /workspace/work/kb/bin/bun run lint exited (1)
+
+ Tasks:    4 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    6.933s
+Failed:    tempo-rhythm-web#lint
+
+ ERROR  run failed: command  exited (1)
+error: script "lint" exited with code 1
+```
+
+Initial native-output/explicit-role lint, exit 1, actual final 20 lines:
+
+```text
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: Checked 476 files in 5s. No fixes applied.
+tempo-rhythm-web:lint: Found 2 errors.
+tempo-rhythm-web:lint: Found 9 warnings.
+tempo-rhythm-web:lint: lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   × Some errors were emitted while running checks.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: error: script "lint" exited with code 1
+ ERROR  tempo-rhythm-web#lint: command (/workspace/work/kb-09/apps/web) /workspace/work/kb/bin/bun run lint exited (1)
+
+ Tasks:    4 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    6.209s
+Failed:    tempo-rhythm-web#lint
+
+ ERROR  run failed: command  exited (1)
+error: script "lint" exited with code 1
+```
