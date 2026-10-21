@@ -1,6 +1,7 @@
 import * as Bun from "bun";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { constants as osConstants } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import type { Browser, Page } from "@playwright/test";
 
@@ -86,6 +87,11 @@ async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{
   let child: ReturnType<typeof Bun.spawn> | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let timedOut = false;
+  let receiveExit!: (code: number) => void;
+  let rejectExit!: (error: unknown) => void;
+  // Register the OS wait-status receipt at launch; the lazy .exited promise
+  // stalled after both output pipes closed in hosted job 119249084458.
+  const exited = new Promise<number>((resolve, reject) => { receiveExit = resolve; rejectExit = reject; });
   const killOwnedTree = () => {
     const ownedChild = child;
     if (!ownedChild) return;
@@ -119,7 +125,24 @@ async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{
       cwd: repo,
       env: { ...process.env, KB77_FIXTURE_CHILD: "1", KB77_FIXTURE_TOKEN: runToken, KB77_RESULTS: output, KB77_FIXTURE_PROBE: probe ?? "" },
       stdout: "pipe", stderr: "pipe", detached: process.platform !== "win32",
+      onExit(_process, code, signal, error) {
+        trace(`parent:os-exit code=${code} signal=${signal}`);
+        if (error) rejectExit(error);
+        else if (signal !== null) {
+          // Bun 1.3.9 reports signal names at runtime despite its numeric type.
+          const number = typeof signal === "number" ? signal : osConstants.signals[String(signal) as NodeJS.Signals];
+          if (number === undefined) rejectExit(Error(`KB77 child exited with unknown signal ${signal}`));
+          else receiveExit(128 + number);
+        }
+        else if (code !== null) receiveExit(code);
+        else rejectExit(Error("KB77 child exited without an OS status"));
+      },
     });
+    if (probe === "exit-status") {
+      // Reproduce an unavailable legacy receipt while retaining a real OS exit.
+      Object.defineProperty(child, "exited", { get: () => new Promise<number>(() => {}) });
+      trace("parent:legacy-exited:stalled");
+    }
     trace(`parent:spawn:done pid=${child.pid}`);
     // The original 480s hook includes cancellation, reaping and directory cleanup.
     timer = setTimeout(() => {
@@ -142,7 +165,7 @@ async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{
     const [out, err, code] = await Promise.all([
       stream(child.stdout as ReadableStream<Uint8Array>, "stdout"),
       stream(child.stderr as ReadableStream<Uint8Array>, "stderr"),
-      child.exited.then((code) => { trace(`parent:child-exit ${code}`); return code; }),
+      exited.then((code) => { trace(`parent:child-exit ${code}`); return code; }),
     ]);
     const run = { code, out, err, timedOut, directory, pid: child.pid };
     try {
@@ -155,7 +178,7 @@ async function runChild(probe?: string, deadline = beforeAllDeadline): Promise<{
     clearTimeout(timer);
     await releaseAll(
       () => { trace("parent:kill:start"); killOwnedTree(); trace("parent:kill:done"); },
-      async () => { trace("parent:reap:start"); if (child) await child.exited; trace("parent:reap:done"); },
+      async () => { trace("parent:reap:start"); if (child) await exited; trace("parent:reap:done"); },
       () => { trace("parent:directory-remove:start"); rmSync(directory, { recursive: true, force: true }); trace("parent:directory-remove:done"); }
     );
   }
@@ -629,7 +652,10 @@ async function runProbe(mode: string, results: Results): Promise<void> {
     results.probe = { pass: true };
     trace(`probe:${mode}:server-ready ${serverUrl}`);
     if (mode === "setup-failure") throw Error("KB77 controlled launch failure");
-    if (mode === "close-rejection") {
+    if (mode === "exit-status") {
+      for (const name of names) results[name] = { pass: true };
+      process.exitCode = 73;
+    } else if (mode === "close-rejection") {
       browser = { close: () => Promise.reject(Error("KB77 controlled browser close rejection")) };
     } else if (mode === "hang") {
       const descendant = Bun.spawn([process.execPath, "-e", "setInterval(() => {}, 1000)"], { detached: true, stdout: "ignore", stderr: "ignore" });
@@ -718,6 +744,20 @@ if (childMode) {
       await expect(fetch(payload.serverUrl!)).rejects.toThrow();
       expect(existsSync(failed.run.directory)).toBe(false);
       expect(() => requireSuccessfulExit(failed.run, payload)).toThrow("browser child exit");
+    }, 30_000);
+
+    test("OS exit status rejects successful results when the legacy exit promise stalls", async () => {
+      const failed = await runChild("exit-status", 30_000);
+      if (failed.error) throw failed.error;
+      const payload = failed.payload!;
+      expect(failed.run.code).toBe(73);
+      expect(failed.run.timedOut).toBe(false);
+      for (const name of names) expect(payload.results[name]).toEqual({ pass: true });
+      expect(payload.cleanup).toEqual({ server: true, browser: true, complete: true });
+      await expect(fetch(payload.serverUrl!)).rejects.toThrow();
+      expect(existsSync(failed.run.directory)).toBe(false);
+      expect(() => process.kill(failed.run.pid, 0)).toThrow();
+      expect(() => requireSuccessfulExit(failed.run, payload)).toThrow("browser child exit 73");
     }, 30_000);
 
     test("browser close rejection releases server and cannot report success", async () => {
