@@ -290,7 +290,7 @@ Combined results are pending. Exact causes of the intermittent hosted hangs and 
 <!-- KB-FINISH-LIVE-RESULTS -->
 ### Current combined results
 
-AWAY — Snapshot 2026-10-21T12:47:32.816Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+AWAY — Snapshot 2026-10-21T13:47:00.508Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
 
 | Command | Result | Seconds |
 |---|---|---|
@@ -298,13 +298,13 @@ AWAY — Snapshot 2026-10-21T12:47:32.816Z. These results apply only to local co
 | install | UNKNOWN: frozen resolution reached 120-second bound | 120.28 |
 | lint | PASS | 6.31 |
 | typecheck | PASS | 162.04 |
-| test | Pending | — |
-| scans | Pending | — |
+| test | FAIL, exit 1 | 3874.76 |
+| scans | PASS | 30.39 |
 | e2e | Pending | — |
 | build | Pending | — |
 
-AT — KB-09 was subsequently held at AT-14 after two verified fresh review findings. Its unchanged input remains in this immutable validation checkout; a passing test does not approve those defects. KB-75 is using its one authorized extra pass for a deterministic browser time zone. KB-77 is using ordinary source candidate three for bounded child lifecycle diagnostics after its own hosted fixture again timed out. Their later repairs are not covered by this older manifest.
+AT — KB-09 was subsequently held at AT-14 after two verified fresh review findings. Its unchanged input remains in this immutable validation checkout; a passing test does not approve those defects. KB-75 is using its one authorized extra pass for a deterministic browser time zone. KB-77 is using ordinary source candidate three for bounded child lifecycle diagnostics after its own hosted fixture again timed out. KB-45 is using its extra for an English fallback language boundary that preserves a localized child’s own semantics. KB-74 was reopened for a separate modal-dialog correction using its unused extra; the manifest contains only its older integration baseline. These later repairs are not covered by this older manifest.
 
-WALK — Hosted follow-up #1199 (KB-61 input35b1c32) passed all required checks and was marked ready for an actual CodeRabbit review. Latest KB-71 job119219800967 failed only the integration-baseline KB-61 480-second fixture, which #1199 repairs. KB-77 job119219928829 failed its own 480-second fixture plus the unchanged shared codec 30-second bundle check. KB-44 job119219282273 and KB-69 job119219667179 failed only that codec check. These failures remain failures.
+WALK — Hosted follow-up #1199 (KB-61 input35b1c32) passed all required hosted checks, then actual CodeRabbit review found cleanup error loss. The follow-up was returned to draft at AT-15; documentation-only72f6302 clarifies prior versus final validation and does not change its tested source. Latest KB-71 job119219800967 failed only the integration-baseline KB-61 480-second fixture, which #1199 repairs. KB-77 job119219928829 failed its own 480-second fixture plus the unchanged shared codec 30-second bundle check. KB-44 job119219282273 and KB-69 job119219667179 failed only that codec check. These failures remain failures.
 
 UNKNOWN — A read-only codec audit found unchanged codec files and a still-in-process baseline KB-67 native build/server fixture sharing the full-suite process with global module mocks. That is a possible interaction, not a proven cause. KB-44 already isolates its builds; its subsequent-build/server proof passed11/11. No shared codec change, timeout increase or scan/config weakening is authorized or made.
