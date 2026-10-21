@@ -96,7 +96,7 @@ The five earlier merge receipts remain historical. These issues stay open until 
 | KB-01 | — | — | Blocked — prerequisites: 1094, 1096, 1110, 1112, 1113, 1114, 1115, 1123, 1127; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-16 | — | — | Blocked — prerequisites: KB-01, 1094, 1110, 1112, 1113, 1116; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
 | KB-31 | — | — | Blocked — prerequisites: KB-01, KB-16, 1094; issue filing queued after shared fix. Owner architecture/config gate remains unanswered. |
-| KB-02 | 1153 | 1160 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
+| KB-02 | 1153 | 1160 | PR open — rejected edit reset and truthful child-case mapping pass 12 child / 14 parent cases. Full incomplete: observed 1,565 pass lines / 2 fail / 3 todo (shared cancellation and KB-66 timeout), exit 143. E2E 27 pass / 1 fail / 89 skip; install UNKNOWN; lint/typecheck/scans/build pass. Shared prerequisite stuck. |
 | KB-03 | 1157 | 1162 | PR open — Final shared + own: 33 pass / 0 fail, 80 assertions. Earlier full 3520/0/3 todo; frozen install corrected to PASS (observed exit 0,303.72 s); E2E infrastructure UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-04 | 1141 | 1147 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-05 | 1142 | 1149 | PR open — Final shared + own: 31 pass / 0 fail, 247 assertions. Earlier full 3479/22/3 todo (KB-64+KB-61); E2E 28/0/89 skip; remaining local gates pass. Shared #1203 stuck; current guards/review still required. |
