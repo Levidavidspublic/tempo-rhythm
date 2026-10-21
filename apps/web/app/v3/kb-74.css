@@ -1,3 +1,18 @@
+/* Keep the real Sidebar as the desktop grid/sticky item while its stable boundary is nonmodal. */
+.kb74-rail-boundary {
+  display: contents;
+}
+
+/* A modal needs its own accessible box without changing the real fixed rail's dimensions. */
+.kb74-rail-boundary[role="dialog"] {
+  display: block;
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: min(var(--tp-rail-w), 86vw);
+  z-index: 40;
+}
+
 /* The narrow rail is a modal drawer; its links need phone-sized tap targets. */
 @media (max-width: 1023px) {
   .tp-app[data-rail="open"] .tp-rail .tp-tree-item {
