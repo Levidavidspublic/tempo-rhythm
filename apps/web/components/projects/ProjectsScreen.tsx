@@ -39,6 +39,8 @@ const FILTER_LABEL = {
   done: "pj.status.done",
 } as const;
 
+const PROJECT_LIST_CLASS_NAME = "tp-cards pj-cards kb08-list";
+
 /**
  * Projects (docs/design/v3/screens/web/projects.html). There is no projects table: a project is
  * the tasks that share a projectId, so each card shows its name, a status worked out from those
@@ -148,7 +150,7 @@ function ProjectsContent() {
           </div>
 
           {shown.length > 0 ? (
-            <div className="tp-cards pj-cards kb08-list" data-component="CardGrid">
+            <div className={PROJECT_LIST_CLASS_NAME} data-component="CardGrid">
               {shown.map((project) => (
                 <ProjectCard key={project.id} project={project} lang={lang} />
               ))}
@@ -265,9 +267,9 @@ export function Kb08Gallery() {
       {states.map((next) => <button key={next} type="button" className="tp-btn tp-btn--secondary" aria-pressed={state === next} onClick={() => { setState(next); setFeedback(""); }}>{translateKb08(lang, `gallery.${next}`)}</button>)}
     </fieldset>
     {state === "offline" ? <ProjectListState kind="offline" lang={lang} /> : null}
-    {state === "empty" || state === "loading" || state === "error" ? <ProjectListState kind={state} lang={lang} onAction={() => setFeedback(state)} /> : null}
+    {state === "empty" || state === "loading" || state === "error" ? <ProjectListState kind={state} lang={lang} onAction={() => setFeedback(translateKb08(lang, `gallery.${state}`))} /> : null}
     {state === "disabled" ? <ProjectListState kind="disabled" lang={lang} /> : null}
-    {state === "default" || state === "disabled" || state === "overflow" || state === "offline" ? <div className="kb08-list">{samples.map((project) => <ProjectSummaryRow key={project.id} project={project} lang={lang} disabled={state === "disabled"} onNavigate={(target) => setFeedback(`${project.id}: ${target}`)} />)}</div> : null}
+    {state === "default" || state === "disabled" || state === "overflow" || state === "offline" ? <div className={PROJECT_LIST_CLASS_NAME}>{samples.map((project) => <ProjectSummaryRow key={project.id} project={project} lang={lang} disabled={state === "disabled"} onNavigate={(target) => setFeedback(`${project.id}: ${target}`)} />)}</div> : null}
     {feedback ? <output aria-live="polite">{translateKb08(lang, "gallery.feedback", { action: feedback })}</output> : null}
   </main>;
 }

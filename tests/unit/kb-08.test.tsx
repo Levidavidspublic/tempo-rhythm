@@ -24,7 +24,7 @@ if (process.env.KB08_ISOLATED !== "1") {
     "error and loading states render separately",
     "gallery renders the real exported row and owns one h1 and one main",
     "English and Hebrew dictionaries have exact key parity",
-    "hydrated gallery: keyboard navigation, callbacks, RTL, states and responsive targets",
+    "hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-width rows",
   ];
   let output: string | undefined;
   for (const name of names) {
@@ -140,21 +140,37 @@ describe("KB-08 projects list", () => {
 let fixtureDirectory: string | undefined;
 afterAll(async () => { if (fixtureDirectory) await rm(fixtureDirectory, { recursive: true, force: true }); });
 
-test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsive targets", async () => {
+test("hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-width rows", async () => {
   const scratch = join(process.cwd(), "work");
   await mkdir(scratch, { recursive: true });
   fixtureDirectory = await mkdtemp(join(scratch, "kb08-gallery-"));
   await symlink(join(process.cwd(), "apps/web/node_modules"), join(fixtureDirectory, "node_modules"));
   const entry = join(fixtureDirectory, "entry.tsx");
-  await writeFile(entry, `import React from ${JSON.stringify(join(process.cwd(), "apps/web/node_modules/react"))};\nimport { createRoot } from ${JSON.stringify(join(process.cwd(), "apps/web/node_modules/react-dom/client"))};\nimport { Kb08Gallery } from ${JSON.stringify(join(process.cwd(), "apps/web/components/projects/ProjectsScreen"))};\ncreateRoot(document.getElementById("root")!).render(<Kb08Gallery />);\n`);
-  const result = await Bun.build({ entrypoints: [entry], outdir: join(fixtureDirectory, "out"), target: "browser" });
+  await writeFile(entry, `import React from ${JSON.stringify(join(process.cwd(), "apps/web/node_modules/react"))};\nimport { createRoot } from ${JSON.stringify(join(process.cwd(), "apps/web/node_modules/react-dom/client"))};\nimport { Kb08Gallery, ProjectsScreen } from ${JSON.stringify(join(process.cwd(), "apps/web/components/projects/ProjectsScreen"))};\nimport { LocaleProvider } from ${JSON.stringify(join(process.cwd(), "apps/web/components/providers/LocaleProvider"))};\nimport { TpIconSprite } from ${JSON.stringify(join(process.cwd(), "apps/web/components/tempo/TpIcon"))};\nconst mounted = new URLSearchParams(location.search).has("mounted");\ncreateRoot(document.getElementById("root")!).render(mounted ? <LocaleProvider><main><TpIconSprite /><ProjectsScreen /></main></LocaleProvider> : <Kb08Gallery />);\n`);
+  const result = await Bun.build({ entrypoints: [entry], outdir: join(fixtureDirectory, "out"), target: "browser", plugins: [{
+    name: "kb08-controlled-project-queries",
+    setup(build) {
+      build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: "convex-react", namespace: "kb08-fixture" }));
+      build.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: "navigation", namespace: "kb08-fixture" }));
+      build.onLoad({ filter: /.*/, namespace: "kb08-fixture" }, ({ path }) => ({ loader: "js", contents: path === "navigation"
+        ? 'export const useRouter = () => ({ push: (href) => { window.kb08Navigation = href; } });'
+        : `import { getFunctionName } from ${JSON.stringify(join(process.cwd(), "node_modules/convex/server"))};
+export const useConvexAuth = () => ({ isAuthenticated: true, isLoading: false });
+export const useQuery = (reference, args) => args === "skip" ? undefined : getFunctionName(reference) === "users:getProfile" ? { _id: "fictional-user", greetingName: "Maya" } : [
+  { _id: "maya-task", projectId: "maya-home", projectName: "Maya's home", status: "todo", updatedAt: 3 },
+  { _id: "dana-task", projectId: "dana-notes", projectName: "Dana's notes", status: "done", updatedAt: 2 },
+  { _id: "yoni-task", projectId: "yoni-week", projectName: "Yoni's week", status: "todo", updatedAt: 1 }
+];
+export const useMutation = () => () => { throw new Error("Unexpected mutation in display fixture"); };` }));
+    },
+  }] });
   if (!result.success) throw new Error(`Gallery bundle failed: ${result.logs.map(String).join("\n")}`);
   const bundleJs = result.outputs.find((output) => output.path.endsWith(".js"));
   const bundleCss = result.outputs.find((output) => output.path.endsWith(".css"));
   if (!bundleJs || !bundleCss) throw new Error("Gallery bundle must include JS and CSS");
   const styles = await Promise.all([
     "docs/design/v3/tokens.css",
-    "docs/design/v3/tempo.css",
+    "apps/web/app/tempo.css",
     "apps/web/app/v3/goals.css",
   ].map((path) => Bun.file(path).text()));
   const css = `${styles.join("\n").replace(/@import url\([^;]+;/g, "")}\n${await bundleCss.text()}`;
@@ -175,6 +191,7 @@ test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsi
       expect(await page.locator("#i-page").count()).toBe(1);
       expect(await page.locator("h1").count()).toBe(1);
       expect(await page.locator("main").count()).toBe(1);
+      expect(await page.locator(".tp-cards.kb08-list").count()).toBe(1);
       expect(await page.locator("article a a, article button a, article a button").count()).toBe(0);
       await page.locator("article a").first().focus();
       expect(await page.evaluate(() => document.activeElement?.getAttribute("aria-label"))).toContain("Open project");
@@ -199,6 +216,12 @@ test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsi
         await page.getByRole("button", { name: lang === "en" ? "English" : "עברית" }).click();
         expect(await page.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
         expect(await page.locator(".kb08-row__count").first().evaluate((node) => getComputedStyle(node).direction)).toBe(lang === "he" ? "rtl" : "ltr");
+        for (const kind of ["empty", "error"] as const) {
+          await page.getByRole("button", { name: translateKb08(lang, `gallery.${kind}`), exact: true }).click();
+          await page.getByRole("button", { name: translateKb08(lang, `${kind}.action`), exact: true }).click();
+          expect(await page.locator("output").last().textContent()).toBe(translateKb08(lang, "gallery.feedback", { action: translateKb08(lang, `gallery.${kind}`) }));
+        }
+        await page.getByRole("button", { name: translateKb08(lang, "gallery.default"), exact: true }).click();
         for (const theme of ["light", "dark"] as const) {
           await page.evaluate((next) => document.documentElement.dataset.theme = next, theme);
           expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
@@ -210,6 +233,29 @@ test("hydrated gallery: keyboard navigation, callbacks, RTL, states and responsi
         }
       }
       await page.close();
+
+      // Exercise the actual /projects component, including its production CardGrid classes.
+      // Only auth/query values and router writes are controlled; grouping and layout are real.
+      const mounted = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+      for (const lang of ["en", "he"] as const) {
+        await mounted.goto(`${server.url.href}?mounted=1&lang=${lang}`);
+        await mounted.locator('[data-component="ProjectSummaryRow"]').first().waitFor();
+        expect(await mounted.locator("h1").count()).toBe(1);
+        expect(await mounted.locator("main").count()).toBe(1);
+        expect(await mounted.locator(".tp-cards.kb08-list").count()).toBe(1);
+        const layout = await mounted.locator(".kb08-list").evaluate((list) => ({
+          width: list.getBoundingClientRect().width,
+          rows: [...list.children].map((row) => ({ width: row.getBoundingClientRect().width, top: row.getBoundingClientRect().top })),
+        }));
+        expect(layout.rows).toHaveLength(3);
+        expect(layout.rows.every((row) => Math.abs(row.width - layout.width) < 1)).toBe(true);
+        expect(layout.rows[1]!.top).toBeGreaterThan(layout.rows[0]!.top);
+        expect(layout.rows[2]!.top).toBeGreaterThan(layout.rows[1]!.top);
+        expect(await mounted.locator("article a").first().getAttribute("href")).toBe("/projects/maya-home");
+        expect(await mounted.locator("article a").nth(1).getAttribute("href")).toBe("/projects/maya-home/kanban");
+        expect(await mounted.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      }
+      await mounted.close();
     }
   } finally {
     await browser.close();

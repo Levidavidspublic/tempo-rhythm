@@ -1,5 +1,5 @@
 /* KB-08: projects summary rows only. Values come from the v3 token source. */
-.kb08-list { display: grid; gap: var(--tp-space-3); min-width: 0; }
+.kb08-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--tp-space-3); min-width: 0; }
 .kb08-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--tp-space-3) var(--tp-space-4); align-items: center; min-width: 0; }
 .kb08-row__summary { display: grid; gap: var(--tp-space-2); min-width: 0; }
 .kb08-row__summary .tp-status { justify-self: start; }
