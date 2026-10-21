@@ -1,12 +1,57 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { chromium, type Browser, type Page } from "@playwright/test";
+import { chromium, expect as playwrightExpect, type Browser, type Page } from "@playwright/test";
 import { createElement } from "../../apps/web/node_modules/react";
 import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
-import { Kb10Gallery, MagicLinkStatus, SignInHelp } from "../../apps/web/components/auth/SignInForm";
 import { en, he, kb10t } from "../../apps/web/lib/i18n-groups/kb-10";
 
+const errorCases = [["invalid", "kb10.invalid"], ["error", "kb10.sendError"], ["rateError", "kb10.rateError"]] as const;
+const names = [
+  "initial form offers one email field and one primary send action",
+  "invalid email stays local, has associated error and keeps input focus",
+  "pending disables duplicate send without changing resend arguments",
+  "sent status focuses its heading and isolates the address",
+  "send error retains the entered address and exposes a retry",
+  ...errorCases.flatMap(([mode]) => [
+    `${mode} feedback follows language changes without resubmitting`,
+    `editing email ${mode === "rateError" ? "preserves rate-limit" : `clears ${mode}`} feedback`,
+  ]),
+  "pending send failure uses the language selected before rejection",
+  "keyboard reset returns focus to the retained email",
+  "Hebrew switch uses RTL while email remains LTR",
+  "phone controls meet 44 px and long address cannot widen the page",
+  "sign-up and modal preserve shared callbacks and approval copy",
+  "gallery controls change real states, send and reset",
+  "reduced motion and keyboard focus remain visible",
+  "new exports render and English/Hebrew keys match",
+  "mounted and gallery screenshots cover 390/1280, en/he, light/dark",
+];
+
+// Keep the browser bundler and server out of the full-suite process: Bun's shared
+// module/build state otherwise leaks between this fixture and later galleries.
+if (process.env.KB10_ISOLATED !== "1") {
+  let output: string | undefined;
+  let childExit: number | undefined;
+  describe.serial("KB-10 isolated mounted sign-in and gallery", () => {
+    for (const name of names) test(name, () => {
+      if (output === undefined) {
+        const child = Bun.spawnSync([process.execPath, "test", import.meta.path], {
+          cwd: process.cwd(),
+          env: { ...process.env, KB10_ISOLATED: "1" },
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        output = Bun.stripANSI(`${child.stdout.toString()}${child.stderr.toString()}`);
+        childExit = child.exitCode;
+      }
+      if (childExit !== 0) throw new Error(`KB-10 isolated test process failed (exit ${childExit}):\n${output}`);
+      expect(childExit).toBe(0);
+      expect(output).toContain(`(pass) KB-10 mounted sign-in and gallery > ${name}`);
+    }, 300_000);
+  });
+} else {
+const { Kb10Gallery, MagicLinkStatus, SignInHelp } = await import("../../apps/web/components/auth/SignInForm");
 const repo = process.cwd();
 const web = join(repo, "apps/web");
 const component = join(web, "components/auth/SignInForm.tsx");
@@ -17,7 +62,7 @@ let origin: string;
 let fixtureDir: string;
 
 const stubs: Record<string, string> = {
-  "@convex-dev/auth/react": `export function useAuthActions(){return {signIn:(provider,args)=>{window.__authCalls.push({provider,args});const mode=new URLSearchParams(location.search).get("mode");if(mode==="error")return Promise.reject(new Error("send failed"));if(mode==="pending")return new Promise((resolve,reject)=>{window.__resolveAuth=resolve;window.__rejectAuth=reject});return Promise.resolve()}}}`,
+  "@convex-dev/auth/react": `export function useAuthActions(){return {signIn:(provider,args)=>{window.__authCalls.push({provider,args});const mode=new URLSearchParams(location.search).get("mode");if(mode==="error"||mode==="rateError")return Promise.reject(new Error(mode==="rateError"?"TooManyRequests":"send failed"));if(mode==="pending")return new Promise((resolve,reject)=>{window.__resolveAuth=resolve;window.__rejectAuth=reject});return Promise.resolve()}}}`,
   "next/link": `import React from "${web}/node_modules/react";export default function Link({href,children,...rest}){return React.createElement("a",{href:typeof href==="string"?href:href.pathname,...rest},children)}`,
   "@/components/providers/LocaleProvider": `import React from "${web}/node_modules/react";export function useLocale(){const lang=React.useSyncExternalStore(fn=>{window.addEventListener("kb10:lang",fn);return()=>window.removeEventListener("kb10:lang",fn)},()=>document.documentElement.lang==="he"?"he":"en",()=>"en");return {lang,dir:lang==="he"?"rtl":"ltr",setLang(next){document.documentElement.lang=next;document.documentElement.dir=next==="he"?"rtl":"ltr";window.dispatchEvent(new Event("kb10:lang"))}}}`,
 };
@@ -135,6 +180,50 @@ describe.serial("KB-10 mounted sign-in and gallery", () => {
     expect(await page.getByRole("button", { name: kb10t("en", "kb10.send") }).isEnabled()).toBe(true);
     await page.close();
   });
+  for (const [mode, key] of errorCases) {
+    test(`${mode} feedback follows language changes without resubmitting`, async () => {
+      const page = await open(390, `mode=${mode}`);
+      await page.getByRole("textbox", { name: kb10t("en", "kb10.email") }).fill(mode === "invalid" ? "invalid" : "maya@example.com");
+      await page.getByRole("button", { name: kb10t("en", "kb10.send") }).click();
+      await playwrightExpect(page.getByRole("alert")).toHaveText(kb10t("en", key));
+      await page.getByRole("button", { name: kb10t("en", "kb10.hebrew") }).click();
+      await playwrightExpect(page.getByRole("alert")).toHaveText(kb10t("he", key));
+      await page.getByRole("button", { name: kb10t("he", "kb10.english") }).click();
+      await playwrightExpect(page.getByRole("alert")).toHaveText(kb10t("en", key));
+      expect(await page.evaluate(() => (window as unknown as { __authCalls: unknown[] }).__authCalls.length)).toBe(mode === "invalid" ? 0 : 1);
+      await page.close();
+    });
+    test(`editing email ${mode === "rateError" ? "preserves rate-limit" : `clears ${mode}`} feedback`, async () => {
+      const page = await open(390, `mode=${mode}`);
+      const input = page.getByRole("textbox", { name: kb10t("en", "kb10.email") });
+      await input.fill(mode === "invalid" ? "invalid" : "maya@example.com");
+      await page.getByRole("button", { name: kb10t("en", "kb10.send") }).click();
+      await playwrightExpect(page.getByRole("alert")).toHaveText(kb10t("en", key));
+      await input.fill("dana@example.com");
+      if (mode === "rateError") {
+        await playwrightExpect(page.getByRole("alert")).toHaveText(kb10t("en", key));
+        expect(await input.getAttribute("aria-invalid")).toBe("true");
+        expect(await input.getAttribute("aria-describedby")).toBe(await page.getByRole("alert").getAttribute("id"));
+      } else {
+        await playwrightExpect(page.getByRole("alert")).toHaveCount(0);
+        expect(await input.getAttribute("aria-invalid")).toBe("false");
+        expect(await input.getAttribute("aria-describedby")).toBeNull();
+      }
+      expect(await input.inputValue()).toBe("dana@example.com");
+      expect(await page.evaluate(() => (window as unknown as { __authCalls: unknown[] }).__authCalls.length)).toBe(mode === "invalid" ? 0 : 1);
+      await page.close();
+    });
+  }
+  test("pending send failure uses the language selected before rejection", async () => {
+    const page = await open(390, "mode=pending");
+    await page.getByRole("textbox", { name: kb10t("en", "kb10.email") }).fill("maya@example.com");
+    await page.getByRole("button", { name: kb10t("en", "kb10.send") }).click();
+    await page.getByRole("button", { name: kb10t("en", "kb10.hebrew") }).click();
+    await page.evaluate(() => (window as unknown as { __rejectAuth: (error: Error) => void }).__rejectAuth(new Error("send failed")));
+    await playwrightExpect(page.getByRole("alert")).toHaveText(kb10t("he", "kb10.sendError"));
+    expect(await page.getByRole("textbox", { name: kb10t("he", "kb10.email") }).inputValue()).toBe("maya@example.com");
+    await page.close();
+  });
   test("keyboard reset returns focus to the retained email", async () => {
     const page = await open();
     await page.getByRole("textbox", { name: kb10t("en", "kb10.email") }).fill("maya@example.com");
@@ -217,3 +306,4 @@ describe.serial("KB-10 mounted sign-in and gallery", () => {
     }
   }, 300_000);
 });
+}

@@ -135,7 +135,7 @@ export function SignInForm({ variant = "modal", nextPath, flow = "sign-in", onSu
   const { lang, setLang } = useLocale();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorKey, setErrorKey] = useState<"kb10.invalid" | "kb10.rateError" | "kb10.sendError" | "">("");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -157,13 +157,13 @@ export function SignInForm({ variant = "modal", nextPath, flow = "sign-in", onSu
     if (pendingRef.current) return;
     const input = inputRef.current;
     if (!input?.checkValidity()) {
-      setError(kb10t(lang, "kb10.invalid"));
+      setErrorKey("kb10.invalid");
       input?.focus();
       return;
     }
     pendingRef.current = true;
     setIsLoading(true);
-    setError("");
+    setErrorKey("");
     try {
       await signIn("resend", {
         email,
@@ -174,7 +174,7 @@ export function SignInForm({ variant = "modal", nextPath, flow = "sign-in", onSu
       onSuccess?.();
     } catch (err: unknown) {
       const message = (err as { message?: string }).message || "";
-      setError(kb10t(lang, message.includes("TooManyRequests") ? "kb10.rateError" : "kb10.sendError"));
+      setErrorKey(message.includes("TooManyRequests") ? "kb10.rateError" : "kb10.sendError");
     } finally {
       pendingRef.current = false;
       setIsLoading(false);
@@ -182,12 +182,15 @@ export function SignInForm({ variant = "modal", nextPath, flow = "sign-in", onSu
   };
   const onReset = () => {
     setMagicLinkSent(false);
-    setError("");
+    setErrorKey("");
     focusResetRef.current = true;
   };
   const otherHref = (pathname: string): OtherHref =>
     nextPath ? { pathname, query: { next: nextPath } } : pathname;
-  return <PageCard flow={flow} email={email} setEmail={setEmail} isLoading={isLoading} error={error} sent={magicLinkSent}
+  return <PageCard flow={flow} email={email} setEmail={value => {
+    setEmail(value);
+    setErrorKey(current => current === "kb10.rateError" ? current : "");
+  }} isLoading={isLoading} error={errorKey ? kb10t(lang, errorKey) : ""} sent={magicLinkSent}
     onSubmit={handleSubmit} onReset={onReset} otherHref={otherHref(flow === "sign-up" ? "/sign-in" : "/sign-up")}
     variant={variant} lang={lang} onSwitch={onSwitch} onLanguageChange={setLang} inputRef={inputRef} headingRef={headingRef} />;
 }

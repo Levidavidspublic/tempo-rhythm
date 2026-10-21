@@ -66,3 +66,44 @@ Last 20 lines of local Playwright output:
   89 skipped
   27 passed (4.7m)
 ```
+
+## Owner-authorized review repair — 21 Oct 2026
+
+Both current CodeRabbit findings on PR #1159 were reproduced in the mounted form: [stale errors after an email edit](https://github.com/Levidavidspublic/tempo-rhythm/pull/1159#discussion_r4335130212) and [errors retaining the submission language](https://github.com/Levidavidspublic/tempo-rhythm/pull/1159#discussion_r4335130227). The form now stores a typed error key and translates it during rendering. Editing an address clears validation and generic send errors, including their invalid-field association, while preserving rate-limit feedback. The auth provider, arguments, callbacks, and shared props retain their existing behavior.
+
+Seven additional hydrated browser regressions cover English → Hebrew → English feedback for invalid input, generic send failure, and rate limiting; clearing invalid-input and generic-send feedback on edit; retaining rate-limit feedback on edit; and switching language while a send is pending before rejecting it. They exercise the mounted `SignInForm` with fictional, controlled auth promises. Before the fix, the targeted run reported **1 pass, 6 expected failures, 13 filtered out** in 93.75 seconds; the existing rate-limit retention behavior passed. The six failures reproduced the two reviewed issues and the deferred-rejection language variant.
+
+The seven new case names are:
+
+- `invalid feedback follows language changes without resubmitting`
+- `editing email clears invalid feedback`
+- `error feedback follows language changes without resubmitting`
+- `editing email clears error feedback`
+- `rateError feedback follows language changes without resubmitting`
+- `editing email preserves rate-limit feedback`
+- `pending send failure uses the language selected before rejection`
+
+The complete 20-case file now executes its component imports, browser bundle, and loopback server in one clean child process. Each parent case requires both a successful child exit and its own passing child result; all browser assertions and individual timeouts are retained. This contains Bun module/build state that can otherwise affect later gallery fixtures. Compatibility with the newly integrated KB-67 gallery remains pending the lead’s post-rebase check.
+
+The earlier validation table describes the original implementation. Current repair validation uses Bun **1.3.9** and the same checks and configuration:
+
+| Command | Exit | Repair result |
+|---|---:|---|
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 124 | **UNKNOWN** — still resolving dependencies at the authorized 120-second bound. Existing identical third-party dependencies were materialized in a real local `.bun` directory; workspace links resolve inside this worktree. |
+| `bun run lint` | 0 | 5/5 tasks successful; existing unrelated warnings |
+| `bun run typecheck` | 0 | 5/5 tasks successful |
+| `bun test tests/unit/kb-10.test.tsx` | 0 | 20 pass, 0 fail, 40 parent assertions, 81.10 seconds; all 20 child cases and child exit verified |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK; 66 documented notices |
+| `bun run test` | — | Pending lead validation on the integrated candidate |
+| `CI=1 bunx playwright test --reporter=line` | — | Pending lead validation on the integrated candidate, including unchanged route checks |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | Pending lead validation on the integrated candidate |
+
+Frozen-install output at the bound:
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Live email delivery, backend state, and device screen-reader behavior remain **UNKNOWN**. The existing contact sheet records the original visual evidence; this repair changes feedback transitions and does not add product copy or styling. The lead records the final integrated source commit with the remaining check results.
