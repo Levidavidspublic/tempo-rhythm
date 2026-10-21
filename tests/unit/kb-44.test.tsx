@@ -2,13 +2,10 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { chromium } from "@playwright/test";
-import { createElement } from "../../apps/web/node_modules/react";
-import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
-import { en, he, translateKb44 } from "../../apps/web/lib/i18n-groups/kb-44";
 
 // Other component tests register Bun's process-global Convex mocks. Keep this file's real
-// gallery and component imports in one clean child process when the full suite loads them.
+// product imports in clean child processes. Each browser child builds and serves only once,
+// keeping native Bun build/server state out of the full-suite parent and the other fixture.
 if (process.env.KB44_ISOLATED !== "1") {
   const names = [
     "first step has textual and semantic progress",
@@ -22,27 +19,40 @@ if (process.env.KB44_ISOLATED !== "1") {
     "hydrated gallery: Back retains input, Next focuses heading, error retains input, pending, RTL and reduced motion",
     "hydrated OnboardingFlow: Back retains input, resume review locks during save, error keeps step",
   ];
-  let output: string | undefined;
+  const runs = new Map<string, { exitCode: number; output: string }>();
   for (const name of names) {
     test(`KB-44 isolated: ${name}`, () => {
-      if (output === undefined) {
-        const run = Bun.spawnSync([process.execPath, "test", import.meta.path], {
+      const fixture = name.startsWith("hydrated gallery:") ? "gallery"
+        : name.startsWith("hydrated OnboardingFlow:") ? "flow" : "static";
+      let run = runs.get(fixture);
+      if (!run) {
+        const child = Bun.spawnSync([process.execPath, "test", import.meta.path], {
           cwd: process.cwd(),
-          env: { ...process.env, KB44_ISOLATED: "1" },
+          env: { ...process.env, KB44_ISOLATED: "1", KB44_FIXTURE: fixture },
           stdout: "pipe",
           stderr: "pipe",
         });
-        output = `${run.stdout.toString()}${run.stderr.toString()}`;
-        if (run.exitCode !== 0) throw new Error(`KB-44 clean test process failed:\n${output}`);
+        run = { exitCode: child.exitCode, output: `${child.stdout.toString()}${child.stderr.toString()}` };
+        runs.set(fixture, run);
       }
-      expect(output).toContain(name);
+      // Each group must actually succeed; matching a printed name is only supplementary.
+      if (run.exitCode !== 0) throw new Error(`KB-44 ${fixture} clean test process failed:\n${run.output}`);
+      expect(run.output).toContain(name);
     }, 300_000);
   }
 } else {
+  const fixture = process.env.KB44_FIXTURE;
+  if (fixture !== "static" && fixture !== "gallery" && fixture !== "flow") {
+    throw new Error("KB-44 isolated child requires a static, gallery, or flow fixture");
+  }
+  const { chromium } = await import("@playwright/test");
+  const { createElement } = await import("../../apps/web/node_modules/react");
+  const { renderToStaticMarkup } = await import("../../apps/web/node_modules/react-dom/server");
+  const { en, he, translateKb44 } = await import("../../apps/web/lib/i18n-groups/kb-44");
   const { Kb44Gallery, OnboardingResumeNotice, OnboardingStepSummary } = await import("../../apps/web/components/onboarding/OnboardingFlow");
   const render = (node: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(node);
 
-  describe("KB-44 onboarding", () => {
+  if (fixture === "static") describe("KB-44 onboarding", () => {
     test("first step has textual and semantic progress", () => {
       const html = render(createElement(OnboardingStepSummary, { step: 1, total: 5, lang: "en" }));
       expect(html).toContain("Step 1 of 5");
@@ -106,7 +116,7 @@ if (process.env.KB44_ISOLATED !== "1") {
   let fixtureDirectory: string | undefined;
   afterAll(async () => { if (fixtureDirectory) await rm(fixtureDirectory, { recursive: true, force: true }); });
 
-  test("hydrated gallery: Back retains input, Next focuses heading, error retains input, pending, RTL and reduced motion", async () => {
+  if (fixture === "gallery") test("hydrated gallery: Back retains input, Next focuses heading, error retains input, pending, RTL and reduced motion", async () => {
     const scratch = join(process.cwd(), "work");
     await mkdir(scratch, { recursive: true });
     fixtureDirectory = await mkdtemp(join(scratch, "kb44-gallery-"));
@@ -126,73 +136,76 @@ if (process.env.KB44_ISOLATED !== "1") {
       if (path === "/gallery.css") return new Response(css, { headers: { "content-type": "text/css" } });
       return new Response('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/gallery.css"></head><body style="margin:0;background:var(--tp-ground)"><div id="root"></div><script>window.process={env:{NODE_ENV:"production",NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS:"0"}};</script><script type="module" src="/gallery.js"></script></body></html>', { headers: { "content-type": "text/html" } });
     } });
-    const executable = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
-    if (!executable) { server.stop(); throw new Error("Chromium missing: install Playwright browser or system Chromium for KB-44 gallery test"); }
-    const browser = await chromium.launch({ executablePath: executable, headless: true, args: ["--no-sandbox"] });
     try {
-      for (const width of [390, 1280]) {
-        const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
-        await page.goto(server.url.href);
-        await page.locator('[data-component="Kb44Gallery"]').waitFor();
-        expect(await page.locator("h1").count()).toBe(1);
-        expect(await page.locator("main").count()).toBe(1);
-        expect(await page.locator("#i-info").count()).toBe(1);
-        await page.locator('input[type="text"]').fill("Dana");
-        await page.getByRole("button", { name: "Continue" }).click();
-        expect(await page.locator("progress").getAttribute("value")).toBe("2");
-        expect(await page.locator('input[type="text"]').inputValue()).toBe("Dana");
-        expect(await page.evaluate(() => document.activeElement?.tagName)).toBe("H2");
-        await page.getByRole("button", { name: "Back", exact: true }).click();
-        expect(await page.locator("progress").getAttribute("value")).toBe("1");
-        expect(await page.locator('input[type="text"]').inputValue()).toBe("Dana");
-        await page.getByRole("button", { name: "Resume" }).click();
-        expect(await page.locator('[data-component="OnboardingResumeNotice"]').count()).toBe(1);
-        await page.getByRole("button", { name: "Review earlier steps" }).click();
-        expect(await page.locator("progress").getAttribute("value")).toBe("1");
-        await page.getByRole("button", { name: "Error", exact: true }).click();
-        await page.locator('input[type="text"]').fill("Yoni");
-        expect(await page.getByRole("alert").count()).toBe(1);
-        await page.getByRole("button", { name: "Try again" }).click();
-        expect(await page.locator('input[type="text"]').inputValue()).toBe("Yoni");
-        await page.getByRole("button", { name: "Pending", exact: true }).click();
-        expect(await page.getByRole("button", { name: "Saving…" }).isDisabled()).toBe(true);
-        await page.getByRole("button", { name: "Disabled" }).click();
-        expect(await page.locator('input[type="text"]').isDisabled()).toBe(true);
-        await page.getByRole("button", { name: "Long input" }).click();
-        expect(await page.locator('input[type="text"]').inputValue()).toContain("very long fictional name");
-        await page.getByRole("button", { name: "Empty" }).click();
-        expect(await page.locator('input[type="text"]').inputValue()).toBe("");
-        await page.getByRole("button", { name: "Loading" }).click();
-        expect(await page.locator('[aria-busy="true"]').count()).toBe(1);
-        await page.getByRole("button", { name: "Default" }).click();
-        if (width === 390) {
-          const targets = await page.locator("button, input").evaluateAll((nodes) => nodes.map((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
-          expect(targets.every(({ width: w, height: h }) => w >= 44 && h >= 44)).toBe(true);
-        }
-        for (const lang of ["en", "he"] as const) {
-          await page.getByRole("button", { name: lang === "en" ? "English" : "עברית" }).click();
-          expect(await page.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
-          expect(await page.locator(".kb44-summary__text").evaluate((node) => getComputedStyle(node).direction)).toBe(lang === "he" ? "rtl" : "ltr");
-          for (const theme of ["light", "dark"] as const) {
-            await page.evaluate((next) => document.documentElement.dataset.theme = next, theme);
-            expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-            expect(await page.locator(".kb44-summary__progress").evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration))).toBeLessThan(0.001);
-            const capture = process.env.KB44_EVIDENCE_DIR;
-            if (capture) {
-              await mkdir(capture, { recursive: true });
-              await page.screenshot({ path: join(capture, `after-${width}-${lang}-${theme}.png`), fullPage: true });
+      const executable = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
+      if (!executable) { throw new Error("Chromium missing: install Playwright browser or system Chromium for KB-44 gallery test"); }
+      const browser = await chromium.launch({ executablePath: executable, headless: true, args: ["--no-sandbox"] });
+      try {
+        for (const width of [390, 1280]) {
+          const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+          await page.goto(server.url.href);
+          await page.locator('[data-component="Kb44Gallery"]').waitFor();
+          expect(await page.locator("h1").count()).toBe(1);
+          expect(await page.locator("main").count()).toBe(1);
+          expect(await page.locator("#i-info").count()).toBe(1);
+          await page.locator('input[type="text"]').fill("Dana");
+          await page.getByRole("button", { name: "Continue" }).click();
+          expect(await page.locator("progress").getAttribute("value")).toBe("2");
+          expect(await page.locator('input[type="text"]').inputValue()).toBe("Dana");
+          expect(await page.evaluate(() => document.activeElement?.tagName)).toBe("H2");
+          await page.getByRole("button", { name: "Back", exact: true }).click();
+          expect(await page.locator("progress").getAttribute("value")).toBe("1");
+          expect(await page.locator('input[type="text"]').inputValue()).toBe("Dana");
+          await page.getByRole("button", { name: "Resume" }).click();
+          expect(await page.locator('[data-component="OnboardingResumeNotice"]').count()).toBe(1);
+          await page.getByRole("button", { name: "Review earlier steps" }).click();
+          expect(await page.locator("progress").getAttribute("value")).toBe("1");
+          await page.getByRole("button", { name: "Error", exact: true }).click();
+          await page.locator('input[type="text"]').fill("Yoni");
+          expect(await page.getByRole("alert").count()).toBe(1);
+          await page.getByRole("button", { name: "Try again" }).click();
+          expect(await page.locator('input[type="text"]').inputValue()).toBe("Yoni");
+          await page.getByRole("button", { name: "Pending", exact: true }).click();
+          expect(await page.getByRole("button", { name: "Saving…" }).isDisabled()).toBe(true);
+          await page.getByRole("button", { name: "Disabled" }).click();
+          expect(await page.locator('input[type="text"]').isDisabled()).toBe(true);
+          await page.getByRole("button", { name: "Long input" }).click();
+          expect(await page.locator('input[type="text"]').inputValue()).toContain("very long fictional name");
+          await page.getByRole("button", { name: "Empty" }).click();
+          expect(await page.locator('input[type="text"]').inputValue()).toBe("");
+          await page.getByRole("button", { name: "Loading" }).click();
+          expect(await page.locator('[aria-busy="true"]').count()).toBe(1);
+          await page.getByRole("button", { name: "Default" }).click();
+          if (width === 390) {
+            const targets = await page.locator("button, input").evaluateAll((nodes) => nodes.map((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
+            expect(targets.every(({ width: w, height: h }) => w >= 44 && h >= 44)).toBe(true);
+          }
+          for (const lang of ["en", "he"] as const) {
+            await page.getByRole("button", { name: lang === "en" ? "English" : "עברית" }).click();
+            expect(await page.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
+            expect(await page.locator(".kb44-summary__text").evaluate((node) => getComputedStyle(node).direction)).toBe(lang === "he" ? "rtl" : "ltr");
+            for (const theme of ["light", "dark"] as const) {
+              await page.evaluate((next) => document.documentElement.dataset.theme = next, theme);
+              expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+              expect(await page.locator(".kb44-summary__progress").evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration))).toBeLessThan(0.001);
+              const capture = process.env.KB44_EVIDENCE_DIR;
+              if (capture) {
+                await mkdir(capture, { recursive: true });
+                await page.screenshot({ path: join(capture, `after-${width}-${lang}-${theme}.png`), fullPage: true });
+              }
             }
           }
+          await page.close();
         }
-        await page.close();
+      } finally {
+        await browser.close();
       }
     } finally {
-      await browser.close();
       server.stop();
     }
   }, 240_000);
 
-  test("hydrated OnboardingFlow: Back retains input, resume review locks during save, error keeps step", async () => {
+  if (fixture === "flow") test("hydrated OnboardingFlow: Back retains input, resume review locks during save, error keeps step", async () => {
     const scratch = join(process.cwd(), "work");
     await mkdir(scratch, { recursive: true });
     const directory = await mkdtemp(join(scratch, "kb44-flow-"));
@@ -256,38 +269,41 @@ createRoot(document.getElementById("root")!).render(<LocaleProvider><ThemeProvid
       if (path === "/flow.css") return new Response(css, { headers: { "content-type": "text/css" } });
       return new Response('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/flow.css"></head><body style="margin:0;background:var(--tp-ground)"><div id="root"></div><script>window.process={env:{NODE_ENV:"production",NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS:"0"}};</script><script type="module" src="/flow.js"></script></body></html>', { headers: { "content-type": "text/html" } });
     } });
-    const executable = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
-    if (!executable) { server.stop(); throw new Error("Chromium missing for KB-44 OnboardingFlow test"); }
-    const browser = await chromium.launch({ executablePath: executable, headless: true, args: ["--no-sandbox"] });
     try {
-      const page = await browser.newPage({ viewport: { width: 390, height: 900 }, reducedMotion: "reduce" });
-      await page.goto(server.url.href);
-      await page.locator("#s1-title").waitFor();
-      await page.getByRole("button", { name: "Continue" }).click();
-      await page.locator("#onboarding-name").fill("Dana");
-      await page.getByRole("button", { name: "Continue" }).click();
-      expect(await page.locator("#s3-title").count()).toBe(1);
-      expect(await page.evaluate(() => document.activeElement?.id)).toBe("s3-title");
-      await page.getByRole("button", { name: "Back" }).click();
-      expect(await page.locator("#onboarding-name").inputValue()).toBe("Dana");
-      await page.goto(`${server.url.href}?step=5`);
-      await page.locator('[data-component="OnboardingResumeNotice"]').waitFor();
-      const review = page.getByRole("button", { name: "Review earlier steps" });
-      await page.getByRole("button", { name: "Start using Tempo" }).click();
-      expect(await review.isDisabled()).toBe(true);
-      await review.evaluate((node: HTMLButtonElement) => node.click());
-      expect(await page.locator("#s5-title").count()).toBe(1);
-      expect(await page.evaluate(() => (window as unknown as { __kb44: { mutationArgs: unknown } }).__kb44.mutationArgs)).toEqual({ fullName: "Maya" });
-      await page.evaluate(() => (window as unknown as { __kb44: { reject: (error: Error) => void } }).__kb44.reject(new Error("network")));
-      await page.getByRole("alert").waitFor();
-      expect(await page.locator("#s5-title").count()).toBe(1);
-      expect(await review.isEnabled()).toBe(true);
-      await review.click();
-      expect(await page.locator("#s1-title").count()).toBe(1);
-      expect(await page.evaluate(() => document.activeElement?.id)).toBe("s1-title");
-      await page.close();
+      const executable = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome"].find(existsSync);
+      if (!executable) { throw new Error("Chromium missing for KB-44 OnboardingFlow test"); }
+      const browser = await chromium.launch({ executablePath: executable, headless: true, args: ["--no-sandbox"] });
+      try {
+        const page = await browser.newPage({ viewport: { width: 390, height: 900 }, reducedMotion: "reduce" });
+        await page.goto(server.url.href);
+        await page.locator("#s1-title").waitFor();
+        await page.getByRole("button", { name: "Continue" }).click();
+        await page.locator("#onboarding-name").fill("Dana");
+        await page.getByRole("button", { name: "Continue" }).click();
+        expect(await page.locator("#s3-title").count()).toBe(1);
+        expect(await page.evaluate(() => document.activeElement?.id)).toBe("s3-title");
+        await page.getByRole("button", { name: "Back" }).click();
+        expect(await page.locator("#onboarding-name").inputValue()).toBe("Dana");
+        await page.goto(`${server.url.href}?step=5`);
+        await page.locator('[data-component="OnboardingResumeNotice"]').waitFor();
+        const review = page.getByRole("button", { name: "Review earlier steps" });
+        await page.getByRole("button", { name: "Start using Tempo" }).click();
+        expect(await review.isDisabled()).toBe(true);
+        await review.evaluate((node: HTMLButtonElement) => node.click());
+        expect(await page.locator("#s5-title").count()).toBe(1);
+        expect(await page.evaluate(() => (window as unknown as { __kb44: { mutationArgs: unknown } }).__kb44.mutationArgs)).toEqual({ fullName: "Maya" });
+        await page.evaluate(() => (window as unknown as { __kb44: { reject: (error: Error) => void } }).__kb44.reject(new Error("network")));
+        await page.getByRole("alert").waitFor();
+        expect(await page.locator("#s5-title").count()).toBe(1);
+        expect(await review.isEnabled()).toBe(true);
+        await review.click();
+        expect(await page.locator("#s1-title").count()).toBe(1);
+        expect(await page.evaluate(() => document.activeElement?.id)).toBe("s1-title");
+        await page.close();
+      } finally {
+        await browser.close();
+      }
     } finally {
-      await browser.close();
       server.stop();
       await rm(directory, { recursive: true, force: true });
     }
