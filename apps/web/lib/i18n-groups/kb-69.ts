@@ -61,7 +61,7 @@ export const he: Record<keyof typeof en, string> = {
   "gallery.title": "מצבי המתנה לאישור",
   "gallery.default": "ממתינים",
   "gallery.revoked": "גישה מושהית",
-  "gallery.pending": "שם נשמר",
+  "gallery.pending": "השם בשמירה",
   "gallery.saved": "השם נשמר",
   "gallery.nameError": "שגיאת שם",
   "gallery.signOutError": "שגיאת התנתקות",

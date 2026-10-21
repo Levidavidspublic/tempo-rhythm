@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test as unitTest } from "bun:test";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -8,6 +8,9 @@ import { en, he, kb69t } from "../../apps/web/lib/i18n-groups/kb-69";
 const root = process.cwd();
 const web = join(root, "apps/web");
 const temp = join(root, "work/kb69-fixture");
+const fixtureChild = process.env.KB69_FIXTURE_CHILD === "1";
+const resultMarker = "KB69_FIXTURE_RESULTS=";
+const caseResults: Record<string, { pass: boolean }> = {};
 setDefaultTimeout(60_000);
 let browser: Browser;
 let server: ReturnType<typeof Bun.serve>;
@@ -115,10 +118,39 @@ async function pageFor(mode: "screen" | "gallery" | "before" = "screen", lang: "
 const state = (page: Page) => page.evaluate(() => (window as any).__kb69.state);
 const settled = (page: Page, ok: boolean) => page.evaluate(value => (window as any).__kb69.settleSave(value), ok);
 
+// Bun bundler plugins and servers must not share the full suite's process-wide mocks.
+// Keep each original test timeout in the child; no aggregate timeout replaces them.
+if (!fixtureChild) {
+  const child = Bun.spawn([process.execPath, "test", import.meta.path], {
+    cwd: root, env: { ...process.env, KB69_FIXTURE_CHILD: "1" }, stdout: "pipe", stderr: "pipe",
+  });
+  const [out, err, code] = await Promise.all([
+    new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+  ]);
+  if (code !== 0) throw new Error(`KB-69 isolated fixture exited ${code}:\n${err.slice(-10000)}\n${out.slice(-2000)}`);
+  const record = out.split("\n").find(line => line.startsWith(resultMarker));
+  if (!record) throw new Error("KB-69 isolated fixture exited without its assertion results");
+  Object.assign(caseResults, JSON.parse(record.slice(resultMarker.length)));
+  console.info(`KB-69 isolated fixture exit 0: ${Object.keys(caseResults).length} completed cases`);
+}
+
+function test(name: string, run: () => unknown | Promise<unknown>, timeout?: number) {
+  unitTest(name, async () => {
+    if (fixtureChild) {
+      await run();
+      caseResults[name] = { pass: true };
+    } else expect(caseResults[name]).toEqual({ pass: true });
+  }, timeout);
+}
+
 // The actual mounted component uses fictional query/mutation/auth stubs; no live account is touched.
 describe.serial("KB-69 approval waiting", () => {
-  beforeAll(buildFixture, 120_000);
-  afterAll(async () => { await browser?.close(); server?.stop(true); });
+  beforeAll(fixtureChild ? buildFixture : () => {}, 120_000);
+  afterAll(async () => {
+    if (!fixtureChild) return;
+    await browser?.close(); server?.stop(true);
+    console.info(resultMarker + JSON.stringify(caseResults));
+  });
 
   test("en/he dictionary keys match and interpolation keeps the limit", () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(he).sort());
@@ -273,6 +305,24 @@ describe.serial("KB-69 approval waiting", () => {
       await page.close();
     }
   });
+  test("Hebrew gallery distinguishes saving from saved through exact accessible names", async () => {
+    const page = await pageFor("gallery", "he");
+    try {
+      await page.getByRole("button", { name: "עברית", exact: true }).click();
+      const pending = page.getByRole("button", { name: "השם בשמירה", exact: true });
+      const saved = page.getByRole("button", { name: "השם נשמר", exact: true });
+      await pwExpect(pending).toHaveCount(1);
+      await pwExpect(saved).toHaveCount(1);
+      await pending.click();
+      await pwExpect(pending).toHaveAttribute("aria-pressed", "true");
+      await pwExpect(saved).toHaveAttribute("aria-pressed", "false");
+      await pwExpect(page.locator("[data-component=WaitingNameFeedback]")).toHaveText(he["name.saving"]);
+      await saved.click();
+      await pwExpect(saved).toHaveAttribute("aria-pressed", "true");
+      await pwExpect(pending).toHaveAttribute("aria-pressed", "false");
+      await pwExpect(page.locator("[data-component=WaitingNameFeedback]")).toHaveText(he["name.saved"]);
+    } finally { await page.close(); }
+  });
   test("browser evidence covers current and opt-in source-derived before, widths, locales and themes", async () => {
     const shots = join(root, "work/kb69-captures");
     await mkdir(shots, { recursive: true });
@@ -285,6 +335,18 @@ describe.serial("KB-69 approval waiting", () => {
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await page.screenshot({ path: join(shots, `${mode}-${width}-${lang}-${theme}.png`), fullPage: true });
         await page.close();
+      }
+      if (lang === "he") {
+        const page = await pageFor("gallery", lang, width);
+        try {
+          await page.getByRole("button", { name: "עברית", exact: true }).click();
+          await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+          for (const scenario of ["pending", "saved"] as const) {
+            await page.getByRole("button", { name: he[`gallery.${scenario}`], exact: true }).click();
+            await pwExpect(page.locator("[data-component=WaitingNameFeedback]")).toHaveText(he[scenario === "pending" ? "name.saving" : "name.saved"]);
+            await page.screenshot({ path: join(shots, `gallery-${scenario}-${width}-he-${theme}.png`), fullPage: true });
+          }
+        } finally { await page.close(); }
       }
     }
   }, 300_000);
