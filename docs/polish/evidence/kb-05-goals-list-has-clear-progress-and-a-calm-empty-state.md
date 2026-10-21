@@ -103,3 +103,9 @@ Full test failure tail:
 Ran 3504 tests across 213 files. [684.70s]
 error: script "test" exited with code 1
 ```
+
+## Final shared-helper integration
+
+PASS — shared source `2d99c84` was merged normally into this branch at `cbda09f`. The combined command `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-05.test.tsx` exited 0 with **31 passed, 0 failed, 247 assertions in 23.56 seconds**: all 18 shared cases and all 13 KB-05 cases. No KB-05 source or assertion changed after `87aa138`.
+
+This focused proof uses the shared correction for missing OS exit delivery, receipt framing and signal ownership. The complete mandatory sequence above used earlier shared source `4d30965`; its failures remain recorded and are not claimed as checks of the newer helper. Current-head hosted CI and CodeRabbit review remain required before merge.
