@@ -89,3 +89,9 @@ Last 20 lines of the failed local E2E run:
 ```
 
 Real milestone rows and movement controls remain blocked: the existing goals record has no milestone field or goal-to-task/project relation. This presentation-only ticket cannot add that contract. The Hebrew strings are machine-drafted for Amit’s native review. Device screen-reader results and signed-in backend behavior remain UNKNOWN.
+
+## AWAY — repair draft, validation pending
+
+Exported GoalProgressSummary, retained fractional stored progress with finite/bounds handling, and exposed loading status semantics. Added fractional/nonfinite/partial-completion/null-description regressions. Final focused: 19 pass, 0 fail, 82 assertions. Final lint/typecheck and four scans pass; frozen install UNKNOWN after resolver timeout. Prior setup failures are retained in local logs. Root repaired ignored dependency links/cache without tracked configuration changes. Existing screenshots still represent the unchanged integer-progress appearance.
+
+The lead owns the remaining full unit suite, scan confirmation, local E2E and build commands. They are queued separately under the shared resource lock; no passing result is claimed for an unfinished command. This repair may be pushed as a draft for hosted CI, but is not yet eligible for integration. No assertions, check configuration, timeout or skip conditions were weakened. The lead will append actual outcomes and failure tails before the merge gate.

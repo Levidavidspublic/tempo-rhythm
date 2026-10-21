@@ -262,8 +262,8 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
   );
 }
 
-function GoalProgressSummary({ progress, lang }: { progress: number; lang: "en" | "he" }) {
-  const percent = Number.isFinite(progress) ? Math.max(0, Math.min(100, Math.round(progress))) : 0;
+export function GoalProgressSummary({ progress, lang }: { progress: number; lang: "en" | "he" }) {
+  const percent = Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0;
   return (
     <section className="tp-section kb06-goal__progress" aria-labelledby="kb06-progress-h">
       <div className="tp-section__head">
@@ -315,7 +315,7 @@ export function GoalDetailState({
   const title = tKb06(lang, `kb06.${kind}`);
   const Heading = asSection ? "h2" : "h1";
   return (
-    <section className="kb06-goal__state" data-kind={kind} aria-live={kind === "loading" ? "polite" : undefined} aria-busy={kind === "loading" ? true : undefined}>
+    <section className="kb06-goal__state" data-kind={kind} role={kind === "loading" ? "status" : undefined} aria-busy={kind === "loading" ? true : undefined}>
       <Heading>{title}</Heading>
       {kind === "unavailable" ? <p>{tKb06(lang, "kb06.unavailableHelp")}</p> : null}
       {kind === "error" && onRetry ? (
