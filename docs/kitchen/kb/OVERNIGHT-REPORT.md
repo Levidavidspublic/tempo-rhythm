@@ -87,7 +87,7 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-06 | 1143 | 1151 | PR open — Final shared + own: 36 pass / 1 fail, 133 assertions; own 19 pass, shared cancellation fails. Earlier full incomplete 1556/1/3 todo,exit 143; E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
-| KB-09 | 1145 | 1150 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
+| KB-09 | 1145 | 1150 | PR open — logical-title and literal-interpolation fixes pass 20 child / 22 parent cases. Full 3,515 pass / 0 fail / 3 todo; E2E 27 pass / 1 fail / 89 skip (task-view navigation). Install UNKNOWN; lint/typecheck/scans/build pass. Independent of shared harness; E2E blocks merge. |
 | KB-10 | 1155 | 1159 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-44 | 1154 | 1158 | PR open — authorized scoped pass or remaining-ticket audit queued; current validation and all merge gates required. |
 | KB-45 | 1156 | 1163 | PR open — Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition remains unproved. Shared #1203 stuck; current guards/review still required. |
