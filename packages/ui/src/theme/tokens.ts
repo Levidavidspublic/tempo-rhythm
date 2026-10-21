@@ -43,6 +43,61 @@ export const tempoColorsDark = {
   ring: "#e8a87c",
 } as const;
 
+/**
+ * Tempo Flow v3 palette (docs/design/v3/tokens.css `--tp-*`), for surfaces without CSS custom
+ * properties (mobile). Light is the default; dark mirrors `[data-theme="dark"]`. Values are the
+ * same as the web's, so both apps read the same.
+ */
+export const tempoV3Colors = {
+  ground: "#F3EEE4",
+  paper: "#FBF9F4",
+  sunken: "#EAE3D6",
+  hover: "#EDE6DA",
+  ink: "#1B1916",
+  inkMuted: "#57514A",
+  inkSubtle: "#6B645C",
+  line: "#D9D0C1",
+  lineStrong: "#B9AE9C",
+  lineControl: "#877C6B",
+  accent: "#A3461F",
+  onAccent: "#FFFFFF",
+  accentWash: "#F3E2D6",
+  done: "#3B6948",
+  doneWash: "#E3EBDF",
+  info: "#36628C",
+  infoWash: "#E0E7EE",
+  caution: "#7E5A0C",
+  cautionWash: "#F1E6CC",
+  danger: "#9E3B27",
+  dangerWash: "#F3DFD7",
+  glassSolid: "#FBF9F4",
+} as const;
+
+export const tempoV3ColorsDark = {
+  ground: "#161412",
+  paper: "#201D1A",
+  sunken: "#110F0D",
+  hover: "#2A2622",
+  ink: "#F2ECE2",
+  inkMuted: "#B5AC9F",
+  inkSubtle: "#9E9588",
+  line: "#38332D",
+  lineStrong: "#5C554C",
+  lineControl: "#7F7669",
+  accent: "#EE9468",
+  onAccent: "#1B1916",
+  accentWash: "#3A2A20",
+  done: "#8FC09C",
+  doneWash: "#1F2D23",
+  info: "#94B8DA",
+  infoWash: "#1C2632",
+  caution: "#DDB45E",
+  cautionWash: "#30281A",
+  danger: "#EE9A86",
+  dangerWash: "#35211C",
+  glassSolid: "#24211D",
+} as const satisfies Record<keyof typeof tempoV3Colors, string>;
+
 export const tempoFonts = {
   serif: "Newsreader",
   sans: "Inter",

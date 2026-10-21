@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempo v3 · Screen board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tempo.css">
+<script src="tempo.js"></script>
+<style>
+  /* layout only — index.html (review board of every screen, not product UI) */
+  .board { max-width: 1440px; margin-inline: auto; padding: var(--tp-space-10) var(--tp-space-6) var(--tp-space-20); display: grid; gap: var(--tp-space-12); }
+  .board-head { display: grid; gap: var(--tp-space-3); }
+  .board-head h1 { font-size: var(--tp-text-4xl); letter-spacing: -0.015em; }
+  .board-head p { max-width: var(--tp-measure); color: var(--tp-ink-muted); }
+  .board-links { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+  .board-controls { position: sticky; inset-block-start: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: var(--tp-space-4); align-items: center; padding: var(--tp-space-3) var(--tp-space-4); border-radius: var(--tp-radius-lg); }
+  .board-controls fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--tp-space-2); align-items: center; }
+  .board-controls legend { float: left; margin-inline-end: var(--tp-space-2); font-size: var(--tp-text-sm); font-weight: 600; color: var(--tp-ink-muted); }
+  .board-toggle { display: inline-flex; align-items: center; gap: var(--tp-space-2); min-height: var(--tp-touch); padding: 0 var(--tp-space-3); border: 1px solid var(--tp-line-control); border-radius: var(--tp-radius-pill); background: var(--tp-paper); font-size: var(--tp-text-sm); cursor: pointer; }
+  .board-toggle input { width: 18px; height: 18px; accent-color: var(--tp-ink); }
+  .board-nav { display: flex; flex-wrap: wrap; gap: var(--tp-space-2) var(--tp-space-4); font-size: var(--tp-text-sm); }
+  .board-groups { display: grid; gap: var(--tp-space-12); }
+  .board-group { display: grid; gap: var(--tp-space-5); scroll-margin-block-start: calc(var(--tp-space-20) * 1.5); }
+  .board-group__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--tp-space-3); }
+  .board-group__head h2 { font-size: var(--tp-text-2xl); }
+  .board-group__head span { color: var(--tp-ink-muted); font-size: var(--tp-text-sm); }
+  .board-grid { display: grid; gap: var(--tp-space-5); grid-template-columns: repeat(auto-fill, minmax(var(--card-min, 240px), 1fr)); align-items: start; }
+  .board[data-w="1280"] .board-grid--web { --card-min: 380px; }
+  .board-grid--mobile { --card-min: 260px; }
+  .board-card { display: grid; gap: var(--tp-space-2); margin: 0; padding: var(--tp-space-3); background: var(--tp-paper); border: 1px solid var(--tp-line); border-radius: var(--tp-radius-lg); min-width: 0; }
+  .board-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--tp-space-2); }
+  .board-card__name { font-weight: 600; }
+  .board-card__route { font-size: var(--tp-text-xs); color: var(--tp-ink-muted); overflow-wrap: anywhere; }
+  .board-card__view { overflow: hidden; border-radius: var(--tp-radius-md); border: 1px solid var(--tp-line-strong); background: var(--tp-ground); }
+  .board-card__view iframe { display: block; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .board-note { color: var(--tp-ink-muted); font-size: var(--tp-text-sm); max-width: var(--tp-measure); }
+  @media (max-width: 767px) { .board { padding-inline: var(--tp-space-4); } .board-head h1 { font-size: var(--tp-text-3xl); } }
+</style>
+</head>
+<body>
+<main class="board" id="board" data-w="1280">
+  <header class="board-head">
+    <span class="tp-eyebrow">Tempo v3 · Stage 2 · Every screen</span>
+    <h1>Screen board</h1>
+    <p>Every web and mobile screen, grouped by area. Choose a width, a theme and a language direction. Each card shows the screen name, its target route, an Open link to the full screen and a live preview that loads as it scrolls into view. Mobile screens always preview at 390 px.</p>
+    <div class="board-links">
+      <a class="tp-btn tp-btn--secondary tp-btn--sm" href="hero-board.html">Open the Stage 1 hero board</a>
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="README.md">README</a>
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="screen-map.md">Screen map</a>
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="components.md">Components</a>
+      <a class="tp-btn tp-btn--ghost tp-btn--sm" href="DESIGN.md">Design system</a>
+    </div>
+  </header>
+
+  <div class="board-controls tp-glass" role="group" aria-label="Preview options">
+    <fieldset><legend>Width</legend>
+      <label class="board-toggle"><input type="radio" name="w" value="390"> 390</label>
+      <label class="board-toggle"><input type="radio" name="w" value="1280" checked> 1280</label>
+    </fieldset>
+    <fieldset><legend>Theme</legend>
+      <label class="board-toggle"><input type="radio" name="theme" value="light" checked> Light</label>
+      <label class="board-toggle"><input type="radio" name="theme" value="dark"> Dark</label>
+    </fieldset>
+    <fieldset><legend>Direction</legend>
+      <label class="board-toggle"><input type="radio" name="lang" value="en" checked> English · LTR</label>
+      <label class="board-toggle"><input type="radio" name="lang" value="he"> Hebrew · RTL</label>
+    </fieldset>
+  </div>
+
+  <nav class="board-nav" aria-label="Groups" id="groupNav"></nav>
+
+  <div id="groups" class="board-groups"></div>
+
+  <p class="board-note">Previews are scaled, non-interactive frames of the real screen files. Use Open to click through a screen at full size. Add <code>&amp;state=empty|loading|error|offline</code> to any Open link to see the other states.</p>
+</main>
+
+<script>
+(function () {
+  /* The board chrome is always English, left to right, whatever tempo.js read from storage. */
+  var root = document.documentElement;
+  root.lang = "en"; root.dir = "ltr";
+
+  var GROUPS = [
+    { id: "flow", title: "Flow", dir: "web", items: [
+      ["today", "Today", "/today"],
+      ["daily-note", "Daily Note (focus)", "/daily-note"],
+      ["brain-dump", "Brain Dump", "/brain-dump"],
+      ["plan", "Planning (day / week / month)", "/plan"]
+    ]},
+    { id: "coach", title: "Coach", dir: "web", items: [
+      ["coach", "Coach panel (over Today)", "CoachPanel in /today"],
+      ["coach-thread", "Coach conversation", "/coach/[threadId]"],
+      ["coach-history", "Chat history", "/history"],
+      ["voice-call", "Live voice call (over Today)", "VoiceCall in /today"]
+    ]},
+    { id: "pages", title: "Pages & blocks", dir: "web", items: [
+      ["page-editor", "Page editor", "/notes/[id]"],
+      ["page-blocks", "Page with every block", "/notes/[id] (/p/[pageId] redirects)"],
+      ["weekly-page", "Weekly page", "/notes/[id] (weekly)"],
+      ["new-page", "New page", "/notes/new"],
+      ["templates", "Templates", "/templates"],
+      ["template-builder", "Template · builder", "/templates/builder"],
+      ["template-run", "Template · run", "/templates/run/[id]"],
+      ["template-editor", "Template · editor (legacy)", "/templates/editor/[id]"],
+      ["template-sketch", "Template · sketch", "/templates/sketch"]
+    ]},
+    { id: "library", title: "Library", dir: "web", items: [
+      ["tasks", "Tasks", "/tasks"],
+      ["task-sheet", "Task sheet", "?task=<id> on any route"],
+      ["notes", "Notes", "/notes"],
+      ["journal", "Journal", "/journal"],
+      ["calendar", "Calendar", "/calendar"],
+      ["habits", "Habits", "/habits"],
+      ["habit-detail", "Habit detail", "/habits/[id]"],
+      ["routines", "Routines", "/routines"],
+      ["routine-detail", "Routine · guided", "/routines/[id]"],
+      ["goals", "Goals", "/goals"],
+      ["goal-detail", "Goal detail", "/goals/[id]"],
+      ["goals-progress", "Goals · chart", "/goals/progress"],
+      ["projects", "Projects", "/projects"],
+      ["project-detail", "Project page", "/projects/[id]"],
+      ["project-kanban", "Project · kanban", "/projects/[id]/kanban"]
+    ]},
+    { id: "you", title: "You", dir: "web", items: [
+      ["insights", "Insights", "/insights"],
+      ["activity", "Recent activity", "/activity"],
+      ["search", "Search", "/search"],
+      ["command", "Command bar", "/command"],
+      ["notifications", "Notifications", "/notifications"],
+      ["ask-founder", "Ask the founder", "/ask-founder"],
+      ["empty-states", "Empty states (reference)", "/empty-states"]
+    ]},
+    { id: "memory", title: "Memory & modules", dir: "web", items: [
+      ["memory", "What Tempo remembers", "/memory"],
+      ["memory-import", "Import memory", "/memory/import"],
+      ["modules", "Modules", "/modules"],
+      ["module-preview", "Module preview", "/modules/preview/[draftId]"],
+      ["nags", "Nags", "/nags"]
+    ]},
+    { id: "settings", title: "Settings", dir: "web", items: [
+      ["settings-profile", "Settings · Profile", "/settings/profile"],
+      ["settings-prefs", "Settings · Preferences", "/settings/preferences"],
+      ["settings-privacy", "Settings · Privacy", "/settings/privacy"],
+      ["settings-integrations", "Settings · Integrations", "/settings/integrations"],
+      ["billing", "Plan and billing", "/settings/billing"],
+      ["trial-end", "Trial ending", "/billing/trial-end"]
+    ]},
+    { id: "public", title: "Public", dir: "web", items: [
+      ["landing", "Landing", "/"],
+      ["about", "About", "/about"],
+      ["changelog", "Changelog", "/changelog"],
+      ["sign-in", "Sign in", "/sign-in"],
+      ["sign-up", "Sign up (ask to join)", "/sign-up"],
+      ["link-sent", "Link sent", "/sign-in/sent"],
+      ["approval-pending", "Approval pending", "/sign-up/pending"],
+      ["onboarding", "Onboarding (web)", "/onboarding"]
+    ]},
+    { id: "mobile", title: "Mobile", dir: "mobile", items: [
+      ["today", "Today (tab home)", "(tabs)/today"],
+      ["capture", "Capture composer", "capture"],
+      ["coach", "Coach", "(tabs)/coach"],
+      ["voice-call", "Voice call", "voice-call"],
+      ["tasks", "Tasks", "(tabs)/tasks"],
+      ["notes", "Notes", "(tabs)/notes"],
+      ["journal", "Journal", "journal"],
+      ["habits", "Habits", "habits"],
+      ["calendar", "Calendar", "calendar"],
+      ["routines", "Routines", "routines"],
+      ["templates", "Templates", "templates"],
+      ["settings", "Settings", "settings"],
+      ["onboarding", "Onboarding", "(auth)/onboarding"]
+    ]}
+  ];
+
+  /* Preview sizes. Mobile files draw their own handset frame, so the viewport is the frame plus its stage padding. */
+  var SIZES = {
+    "390":    { w: 390,  h: 844, s: 0.55 },
+    "1280":   { w: 1280, h: 800, s: 0.28 },
+    "mobile": { w: 480,  h: 940, s: 0.5 }
+  };
+
+  var opts = { w: "1280", theme: "light", lang: "en" };
+  var board = document.getElementById("board");
+  var host = document.getElementById("groups");
+  var nav = document.getElementById("groupNav");
+  var frames = [];
+
+  function src(f) { return "screens/" + f.dir + "/" + f.file + ".html?theme=" + opts.theme + "&lang=" + opts.lang; }
+  function sizeFor(f) { return f.dir === "mobile" ? SIZES.mobile : SIZES[opts.w]; }
+
+  function applySize(f) {
+    var sz = sizeFor(f);
+    f.view.style.width = Math.round(sz.w * sz.s) + "px";
+    f.view.style.height = Math.round(sz.h * sz.s) + "px";
+    f.iframe.style.width = sz.w + "px"; f.iframe.style.height = sz.h + "px";
+    f.iframe.width = sz.w; f.iframe.height = sz.h;
+    f.iframe.style.transform = "scale(" + sz.s + ")";
+  }
+
+  GROUPS.forEach(function (g) {
+    var count = g.items.length;
+    var a = document.createElement("a"); a.href = "#" + g.id; a.textContent = g.title + " (" + count + ")"; nav.appendChild(a);
+    var sec = document.createElement("section"); sec.className = "board-group"; sec.id = g.id; sec.setAttribute("aria-labelledby", g.id + "-h");
+    var head = document.createElement("div"); head.className = "board-group__head";
+    var h2 = document.createElement("h2"); h2.id = g.id + "-h"; h2.textContent = g.title;
+    var meta = document.createElement("span"); meta.className = "tp-num"; meta.textContent = count + " screens · " + (g.dir === "mobile" ? "screens/mobile/ · 390 px only" : "screens/web/");
+    head.appendChild(h2); head.appendChild(meta); sec.appendChild(head);
+    var grid = document.createElement("div"); grid.className = "board-grid board-grid--" + g.dir;
+    g.items.forEach(function (it) {
+      var f = { dir: g.dir, file: it[0], name: it[1], route: it[2] };
+      var card = document.createElement("figure"); card.className = "board-card";
+      var cap = document.createElement("figcaption"); cap.style.display = "grid"; cap.style.gap = "var(--tp-space-1)";
+      var top = document.createElement("div"); top.className = "board-card__head";
+      var nm = document.createElement("span"); nm.className = "board-card__name"; nm.textContent = f.name;
+      var open = document.createElement("a"); open.target = "_blank"; open.rel = "noopener"; open.textContent = "Open";
+      open.setAttribute("aria-label", "Open " + f.name + (g.dir === "mobile" ? " (mobile)" : ""));
+      top.appendChild(nm); top.appendChild(open);
+      var rt = document.createElement("code"); rt.className = "board-card__route"; rt.textContent = f.route + " · " + f.dir + "/" + f.file + ".html";
+      cap.appendChild(top); cap.appendChild(rt);
+      var view = document.createElement("div"); view.className = "board-card__view";
+      var fr = document.createElement("iframe"); fr.loading = "lazy"; fr.tabIndex = -1;
+      fr.title = "Preview: " + f.name + (g.dir === "mobile" ? " (mobile)" : "");
+      view.appendChild(fr);
+      card.appendChild(cap); card.appendChild(view); grid.appendChild(card);
+      f.open = open; f.view = view; f.iframe = fr; f.loaded = false;
+      frames.push(f);
+    });
+    sec.appendChild(grid); host.appendChild(sec);
+  });
+
+  function refresh() {
+    board.dataset.w = opts.w;
+    root.setAttribute("data-theme", opts.theme);
+    frames.forEach(function (f) {
+      var s = src(f);
+      f.open.href = s;
+      applySize(f);
+      if (f.loaded) f.iframe.src = s; else f.iframe.dataset.src = s;
+    });
+  }
+
+  /* Lazy load: a frame gets its src only when it nears the viewport. */
+  var io = "IntersectionObserver" in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var f = frames.filter(function (x) { return x.view === e.target; })[0];
+      if (f && !f.loaded) { f.loaded = true; f.iframe.src = f.iframe.dataset.src; io.unobserve(e.target); }
+    });
+  }, { rootMargin: "400px 0px" }) : null;
+
+  refresh();
+  frames.forEach(function (f) {
+    if (io) io.observe(f.view); else { f.loaded = true; f.iframe.src = f.iframe.dataset.src; }
+  });
+
+  document.addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.name === "w" || t.name === "theme" || t.name === "lang") { opts[t.name] = t.value; refresh(); }
+  });
+})();
+</script>
+</body>
+</html>

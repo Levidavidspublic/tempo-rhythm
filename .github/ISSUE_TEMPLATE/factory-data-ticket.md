@@ -1,6 +1,6 @@
 ---
 name: Factory data ticket
-about: The ONE ticket per batch that owns convex/ (schema, functions, generated types). See AGENTS.md section 8.
+about: Ticket 0 of a loop - the ONE ticket that owns convex/ (schema, indexes, queries/mutations/actions, generated types) for every component in the loop. See factory/LOOP.md.
 title: "[TEMPO-Bxx-01] <goal>"
 labels: ["ticket:data"]
 ---
@@ -8,7 +8,8 @@ labels: ["ticket:data"]
 ticket: TEMPO-Bxx-01
 batch: Bxx
 type: data
-lane: claude             # data tickets are always claude
+lane: claude             # ticket 0 (data) is always claude
+browser_test: false
 scope:
   - convex/
 depends_on: []

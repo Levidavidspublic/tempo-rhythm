@@ -1,6 +1,7 @@
 name: factory-weekly-report
 
-# Phase 04 Step 9. Once a week (Sunday 06:00 UTC = 09:00 Israel summer time / 08:00 winter) one
+# Phase 04 Step 9. Once a week (Sunday 07:00 UTC = 10:00 Israel summer time / 09:00 winter; moved from 06:00 UTC on
+# 6 Oct 2026 so it never fires inside the 20:00-09:00 monitoring-off window, factory/LOOP.md "Quiet hours") one
 # issue: merged tickets, blocked tickets, attempts used, Actions minutes, Copilot premium requests
 # if the API allows it (else UNKNOWN); Cursor and Bugbot cost UNKNOWN. Creates an issue with
 # github.token (an issue, not a PR or merge). Script: scripts/factory/weekly-report.mjs.
@@ -8,7 +9,7 @@ name: factory-weekly-report
 
 on:
   schedule:
-    - cron: "0 6 * * 0"
+    - cron: "0 7 * * 0"
   workflow_dispatch:
     inputs:
       force:

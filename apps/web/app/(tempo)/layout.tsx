@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ApprovalGate } from "@/components/approval/ApprovalGate";
 import { TempoShell } from "@/components/tempo/TempoShell";
 
 export default function TempoGroupLayout({
@@ -6,5 +7,9 @@ export default function TempoGroupLayout({
 }: {
   children: ReactNode;
 }) {
-  return <TempoShell>{children}</TempoShell>;
+  return (
+    <ApprovalGate>
+      <TempoShell>{children}</TempoShell>
+    </ApprovalGate>
+  );
 }

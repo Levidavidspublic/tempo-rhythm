@@ -1,0 +1,129 @@
+name: factory-batch
+
+# Batch loop (2026-10-06, factory/LOOP.md): ONE Cursor Bugbot review per loop instead of one per PR.
+# Script: scripts/factory/batch-loop.mjs (read its header). Actions:
+#   plan     read-only readiness of the loop's component PRs
+#   build    create batch/<loop-id> from integration; retarget each CI-green component PR to it and merge its head
+#   open     open ONE PR batch/<loop-id> -> integration ("Closes #N" for every ticket)
+#   review   ONE "@cursor review" on the batch PR (skipped when Bugbot already ran / runs / was asked)
+#   run      build -> open -> review
+#   status   CI + Bugbot gate; 3 fix rounds with findings left -> blocked:amit
+#   enqueue  CI green + Bugbot clean -> GraphQL enqueuePullRequest (merge queue, squash)
+#   finalize (also automatic when a batch/* PR merges) comment "landed via #B" on each component PR
+# Bugbot fix loop: factory-review-fix (Bugbot review on a batch/* head) -> factory-lane-claude target_branch.
+#
+# Token (R15): every write except finalize needs a USER token, secret FACTORY_BATCH_TOKEN (Division6066). PRs
+# opened with GITHUB_TOKEN start no CI and Bugbot can't review them. Without the secret, write actions stop
+# PARKED and the same script runs from a person's shell:
+#   GH_TOKEN=<Division6066 token> GITHUB_REPOSITORY=Levidavidspublic/tempo-rhythm \
+#     node scripts/factory/batch-loop.mjs run --loop <id>
+# finalize only comments/labels, so it uses github.token.
+# Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem build/run never START a new loop (batch branch missing
+# -> notice, green). In-flight loops, open/review/status/enqueue and merge/finalize are not gated (batch-loop.mjs).
+
+on:
+  workflow_dispatch:
+    inputs:
+      loop_id:
+        description: Loop id (batch branch = batch/<loop_id>; also matches ticket front-matter loop:/batch:)
+        required: true
+        type: string
+      action:
+        description: What to do
+        type: choice
+        options: [plan, build, open, review, run, status, enqueue, finalize]
+        default: plan
+      prs:
+        description: Optional comma list of PR numbers (else every open PR whose ticket has loop/batch = loop_id)
+        required: false
+        type: string
+        default: ""
+      wait_auto:
+        description: review - seconds to wait for an automatic Bugbot run before posting "@cursor review"
+        required: false
+        type: string
+        default: "180"
+      dry_run:
+        description: Print what would happen; change nothing
+        type: boolean
+        default: false
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off tests only)
+        type: boolean
+        default: false
+  pull_request:
+    types: [closed]
+    branches: [integration]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: read
+  statuses: read
+
+concurrency:
+  group: factory-batch-${{ inputs.loop_id || github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
+jobs:
+  batch:
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+        ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true || inputs.action == 'plan' || inputs.action == 'status'))
+      || (github.event_name == 'pull_request' && github.event.pull_request.merged == true &&
+        startsWith(github.event.pull_request.head.ref, 'batch/') &&
+        github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: force=true only from a person
+        if: github.event_name == 'workflow_dispatch' && inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: integration
+          sparse-checkout: scripts/factory
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Resolve action, loop and token
+        id: r
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ inputs.action }}
+          LOOP: ${{ inputs.loop_id }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HAS_USER_TOKEN: ${{ secrets.FACTORY_BATCH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then ACTION=finalize; LOOP="${HEAD_REF#batch/}"; fi
+          case "$LOOP" in (*[!A-Za-z0-9._-]*|"") echo "::error::bad loop id '$LOOP'"; exit 1;; esac
+          kind=github
+          case "$ACTION" in
+            plan|status|finalize) ;;
+            *) if [ "$HAS_USER_TOKEN" != "true" ]; then
+                 echo "::error::PARKED: secret FACTORY_BATCH_TOKEN (Division6066 user token) is not set; '$ACTION' needs it (R15). Run scripts/factory/batch-loop.mjs from a person's shell instead (see header)."
+                 exit 1
+               fi; kind=user;;
+          esac
+          { echo "action=$ACTION"; echo "loop=$LOOP"; echo "kind=$kind"; } >> "$GITHUB_OUTPUT"
+      - name: batch-loop
+        env:
+          GH_TOKEN: ${{ steps.r.outputs.kind == 'user' && secrets.FACTORY_BATCH_TOKEN || github.token }}
+          ACTION: ${{ steps.r.outputs.action }}
+          LOOP: ${{ steps.r.outputs.loop }}
+          PRS: ${{ inputs.prs }}
+          WAIT_AUTO: ${{ inputs.wait_auto || '0' }}
+          DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
+          FACTORY_QUIET_START: ${{ vars.FACTORY_QUIET_START }}
+          FACTORY_QUIET_END: ${{ vars.FACTORY_QUIET_END }}
+          FACTORY_QUIET_HOURS: ${{ vars.FACTORY_QUIET_HOURS }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ -n "${PRS:-}" ]; then extra+=(--prs "$PRS"); fi
+          node scripts/factory/batch-loop.mjs "$ACTION" --loop "$LOOP" --wait-auto "$WAIT_AUTO" "${extra[@]}" $DRY

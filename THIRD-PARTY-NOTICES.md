@@ -18,12 +18,66 @@ section here. Add the entry in the same PR that adds the dependency.
 
 ---
 
+### @ai-sdk/provider-utils
+
+- Version: 3.0.14
+- License: Apache-2.0
+- Source: https://github.com/vercel/ai
+- Used by: package.json
+
 ### @auth/core
 
 - Version: 0.37.4
 - License: ISC
 - Source: https://github.com/nextauthjs/next-auth
 - Used by: package.json (convex/auth.ts Resend magic-link provider)
+
+### @codemirror/commands
+
+- Version: 6.11.1
+- License: MIT
+- Source: https://github.com/codemirror/commands
+- Used by: apps/web/package.json
+- Notes: Undo history and the default key bindings for the v3 page editor.
+
+### @codemirror/lang-markdown
+
+- Version: 6.5.2
+- License: MIT
+- Source: https://github.com/codemirror/lang-markdown
+- Used by: apps/web/package.json
+- Notes: Markdown (CommonMark + GFM) parsing for the live preview. Pulls in @codemirror/lang-html, @codemirror/autocomplete and their language packages transitively, all MIT.
+
+### @codemirror/language
+
+- Version: 6.12.4
+- License: MIT
+- Source: https://github.com/codemirror/language
+- Used by: apps/web/package.json
+- Notes: Syntax tree access and highlighting for the live preview.
+
+### @codemirror/state
+
+- Version: 6.7.6
+- License: MIT
+- Source: https://github.com/codemirror/state
+- Used by: apps/web/package.json
+- Notes: Editor state. The document is the exact notes.body text (line separator pinned to \n, so saves are byte-exact).
+
+### @codemirror/view
+
+- Version: 6.43.13
+- License: MIT
+- Source: https://github.com/codemirror/view
+- Used by: apps/web/package.json
+- Notes: Editor view and the Obsidian-style live preview decorations.
+
+### @convex-dev/agent
+
+- Version: 0.3.2
+- License: Apache-2.0
+- Source: https://github.com/get-convex/agent
+- Used by: package.json
 
 ### @convex-dev/auth
 
@@ -52,6 +106,44 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT
 - Source: https://expo.github.io/vector-icons
 - Used by: apps/mobile/package.json
+
+### @json-render/core
+
+- Version: 0.21.0
+- License: Apache-2.0
+- Source: https://github.com/vercel-labs/json-render
+- Used by: packages/ui/package.json
+
+### @json-render/react
+
+- Version: 0.21.0
+- License: Apache-2.0
+- Source: https://github.com/vercel-labs/json-render
+- Used by: packages/ui/package.json
+
+### @openuidev/react-lang
+
+- Version: 1.0.1
+- License: MIT
+- Source: https://github.com/thesysdev/openui
+- Used by: apps/web/package.json
+- Note: brings @openuidev/lang-core, @openuidev/observability and @openuidev/devtools (all MIT, same repository). Runtime usage reports are opt-in and off; lang-core's install report is a postinstall script, which Bun does not run for dependencies.
+
+### @lezer/highlight
+
+- Version: 1.2.5
+- License: MIT
+- Source: https://github.com/lezer-parser/highlight
+- Used by: apps/web/package.json
+- Notes: Highlight tags for the Markdown syntax tree.
+
+### @lezer/markdown
+
+- Version: 1.7.2
+- License: MIT
+- Source: https://github.com/lezer-parser/markdown
+- Used by: apps/web/package.json
+- Notes: Markdown grammar with the GFM extensions (tables, task lists, strikethrough).
 
 ### @polar-sh/nextjs
 
@@ -124,6 +216,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://www.npmjs.com/package/@rn-primitives/types
 - Used by: apps/mobile/package.json
 
+### ai
+
+- Version: 5.0.82
+- License: Apache-2.0
+- Source: https://github.com/vercel/ai
+- Used by: package.json
+
 ### class-variance-authority
 
 - Version: 0.7.1
@@ -151,6 +250,20 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: Apache-2.0
 - Source: https://convex.dev
 - Used by: package.json, apps/web/package.json, apps/mobile/package.json
+
+### convex-test
+
+- Version: 0.0.38
+- License: Apache-2.0
+- Source: https://github.com/get-convex/convex-test
+- Used by: package.json
+
+### convex-helpers
+
+- Version: 0.1.104
+- License: Apache-2.0
+- Source: https://github.com/get-convex/convex-helpers
+- Used by: package.json
 
 ### expo
 
@@ -257,6 +370,13 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://nextjs.org
 - Used by: apps/web/package.json
 
+### panelui-web (copied source, not a dependency)
+
+- Version: 0.2.0 (shadcn registry items kpi and day-grid, https://panelui.dev/r/web/)
+- License: MIT, (c) Khalid Abdi
+- Source: https://github.com/panel-ui/PanelUI
+- Used by: apps/web/components/panelui/kpi.tsx, apps/web/components/panelui/day-grid.tsx (each file keeps the attribution header)
+
 ### react
 
 - Version: 19.1.0
@@ -270,6 +390,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT
 - Source: https://react.dev/
 - Used by: apps/web/package.json, apps/mobile/package.json
+
+### react-markdown
+
+- Version: 10.1.0
+- License: MIT
+- Source: https://github.com/remarkjs/react-markdown
+- Used by: apps/web/package.json
+- Notes: the unified, remark, micromark, hast and unist packages it pulls in transitively are all MIT. Raw HTML stays disabled (no rehype-raw installed).
 
 ### react-native
 
@@ -334,6 +462,14 @@ section here. Add the entry in the same PR that adds the dependency.
 - Source: https://docs.swmansion.com/react-native-worklets
 - Used by: apps/mobile/package.json
 
+### remark-gfm
+
+- Version: 4.0.1
+- License: MIT
+- Source: https://github.com/remarkjs/remark-gfm
+- Used by: apps/web/package.json
+- Notes: GFM (tables, task lists, strikethrough, autolinks) for the read view (OVERNIGHT-RUN.md decision 2).
+
 ### styled-jsx
 
 - Version: 5.1.7
@@ -347,3 +483,17 @@ section here. Add the entry in the same PR that adds the dependency.
 - License: MIT
 - Source: https://github.com/dcastil/tailwind-merge
 - Used by: apps/web/package.json, apps/mobile/package.json
+
+### tailwind-variants
+
+- Version: 3.3.1
+- License: MIT
+- Source: https://github.com/heroui-inc/tailwind-variants
+- Used by: apps/web/package.json (PanelUI's KPI and Day Grid, apps/web/components/panelui)
+
+### zod
+
+- Version: 4.3.6
+- License: MIT
+- Source: https://github.com/colinhacks/zod
+- Used by: package.json, packages/ui/package.json, packages/utils/package.json

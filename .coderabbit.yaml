@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit reviews the default branch (integration) without this file.
+# Release PRs target master, which is not the default branch, so they are
+# skipped ("Review skipped: reviews are disabled for this base branch")
+# unless master is listed here. Patterns are not anchored; ^ and $ match
+# the whole branch name. Other settings stay at CodeRabbit defaults.
+reviews:
+  auto_review:
+    base_branches:
+      - "^master$"

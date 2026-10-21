@@ -1,0 +1,166 @@
+name: Archify
+
+# Keeps docs/architecture/ current: (a) system architecture, (b) factory workflow diagram.
+# Renderer: tt-a1i/archify v3.0.1 (MIT), pinned to commit 2ab3cae7ac2c2a55d7386ca789d03c4fcd31816c.
+# Output is standalone HTML (open in any browser) + the typed JSON source next to it.
+#
+# How it runs (two passes in ONE file):
+#   push to integration (merge-queue / auto-merge merges are pushes) -> job `gate`:
+#     pause check -> debounce (at most one refresh per hour, measured by the age of the newest
+#     `archify-architecture` artifact) -> dispatches this same workflow (workflow_dispatch).
+#     GITHUB_TOKEN may start workflow_dispatch runs (GitHub's documented exception); it opens no PR.
+#   workflow_dispatch -> job `refresh`: pause check (force=true bypasses, person only) ->
+#     claude-code-action (Claude GitHub App token, R15) re-reads the code that changed since the
+#     last map, updates the JSON only if architecture / factory-flow facts changed, re-renders with
+#     archify `finalize`, and opens or updates ONE PR from config/architecture-refresh into
+#     integration, labelled `config`. Nothing is merged here: config PRs merge through the normal
+#     path (GitHub merge queue on tempo-rhythm) once checks are green.
+#   claude-code-action v1 does not accept `push` events (src/github/context.ts: automation events
+#   are workflow_dispatch, repository_dispatch, schedule, workflow_run), hence the self-dispatch.
+#
+# Pause (Run Book v5 B4): paused = no refresh. workflow_dispatch force=true runs anyway, never from a bot.
+
+on:
+  push:
+    branches: [integration]
+    paths-ignore:
+      - "docs/architecture/**"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Run even while the factory is paused (Amit / Grok Bot one-off only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: archify-${{ github.event_name }}
+  cancel-in-progress: false
+
+env:
+  ARCHIFY_SHA: 2ab3cae7ac2c2a55d7386ca789d03c4fcd31816c # tt-a1i/archify v3.0.1
+  ARCHIFY_UPDATE_CHECK_DISABLED: "1"
+
+jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem no refresh is started; the run ends green.
+    # The next push after 09:00 (or a manual run) catches up: the refresh diffs from the last mapped commit.
+    if: (github.event_name == 'push' && vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || (github.event_name == 'workflow_dispatch' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true))
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "Archify refresh (Claude run + config PR)"
+  gate:
+    name: Debounce and dispatch
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && github.event_name == 'push' && vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: At most one refresh per hour, then dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Debounce on the newer of: the last maps artifact, and the last dispatched refresh run (any result).
+          # The artifact alone is written only at the END of a successful refresh, so pushes during a running
+          # refresh, or after a failed one, each started another Claude run (3 dispatches in 7 min, 6 Oct 14:15 IDT).
+          last_art=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=archify-architecture&per_page=1" --jq '.artifacts[0].created_at // empty')
+          last_run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/archify.yml/runs?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].created_at // empty')
+          newest=0
+          for t in "$last_art" "$last_run"; do
+            if [ -n "$t" ]; then
+              s=$(date -d "$t" +%s)
+              if [ "$s" -gt "$newest" ]; then newest=$s; fi
+            fi
+          done
+          if [ "$newest" -gt 0 ]; then
+            age=$(( $(date +%s) - newest ))
+            if [ "$age" -lt 3600 ]; then
+              echo "Debounced: last refresh ${age}s ago (< 3600s). The next push after the hour, or a manual run, catches up (the refresh diffs from the last mapped commit, so nothing is lost)." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          fi
+          gh workflow run archify.yml -R "$GITHUB_REPOSITORY" --ref integration
+          echo "Dispatched Archify refresh for ${GITHUB_SHA::7}." >> "$GITHUB_STEP_SUMMARY"
+
+  refresh:
+    name: Refresh docs/architecture
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && github.event_name == 'workflow_dispatch' && ((vars.FACTORY_PAUSED_ALL != 'true' && vars.FACTORY_PAUSED != 'true') || inputs.force == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - name: force=true only from a person
+        if: inputs.force == true && endsWith(github.triggering_actor, '[bot]')
+        run: |
+          echo "::error::force=true came from a bot (${{ github.triggering_actor }}). Only Amit or Grok Bot may force a paused factory run."
+          exit 1
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: integration
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Archify v3.0.1 (pinned, not committed)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: tt-a1i/archify
+          ref: ${{ env.ARCHIFY_SHA }}
+          path: .archify-skill
+          sparse-checkout: archify
+          persist-credentials: false
+
+      - name: Archify doctor
+        run: node .archify-skill/archify/bin/archify.mjs doctor
+
+      - uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The `gate` job self-dispatches this run with GITHUB_TOKEN, so the actor is github-actions[bot].
+          # Without this the action refused every refresh ("non-human actor"; 34/34 failed 5-6 Oct, audit 2026-10-06).
+          allowed_bots: "github-actions"
+          base_branch: integration
+          prompt: |
+            Read .github/factory/archify-prompt.md and do exactly what it says.
+            Archify CLI: node .archify-skill/archify/bin/archify.mjs  (skill guide: .archify-skill/archify/SKILL.md)
+          # 90 turns: refreshes took 35, 51 and 62 turns on 6 Oct; at 60 a finished refresh was reported as a failure
+          # (run 37455208551) and the debounce marker was skipped. The job timeout (45 min) still caps a run.
+          claude_args: >-
+            --model ${{ vars.FACTORY_MODEL_CLAUDE }}
+            --max-turns 90
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(node .archify-skill/archify/bin/archify.mjs:*),Bash(ls:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git fetch:*),Bash(git checkout:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr create:*),Bash(gh pr edit:*)"
+
+      - name: Check the refresh branch touches only docs/architecture/
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! git fetch -q origin config/architecture-refresh 2>/dev/null; then
+            echo "No refresh branch: maps already current." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          git fetch -q origin integration
+          bad=$(git diff --name-only origin/integration...origin/config/architecture-refresh | grep -v '^docs/architecture/' || true)
+          if [ -n "$bad" ]; then echo "::error::config/architecture-refresh changes files outside docs/architecture/: $bad"; exit 1; fi
+          gh pr list -R "$GITHUB_REPOSITORY" --head config/architecture-refresh --base integration --state open --json number,url,labels >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload maps (also the debounce marker)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: archify-architecture
+          path: docs/architecture/
+          if-no-files-found: warn
+          retention-days: 14

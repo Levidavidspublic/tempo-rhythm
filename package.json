@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "check": "turbo run check",
-    "test": "bun test convex apps/web/lib tests/unit",
+    "test": "bun test convex apps/web/lib apps/web/components tests/unit packages",
     "check:notices": "bun scripts/check-notices.ts",
     "scan:forbidden-tech": "bun scripts/scan-forbidden-tech.ts",
     "scan:ram-only-audit": "bun scripts/scan-ram-only-audit.ts",
@@ -27,15 +27,22 @@
     "convex:codegen": "bun x convex codegen"
   },
   "dependencies": {
+    "@ai-sdk/provider-utils": "3.0.14",
     "@auth/core": "0.37.4",
+    "@convex-dev/agent": "0.3.2",
     "@convex-dev/auth": "^0.0.91",
-    "convex": "^1.32.0"
+    "@tempo/utils": "workspace:*",
+    "ai": "5.0.82",
+    "convex": "^1.32.0",
+    "convex-helpers": "0.1.104",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
     "@playwright/test": "^1.61.1",
     "@types/bun": "^1.3.13",
     "@types/node": "^20.19.0",
+    "convex-test": "0.0.38",
     "turbo": "^2.3.3"
   }
 }

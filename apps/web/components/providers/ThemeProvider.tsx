@@ -9,6 +9,8 @@ import {
   useMemo,
   useState,
 } from "react";
+import { deviceSettingChange } from "@/lib/device-sync";
+import { applyTextSize } from "@/lib/settings/textSize";
 import {
   DYSLEXIA_STORAGE_KEY,
   THEME_STORAGE_KEY,
@@ -46,6 +48,16 @@ function detectSystemTheme(): "light" | "dark" {
     : "light";
 }
 
+function applyThemeAttr(next: ThemePreference) {
+  if (next === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", next);
+}
+
+function applyDyslexiaAttr(on: boolean) {
+  if (on) document.documentElement.setAttribute("data-dyslexia", "on");
+  else document.documentElement.removeAttribute("data-dyslexia");
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemePreference>("system");
   const [dyslexia, setDyslexiaState] = useState<boolean>(false);
@@ -53,8 +65,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const storedTheme = localStorage.getItem(
-        THEME_STORAGE_KEY,
+      // ?theme= forces this load (the pre-hydration script applied it already); keep state in step.
+      const queryTheme = new URLSearchParams(window.location.search).get("theme");
+      const storedTheme = (
+        queryTheme === "light" || queryTheme === "dark" ? queryTheme : localStorage.getItem(THEME_STORAGE_KEY)
       ) as ThemePreference | null;
       if (storedTheme === "light" || storedTheme === "dark") {
         setThemeState(storedTheme);
@@ -69,7 +83,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => setSystemTheme(mql.matches ? "dark" : "light");
     mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
+
+    // Another tab of this browser saved a display setting: show it here too (nothing is stored
+    // again, so the tabs don't echo each other).
+    const onStorage = (event: StorageEvent) => {
+      const change = deviceSettingChange(event.key, event.newValue);
+      if (change?.kind === "theme") {
+        setThemeState(change.theme);
+        applyThemeAttr(change.theme);
+      } else if (change?.kind === "dyslexia") {
+        setDyslexiaState(change.on);
+        applyDyslexiaAttr(change.on);
+      } else if (change?.kind === "textSize") {
+        applyTextSize(document.documentElement, change.size);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      mql.removeEventListener("change", onChange);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const setTheme = useCallback((next: ThemePreference) => {
@@ -77,11 +110,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       if (next === "system") {
         localStorage.removeItem(THEME_STORAGE_KEY);
-        document.documentElement.removeAttribute("data-theme");
       } else {
         localStorage.setItem(THEME_STORAGE_KEY, next);
-        document.documentElement.setAttribute("data-theme", next);
       }
+      applyThemeAttr(next);
     } catch {
       /* storage unavailable */
     }
@@ -92,11 +124,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       if (next) {
         localStorage.setItem(DYSLEXIA_STORAGE_KEY, "on");
-        document.documentElement.setAttribute("data-dyslexia", "on");
       } else {
         localStorage.removeItem(DYSLEXIA_STORAGE_KEY);
-        document.documentElement.removeAttribute("data-dyslexia");
       }
+      applyDyslexiaAttr(next);
     } catch {
       /* storage unavailable */
     }

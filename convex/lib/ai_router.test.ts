@@ -5,10 +5,11 @@ import {
 	AiRateLimitedError,
 	AiUpstreamError,
 } from "./ai_errors";
-import { callLLM, TIER_MODEL } from "./ai_router";
+import { callLLM, DEEPINFRA_CHAT_COMPLETIONS_URL, DEFAULT_AI_MODEL } from "./ai_router";
 
 const originalFetch = globalThis.fetch;
-const originalApiKey = process.env.MISTRAL_API_KEY;
+const originalApiKey = process.env.DEEPINFRA_API_KEY;
+const originalModel = process.env.TEMPO_AI_MODEL;
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
 	return new Response(JSON.stringify(body), {
@@ -34,21 +35,27 @@ function successBody(content = "ok") {
 }
 
 beforeEach(() => {
-	process.env.MISTRAL_API_KEY = "test-key";
+	process.env.DEEPINFRA_API_KEY = "test-key";
+	delete process.env.TEMPO_AI_MODEL;
 });
 
 afterEach(() => {
 	globalThis.fetch = originalFetch;
 	if (originalApiKey === undefined) {
-		delete process.env.MISTRAL_API_KEY;
+		delete process.env.DEEPINFRA_API_KEY;
 	} else {
-		process.env.MISTRAL_API_KEY = originalApiKey;
+		process.env.DEEPINFRA_API_KEY = originalApiKey;
+	}
+	if (originalModel === undefined) {
+		delete process.env.TEMPO_AI_MODEL;
+	} else {
+		process.env.TEMPO_AI_MODEL = originalModel;
 	}
 });
 
 describe("callLLM", () => {
-	test("throws AiAuthError when MISTRAL_API_KEY is missing", async () => {
-		delete process.env.MISTRAL_API_KEY;
+	test("throws AiAuthError when DEEPINFRA_API_KEY is missing", async () => {
+		delete process.env.DEEPINFRA_API_KEY;
 		await expect(
 			callLLM({ tier: "fast", messages: [{ role: "user", content: "hi" }] }),
 		).rejects.toBeInstanceOf(AiAuthError);
@@ -67,7 +74,7 @@ describe("callLLM", () => {
 
 		expect(result.content).toBe('{"plan":true}');
 		expect(result.tier).toBe("fast");
-		expect(result.model).toBe(TIER_MODEL.fast);
+		expect(result.model).toBe(DEFAULT_AI_MODEL);
 		expect(result.escalated).toBe(false);
 		expect(result.usage.totalTokens).toBe(15);
 	});
@@ -122,31 +129,46 @@ describe("callLLM", () => {
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 
-	test("escalates to balanced tier when fast tier hits context limit", async () => {
-		const fetchMock = mock(
-			(_url: string | URL | Request, init?: RequestInit) => {
-				const body = JSON.parse(String(init?.body)) as { model: string };
-				if (body.model === TIER_MODEL.fast) {
-					return Promise.resolve(
-						errorResponse(
-							400,
-							JSON.stringify({ error: "context_length_exceeded" }),
-						),
-					);
-				}
-				return Promise.resolve(jsonResponse(successBody("escalated")));
-			},
+	test("posts to DeepInfra's OpenAI-compatible endpoint with DeepSeek V4.1 Flash by default", async () => {
+		const fetchMock = mock((url: string | URL | Request, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body)) as { model: string };
+			expect(String(url)).toBe(DEEPINFRA_CHAT_COMPLETIONS_URL);
+			expect(body.model).toBe("deepseek-ai/DeepSeek-V4.1-Flash");
+			return Promise.resolve(jsonResponse(successBody("ok")));
+		});
+		globalThis.fetch = fetchMock;
+
+		for (const tier of ["fast", "balanced", "deep"] as const) {
+			const result = await callLLM({ tier, messages: [{ role: "user", content: "hi" }] });
+			expect(result.model).toBe(DEFAULT_AI_MODEL);
+			expect(result.escalated).toBe(false);
+		}
+		expect(fetchMock).toHaveBeenCalledTimes(3);
+	});
+
+	test("TEMPO_AI_MODEL overrides the model in one place", async () => {
+		process.env.TEMPO_AI_MODEL = "deepseek-ai/DeepSeek-V4-Flash";
+		const fetchMock = mock((_url: string | URL | Request, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body)) as { model: string };
+			expect(body.model).toBe("deepseek-ai/DeepSeek-V4-Flash");
+			return Promise.resolve(jsonResponse(successBody("ok")));
+		});
+		globalThis.fetch = fetchMock;
+
+		const result = await callLLM({ tier: "fast", messages: [{ role: "user", content: "hi" }] });
+		expect(result.model).toBe("deepseek-ai/DeepSeek-V4-Flash");
+	});
+
+	test("context-too-large surfaces without retry (single model, nothing to escalate to)", async () => {
+		const fetchMock = mock(() =>
+			Promise.resolve(errorResponse(400, JSON.stringify({ error: "context_length_exceeded" }))),
 		);
 		globalThis.fetch = fetchMock;
 
-		const result = await callLLM({
-			tier: "fast",
-			messages: [{ role: "user", content: "big" }],
-		});
-
-		expect(result.content).toBe("escalated");
-		expect(result.tier).toBe("balanced");
-		expect(result.escalated).toBe(true);
+		await expect(
+			callLLM({ tier: "fast", messages: [{ role: "user", content: "big" }] }),
+		).rejects.toBeInstanceOf(AiContextTooLargeError);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
 
 	test("throws AiContextTooLargeError when deep tier still exceeds context", async () => {

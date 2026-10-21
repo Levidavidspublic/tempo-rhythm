@@ -1,22 +1,17 @@
 "use client";
 
 import { useConvexAuth } from "convex/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import Link from "next/link";
+
+import { passkeysView } from "./passkeys-view";
 
 const PASSKEYS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_PASSKEYS === "true";
 
 export default function PasskeysSettingsPage() {
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const router = useRouter();
+  const view = passkeysView({ isLoading, isAuthenticated, passkeysEnabled: PASSKEYS_ENABLED });
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/sign-in");
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  if (isLoading) {
+  if (view === "loading") {
     return (
       <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
         <div
@@ -27,11 +22,20 @@ export default function PasskeysSettingsPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
+  if (view === "signed-out") {
+    // The server proxy already redirects signed-out visitors. Reaching here means
+    // the client lost its session while the cookie is valid: offer a way back.
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+        <p className="text-muted-foreground">We couldn&apos;t confirm your session.</p>
+        <Link href="/sign-in?next=%2Fsettings%2Fpasskeys" className="mt-3 inline-block underline">
+          Sign in again
+        </Link>
+      </div>
+    );
   }
 
-  if (!PASSKEYS_ENABLED) {
+  if (view === "coming-soon") {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <div className="rounded-2xl border border-border bg-card px-8 py-12">

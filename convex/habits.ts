@@ -16,6 +16,18 @@ export const list = query({
 	},
 });
 
+export const get = query({
+	args: { habitId: v.id("habits") },
+	handler: async (ctx, args) => {
+		const user = await requireUser(ctx);
+		const habit = await ctx.db.get(args.habitId);
+		if (!habit || habit.userId !== user._id || habit.deletedAt !== undefined) {
+			return null;
+		}
+		return habit;
+	},
+});
+
 export const create = mutation({
 	args: {
 		name: v.string(),

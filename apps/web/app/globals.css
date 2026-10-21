@@ -1,4 +1,12 @@
 @import "tailwindcss";
+@import "./tempo.css";
+/* v3 screen groups: layout for each group's screens, one file per group. */
+@import "./v3/habits.css";
+@import "./v3/goals.css";
+@import "./v3/you.css";
+@import "./v3/settings.css";
+@import "./v3/extras.css";
+@import "./v3/coach-chat.css";
 
 /* ==========================================================================
    Tempo Flow — design tokens
@@ -25,31 +33,55 @@
   --color-amber: #d4a44c;
   --color-slate-blue: #6e88a7;
 
-  /* ---- Semantic surfaces (light defaults) ------------------ */
-  --color-background: #f3ebe2; /* cream */
-  --color-foreground: #131312; /* ink */
-  --color-card: #faf6f0;
-  --color-card-foreground: #131312;
-  --color-popover: #faf6f0;
-  --color-popover-foreground: #131312;
-  --color-surface-sunken: #ebe0d2;
-  --color-surface-inverse: #131312;
+  /* ---- Semantic surfaces → Tempo v3 tokens (DESIGN.md §2, §9) ----
+     The --tp-* values below switch with data-theme, so these follow. */
+  --color-background: var(--tp-ground);
+  --color-foreground: var(--tp-ink);
+  --color-card: var(--tp-paper);
+  --color-card-foreground: var(--tp-ink);
+  --color-popover: var(--tp-paper);
+  --color-popover-foreground: var(--tp-ink);
+  --color-surface-sunken: var(--tp-sunken);
+  --color-surface-inverse: var(--tp-ink);
 
-  --color-primary: #d97757;
-  --color-primary-foreground: #fafaf9;
-  --color-secondary: #ebe0d2;
-  --color-secondary-foreground: #131312;
-  --color-muted: #ebe0d2;
-  --color-muted-foreground: #6b6864;
-  --color-subtle-foreground: #9a968f;
-  --color-accent: #e8a87c;
-  --color-accent-foreground: #131312;
-  --color-destructive: #c8553d;
-  --color-destructive-foreground: #fafaf9;
-  --color-border: #d7cec2;
-  --color-border-soft: #e6ddd1;
-  --color-input: #d7cec2;
-  --color-ring: #d97757;
+  --color-primary: var(--tp-accent);
+  --color-primary-foreground: var(--tp-on-accent);
+  --color-secondary: var(--tp-sunken);
+  --color-secondary-foreground: var(--tp-ink);
+  --color-muted: var(--tp-sunken);
+  --color-muted-foreground: var(--tp-ink-muted);
+  --color-subtle-foreground: var(--tp-ink-subtle);
+  /* shadcn "accent" is the hover wash, not the brand accent (that is primary). */
+  --color-accent: var(--tp-hover);
+  --color-accent-foreground: var(--tp-ink);
+  --color-destructive: var(--tp-danger);
+  --color-destructive-foreground: var(--tp-on-accent);
+  --color-border: var(--tp-line);
+  --color-border-soft: var(--tp-line);
+  --color-input: var(--tp-line-control);
+  --color-ring: var(--tp-accent);
+
+  /* ---- Tempo v3 tokens, one to one (DESIGN.md §9) ------------ */
+  --color-ground: var(--tp-ground);
+  --color-paper: var(--tp-paper);
+  --color-sunken: var(--tp-sunken);
+  --color-hover: var(--tp-hover);
+  --color-ink-muted: var(--tp-ink-muted);
+  --color-ink-subtle: var(--tp-ink-subtle);
+  --color-line-strong: var(--tp-line-strong);
+  --color-line-control: var(--tp-line-control);
+  --color-on-accent: var(--tp-on-accent);
+  --color-accent-wash: var(--tp-accent-wash);
+  --color-done: var(--tp-done);
+  --color-done-wash: var(--tp-done-wash);
+  --color-info: var(--tp-info);
+  --color-info-wash: var(--tp-info-wash);
+  --color-caution: var(--tp-caution);
+  --color-caution-wash: var(--tp-caution-wash);
+  --color-danger: var(--tp-danger);
+  --color-danger-wash: var(--tp-danger-wash);
+  --color-glass: var(--tp-glass);
+  --color-glass-solid: var(--tp-glass-solid);
 
   /* ---- Marketing surfaces (dark strips on landing) --------- */
   --color-mkt-dark-bg: #1e1d1b;
@@ -61,13 +93,9 @@
   --color-mkt-dark-bubble: rgba(247, 240, 232, 0.06);
 
   /* ---- Type scale ------------------------------------------ */
-  --font-serif:
-    var(--font-newsreader), "Iowan Old Style", "Georgia", serif;
-  --font-sans:
-    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
-  --font-mono:
-    var(--font-ibm-mono), "SFMono-Regular", "JetBrains Mono", monospace;
+  --font-serif: var(--tp-font-serif);
+  --font-sans: var(--tp-font-sans);
+  --font-mono: var(--tp-font-mono);
 
   --text-display: 56px;
   --text-h1: 32px;
@@ -110,33 +138,291 @@
   --topbar-h: 56px;
 }
 
+/* ==========================================================================
+   Tempo v3 tokens — ported from docs/design/v3/tokens.css (single source of
+   truth for colour, type, space, radius, elevation, motion). tempo.css and
+   every v3 component reference only var(--tp-*). Fonts ship locally (SIL OFL,
+   licences next to each file in apps/web/fonts/).
+   ========================================================================== */
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("../fonts/source-sans-3/SourceSans3-latin.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Assistant";
+  src: url("../fonts/assistant/Assistant-hebrew.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: "Assistant";
+  src: url("../fonts/assistant/Assistant-latin.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Frank Ruhl Libre";
+  src: url("../fonts/frank-ruhl-libre/FrankRuhlLibre-hebrew.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: "Frank Ruhl Libre";
+  src: url("../fonts/frank-ruhl-libre/FrankRuhlLibre-latin.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../fonts/opendyslexic/OpenDyslexic-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "OpenDyslexic";
+  src: url("../fonts/opendyslexic/OpenDyslexic-Bold.woff") format("woff");
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* ---- Colour · light ------------------------------------- */
+  --tp-ground:        #F3EEE4;  /* parchment page ground */
+  --tp-paper:         #FBF9F4;  /* the "paper" page, cards */
+  --tp-sunken:        #EAE3D6;  /* rails, wells, inputs */
+  --tp-hover:         #EDE6DA;  /* row hover / selected wash */
+  --tp-ink:           #1B1916;  /* primary text */
+  --tp-ink-muted:     #57514A;  /* secondary text */
+  --tp-ink-subtle:    #6B645C;  /* tertiary text, ≥13px only */
+  --tp-line:          #D9D0C1;  /* hairlines, dividers */
+  --tp-line-strong:   #B9AE9C;  /* card edges (decorative) */
+  --tp-line-control:  #877C6B;  /* checkbox, input, button outlines (≥3:1) */
+  --tp-accent:        #A3461F;  /* one primary action + focus */
+  --tp-on-accent:     #FFFFFF;
+  --tp-accent-wash:   #F3E2D6;  /* selected chip ground, never a large fill */
+
+  --tp-done:          #3B6948;  --tp-done-wash:    #E3EBDF;
+  --tp-info:          #36628C;  --tp-info-wash:    #E0E7EE;
+  --tp-caution:       #7E5A0C;  --tp-caution-wash: #F1E6CC;
+  --tp-danger:        #9E3B27;  --tp-danger-wash:  #F3DFD7;
+
+  /* glass — floating chrome only */
+  --tp-glass:         rgba(251, 249, 244, 0.82);
+  --tp-glass-solid:   #FBF9F4;
+  --tp-glass-edge:    rgba(255, 255, 255, 0.70);
+  --tp-glass-line:    rgba(27, 25, 22, 0.10);
+  --tp-scrim:         rgba(27, 25, 22, 0.28);
+
+  /* ---- Elevation ------------------------------------------ */
+  --tp-shadow-whisper: 0 1px 1px rgba(27, 25, 22, 0.05);
+  --tp-shadow-card:    0 1px 2px rgba(27, 25, 22, 0.06), 0 4px 12px -8px rgba(27, 25, 22, 0.14), 0 0 0 1px rgba(27, 25, 22, 0.06);
+  --tp-shadow-float:   0 12px 32px -12px rgba(27, 25, 22, 0.22), 0 2px 6px -2px rgba(27, 25, 22, 0.08);
+  --tp-shadow-modal:   0 28px 64px -24px rgba(27, 25, 22, 0.36);
+  /* Depth, run 2 polish: ground < paper (ring + long soft drop) < cards on paper (border + short drop). */
+  --tp-shadow-paper:   0 1px 2px rgba(27, 25, 22, 0.05), 0 18px 40px -26px rgba(27, 25, 22, 0.28), 0 0 0 1px rgba(27, 25, 22, 0.07);
+  --tp-shadow-raise:   0 1px 2px rgba(27, 25, 22, 0.05), 0 4px 10px -8px rgba(27, 25, 22, 0.16);
+  --tp-shadow-lift:    0 2px 4px rgba(27, 25, 22, 0.06), 0 12px 28px -14px rgba(27, 25, 22, 0.24);
+  --tp-line-card:      color-mix(in srgb, var(--tp-line) 55%, var(--tp-line-strong));
+  /* Faint paper grain on the ground only (never on paper, cards or text). Light flecks on the
+     light ground, dark flecks on the dark one: the grain only moves the ground away from the
+     text, so no pair drops below DESIGN.md §6. */
+  --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.28'/%3E%3C/svg%3E");
+  /* Empty-state art: one quiet line drawing in the icon set's 1.5 px stroke. */
+  --tp-empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='rgb(107 100 92)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4h10l6 6v18H9z'/%3E%3Cpath d='M19 4v6h6'/%3E%3Cpath d='M12.5 15h9M12.5 19h9M12.5 23h5.5'/%3E%3C/svg%3E");
+
+  /* ---- Type families -------------------------------------- */
+  --tp-font-serif: var(--font-newsreader), "Frank Ruhl Libre", "Iowan Old Style", Georgia, serif;
+  --tp-font-sans:  "Source Sans 3", "Assistant", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --tp-font-mono:  var(--font-ibm-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* ---- Type scale (px, base 17) --------------------------- */
+  --tp-text-xs:   13px;   /* minimum anywhere */
+  --tp-text-sm:   15px;
+  --tp-text-md:   17px;   /* base */
+  --tp-text-lg:   20px;
+  --tp-text-xl:   26px;   /* run 2 polish: a stronger heading scale (was 24 / 30 / 38) */
+  --tp-text-2xl:  32px;
+  --tp-text-3xl:  42px;
+  --tp-text-4xl:  48px;
+  --tp-leading-body:    1.6;
+  --tp-leading-snug:    1.35;
+  --tp-leading-heading: 1.18;
+  --tp-tracking-body:   0;
+  --tp-tracking-label:  0.01em;
+  --tp-word-spacing:    normal;
+  --tp-measure:         68ch;
+
+  /* ---- Spacing (4 px scale) ------------------------------- */
+  --tp-space-1:  4px;
+  --tp-space-2:  8px;
+  --tp-space-3:  12px;
+  --tp-space-4:  16px;
+  --tp-space-5:  20px;
+  --tp-space-6:  24px;
+  --tp-space-8:  32px;
+  --tp-space-10: 40px;
+  --tp-space-12: 48px;
+  --tp-space-16: 64px;
+  --tp-space-20: 80px;
+
+  /* ---- Radius --------------------------------------------- */
+  --tp-radius-sm:   6px;
+  --tp-radius-md:   10px;
+  --tp-radius-lg:   14px;
+  --tp-radius-xl:   20px;
+  --tp-radius-pill: 999px;
+
+  /* ---- Glass recipe --------------------------------------- */
+  --tp-glass-blur: 18px;
+  --tp-glass-saturate: 150%;
+
+  /* ---- Motion (≤250ms, one animation per interaction) ----- */
+  --tp-dur-fast: 120ms;
+  --tp-dur-base: 180ms;
+  --tp-dur-slow: 240ms;
+  --tp-dur-exit: 160ms;  /* ~65% of slow */
+  --tp-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --tp-ease-in:  cubic-bezier(0.4, 0, 1, 1);
+
+  /* ---- Layout --------------------------------------------- */
+  --tp-rail-w:     264px;
+  --tp-coach-w:    400px;
+  --tp-topbar-h:   56px;
+  --tp-tabbar-h:   64px;
+  --tp-paper-max:  760px;
+  --tp-touch:      44px;
+  --tp-focus-w:    2px;
+  --tp-focus-gap:  2px;
+}
+
+/* ---- Colour · dark (chosen independently, not inverted) ---- */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --tp-ground:        #161412;
+  --tp-paper:         #201D1A;
+  --tp-sunken:        #110F0D;
+  --tp-hover:         #2A2622;
+  --tp-ink:           #F2ECE2;
+  --tp-ink-muted:     #B5AC9F;
+  --tp-ink-subtle:    #9E9588;
+  --tp-line:          #38332D;
+  --tp-line-strong:   #5C554C;
+  --tp-line-control:  #7F7669;
+  --tp-accent:        #EE9468;
+  --tp-on-accent:     #1B1916;
+  --tp-accent-wash:   #3A2A20;
+
+  --tp-done:          #8FC09C;  --tp-done-wash:    #1F2D23;
+  --tp-info:          #94B8DA;  --tp-info-wash:    #1C2632;
+  --tp-caution:       #DDB45E;  --tp-caution-wash: #30281A;
+  --tp-danger:        #EE9A86;  --tp-danger-wash:  #35211C;
+
+  --tp-glass:         rgba(36, 33, 29, 0.86);
+  --tp-glass-solid:   #24211D;
+  --tp-glass-edge:    rgba(255, 255, 255, 0.07);
+  --tp-glass-line:    rgba(242, 236, 226, 0.10);
+  --tp-scrim:         rgba(0, 0, 0, 0.48);
+
+  --tp-shadow-whisper: 0 1px 1px rgba(0, 0, 0, 0.30);
+  --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 16px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(242, 236, 226, 0.06);
+  --tp-shadow-float:   0 16px 36px -12px rgba(0, 0, 0, 0.60), 0 0 0 1px rgba(242, 236, 226, 0.06);
+  --tp-shadow-modal:   0 28px 64px -20px rgba(0, 0, 0, 0.70);
+  --tp-shadow-paper:   0 1px 2px rgba(0, 0, 0, 0.34), 0 22px 44px -24px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(242, 236, 226, 0.07);
+  --tp-shadow-raise:   0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 14px -10px rgba(0, 0, 0, 0.60);
+  --tp-shadow-lift:    0 2px 4px rgba(0, 0, 0, 0.40), 0 14px 30px -14px rgba(0, 0, 0, 0.68);
+  --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.22'/%3E%3C/svg%3E");
+  --tp-empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='rgb(158 149 136)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4h10l6 6v18H9z'/%3E%3Cpath d='M19 4v6h6'/%3E%3Cpath d='M12.5 15h9M12.5 19h9M12.5 23h5.5'/%3E%3C/svg%3E");
+}
+
+/* ---- System fallback: no stored theme, OS asks for dark ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --tp-ground:        #161412;
+    --tp-paper:         #201D1A;
+    --tp-sunken:        #110F0D;
+    --tp-hover:         #2A2622;
+    --tp-ink:           #F2ECE2;
+    --tp-ink-muted:     #B5AC9F;
+    --tp-ink-subtle:    #9E9588;
+    --tp-line:          #38332D;
+    --tp-line-strong:   #5C554C;
+    --tp-line-control:  #7F7669;
+    --tp-accent:        #EE9468;
+    --tp-on-accent:     #1B1916;
+    --tp-accent-wash:   #3A2A20;
+
+    --tp-done:          #8FC09C;  --tp-done-wash:    #1F2D23;
+    --tp-info:          #94B8DA;  --tp-info-wash:    #1C2632;
+    --tp-caution:       #DDB45E;  --tp-caution-wash: #30281A;
+    --tp-danger:        #EE9A86;  --tp-danger-wash:  #35211C;
+
+    --tp-glass:         rgba(36, 33, 29, 0.86);
+    --tp-glass-solid:   #24211D;
+    --tp-glass-edge:    rgba(255, 255, 255, 0.07);
+    --tp-glass-line:    rgba(242, 236, 226, 0.10);
+    --tp-scrim:         rgba(0, 0, 0, 0.48);
+
+    --tp-shadow-whisper: 0 1px 1px rgba(0, 0, 0, 0.30);
+    --tp-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 16px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(242, 236, 226, 0.06);
+    --tp-shadow-float:   0 16px 36px -12px rgba(0, 0, 0, 0.60), 0 0 0 1px rgba(242, 236, 226, 0.06);
+    --tp-shadow-modal:   0 28px 64px -20px rgba(0, 0, 0, 0.70);
+    --tp-shadow-paper:   0 1px 2px rgba(0, 0, 0, 0.34), 0 22px 44px -24px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(242, 236, 226, 0.07);
+    --tp-shadow-raise:   0 1px 2px rgba(0, 0, 0, 0.32), 0 6px 14px -10px rgba(0, 0, 0, 0.60);
+    --tp-shadow-lift:    0 2px 4px rgba(0, 0, 0, 0.40), 0 14px 30px -14px rgba(0, 0, 0, 0.68);
+    --tp-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.22'/%3E%3C/svg%3E");
+    --tp-empty-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='rgb(158 149 136)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 4h10l6 6v18H9z'/%3E%3Cpath d='M19 4v6h6'/%3E%3Cpath d='M12.5 15h9M12.5 19h9M12.5 23h5.5'/%3E%3C/svg%3E");
+  }
+}
+
+/* ---- Hebrew: open serif + sans that pair with Latin -------- */
+:lang(he) {
+  --tp-font-serif: "Frank Ruhl Libre", var(--font-newsreader), Georgia, serif;
+  --tp-font-sans:  "Assistant", "Source Sans 3", system-ui, sans-serif;
+}
+
+/* ---- Dyslexia mode ----------------------------------------- */
+[data-dyslexia="on"] {
+  --tp-font-sans: "OpenDyslexic", "Atkinson Hyperlegible", "Source Sans 3", "Assistant", system-ui, sans-serif;
+  --tp-leading-body: 1.8;
+  --tp-leading-snug: 1.5;
+  --tp-tracking-body: 0.035em;
+  --tp-tracking-label: 0.04em;
+  --tp-word-spacing: 0.12em;
+  --tp-measure: 60ch;
+}
+[data-dyslexia="on"][data-dyslexia-font="fallback"] {
+  --tp-font-sans: "Atkinson Hyperlegible", "Source Sans 3", "Assistant", system-ui, sans-serif;
+}
+[data-dyslexia="on"][data-dyslexia-headings="on"] {
+  --tp-font-serif: var(--tp-font-sans);
+}
+/* Hebrew has no OpenDyslexic glyphs: keep Assistant, add spacing only */
+[data-dyslexia="on"]:lang(he) {
+  --tp-font-sans: "Assistant", "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+
+/* ---- Text size S / M / L (user setting) -------------------- */
+[data-text-size="s"] { --tp-text-md: 15px; --tp-text-lg: 18px; --tp-text-sm: 14px; }
+[data-text-size="l"] { --tp-text-md: 20px; --tp-text-lg: 23px; --tp-text-sm: 17px; --tp-text-xs: 15px; }
+
 /* ---- Dark mode (data attribute driven, user override wins) - */
 [data-theme="dark"] {
-  --color-background: #131312;
-  --color-foreground: #f3ebe2;
-  --color-card: #1c1c1a;
-  --color-card-foreground: #f3ebe2;
-  --color-popover: #1c1c1a;
-  --color-popover-foreground: #f3ebe2;
-  --color-surface-sunken: #161615;
-  --color-surface-inverse: #f3ebe2;
-
-  --color-primary: #d97757;
-  --color-primary-foreground: #131312;
-  --color-secondary: #2c2b28;
-  --color-secondary-foreground: #f3ebe2;
-  --color-muted: #2c2b28;
-  --color-muted-foreground: #a8a49f;
-  --color-subtle-foreground: #7a7672;
-  --color-accent: #e8a87c;
-  --color-accent-foreground: #131312;
-  --color-destructive: #c8553d;
-  --color-destructive-foreground: #f3ebe2;
-  --color-border: #2c2b28;
-  --color-border-soft: #242320;
-  --color-input: #2c2b28;
-  --color-ring: #e8a87c;
-
   --color-mkt-dark-bg: #1f1e1c;
   --color-mkt-dark-bg-2: #26241f;
   --color-mkt-dark-fg: #f3ebe2;
@@ -149,104 +435,55 @@
     0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-/* ---- System fallback: only applies when user hasn't set a theme ---- */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --color-background: #131312;
-    --color-foreground: #f3ebe2;
-    --color-card: #1c1c1a;
-    --color-card-foreground: #f3ebe2;
-    --color-popover: #1c1c1a;
-    --color-popover-foreground: #f3ebe2;
-    --color-surface-sunken: #161615;
-    --color-surface-inverse: #f3ebe2;
-    --color-primary: #d97757;
-    --color-primary-foreground: #131312;
-    --color-secondary: #2c2b28;
-    --color-secondary-foreground: #f3ebe2;
-    --color-muted: #2c2b28;
-    --color-muted-foreground: #a8a49f;
-    --color-subtle-foreground: #7a7672;
-    --color-accent: #e8a87c;
-    --color-accent-foreground: #131312;
-    --color-destructive: #c8553d;
-    --color-destructive-foreground: #f3ebe2;
-    --color-border: #2c2b28;
-    --color-border-soft: #242320;
-    --color-input: #2c2b28;
-    --color-ring: #e8a87c;
-  }
-}
-
-/* ---- OpenDyslexic toggle --------------------------------- */
-@font-face {
-  font-family: "OpenDyslexic";
-  src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff")
-    format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "OpenDyslexic";
-  src: url("https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Bold.woff")
-    format("woff");
-  font-weight: 500 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-[data-dyslexia="on"] {
-  --font-serif: "OpenDyslexic", var(--font-newsreader), Georgia, serif;
-  --font-sans: "OpenDyslexic", var(--font-inter), system-ui, sans-serif;
-  line-height: 1.7;
-  letter-spacing: 0.01em;
-}
-
 /* ---- Base reset + body ----------------------------------- */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+/* In the base layer, like preflight: element rules never beat a utility. */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
 
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "ss01", "cv01";
-}
+  body {
+    background: var(--tp-ground);
+    color: var(--tp-ink);
+    font-family: var(--tp-font-sans);
+    font-size: var(--tp-text-md);
+    line-height: var(--tp-leading-body);
+    letter-spacing: var(--tp-tracking-body);
+    word-spacing: var(--tp-word-spacing);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv01";
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
-}
-h1 {
-  font-size: var(--text-h1);
-}
-h2 {
-  font-size: var(--text-h2);
-}
-h3 {
-  font-size: var(--text-h3);
-}
-p {
-  margin: 0;
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-family: var(--tp-font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: var(--tp-leading-heading);
+  }
+  h1 {
+    font-size: var(--text-h1);
+  }
+  h2 {
+    font-size: var(--text-h2);
+  }
+  h3 {
+    font-size: var(--text-h3);
+  }
+  p {
+    margin: 0;
+  }
 }
 
 /* ---- Typography utilities (replaces shell.css helpers) --- */
@@ -366,4 +603,106 @@ p {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* ---- v3 shell: a page's side column (apps/web/components/tempo/ShellSlots.tsx) ---- */
+/* /coach: the thread scrolls inside a bounded surface, so the composer stays in reach. */
+.tp-coach-page { display: flex; flex-direction: column; height: clamp(360px, calc(100dvh - var(--tp-topbar-h) - 240px), 760px); }
+.tp-coach-page > * { flex: none; }
+.tp-coach-page > .tp-coach-thread { flex: 1 1 auto; min-height: 0; }
+
+/* /coach puts the push dial and today's proposal beside the chat, outside main. */
+.tp-app__aside { grid-area: aside; min-width: 0; padding: var(--tp-space-8) var(--tp-space-6) var(--tp-space-20) 0; display: grid; gap: var(--tp-space-6); align-content: start; }
+.tp-app__aside[hidden] { display: none; }
+/* biome-ignore lint/correctness/noInvalidGridAreas: every row string has the same cell count */
+.tp-app[data-aside="open"] { grid-template-columns: var(--tp-rail-w) minmax(0, 1fr) var(--tp-coach-w); grid-template-areas: "rail top top" "rail main aside"; }
+@media (max-width: 1279px) {
+  /* biome-ignore lint/correctness/noInvalidGridAreas: every row string has the same cell count */
+  .tp-app[data-aside="open"] { grid-template-columns: var(--tp-rail-w) minmax(0, 1fr); grid-template-rows: auto auto 1fr; grid-template-areas: "rail top" "rail main" "rail aside"; }
+  .tp-app__aside { padding: 0 var(--tp-space-6) var(--tp-space-20); }
+}
+@media (max-width: 1023px) {
+  /* biome-ignore lint/correctness/noInvalidGridAreas: every row string has the same cell count */
+  .tp-app[data-aside="open"] { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "main" "aside"; }
+}
+@media (max-width: 767px) {
+  .tp-app__aside { padding: 0 var(--tp-space-4) calc(var(--tp-tabbar-h) + var(--tp-space-16)); }
+}
+
+/* Templates (templates.html, layout only). */
+.tpl-list { list-style: none; margin: 0; padding: 0; }
+.tpl-list > li { display: grid; min-width: 0; }
+.tpl-card { display: grid; gap: var(--tp-space-3); align-content: start; }
+.tpl-card .tp-card__head { margin-bottom: 0; }
+.tpl-card__badges, .tpl-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2); }
+.tpl-card__adds { margin: 0; padding-inline-start: var(--tp-space-5); display: grid; gap: var(--tp-space-1); }
+.tpl-card__delete { margin-inline-start: auto; }
+.tpl-skel { display: grid; gap: var(--tp-space-4); grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--tp-space-20) * 3.5)), 1fr)); }
+/* Template run sits in the bare layout (no shell main), so it brings its own page padding. */
+.tp-run { padding: var(--tp-space-8) var(--tp-space-6) var(--tp-space-20); }
+@media (max-width: 767px) {
+  .tp-run { padding-inline: var(--tp-space-4); }
+  .tp-run > .tp-pagehead, .tp-run > .tp-notice { padding-inline: 0; }
+}
+
+/* Brain dump (brain-dump.html, layout only). */
+.bd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--tp-space-2) var(--tp-space-3); }
+.bd-group { display: grid; gap: var(--tp-space-2); }
+.bd-group__title { margin: 0; font-size: var(--tp-text-sm); }
+/* A plan line's reason is a sentence, not a label: tp-chip is nowrap, which pushed rows past a phone's width. */
+.bd-group .tp-import-row__bar .tp-chip { white-space: normal; max-width: 100%; padding-block: var(--tp-space-1); }
+.bd-row__actions { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); margin-inline-start: auto; }
+.bd-saved { flex-wrap: wrap; }
+.bd-saved .tp-notice__action { display: inline-flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+
+/* Search (search.html, layout only). */
+.sr-screen { display: grid; gap: var(--tp-space-6); min-width: 0; }
+.sr-results { display: grid; gap: var(--tp-space-6); }
+.sr-list { padding: var(--tp-space-1); }
+/* Under 768 px the shell main has no side padding; the screen keeps the 16 px gutter its page head has. */
+@media (max-width: 767px) { .tp-page > .sr-screen { padding-inline: var(--tp-space-4); } }
+/* Sign-up: the auth card, then the terms line under it at the card's width. */
+.tp-auth-stack { display: grid; gap: var(--tp-space-4); justify-items: center; width: min(100%, calc(var(--tp-space-20) * 5 + var(--tp-space-10))); }
+.tp-auth-stack > .tp-auth-card { width: 100%; }
+
+/* Calendar (v3 calendar.html look on the Day / Week / Month lists). Layout only. */
+.cal-add { gap: var(--tp-space-3); }
+.cal-add__row { display: grid; gap: var(--tp-space-3); grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; }
+.cal-views { border: 0; margin: 0; padding: 0; min-width: 0; }
+.cal-views .tp-seg__opt[aria-pressed="true"] { background: var(--tp-paper); color: var(--tp-ink); border-color: var(--tp-line-control); box-shadow: var(--tp-shadow-whisper); }
+.cal-toolbar { align-items: center; }
+.cal-list { padding: var(--tp-space-2) var(--tp-space-4); gap: 0; }
+.cal-event[data-editing="true"] { display: block; }
+.cal-event__edit { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3); }
+.cal-event__title-field { flex: 1 1 calc(var(--tp-space-20) * 2); }
+.cal-event__error { grid-column: 1 / -1; }
+@media (max-width: 767px) {
+  .cal-add__row { grid-template-columns: minmax(0, 1fr); }
+  .cal-list { padding-inline: var(--tp-space-3); }
+}
+
+/* Tasks (v3 tasks.html): view switcher, create form, task rows. Layout only. */
+.tk-views .tp-segmented { list-style: none; margin: 0; }
+.tk-views .tp-seg__opt { text-decoration: none; }
+.tk-views .tp-seg__opt[aria-current="page"] { background: var(--tp-paper); color: var(--tp-ink); border-color: var(--tp-line-control); box-shadow: var(--tp-shadow-whisper); }
+.tk-create { gap: var(--tp-space-4); }
+.tk-create__grid { display: grid; gap: var(--tp-space-3); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) * 2), 1fr)); align-items: end; }
+.tk-create__title { grid-column: 1 / -1; }
+.tk-create__more { display: flex; flex-wrap: wrap; align-items: end; gap: var(--tp-space-3) var(--tp-space-6); }
+.tk-groups { display: grid; gap: var(--tp-space-8); }
+.tk-list { padding: var(--tp-space-2) var(--tp-space-4); gap: 0; }
+.tk-row .tp-checklist { margin-top: var(--tp-space-1); }
+.tk-row__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--tp-space-1); }
+.tk-row[data-done="true"] .tp-check__box { background: var(--tp-done); border-color: var(--tp-done); color: var(--tp-paper); }
+.tk-editor { display: grid; gap: var(--tp-space-3); border: 0; margin: 0; padding: 0; min-width: 0; }
+.tk-editor__grid { display: grid; gap: var(--tp-space-3); grid-template-columns: repeat(auto-fit, minmax(calc(var(--tp-space-20) * 2), 1fr)); }
+.tk-editor__step { display: flex; align-items: center; gap: var(--tp-space-2); }
+.tk-editor__steptext { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.tk-editor__add { display: flex; flex-wrap: wrap; gap: var(--tp-space-2); }
+.tk-editor__add .tp-input { flex: 1 1 calc(var(--tp-space-20) * 2); min-width: 0; }
+.tk-editor__save { justify-self: start; }
+@media (max-width: 767px) {
+  .tk-list { padding-inline: var(--tp-space-3); }
+  .tk-row { grid-template-columns: auto minmax(0, 1fr); }
+  .tk-row__actions { grid-column: 2; justify-content: flex-start; }
 }

@@ -58,9 +58,8 @@ tools:
   edit:
   bash: ["git diff:*", "git log:*", "git status:*", "ls:*", "cat:*"]
 safe-outputs:
-  github-app:
-    app-id: ${{ secrets.FACTORY_APP_ID }}
-    private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+  # No Factory App (Amit 2026-10-05): safe outputs use the workflow's own GITHUB_TOKEN, like factory-dispatch.
+  # The App block made every merged `factory` PR (e.g. batch #673) fail at "Generate GitHub App token".
   create-pull-request:
     title-prefix: "Proposed ticket changes — "
     labels: [config]

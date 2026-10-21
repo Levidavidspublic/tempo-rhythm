@@ -4,6 +4,7 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import type { NextRequest } from "next/server";
+import { E2E_WIRING_ROUTES } from "./lib/e2eWiringRoutes";
 import { decideEntryRedirect, PUBLIC_ROUTE_PATTERNS } from "./lib/rootEntry";
 
 const isPublicRoute = createRouteMatcher([...PUBLIC_ROUTE_PATTERNS]);
@@ -18,12 +19,15 @@ const isCoreTaskViewRoute = createRouteMatcher([
   "/projects/(.*)",
 ]);
 
+// Wiring smoke specs (tests/e2e/wiring/) open these signed out under the same dev-only bypass.
+const isWiringE2ERoute = createRouteMatcher([...E2E_WIRING_ROUTES]);
+
 export default convexAuthNextjsMiddleware(async (request: NextRequest, ctx) => {
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.TEMPO_E2E_AUTH_BYPASS === "1" &&
     process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS === "1" &&
-    isCoreTaskViewRoute(request)
+    (isCoreTaskViewRoute(request) || isWiringE2ERoute(request))
   ) {
     return;
   }

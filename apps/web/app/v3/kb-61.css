@@ -1,0 +1,45 @@
+.kb61-sheet .kb61-saving {
+  display: grid;
+  gap: var(--tp-space-1);
+  color: var(--tp-ink-muted);
+  font-size: var(--tp-text-sm);
+  overflow-wrap: anywhere;
+}
+.kb61-sheet .tp-input[readonly] {
+  background: var(--tp-sunken);
+  color: var(--tp-ink);
+}
+.kb61-sheet .tp-btn {
+  min-block-size: var(--tp-touch);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.kb61-sheet .tp-btn:focus-visible,
+.kb61-sheet .tp-input:focus-visible,
+.kb61-sheet .tp-select__input:focus-visible,
+.kb61-gallery .tp-btn:focus-visible {
+  outline: 2px solid var(--tp-accent);
+  outline-offset: var(--tp-space-1);
+}
+.kb61-gallery {
+  display: grid;
+  gap: var(--tp-space-4);
+}
+.kb61-gallery__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tp-space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kb61-sheet,
+  .kb61-sheet *,
+  .kb61-scrim,
+  .kb61-gallery .tp-btn {
+    animation: none;
+    transition: none;
+  }
+}

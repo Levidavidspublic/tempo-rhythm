@@ -1,0 +1,56 @@
+name: factory-release-pr
+
+# Phase J2. Opens or updates ONE pull request integration → master titled
+# "Release YYYY-MM-DD" (Asia/Jerusalem). The body lists pull requests merged
+# into integration since the master tip. If a Release PR is already open,
+# its body is updated. A second PR is not opened.
+#
+# Does not merge. Does not push to master. Does not change branch protection.
+# Required checks on the release PR stay required.
+# Merges on public tempo use the GitHub merge queue.
+#
+# A pull request opened with the workflow GITHUB_TOKEN does not trigger
+# pull_request workflows (GitHub's token recursion guard). That does not
+# weaken required checks. If those checks do not start, re-run them.
+#
+# factory-nightly.yml is not modified. workflow_run below starts after that
+# workflow succeeds, once this file is on the default branch (integration).
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["factory-nightly"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: factory-release-pr
+  cancel-in-progress: false
+
+jobs:
+  quiet:
+    # Quiet hours (factory/LOOP.md): 22:00-09:00 Asia/Jerusalem nothing new starts; the run ends green.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    uses: ./.github/workflows/factory-quiet-hours.yml
+    with:
+      what: "factory-release-pr (Release PR integration -> master)"
+  release-pr:
+    needs: quiet
+    if: needs.quiet.outputs.quiet != 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/factory
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Open or update the release PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/factory/release-pr.mjs

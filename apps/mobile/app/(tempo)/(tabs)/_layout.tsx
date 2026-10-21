@@ -1,57 +1,30 @@
 import { Tabs } from "expo-router";
-import { BookOpen, CheckSquare, Heart, Home } from "lucide-react-native";
-import { tempoColors } from "@tempo/ui/theme";
+import { usePrefs } from "@/components/v3/prefs";
+import { TempoTabBar } from "@/components/v3/TabBar";
 
 /**
- * Tempo Flow bottom tab bar.
- * @source docs/design/claude-export/design-system/mobile/mobile-shell.jsx
+ * Tempo Flow bottom tab bar: Today, Tasks, Coach, Notes, and More (a sheet).
+ * @source docs/design/v3/screens/mobile/today.html (tab bar, data-count="5")
  * @action navigateTab
  */
 export default function TabsLayout() {
+  const { colors } = usePrefs();
   return (
     <Tabs
+      tabBar={(props) => <TempoTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: tempoColors.tempoOrange,
-        tabBarInactiveTintColor: tempoColors.dustGreySoft,
-        tabBarStyle: {
-          backgroundColor: tempoColors.creamRaised,
-          borderTopColor: tempoColors.lineSoft,
-        },
+        // v3 tab bar (tempo.css .tp-tab): ink when current on a hover wash, muted ink otherwise.
+        tabBarActiveTintColor: colors.ink,
+        tabBarInactiveTintColor: colors.inkMuted,
+        tabBarActiveBackgroundColor: colors.hover,
+        sceneStyle: { backgroundColor: colors.ground },
       }}
     >
-      <Tabs.Screen
-        name="today"
-        options={{
-          title: "Today",
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          title: "Tasks",
-          tabBarIcon: ({ color, size }) => (
-            <CheckSquare size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="notes"
-        options={{
-          title: "Notes",
-          tabBarIcon: ({ color, size }) => (
-            <BookOpen size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="coach"
-        options={{
-          title: "Coach",
-          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="today" options={{ title: "Today" }} />
+      <Tabs.Screen name="tasks" options={{ title: "Tasks" }} />
+      <Tabs.Screen name="coach" options={{ title: "Coach" }} />
+      <Tabs.Screen name="notes" options={{ title: "Notes" }} />
     </Tabs>
   );
 }

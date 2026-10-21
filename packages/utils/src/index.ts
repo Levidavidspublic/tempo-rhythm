@@ -20,6 +20,41 @@ export {
   resolveEnergySuggestion,
 } from "./habit-energy-suggestions";
 
+export {
+  BLOCK_CODEC_LIMITS,
+  type BlockErrorCode,
+  type BlockSegment,
+  type BrokenBlockSegment,
+  type MarkdownSegment,
+  pageMetaDataSchema,
+  parseTempoBlocks,
+  serializeTempoBlocks,
+  type TempoBlock,
+  taskDataSchema,
+  tempoBlockSchema,
+  templateDataSchema,
+  type ValidBlockSegment,
+} from "./blocks";
+
+export {
+  PAGE_TEXT_LIMITS,
+  type PageTextOptions,
+  type PageTextProjection,
+  pageSnippet,
+  projectPageText,
+} from "./page-summary";
+
+export {
+  type Backlink,
+  backlinksFor,
+  findWikiLinks,
+  isLinkableTitle,
+  type PageRef,
+  sameTitle,
+  titleKey,
+  type WikiLink,
+} from "./wiki-links";
+
 /**
  * Format a Unix timestamp (ms) to a locale date string
  */
@@ -57,3 +92,17 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return `${str.substring(0, maxLength - 3)}...`;
 }
+
+export {
+  type HistoryImportCoverage,
+  type HistoryImportProvider,
+  type HistoryImportRecord,
+  type HistoryImportResult,
+  MAX_HISTORY_CONTENT_CHARS,
+  MAX_HISTORY_CONVERSATIONS,
+  MAX_HISTORY_IMPORT_BYTES,
+  MAX_HISTORY_MESSAGES,
+  MAX_HISTORY_RECORDS,
+  MAX_HISTORY_SOURCE_ID_CHARS,
+  parseHistoryImport,
+} from "./historyImport";

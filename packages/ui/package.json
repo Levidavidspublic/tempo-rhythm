@@ -11,18 +11,30 @@
     "./brand/native": "./src/brand/native.tsx",
     "./primitives": "./src/primitives/index.ts",
     "./native": "./src/native/index.ts",
-    "./theme": "./src/theme/tokens.ts"
+    "./theme": "./src/theme/tokens.ts",
+    "./blocks/catalog": "./src/blocks/catalog.ts",
+    "./blocks/block-spec": "./src/blocks/block-spec.ts",
+    "./blocks/decision-steps": "./src/blocks/decision-steps.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "biome lint .",
     "check": "biome check ."
   },
+  "dependencies": {
+    "@json-render/core": "0.21.0",
+    "@json-render/react": "0.21.0",
+    "@tempo/utils": "workspace:*",
+    "zod": "4.3.6"
+  },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
+    "@types/react-dom": "19.2.3",
+    "react-dom": "19.2.3",
     "typescript": "^5.9.3"
   }
 }
