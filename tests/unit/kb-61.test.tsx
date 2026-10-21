@@ -52,6 +52,7 @@ function parseResults(run: ChildRun, expectedToken: string): RecordPayload {
   return payload;
 }
 function requireSuccessfulExit(run: ChildRun, payload: RecordPayload) {
+  if (run.cleanupErrors.length) throw new AggregateError(run.cleanupErrors, "KB61 fixture cleanup failed");
   if (run.timedOut) throw Error(`KB61 child exceeded its lifecycle budget: ${run.err.slice(-6000)}`);
   if (run.code !== 0) throw Error(`KB61 clean child exit ${run.code}: ${run.err.slice(-6000)}`);
   if (!payload.cleanup.complete) throw Error("KB61 child did not complete cleanup");
@@ -696,6 +697,15 @@ if (child) {
       requireFixtureSuccess(proof);
       expect(proof.out).toContain("controlled descendant cleanup failure");
       expect(proof.out).toContain("controlled process-group termination failure");
+      const record = proof.out.split("\n").find((line) => line.startsWith("KB61_BOTH_CLEANUP_ERRORS="));
+      if (!record) throw Error("The cleanup fault proof returned no errors");
+      const errors = (JSON.parse(record.slice("KB61_BOTH_CLEANUP_ERRORS=".length)) as string[]).map((message) => Error(message));
+      let rejected: unknown;
+      try { requireSuccessfulExit({ ...outcome.run, code: null, timedOut: true, cleanupErrors: errors }, outcome.payload!); }
+      catch (error) { rejected = error; }
+      if (!(rejected instanceof AggregateError)) throw Error("The KB61 acceptance gate hid cleanup errors behind exit status");
+      expect(rejected.errors[0]).toBe(errors[0]);
+      expect(rejected.errors[1]).toBe(errors[1]);
     });
 
     test("clean child completes every original case and cleanup with authoritative exit", () => {
