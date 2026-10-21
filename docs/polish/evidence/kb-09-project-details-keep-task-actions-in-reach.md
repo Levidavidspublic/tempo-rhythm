@@ -159,7 +159,7 @@ Bun **1.3.9**, system Chromium, worktree-local workspace links and the existing 
 | `CI=1 bunx playwright test --reporter=line` | UNKNOWN: root owns the complete E2E gate |
 | `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | UNKNOWN: root owns the build gate |
 
-Final frozen source/test (including unchanged CSS) SHA-256:
+Historical source/test SHA-256 for the earlier scoped pass ending at `e39ac6b` (including unchanged CSS). These values precede the overnight v3 correction and are retained as historical evidence:
 
 ```text
 b38e92b16389cf4b4e83bde5db55029c5ae25799a546ee4eb5e28266b6598560  apps/web/components/projects/ProjectDetailScreen.tsx
@@ -296,6 +296,17 @@ Received: 1
 Ran 22 tests across 1 file. [26.07s]
 ```
 
+
+### Current frozen source/test provenance
+
+The overnight v3 focused and mandatory results below use source commit `b67700e6e1fb7a4c8c697648d73bfb5bb0f4ce69`. SHA-256 values were checked against that commit and the current working tree; all four source/test files still match byte-for-byte. Subsequent commits change evidence only. The earlier hash block is historical, not the final source for this pass.
+
+```text
+28997b7bba4612ab09b53778ac7e420ecb19a98934c7b3df0203dfa563d25375  apps/web/components/projects/ProjectDetailScreen.tsx
+0a15c8f6e144aec1c493300445123e478fb530f2aef078da63e09a229db89e82  apps/web/lib/i18n-groups/kb-09.ts
+6e3ca5a93e981fb887c5937142b7dd80414acb53c41ff03d62233b1004d2b1c1  apps/web/app/v3/kb-09.css
+cb2c8356911f8c2c93d697a7d73a164928e2eb975c1245c7be429d74ae1b235d  tests/unit/kb-09.test.tsx
+```
 
 ### Final mandatory receipts for the prescribed pass
 
