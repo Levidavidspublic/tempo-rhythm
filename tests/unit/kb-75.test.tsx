@@ -1,9 +1,13 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import type { Browser } from "@playwright/test";
+import { fixtureCleanup, fixturePhase, requireFixtureSuccess, runIsolatedFixture, type FixtureRun } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
 
 const repo = resolve(import.meta.dir, "../..");
 const child = process.env.KB75_FIXTURE_CHILD === "1";
+const fixtureTimeout = process.env.KB75_CAPTURE_DIR ? 480_000 : 240_000;
 type Results = Record<string, { pass: boolean; detail?: string }>;
 
 const backend = `
@@ -61,28 +65,40 @@ async function runFixture(): Promise<Results> {
   const web = join(repo, "apps/web");
   const postcss = (await import(Bun.resolveSync("postcss", web))).default;
   const tailwind = (await import(Bun.resolveSync("@tailwindcss/postcss", web))).default;
-  const temp = join(repo, "work/kb75-fixture");
-  await mkdir(temp, {recursive:true});
+  await mkdir(join(repo, "work"), {recursive:true});
+  const temp = await mkdtemp(join(repo, "work/kb75-fixture-"));
+  let server: ReturnType<typeof Bun.serve> | undefined;
+  let browser: Browser | undefined;
+  const release = fixtureCleanup({
+    server: () => server?.stop(true),
+    browser: () => browser?.close(),
+    directory: () => rm(temp, {recursive:true, force:true}),
+  }, 5_000);
+  try {
+  fixturePhase("KB-75 setup start");
   await Promise.all([
     writeFile(join(temp,"backend.ts"),backend),
     writeFile(join(temp,"api.ts"),api),
     writeFile(join(temp,"entry.tsx"),entry),
   ]);
   const cssPath = join(web,"app/globals.css");
+  fixturePhase("KB-75 styles start");
   const baseCss = (await postcss([tailwind({base:repo})]).process(await readFile(cssPath,"utf8"),{from:cssPath})).css;
+  fixturePhase("KB-75 styles complete");
   const build = async (source:string) => {
-    const output=await Bun.build({entrypoints:[source],target:"browser",outdir:temp,
+    const name=source.endsWith("before-entry.tsx")?"before-entry":"entry";
+    const outdir=join(temp,name+"-bundle");
+    fixturePhase(`KB-75 build start: ${name}`);
+    await isolatedBrowserBuild({
+      cwd:repo, entrypoints:[source], outdir, resolveFrom:web,
       define:{"process.env.NODE_ENV":'"test"'},
-      plugins:[{name:"kb75-fixture",setup(b){
-        b.onResolve({filter:/^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/},
-          ({path})=>({path:Bun.resolveSync(path,web)}));
-        b.onResolve({filter:/^convex\/react$/},()=>({path:join(temp,"backend.ts")}));
-        b.onResolve({filter:/^@\/convex\/_generated\/api$/},()=>({path:join(temp,"api.ts")}));
-        b.onResolve({filter:/^@\//},({path})=>({path:Bun.resolveSync(path,web)}));
-      }}]});
-    if(!output.success)throw Error(output.logs.map(String).join("\n"));
-    return {js:await output.outputs.find(file=>file.path.endsWith(".js"))?.text()??"",
-      css:(await Promise.all(output.outputs.filter(file=>file.path.endsWith(".css")).map(file=>file.text()))).join("\n")};
+      aliases:{"convex/react":join(temp,"backend.ts"),"@/convex/_generated/api":join(temp,"api.ts")},
+      timeoutMs:fixtureTimeout, cleanupMs:5_000,
+    });
+    const css=join(outdir,`${name}.css`);
+    fixturePhase(`KB-75 build complete: ${name}`);
+    return {js:await readFile(join(outdir,`${name}.js`),"utf8"),
+      css:existsSync(css)?await readFile(css,"utf8"):""};
   };
   const current=await build(join(temp,"entry.tsx"));
   let before:{js:string;css:string}|null=null;
@@ -97,7 +113,8 @@ async function runFixture(): Promise<Results> {
     before=await build(join(temp,"before-entry.tsx"));
   }
   if(process.env.KB75_BUNDLE_ONLY==="1")return {bundle:{pass:Boolean(current.js&&baseCss&&(!before||before.js))}};
-  const server=Bun.serve({hostname:"127.0.0.1",port:0,fetch(request){
+  fixturePhase("KB-75 server start");
+  server=Bun.serve({hostname:"127.0.0.1",port:0,fetch(request){
     const url=new URL(request.url);
     if(url.pathname==="/current.js")return new Response(current.js,{headers:{"content-type":"text/javascript"}});
     if(url.pathname==="/before.js")return new Response(before?.js??"",{headers:{"content-type":"text/javascript"}});
@@ -113,12 +130,14 @@ async function runFixture(): Promise<Results> {
   }});
   const executable=[chromium.executablePath(),"/usr/bin/chromium","/usr/bin/google-chrome","/usr/bin/chromium-browser"].find(existsSync);
   if(!executable)throw Error("KB75 fixture requires installed Playwright Chromium or system Chrome/Chromium");
-  const browser=await chromium.launch({executablePath:executable,args:["--no-sandbox"]});
+  fixturePhase("KB-75 browser launch");
+  browser=await chromium.launch({executablePath:executable,args:["--no-sandbox"]});
+  fixturePhase("KB-75 browser ready");
   const results:Results={};
   const open=async(mode:"screen"|"gallery"|"before"="screen",lang:"en"|"he"="en",width=390,theme:"light"|"dark"="light",initial:"admin"|"nonadmin"="admin")=>{
-    const page=await browser.newPage({viewport:{width,height:844},reducedMotion:"reduce",timezoneId:"UTC"});
+    const page=await browser!.newPage({viewport:{width,height:844},reducedMotion:"reduce",timezoneId:"UTC"});
     const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
-    await page.goto(`http://127.0.0.1:${server.port}/?mode=${mode}&lang=${lang}&initial=${initial}`);
+    await page.goto(`http://127.0.0.1:${server!.port}/?mode=${mode}&lang=${lang}&initial=${initial}`);
     await page.locator("h1").waitFor({state:"visible",timeout:15_000}).catch(async()=>{throw Error("No hydrated h1: "+errors.join(" | "))});
     await page.waitForFunction(target=>document.documentElement.lang===target,lang);
     await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
@@ -129,12 +148,12 @@ async function runFixture(): Promise<Results> {
     return page;
   };
   const check=async(name:string,fn:()=>Promise<void>)=>{
-    try{await fn();results[name]={pass:true}}catch(error){results[name]={pass:false,detail:String(error)}}
+    fixturePhase(`KB-75 case start: ${name}`);
+    try{await fn();results[name]={pass:true};fixturePhase(`KB-75 case complete: ${name}`)}catch(error){results[name]={pass:false,detail:String(error)};fixturePhase(`KB-75 case failed: ${name}: ${error}`)}
   };
   const state=(page:any)=>page.evaluate(()=>(window as any).__kb75.state);
   const act=(page:any,name:string)=>(page.locator('[data-user-id="'+name+'"]'));
   const settle=(page:any,id:string,ok:boolean)=>page.evaluate(([userId,success])=>(window as any).__kb75.settle(userId,success),[id,ok]);
-  try {
     await check("loading distinct from zero",async()=>{
       const page=await open();
       await page.evaluate(()=>(window as any).__kb75.setMe(undefined));
@@ -324,8 +343,12 @@ async function runFixture(): Promise<Results> {
           await page.close();
         }
     }
-  } finally {await browser.close();server.stop(true)}
   return results;
+  } finally {
+    fixturePhase("KB-75 cleanup start");
+    await release();
+    fixturePhase("KB-75 cleanup complete");
+  }
 }
 
 if(child){
@@ -335,18 +358,22 @@ if(child){
   const {afterAll,beforeAll,describe,expect,test}=await import("bun:test");
   const {kb75Copy}=await import("../../apps/web/lib/i18n-groups/kb-75");
   let results:Results={};
-  let processChild:ReturnType<typeof Bun.spawn>|undefined;
+  const cancellation=new AbortController();
+  let running:Promise<FixtureRun>|undefined;
   afterAll(async()=>{
-    if(processChild && processChild.exitCode===null){processChild.kill();await processChild.exited}
+    cancellation.abort();
+    await running;
   });
   beforeAll(async()=>{
-    const spawned=Bun.spawn([process.execPath,import.meta.path],{
-      cwd:repo,env:{...process.env,KB75_FIXTURE_CHILD:"1"},stdout:"pipe",stderr:"pipe"});
-    processChild=spawned;
-    const [out,err,code]=await Promise.all([
-      new Response(spawned.stdout).text(),new Response(spawned.stderr).text(),spawned.exited]);
-    if(code!==0)throw Error(`KB75 clean child exit ${code}: ${err.slice(-5000)}`);
-    results=JSON.parse(out.trim().split("\n").at(-1)??"{}");
+    running=runIsolatedFixture({
+      command:[process.execPath,import.meta.path],cwd:repo,
+      env:{...process.env,KB75_FIXTURE_CHILD:"1"},
+      timeoutMs:fixtureTimeout,cleanupMs:5_000,signal:cancellation.signal,
+    });
+    const run=await running;
+    requireFixtureSuccess(run);
+    results=JSON.parse(run.out.trim().split("\n").at(-1)??"{}");
+    fixturePhase(`KB-75 result exit=${run.code} supervisor=${run.supervisorCode}; ${Object.keys(results).length} named results`);
   },process.env.KB75_CAPTURE_DIR ? 480_000 : 240_000);
   describe("KB-75 mounted admin approvals",()=>{
     test("dictionary keys match and Hebrew is present",()=>{

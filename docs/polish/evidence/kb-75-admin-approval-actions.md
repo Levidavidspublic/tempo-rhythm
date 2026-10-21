@@ -480,3 +480,20 @@ This is all available local output. Setup hit its existing 240-second deadline, 
 After the runner ended, an owned child was briefly observed as PID 140695, PPID 1, PGID 121772. A subsequent exact-PID inspection found it exited before any cleanup signal was sent. Final `/proc` inspection reports that PID as zombie state `Z`, empty command line, and no live scoped Bun/flock processes (`/workspace/work/kb-finish/kb75-extra/cleanup-final.json`). No worker runner remains active. The unknown waiting phase is not inferred from the timeout.
 
 Root separately reported current-source hosted CI **PASS** for `7f928273de78fe0814c2666a10294c5c435bad50`, [run 39607557790](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39607557790). This hosted result is separate evidence and does not replace the failed local non-UTC focused gate or establish that the hosted environment used a non-UTC parent. Remote review/queue and final validation remain root-owned.
+
+
+## Overnight v3 shared-harness adoption — 2026-10-21
+
+PR open — the owner authorized AT-16's scoped shared-harness adoption in the overnight v3 instruction. Role: WORKHORSE. This continues issue #1178 and draft #1179, preserves the prior exhausted-pass ledger and failure receipts, and brings in shared #1202/#1203 at `4d30965` through an ordinary merge.
+
+The parent uses the shared bounded child runner with cancellation, streaming phase evidence, actual child and supervisor exit validation, and owned-process reaping. Fresh build isolation resolves packages independently of the full Bun suite. The child owns a unique temporary directory; independent server/browser/directory cleanup begins even after setup failure and is used for normal exit and cancellation. The existing 240-second normal setup, 480-second optional capture, default five-second cleanup and every browser wait/assertion deadline remain unchanged. No fixed sleep was added.
+
+All 23 existing parent cases remain: the dictionary case plus 22 named browser cases. A comparison with original branch head `b7196b6` found identical 22 browser case names, all 38 browser-expect-bearing lines and all three parent-expect-bearing lines. Exact date and browser UTC assertions remain. Product component, dictionary, CSS and contact sheet are byte-identical to that original head.
+
+Non-UTC focused proof: `TZ=America/Los_Angeles bun test tests/unit/kb-75.test.tsx` → exit 0, **23 pass / 0 fail**, 24 parent assertions, 25.83 seconds. A separate parent preflight resolved `America/Los_Angeles`. The unchanged date case proved both browser pages resolve `UTC` and retain the exact English/Hebrew date strings. Streamed phases reached every named case and completed cleanup; actual child exit 0, supervisor exit 0, all 22 browser results returned. Both recorded runner PIDs were absent after completion and no unique `work/kb75-fixture-*` directory remained.
+
+Before: retained historical non-UTC run above reported zero named results and two hook failures at 240 seconds and five seconds (245.95 seconds total). After: all 23 cases pass in 25.83 seconds. This proves the new invocation completed, not the precise phase in which the old buffered invocation stalled.
+
+Bun 1.3.9. Frozen install remained at Resolving dependencies and reached the external 120-second bound, exit 124: UNKNOWN. Its bun.lock SHA256 matches the successfully installed shared worktree (`35da413125508b8d1fbbaff0fc48b01dd8db7a437dd3439dc7d2f2edfbfcd1f7`); installed trees were copied locally with workspace links preserved. No manifest/lockfile/environment/configuration changed. Mandatory lint/typecheck/full suite/scans/E2E/build are running in order, with E2E serialized under the shared browser lock.
+
+Logs are `/workspace/kb-run-logs/kb75-install.log`, `kb75-parent-zone.log`, `kb75-focused.log`, `kb75-0.log` through `kb75-5.log` and `kb75-results.json`. Final command results follow below. The required PR attachment tool call was attempted separately, but host completion is UNKNOWN after it hung. Live administrative writes, native Hebrew and physical-device checks remain UNKNOWN.
