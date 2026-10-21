@@ -1,14 +1,75 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
-import { readFile, mkdir, writeFile } from "node:fs/promises";
+import { readFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, expect as pwExpect, type Browser, type Page } from "@playwright/test";
 import { en, he, kb09t } from "../../apps/web/lib/i18n-groups/kb-09";
 
 const root = process.cwd();
+
+// Keep module defaults, Bun.build and Bun.serve out of other suites' process state.
+if (process.env.KB09_ISOLATED !== "1") {
+  type ChildCase = { name: string; status: "passed" | "failed" | "skipped"; details: string };
+  type ChildResult = { code: number; output: string; cases: ChildCase[]; reportError?: string };
+  const names = [...(await readFile(import.meta.path, "utf8")).matchAll(/\btest\("([^"\n]+)"/g)].map((match) => match[1]);
+  const decode = (value: string) => value.replace(/&(quot|apos|lt|gt|amp);/g, (_, key: string) =>
+    ({ quot: '"', apos: "'", lt: "<", gt: ">", amp: "&" })[key] ?? key);
+  let child: ReturnType<typeof Bun.spawn> | undefined;
+  let reportDir: string | undefined;
+  let result: Promise<ChildResult> | undefined;
+  const run = () => result ??= (async () => {
+    const work = join(root, "work");
+    await mkdir(work, { recursive: true });
+    reportDir = await mkdtemp(join(work, "kb09-run-"));
+    const reportPath = join(reportDir, "results.xml");
+    try {
+      child = Bun.spawn([process.execPath, "test", import.meta.path, "--reporter=junit", `--reporter-outfile=${reportPath}`], {
+        cwd: root, env: { ...process.env, KB09_ISOLATED: "1" }, stdout: "pipe", stderr: "pipe",
+      });
+      const [stdout, stderr, code] = await Promise.all([
+        new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+      ]);
+      const output = stdout + stderr;
+      process.stderr.write(output);
+      let xml = "";
+      let reportError: string | undefined;
+      try { xml = await readFile(reportPath, "utf8"); }
+      catch (error) { reportError = String(error); }
+      const cases: ChildCase[] = [...xml.matchAll(/<testcase\b([^>]*)(?:\/>|>([\s\S]*?)<\/testcase>)/g)].map((match) => {
+        const name = decode(match[1].match(/\bname="([^"]*)"/)?.[1] ?? "");
+        const details = match[2] ?? "";
+        const status = /<(?:failure|error)\b/.test(details) ? "failed" : /<skipped\b/.test(details) ? "skipped" : "passed";
+        return { name, status, details };
+      });
+      return { code, output, cases, reportError };
+    } finally {
+      if (reportDir) await rm(reportDir, { recursive: true, force: true });
+    }
+  })();
+  for (const name of names) {
+    test(name, async () => {
+      const completed = await run();
+      const matches = completed.cases.filter((item) => item.name === name || item.name.endsWith(` > ${name}`));
+      if (matches.length !== 1) throw new Error(`KB-09 child did not report exactly one result for ${name}; exit ${completed.code}; ${completed.reportError ?? ""}\n${completed.output}`);
+      if (matches[0].status !== "passed") throw new Error(`KB-09 child case ${name}: ${matches[0].status}\n${matches[0].details}\n${completed.output}`);
+      expect(matches[0].status).toBe("passed");
+    }, 300_000);
+  }
+  const gateName = "isolated KB-09 child exits successfully and reports every case";
+  test(gateName, async () => {
+    const completed = await run();
+    expect(completed.code).toBe(0);
+    expect(completed.cases).toHaveLength(names.length);
+    expect(completed.reportError).toBeUndefined();
+  }, 300_000);
+  afterAll(async () => {
+    if (child?.exitCode === null) { child.kill(); await child.exited; }
+    if (reportDir) await rm(reportDir, { recursive: true, force: true });
+  });
+} else {
 setDefaultTimeout(60_000);
 const web = join(root, "apps/web");
-const temp = join(root, "work/kb09-fixture");
+let temp: string;
 let browser: Browser;
 let server: ReturnType<typeof Bun.serve>;
 let beforeBundleJs: string | null = null;
@@ -80,7 +141,8 @@ function html(mode: string, lang: string): string {
 }
 
 async function buildFixture() {
-  await mkdir(temp, { recursive: true });
+  await mkdir(join(root, "work"), { recursive: true });
+  temp = await mkdtemp(join(root, "work/kb09-fixture-"));
   await writeFile(join(temp, "backend.ts"), backend);
   await writeFile(join(temp, "api.ts"), api);
   await writeFile(join(temp, "entry.tsx"), entry);
@@ -143,7 +205,13 @@ async function pageFor(mode: "screen" | "gallery" | "before" = "screen", lang: "
 
 describe.serial("KB-09 project detail", () => {
   beforeAll(buildFixture, 120_000);
-  afterAll(async () => { await browser?.close(); server?.stop(true); });
+  afterAll(async () => {
+    try { server?.stop(true); }
+    finally {
+      try { await browser?.close(); }
+      finally { if (temp) await rm(temp, { recursive: true, force: true }); }
+    }
+  });
 
   test("en/he dictionary keys match", () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(he).sort());
@@ -283,7 +351,7 @@ describe.serial("KB-09 project detail", () => {
   });
 
   test("browser evidence covers widths, locales, and themes", async () => {
-    const shots = join(root, "work/kb09-captures");
+    const shots = join(temp, "captures");
     await mkdir(shots, { recursive: true });
     for (const width of [390, 1280]) for (const lang of ["en", "he"] as const) for (const theme of ["light", "dark"] as const) {
       for (const mode of beforeBundleJs ? ["before", "screen"] as const : ["screen"] as const) {
@@ -298,3 +366,5 @@ describe.serial("KB-09 project detail", () => {
     }
   }, 300_000);
 });
+
+}
