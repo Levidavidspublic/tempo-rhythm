@@ -11,18 +11,24 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 ## Shared test fix
 
-- Ticket [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), draft [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), sourcec5fd530: focused **12 pass / 0 fail**,37assertions,3.03s. Prior focused candidates9/1,10/0 and8/4 are retained in the shared evidence. The supervisor fix responds to observed empty /proc task children data by using PPID enumeration and verifies detached descendant reaping. Final shared PR head92495a8 (implementation511065b): lint/typecheck5/5, frozeninstall2,000packages, four scans and build1/1 pass. E2E remains infrastructureUNKNOWN. Full-suite evidence below; current hosted gates and CodeRabbit pending. PR remains open; no merge claim.
-- Before (current local baseline, Bun 1.3.9): `bun run test` finished with **3,473 pass / 20 fail / 3 todo** across 211 files in 173.45s; failures are KB-64 browser-close cases. Lint and typecheck pass 5/5. This fresh baseline does not reproduce every historical hosted failure.
-- Before: historical combined validation recorded 3,585 pass / 30 fail / 3 todo / 2 errors (VALIDATION.md); later KB-66 affected two cancelled hosted runs, each with eight 240-second timeouts. These are different candidates and must not be added together or treated as a controlled comparison.
-- Baseline remaining gates: four scans/notices and build pass. E2E is UNKNOWN because the required browser is missing and its CDN download returns403 (actual run1pass/28fail/88skip).
-- After (latest shared source511065b): **13 pass / 0 fail**,43assertions,2.50s, including nested build-supervisor receipts. Actual fixture adoption: KB-03 **15/0**,27assertions,8.37s at aed296c; KB-66 child **19/0**,32assertions,12.60s and parent **19/0**,38assertions,12.99s at b190b2b. Original case bodies/assertions/deadlines retained. These focused improvements do not claim the historical hosted EISDIR has been reproduced locally.
-- Shared full-suite c5fd530: incomplete, cancelled with exit143 after unchanged KB-66’s first240,017.58ms timeout, before repeating the cached wait. No final pass/fail count exists; the retained prefix has1,534observedpasses/1failure/3todo. KB-64 and all12 then-present helper cases passed. This distinguishes a remaining consumer migration from helper proof; all mandatory remaining commands completed as recorded above. Hosted EISDIR and intermittent teardown hangs must be distinguished from locally reproduced failures.
+PR open — [shared ticket #1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), [draft #1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). No existing test is removed, skipped or weakened. The helper isolates Bun browser builds, streams child phases, bounds cancellation and cleanup, reaps owned descendants, preserves the authoritative child exit, and waits on committed browser signals.
 
-Shared #1202 is PR open: [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), waiting for current green CI and CodeRabbit. KB-05 adoption has started.
+At `4d30965`, all **15 focused helper cases pass**, with 45 assertions in 2.96 seconds. The earlier 9/1, 10/0, 8/4, 12/0, 13/0 and 14/1 receipts remain in the scoped evidence. CodeRabbit’s two major findings (early receipt validation and PID-zero signaling) were fixed with isolated regressions. Its next review identified two minor corrections: recompute the deadline after the dynamic import, and relabel an earlier 13-case evidence row. Those corrections are pending.
 
-CodeRabbit found and verified two shared-helper blockers (early receipt validation and PID-zero signaling on spawn failure). Both are fixed at4d30965 with two isolated regressions: **15/0**,45assertions,2.96s. The failed new regression scaffolding run14/1 is retained; its binding correction was part of the same scoped review pass. Current hosted Test is pending. The next CodeRabbit review found two minor corrections: deadline accounting after dynamic import and an obsolete “final” evidence label. These are being corrected; no merge.
+| Run | Result | Meaning |
+|---|---|---|
+| Fresh local baseline, Bun 1.3.9 | 3,473 pass / 20 fail / 3 todo | All 20 failures were KB-64 browser-close cases. |
+| Shared helper local full run, `c5fd530` | Incomplete; observed 1,534 pass / 1 fail / 3 todo, cancelled with exit 143 | Unchanged KB-66 reached its first 240-second timeout; no final aggregate exists. |
+| Shared helper hosted full run, `4d30965` | 3,487 pass / 1 fail / 3 todo, 212 files, 729.37 seconds | Only unchanged KB-61’s 480-second hook failed. Other required checks passed. |
+| KB-03 adoption full run, earlier shared dependency | 3,520 pass / 0 fail / 3 todo | A passing full run on that source, not proof of every later head. |
+| KB-66 adoption full run | 3,489 pass / 17 fail / 3 todo | All 17 failures were KB-64 browser-close cases. |
+| KB-67 adoption full run, before final parser correction | 3,457 pass / 32 fail / 3 todo | 31 old-parser failures plus KB-61’s original 480-second timeout. Final focused shared + own run passed 46/0. |
+| KB-05 adoption full run, `87aa138` | 3,479 pass / 22 fail / 3 todo | 21 KB-64 browser-close failures plus KB-61’s 480-second timeout; all 13 own cases passed. |
+| KB-45 adoption full run, `92c20bed` | 3,520 pass / 0 fail / 3 todo | All 12 own cases and the shared helper passed. |
 
-E2E runtime recovery: the exact command now uses installed Chromium 151 through its local executable cache path, with no repository/configuration change. Planning baseline **27 pass / 1 fail / 89 skip**; remaining task-view failure is retained. KB-67 separately reports **28 pass / 0 fail / 89 skip**. Neither result erases earlier launch failures or proves another source head.
+The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports and KB-75’s 23 cases. It has not yet produced a green shared PR. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
+
+E2E recovery: the exact command now uses installed Chromium 151 through its local executable-cache path, without repository or configuration changes. Planning baseline: **27 pass / 1 fail / 89 skip** (task-view navigation). KB-67 and KB-45 each separately passed **28 / 0 / 89 skip**. Earlier missing-browser failures and the CDN 403 remain recorded. Existing credential-gated skips were not introduced by this run.
 
 ## Per ticket
 
@@ -45,7 +51,7 @@ E2E runtime recovery: the exact command now uses installed Chromium 151 through 
 | KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — corrective adapter focused child19/0 and parent19/0; full3,489pass/17fail/3todo (KB-64 browser-close baseline), scans/build pass. Final shared+own34/0 at b5a483e; hosted gates/shared merge pending; issue remains reopened. |
 | KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-67 | 1169 | 1197 | PR open — final shared + own 46/0 at 7095f66; E2E 28/0/89 skip. Earlier full 3457/32/3 todo includes 31 old-parser failures and KB-61 timeout. Shared dependency, full-suite and current CI/review block merge. |
+| KB-67 | 1169 | 1197 | PR open — final shared + own 46/0 at 7095f66; E2E 28/0/89 skip. Earlier full 3457/32/3 todo includes 31 old-parser failures and KB-61 timeout. Shared dependency, full-suite and current CI/review block merge. Secret scan flags a synthetic receipt UUID in committed evidence; historical scan remains a blocker after redaction. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
 | KB-74 | 1171 | 1200 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-71 | 1175 | 1177 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
