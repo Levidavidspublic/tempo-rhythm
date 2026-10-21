@@ -118,3 +118,69 @@ Historical hosted Test failure, last 20 command lines before CI cleanup (full ex
 ```
 
 Exact logs/exits, `checks.json`, `coverage-audit.json`, the frozen baseline, source SHA manifests and budget ledger remain under ignored `work/kb45-isolation/`. Root handoff: `/workspace/work/kb-finish/kb45/HANDOFF.md`. Hosted CI, final review and integration eligibility remain unverified here. No push, remote mutation, deployment or additional broad check was performed by this worker.
+
+## Final authorized extra repair — language boundaries (21 October 2026)
+
+Codex review comment `4336882877` correctly identified that the Hebrew `SignUpForm` wrapper made the unchanged English `SignInForm` inherit `lang="he"` and RTL. Only that existing child now sits inside an English/LTR fallback boundary. Its props, fixed sign-up flow, callbacks and auth implementation are unchanged. The translated guidance and legal siblings keep Hebrew/RTL. No route, shared child, backend, dictionary, stylesheet or evidence JPG changed.
+
+Exact source/test commit: `9a5c3fd683786f9447105d99b8662c9fd90c944f`. The coordinator requested this frozen source commit before the queued focused check completed, so hosted validation could proceed independently; this later evidence update is part of the same candidate, not another source repair.
+
+Coordinator receipt: hosted CI run `39607639130` passed at this exact source head, and the current actual CodeRabbit review had no action. The coordinator also retained a different result from the combined checkout containing older KB-45 `d6ef7b7` and localized KB-10 `fe554ba`: its browser child reported 10 pass / 1 fail after a page-load timeout. That composed failure remains a compatibility concern; the independent hosted result does not establish the localized composition. No source change followed either receipt.
+
+Budget reconciliation: ordinary candidate 1 comprises `f433102` plus its initial capture follow-up `c0f0917`; ordinary candidate 2 is `bb6686a` (retry focus, live region and contrast); ordinary candidate 3 is `d6ef7b7` (test isolation). These are three cohesive source candidates, not one attempt per command. The retained audit is `/workspace/work/kb-finish/kb45/budget-ledger.md`. Zero extra passes preceded this change. The coordinating agent explicitly applied the owner's existing KB FINISH authorization for one additional pass to this exhausted ticket; the named stuck-ticket examples do not limit that authorization. This is the fourth and final source candidate. No fifth pass is assumed.
+
+The original isolated child body remains byte-identical, including its eleven cases, 58 assertion sites, 240-second browser deadline and 30-second cleanup deadline. The parent still requires the authoritative child exit and exact completed-case totals; totals now include the added twelfth case, **“Hebrew page and modal respect fallback and child-owned auth language boundaries”** (60 seconds). That mounted case checks labels, send errors, sent-link instructions and reset on the actual page/modal child, while checking the Hebrew guidance/legal boundaries separately. It uses only the existing fake email boundary and fictional Maya data. Failed child output cannot satisfy another parent case.
+
+Compatibility: inspected KB-10 candidate `fe554ba`, whose real `AuthCard` declares its own locale-specific `lang` and `dir`. A nearer Hebrew/RTL child boundary overrides this English fallback. The new regression checks the current untranslated child as English and, when the actual mounted child owns an `AuthCard` boundary, requires Hebrew/RTL and Hebrew copy instead. It does not require future localized child content to remain English. That localized branch has not been exercised in this independent KB-45 worktree; the coordinator owns combined validation. The existing eleven assertions/callbacks are deliberately retained rather than rewritten for another ticket. Device screen-reader pronunciation remains UNKNOWN.
+
+Test results (cloud agent sandbox), exact logs under `/workspace/work/kb-finish/kb45-final/`:
+
+| Command | Exit | Result |
+| --- | --- | --- |
+| `bun --version` | 0 | 1.3.9 |
+| `timeout 120s bun install --frozen-lockfile` | 124 | UNKNOWN: dependency resolution stalled until the agreed bound. Existing installed dependencies used. |
+| `bun run lint` | 0 | 5 successful, 5 total; 4 cached; 8.386 seconds. |
+| `bun run typecheck` | 0 | 5 successful, 5 total; 4 cached; 62.044 seconds. |
+| `flock /workspace/work/kb-finish/heavy-check.lock bun test tests/unit/kb-45.test.tsx` | 1 | FAIL: parent 0 pass / 12 fail, 309.34 seconds; authoritative child 10 pass / 2 fail, 322 assertions, 301.86 seconds. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | All four OK. |
+| `bun run test` | — | UNKNOWN: coordinator owns the broad gate. |
+| `CI=1 bunx playwright test --reporter=line` | — | UNKNOWN: coordinator owns the E2E gate. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | UNKNOWN: coordinator owns the build gate. |
+
+Frozen-install output (entire log):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+`preservation.json` records original-case preservation; `protected-files.json` records byte equality of the unchanged shared child, callers, dictionary, CSS, JPG, root manifest and lock; `candidate-source.json` seals the two source/test hashes before focused validation. No broad test, E2E, build, remote write or combined-checkout edit was performed by this worker. The coordinator owns those remaining gates and remote operations.
+
+Local focused failure: the existing browser case failed while clicking the Hebrew overflow control at test line 227, reporting **“Target page, context or browser has been closed”** after 204.17 seconds. The added case then failed its first `newPage` call because the browser was already closed; it did not reach its language assertions. The first parent wrapper also reported its unchanged 300-second timeout, and Bun printed `killed 1 dangling process`. This is a recorded failure, not an environment-only UNKNOWN or an all-passes/EOF child-exit hang. The cause of the browser closure has not been established. The English fallback and localized composition therefore have no successful local mounted proof from this run, despite the separate hosted pass. No retry or source change followed this final candidate.
+
+Read-only live evidence captured before exit: ten static cases had passed; the child was alive and consuming CPU, the fixture server was listening on loopback, and Chromium had launched. Child stdout/stderr used regular memfds, safely copied without consuming a pipe into `child-live-1.log` / `child-live-2.log`. After exit, `cleanup.json` confirms server refusal, unique fixture-directory removal and unchanged frozen source hashes. All owned Bun/bash/flock processes exited. Three recorded Chromium descendants remain exited PID-1 zombies; no executing owned process remains. Evidence-only handoff is permitted; another source repair requires new owner authority.
+
+Focused command failure, last 20 lines:
+
+```text
+[pid=142274][err] [142274:142302:1021/135554.117638:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=142274][err] [142274:142274:1021/135554.132434:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=142274][err] [142274:142274:1021/135758.946332:ERROR:chrome/browser/ui/views/user_education/impl/browser_user_education_interface_impl.cc:186] Attempting to show IPH IPH_ExtensionsZeroStatePromo before browser initialization complete; IPH will not be shown.
+[pid=142274] <gracefully close start>
+ log: [],
+
+      at /workspace/work/kb-45/tests/unit/kb-45.test.tsx:301:34
+(fail) Hebrew page and modal respect fallback and child-owned auth language boundaries [1159.29ms]
+
+ 10 pass
+ 2 fail
+ 322 expect() calls
+Ran 12 tests across 1 file. [301.86s]
+
+      at verify (/workspace/work/kb-45/tests/unit/kb-45.test.tsx:36:100)
+(fail) Hebrew page and modal respect fallback and child-owned auth language boundaries [0.27ms]
+
+ 0 pass
+ 12 fail
+Ran 12 tests across 1 file. [309.34s]
+```
