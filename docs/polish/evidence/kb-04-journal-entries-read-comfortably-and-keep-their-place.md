@@ -178,3 +178,86 @@ Parent result (the same child assertions are not counted twice):
 17 expect() calls
 Ran 17 tests across 1 file. [106.24s]
 ```
+
+
+## Overnight v3 committed-signal repair — 21 October 2026
+
+The authorized AT-08 timing repair passes its focused checks and hosted CI. Local full-suite completion remains UNKNOWN after an environment interruption; its observed failures are preserved below. This pass makes no product or screenshot change.
+
+Source: `ae4caffd638f40966868c989dab5af40d3790c74`, following a normal merge of integration `39b564ec329705587df5262ed5a061bbec9a1e8f`. No shared-harness dependency was added. The existing clean-child fixture is retained.
+
+The mounted next-day heading, end message, and gallery heading now wait for `document.activeElement` to match the expected focus before each original assertion. The negative-focus check waits for `.kb04-more-wrap > button` to detach after `onReady` commits, then asserts that focus stayed on the original link. This stable button selector matters: the accessible name changes from Load more to Loading before the focus decision, so waiting for the old name to disappear would finish too early. The fixed 50 ms sleep is removed.
+
+All 17 existing case names, all 47 assertion source lines, and all original timeout/deadline declarations are unchanged. The child still uses the original 45-second default, 120-second setup, and 300-second matrix limits; parent cases retain 300 seconds. The authorized pass contains one source candidate. Before this pass, the historical focused run was 17/0 but both verified timing review findings remained open. After the repair, all 17 child cases pass with 124 assertions; all 17 parent cases pass with 17 output/exit checks. Parent and child counts describe the same cases and are not added together.
+
+### Test results (cloud agent sandbox)
+
+All commands below ran on source `ae4caff`; no dependencies, configuration, product paths, assertions or deadlines changed. Required checks ran in order. An environment refresh ended the local full-suite process without a final aggregate or retained exit status; remaining scans, E2E and build resumed afterward. The unchanged full suite was not retried to obtain green.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `bun --version` | 0 | 1.3.9 |
+| `bun install --frozen-lockfile` | 0 | PASS: 2,000 packages installed, 302.95 s; initial Resolving dependencies phase eventually completed |
+| `bun test tests/unit/kb-04.test.tsx` | 0 | PASS: child 17/0, 124 assertions, 20.89 s; parent 17/0, 17 checks, 21.00 s |
+| `bun run lint` | 0 | PASS: 5/5 tasks, 0 errors |
+| `bun run typecheck` | 0 | PASS: 5/5 tasks |
+| `bun run test` | UNKNOWN | INCOMPLETE: environment interruption; 2,860 observed pass lines, 20 fail lines, 3 todo lines, **not final totals**. All failures observed were unchanged KB64 browser-closed cases. KB04 child 17/0 in 19.89 s and all 17 parent cases passed in this run. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0 | PASS: all four checks |
+| `CI=1 bunx playwright test --reporter=line` | 0 | PASS: 28 passed, 89 expected credential-gated skips, 58.5 s; serialized with the shared port lock, installed system Chromium |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0 | PASS: 1/1 task, uncached, 29.892 s |
+
+Hosted [CI run 39669386749](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39669386749), on the same source, completed successfully. [Test job 119462894925](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39669386749/job/119462894925) reports **3,510 pass, 0 fail, 3 todo; 3,513 tests across 212 files, 192.90 s**. Hosted lint, typecheck, scans, notices, E2E and build also passed. Security and e2e-preview succeeded. These hosted receipts do not erase the interrupted local result. Evidence-only head checks and current review coverage remain required before integration.
+
+The two timing threads were answered and resolved with source and focused evidence: `PRRT_kwDORjuLB86uutg6` and `PRRT_kwDORjuLB86uuthC`. At the worker's latest check, no inline review finding remained unresolved. Root coordinates current CodeRabbit coverage and integration gates. No merge or production action was performed.
+
+Logs remain outside the repository under `/workspace/kb-run-logs/kb04-*.log`, with retained exit files for completed commands. No final local `kb04-test.exit` exists. Historical missing desktop baseline captures, authenticated live behavior, Hebrew native read and physical-device accessibility remain as previously disclosed; the latter two happen before production and do not block preview work.
+
+First observed local full-suite failure, final 20 lines at that failure:
+
+```text
+(pass) KB64 Undo recovery > a synchronously thrown callback also returns a safe retry [1344.60ms]
+(pass) KB64 Undo recovery > pointer retry calls once more and keeps the original deadline [1106.85ms]
+(pass) KB64 Undo recovery > keyboard retry is reachable and has a visible focus ring [1427.80ms]
+142 |       errors.push(error.message);
+143 |       console.error("KB64 pageerror", error.message);
+144 |     });
+145 |     await page.clock.install({ time: 1_800_000_000_000 });
+146 |     await page.goto(`${origin}/?${params}`, { waitUntil: "load" });
+147 |     await page.locator("h1").waitFor();
+                                   ^
+error: waitFor: Target page, context or browser has been closed
+Call log:
+  - waiting for locator('h1') to be visible
+
+ log: [ "  - waiting for locator('h1') to be visible" ],
+
+      at open (/workspace/kb04/tests/unit/kb-64.test.tsx:147:30)
+      at /workspace/kb04/tests/unit/kb-64.test.tsx:356:20
+      at processTicksAndRejections (native:7:39)
+(fail) KB64 Undo recovery > same-tick duplicate activation starts one callback [1035.46ms]
+```
+
+Interrupted local full-suite log, final 20 retained lines (no aggregate or authoritative exit):
+
+```text
+(pass) pickNextBlocks > respects the limit (default 3) [0.05ms]
+(pass) pickNextBlocks > does not mutate its input [0.02ms]
+(pass) pickNextBlocks > returns an empty list when nothing is left [0.01ms]
+(pass) planProgress > counts done top tasks [0.02ms]
+(pass) planProgress > handles no tasks
+
+apps/web/components/notes/NotesScreen.test.tsx:
+(pass) notes views inside the shell > the list, with notes: no <main> of its own [1.74ms]
+(pass) notes views inside the shell > the list, with notes: the Hebrew render has no Latin label besides the user's text [0.67ms]
+(pass) notes views inside the shell > the list, empty: no <main> of its own [0.18ms]
+(pass) notes views inside the shell > the list, empty: the Hebrew render has no Latin label besides the user's text [0.19ms]
+(pass) notes views inside the shell > the list, loading: no <main> of its own [0.14ms]
+(pass) notes views inside the shell > the list, loading: the Hebrew render has no Latin label besides the user's text [0.13ms]
+(pass) notes views inside the shell > a note, loading: no <main> of its own [0.41ms]
+(pass) notes views inside the shell > a note, loading: the Hebrew render has no Latin label besides the user's text [0.12ms]
+(pass) notes views inside the shell > a note, not found: no <main> of its own [0.22ms]
+(pass) notes views inside the shell > a note, not found: the Hebrew render has no Latin label besides the user's text [0.11ms]
+(pass) notes views inside the shell > English copy is unchanged [0.50ms]
+(pass) a waiting save is sent when the page goes away > pagehide sends it once with the latest text; the timer and unmount don't send it again [739.39ms]
+(pass) a waiting save is sent when the page goes away > the tab going hidden sends it once; going visible doesn't, and a later pagehide adds nothing [710.57ms]
+```
