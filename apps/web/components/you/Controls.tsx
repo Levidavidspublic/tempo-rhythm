@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import { kb78Copy } from "@/lib/i18n-groups/kb-78";
@@ -140,11 +140,13 @@ export function ConfirmSheet({
   const sheetRef = useRef<HTMLElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
   const confirmRef = useRef(onConfirm);
-  confirmRef.current = onConfirm;
   const busyRef = useRef(busy);
-  busyRef.current = busy;
+  useLayoutEffect(() => {
+    closeRef.current = onClose;
+    confirmRef.current = onConfirm;
+    busyRef.current = busy;
+  }, [busy, onClose, onConfirm]);
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
