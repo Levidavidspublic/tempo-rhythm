@@ -69,3 +69,109 @@ Ran 19 tests across 1 file. [73.95s]
  1 fail
 Ran 1 test across 1 file. [77.72s]
 ```
+
+
+## Overnight v3 fixture correction — 2026-10-21
+
+PR open — all 19 original KB-66 cases pass with the shared harness; local mandatory checks are recorded below, and final shared-review adoption plus hosted gates remain pending. Role: WORKHORSE. Issue #1165 was already reopened; original PR #1168 remains merged. This corrective branch depends on shared harness PR #1203, source `511065b`, and changes only this evidence file and `tests/unit/kb-66.test.tsx`. Activity product code and existing screenshots are retained.
+
+The reopened cause was a cached unbounded child promise: eight successive parent 240-second timeouts occurred in each of hosted jobs119278684404/119279342909 before their cancellation. Those incomplete hosted runs have no full-suite total and are not passes. The child phase was hidden by buffered pipes.
+
+Source `b190b2b` runs that one cached promise through `runIsolatedFixture`, streams setup/build/browser/case/cleanup/exit phases, and accepts results only after the actual child exit, supervisor exit and cleanup receipts all succeed. Later reports receive an already-settled failure immediately. The 19 original case names, every child assertion line and all existing test/hook timeout literals remain unchanged. The existing 240-second parent bound budgets 225 seconds of execution plus bounded cleanup and result delivery; no test deadline is extended. The browser build uses the shared fresh-process resolver and a unique output directory inside the existing temporary fixture directory. Server, browser and directory cleanup start independently through the shared idempotent cleanup function; its 5-second allowance fits the existing default cleanup hook deadline. Parent reports also require an actual Bun `(pass)` record for that specific case, not merely the case name inside an error.
+
+The first attempted focused run occurred before local dependency installation completed (0 pass/1 fail/1 error, missing local React); no case ran. Two exact frozen-install commands stalled during resolution and were interrupted. An identical dependency tree was copied from the shared-harness worktree; lockfile/root/web package manifests match and relative links resolve inside this worktree. Installation is UNKNOWN, not a claimed frozen-install pass.
+
+The first executable adapter candidate then ran seven child cases before setup failed because it eagerly resolved the unused original react-native-web alias. The adapter restores that alias's original lazy path. Its child exited1 and cleanup completed; all19 parent reports rejected the same settled result within0.94seconds rather than repeating the240-second timeout. This failure is retained as a real failed candidate. The nested isolated-build contract also exposed a shared receipt parser issue, corrected centrally in#1203; no private helper fork was added.
+
+Final focused proof: `bun test tests/unit/kb-66.test.tsx`, Bun1.3.9, system Chromium. Child19pass/0fail with32 Bun assertions in12.60seconds; parent19pass/0fail with38 reporting assertions in12.99seconds. These are the same19 behavioral cases, not38 separate behaviors. Both build and fixture child exits were0, both supervisors completed, and their PIDs no longer existed afterward. The historical intermittent hosted stall is not claimed reproduced or cured solely by this local pass.
+
+| Required command | Current result |
+|---|---|
+| `bun --version` | PASS1.3.9 |
+| `bun install --frozen-lockfile` | UNKNOWN: two resolution stalls interrupted; identical dependency tree used for validation |
+| `bun run lint` | PASS5/5, zero errors;9 existing warnings |
+| `bun run typecheck` | PASS5/5 |
+| `bun run test` | FAIL:3,489pass/17fail/3todo,3,509tests/212files,344.89seconds; all17 failures are unchanged KB-64 browser-close cases; own19/0 and shared13/0 |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS:all four |
+| `CI=1 bunx playwright test --reporter=line` | UNKNOWN:Playwright browser unavailable/CDN403; actual1pass/28launch failures/88skip |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS1/1, cached |
+
+Focused failure tail (unused alias candidate):
+```text
+(fail) gallery statically mounts the actual activity heading and feed views
+(fail) mounted caller and exact query contract remain wired
+(fail) English and machine-drafted Hebrew keys have parity [0.02ms]
+(fail) no entries retain the mounted empty view and no paging control
+(fail) exactly 20 items show a current-snapshot end without a button
+(fail) 21 items focus the new row after final-button removal
+(fail) 30 exactly completes in one chunk and keeps the new row in view
+(fail) 31 items require two chunks and focus rows 21 then 31 [0.02ms]
+(fail) focus moved elsewhere during a load remains there
+(fail) Hebrew direction, time and counts remain readable
+(fail) StrictMode announces each loaded count once and transfers focus once
+(fail) reactive insertion alone does not steal focus and next chunk uses its stable boundary
+(fail) pending load keeps its older boundary when the anchor disappears beside a new top row
+(fail) gallery controls and retry callback remain operable
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes
+[kitchen-fixture] EOF OS pid=22807 stat=22807 (python3) Z 22793 22807 22807 0 -1 4227340 2659 35419 0 0 2 0 62 5 20 0 1 0 90458 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 3 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+
+ 0 pass
+ 19 fail
+Ran 19 tests across 1 file. [938.00ms]
+```
+
+The mandatory sequence above used shared511065b and KB-66 sourceb190b2b. The validation coordinator was paused after starting full tests to serialize the later localhost E2E run; no active test was paused, cancelled or given a changed timeout. E2E then held the shared browser lock. The full test itself reported344.89seconds; coordinator wall time includes the serialization hold.
+
+The planning baseline had3,473pass/20fail/3todo. This composed run adds13 shared-harness cases and has three fewer KB-64 failures. That unrelated variation is not evidence that KB-66 fixed KB-64. Both sources retain failing full-suite outcomes.
+
+Last20lines — kb66-full.log
+```text
+(fail) KB64 Undo recovery > fulfillment makes no invented success claim and does not expire early [16.02ms]
+(fail) KB64 Undo recovery > unmount fences a stale rejected request and cancels expiry [16.05ms]
+(fail) KB64 Undo recovery > changed deadline fences an old rejection without leaking error or busy state [16.25ms]
+(fail) KB64 Undo recovery > changed deadline fences an old fulfilled request after the old deadline [16.00ms]
+(fail) KB64 Undo recovery > new inline callback identities do not reset an active request [16.10ms]
+(fail) KB64 Undo recovery > Hebrew recovery has RTL direction and localized action copy [16.10ms]
+(fail) KB64 Undo recovery > an immediate fulfillment crossing the deadline still schedules post-commit expiry [22.86ms]
+(fail) KB64 Undo recovery > late successful real detail restoration keeps the parent navigation authoritative [16.20ms]
+(fail) KB64 Undo recovery > real NotesScreen list callback contains rejection and retries the same note [21.54ms]
+(fail) KB64 Undo recovery > real NotesScreen page callback contains rejection and leaves false fulfillment neutral [50.12ms]
+(fail) KB64 Undo recovery > gallery reuses the notice and supports reject retry expiration and language [37.13ms]
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [16.46ms]
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [16.18ms]
+
+ 3489 pass
+ 3 todo
+ 17 fail
+ 81431 expect() calls
+Ran 3509 tests across 212 files. [344.89s]
+error: script "test" exited with code 1
+```
+
+Last20lines — kb66-e2e.log
+```text
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/harness.spec.ts:8:7 › wiring E2E harness › signed-out /plan is not sent to /sign-in under the dev E2E bypass
+    [chromium] › tests/e2e/wiring/harness.spec.ts:14:7 › wiring E2E harness › a route outside the wiring list still redirects
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  88 skipped
+  1 passed (13.8s)
+```
+
+Final shared-review adoption: merged shared commit `4d30965` normally, including receipt validation after stderr drain and the failed-spawn PID guard. `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-66.test.tsx` exited 0: 34 pass / 0 fail / 83 assertions across the shared 15 cases and KB-66’s original 19 cases, in 15.42 seconds. The isolated KB-66 child also reported 19 pass / 0 fail / 32 assertions in 12.47 seconds and completed browser/server/directory cleanup before authoritative exit 0. Log: `/workspace/kb-run-logs/kb66-final-focused.log`.
+
+The mandatory full-sequence receipts above remain explicitly tied to shared `511065b`; this final check covers the changed shared runner and its KB-66 consumer. Hosted CI and CodeRabbit review of the final PR are pending. No merge is authorized while the prerequisite, mandatory failures, or review gates remain unresolved.
