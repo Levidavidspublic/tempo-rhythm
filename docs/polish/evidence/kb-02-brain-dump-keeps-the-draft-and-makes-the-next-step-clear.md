@@ -1,5 +1,91 @@
 # KB-02 brain dump evidence
 
+## Authorized v3 correction — 2026-10-21
+
+Blocked — the rejected-edit bug and case reporting are corrected, but shared harness PR #1203 has a reproduced cancellation failure. This branch includes frozen shared commit `2d99c84a365c6ead0009715012b0cdd908b570aa` by ordinary merge; integration does not yet contain that dependency. This is not a merge recommendation.
+
+Final product/test source: `41a3d0194014685c1e03fa971d79ef093dd606c7`. Reject now clears the active edit only when its row is rejected. The remaining accepted idea can be submitted using Add accepted, or the remaining proposal can be saved as a page. Mutation argument expressions, crisis ordering, Today placement and draft persistence are unchanged.
+
+Before the product correction, the new mounted regression failed with Add accepted still disabled: 0 pass, 1 fail, 11 filtered, 3 assertions, exit 1 in 3.16 s. The source was ordinary integration/shared merge `7321cb80585dd4d4c186e5417908460770919f35` plus the new scoped test, with the product unchanged. Afterward, the same regression covers both submit paths, verifies the rejected title and its unsaved edit are omitted, and confirms no mutation occurs until explicit submission.
+
+The fixture now uses the shared bounded child lifecycle with streamed setup/case/cleanup phases and independent cleanup of browser, server and its temporary directory. Every original case body, assertion and deadline is retained: eleven child cases, the 90 s setup, 30 s cleanup, existing 90/180 s case limits and 300 s parent case limits. The added regression is a twelfth child case. Each outer case maps the exact named final Bun verdict from stderr; a successful sibling remains successful when another case fails. A separate required lifecycle test rejects nonzero exit, signal, timeout, cancellation, truncated output or cleanup failure, including hook failures. The mapping regression covers failed and missing cases, unrelated names, duplicate failure summaries, conflicting verdicts, misleading callback receipts and independent exit/cleanup failure gates.
+
+Focused proof on final source: `bun test tests/unit/kb-02.test.tsx` → 14 pass, 0 fail, 34 parent assertions, exit 0 in 66.31 s; the isolated browser child reports 12 pass, 0 fail, 293 assertions in 65.14 s. This includes all eight width/language/theme cells and the original focus/motion assertions.
+
+The earlier combined proof on `ac26cca` (same product correction, before switching callback receipts to final Bun verdicts) reports 31 pass, 1 fail, 84 parent assertions, exit 1 in 48.36 s. KB-02's 14 parent tests and 12 child cases passed. The failure is shared `deadline bounds a child ignoring cancellation and reaps its real exit`: expected child `SIGKILL`, received `null` after the supervisor was killed before its receipt. The shared source is unchanged; the final own-only proof does not erase this failure. No further shared repair or retry is authorized in this pass.
+
+### Test results (cloud agent sandbox)
+
+Bun 1.3.9. Required checks run on final source `41a3d0194014685c1e03fa971d79ef093dd606c7`, in AGENTS.md order. Exact frozen installation reached only “Resolving dependencies” and was externally terminated at 120 s (exit 124): UNKNOWN. After it exited, the six verified dependency trees from the prior KB-06 worktree were copied while preserving workspace links. No lockfile or environment configuration changed. Results:
+
+| Command | Result on final source |
+|---|---|
+| `bun --version` | PASS, 1.3.9, exit 0. |
+| `bun install --frozen-lockfile` | UNKNOWN, externally bounded at 120 s, exit 124; fallback dependency provenance above. |
+| `bun run lint` | PASS, 5/5 tasks, 0 errors, 9 existing warnings, exit 0. |
+| `bun run typecheck` | PASS, 5/5 tasks, exit 0. |
+| `bun run test` | INCOMPLETE, exit 143 after 672.58 s. Observed log markers: 1565 pass, 2 fail, 3 todo; these are not final suite totals. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, all four OK, exit 0. |
+| `CI=1 bunx playwright test --reporter=line` (serialized with `flock`) | FAIL, 27 pass, 1 fail, 89 expected credential-gated skips, exit 1. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, 1/1 task, exit 0. |
+
+The full unit run reproduced the frozen shared cancellation failure and then reached unchanged KB-66's first original 240000 ms timeout. Subsequent wrapper cases wait on that same cached pending child promise. The worker verified its root unit Bun process belonged to this worktree and had no attached child, then externally sent SIGTERM under the run coordinator's bounded-run authorization. No deadline was shortened, no case was skipped, and no final full-suite pass is claimed. KB-02's exact final-source proof is the separate focused run above.
+
+E2E's sole failure is existing `task-views-core.spec.ts:57`: the original 30000 ms test deadline expired after reload while waiting for the updated task title, with a browser session-closed error. The `/brain-dump` route wiring case passed; this does not verify a signed-in backend. No unrelated test or product change was made.
+
+#### Incomplete full unit run, final 20 lines
+
+```text
+tests/unit/kb-08.test.tsx:
+(pass) KB-08 isolated: empty projects offer one deliberate start action [4729.79ms]
+(pass) KB-08 isolated: one project renders a named summary with distinct safe destinations [0.01ms]
+(pass) KB-08 isolated: count labels distinguish 0/1, 1/1 and multiple tasks
+(pass) KB-08 isolated: long user names retain auto direction and a wrapping class
+(pass) KB-08 isolated: actions are peers, never nested interactive controls
+(pass) KB-08 isolated: disabled navigation has no href or keyboard target
+(pass) KB-08 isolated: Hebrew count has RTL copy and isolated LTR digits
+(pass) KB-08 isolated: offline state stays a notice and does not create a project
+(pass) KB-08 isolated: filtered state only exposes the supplied reset callback
+(pass) KB-08 isolated: error and loading states render separately
+(pass) KB-08 isolated: gallery renders the real exported row and owns one h1 and one main
+(pass) KB-08 isolated: English and Hebrew dictionaries have exact key parity
+(pass) KB-08 isolated: hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-width rows
+
+tests/unit/kb-66.test.tsx:
+(fail) load-more view names the currently visible count and preserves LTR numerals [240033.27ms]
+  ^ this test timed out after 240000ms.
+error: script "test" was terminated by signal SIGTERM (Polite quit request)
+Terminated
+```
+
+#### Local E2E, final 20 lines
+
+```text
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:235548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:235618) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  1 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  27 passed (1.8m)
+```
+
+The original contact sheet and historical receipts follow. Hebrew native review and real-device accessibility are required before production; signed-in backend behavior remains UNKNOWN. The existing same-host proposal #1053 still requires deliberate reconciliation before integration. Current CI, CodeRabbit and every repository guard remain merge gates; shared helper files in this PR's diff are a dependency-related scope-guard blocker until #1203 lands.
+
+
 Source commits: first production change `1dd30ac53dcb6463ca93b1e5bfea9b203e79f749`, previous source/test revision `adf589515a8276a8c66b161d6cd14cc8c68cc3cb` (`t/1153-kb-02`). The [contact sheet](kb-02-brain-dump-keeps-the-draft-and-makes-the-next-step-clear.jpg) compares the original mounted `BrainDumpScreen` saved before editing with the changed mounted screen at 390 and 1280 px, English and Hebrew, light and dark. Each image uses fictional Maya, Dana and Yoni data. The screen, its pure helpers, i18n, icons, and v3 styles are production modules; Convex data/actions/mutations, locale context and Next link are fixture stubs. The fixture uses local font fallback. No real account or backend is exercised, and labels appear only on the evidence sheet.
 
 ## Authorized extra repair — 2026-10-21
