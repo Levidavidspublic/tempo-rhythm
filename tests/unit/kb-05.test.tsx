@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createElement, type ReactElement } from "../../apps/web/node_modules/react";
@@ -9,8 +9,33 @@ import { chromium } from "@playwright/test";
 import { en, he, kb05t } from "../../apps/web/lib/i18n-groups/kb-05";
 import { GoalEmptyState, GoalNameForm, GoalProgressLabel, Kb05Gallery } from "../../apps/web/components/goals/GoalsScreen";
 
+import { fixtureCleanup, fixturePhase } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild, waitForCommittedFocus } from "../helpers/kitchen-browser";
+
 const repo = resolve(import.meta.dir, "../..");
 const render = (element: ReactElement) => renderToStaticMarkup(element);
+
+// Bundle in a fresh process so another suite's module mocks cannot affect Bun's resolver.
+// Success requires the authoritative isolated child exit plus actual emitted JavaScript.
+async function buildBrowserFixture(entry: string, directory: string, deadline: number, aliases: Record<string, string> = {}) {
+  const outdir = join(directory, "bundle");
+  const cleanupMs = Math.min(1000, Math.max(1, Math.floor((deadline - Date.now()) / 2)));
+  fixturePhase("KB-05 build start");
+  await isolatedBrowserBuild({
+    cwd: repo, resolveFrom: join(repo, "apps/web"), entrypoints: [entry], outdir,
+    timeoutMs: Math.max(1, deadline - Date.now() - cleanupMs), cleanupMs,
+    aliases: {
+      "@/convex/_generated/api": Bun.resolveSync("./convex/_generated/api", repo),
+      "@/convex/lib/softDelete": Bun.resolveSync("./convex/lib/softDelete", repo),
+      ...aliases,
+    },
+  });
+  const outputs = (await readdir(outdir)).map((name) => ({
+    path: join(outdir, name), arrayBuffer: () => Bun.file(join(outdir, name)).arrayBuffer(),
+  }));
+  fixturePhase("KB-05 build complete");
+  return { success: outputs.some((output) => output.path.endsWith(".js")), outputs };
+}
 
 describe("KB-05 goals list", () => {
   test("empty list has a calm next step", () => {
@@ -92,18 +117,25 @@ let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
 let server: ReturnType<typeof Bun.serve> | undefined;
 let directory: string | undefined;
 
+const cleanup = fixtureCleanup({
+  browser: () => browser?.close(),
+  server: () => server?.stop(true),
+  directory: () => directory ? rm(directory, { recursive: true, force: true }) : undefined,
+}, 30_000);
 afterAll(async () => {
-  await browser?.close();
-  server?.stop(true);
-  if (directory) await rm(directory, { recursive: true, force: true });
+  fixturePhase("KB-05 gallery cleanup start");
+  await cleanup();
+  fixturePhase("KB-05 gallery cleanup complete");
 }, 30_000);
 
 test("hydrated gallery exercises the real name form, focus return, RTL, and 44 px actions", async () => {
+  const deadline = Date.now() + 240_000;
+  fixturePhase("KB-05 gallery case start");
   directory = await mkdtemp(join(tmpdir(), "tempo-kb05-"));
   const entry = join(directory, "entry.tsx");
   const modulePath = join(repo, "apps/web/components/goals/GoalsScreen.tsx");
   await writeFile(entry, `import React from "${join(repo, "apps/web/node_modules/react")}";\nimport { createRoot } from "${join(repo, "apps/web/node_modules/react-dom/client")}";\nimport { TpIconSprite } from "${join(repo, "apps/web/components/tempo/TpIcon.tsx")}";\nimport { Kb05Gallery } from ${JSON.stringify(modulePath)};\nconst params = new URLSearchParams(location.search); createRoot(document.getElementById("root")!).render(React.createElement(React.Fragment, null, React.createElement(TpIconSprite), React.createElement(Kb05Gallery, { lang: params.get("lang") === "he" ? "he" : "en" })));`);
-  const result = await Bun.build({ entrypoints: [entry], target: "browser", outdir: directory, minify: false });
+  const result = await buildBrowserFixture(entry, directory, deadline);
   expect(result.success).toBe(true);
   const assets = new Map<string, Uint8Array>();
   for (const output of result.outputs) assets.set(`/${output.path.split("/").at(-1)}`, new Uint8Array(await output.arrayBuffer()));
@@ -115,6 +147,7 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
   const styleLinks = [...assets.keys()].filter((name) => name.endsWith(".css") && !["/tokens.css", "/tempo.css", "/goals.css"].includes(name)).map((name) => `<link rel="stylesheet" href="${name}">`).join("");
   const script = [...assets.keys()].find((name) => name.endsWith(".js"));
   expect(script).toBeDefined();
+  fixturePhase("KB-05 gallery server start");
   server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
     const path = new URL(request.url).pathname;
     if (path === "/") return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/tempo.css"><link rel="stylesheet" href="/goals.css">${styleLinks}</head><body><div id="root"></div><script>window.process={env:{NODE_ENV:"production"}};</script><script src="${script}"></script></body></html>`, { headers: { "content-type": "text/html; charset=utf-8" } });
@@ -123,6 +156,7 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
   } });
   const browserPath = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(existsSync);
   if (!browserPath) throw new Error("KB-05 browser fixture needs Playwright Chromium or an installed chromium/google-chrome binary");
+  fixturePhase("KB-05 gallery browser launch");
   browser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--no-sandbox"] });
   for (const lang of ["en", "he"] as const) {
     for (const width of [390, 1280]) {
@@ -150,6 +184,7 @@ test("hydrated gallery exercises the real name form, focus return, RTL, and 44 p
       await page.locator("#kb05-empty-action").click();
       const input = page.locator("#gl-name");
       await input.waitFor();
+      await waitForCommittedFocus(input, 30_000);
       expect(await input.evaluate((node) => node === document.activeElement)).toBe(true);
       await page.locator("form button[type=submit]").click();
       expect(await input.getAttribute("aria-invalid")).toBe("true");
@@ -192,11 +227,18 @@ type CreateFixtureWindow = Window & {
 };
 
 test("production GoalsScreen focuses the newly created goal after the query includes it", async () => {
+  const deadline = Date.now() + 30_000;
+  fixturePhase("KB-05 production case start");
   const fixtureRoot = join(repo, "work");
   await mkdir(fixtureRoot, { recursive: true });
   const fixtureDirectory = await mkdtemp(join(fixtureRoot, "tempo-kb05-create-"));
   let fixtureServer: ReturnType<typeof Bun.serve> | undefined;
   let fixtureBrowser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
+  const cleanupProduction = fixtureCleanup({
+    browser: () => fixtureBrowser?.close(),
+    server: () => fixtureServer?.stop(true),
+    directory: () => rm(fixtureDirectory, { recursive: true, force: true }),
+  }, 30_000);
   try {
     const webRoot = join(repo, "apps/web");
     const reactPaths = {
@@ -245,20 +287,16 @@ test("production GoalsScreen focuses the newly created goal after the query incl
       import { LocaleProvider } from "${join(repo, "apps/web/components/providers/LocaleProvider.tsx")}";
       createRoot(document.getElementById("root")).render(<LocaleProvider><GoalsScreen /></LocaleProvider>);
     `);
-    const result = await Bun.build({
-      entrypoints: [entry], target: "browser", outdir: fixtureDirectory,
-      plugins: [{ name: "kb05-backend-boundary", setup(build) {
-        build.onResolve({ filter: /^convex\/react$/ }, () => ({ path: shim }));
-        build.onResolve({ filter: /^react(?:\/jsx(?:-dev)?-runtime)?$/ }, ({ path }) => ({
-          path: reactPaths[path as keyof typeof reactPaths],
-        }));
-      } }],
+    const result = await buildBrowserFixture(entry, fixtureDirectory, deadline, {
+      "convex/react": shim,
+      ...reactPaths,
     });
     expect(result.success).toBe(true);
     const assets = new Map<string, Uint8Array>();
     for (const output of result.outputs) assets.set(`/${output.path.split("/").at(-1)}`, new Uint8Array(await output.arrayBuffer()));
     const script = [...assets.keys()].find((name) => name.endsWith(".js"));
     expect(script).toBeDefined();
+    fixturePhase("KB-05 production server start");
     fixtureServer = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
       const path = new URL(request.url).pathname;
       if (path === "/") return new Response(`<!doctype html><html><body><div id="root"></div><script>window.process={env:{NODE_ENV:"production"}};</script><script src="${script}"></script></body></html>`, { headers: { "content-type": "text/html" } });
@@ -267,6 +305,7 @@ test("production GoalsScreen focuses the newly created goal after the query incl
     } });
     const browserPath = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(existsSync);
     if (!browserPath) throw new Error("KB-05 production fixture needs Playwright Chromium or an installed chromium/google-chrome binary");
+    fixturePhase("KB-05 production browser launch");
     fixtureBrowser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--no-sandbox"] });
     for (const lang of ["en", "he"] as const) {
       const page = await fixtureBrowser.newPage();
@@ -294,8 +333,8 @@ test("production GoalsScreen focuses the newly created goal after the query incl
       await page.close();
     }
   } finally {
-    await fixtureBrowser?.close();
-    fixtureServer?.stop(true);
-    await rm(fixtureDirectory, { recursive: true, force: true });
+    fixturePhase("KB-05 production cleanup start");
+    await cleanupProduction();
+    fixturePhase("KB-05 production cleanup complete");
   }
 }, 30_000);
