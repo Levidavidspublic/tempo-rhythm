@@ -286,3 +286,25 @@ A queued E2E process was verified to have no child process before being stopped;
 ### UNKNOWN
 
 Combined results are pending. Exact causes of the intermittent hosted hangs and local readiness/timing failures are not established. Live accounts, native Hebrew review, physical-device accessibility and production behavior remain unverified. No production-ready or shipped claim is made.
+
+<!-- KB-FINISH-LIVE-RESULTS -->
+### Current combined results
+
+AWAY — Snapshot 2026-10-21T12:47:32.816Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+
+| Command | Result | Seconds |
+|---|---|---|
+| version | PASS | 0.04 |
+| install | UNKNOWN: frozen resolution reached 120-second bound | 120.28 |
+| lint | PASS | 6.31 |
+| typecheck | PASS | 162.04 |
+| test | Pending | — |
+| scans | Pending | — |
+| e2e | Pending | — |
+| build | Pending | — |
+
+AT — KB-09 was subsequently held at AT-14 after two verified fresh review findings. Its unchanged input remains in this immutable validation checkout; a passing test does not approve those defects. KB-75 is using its one authorized extra pass for a deterministic browser time zone. KB-77 is using ordinary source candidate three for bounded child lifecycle diagnostics after its own hosted fixture again timed out. Their later repairs are not covered by this older manifest.
+
+WALK — Hosted follow-up #1199 (KB-61 input35b1c32) passed all required checks and was marked ready for an actual CodeRabbit review. Latest KB-71 job119219800967 failed only the integration-baseline KB-61 480-second fixture, which #1199 repairs. KB-77 job119219928829 failed its own 480-second fixture plus the unchanged shared codec 30-second bundle check. KB-44 job119219282273 and KB-69 job119219667179 failed only that codec check. These failures remain failures.
+
+UNKNOWN — A read-only codec audit found unchanged codec files and a still-in-process baseline KB-67 native build/server fixture sharing the full-suite process with global module mocks. That is a possible interaction, not a proven cause. KB-44 already isolates its builds; its subsequent-build/server proof passed11/11. No shared codec change, timeout increase or scan/config weakening is authorized or made.
