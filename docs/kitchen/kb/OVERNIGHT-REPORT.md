@@ -2,6 +2,40 @@
 
 In progress — The run is not finished. Shared harness #1202 precedes ticket repairs. This report records verified results only; the prior completion receipts remain in STATUS.md.
 
+## Second-lane steer — 21 October, evening
+
+WALK — Amit added a parallel feature lane. Lane 1 retains the shared test fix first, followed by the existing KB repairs. Lane 2 has separate file ownership; no writer edits Lane 1 files or protected PRs #1193/#1198. Four live worktrees are allocated: the planning register, shared harness, page editor and landing feature. The 31 older clean checkouts were archived locally with all contents and commit references preserved; their branches and PRs were not changed.
+
+| Lane | Assignment | Owned implementation/test paths | Current result |
+|---|---|---|---|
+| 1 | Shared harness #1202 / PR #1203 | `tests/helpers/kitchen-fixture.ts`, `tests/helpers/kitchen-browser.ts`, `tests/unit/kitchen-fixture.test.ts` | Source `2d99c84` has green hosted checks; current review identifies portable OS-exit assertions and child signal propagation. The newer handoff records an exhausted three-round limit and retained cancellation failure: AT-21 blocks another source candidate. Proposed portability/signal changes are preserved locally, uncommitted and unpushed; no fourth pass is credited or merged. |
+| 2 | [Checkbox #1205](https://github.com/Levidavidspublic/tempo-rhythm/issues/1205) | `apps/web/components/editor/live-preview.ts`, `tests/unit/tempo-pages-checkbox.test.tsx` | Reproduced: an active task-marker line draws no checkbox; the same inactive line draws one. Scoped implementation and mounted proof in progress. |
+| 2 | [Hero #1206](https://github.com/Levidavidspublic/tempo-rhythm/issues/1206) | `apps/web/components/marketing-pages/LandingPage.tsx`, `apps/web/app/v3/landing-motion.css`, `tests/e2e/landing-motion.spec.ts` | Finite token-based entrance and reduced-motion proof in progress. Subsequent pricing/copy changes serialize after this ticket. |
+
+WALK — The narrow checkbox repair shares a file with the older KA-08/#1101, #1081 and #1053 drafts. Those drafts remain untouched; later reconciliation is required. No active Lane 1 writer owns the editor file.
+
+### Feature coverage and next work
+
+| Requested feature | Verified code state | Remaining proof or implementation |
+|---|---|---|
+| Chat history and coaching intensity | Existing chats column and mounted `CoachControls`; `coach.getSettings` / `setDial` affect the coach prompt. | Preview verification; do not duplicate the control. |
+| Voice-to-voice | Existing `VoiceCall` lifecycle; availability checks provider configuration, locale and budget. | Live availability is UNKNOWN; no provider calls or spending during this run. |
+| Composer web / think hard / cancel | Web preference exists. No public per-turn deep/cancel contract was found. | Backend contract and protected composer ownership must be resolved; no fake cancellation or disabled-only parity claim. |
+| Structured live answers | Existing OpenUI proposal/source UI and json-render catalog. | KA-45/#1128 owns renderer consolidation, dependent on #1081. The requested matching repository SKILL.md was not found; existing implementation is not proof of a skill. |
+| Editable pages / checkbox | Shared mounted Markdown editor; page types daily, weekly, project, plain, template. | #1205; full page-type E2E and sidebar block support remain open. |
+| Red three-error badge | No matching application badge identified in editor source. | Exact runtime cause UNKNOWN; do not suppress the badge or error reporting. |
+| Chat with current page | Editor registers note ID, flushes edits, and calls owner-checked `coach.reply({noteId})`. | Authenticated E2E remains unverified. |
+| Multiple notebook sources | Missing notebook/source implementation in integration. | Existing KA-40/#1123 and KA-41/#1124 prerequisites; no duplicate backend. |
+| Goals / onboarding | Existing goals and onboarding surfaces. | Preserve Lane 1 ownership of KB-05/06/44/76; verify wiring after their merges. |
+| Template gallery | Daily, weekly, project and meeting starters exist; habit and goal starters absent. | Complete the missing starters and verify user-editable creation; backend ownership applies. |
+| Plan / Kanban / day-week-month | Calendar already queries events and due tasks; project Kanban persists status. | Unified presentation remains; reconcile KA-09/#1102 and #1081 ownership before changing their overlapping files. |
+| Tiered pricing / public copy | Billing catalog already defines Trial/Basic/Pro/Max prices. | Reuse catalog on public pricing, serialize landing edits after #1206; no invented price. |
+| Paid admission / beta Premium | Manual approval and RevenueCat webhook exist; approval and entitlement paths are not fully reconciled. | Flagged provider wiring and separate admission semantics need scoped backend work. No charges, keys or environment writes. |
+
+AWAY — Nothing in this table is a claim of preview deployment or production readiness. Merge each ticket only after current CI, addressed CodeRabbit findings and guards; then verify preview independently. Production stays unchanged.
+
+UNKNOWN — Executor is not exposed as a callable connector here; its supplied MCP endpoint returns proxy CONNECT 403. Its one setup item is in NEEDS-AMIT.md. Available GitHub and local tools remain usable.
+
 ## Done
 
 - Read the repo rules, planning PR, previous status and all twenty owner questions. Recorded Amit’s v3 decisions in NEEDS-AMIT.md.
