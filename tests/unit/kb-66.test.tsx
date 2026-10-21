@@ -5,10 +5,37 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { chromium, expect as pwExpect, type Browser, type Page } from "@playwright/test";
-import { ActivityEndStatus, ActivityLoadMore, Kb66Gallery } from "../../apps/web/components/activity/ActivityScreen";
 import { en, he } from "../../apps/web/lib/i18n-groups/kb-66";
 
 const root = join(import.meta.dir, "../..");
+// Bun module mocks and fixture servers are process-global. Keep these actual-source
+// renders and browser checks in a clean process when other KB suites run beside them.
+if (process.env.KB66_ISOLATED !== "1") {
+  const source = await readFile(import.meta.path, "utf8");
+  const names = [...source.matchAll(/\btest\("([^"\n]+)"/g)].map((match) => match[1]);
+  // Run the whole child suite even when a parent name filter selects fewer reports;
+  // this keeps every underlying regression mandatory and retains child failures.
+  let result: Promise<{ code: number; output: string }> | undefined;
+  const run = () => result ??= (async () => {
+    const child = Bun.spawn([process.execPath, "test", import.meta.path], {
+      cwd: root, env: { ...process.env, KB66_ISOLATED: "1" }, stdout: "pipe", stderr: "pipe",
+    });
+    const [stdout, stderr, code] = await Promise.all([
+      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+    ]);
+    const output = stdout + stderr;
+    process.stderr.write(output);
+    return { code, output };
+  })();
+  for (const name of names) {
+    test(name, async () => {
+      const child = await run();
+      if (child.code !== 0) throw new Error(`KB-66 clean child exited ${child.code}:\n${child.output}`);
+      expect(child.output).toContain(name);
+    }, 240_000);
+  }
+} else {
+const { ActivityEndStatus, ActivityLoadMore, Kb66Gallery } = await import("../../apps/web/components/activity/ActivityScreen");
 const render = (element: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(element);
 
 describe("KB-66 activity reading position", () => {
@@ -180,6 +207,32 @@ describe("KB-66 hydrated activity gallery and mounted screen", () => {
     finally { await page.close(); }
   },120_000);
 
+  test("pending load keeps its older boundary when the anchor disappears beside a new top row", async () => {
+    for (const lang of ["en", "he"] as const) {
+      const page = await fixture(390, lang, true, true);
+      try {
+        const button = page.getByRole("button", { name: lang === "he" ? "הצגת ישנים יותר" : "Show older" });
+        await button.focus();
+        // Change the query in the same click, before React commits the larger page.
+        // The click handler still captures its original last-visible row (a19).
+        await button.evaluate((element) => element.addEventListener("click", () => {
+          const items = (window as any).__kb66Activity;
+          (window as any).__kb66Activity = [
+            { ...items[0], id: "new-during-load", title: "Dana's new activity", occurredAt: Date.now() },
+            ...items.filter((item: { id: string }) => item.id !== "a19"),
+          ];
+          window.dispatchEvent(new Event("kb66-query"));
+        }, { capture: true, once: true }));
+        await page.keyboard.press("Enter");
+        await pwExpect(page.locator('[data-kb66-row-id="a19"]')).toHaveCount(0);
+        await pwExpect(page.locator('[data-kb66-row-id="new-during-load"]')).toBeVisible();
+        await pwExpect(page.locator('[data-kb66-row-id="a20"]')).toBeFocused();
+        await pwExpect(page.locator('[data-kb66-row-id="new-during-load"]')).not.toBeFocused();
+        await pwExpect(page.locator("[data-kb66-row-id]")).toHaveCount(30);
+      } finally { await page.close(); }
+    }
+  },120_000);
+
   test("gallery controls and retry callback remain operable", async () => {
     const page=await fixture();
     try { await page.getByRole("button",{name:"Error example"}).click(); await pwExpect(page.getByRole("button",{name:"Retry"})).toBeVisible(); await page.getByRole("button",{name:"Retry"}).click(); await pwExpect(page.getByRole("button",{name:"Show older"})).toBeVisible(); await page.getByRole("button",{name:"0 items",exact:true}).click(); await pwExpect(page.getByText("No recent activity")).toBeVisible(); await page.getByRole("button",{name:"31 items",exact:true}).click(); await pwExpect(page.getByRole("button",{name:"Show older"})).toBeVisible(); await page.getByRole("button",{name:"New activity arrived"}).click(); await pwExpect(page.getByText("Dana's new activity")).toBeVisible(); await page.getByRole("button",{name:"עברית"}).click(); await pwExpect(page.locator("html")).toHaveAttribute("dir","rtl"); await page.getByRole("button",{name:"English"}).click(); await pwExpect(page.locator("html")).toHaveAttribute("dir","ltr"); }
@@ -193,9 +246,9 @@ describe("KB-66 hydrated activity gallery and mounted screen", () => {
         const button=page.getByRole("button",{name:lang==="he"?"הצגת ישנים יותר":"Show older"});
         await button.focus(); await page.keyboard.press("Enter"); await pwExpect(page.locator('[data-kb66-row-id="a20"]')).toBeFocused();
         await button.focus(); await page.keyboard.press("Enter"); await pwExpect(page.locator('[data-kb66-row-id="a30"]')).toBeFocused();
-        await page.screenshot({path:join(root,"work",`kb66-mounted-final-${width}-${lang}-light.png`),fullPage:true});
+        await page.screenshot({path:join(directory,`kb66-mounted-final-${width}-${lang}-light.png`),fullPage:true});
         await page.evaluate(()=>document.documentElement.setAttribute("data-theme","dark"));
-        await page.screenshot({path:join(root,"work",`kb66-mounted-final-${width}-${lang}-dark.png`),fullPage:true});
+        await page.screenshot({path:join(directory,`kb66-mounted-final-${width}-${lang}-dark.png`),fullPage:true});
         await page.evaluate(()=>document.documentElement.setAttribute("data-text-size","l"));
         await pwExpect(page.locator("body")).toHaveCSS("font-size","20px");
         const metrics=await page.evaluate(()=>({
@@ -214,3 +267,5 @@ describe("KB-66 hydrated activity gallery and mounted screen", () => {
     }
   },240_000);
 });
+
+}

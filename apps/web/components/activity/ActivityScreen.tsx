@@ -162,6 +162,7 @@ export function ActivityEndStatus({ shown, total, lang }: { shown: number; total
 type PendingFocus = {
   source: HTMLButtonElement;
   anchorId: string | null;
+  anchorOccurredAt: number | null;
   visibleIds: Set<string>;
   previousShown: number;
 };
@@ -185,7 +186,10 @@ function ActivityFeed({ groups }: { groups: DayGroup<ActivityItemLike>[] }) {
     const anchorIndex = visibleItems.findIndex((item) => item.id === pending.anchorId);
     const nextItem = anchorIndex >= 0
       ? visibleItems.slice(anchorIndex + 1).find((item) => !pending.visibleIds.has(item.id))
-      : visibleItems.find((item) => !pending.visibleIds.has(item.id));
+      : visibleItems.find((item) =>
+        !pending.visibleIds.has(item.id) &&
+        (pending.anchorOccurredAt === null || item.occurredAt <= pending.anchorOccurredAt)
+      );
     setAnnounced({ shown: page.shown, total: page.total });
     if (!nextItem) return;
     frameRef.current = requestAnimationFrame(() => {
@@ -212,6 +216,7 @@ function ActivityFeed({ groups }: { groups: DayGroup<ActivityItemLike>[] }) {
     pendingRef.current = {
       source: button,
       anchorId: visibleItems.at(-1)?.id ?? null,
+      anchorOccurredAt: visibleItems.at(-1)?.occurredAt ?? null,
       visibleIds,
       previousShown: page.shown,
     };
