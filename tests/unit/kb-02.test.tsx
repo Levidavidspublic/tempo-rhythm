@@ -50,12 +50,13 @@ if (process.env.KB02_ISOLATED !== "1" && !beforeMode) {
   const outcomes = (output: string) => {
     const result = new Map<string, boolean>();
     for (const line of output.split("\n")) {
-      if (!line.startsWith("KB02_CASE=")) continue;
-      const entry = JSON.parse(line.slice("KB02_CASE=".length));
-      if (typeof entry.name !== "string" || typeof entry.pass !== "boolean" || result.has(entry.name)) {
-        throw new Error("Invalid or duplicate KB-02 case result");
-      }
-      result.set(entry.name, entry.pass);
+      // Bun's terminal verdict includes framework timeouts, unlike callback receipts.
+      const entry = line.match(/^\((pass|fail)\) KB-02 mounted brain dump and gallery > (.+?)(?: \[[\d.]+ms\])?$/);
+      if (!entry) continue;
+      const [, verdict, name] = entry;
+      const pass = verdict === "pass";
+      if (result.has(name) && result.get(name) !== pass) throw new Error("Conflicting KB-02 case result");
+      result.set(name, pass);
     }
     return result;
   };
@@ -63,7 +64,7 @@ if (process.env.KB02_ISOLATED !== "1" && !beforeMode) {
   for (const name of names) {
     test(`KB-02 isolated: ${name}`, async () => {
       const result = await run();
-      const output = result.out;
+      const output = result.err;
       expect(outcomes(output).get(name)).toBe(true);
       expect(output).toContain(name);
     }, 300_000);
@@ -72,14 +73,19 @@ if (process.env.KB02_ISOLATED !== "1" && !beforeMode) {
     requireFixtureSuccess(await run());
   }, 300_000);
   test("KB-02 maps exact case outcomes independently of aggregate lifecycle failure", () => {
-    const output = ['KB02_CASE={"name":"successful sibling","pass":true}',
-      'KB02_CASE={"name":"failed case","pass":false}', '(fail) successful sibling suffix'].join("\n");
+    const output = [
+      '(pass) KB-02 mounted brain dump and gallery > successful sibling [1.25ms]',
+      '(fail) KB-02 mounted brain dump and gallery > failed case [90000.00ms]',
+      'KB02_CASE={"name":"failed case","pass":true}',
+      '(fail) unrelated suite > successful sibling',
+    ].join("\n");
     const mapped = outcomes(output);
     expect(mapped.get("successful sibling")).toBe(true);
     expect(mapped.get("failed case")).toBe(false);
     expect(mapped.get("missing case")).toBeUndefined();
     expect(mapped.get("successful sibling suffix")).toBeUndefined();
-    expect(() => outcomes(output + "\n" + output)).toThrow("duplicate");
+    expect(outcomes(output + "\n" + output)).toEqual(mapped); // Bun repeats failures in its summary.
+    expect(() => outcomes(output + "\n(pass) KB-02 mounted brain dump and gallery > failed case [1.00ms]")).toThrow("Conflicting");
     const success: FixtureRun = { pid: 1, code: 0, signal: null, out: output, err: "", timedOut: false,
       cancelled: false, cleanupErrors: [], outputTruncated: false };
     expect(() => requireFixtureSuccess(success)).not.toThrow();
@@ -100,13 +106,7 @@ const cleanup = fixtureCleanup({
 function fixtureTest(name: string, body: () => unknown | Promise<unknown>, timeout?: number) {
   test(name, async () => {
     fixturePhase(`KB-02 case start: ${name}`);
-    try {
-      await body();
-      process.stdout.write(`KB02_CASE=${JSON.stringify({ name, pass: true })}\n`);
-    } catch (error) {
-      process.stdout.write(`KB02_CASE=${JSON.stringify({ name, pass: false })}\n`);
-      throw error;
-    }
+    await body();
   }, timeout);
 }
 
