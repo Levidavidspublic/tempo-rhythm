@@ -511,3 +511,7 @@ Logs and manifests: kb-auth-composition-manifest.json; kb-auth-composition-insta
 ## Final filing and document checks — 21 October 2026
 
 PASS — All 59 written tickets match the actual repository front-matter parser for ticket ID, type, role, exact scope and dependencies. The queue is ordered without backward KB dependencies; every issue mapping is unique. All 34 newly filed issue bodies match their complete specifications and have kitchen-kb without convex-arch. The first final-check script compared logical KB IDs against the parser’s TEMPO-KB IDs and failed; correcting that validator representation produced the stated pass without changing a ticket. git diff --check passes and every planning-branch changed path remains under docs/kitchen/kb/. Earlier product-baseline checks remain separately recorded; documentation edits do not imply a new product test run.
+
+## KB-70 corrective merge receipt — 21 October 2026
+
+DONE — PR #1196 merged at 21:02:50 UTC to integration as `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`; issue #1166 closed at 21:02:51 UTC. Final head bf63acc and ready-state checks passed. CodeRabbit explicitly covered bf63acc and reported no actionable finding; zero unresolved threads. Queue Test job 119481661402 passed 3,493 / 0 / 3 todo in 284.45 seconds. All queue guards passed before merge. Later push-triggered checks are separate and do not change the recorded pre-merge gate evidence. Original #1167 and its reopening cause remain historical.

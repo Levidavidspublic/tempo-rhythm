@@ -1,6 +1,6 @@
 # Overnight report — 2026-10-21
 
-In progress — The run is not finished. Shared harness #1202 precedes ticket repairs. This report records verified results only; the prior completion receipts remain in STATUS.md.
+Partially complete — The authorized v3 pass finished on 21 October 2026. KB-70 corrective #1196 merged into integration; six KB tickets are closed in total. All nine fixture reruns and seven scoped passes are recorded, and all 34 remaining written specifications are filed. The shared harness is still stuck, so dependent work remains open. This is not a completed kitchen or production-readiness claim. Prior receipts remain in STATUS.md.
 
 ## Second-lane steer — 21 October, evening
 
@@ -50,6 +50,8 @@ UNKNOWN — Executor is not exposed as a callable connector here; its supplied M
 
 ## Done
 
+- Merged KB-70 corrective [#1196](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196) through the integration queue at 21:02:50 UTC; issue #1166 closed. Commit `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`. All required local, final-head, ready-state and queue checks passed; final CodeRabbit review has no open finding.
+
 - Filed all 34 remaining written specifications in dependency order, verified their full remote bodies and kitchen-kb labels, and mapped all 59 specifications in ISSUES.json. All 34 remain blocked by their real prerequisites.
 - Proved the exact KB-10/KB-45 composition: 32 original cases pass, plus the explicit Hebrew AuthCard probe in both real mounts.
 - Completed the nine fixture reruns and seven authorized scoped bug/timing passes; exact results and retained failures are below.
@@ -91,14 +93,14 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 
 ## Reopened tickets
 
-The five earlier merge receipts remain historical. These issues stay open until their corrective PRs pass every gate.
+The five earlier merge receipts remain historical. KB-70 is corrected and closed again; the other four reopened issues remain open with linked corrective PRs.
 
 | Ticket | Why reopened | Linked correction and current result |
 |---|---|---|
 | KB-61 | The merged fixture reached its 480-second setup deadline and could leave its server alive after launch failure. | [#1199](https://github.com/Levidavidspublic/tempo-rhythm/pull/1199) adopts the shared lifecycle and preserves both cleanup errors. Final focused 27 / 0; shared dependency and broader failures remain. |
 | KB-66 | A cached unresolved child promise caused eight successive 240-second wrapper timeouts in later hosted runs. | [#1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) streams and bounds one shared child lifecycle; final combined 37 / 0. Shared prerequisite remains stuck. |
 | KB-67 | Browser teardown could stall before server cleanup; hosted jobs passed named cases then failed the 60-second teardown hook. | [#1197](https://github.com/Levidavidspublic/tempo-rhythm/pull/1197) independently cleans owned resources and validates each child result; final combined 49 / 0. Shared prerequisite and historical scan finding remain. |
-| KB-70 | The unread-row locator matched before the committed read state; the wrapper also checked child exit only on its first case. | [#1196](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196) carries the correction; the v3 pass waits for the matching row’s actual focus; all 13 focused cases and the full suite pass. |
+| KB-70 | The unread-row locator matched before the committed read state; the wrapper also checked child exit only on its first case. | Merged — corrective PR #1196 entered integration through the required queue at 2026-10-21T21:02:50Z, commit 7d1a0f6957852fe9f6d60849e3df9bc7505e90ac. Issue #1166 closed. Focused 13 / 0; local, ready-state and queue full suites 3,493 / 0 / 3 todo; E2E 28 / 0 / 89 existing skips; exact frozen install, lint/typecheck/scans/build pass. Final head bf63acc reviewed by CodeRabbit with no open finding. |
 | KB-74 | Late review found a focus-trapping narrow drawer without a named modal-dialog boundary. | [#1200](https://github.com/Levidavidspublic/tempo-rhythm/pull/1200) adds modal semantics; the v3 pass synchronizes exact geometry checks with the settled transition; 27 focused cases pass, while unrelated full-suite failures remain. |
 
 ## Per ticket
@@ -123,7 +125,7 @@ The five earlier merge receipts remain historical. These issues stay open until 
 | KB-45 | 1156 | 1163 | PR open — Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition passes 32 original cases plus the explicit Hebrew AuthCard probe. Shared #1203 stuck; current guards/review still required. |
 | KB-69 | 1161 | 1164 | PR open — read-only audit completed. Current hosted Test was cancelled after eight unchanged KB-66 240-second deadlines; no complete aggregate. Waits for fixture prerequisites; no assumed retry-budget extension. |
 | KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — Final shared + own: 37 pass / 0 fail, 91 assertions. Current hosted full 3,511 / 0 / 3 todo; earlier full 3489/17/3 todo (KB-64); E2E infrastructure UNKNOWN; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
-| KB-70 | 1166 | 1196 | PR open — all local mandatory gates pass: focused 13 / 0; full 3,493 / 0 / 3 todo; E2E 28 / 0 / 89 existing skips; exact frozen install exit 0 in 301.91 seconds; lint/typecheck/scans/build pass. Final evidence head bf63acc passes hosted CI. Final and ready-state checks pass; CodeRabbit explicitly reviewed bf63acc with no actionable findings and no open thread. Submitted to the required integration merge queue; merge receipt pending. |
+| KB-70 | 1166 | 1196 | Merged — corrective PR #1196 entered integration through the required queue at 2026-10-21T21:02:50Z, commit 7d1a0f6957852fe9f6d60849e3df9bc7505e90ac. Issue #1166 closed. Focused 13 / 0; local, ready-state and queue full suites 3,493 / 0 / 3 todo; E2E 28 / 0 / 89 existing skips; exact frozen install, lint/typecheck/scans/build pass. Final head bf63acc reviewed by CodeRabbit with no open finding. |
 | KB-67 | 1169 | 1197 | PR open — Final shared + own: 49 pass / 0 fail, 144 assertions. Current hosted full 3,515 / 0 / 3 todo; earlier full 3457/32/3 todo (old parser+KB-61); E2E 28/0/89 skip; historical synthetic UUID still fails security scan after redaction. Shared #1203 stuck; current guards/review still required. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
 | KB-74 | 1171 | 1200 | PR open — settled-transition proof improves 25 pass / 2 fail to 27 pass / 0 fail. Full 3,472 pass / 23 fail / 3 todo, all failures in unchanged KB-64; all 27 own cases pass. E2E 28 pass / 0 fail / 89 skip; lint/typecheck/scans/build pass; install UNKNOWN. Independent of shared harness; full-suite failures block merge. |
@@ -182,4 +184,6 @@ The five earlier merge receipts remain historical. These issues stay open until 
 - KB-45, KB-61, KB-74 and KB-78 final hosted Test jobs are still running at this observation; their shared dependency remains blocked regardless.
 - Final CodeRabbit coverage and required checks remain unverified for PRs already blocked by retained local failures or dependencies.
 - Production behavior, live search service quality, real-device accessibility and complete Agent transcript coverage.
-- No production readiness or unattended completion claim.
+- No production readiness or full-kitchen completion claim. New integration push checks and any automatic preview activity after the verified queue merge are separate; no deployed-preview validation is claimed.
+
+Snapshot: 6 closed / 55 open KB issues; 11 merged / 21 open KB PRs, including the lead/planning and shared-harness records. All 59 worker specifications are filed; 34 newly filed tickets have no PR because their prerequisites remain open. Separately reported feature-lane work is excluded from these counts.
