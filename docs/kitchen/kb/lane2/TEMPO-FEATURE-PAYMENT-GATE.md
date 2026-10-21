@@ -1,5 +1,3 @@
-# [TEMPO-FEATURE-PAYMENT-GATE] Payment webhooks cannot change accounts while processing is off
-
 ---
 ticket: TEMPO-FEATURE-PAYMENT-GATE
 batch: FEATURE
@@ -17,6 +15,8 @@ overlap_test: false
 expected_merge: clean
 hold: false
 ---
+
+# [TEMPO-FEATURE-PAYMENT-GATE] Payment webhooks cannot change accounts while processing is off
 
 FOR: tempo-rhythm, Lane 2 Tempo features, WORKHORSE; backend ticket. This is a scoped server-side off switch, not operational payment admission.
 WHEN: A worktree becomes free within the four-worktree limit; no other worker owns these paths. Protected #1193/#1198 and held auth/persona/memory/council files remain untouched. File audit found older non-KB drafts #47, #55, #76, #103, #110, #115, #119, #123, #124, #126, #127 and #128 also touch revenuecat.ts. They are untouched and not assumed superseded; later merges require reconciliation. No active Lane 1 writer owns these paths. Preserve the run's owner architecture gate before merge; the worker adds no label.
