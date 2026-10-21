@@ -209,7 +209,9 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
           if (line.startsWith("KITCHEN_CHILD_EXIT=")) {
             try {
               const record = JSON.parse(line.slice("KITCHEN_CHILD_EXIT=".length));
-              if (record.token !== token || !Number.isInteger(record.code)) throw new Error("Invalid child exit receipt");
+              // Nested isolated builds stream their own receipts through this pipe.
+              if (record.token !== token) continue;
+              if (!Number.isInteger(record.code)) throw new Error("Invalid child exit receipt");
               receiptCount++;
               if (record.code < 0) {
                 result.signal = Object.entries(constants.signals).find(([, value]) => value === -record.code)?.[0] as NodeJS.Signals ?? null;

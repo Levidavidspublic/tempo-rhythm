@@ -126,6 +126,23 @@ describe.serial("shared kitchen fixture lifecycle", () => {
       .rejects.toThrow("Committed transition signal timed out");
   });
 
+  test("nested isolated builds retain separate authoritative child exits", async () => {
+    for (const code of [0, 17]) {
+      const result = await run(`
+        import { runIsolatedFixture, requireFixtureSuccess } from ${JSON.stringify(helper)};
+        const nested = await runIsolatedFixture({ command:[process.execPath,"-e","process.exit(${code})"], cwd:${JSON.stringify(root)}, timeoutMs:1000, cleanupMs:500 });
+        requireFixtureSuccess(nested);
+      `);
+      if (code === 0) requireFixtureSuccess(result);
+      else {
+        expect(result.code).not.toBe(0);
+        expect(() => requireFixtureSuccess(result)).toThrow();
+      }
+      expect(result.cleanupErrors).toEqual([]);
+      expect(result.err.match(/KITCHEN_CHILD_EXIT=/g)?.length).toBe(2);
+    }
+  });
+
   test("fresh browser builds resolve React scheduler from its actual importing package", async () => {
     const directory = await mkdtemp(join(tmpdir(), "kitchen-build-"));
     try {
