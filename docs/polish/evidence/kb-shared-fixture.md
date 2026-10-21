@@ -1,6 +1,6 @@
 # Shared Kitchen fixture harness
 
-PR open — the shared harness has 13 passing focused cases; worker adoption and hosted verification are still required. No existing fixture, case, assertion, timeout or deadline changes in this ticket.
+PR open — the shared harness has 15 passing focused cases; worker adoption and hosted verification are still required. No existing fixture, case, assertion, timeout or deadline changes in this ticket.
 
 Date: 2026-10-21. Role: WORKHORSE. Ticket: TEMPO-KB-HARNESS, #1202. Tracking: planning PR #1140.
 
@@ -99,3 +99,11 @@ E2E final 20 lines:
   88 skipped
   1 passed (34.7s)
 ```
+
+## CodeRabbit correction: drained receipts and failed spawns
+
+Fixed — the runner now records the OS exit immediately but validates the token-bound receipt only after the child close event has drained stderr. A controlled fresh child pauses the real supervisor stderr until its OS exit event, then resumes it on a microtask; the receipt is accepted after close. Its process-local module mock never enters the parent or another suite.
+
+Fixed — a failed spawn has no owned PID. Cancellation returns without signaling it, and the signal helper refuses zero/noninteger process IDs. A controlled child runs with a nonexistent executable search path, verifies the spawn error remains a failure, and proves its caller survives; no caller process group is signaled.
+
+The first added delayed-drain regression captured a live import binding that its own mock replaced, causing recursion: **14 pass / 1 fail**, 44 assertions. That scaffolding failure is retained. Capturing the native spawn function before installing the isolated mock completed the same authorized review correction. The corrected proof is **15 pass / 0 fail**, 45 assertions, 2.96 seconds. Every previous case, assertion and timeout remains. The current full hosted run remains required; earlier local full-suite and E2E limitations above remain unchanged.
