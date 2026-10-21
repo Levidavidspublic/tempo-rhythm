@@ -11,11 +11,11 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 ## Shared test fix
 
-PR open — [shared ticket #1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), [draft #1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). No existing test is removed, skipped or weakened. The helper isolates Bun browser builds, streams child phases, bounds cancellation and cleanup, reaps owned descendants, preserves the authoritative child exit, and waits on committed browser signals.
+Stuck — [shared ticket #1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), [draft #1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). No existing test is removed, skipped or weakened. The helper isolates Bun browser builds, streams child phases, bounds cancellation and cleanup, reaps owned descendants, preserves the authoritative child exit, and waits on committed browser signals.
 
 Current source is `2d99c84`: **18 focused helper cases pass**, with 53 assertions in 4.33 seconds, and scoped TypeScript compilation passes. All original 15 cases, assertions and deadlines remain. The three added regressions cover a missing runtime exit event using an owned native child, receipt framing after a partial stderr line, and parent cancellation signal propagation.
 
-The fallback accepts only a matching nonblocking `waitpid` return after verifying the direct child’s parent, PID start time and zombie state. That supplies the real OS exit status and proves reaping; both streams must also finish draining. EOF, a printed receipt and zombie state alone cannot pass. A controlled nonzero exit remains a failure. CodeRabbit’s earlier receipt-order, PID-zero, transition-budget and evidence-label findings are addressed. New current-head CI and review remain pending.
+The fallback accepts only a matching nonblocking `waitpid` return after verifying the direct child’s parent, PID start time and zombie state. That supplies the real OS exit status and proves reaping; both streams must also finish draining. EOF, a printed receipt and zombie state alone cannot pass. A controlled nonzero exit remains a failure. CodeRabbit’s earlier receipt-order, PID-zero, transition-budget and evidence-label findings are addressed. Current hosted CI is green, but the KB-75 combined proof on this exact source failed the original cancellation assertion: the supervisor was killed before its child exit receipt, leaving the real child signal UNKNOWN. That failure remains a blocker. Three repair rounds are consumed; AGENTS.md prohibits a fourth without owner authorization. AT-21 records that decision. The latest CodeRabbit platform-specific test finding is unresolved; no suggested test skip was applied.
 
 Earlier focused results (9/1, 10/0, 8/4, 12/0, 13/0, 14/1 and 15/0) remain in the scoped evidence. KB-03’s hosted run exposed the missed exit event in the new delayed-stderr regression (3,522 pass / 1 fail / 3 todo); this led to the OS-wait correction rather than a longer timeout.
 
@@ -32,7 +32,7 @@ Earlier focused results (9/1, 10/0, 8/4, 12/0, 13/0, 14/1 and 15/0) remain in th
 | KB-75 adoption full run, `52689a4` | 3,510 pass / 1 fail / 3 todo | Only unchanged KB-61’s 480-second hook failed; all 23 own cases passed. |
 | KB-78 adoption full run, `e618a0f` | 3,530 pass / 0 fail / 3 todo | All 22 own cases passed on shared `4d30965`; final shared combined proof is pending. |
 
-The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports, KB-75’s 23, KB-77’s 25 and KB-78’s 22 cases. Final combined proofs on `2d99c84` are being collected. It has not yet produced a green shared PR. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
+The shared fix works in focused migrations, including KB-03’s 15, KB-05’s 13, KB-06’s 19, KB-45’s 12, KB-66’s 19, KB-67’s 31 parent reports, KB-75’s 23, KB-77’s 25 and KB-78’s 22 cases. Final combined proofs on `2d99c84` are being collected. Hosted CI is green on the latest shared head, but the retained local cancellation failure prevents a merge. Intermittent KB-64 results and baseline hook failures must not be credited to unrelated fixes. Historical 3,585/30/3 plus two errors and two cancelled KB-66 hosted runs with eight timeouts each are different candidates, not a controlled before/after comparison.
 
 E2E recovery: the exact command now uses installed Chromium 151 through its local executable-cache path, without repository or configuration changes. Planning baseline: **27 pass / 1 fail / 89 skip** (task-view navigation). KB-67 and KB-45 each separately passed **28 / 0 / 89 skip**. Earlier missing-browser failures and the CDN 403 remain recorded. Existing credential-gated skips were not introduced by this run.
 
@@ -102,10 +102,11 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 
 ## Needs Amit (in order)
 
-1. AT-02: owner architecture gates for KB-01/16/31 after prerequisites; no agent-added label.
-2. AT-03: existing KA-24 search capability configuration; no environment changes.
-3. AT-04: native Hebrew and real-device checks before production, not preview.
-4. FACTORY_PAUSED=true is Amit’s prerequisite for #1198; never merge it in this run.
+1. AT-21: additional scoped shared-harness pass after the three-round limit; fix the retained cancellation failure and platform proof without changing deadlines or skipping tests.
+2. AT-02: owner architecture gates for KB-01/16/31 after prerequisites; no agent-added label.
+3. AT-03: existing KA-24 search capability configuration; no environment changes.
+4. AT-04: native Hebrew and real-device checks before production, not preview.
+5. FACTORY_PAUSED=true is Amit’s prerequisite for #1198; never merge it in this run.
 
 ## UNKNOWN
 

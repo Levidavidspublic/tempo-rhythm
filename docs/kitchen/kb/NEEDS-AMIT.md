@@ -2,10 +2,11 @@
 
 Blocked — These owner actions remain. Decisions recorded below apply from 2026-10-21 (Asia/Jerusalem). The previous twenty-question ledger remains in git history and VALIDATION.md; it is not a pending approval list.
 
-1. AT-02 — Supply the owner-only `convex-arch` gate for KB-01, KB-16 and KB-31 after prerequisites are ready. No label is added by this run; these tickets wait.
-2. AT-03 — Provide and validate the existing KA-24 search-service capability configuration before KB-16 can enable supported engines. No service or environment change is authorized.
-3. AT-04 — Arrange the Hebrew native read and real-device accessibility checks before production. These do not block preview work.
-4. Factory configuration — PR #1198 must remain unmerged until Amit sets `FACTORY_PAUSED=true`. This run does not change that setting or merge that PR.
+1. AT-21 — Decide whether to authorize one more scoped shared-harness correction in [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). Three top-level rounds are consumed: initial implementation, review correction, and OS-exit recovery. On current `2d99c84`, KB-75’s combined proof failed the existing cancellation assertion: the supervisor was killed before supplying the child receipt, so the child signal remains UNKNOWN. Keep every deadline and assertion. The latest CodeRabbit platform finding must also be addressed without its suggested test skips. AGENTS.md says “After the 3rd failure: stop and report `stuck`”; this run does not authorize itself a fourth round or merge the known failure. Hosted green CI does not erase it.
+2. AT-02 — Supply the owner-only `convex-arch` gate for KB-01, KB-16 and KB-31 after prerequisites are ready. No label is added by this run; these tickets wait.
+3. AT-03 — Provide and validate the existing KA-24 search-service capability configuration before KB-16 can enable supported engines. No service or environment change is authorized.
+4. AT-04 — Arrange the Hebrew native read and real-device accessibility checks before production. These do not block preview work.
+5. Factory configuration — PR #1198 must remain unmerged until Amit sets `FACTORY_PAUSED=true`. This run does not change that setting or merge that PR.
 
 ## Amit's answers — 2026-10-21
 

@@ -4,14 +4,14 @@ AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 18:25 (Asia/Je
 
 ## Overnight v3 — 2026-10-21
 
-In progress — Amit authorized the shared harness first, then nine fixture reruns, then seven scoped bug/timing passes. Earlier AT-05–AT-20 holds are historical and superseded by that sequence, not an unlimited retry grant. Shared issue [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), draft [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), now has 18 passing focused cases at `2d99c84`, including authoritative OS reaping when Bun loses its exit notification. All nine fixture tickets have passing own focused cases on the preceding shared source; final combined proofs and remaining mandatory validation are in progress. Current CI/review and full-suite failures remain blockers, with source-specific evidence in OVERNIGHT-REPORT.md. AT-01 holds remain; AT-02/03 backend gates remain unanswered. #1193 is excluded and #1198 cannot merge. No new PR has merged in this run.
+In progress — Amit authorized the shared harness first, then nine fixture reruns, then seven scoped bug/timing passes. Earlier AT-05–AT-20 holds are historical and superseded by that sequence, not an unlimited retry grant. Shared issue [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), draft [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), now has 18 passing focused cases at `2d99c84`, including authoritative OS reaping when Bun loses its exit notification. All nine fixture tickets have passing own focused cases on the preceding shared source; final combined proofs and remaining mandatory validation are in progress. Shared #1203 is now stuck: hosted CI is green, but KB-75’s final combined proof failed its existing cancellation assertion after three repair rounds. AT-21 records the owner-only additional-pass decision. Current CI/review and full-suite failures remain blockers, with source-specific evidence in OVERNIGHT-REPORT.md. AT-01 holds remain; AT-02/03 backend gates remain unanswered. #1193 is excluded and #1198 cannot merge. No new PR has merged in this run.
 
 ## Counts
 
 - KB issues: **5 closed / 22 open**, including the administrative lead issue #1176.
 - KB PRs: **10 merged / 22 open**; includes planning #1140, shared harness #1203 and corrective #1204.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **4 remaining owner actions**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
+- NEEDS-AMIT.md: **5 remaining owner actions**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
 
 ## Authority and gates
 
