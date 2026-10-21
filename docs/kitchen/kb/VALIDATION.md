@@ -290,7 +290,7 @@ Combined results are pending. Exact causes of the intermittent hosted hangs and 
 <!-- KB-FINISH-LIVE-RESULTS -->
 ### Current combined results
 
-AWAY — Snapshot 2026-10-21T14:25:31.570Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
+AWAY — Snapshot 2026-10-21T14:42:56.286Z. These results apply only to local commit d4f9cf2 and the exact input manifest above.
 
 | Command | Result | Seconds |
 |---|---|---|
@@ -300,14 +300,18 @@ AWAY — Snapshot 2026-10-21T14:25:31.570Z. These results apply only to local co
 | typecheck | PASS | 162.04 |
 | test | FAIL, exit 1 | 3874.76 |
 | scans | PASS | 30.39 |
-| e2e | Pending | — |
-| build | Pending | — |
+| e2e | FAIL, exit 1 | 2441.18 |
+| build | PASS | 897.11 |
 
 AT — KB-09 was subsequently held at AT-14 after two verified fresh review findings. Its unchanged input remains in this immutable validation checkout; a passing test does not approve those defects. KB-75 used its one extra for a deterministic browser time zone. Hosted CI passed, but local non-UTC validation failed with 0 named cases reported and 2 hook failures; the buffered child phase remains UNKNOWN. The PR is draft at AT-16 and its source remains unchanged in evidence-only b7196b6. KB-77 final extra source502f0cc again streamed all18browser passes and cleanup, then output EOF without an OS-exit callback. Hosted job119267322831 failed the unchanged480s hook plus the unchanged codec30s check. The draft is held at AT-18; evidence-only58327ef preserves the result. Local final focus was canceled before execution after this known failure; no fifth source candidate was made. KB-45 is using its extra for an English fallback language boundary that preserves a localized child’s own semantics. KB-74 correction #1200 uses final extra source3d99346. Hosted job119268396163 passed all25original cases but failed two new geometry checks before transition synchronization; the draft is held at AT-17, with evidence-onlyfc68d9c. Final local focus was canceled before execution; the combined manifest contains only the older integration source. These later repairs are not covered by this older manifest.
 
 WALK — Hosted follow-up #1199 (KB-61 input35b1c32) passed all required hosted checks, then actual CodeRabbit review found cleanup error loss. The follow-up was returned to draft at AT-15; documentation-only72f6302 clarifies prior versus final validation and does not change its tested source. Latest KB-71 job119219800967 failed only the integration-baseline KB-61 480-second fixture, which #1199 repairs. KB-77 job119219928829 failed its own 480-second fixture plus the unchanged shared codec 30-second bundle check. KB-44 job119219282273 and KB-69 job119219667179 failed only that codec check. These failures remain failures.
 
 UNKNOWN — A read-only codec audit found unchanged codec files and a still-in-process baseline KB-67 native build/server fixture sharing the full-suite process with global module mocks. That is a possible interaction, not a proven cause. KB-44 already isolates its builds; its subsequent-build/server proof passed11/11. No shared codec change, timeout increase or scan/config weakening is authorized or made.
+
+WALK — Completed full unit run: **3,585 pass, 30 fail, 3 todo, 2 errors; 3,618 tests across 219 files**. Eleven KB-45 outer failures repeat one failed child run; they are retained in the actual reported count.
+
+WALK — Completed local Playwright run: **1 pass, 27 fail, 89 expected credential-gated skips**. This is a failed command, not preview or production proof.
 
 ### test: retained failure tail
 
@@ -334,8 +338,33 @@ Ran 3618 tests across 219 files. [3873.85s]
 error: script "test" exited with code 1
 ```
 
+### e2e: retained failure tail
+
+```text
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:14:7 › habits, brain dump and search wiring › /habits/[id] mounts HabitDetail
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/harness.spec.ts:8:7 › wiring E2E harness › signed-out /plan is not sent to /sign-in under the dev E2E bypass
+    [chromium] › tests/e2e/wiring/harness.spec.ts:14:7 › wiring E2E harness › a route outside the wiring list still redirects
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  89 skipped
+  1 passed (27.3m)
+```
+
 ### Individual PR assessment
 
 WALK — KB-07 (f0dae9f) and KB-66 (e7d5b52) were assessed separately from the optional eleven-input combined checkout. Each has green current-head hosted Test, Build, E2E, CI and required guards; addressed actual CodeRabbit review; unchanged scoped blobs; no unmet dependency; and passing isolated and combined ticket fixtures (9 and19 cases respectively). A read-only source audit found neither in the failing fixture product import graphs, and neither introduces parent-process mocks or shared timeout changes. The combined failure remains a failure; absence of import overlap is not proof of its cause. The integration merge queue must run its checks again. All remaining mandatory local commands continue before final handoff; no repository check is removed, relaxed or declared passed on the basis of this assessment.
 
-WALK — KB-10 is not included in that assessment because the failed KB-45 fixture mounts its sign-in form. KB-44 and KB-71 also appear in failing onboarding/notes product graphs. A separate local-only frozen composition of KB-10 fe554ba and new KB-45 9a5c3fd is prepared to test the changed auth boundary after the mandatory sequence; it is not yet a passing result.
+WALK — KB-10 a4e392d has separately passed its own current-base hosted gates using the existing integration SignUpForm, with unchanged CodeRabbit-reviewed scoped files and no unresolved threads. A read-only independent reviewer found no concrete KB-10 defect: the failed combined fixture also included a separate unmerged KB-45 patch. Ready-triggered checks and the merge queue must still pass. KB-44 and KB-71 appear in failing onboarding/notes product graphs and require their own current-head green gates; KB-71 fresh hosted job119279435491 failed only the unchanged codec bundle deadline (3515 pass,1 fail). A local-only frozen composition of KB-10 fe554ba and new KB-45 9a5c3fd is now testing the changed auth boundary; it is not yet a passing result.
