@@ -54,3 +54,52 @@ error: Could not resolve: "react/jsx-dev-runtime". Maybe you need to "bun instal
  174 expect() calls
 Ran 13 tests across 1 file. [32.92s]
 ```
+
+
+## Overnight shared fixture pass — 2026-10-21
+
+PR open — both scoped browser cases pass with isolated builds; current hosted checks and CodeRabbit review remain required. Role: WORKHORSE. Prerequisite: shared harness #1203 (source `4d30965`). The previous hosted Test on `2e87b65` had 3411 passes, 3 todos and 2 failures from Bun EISDIR/Unseekable module resolution.
+
+Both browser entrypoints now build through `isolatedBrowserBuild` in fresh supervised Bun processes. The adapter preserves the existing backend-boundary aliases and requires authoritative child success plus emitted JavaScript. Build time comes from the original case deadline, with bounded cleanup reserved inside it. Browser/server/directory cleanup uses the shared aggregate cleanup helper, and gallery focus waits on the committed active element before the original assertion. Phase evidence streams during build, server start, browser launch and cleanup. Product files and the existing contact sheet are unchanged.
+
+All 13 case names and all 58 original `expect` statements remain byte-for-byte identical. The original 240000 ms gallery timeout, 30000 ms production timeout and 30000 ms cleanup hook remain. Focused validation before the shared review correction: `bun test tests/unit/kb-05.test.tsx` exited 0 with 13 passes, 0 failures and 194 assertions in 20.34 seconds. The subsequent shared correction affects receipt drain and failed spawn handling; full validation below uses that correction.
+
+Implementation source: `87aa138`. Bun 1.3.9; frozen installation passed with 2000 packages in 4.67 seconds. The complete mandatory sequence ran once in the prescribed order. The E2E command held the shared localhost lock and used installed Chromium 151 through a runtime cache link prepared by the lead; no tracked configuration changed.
+
+| Check | Result |
+| --- | --- |
+| `bun run lint` | PASS, exit 0, 5/5 tasks |
+| `bun run typecheck` | PASS, exit 0, 5/5 tasks |
+| `bun run test` | FAIL, exit 1: 3479 passed, 22 failed, 3 todos, 81578 assertions; 3504 tests across 213 files in 684.70 seconds |
+| Four scan/notices commands | PASS, exit 0 |
+| `CI=1 bunx playwright test --reporter=line` | PASS, exit 0: 28 passed, 89 expected skips, 1.4 minutes |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0: 1/1 task, fresh build, 44.168 seconds |
+
+The full run passed all 13 KB-05 cases and all 15 shared-harness cases. Its 22 failures were 21 unchanged KB-64 browser-close cases and one unchanged KB-61 hook timeout at 480000.52 ms. During that wait, the KB-61 child was a zombie still parented to the Bun test runner; the original hook deadline was allowed to expire and the suite then completed. This is observed lifecycle evidence, not an attribution to product code. The prior planning baseline also had KB-64 browser-close failures (20). After the suite, only the specifically inventoried browser group left by KB-64 was stopped. KB-05's own browser/server/directory cleanup completed in both cases.
+
+Hosted EISDIR disappearance on the new branch head remains UNKNOWN until current CI finishes. The focused and complete local runs contain zero KB-05 failures after the two hosted fixture failures before adoption. No test was skipped, removed, weakened or given a larger timeout. Hebrew native review and real-device checks remain pre-production needs and do not block preview work.
+
+Full test failure tail:
+
+```text
+(fail) KB64 Undo recovery > changed deadline fences an old rejection without leaking error or busy state [16.06ms]
+(fail) KB64 Undo recovery > changed deadline fences an old fulfilled request after the old deadline [16.05ms]
+(fail) KB64 Undo recovery > new inline callback identities do not reset an active request [16.04ms]
+(fail) KB64 Undo recovery > Hebrew recovery has RTL direction and localized action copy [16.01ms]
+(fail) KB64 Undo recovery > an immediate fulfillment crossing the deadline still schedules post-commit expiry [16.03ms]
+(fail) KB64 Undo recovery > late successful real detail restoration keeps the parent navigation authoritative [16.06ms]
+(fail) KB64 Undo recovery > real NotesScreen list callback contains rejection and retries the same note [16.03ms]
+(fail) KB64 Undo recovery > real NotesScreen page callback contains rejection and leaves false fulfillment neutral [16.10ms]
+(fail) KB64 Undo recovery > gallery reuses the notice and supports reject retry expiration and language [15.99ms]
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [16.02ms]
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [16.03ms]
+(fail) (unnamed) [480000.52ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3479 pass
+ 3 todo
+ 22 fail
+ 81578 expect() calls
+Ran 3504 tests across 213 files. [684.70s]
+error: script "test" exited with code 1
+```
