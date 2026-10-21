@@ -1,5 +1,7 @@
 # KB implementation handoff
 
+Current filing update — 21 October 2026: all 59 written specifications now have issues; the 34 newly filed dependency-blocked assignments are mapped in [ISSUES.json](ISSUES.json) and [STATUS.md](STATUS.md). The 25-assignment descriptions below are historical implementation receipts, not an instruction to file the others again.
+
 Amit explicitly authorized implementation after the original planning request. This planning PR still contains documentation only. This handoff records the earlier draft-only implementation phase; [STATUS.md](STATUS.md) records current KB FINISH authority, review gates and merge receipts. The owner now authorizes reviewed, green KB work to merge through integration's merge queue, without a production release or deployment. A pushed draft, passing CI and production readiness are different states. Read each PR's current check results and `Test results (cloud agent sandbox)` before continuing it.
 
 **QA ownership correction, 20 Oct:** Amit identifies CodeRabbit as the primary QA/review tool and has retired Bugbot for cost. Older factory references naming Bugbot are stale; no worker should invoke or re-enable it. The observed test/build/lint/typecheck and aggregate ci check runs are published by GitHub Actions. Report their execution results alongside CodeRabbit review findings. This correction changes the reviewer assignment, not the existing failing-check evidence or repository repair/scope limits. No review bot was invoked and no factory/config file changed in this correction.
