@@ -2,7 +2,7 @@
  * CodeMirror 6 live preview for Tempo pages (OVERNIGHT-RUN.md decision 2).
  *
  * The document is the exact `notes.body` text. Every visual change is a decoration: Markdown
- * marks hide when the cursor is not on their line (Obsidian-style), `json tempo` fences draw
+ * marks hide when the cursor is not on their line (checkboxes stay usable while editing), `json tempo` fences draw
  * as atomic cards that never show their JSON, GFM tables draw as tables until the cursor
  * enters them. Nothing here rewrites text on load, so an untouched page saves back identical.
  */
@@ -442,16 +442,20 @@ class CheckboxWidget extends WidgetType {
     return other.checked === this.checked && other.at === this.at && other.label === this.label;
   }
   toDOM(view: EditorView): HTMLElement {
-    const box = el("input", { type: "checkbox", class: "cm-tp-checkbox", "aria-label": this.label });
+    const box = el("input", { type: "checkbox", class: "cm-tp-checkbox", "aria-label": this.label, "data-checkbox-at": String(this.at) });
+    const target = el("label", { class: "cm-tp-checkbox-target" }, [box]);
     (box as HTMLInputElement).checked = this.checked;
-    box.addEventListener("mousedown", (e) => e.preventDefault());
+    target.addEventListener("mousedown", (e) => e.preventDefault());
     box.addEventListener("click", (e) => {
       e.preventDefault();
       const marker = view.state.doc.sliceString(this.at, this.at + 3);
       if (!/^\[[ xX]\]$/.test(marker)) return;
+      const hadFocus = document.activeElement === box;
       view.dispatch({ changes: { from: this.at + 1, to: this.at + 2, insert: this.checked ? " " : "x" }, userEvent: "input.check" });
+      // The new checked value replaces this widget. Keep keyboard activation on its replacement.
+      if (hadFocus) view.dom.querySelector<HTMLInputElement>(`input[data-checkbox-at="${this.at}"]`)?.focus();
     });
-    return box;
+    return target;
   }
   ignoreEvent(): boolean {
     return false;
@@ -594,7 +598,7 @@ export function inlineDecorations(state: EditorState, ranges: readonly { from: n
               const lineEnd = line.to;
               if (node.to < lineEnd) decos.push(Decoration.mark({ class: "cm-tp-done" }).range(node.to, lineEnd));
             }
-            if (isActive) return;
+            // A checkbox remains a control while its title is being typed or selected.
             // Hide "- " before the marker so only the checkbox shows.
             const listStart = state.doc.sliceString(line.from, node.from);
             const markFrom = line.from + listStart.search(/[-*+]\s+$/);
@@ -785,14 +789,24 @@ const tempoTheme = EditorView.theme({
     fontSize: "var(--tp-text-sm)",
   },
   ".cm-tp-bullet": { display: "inline-block", width: "1.1em", color: "var(--tp-ink-muted)" },
+  ".cm-tp-checkbox-target": {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "var(--tp-touch)",
+    height: "var(--tp-touch)",
+    marginInlineEnd: "var(--tp-space-1)",
+    verticalAlign: "middle",
+    cursor: "pointer",
+  },
   ".cm-tp-checkbox": {
-    width: "18px",
-    height: "18px",
-    margin: "0 6px 0 0",
-    verticalAlign: "-3px",
+    width: "var(--tp-space-5)",
+    height: "var(--tp-space-5)",
+    margin: "0",
     accentColor: "var(--tp-done)",
     cursor: "pointer",
   },
+  ".cm-tp-checkbox:focus-visible": { outline: "var(--tp-focus-w) solid var(--tp-accent)", outlineOffset: "var(--tp-focus-gap)" },
   ".cm-tp-hr": { display: "inline-block", width: "100%", borderTop: "1px solid var(--tp-line)", verticalAlign: "middle" },
   ".cm-tp-block": { margin: "var(--tp-space-2) 0" },
   // A task card's title is a field that reads as plain text until it is focused.
