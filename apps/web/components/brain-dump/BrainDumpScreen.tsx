@@ -224,6 +224,7 @@ export function BrainDumpScreen() {
   const handleReject = useCallback((index: number) => {
     setAccepted((prev) => prev.filter((i) => i !== index));
     setRejected((prev) => (prev.includes(index) ? prev : [...prev, index]));
+    setEditingIndex((current) => current === index ? null : current);
   }, []);
 
   const saveEdit = useCallback(() => {

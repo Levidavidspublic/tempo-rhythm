@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { basename, join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import * as bun from "bun";
 import { en, he, tKb02 } from "../../apps/web/lib/i18n-groups/kb-02";
 import { translate } from "../../apps/web/lib/i18n";
+import { fixtureCleanup, fixturePhase, requireFixtureSuccess, runIsolatedFixture, type FixtureRun } from "../helpers/kitchen-fixture";
 
 const repo = process.cwd();
 const web = join(repo, "apps/web");
@@ -30,6 +31,7 @@ if (process.env.KB02_ISOLATED !== "1" && !beforeMode) {
     "multiline Hebrew capture keeps direction and wraps",
     "pending sort leaves the draft visible and then shows a proposal",
     "proposal is a preview until a person accepts and adds",
+    "rejecting the edited idea releases both submission actions for remaining ideas",
     "saved page retains keyboard reachable Open and Undo while removal waits",
     "recovery notice dismisses and returns focus to the draft",
     "390 px long text does not widen the viewport",
@@ -38,27 +40,75 @@ if (process.env.KB02_ISOLATED !== "1" && !beforeMode) {
     "English and Hebrew new keys match",
     "mounted screen and gallery fit phone and desktop in both languages and themes",
   ];
-  let output: string | undefined;
-  for (const name of names) {
-    test(`KB-02 isolated: ${name}`, () => {
-      if (output === undefined) {
-        const run = bun.spawnSync([process.execPath, "test", import.meta.path], {
-          cwd: repo,
-          env: { ...process.env, KB02_ISOLATED: "1" },
-          stdout: "pipe",
-          stderr: "pipe",
-        });
-        output = `${run.stdout.toString()}${run.stderr.toString()}`;
-        if (run.exitCode !== 0) throw new Error(`KB-02 clean test process failed:\n${output}`);
+  const controller = new AbortController();
+  let running: Promise<FixtureRun> | undefined;
+  const run = () => running ??= runIsolatedFixture({
+    command: [process.execPath, "test", import.meta.path], cwd: repo,
+    env: { ...process.env, KB02_ISOLATED: "1" },
+    timeoutMs: 300_000, cleanupMs: 30_000, signal: controller.signal,
+  });
+  const outcomes = (output: string) => {
+    const result = new Map<string, boolean>();
+    for (const line of output.split("\n")) {
+      if (!line.startsWith("KB02_CASE=")) continue;
+      const entry = JSON.parse(line.slice("KB02_CASE=".length));
+      if (typeof entry.name !== "string" || typeof entry.pass !== "boolean" || result.has(entry.name)) {
+        throw new Error("Invalid or duplicate KB-02 case result");
       }
+      result.set(entry.name, entry.pass);
+    }
+    return result;
+  };
+  afterAll(async () => { controller.abort(); await running; }, 30_000);
+  for (const name of names) {
+    test(`KB-02 isolated: ${name}`, async () => {
+      const result = await run();
+      const output = result.out;
+      expect(outcomes(output).get(name)).toBe(true);
       expect(output).toContain(name);
     }, 300_000);
   }
+  test("KB-02 isolated child setup, exit and cleanup succeed", async () => {
+    requireFixtureSuccess(await run());
+  }, 300_000);
+  test("KB-02 maps exact case outcomes independently of aggregate lifecycle failure", () => {
+    const output = ['KB02_CASE={"name":"successful sibling","pass":true}',
+      'KB02_CASE={"name":"failed case","pass":false}', '(fail) successful sibling suffix'].join("\n");
+    const mapped = outcomes(output);
+    expect(mapped.get("successful sibling")).toBe(true);
+    expect(mapped.get("failed case")).toBe(false);
+    expect(mapped.get("missing case")).toBeUndefined();
+    expect(mapped.get("successful sibling suffix")).toBeUndefined();
+    expect(() => outcomes(output + "\n" + output)).toThrow("duplicate");
+    const success: FixtureRun = { pid: 1, code: 0, signal: null, out: output, err: "", timedOut: false,
+      cancelled: false, cleanupErrors: [], outputTruncated: false };
+    expect(() => requireFixtureSuccess(success)).not.toThrow();
+    expect(() => requireFixtureSuccess({ ...success, code: 1 })).toThrow();
+    expect(() => requireFixtureSuccess({ ...success, cleanupErrors: [new Error("afterAll cleanup failed")] })).toThrow();
+    expect(() => requireFixtureSuccess({ ...success, code: null, signal: "SIGTERM" })).toThrow();
+  });
 } else {
 let browser: Browser;
 let server: ReturnType<typeof bun.serve>;
 let origin: string;
 let temp: string;
+const cleanup = fixtureCleanup({
+  browser: () => browser?.close(),
+  server: () => server?.stop(true),
+  directory: () => temp ? rmSync(temp, { recursive: true, force: true }) : undefined,
+}, 30_000);
+function fixtureTest(name: string, body: () => unknown | Promise<unknown>, timeout?: number) {
+  test(name, async () => {
+    fixturePhase(`KB-02 case start: ${name}`);
+    try {
+      await body();
+      process.stdout.write(`KB02_CASE=${JSON.stringify({ name, pass: true })}\n`);
+    } catch (error) {
+      process.stdout.write(`KB02_CASE=${JSON.stringify({ name, pass: false })}\n`);
+      throw error;
+    }
+  }, timeout);
+}
 
 const stubs: Record<string, string> = {
   "convex/react": `export const useConvex=()=>({query:async ref=>ref?.__kb==="crisis"?{isCrisis:false}:null});export const useAction=()=>async args=>{window.__kbCalls.push({kind:"prioritize",args});if(new URLSearchParams(location.search).has("pending"))return await new Promise(resolve=>{window.__kbResolve=resolve});return ${JSON.stringify(plan)}};export const useMutation=ref=>async args=>{window.__kbCalls.push({kind:ref?.__kb,args});if(ref?.__kb==="notes.remove"&&new URLSearchParams(location.search).has("pendingUndo"))return await new Promise(resolve=>{window.__kbResolveUndo=resolve});if(ref?.__kb==="notes.create")return "fictional-note";if(ref?.__kb==="acceptPlan")return {created:1,taskIds:["fictional-task"]};return null};`,
@@ -179,10 +229,10 @@ async function capture(page: Page, name: string) {
 const kept = { draft: "Maya wants room to rest, and time with Dana and Yoni.", plan, accepted: [], rejected: [], savedPageId: null };
 
 describe.serial("KB-02 mounted brain dump and gallery", () => {
-  beforeAll(async () => { await makeFixture(); browser = await chromium.launch({ executablePath: executable(), headless: true, args: ["--no-sandbox"] }); }, 90_000);
-  afterAll(async () => { await browser?.close(); server?.stop(true); }, 30_000);
+  beforeAll(async () => { fixturePhase("KB-02 setup start"); await makeFixture(); fixturePhase("KB-02 browser launch"); browser = await chromium.launch({ executablePath: executable(), headless: true, args: ["--no-sandbox"] }); fixturePhase("KB-02 setup ready"); }, 90_000);
+  afterAll(async () => { fixturePhase("KB-02 cleanup start"); await cleanup(); fixturePhase("KB-02 cleanup complete"); }, 30_000);
 
-  test("empty capture gives a gentle prompt before sorting", async () => {
+  fixtureTest("empty capture gives a gentle prompt before sorting", async () => {
     const page = await open();
     expect(await page.getByText(tKb02("en", "kb02.empty")).count()).toBe(1);
     await page.getByRole("button", { name: "Sort it" }).click();
@@ -191,7 +241,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("multiline Hebrew capture keeps direction and wraps", async () => {
+  fixtureTest("multiline Hebrew capture keeps direction and wraps", async () => {
     const page = await open(390, "lang=he");
     const textarea = page.locator("textarea");
     await textarea.fill("מאיה רוצה שבוע רגוע יותר\nזמן לפגוש את דנה ואת יוני");
@@ -201,7 +251,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("pending sort leaves the draft visible and then shows a proposal", async () => {
+  fixtureTest("pending sort leaves the draft visible and then shows a proposal", async () => {
     const page = await open(390, "pending=1", kept);
     await page.locator("textarea").fill("Maya needs a calmer Friday.");
     await page.getByRole("button", { name: "Sort it" }).click();
@@ -218,7 +268,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("proposal is a preview until a person accepts and adds", async () => {
+  fixtureTest("proposal is a preview until a person accepts and adds", async () => {
     const page = await open();
     await page.locator("textarea").fill("Maya needs a calmer Friday.");
     await page.getByRole("button", { name: "Sort it" }).click();
@@ -236,7 +286,39 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("saved page retains keyboard reachable Open and Undo while removal waits", async () => {
+  fixtureTest("rejecting the edited idea releases both submission actions for remaining ideas", async () => {
+    for (const action of ["add", "page"] as const) {
+      const page = await open(390, "", kept);
+      try {
+        await page.getByRole("button", { name: "Accept", exact: true }).last().click();
+        await page.getByRole("button", { name: tKb02("en", "kb02.edit"), exact: true }).first().click();
+        await page.getByRole("textbox", { name: tKb02("en", "kb02.editLabel") }).fill("Unsaved rejected edit");
+        const add = page.getByRole("button", { name: /Add accepted/ });
+        const save = page.getByRole("button", { name: translate("en", "bd.savePage"), exact: true });
+        expect(await add.isDisabled()).toBe(true);
+        expect(await save.isDisabled()).toBe(true);
+        await page.getByRole("button", { name: "Reject", exact: true }).first().click();
+        await page.getByRole("textbox", { name: tKb02("en", "kb02.editLabel") }).waitFor({ state: "detached" });
+        expect(await add.isEnabled()).toBe(true);
+        expect(await save.isEnabled()).toBe(true);
+        expect(await page.evaluate(() => window.__kbCalls.length)).toBe(0);
+        if (action === "add") {
+          await add.click();
+          await page.waitForFunction(() => window.__kbCalls.some(call => call.kind === "acceptPlan"));
+          expect(await page.evaluate(() => window.__kbCalls.find(call => call.kind === "acceptPlan")?.args)).toEqual({ items: [plan.priorities[1]].map(({ title, urgency }) => ({ title, urgency })) });
+        } else {
+          await save.click();
+          await page.locator(".bd-saved a").waitFor();
+          const args = await page.evaluate(() => window.__kbCalls.find(call => call.kind === "notes.create")?.args) as { title: string; body: string };
+          expect(args.body).toContain(plan.priorities[1].title);
+          expect(args.body).not.toContain(plan.priorities[0].title);
+          expect(args.body).not.toContain("Unsaved rejected edit");
+        }
+      } finally { await page.close(); }
+    }
+  }, 90_000);
+
+  fixtureTest("saved page retains keyboard reachable Open and Undo while removal waits", async () => {
     const page = await open(390, "pendingUndo=1", kept);
     await page.getByRole("button", { name: "Save as a page" }).click();
     const link = page.getByRole("link", { name: /Open the page/ });
@@ -252,7 +334,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("recovery notice dismisses and returns focus to the draft", async () => {
+  fixtureTest("recovery notice dismisses and returns focus to the draft", async () => {
     const page = await open(390, "", kept);
     await page.getByText(tKb02("en", "kb02.recovered")).waitFor();
     await page.getByRole("button", { name: tKb02("en", "kb02.dismiss") }).click();
@@ -261,7 +343,7 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("390 px long text does not widen the viewport", async () => {
+  fixtureTest("390 px long text does not widen the viewport", async () => {
     const page = await open(390, "gallery=1");
     await page.getByRole("button", { name: tKb02("en", "kb02.galleryOverflow") }).click();
     expect(await noOverflow(page)).toBe(true);
@@ -269,14 +351,14 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("offline copy explains the draft and the connection", async () => {
+  fixtureTest("offline copy explains the draft and the connection", async () => {
     const page = await open(390, "gallery=1");
     await page.getByRole("button", { name: tKb02("en", "kb02.galleryOffline") }).click();
     expect(await page.getByText(tKb02("en", "kb02.offline")).count()).toBe(1);
     await page.close();
   }, 90_000);
 
-  test("gallery states, controls, focus, and disabled action work", async () => {
+  fixtureTest("gallery states, controls, focus, and disabled action work", async () => {
     const page = await open(390, "gallery=1");
     for (const key of ["kb02.galleryEmpty", "kb02.galleryLoading", "kb02.galleryError", "kb02.galleryDisabled", "kb02.galleryDefault"] as const) {
       await page.getByRole("button", { name: tKb02("en", key) }).click();
@@ -297,12 +379,12 @@ describe.serial("KB-02 mounted brain dump and gallery", () => {
     await page.close();
   }, 90_000);
 
-  test("English and Hebrew new keys match", () => {
+  fixtureTest("English and Hebrew new keys match", () => {
     expect(Object.keys(en).sort()).toEqual(Object.keys(he).sort());
     expect(Object.values(he).every(Boolean)).toBe(true);
   });
 
-  test("mounted screen and gallery fit phone and desktop in both languages and themes", async () => {
+  fixtureTest("mounted screen and gallery fit phone and desktop in both languages and themes", async () => {
     for (const theme of ["light", "dark"] as const) for (const width of [390, 1280]) for (const lang of ["en", "he"] as const) {
       const params = `lang=${lang}&theme=${theme}`;
       const page = await open(width, params, kept);
