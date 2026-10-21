@@ -95,3 +95,88 @@ Real milestone rows and movement controls remain blocked: the existing goals rec
 Exported GoalProgressSummary, retained fractional stored progress with finite/bounds handling, and exposed loading status semantics. Added fractional/nonfinite/partial-completion/null-description regressions. Final focused: 19 pass, 0 fail, 82 assertions. Final lint/typecheck and four scans pass; frozen install UNKNOWN after resolver timeout. Prior setup failures are retained in local logs. Root repaired ignored dependency links/cache without tracked configuration changes. Existing screenshots still represent the unchanged integer-progress appearance.
 
 The lead owns the remaining full unit suite, scan confirmation, local E2E and build commands. They are queued separately under the shared resource lock; no passing result is claimed for an unfinished command. This repair may be pushed as a draft for hosted CI, but is not yet eligible for integration. No assertions, check configuration, timeout or skip conditions were weakened. The lead will append actual outcomes and failure tails before the merge gate.
+
+
+## 2026-10-21 — v3 AT-10 shared fixture continuation
+
+PR open — the shared isolation harness in #1203 now builds this fixture in a fresh process. All 19 existing cases, assertions, per-case 60,000 ms deadlines and the 60,000 ms setup hook remain intact. The complete case block was compared byte-for-byte with source `931d987`; product files and screenshots are unchanged.
+
+WORKHORSE source `441370c1f8d61cb89d4cc0da57b105780c2c2f97` includes shared `4d30965` and current integration by ordinary merges. The shared child emits build phases, preserves the authoritative child outcome, and bounds execution plus cleanup inside the existing setup deadline. Browser, loopback server and temporary directory clean up independently under the existing 5,000 ms teardown budget. Case-start and teardown phases stream as they happen. No fixed sleep, skipped case, weakened expectation, new dependency or configuration change was introduced.
+
+Before: hosted Test on `931d987` reported 3426 pass / 1 fail / 3 todo, with scheduler EISDIR/Unseekable during fixture setup. After: the corrected local focused command `bun test tests/unit/kb-06.test.tsx` exits 0, 19 pass / 0 fail, 82 assertions, 21.88 s. These are separate environments; current-head hosted CI remains authoritative for hosted validation.
+
+First adoption attempt `f911522` reported 0 pass / 1 setup failure. The shared resolver needed an explicit existing alias for `@/convex/lib/softDelete`; the fixture now points to the actual repository module according to the existing web tsconfig, preserving the real constant and production semantics. There is no backend edit or replacement stub. The complete failure tail is retained:
+
+```text
+tests/unit/kb-06.test.tsx:
+[kitchen-fixture] KB-06 fixture files
+[kitchen-fixture] start pid=70651
+[kitchen-fixture] build start
+error: ResolveMessage: Cannot find module '/workspace/kb06/apps/web/convex/lib/softDelete' from '/workspace/kb06/apps/web'
+    at /workspace/kb06/apps/web/components/goals/shared.tsx:0
+
+Bun v1.3.9 (Linux x64)
+KITCHEN_CHILD_EXIT={"token": "<synthetic receipt identifier>", "code": 1}
+[kitchen-fixture] supervisor reaped all descendants
+[kitchen-fixture] stderr EOF pid=70651 exit-observed=false
+[kitchen-fixture] stdout EOF pid=70651 exit-observed=false
+[kitchen-fixture] exit pid=70651 code=0 signal=none
+(fail) (unnamed) [194.95ms]
+[kitchen-fixture] KB-06 cleanup start
+[kitchen-fixture] KB-06 cleanup complete
+
+ 0 pass
+ 1 fail
+Ran 1 test across 1 file. [957.00ms]
+```
+
+Bun is 1.3.9. `bun install --frozen-lockfile` remained at dependency resolution for 120 s and was bounded externally (exit 124), so installation is UNKNOWN. Local checks use the verified installed dependency tree copied from the preceding KB-03 worktree with workspace-relative links preserved. No manifest or lockfile changed.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Mandatory checks on source `441370c` and shared `4d30965`, in required order:
+
+| Command | Exit / result |
+|---|---|
+| `bun --version` | 0; 1.3.9 |
+| `bun install --frozen-lockfile` | 124; UNKNOWN after external 120 s bound at dependency resolution |
+| `bun run lint` | 0; PASS, 5/5 tasks |
+| `bun run typecheck` | 0; PASS, 5/5 tasks |
+| `bun run test` | 143; incomplete, externally cancelled after unchanged KB-66 timed out at its original 240,000 ms deadline; observed 1556 pass / 1 fail / 3 todo, not final suite totals |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | 0; PASS, all four |
+| `CI=1 bunx playwright test --reporter=line` | 0; PASS, 28 pass / 89 credential-gated skips, 1.6 min; serialized with the shared browser lock |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | 0; PASS, 1/1 tasks |
+
+All 19 KB-06 cases passed in the full root process and its teardown completed. The separate unchanged KB-66 wrapper buffered a child that was already defunct; it timed out on the first original 240,000 ms deadline and subsequent cases awaited the same cached pending promise. The lead authorized external cancellation rather than waiting through repeated identical deadlines. This is an incomplete run, not a passing broad gate. One old KB-66 defunct child was adopted by PID 1 after cancellation and cannot be reaped by this worker; it was not a running server/browser. The new KB-06 shared builder separately reported its descendant reap and successful teardown.
+
+Last 20 lines of the incomplete full-unit command:
+
+```text
+(pass) KB-08 isolated: empty projects offer one deliberate start action [5985.31ms]
+(pass) KB-08 isolated: one project renders a named summary with distinct safe destinations [0.01ms]
+(pass) KB-08 isolated: count labels distinguish 0/1, 1/1 and multiple tasks
+(pass) KB-08 isolated: long user names retain auto direction and a wrapping class
+(pass) KB-08 isolated: actions are peers, never nested interactive controls
+(pass) KB-08 isolated: disabled navigation has no href or keyboard target
+(pass) KB-08 isolated: Hebrew count has RTL copy and isolated LTR digits
+(pass) KB-08 isolated: offline state stays a notice and does not create a project
+(pass) KB-08 isolated: filtered state only exposes the supplied reset callback
+(pass) KB-08 isolated: error and loading states render separately
+(pass) KB-08 isolated: gallery renders the real exported row and owns one h1 and one main
+(pass) KB-08 isolated: English and Hebrew dictionaries have exact key parity
+(pass) KB-08 isolated: hydrated gallery and mounted projects: keyboard, callbacks, RTL and full-width rows
+
+tests/unit/kb-66.test.tsx:
+killed 1 dangling process
+(fail) load-more view names the currently visible count and preserves LTR numerals [240031.33ms]
+  ^ this test timed out after 240000ms.
+error: script "test" was terminated by signal SIGTERM (Polite quit request)
+Terminated
+```
+
+The exact E2E command uses the installed system Chromium through the local Playwright cache fallback established by the lead, as allowed by AGENTS.md. No repository or browser configuration was edited.
+
+ Shared #1203, current-head CI, repository guards and CodeRabbit clearance remain merge prerequisites. Hebrew native reading and real-device checks are required before production and do not block preview.
