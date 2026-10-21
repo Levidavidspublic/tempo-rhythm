@@ -1,7 +1,9 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { fixtureCleanup, fixturePhase, requireFixtureSuccess, runIsolatedFixture } from "../helpers/kitchen-fixture";
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
 import type { ReactElement } from "../../apps/web/node_modules/react";
 
 // Keep global module mocks and native build/server state in a clean child. The child
@@ -21,24 +23,28 @@ if (process.env.KB45_ISOLATED !== "1") {
     "hydrated gallery and mounted modal preserve validation, retry, Hebrew links, contrast, and 44 px controls",
     "Hebrew page and modal respect fallback and child-owned auth language boundaries",
   ];
-  let result: { exitCode: number; output: string } | undefined;
-  const verify = (name: string) => {
-    if (!result) {
-      const child = Bun.spawnSync([process.execPath, "test", import.meta.path], {
-        cwd: process.cwd(),
-        env: { ...process.env, KB45_ISOLATED: "1" },
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      result = { exitCode: child.exitCode, output: `${child.stdout.toString()}${child.stderr.toString()}` };
-    }
+  let result: Promise<string> | undefined;
+  const run = () => result ??= (async () => {
+    // Execution and cleanup fit within the original first wrapper's 300 seconds.
+    const child = await runIsolatedFixture({
+      command: [process.execPath, "test", import.meta.path],
+      cwd: process.cwd(), env: { ...process.env, KB45_ISOLATED: "1" },
+      timeoutMs: 285_000, cleanupMs: 5_000,
+    });
+    requireFixtureSuccess(child);
+    return child.out + child.err;
+  })();
+  const verify = async (name: string) => {
+    const output = await run();
     // A printed case name never substitutes for the actual child result.
-    if (result.exitCode !== 0) throw new Error(`KB-45 clean test process failed:\n${result.output}`);
-    if (!/^\s*12 pass$/m.test(result.output) || !/^\s*0 fail$/m.test(result.output)
-      || !/^Ran 12 tests across 1 file\./m.test(result.output)) {
-      throw new Error(`KB-45 child must complete all twelve cases:\n${result.output}`);
+    if (!/^\s*12 pass$/m.test(output) || !/^\s*0 fail$/m.test(output)
+      || !/^Ran 12 tests across 1 file\./m.test(output)) {
+      throw new Error(`KB-45 child must complete all twelve cases:\n${output}`);
     }
-    expect(result.output).toContain(name);
+    expect(output).toContain(name);
+    expect(Bun.stripANSI(output).split("\n").some((line) => line.startsWith("(pass)") &&
+      (line.includes(` > ${name} [`) || line.endsWith(` > ${name}`) ||
+        line.startsWith(`(pass) ${name} [`) || line === `(pass) ${name}`))).toBe(true);
   };
   describe("KB-45 sign-up guidance", () => {
     for (const name of names.slice(0, 10)) test(name, () => verify(name), 300_000);
@@ -59,41 +65,49 @@ if (process.env.KB45_ISOLATED !== "1") {
 
   describe("KB-45 sign-up guidance", () => {
     test("default guidance explains the actual magic-link approval flow", () => {
+      fixturePhase("KB-45 case: default guidance explains the actual magic-link approval flow");
       const html = render(createElement(SignUpStatus, { lang: "en" }));
       expect(html).toContain("We email a sign-in link");
       expect(html).toContain("approval after opening it");
       expect(html).toContain('data-component="SignUpStatus"');
     });
     test("waiting copy explains review without claiming this account is pending", () => {
+      fixturePhase("KB-45 case: waiting copy explains review without claiming this account is pending");
       const html = render(createElement(SignUpStatus, { lang: "en", phase: "waitingCopy" }));
       expect(html).toContain("Amit reviews new accounts by hand");
       expect(html).not.toContain("Your account is pending");
     });
     test("approved copy describes a later path without claiming approval", () => {
+      fixturePhase("KB-45 case: approved copy describes a later path without claiming approval");
       const html = render(createElement(SignUpStatus, { lang: "en", phase: "approvedCopy" }));
       expect(html).toContain("Once approved");
       expect(html).not.toContain("You are approved");
     });
     test("empty example uses words rather than an empty card", () => {
+      fixturePhase("KB-45 case: empty example uses words rather than an empty card");
       const html = render(createElement(SignUpStatus, { lang: "en", phase: "empty" }));
       expect(html).toContain("No status to show");
     });
     test("loading example exposes busy semantics", () => {
+      fixturePhase("KB-45 case: loading example exposes busy semantics");
       const html = render(createElement(SignUpStatus, { lang: "en", phase: "loading" }));
       expect(html).toContain('aria-busy="true"');
       expect(html).toContain("Loading this example");
     });
     test("error example gives a retry action", () => {
+      fixturePhase("KB-45 case: error example gives a retry action");
       const html = render(createElement(SignUpStatus, { lang: "en", phase: "error", onRetry() {} }));
       expect(html).toContain("Try again");
       expect(html).toContain('type="button"');
     });
     test("disabled example keeps its action visible and unavailable", () => {
+      fixturePhase("KB-45 case: disabled example keeps its action visible and unavailable");
       const html = render(createElement(SignUpStatus, { lang: "en", phase: "disabled" }));
       expect(html).toContain("disabled");
       expect(html).toContain("unavailable");
     });
     test("Hebrew privacy links preserve legal routes and safe new-tab attributes", () => {
+      fixturePhase("KB-45 case: Hebrew privacy links preserve legal routes and safe new-tab attributes");
       const html = render(createElement(SignUpPrivacyLine, { lang: "he" }));
       expect(html).toContain('dir="rtl"');
       expect(html).toContain('href="/terms"');
@@ -102,6 +116,7 @@ if (process.env.KB45_ISOLATED !== "1") {
       expect(html).toContain("מדיניות הפרטיות");
     });
     test("English and Hebrew keys stay paired", () => {
+      fixturePhase("KB-45 case: English and Hebrew keys stay paired");
       expect(Object.keys(en).sort()).toEqual(Object.keys(he).sort());
       for (const key of Object.keys(en) as (keyof typeof en)[]) {
         expect(kb45t("en", key).trim().length).toBeGreaterThan(0);
@@ -109,6 +124,7 @@ if (process.env.KB45_ISOLATED !== "1") {
       }
     });
     test("all new public views are exported", () => {
+      fixturePhase("KB-45 case: all new public views are exported");
       expect(typeof SignUpStatus).toBe("function");
       expect(typeof SignUpPrivacyLine).toBe("function");
       expect(typeof Kb45Gallery).toBe("function");
@@ -118,13 +134,18 @@ if (process.env.KB45_ISOLATED !== "1") {
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   let server: ReturnType<typeof Bun.serve> | undefined;
   let directory: string | undefined;
+  const cleanup = fixtureCleanup({
+    browser: async () => { fixturePhase("KB-45 browser cleanup"); await browser?.close(); },
+    server: () => { server?.stop(true); fixturePhase("KB-45 server cleanup"); },
+    directory: async () => { if (directory) await rm(directory, { recursive: true, force: true }); fixturePhase("KB-45 directory cleanup"); },
+  }, 30_000);
   afterAll(async () => {
-    await browser?.close();
-    server?.stop(true);
-    if (directory) await rm(directory, { recursive: true, force: true });
+    await cleanup();
+    fixturePhase("KB-45 cleanup complete");
   }, 30_000);
 
   test("hydrated gallery and mounted modal preserve validation, retry, Hebrew links, contrast, and 44 px controls", async () => {
+    fixturePhase("KB-45 case: hydrated gallery and mounted modal preserve validation, retry, Hebrew links, contrast, and 44 px controls");
     const work = join(repo, "work");
     await mkdir(work, { recursive: true });
     directory = await mkdtemp(join(work, "tempo-kb45-"));
@@ -135,17 +156,20 @@ if (process.env.KB45_ISOLATED !== "1") {
     await writeFile(authStub, `export function useAuthActions() { return { signIn: async (_provider: string, args: { email: string }) => { (window as any).__kb45Emails.push(args.email); const mode = (window as any).__kb45Mode; if (mode === "pending") await new Promise(() => {}); if (mode === "error") throw new Error("send failed"); } }; }`);
     await writeFile(linkStub, `import React from ${JSON.stringify(reactPath)}; export default function Link({href,children,...rest}: any) { return React.createElement("a", {href: typeof href === "string" ? href : href.pathname, ...rest}, children); }`);
     await writeFile(entry, `import React from ${JSON.stringify(reactPath)}; import {createRoot} from ${JSON.stringify(join(repo, "apps/web/node_modules/react-dom/client"))}; import {LocaleProvider} from ${JSON.stringify(join(repo, "apps/web/components/providers/LocaleProvider.tsx"))}; import {Kb45Gallery,SignUpForm} from ${JSON.stringify(join(repo, "apps/web/components/auth/SignUpForm.tsx"))}; import SignUpModal from ${JSON.stringify(join(repo, "apps/web/components/SignUpModal.tsx"))}; function ProductionMount(){return React.createElement("main",{className:"tp-auth",id:"main",lang:"en",dir:"ltr"},React.createElement(SignUpForm,{variant:"page",nextPath:"/today"}));} const mount=new URLSearchParams(location.search).get("mount");const view=mount==="modal"?React.createElement(SignUpModal,{open:true,onOpenChange(){}}):mount==="production"?React.createElement(ProductionMount):React.createElement(Kb45Gallery);createRoot(document.getElementById("root")!).render(React.createElement(LocaleProvider,null,view));`);
-    const bundle = await Bun.build({
-      entrypoints: [entry], target: "browser", outdir: directory, minify: false,
-      plugins: [{ name: "kb45-fixture-stubs", setup(build) {
-        build.onResolve({ filter: /^@convex-dev\/auth\/react$/ }, () => ({ path: authStub }));
-        build.onResolve({ filter: /^next\/link$/ }, () => ({ path: linkStub }));
-      } }],
+    fixturePhase("KB-45 build start");
+    const bundleDirectory = join(directory, "bundle");
+    await isolatedBrowserBuild({
+      cwd: repo, resolveFrom: join(repo, "apps/web"), entrypoints: [entry], outdir: bundleDirectory,
+      aliases: { "@convex-dev/auth/react": authStub, "next/link": linkStub },
+      timeoutMs: 100_000, cleanupMs: 5_000,
     });
-    if (!bundle.success) throw new Error(`KB-45 fixture failed to build: ${bundle.logs.map(String).join(" | ")}`);
     const assets = new Map<string, Uint8Array>();
-    for (const output of bundle.outputs) assets.set(`/${output.path.split("/").at(-1)}`, new Uint8Array(await output.arrayBuffer()));
+    for (const name of await readdir(bundleDirectory)) {
+      assets.set(`/${name}`, new Uint8Array(await readFile(join(bundleDirectory, name))));
+    }
+    fixturePhase("KB-45 build complete");
     // Compile only the existing modal's utility classes, without app routes or a Next build.
+    fixturePhase("KB-45 utility styles start");
     const modalUtilities = await postcss([tailwindcss()]).process(
       '@import "tailwindcss" source(none); @source "./components/SignUpModal.tsx"; @source "./components/auth/SignInForm.tsx"; @source "./components/ui/dialog.tsx";',
       { from: join(repo, "apps/web/kb45-fixture.css") },
@@ -165,11 +189,14 @@ if (process.env.KB45_ISOLATED !== "1") {
       const asset = assets.get(path);
       return asset ? new Response(asset, { headers: { "content-type": path.endsWith(".css") ? "text/css" : "text/javascript" } }) : new Response("missing", { status: 404 });
     } });
+    fixturePhase("KB-45 server ready");
     const browserPath = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(existsSync);
     if (!browserPath) throw new Error("KB-45 browser fixture needs Playwright Chromium or an installed chromium/google-chrome binary");
     browser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--no-sandbox"] });
+    fixturePhase("KB-45 browser ready");
     const modalContrasts: number[] = [];
     for (const lang of ["en", "he"] as const) for (const width of [390, 1280]) {
+      fixturePhase(`KB-45 gallery ${lang} ${width}`);
       const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
@@ -257,6 +284,7 @@ if (process.env.KB45_ISOLATED !== "1") {
       }
       expect(errors).toEqual([]);
       await page.close();
+      fixturePhase(`KB-45 modal ${lang} ${width}`);
       const modal = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
       await modal.goto(`http://127.0.0.1:${server.port}/?lang=${lang}&mount=modal`);
       await modal.locator(`.kb45-signup[data-variant="modal"][lang="${lang}"]`).waitFor();
@@ -296,6 +324,7 @@ if (process.env.KB45_ISOLATED !== "1") {
   }, 240_000);
 
   test("Hebrew page and modal respect fallback and child-owned auth language boundaries", async () => {
+    fixturePhase("KB-45 case: Hebrew page and modal respect fallback and child-owned auth language boundaries");
     if (!browser || !server) throw new Error("KB-45 mounted language regression needs the completed browser fixture");
     for (const mount of ["production", "modal"]) {
       const page = await browser.newPage({ viewport: { width: 390, height: 900 }, reducedMotion: "reduce" });
