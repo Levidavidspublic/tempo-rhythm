@@ -10,6 +10,11 @@ Blocked — These owner actions remain. Decisions recorded below apply from 2026
 6. Factory configuration — PR #1198 must remain unmerged until Amit sets `FACTORY_PAUSED=true`. This run does not change that setting or merge that PR.
 7. Executor connection (parallel lane, reported separately) — Add Executor as a remote MCP server for this Codex environment using `https://executor.sh/aa/mcp?search_tools=true`, complete its authentication in the host connection settings, and enable its tools for the task. The environment proxy must allow `executor.sh`; the supplied endpoint currently returns CONNECT 403 and no Executor tool is exposed. Do not paste credentials into an issue or comment. Work continues with available tools.
 
+8. AT-23 — Assign narrow chat research/cancellation ownership after protected #1193 is resolved, while keeping persona #1110, memory #1112 and council #1129 held. The remaining composer and transport implementation overlaps their reserved files; this run does not release them.
+9. AT-24 — Approve the actual “think hard” model capability/request and bounded runtime budget before enabling it. Current fast/balanced/deep routes resolve to the same model; selecting a tier alone does not implement stronger reasoning. No new paid call is authorized or made.
+10. AT-25 — Confirm the regular-signup entitlement policy, treatment of existing automatic tester/Max grants, and RevenueCat product/entitlement identifiers mapped to the existing catalog. Protected #1193 owns admission files; public pricing #1208 can proceed with checkout off. No new Premium identifier or paid-access promise is invented.
+11. Hebrew live voice — Supply the approved Hebrew crisis phrase list before that locale is enabled. Existing English voice remains separate; provider-backed behavior is UNKNOWN under this run’s no-spending rule.
+
 ## Amit's answers — 2026-10-21
 
 - AT-01: Keep #1110, #1112 and #1129 held. Preserve their reserved files and work around them; do not release them.
