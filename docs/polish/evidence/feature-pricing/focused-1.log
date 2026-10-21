@@ -1,0 +1,18 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/lib/rootEntry.test.ts:
+
+# Unhandled error between tests
+-------------------------------
+1 | throw new Error(
+              ^
+error: This module cannot be imported from a Client Component module. It should only be used from a Server Component.
+      at /workspace/tempo-rhythm/node_modules/.bun/server-only@0.0.1/node_modules/server-only/index.js:1:11
+      at loadAndEvaluateModule (2:1)
+-------------------------------
+
+
+ 0 pass
+ 1 fail
+ 1 error
+Ran 1 test across 1 file. [4.43s]

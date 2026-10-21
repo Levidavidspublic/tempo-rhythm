@@ -1,0 +1,146 @@
+import { chromium, expect } from '/workspace/tempo-rhythm/node_modules/@playwright/test';
+import { mkdir, writeFile, appendFile } from 'node:fs/promises';
+import { existsSync, openSync, closeSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { createServer } from 'node:net';
+const phase = process.argv[2];
+if (phase !== 'before' && phase !== 'after') throw new Error('Expected before or after');
+const cwd = phase === 'before' ? '/workspace/work/lane2-features' : '/workspace/tempo-rhythm';
+const dir = '/workspace/tempo-rhythm/docs/polish/evidence/feature-pricing';
+await mkdir(dir, { recursive: true });
+await new Promise<void>((resolve, reject) => {
+  const probe = createServer();
+  probe.once('error', reject);
+  probe.listen(3108, '127.0.0.1', () => probe.close(error => error ? reject(error) : resolve()));
+});
+const log = `/workspace/work/overnight/pricing-gates/browser-${phase}.log`;
+const fd = openSync(`/workspace/work/overnight/pricing-gates/server-${phase}.log`, 'w');
+const server = spawn('/workspace/work/kb/bin/bun', ['run', '--cwd', 'apps/web', 'dev', '--port', '3108'], {
+  cwd, detached: true, stdio: ['ignore', fd, fd],
+  env: { ...process.env, PATH: `/workspace/work/kb/bin:${process.env.PATH}`, NEXT_PUBLIC_CONVEX_URL: 'https://example.convex.cloud' },
+});
+closeSync(fd);
+const exited = once(server, 'exit');
+let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
+let count = 0;
+const results: string[] = [];
+try {
+  const start = Date.now();
+  let available = false;
+  while (Date.now() - start < 120000) {
+    if (server.exitCode !== null) throw new Error(`Next exited ${server.exitCode}`);
+    try { available = (await fetch('http://localhost:3108/pricing', { signal: AbortSignal.timeout(2000) })).ok; } catch {}
+    if (available) break;
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  if (!available) throw new Error('Next did not answer within120s');
+  const executablePath = [chromium.executablePath(), '/usr/bin/chromium'].find(existsSync);
+  if (!executablePath) throw new Error('Installed Chromium is required');
+  browser = await chromium.launch({ executablePath, args: ['--no-sandbox'], timeout: 30000 });
+  if (phase === 'before') {
+    const receipts = [];
+    for (const lang of ['en', 'he']) {
+      const page = await browser.newPage({viewport:{width:1280,height:844},reducedMotion:'reduce'});
+      const pageErrors: string[] = [];
+      page.on('pageerror', error => pageErrors.push(error.message));
+      await page.goto('http://localhost:3108/?lang='+lang);
+      await expect(page.locator('main').locator('..')).toHaveAttribute('lang',lang);
+      const examples = page.locator('.tempo-hero__examples');
+      await expect(examples).toBeVisible();
+      const state = await examples.evaluate(el => { const css=getComputedStyle(el); return {animationName:css.animationName,animations:el.getAnimations().length,identity:new DOMMatrix(css.transform).isIdentity,opacity:css.opacity};});
+      expect(state).toEqual({animationName:'none',animations:0,identity:true,opacity:'1'});
+      const before = await examples.boundingBox();
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      expect(await examples.boundingBox()).toEqual(before);
+      expect(pageErrors).toEqual([]);
+      receipts.push({head:'6b2ca7c48a815530af8865b886b34fa59707da31',lang,width:1280,motion:'reduce',...state,box:before,pageErrors});
+      await page.close();
+    }
+    await writeFile('/workspace/work/overnight/hero-examples-reduced.json',JSON.stringify(receipts,null,2));
+    console.log('Hero examples reduced motion EN/HE1280:2PASS');
+  }
+  for (const width of [390, 1280]) for (const lang of ['en', 'he']) {
+    const themes = phase === 'before' ? ['light'] : ['light', 'dark'];
+    for (const theme of themes) {
+      const page = await browser.newPage({ viewport: { width, height: 844 }, colorScheme: theme as 'light'|'dark', reducedMotion: 'reduce' });
+      await page.addInitScript(({ lang, theme }) => { localStorage.setItem('tempo-lang', lang); localStorage.setItem('tempo-theme', theme); }, { lang, theme });
+      const errors: string[] = [];
+      const forbiddenTraffic: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      page.on('request', request => {
+        const url = new URL(request.url());
+        if (/revenuecat|polar\.sh|checkout|purchase/i.test(url.href) || request.method() === 'POST') forbiddenTraffic.push(`${request.method()} ${url.origin}${url.pathname}`);
+      });
+      page.on('websocket', socket => socket.on('framesent', event => {
+        if (typeof event.payload === 'string' && /"type"\s*:\s*"(?:Mutation|Action)"/.test(event.payload)) forbiddenTraffic.push('Convex mutation/action frame');
+      }));
+      await page.goto(`http://localhost:3108/pricing?lang=${lang}`, { timeout: 30000 });
+      if (phase === 'before') {
+        await expect(page).toHaveURL(/\/sign-in\?next=/);
+        await expect(page.locator('.tp-public-pricing')).toHaveCount(0);
+        await expect(page.locator('html')).toHaveAttribute('lang', lang);
+        await expect(page.getByRole('heading', {level:1,name:'Sign in',exact:true})).toBeVisible();
+        await page.screenshot({ path: `${dir}/before-${lang}-${width}.png`, fullPage: true });
+      } else {
+        await expect(page).toHaveURL(new RegExp(`/pricing\\?lang=${lang}$`));
+        await expect(page.locator('.tp-public-pricing')).toHaveAttribute('lang', lang);
+        await expect(page.locator('html')).toHaveAttribute('dir', lang === 'he' ? 'rtl' : 'ltr');
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        await expect(page.getByRole('main')).toHaveCount(1);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+        const cards = page.locator('main .tp-tier');
+        await expect(cards).toHaveCount(4);
+        await expect(page.locator('.tp-tier__amount')).toHaveText(['$1', '$10', '$20', '$40']);
+        await expect(page.locator('.tp-tier__per').first()).toHaveText(lang === 'he' ? 'ל־3 שבועות' : 'for 3 weeks');
+        await expect(page.getByRole('main')).toContainText(lang === 'he' ? 'לא נגבה תשלום בעמוד הזה.' : 'No payment is collected on this page.');
+        await expect(page.locator('a[href="/sign-up"]')).toHaveCount(1);
+        await expect(page.locator('a[href="/sign-in"]')).toHaveCount(1);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        const radios = page.getByRole('radio');
+        await expect(radios).toHaveCount(2);
+        await radios.first().focus();
+        await page.keyboard.press(lang === 'he' ? 'ArrowLeft' : 'ArrowRight');
+        await expect(radios.last()).toBeFocused();
+        await expect(radios.last()).toHaveAttribute('aria-checked', 'true');
+        await expect(page.locator('.tp-tier__amount')).toHaveText(['$1', '$100', '$200', '$400']);
+        const focus = await radios.last().evaluate(el => ({ visible: el.matches(':focus-visible'), style: getComputedStyle(el).outlineStyle, width: Number.parseFloat(getComputedStyle(el).outlineWidth) }));
+        expect(focus.visible).toBe(true); expect(focus.style).not.toBe('none'); expect(focus.width).toBeGreaterThan(0);
+        const targets = await page.locator('.tp-site-header a, .tp-hero__actions a, [role="radio"], .tp-site-footer a').evaluateAll(elements => elements.map(el => ({ h: el.getBoundingClientRect().height, w: el.getBoundingClientRect().width })));
+        expect(targets.every(({h,w}) => h >= 44 && w >= 44)).toBe(true);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.screenshot({ path: `${dir}/after-${lang}-${width}-${theme}-year.png`, fullPage: true });
+        await page.keyboard.press(lang === 'he' ? 'ArrowRight' : 'ArrowLeft');
+        await expect(radios.first()).toBeFocused();
+        await expect(page.locator('.tp-tier__amount')).toHaveText(['$1', '$10', '$20', '$40']);
+        await page.screenshot({ path: `${dir}/after-${lang}-${width}-${theme}-month.png`, fullPage: true });
+        if (width === 390 && lang === 'en' && theme === 'light') {
+          await page.goto('http://localhost:3108/settings');
+          await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings$/);
+        }
+        expect(errors).toEqual([]);
+        expect(forbiddenTraffic).toEqual([]);
+      }
+      count++;
+      results.push(`${phase} ${width} ${lang} ${theme}: PASS`);
+      console.log(results.at(-1));
+      await page.close();
+    }
+  }
+  await writeFile(log, `${results.join('\n')}\n${count} cases PASS\n`);
+} catch (error) {
+  await appendFile(log, `${results.join('\n')}\nFAIL: ${String(error)}\n`);
+  throw error;
+} finally {
+  const cleanupErrors: unknown[] = [];
+  try { await browser?.close(); } catch (error) { cleanupErrors.push(error); }
+  try {
+    if (server.pid && server.exitCode === null && server.signalCode === null) process.kill(-server.pid, 'SIGTERM');
+    await Promise.race([exited, new Promise(resolve => setTimeout(resolve, 10000))]);
+    if (server.pid && server.exitCode === null && server.signalCode === null) {
+      process.kill(-server.pid, 'SIGKILL');
+      await exited;
+    }
+  } catch (error) { cleanupErrors.push(error); }
+  if (cleanupErrors.length) throw new AggregateError(cleanupErrors, 'Evidence cleanup failed');
+}
