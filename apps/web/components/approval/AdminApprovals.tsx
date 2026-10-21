@@ -382,7 +382,7 @@ export function Kb75Gallery() {
       <fieldset className="kb75-actions kb75-gallery-controls">
         <legend>{copy.galleryControls}</legend>
         <Button type="button" size="sm" onClick={() => setLang(lang === "he" ? "en" : "he")}>
-          {lang === "he" ? "English" : "עברית"}
+          {lang === "he" ? <span lang="en">English</span> : <span lang="he">עברית</span>}
         </Button>
         {(["loading", "empty", "loaded"] as const).map((next) => (
           <Button

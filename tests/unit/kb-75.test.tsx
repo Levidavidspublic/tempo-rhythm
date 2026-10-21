@@ -58,9 +58,9 @@ createRoot(document.getElementById("app")).render(
 
 async function runFixture(): Promise<Results> {
   const { chromium, expect: pwExpect } = await import("@playwright/test");
-  const postcss = (await import("../../apps/web/node_modules/postcss/lib/postcss.mjs")).default;
-  const tailwind = (await import("../../apps/web/node_modules/@tailwindcss/postcss/dist/index.mjs")).default;
   const web = join(repo, "apps/web");
+  const postcss = (await import(Bun.resolveSync("postcss", web))).default;
+  const tailwind = (await import(Bun.resolveSync("@tailwindcss/postcss", web))).default;
   const temp = join(repo, "work/kb75-fixture");
   await mkdir(temp, {recursive:true});
   await Promise.all([
@@ -301,6 +301,18 @@ async function runFixture(): Promise<Results> {
       await pwExpect(page.getByRole("alert")).toBeVisible();
       await page.close();
     });
+    await check("language endonyms declare their own language through both switches",async()=>{
+      const page=await open("gallery");
+      const hebrew=page.getByRole("button",{name:"עברית",exact:true});
+      await pwExpect(hebrew.locator("span")).toHaveAttribute("lang","he");
+      await hebrew.click();
+      await pwExpect(page.getByTestId("kb75-gallery")).toHaveAttribute("lang","he");
+      const english=page.getByRole("button",{name:"English",exact:true});
+      await pwExpect(english.locator("span")).toHaveAttribute("lang","en");
+      await english.click();
+      await pwExpect(page.getByTestId("kb75-gallery")).toHaveAttribute("lang","en");
+      await page.close();
+    });
     if(process.env.KB75_CAPTURE_DIR){
       await mkdir(process.env.KB75_CAPTURE_DIR,{recursive:true});
       for(const width of [390,1280])for(const lang of ["en","he"] as const)for(const theme of ["light","dark"] as const)
@@ -318,14 +330,19 @@ if(child){
   try{console.log(JSON.stringify(await runFixture()))}
   catch(error){console.error(error);process.exitCode=1}
 }else{
-  const {beforeAll,describe,expect,test}=await import("bun:test");
+  const {afterAll,beforeAll,describe,expect,test}=await import("bun:test");
   const {kb75Copy}=await import("../../apps/web/lib/i18n-groups/kb-75");
   let results:Results={};
+  let processChild:ReturnType<typeof Bun.spawn>|undefined;
+  afterAll(async()=>{
+    if(processChild && processChild.exitCode===null){processChild.kill();await processChild.exited}
+  });
   beforeAll(async()=>{
-    const processChild=Bun.spawn([process.execPath,import.meta.path],{
+    const spawned=Bun.spawn([process.execPath,import.meta.path],{
       cwd:repo,env:{...process.env,KB75_FIXTURE_CHILD:"1"},stdout:"pipe",stderr:"pipe"});
+    processChild=spawned;
     const [out,err,code]=await Promise.all([
-      new Response(processChild.stdout).text(),new Response(processChild.stderr).text(),processChild.exited]);
+      new Response(spawned.stdout).text(),new Response(spawned.stderr).text(),spawned.exited]);
     if(code!==0)throw Error(`KB75 clean child exit ${code}: ${err.slice(-5000)}`);
     results=JSON.parse(out.trim().split("\n").at(-1)??"{}");
   },process.env.KB75_CAPTURE_DIR ? 480_000 : 240_000);
@@ -344,6 +361,7 @@ if(child){
       "late completion never steals moved focus","English and Hebrew date labels and copy",
       "long email is isolated and wraps in RTL","phone and desktop matrix has one main h1 and 44 px actions",
       "visible focus and reduced motion","both named views render in interactive gallery",
+      "language endonyms declare their own language through both switches",
     ])test(name,()=>expect(results[name]).toEqual({pass:true}));
   });
 }
