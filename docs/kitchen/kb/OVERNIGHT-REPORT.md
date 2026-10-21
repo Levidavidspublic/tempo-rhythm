@@ -13,7 +13,7 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 PR open — [shared ticket #1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), [draft #1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). No existing test is removed, skipped or weakened. The helper isolates Bun browser builds, streams child phases, bounds cancellation and cleanup, reaps owned descendants, preserves the authoritative child exit, and waits on committed browser signals.
 
-At `4d30965`, all **15 focused helper cases pass**, with 45 assertions in 2.96 seconds. The earlier 9/1, 10/0, 8/4, 12/0, 13/0 and 14/1 receipts remain in the scoped evidence. CodeRabbit’s two major findings (early receipt validation and PID-zero signaling) were fixed with isolated regressions. Its next review identified two minor corrections: recompute the deadline after the dynamic import, and relabel an earlier 13-case evidence row. Those corrections are pending.
+At `4d30965`, all **15 focused helper cases pass**, with 45 assertions in 2.96 seconds. The earlier 9/1, 10/0, 8/4, 12/0, 13/0 and 14/1 receipts remain in the scoped evidence. CodeRabbit’s two major findings (early receipt validation and PID-zero signaling) were fixed with isolated regressions. Its next review identified two minor corrections: recompute the deadline after the dynamic import, and relabel an earlier 13-case evidence row. Those corrections are pending. KB-03’s hosted run also exposed a 5-second timeout in the new delayed-stderr regression (3,522 pass / 1 fail / 3 todo); the wrapper’s event ordering is under investigation without increasing its deadline.
 
 | Run | Result | Meaning |
 |---|---|---|
@@ -40,14 +40,14 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-02 | 1153 | 1160 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-03 | 1157 | 1162 | PR open — focused15/0; full3,520pass/0fail/3todo on earlier shared dependency; scans/build pass. Final shared+own30/0 at cdd517d; hosted gates/shared merge pending. |
 | KB-04 | 1141 | 1147 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-05 | 1142 | 1149 | PR open — focused 13/0; full 3479/22/3 todo, unchanged KB-64 and KB-61 failures; remaining checks active. Shared dependency and current gates block merge. |
+| KB-05 | 1142 | 1149 | PR open — Focused 13/0; full 3479/22/3 todo (21 KB-64 failures, one KB-61 timeout); E2E 28/0/89 skip, other local gates pass. Shared dependency and current CI/review block merge. |
 | KB-06 | 1143 | 1151 | PR open — focused 19/0; full suite active. Shared dependency and current gates block merge. |
 | KB-07 | 1146 | 1148 | Merged previously; retained. |
 | KB-08 | 1144 | 1152 | Merged previously; retained. |
 | KB-09 | 1145 | 1150 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-10 | 1155 | 1159 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-44 | 1154 | 1158 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-45 | 1156 | 1163 | PR open — focused 12/0; full 3520/0/3 todo; E2E 28/0/89 skip; final evidence active. Shared dependency and current gates block merge. |
+| KB-45 | 1156 | 1163 | PR open — Focused 12/0; full 3520/0/3 todo; E2E 28/0/89 skip; lint/typecheck/scans/build pass. Frozen install UNKNOWN; shared dependency, localized KB-10 composition and current CI/review block merge. |
 | KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — corrective adapter focused child19/0 and parent19/0; full3,489pass/17fail/3todo (KB-64 browser-close baseline), scans/build pass. Final shared+own34/0 at b5a483e; hosted gates/shared merge pending; issue remains reopened. |
 | KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
