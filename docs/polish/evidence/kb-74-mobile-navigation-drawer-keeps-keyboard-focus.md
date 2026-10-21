@@ -122,3 +122,72 @@ Last 20 lines of failed `e2e` command:
   89 skipped
   25 passed (3.9m)
 ```
+
+## Authorized modal-semantics follow-up, 21 October 2026
+
+The original PR #1174 merged as `542f2cf`; review finding [4335410232](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174#discussion_r4335410232) remains valid on integration `58844f0`: the narrow drawer traps focus and makes the background inert while its real Sidebar exposes only a navigation landmark. The scoped follow-up belongs to the same issue #1171. It does not change Sidebar, routes, backend calls or overlay policy.
+
+The candidate ledger remains three ordinary candidates (`86e7a97`, `3e97fde`, `62c85a6`, rebased to `361d485`, `ff87205`, `e7b3a31`) followed by **one explicitly authorized extra repair**. Evidence-only commits and the merge did not reset or consume another source candidate. This is the fourth and final cohesive candidate; no additional source repair is authorized after it.
+
+The coordinator's immutable combined checkout `d4f9cf28a7e3da3f90539e6a11b5912e74d8bc5a` contains the old KB-74 source. Its existing mounted matrix timed out at 60,026.71 ms against the unchanged 60,000 ms limit. Bun then killed two dangling processes; reduced-motion failed with a closed browser. Earlier passing cases were also slow (Ctrl K 47,943 ms; Hebrew RTL 33,095 ms). These failures remain evidence and are not attributed to the new semantics change. Passing old cases close their pages, and the matrix closes each completed iteration; the log does not establish the cause of the slowdown. No assertion, deadline or configuration was relaxed to address it.
+
+The new regressions exercise named English/Hebrew modal semantics around the actual navigation, their absence before opening and after dismissal, and nonmodal desktop behavior after responsive resizing. All 25 original named cases, assertions and deadlines remain intact. The two existing palette waits now select the dialog containing its real combobox: the newly announced drawer must not satisfy a wait intended for the palette. After removing those two wait-selector refinements and the two added cases, the original test file is byte-for-byte unchanged. Only the new cases use `finally` to release pages if an assertion fails; this prevents the intentional red proof from retaining a page before the existing capture matrix.
+
+Frozen source/test commit: `3d993460374c3fa4de2a6b69e23e8c50ff044de4`. A stable boundary around the actual Sidebar exposes the localized Navigation/ניווט dialog only while the narrow drawer owns modality. Role, modal state and name are one conditional typed props object, absent together when nonmodal. The real navigation landmark, Sidebar props/callbacks and focus queries remain unchanged. Direct-child inert ownership identifies the boundary; nonmodal `display: contents` preserves the actual nav's desktop grid/sticky placement, and the active dialog box uses the existing rail dimensions and layer. No new lint suppression or check/configuration change remains.
+
+The fresh targeted red run exited 1: **0 pass, 25 filtered, 2 fail, 1 error, 7 assertions; 227.42 seconds**. The new named-dialog assertion expected 1 and received 0. The existing capture matrix separately timed out at 63,976.73 ms against its unchanged 60,000 ms deadline, followed by a 30,000 ms click error. It produced **zero fresh before frames**. The existing committed contact sheet is untouched; its mounted after images preserve the merged-source visual baseline before this correction. They are not represented as newly captured images or evidence of modal announcement.
+
+Scoped web lint, using the unchanged installed Biome rules from `apps/web`, exited 0 on all three changed implementation files: **0 errors, 1 pre-existing unused-router warning**. Earlier diagnostic invocation and conditional-ARIA lint failures remain in the handoff logs; the final conditional props object passes without a suppression. Preservation, source hash and whitespace audits pass.
+
+### Final source hosted failure and stop
+
+The corrective [PR #1200](https://github.com/Levidavidspublic/tempo-rhythm/pull/1200), for the same issue #1171, has a failed [Test job 119268396163](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39613536826/job/119268396163) on source `3d99346`. The KB-74 group ran **25 pass, 2 fail**: all 25 original cases passed, including the mounted matrix in 11,968.95 ms. Only the two added cases failed. This is not a green candidate.
+
+The English modal case passed the dialog name, `aria-modal`, actual navigation landmark and focus assertions, then failed exact rectangle equality at line 151:
+
+```text
+Expected Sidebar: { height: 900, width: 263.99999618530273, x: -51.89927291870117, y: 0 }
+Received boundary: { height: 900, width: 264, x: 0, y: 0 }
+(fail) English and Hebrew drawers expose a named modal containing the real navigation [963.00ms]
+```
+
+The desktop case passed its initial and post-resize nonmodal/nav assertions, then failed the English exact leading-edge check at line 176:
+
+```text
+Expected: 0
+Received: -0.09394118189811707
+(fail) desktop navigation has no modal semantics after a mobile drawer resize [965.00ms]
+```
+
+Read-only inspection identifies a missing synchronization condition in the new geometry checks. `tempo.css:500–502` transitions the narrow Sidebar from `translateX(-100%)` to `none`; `--tp-dur-slow` is 240 ms in `globals.css:297`. The new boundary is fixed and unanimated. `openDrawer` waits for the open React state and focused command control, without waiting for the drawer transition to finish; the two rectangle calls are also separate reads. The observed -51.899 px lies inside the Sidebar's -264-to-0 px opening path. The desktop case resizes during that opening and waits for React's closed state, without checking settled geometry. Its small residual offset is consistent with a remaining transform/compositor frame. The hosted log records no computed transform or animation state, so the exact desktop timing cause remains unproven; these failures do not establish a persistent layout defect.
+
+Both new cases stop in their first English iteration. **The new Hebrew modal-name assertion, Hebrew desktop iteration, and sticky-scroll assertion were not reached.** Existing Hebrew/RTL and complete matrix cases passed, but they do not substitute for those unexecuted assertions. Hosted capture variables were not set; no fresh image capture is claimed.
+
+The coordinating agent stopped the final local 27-case waiter only after verifying its log did not exist and it had no child. The queued flock process exited 143; **the local fixture did not start and is NOT RUN because the hosted failure is already known**, rather than a failed or passing local test. No source, test, assertion, timeout, skip or configuration changed after the hosted failure, and no retry was launched. All owned runner/helper sessions are closed.
+
+The three ordinary candidates and one authorized extra are now exhausted. Source/tests remain frozen at `3d99346`; this update changes evidence only. Status: **stuck / AT-17 hold**, pending the owner's synchronization-repair decision. Root owns any further authorization, remote reporting and remaining mandatory current-candidate gates. Old combined results do not validate this source. Device screen readers, native Hebrew review and live authenticated account behavior remain UNKNOWN. Full retained logs, source hashes, preservation audit, budget ledger and final handoff are in `/workspace/work/kb-finish/kb74-modal/`.
+
+Last 20 lines of the failed targeted local red command (full log retained):
+
+```text
+[2m    - performing click action[22m
+
+  log: [ "  - waiting for locator('[data-component=\"Topbar\"] .tp-topbar__menu')", "    - locator resolved to <button type=\"button\" aria-expanded=\"false\" aria-label=\"Open pages\" class=\"tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu\">…</button>",
+  "  - attempting click action", "    - waiting for element to be visible, enabled and stable",
+  "    - element is visible, enabled and stable", "    - scrolling into view if needed",
+  "    - done scrolling", "    - performing click action"
+],
+
+      at openDrawer (/workspace/work/kb-74/tests/unit/kb-74.test.tsx:98:34)
+      at /workspace/work/kb-74/tests/unit/kb-74.test.tsx:370:10
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+
+ 0 pass
+ 25 filtered out
+ 2 fail
+ 1 error
+ 7 expect() calls
+Ran 2 tests across 1 file. [227.42s]
+```
