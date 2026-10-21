@@ -1,6 +1,6 @@
 # KB finish status
 
-WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist, PR #1209), #1206 (landing motion, PR #1210), #1207 (unified Plan, draft #1211) and #1208 (public pricing, implementing), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
+WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist, PR #1209), #1206 (landing motion, PR #1210), #1207 (unified Plan, draft #1211) and #1208 (public pricing, draft #1220), plus #1246 (server payment off switch, committed locally), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
 
 AWAY — KB is unfinished. Initial census: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem); working results refreshed throughout 21 October 2026. Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 32 PRs after corrective follow-ups. Current KB heads, checks and review threads are refreshed below.
 
@@ -17,7 +17,7 @@ In progress — Amit authorized the shared harness first, then nine fixture reru
 
 ## Lane 2 counts
 
-WALK — Four feature issues filed; three feature PRs open (Plan draft; checkbox and hero ready for automatic review), none merged or closed. Checkbox has 8 focused mounted cases and 57 existing editor cases passing. Hero has 8 real-route cases passing. Broad checks and actual CodeRabbit reviews remain pending. Plan passes 13 focused child cases; pricing now occupies the fourth worktree. Hosted checkbox and hero CI/guards pass; actual reviews remain pending. Plan hosted CI fails both existing EN/HE visually-hidden-heading assertions (3,492 pass / 2 fail / 3 todo); AT-27 records its retry boundary. These counts are separate from KB above.
+WALK — Five feature issues filed; four feature PRs open (Plan and pricing draft; checkbox and hero open for actual review), none merged or closed. Checkbox has 8 focused mounted cases and 57 existing editor cases passing; its local full run retains unchanged KB-74/64 failures, with final aggregate pending. CodeRabbit requests a portable Undo shortcut; correction waits until the old-source gate run finishes. Hero has 8 real-route cases passing, green hosted CI and a COMMENTED review with no inline findings; one reduced-motion examples coverage nitpick awaits supplementary browser proof. Pricing draft #1220 at `e1cf987` passes 10 focused cases, lint/typecheck and hosted CI; actual browser evidence remains pending. Plan #1211 retains its two introduced heading failures and AT-27 boundary. Payment #1246 at `2e57468` passes 9 focused cases and scoped lint/TypeScript; broad checks and draft publication remain in progress. Four worktrees: pricing, checkbox, hero, payment; Plan source/PR are preserved while its checkout is paused. These counts are separate from KB above.
 
 ## Authority and gates
 
