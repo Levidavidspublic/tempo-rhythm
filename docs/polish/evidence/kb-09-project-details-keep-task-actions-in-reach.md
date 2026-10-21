@@ -248,3 +248,50 @@ Failed:    tempo-rhythm-web#lint
  ERROR  run failed: command  exited (1)
 error: script "lint" exited with code 1
 ```
+
+
+## Overnight v3 prescribed title repair — 2026-10-21
+
+PR open — owner AT-14 authorizes one scoped correction for the two verified review findings. Role: WORKHORSE. This continues issue #1145 / draft #1150 and preserves the prior attempt ledger and failures above.
+
+The gallery input now holds only the logical project title. Its overflow suffix remains derived display text in a separate paragraph, so typing, leaving overflow and reentering cannot feed the suffix into editable state. The title formatter now uses a function replacer, preserving user-written dollar sequences literally in accessible completion/reopen labels. No other layout, dictionary copy, mutation contract, backend or route changes. Existing CSS and the historical contact sheet remain unchanged; that sheet documents the earlier normal mounted states, while the new overflow behavior is verified by browser assertions below.
+
+New named regressions in the existing test file:
+
+- `task accessible names preserve dollar sequences literally in both languages`: a title containing `$$`, `$&`, dollar-backtick and dollar-apostrophe stays literal in complete and reopen labels, in English/Hebrew and the real screen/gallery.
+- `gallery overflow never feeds its display suffix into editable title state`: actual typing in both languages survives repeated default/overflow switches; the separate long display stays visible and the phone viewport does not overflow.
+
+All 18 previous child cases remain byte-for-byte intact in the test file, along with the parent parser and exit gate, all original assertion lines and deadlines. Two added child cases produce 20 child / 22 parent reports. The existing isolated fixture was sufficient for this proof, so no shared merge or harness change is included in this ticket's pass. The globally frozen shared prerequisite remains separately tracked by root.
+
+Before product correction, the new regressions failed against `e39ac6b` product source on current integration: child **18 pass / 2 fail**, 41 assertions, 25.67 seconds; parent **19 pass / 3 fail**, 20 assertions, 26.07 seconds. The failures are exactly the two new cases plus the authoritative parent exit gate. All 18 old child cases passed. The accessible label converted the literal dollars into replacement syntax, and the overflow input contained the long display suffix instead of the logical title.
+
+After correction: `bun test tests/unit/kb-09.test.tsx` → exit 0; child **20 pass / 0 fail**, 45 assertions, 18.61 seconds; parent **22 pass / 0 fail**, 24 assertions, 19.37 seconds. Both locales, both screen/gallery label paths and both complete/reopen states passed. No original case was skipped or weakened.
+
+Bun 1.3.9. Frozen install remained at Resolving dependencies and reached the external 120-second bound (exit 124): UNKNOWN. The lockfile matches the installed shared-worktree cache; installed trees were copied locally with workspace links preserved. No package or lockfile changed. Mandatory checks are running in order; final receipts follow below.
+
+Logs: `/workspace/kb-run-logs/kb09-install.log`, `kb09-before-focused.log`, `kb09-after-focused.log`, `kb09-0.log` through `kb09-5.log`, and `kb09-results.json`. Required PR attachment was attempted separately but host completion is UNKNOWN after the tool hung. Device, live-account and native Hebrew checks remain UNKNOWN.
+
+Before-correction failure, actual last 20 lines:
+
+```text
+(pass) browser evidence covers widths, locales, and themes
+65 |     }, 300_000);
+66 |   }
+67 |   const gateName = "isolated KB-09 child exits successfully and reports every case";
+68 |   test(gateName, async () => {
+69 |     const completed = await run();
+70 |     expect(completed.code).toBe(0);
+                                ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/workspace/kb09/tests/unit/kb-09.test.tsx:70:28)
+(fail) isolated KB-09 child exits successfully and reports every case [0.28ms]
+
+ 19 pass
+ 3 fail
+ 20 expect() calls
+Ran 22 tests across 1 file. [26.07s]
+```

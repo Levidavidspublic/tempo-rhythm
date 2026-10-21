@@ -318,6 +318,36 @@ describe.serial("KB-09 project detail", () => {
     } finally { await page.close(); }
   });
 
+  test("task accessible names preserve dollar sequences literally in both languages", async () => {
+    const title = "Budget $$100 $& $` $'";
+    const labels = {
+      en: [`Mark done: ${title}`, `Reopen ${title}`],
+      he: [`סימון כהושלמה: ${title}`, `פתיחה מחדש של ${title}`],
+    };
+    for (const lang of ["en", "he"] as const) for (const mode of ["screen", "gallery"] as const) {
+      const page = await pageFor(mode, lang);
+      try {
+        await pwExpect(page.locator("html")).toHaveAttribute("lang", lang);
+        if (mode === "screen") {
+          await page.evaluate((value) => {
+            const fixture = (window as any).__kb09;
+            fixture.setRows(fixture.state.rows.map((row: any) => ({ ...row, title: value })));
+          }, title);
+        } else {
+          await page.getByRole("button", { name: kb09t(lang, "gallery.add"), exact: true }).click();
+          await page.getByLabel(kb09t(lang, "gallery.taskLabel"), { exact: true }).fill(title);
+          await page.getByRole("button", { name: kb09t(lang, "gallery.add"), exact: true }).click();
+        }
+        await pwExpect(page.getByText(title, { exact: true })).toBeVisible();
+        const toggle = mode === "gallery" ? page.getByRole("checkbox").last() : page.getByRole("checkbox").first();
+        await pwExpect(toggle).toHaveAccessibleName(labels[lang][0]);
+        await toggle.click();
+        await pwExpect(toggle).toHaveAttribute("aria-checked", "true");
+        await pwExpect(toggle).toHaveAccessibleName(labels[lang][1]);
+      } finally { await page.close(); }
+    }
+  });
+
   test("task accessible names contain their visible localized action and title", async () => {
     for (const lang of ["en", "he"] as const) for (const mode of ["screen", "gallery"] as const) {
       const page = await pageFor(mode, lang);
@@ -446,6 +476,34 @@ describe.serial("KB-09 project detail", () => {
     expect(size?.width).toBeGreaterThanOrEqual(44);
     expect(size?.height).toBeGreaterThanOrEqual(44);
     await page.close();
+  });
+
+  test("gallery overflow never feeds its display suffix into editable title state", async () => {
+    for (const lang of ["en", "he"] as const) {
+      const page = await pageFor("gallery", lang);
+      try {
+        const input = page.getByLabel(kb09t(lang, "gallery.projectLabel"), { exact: true });
+        const overflow = page.getByRole("button", { name: kb09t(lang, "gallery.overflow"), exact: true });
+        const normal = page.getByRole("button", { name: kb09t(lang, "gallery.default"), exact: true });
+        let title = lang === "he" ? "הפרויקט של דנה" : "Dana's project";
+        await input.fill(title);
+        for (const typed of ["A", "B"]) {
+          await overflow.click();
+          await pwExpect(input).toHaveValue(title);
+          await input.focus();
+          await input.press("End");
+          await input.pressSequentially(typed);
+          title += typed;
+          await pwExpect(input).toHaveValue(title);
+          await pwExpect(page.getByText(`${title} — ${kb09t(lang, "gallery.longText").repeat(12)}`, { exact: true })).toBeVisible();
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+          await normal.click();
+          await pwExpect(input).toHaveValue(title);
+        }
+        await overflow.click();
+        await pwExpect(input).toHaveValue(title);
+      } finally { await page.close(); }
+    }
   });
 
   test("gallery states and controls work at desktop width", async () => {

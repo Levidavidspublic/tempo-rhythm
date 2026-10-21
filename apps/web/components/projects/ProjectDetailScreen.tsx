@@ -483,7 +483,7 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
           <input
             className="tp-input"
             dir="auto"
-            value={shownTitle}
+            value={title}
             aria-describedby={notice !== "idle" ? "kb09-gallery-notice" : undefined}
             aria-invalid={notice === "error" || undefined}
             onChange={(event) => {
@@ -493,6 +493,7 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
             onBlur={() => setNotice("saved")}
           />
         </label>
+        {view === "overflow" ? <p className="tp-muted" dir="auto">{shownTitle}</p> : null}
         <ProjectDetailNotice id="kb09-gallery-notice" lang={lang} kind={notice} />
         {view === "loading" ? <output>{kb09t(lang, "gallery.loadingText")}</output> : null}
         {view === "error" ? (

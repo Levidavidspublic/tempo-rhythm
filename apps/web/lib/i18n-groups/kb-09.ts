@@ -62,5 +62,6 @@ export const he: Record<keyof typeof en, string> = {
 export type Kb09Key = keyof typeof en;
 export function kb09t(lang: "en" | "he", key: Kb09Key, values?: { title?: string }): string {
   const template: string = (lang === "he" ? he : en)[key];
-  return values?.title === undefined ? template : template.replace("{title}", values.title);
+  const title = values?.title;
+  return title === undefined ? template : template.replace("{title}", () => title);
 }
