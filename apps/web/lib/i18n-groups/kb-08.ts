@@ -1,0 +1,83 @@
+/** Projects list copy. Hebrew is machine-drafted for Amit's native-language review. */
+export const en = {
+  "count.one": "{done} of 1 task done",
+  "count.many": "{done} of {total} tasks done",
+  "count.none": "No tasks yet",
+  "open": "Open project: {name}",
+  "open.short": "Open project",
+  "board": "Open board: {name}",
+  "board.short": "Open board",
+  "status.idea": "Idea",
+  "status.active": "Active",
+  "status.paused": "Paused",
+  "status.done": "Done",
+  "empty.title": "No projects yet.",
+  "empty.body": "Start with one project and add a task when you're ready.",
+  "empty.action": "Start a first project",
+  "filtered.title": "No projects with this filter.",
+  "filtered.body": "Your other projects are still here.",
+  "filtered.action": "Show all projects",
+  "loading": "Loading your projects",
+  "error.title": "Projects couldn't load.",
+  "error.body": "Your data is safe. Try again in a moment.",
+  "error.action": "Try again",
+  "offline": "You're offline. Reconnect to load updates.",
+  "disabled.title": "Project links are unavailable here.",
+  "gallery.title": "Projects preview",
+  "gallery.state": "Preview state",
+  "gallery.language": "Preview language",
+  "gallery.default": "Projects",
+  "gallery.empty": "Empty",
+  "gallery.loading": "Loading",
+  "gallery.error": "Error",
+  "gallery.disabled": "Disabled",
+  "gallery.overflow": "Long name",
+  "gallery.offline": "Offline",
+  "gallery.feedback": "Action: {action}",
+} as const;
+
+// Machine-drafted Hebrew; needs Amit's native read.
+export const he: Record<keyof typeof en, string> = {
+  "count.one": "{done} מתוך משימה אחת הושלמה",
+  "count.many": "{done} מתוך {total} משימות הושלמו",
+  "count.none": "עדיין אין משימות",
+  "open": "פתיחת הפרויקט: {name}",
+  "open.short": "פתיחת הפרויקט",
+  "board": "פתיחת הלוח: {name}",
+  "board.short": "פתיחת הלוח",
+  "status.idea": "רעיון",
+  "status.active": "פעיל",
+  "status.paused": "מושהה",
+  "status.done": "הושלם",
+  "empty.title": "עדיין אין פרויקטים.",
+  "empty.body": "אפשר להתחיל בפרויקט אחד ולהוסיף משימה כשמתאים.",
+  "empty.action": "להתחיל פרויקט ראשון",
+  "filtered.title": "אין פרויקטים עם הסינון הזה.",
+  "filtered.body": "שאר הפרויקטים עדיין כאן.",
+  "filtered.action": "להציג את כל הפרויקטים",
+  "loading": "טוענים את הפרויקטים",
+  "error.title": "הפרויקטים לא נטענו.",
+  "error.body": "הנתונים שלך שמורים. אפשר לנסות שוב בעוד רגע.",
+  "error.action": "לנסות שוב",
+  "offline": "אין חיבור לרשת. אפשר להתחבר מחדש כדי לטעון עדכונים.",
+  "disabled.title": "הקישורים לפרויקט אינם זמינים כאן.",
+  "gallery.title": "תצוגה מקדימה של פרויקטים",
+  "gallery.state": "מצב התצוגה המקדימה",
+  "gallery.language": "שפת התצוגה המקדימה",
+  "gallery.default": "פרויקטים",
+  "gallery.empty": "ריק",
+  "gallery.loading": "טעינה",
+  "gallery.error": "שגיאה",
+  "gallery.disabled": "לא זמין",
+  "gallery.overflow": "שם ארוך",
+  "gallery.offline": "אין חיבור",
+  "gallery.feedback": "פעולה: {action}",
+};
+
+export type Kb08Key = keyof typeof en;
+export type Kb08Lang = "en" | "he";
+
+export function translateKb08(lang: Kb08Lang, key: Kb08Key, values: Record<string, string | number> = {}) {
+  const template = (lang === "he" ? he : en)[key];
+  return template.replace(/\{(\w+)\}/g, (_match, field: string) => String(values[field] ?? ""));
+}
