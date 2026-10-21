@@ -25,7 +25,7 @@ type Fixture = {
   pending: { kind: Kind }[];
   settle(kind: Kind, success: boolean): void;
   body(value?: string): string;
-  show(id: string): void;
+  show(id: string | null): void;
   flush(): Promise<void>;
   flushResult: string;
   signal(): void;
@@ -55,7 +55,7 @@ d.body=(value)=>{const view=EditorView.findFromDOM(document.querySelector(".cm-e
 d.perform=(kind,args)=>{d.calls.push({kind,args:{...args}});const apply=()=>{const previous=d.notes[args.noteId];if(kind==="update")d.notes[args.noteId]={...previous,...args};if(kind==="togglePin")d.notes[args.noteId]={...previous,pinned:!previous.pinned};if(kind==="remove")d.notes[args.noteId]={...previous,deletedAt:Date.now()};if(kind==="restore")d.notes[args.noteId]={...previous,deletedAt:undefined};d.signal();return kind==="remove"?{success:true,undoUntilMs:Date.now()+300000}:kind==="restore"?{success:true}:kind==="togglePin"?{pinned:d.notes[args.noteId].pinned}:args.noteId};if(d.modes[kind]==="reject")return Promise.reject(new Error("FICTIONAL_PAGE_FAILURE"));if(d.modes[kind]==="defer")return new Promise((resolve,reject)=>d.pending.push({kind,resolve:()=>resolve(apply()),reject:()=>reject(new Error("FICTIONAL_PAGE_FAILURE"))}));return Promise.resolve(apply())};
 d.settle=(kind,success)=>{const index=d.pending.findIndex(p=>p.kind===kind);if(index<0)throw new Error("No pending "+kind);const item=d.pending.splice(index,1)[0];success?item.resolve():item.reject()};
 function Probe(){const flush=useFlushCoachPage();d.flush=flush;return <button type="button" id="flush" onClick={()=>{d.flushResult="pending";void flush().then(()=>{d.flushResult="resolved"},()=>{d.flushResult="rejected"})}}>Flush fixture page</button>}
-function App(){const[id,setId]=React.useState("a");d.show=setId;return <CoachPageProvider><main><Probe/><NotePage noteId={id}/></main></CoachPageProvider>}
+function App(){const[id,setId]=React.useState("a");d.show=setId;return <CoachPageProvider><main><Probe/>{id!==null&&<NotePage noteId={id}/>}</main></CoachPageProvider>}
 createRoot(document.getElementById("root")).render(<React.StrictMode><App/></React.StrictMode>);
 `);
   const stubs = {
@@ -148,7 +148,7 @@ describe.serial("page action recovery", () => {
     test("original autosave remains Saving after rejection and retains its draft", async () => {
       const p = await open();
       await mode(p, "update", "reject");
-      const draft = await p.evaluate(() => window.pageRecovery.body()) + "\n\nAn unsaved fictional draft.";
+      const draft = `${await p.evaluate(() => window.pageRecovery.body())}\n\nAn unsaved fictional draft.`;
       await edit(p, draft);
       await calls(p, "update", 1);
       await browserExpect(p.locator('[data-state="saving"]')).toHaveText("Saving…");
@@ -214,6 +214,124 @@ describe.serial("page action recovery", () => {
       await browserExpect(notice(p, "save")).toHaveCount(0);
       expect(await p.evaluate(() => window.pageRecovery.body())).toContain("A different draft.");
       await browserExpect(p.locator('[data-state="saved"]')).toHaveCount(0);
+    }, 30_000);
+    for (const destination of ["b", null]) for (const firstSucceeds of [true, false]) {
+      test(`queued outgoing draft survives ${destination === null ? "unmount" : "navigation"} after earlier save ${firstSucceeds ? "resolves" : "rejects"}`, async () => {
+        const p = await open();
+        await p.clock.install();
+        await mode(p, "update", "defer");
+        const untouched = await p.evaluate(() => window.pageRecovery.notes.b.body);
+        await edit(p, "Earlier outgoing draft."); await p.clock.runFor(500); await calls(p, "update", 1);
+        await edit(p, "Latest outgoing draft."); await p.clock.runFor(500); await calls(p, "update", 1);
+        await p.evaluate((id) => window.pageRecovery.show(id), destination);
+        if (destination === null) await browserExpect(p.locator(".cm-content")).toHaveCount(0);
+        else await browserExpect(p.getByRole("textbox", { name: "Note title" })).toHaveValue("Another page");
+        await p.evaluate((success) => window.pageRecovery.settle("update", success), firstSucceeds);
+        await calls(p, "update", 2);
+        expect(await p.evaluate(() => window.pageRecovery.calls[1].args)).toEqual({ noteId: "a", body: "Latest outgoing draft." });
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await browserExpect.poll(() => p.evaluate(() => window.pageRecovery.notes.a.body)).toBe("Latest outgoing draft.");
+        expect(await p.evaluate(() => window.pageRecovery.notes.b.body)).toBe(untouched);
+        await browserExpect(notice(p, "save")).toHaveCount(0);
+        if (destination !== null) {
+          expect(await p.evaluate(() => window.pageRecovery.body())).toBe(untouched);
+          await browserExpect(p.locator('[data-state="saved"]')).toHaveCount(0);
+        }
+      }, 30_000);
+    }
+    for (const destination of ["b", null]) {
+      test(`pending debounce cleanup stays ordered on ${destination === null ? "unmount" : "navigation"}`, async () => {
+        const p = await open();
+        await p.clock.install();
+        await mode(p, "update", "defer");
+        await edit(p, "Earlier draft."); await p.clock.runFor(500); await calls(p, "update", 1);
+        await edit(p, "Draft still inside its debounce.");
+        await p.evaluate((id) => window.pageRecovery.show(id), destination);
+        if (destination === null) await browserExpect(p.locator(".cm-content")).toHaveCount(0);
+        else await browserExpect(p.getByRole("textbox", { name: "Note title" })).toHaveValue("Another page");
+        await calls(p, "update", 1);
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await calls(p, "update", 2);
+        expect(await p.evaluate(() => window.pageRecovery.calls[1].args)).toEqual({ noteId: "a", body: "Draft still inside its debounce." });
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await browserExpect.poll(() => p.evaluate(() => window.pageRecovery.notes.a.body)).toBe("Draft still inside its debounce.");
+        await p.clock.runFor(500); await calls(p, "update", 2);
+        await browserExpect(notice(p, "save")).toHaveCount(0);
+      }, 30_000);
+    }
+    for (const firstSucceeds of [true, false]) {
+      test(`reopened same-note writes follow outgoing writes after earlier save ${firstSucceeds ? "resolves" : "rejects"}`, async () => {
+        const p = await open();
+        await p.clock.install(); await mode(p, "update", "defer");
+        await edit(p, "Outgoing first."); await p.clock.runFor(500); await calls(p, "update", 1);
+        await edit(p, "Outgoing latest."); await p.clock.runFor(500); await calls(p, "update", 1);
+        await p.evaluate(() => window.pageRecovery.show(null));
+        await browserExpect(p.locator(".cm-content")).toHaveCount(0);
+        await p.evaluate(() => window.pageRecovery.show("a"));
+        await browserExpect(p.locator(".cm-content")).toBeVisible();
+        await browserExpect(p.getByRole("textbox", { name: "Note title" })).toHaveValue("Example page");
+        await edit(p, "Reopened draft."); await p.clock.runFor(500); await calls(p, "update", 1);
+        await p.evaluate((success) => window.pageRecovery.settle("update", success), firstSucceeds);
+        await calls(p, "update", 2);
+        expect(await p.evaluate(() => window.pageRecovery.calls[1].args.body)).toBe("Outgoing latest.");
+        // A settled older request must not remove the queue entry for the newer owner.
+        await edit(p, "Newest reopened draft."); await p.clock.runFor(500); await calls(p, "update", 2);
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await calls(p, "update", 3);
+        expect(await p.evaluate(() => window.pageRecovery.calls[2].args.body)).toBe("Reopened draft.");
+        expect(await p.evaluate(() => window.pageRecovery.body())).toBe("Newest reopened draft.");
+        await browserExpect(p.locator('[data-state="saved"]')).toHaveCount(0);
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await calls(p, "update", 4);
+        expect(await p.evaluate(() => window.pageRecovery.calls[3].args.body)).toBe("Newest reopened draft.");
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await browserExpect(p.locator('[data-state="saved"]')).toBeVisible();
+        expect(await p.evaluate(() => window.pageRecovery.notes.a.body)).toBe("Newest reopened draft.");
+        await browserExpect(notice(p, "save")).toHaveCount(0);
+      }, 30_000);
+    }
+    test("a pending outgoing note never blocks a distinct note's save", async () => {
+      const p = await open();
+      await p.clock.install(); await mode(p, "update", "defer");
+      await edit(p, "Pending note A."); await p.clock.runFor(500); await calls(p, "update", 1);
+      await p.evaluate(() => window.pageRecovery.show("b"));
+      await browserExpect(p.getByRole("textbox", { name: "Note title" })).toHaveValue("Another page");
+      await edit(p, "Independent note B."); await p.clock.runFor(500); await calls(p, "update", 2);
+      expect(await p.evaluate(() => window.pageRecovery.calls[1].args)).toEqual({ noteId: "b", body: "Independent note B." });
+      await p.evaluate(() => { window.pageRecovery.settle("update", false); window.pageRecovery.settle("update", true); });
+      await browserExpect(p.locator('[data-state="saved"]')).toBeVisible();
+      expect(await p.evaluate(() => window.pageRecovery.notes.b.body)).toBe("Independent note B.");
+      await browserExpect(notice(p, "save")).toHaveCount(0);
+    }, 30_000);
+    test("a clean reopened page's coach flush rejects its outgoing save failure", async () => {
+      const p = await open();
+      await p.clock.install(); await mode(p, "update", "defer");
+      await edit(p, "Outgoing unsaved context."); await p.clock.runFor(500); await calls(p, "update", 1);
+      await p.evaluate(() => window.pageRecovery.show(null));
+      await browserExpect(p.locator(".cm-content")).toHaveCount(0);
+      await p.evaluate(() => window.pageRecovery.show("a"));
+      await browserExpect(p.locator(".cm-content")).toBeVisible();
+      await browserExpect(p.getByRole("textbox", { name: "Note title" })).toHaveValue("Example page");
+      await p.locator("#flush").click();
+      expect(await p.evaluate(() => window.pageRecovery.flushResult)).toBe("pending");
+      await p.evaluate(() => window.pageRecovery.settle("update", false));
+      await browserExpect.poll(() => p.evaluate(() => window.pageRecovery.flushResult)).toBe("rejected");
+      await calls(p, "update", 1); await calls(p, "remove", 0);
+    }, 30_000);
+    test("a clean reopened page's confirmed deletion waits for its outgoing save", async () => {
+      const p = await open();
+      await p.clock.install(); await mode(p, "update", "defer");
+      await edit(p, "Outgoing content before delete."); await p.clock.runFor(500); await calls(p, "update", 1);
+      await p.evaluate(() => window.pageRecovery.show(null));
+      await browserExpect(p.locator(".cm-content")).toHaveCount(0);
+      await p.evaluate(() => window.pageRecovery.show("a"));
+      await browserExpect(p.locator(".cm-content")).toBeVisible();
+      await browserExpect(p.getByRole("textbox", { name: "Note title" })).toHaveValue("Example page");
+      await confirmDelete(p); await calls(p, "remove", 0);
+      await p.evaluate(() => window.pageRecovery.settle("update", true));
+      await calls(p, "remove", 1);
+      await browserExpect(p.locator(".kb64-toast")).toBeVisible();
+      expect(await p.evaluate(() => window.pageRecovery.calls.map(call => call.kind))).toEqual(["update", "remove"]);
     }, 30_000);
     test("pin failure is caught and repeated pending clicks submit once", async () => {
       const p = await open();
@@ -339,7 +457,7 @@ describe.serial("page action recovery", () => {
       const p = await open({ lang, width, theme });
       const original = await p.evaluate(() => window.pageRecovery.body());
       await mode(p, "update", "reject");
-      await edit(p, original + "\n\n" + (lang === "he" ? "טיוטה לדוגמה שנשארת כאן." : "A fictional draft stays here."));
+      await edit(p, `${original}\n\n${lang === "he" ? "טיוטה לדוגמה שנשארת כאן." : "A fictional draft stays here."}`);
       await calls(p, "update", 1);
       if (baseline) await browserExpect(p.locator('[data-state="saving"]')).toBeVisible();
       else {

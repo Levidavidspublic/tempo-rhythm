@@ -243,6 +243,9 @@ function NotesList() {
 
 type SaveState = "idle" | "saving" | "saved";
 
+// Pending requests survive a page remount; settled entries never retain a note draft.
+const pendingPageSaves = new Map<string, Promise<void>>();
+
 type NotePageProps = {
   noteId: string;
   /** Passed to the page view: where "Back" goes, or null to hide it. */
@@ -290,22 +293,27 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     revision: number;
     save: Promise<void> | null;
     saveRevision: number;
+    savedRevision: number;
     pin: boolean;
     deleting: boolean;
     deleteIntent: number;
   };
   const ownerRef = useRef<Owner | null>(null);
+  const flushLeavingSave = useRef<(owner: Owner) => void>(() => {});
   const [errors, setErrors] = useState({ save: false, pin: false, delete: false });
   const [busy, setBusy] = useState({ save: false, pin: false, delete: false });
 
   // A completion belongs to this mounted note, not merely to a matching note id.
   // Layout cleanup also fences settlements during removal and StrictMode replay.
   useLayoutEffect(() => {
-    const owner: Owner = { noteId, alive: true, revision: 0, save: null, saveRevision: 0, pin: false, deleting: false, deleteIntent: 0 };
+    const owner: Owner = { noteId, alive: true, revision: 0, save: null, saveRevision: 0, savedRevision: -1, pin: false, deleting: false, deleteIntent: 0 };
     ownerRef.current = owner;
     setErrors({ save: false, pin: false, delete: false });
     setBusy({ save: false, pin: false, delete: false });
-    return () => { owner.alive = false; };
+    return () => {
+      owner.alive = false;
+      flushLeavingSave.current(owner);
+    };
   }, [noteId]);
   const owns = (owner: Owner | null): owner is Owner =>
     owner?.alive === true && ownerRef.current === owner && owner.noteId === noteId && !wasDeleted.current;
@@ -331,16 +339,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     }
   }, [note]);
 
-  useEffect(() => {
-    return () => {
-      if (!saveTimer.current) return;
-      clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-      if (!wasDeleted.current) {
-        void updateNote({ noteId: noteId as Id<"notes">, ...notePatch(edits.current, titleRef.current, bodyRef.current) });
-      }
-    };
-  }, [noteId, updateNote]);
+
 
   // Another writer changed this page while it is open: the coach saving a decision to today's
   // page, or the same page in another tab. With no unsaved body edit here the editor takes the
@@ -362,28 +361,30 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     titleRef.current = note.title;
     setTitle(note.title);
   }, [note]);
-  const saveNow = async (owner: Owner) => {
-    // Serialize writes so an older request cannot overwrite a later draft on the server.
-    // A waiting explicit save may continue with newer edits after the earlier save failed.
-    while (owner.save) {
-      const waitingRevision = owner.saveRevision;
-      try { await owner.save; } catch (error) {
-        if (owner.revision === waitingRevision) throw error;
-      }
-      if (!owns(owner)) return;
+  const saveSnapshot = (owner: Owner) => ({
+    savedTitle: titleRef.current,
+    savedBody: bodyRef.current,
+    revision: owner.revision,
+    patch: notePatch(edits.current, titleRef.current, bodyRef.current),
+  });
+  const saveNow = async (owner: Owner, snapshot = saveSnapshot(owner)) => {
+    const { savedTitle, savedBody, revision, patch } = snapshot;
+    // Joining this revision propagates its rejection without silently retrying it.
+    if (owner.save && revision <= owner.saveRevision) return owner.save;
+    if (revision <= owner.savedRevision || (patch.title === undefined && patch.body === undefined)) {
+      // A clean reopened editor still waits for this note's outgoing write before chat/delete.
+      return pendingPageSaves.get(owner.noteId);
     }
-    if (!owns(owner)) return;
-    const savedTitle = titleRef.current;
-    const savedBody = bodyRef.current;
-    const revision = owner.revision;
-    const patch = notePatch(edits.current, savedTitle, savedBody);
-    if (patch.title === undefined && patch.body === undefined) return;
     markBusy(owner, "save", true);
-    setSaveState("saving");
+    if (owns(owner)) setSaveState("saving");
     owner.saveRevision = revision;
-    const request = Promise.resolve().then(async () => {
+    // Enqueue immediately: a reopened page must follow this outgoing immutable snapshot.
+    // An earlier rejected revision releases the queue for this explicit newer write.
+    const previous = pendingPageSaves.get(owner.noteId);
+    const request = Promise.resolve(previous).catch(() => {}).then(async () => {
       try {
         await updateNote({ noteId: owner.noteId as Id<"notes">, ...patch });
+        owner.savedRevision = revision;
         if (!owns(owner)) return;
         if (patch.title !== undefined && titleRef.current === savedTitle) edits.current.title = false;
         if (patch.body !== undefined && bodyRef.current === savedBody) edits.current.body = false;
@@ -398,12 +399,28 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
         }
         throw error;
       } finally {
-        owner.save = null;
-        markBusy(owner, "save", false);
+        if (owner.save === request) {
+          owner.save = null;
+          markBusy(owner, "save", false);
+        }
+        if (pendingPageSaves.get(owner.noteId) === request) pendingPageSaves.delete(owner.noteId);
       }
     });
     owner.save = request;
+    pendingPageSaves.set(owner.noteId, request);
     await request;
+  };
+
+  flushLeavingSave.current = (owner) => {
+    if (!saveTimer.current) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    if (wasDeleted.current) return;
+    // Layout cleanup captures the outgoing refs before another note replaces them.
+    // The same writer keeps this pending debounce behind any earlier request.
+    void saveNow(owner, saveSnapshot(owner)).catch(() => {
+      // The page has left; retain the existing best-effort cleanup contract.
+    });
   };
 
   const scheduleSave = () => {
@@ -507,7 +524,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     }
     try {
       // A failed autosave has no timer, but its draft still must save before deletion.
-      while (owns(owner) && (owner.save || edits.current.title || edits.current.body)) {
+      while (owns(owner) && (pendingPageSaves.has(owner.noteId) || edits.current.title || edits.current.body)) {
         await saveNow(owner);
       }
       if (!owns(owner) || owner.deleteIntent !== intent) return;
