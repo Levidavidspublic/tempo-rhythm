@@ -1,5 +1,7 @@
 # KB finish status
 
+WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist) and #1206 (landing motion), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
+
 AWAY — KB is unfinished. Snapshot: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem). Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 32 PRs after corrective follow-ups. Current KB heads, checks and review threads are refreshed below.
 
 ## Overnight v3 — 2026-10-21
@@ -11,7 +13,7 @@ In progress — Amit authorized the shared harness first, then nine fixture reru
 - KB issues: **5 closed / 22 open**, including the administrative lead issue #1176.
 - KB PRs: **10 merged / 22 open**; includes planning #1140, shared harness #1203 and corrective #1204.
 - Written worker specifications: **59**; **34 have no filed implementation issue or PR**. Nineteen further titles are reserved, not executable tickets.
-- NEEDS-AMIT.md: **6 remaining owner actions**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
+- NEEDS-AMIT.md: **6 KB owner actions plus 1 parallel-lane connection request**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
 
 ## Authority and gates
 

@@ -8,6 +8,7 @@ Blocked — These owner actions remain. Decisions recorded below apply from 2026
 4. AT-03 — Provide and validate the existing KA-24 search-service capability configuration before KB-16 can enable supported engines. No service or environment change is authorized.
 5. AT-04 — Arrange the Hebrew native read and real-device accessibility checks before production. These do not block preview work.
 6. Factory configuration — PR #1198 must remain unmerged until Amit sets `FACTORY_PAUSED=true`. This run does not change that setting or merge that PR.
+7. Executor connection (parallel lane, reported separately) — Add Executor as a remote MCP server for this Codex environment using `https://executor.sh/aa/mcp?search_tools=true`, complete its authentication in the host connection settings, and enable its tools for the task. The environment proxy must allow `executor.sh`; the supplied endpoint currently returns CONNECT 403 and no Executor tool is exposed. Do not paste credentials into an issue or comment. Work continues with available tools.
 
 ## Amit's answers — 2026-10-21
 
