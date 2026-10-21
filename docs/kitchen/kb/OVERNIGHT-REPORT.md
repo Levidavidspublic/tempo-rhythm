@@ -100,7 +100,7 @@ E2E recovery: the exact command now uses installed Chromium 151 through its loca
 | KB-75 | 1178 | 1179 | PR open — Final shared + own: 40 pass / 1 fail, 75 assertions; own 23 pass, shared cancellation fails. Earlier full 3510/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-76 | 1180 | 1183 | PR open — authorized v3 scoped product pass active; full validation and review remain. |
 | KB-59 | 1189 | 1191 | Merged previously; retained. |
-| KB-61 | 1181 | 1199 | PR open — Authorized v3 pass active: shared lifecycle adoption, preserve both cleanup errors with controlled regression; all26 existing cases/deadlines retained. Reopened issue stays open. |
+| KB-61 | 1181 | 1199 | PR open — final focused 27 pass / 0 fail, 51 assertions on 4a52c9c; evidence head 0d86653. Both cleanup errors survive the acceptance gate. Earlier full incomplete (1,545 observed pass lines / 2 fail / 3 todo); E2E 27 pass / 1 fail / 89 skip. Shared dependency stuck; current CI/review required. |
 | KB-64 | 1182 | 1187 | Merged previously; retained. |
 | KB-77 | 1184 | 1186 | PR open — Final shared + own: 43 pass / 0 fail, 163 assertions. Earlier full 3512/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
 | KB-78 | 1188 | 1190 | PR open — Final shared + own: 40 pass / 0 fail, 78 assertions. Earlier full 3530/0/3 todo; E2E 27/1/89 skip (task-view timeout); install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
