@@ -2,7 +2,7 @@
 
 The existing `/admin/approvals` route mounts `AdminApprovals` inside the Tempo shell. The revised host mounts `AdminStatusSummary` and `ApprovalRowFeedback`. Each row now holds its own synchronous request guard, pending state and safe, attributed result. Starting decisions for Maya and Dana concurrently leaves Dana pending when Maya settles. A rapid second click on one row sends one unchanged `approval:setStatus({ userId, status })` call. The reactive admin query remains authoritative for statuses, order and the count of accounts shown; the backend returns at most 500 live accounts, so the count is explicitly qualified. The admin-only query skip and server authorization remain unchanged.
 
-The [contact sheet](./kb-75-admin-approval-actions.jpg) compares the exact original source frozen from integration commit `52bf2803e9105b25c2538aedd81a754a9fbfdedb` before editing with the real mounted current host and the interactive gallery at 390/1280 px, English/Hebrew, light/dark. The baseline screen still displays its original English copy under the Hebrew locale. The fixture uses fictional Maya, Dana and Yoni accounts and stubs only the Convex query/mutation boundary; no live account is read or changed. The current and baseline use real `Button`, `LocaleProvider`, compiled app Tailwind/v3 CSS and the actual component source. The gallery composes the two production view exports; its interactive controls are not a replacement for the mounted host tests.
+The upper part of the [contact sheet](./kb-75-admin-approval-actions.jpg) retains the original comparison; the lower part records the 21 October review repair. The original sheet compares the exact original source frozen from integration commit `52bf2803e9105b25c2538aedd81a754a9fbfdedb` before editing with the real mounted current host and the interactive gallery at 390/1280 px, English/Hebrew, light/dark. The baseline screen still displays its original English copy under the Hebrew locale. The fixture uses fictional Maya, Dana and Yoni accounts and stubs only the Convex query/mutation boundary; no live account is read or changed. The current and baseline use real `Button`, `LocaleProvider`, compiled app Tailwind/v3 CSS and the actual component source. The gallery composes the two production view exports; its interactive controls are not a replacement for the mounted host tests.
 
 ## Browser findings
 
@@ -40,3 +40,367 @@ The focused command `bun test tests/unit/kb-75.test.tsx` passed 22 named cases w
 - phone and desktop matrix has one main h1 and 44 px actions
 - visible focus and reduced motion
 - both named views render in interactive gallery
+
+
+## Historical check results preserved
+
+The following is the prior PR check record at `b9d2b51c48933f4f65772760a6e3477d9eaaa1f5`. Its green hosted results and local failures apply to that source, not the repair below. Earlier TypeScript/build failures, disk errors, timeout failures and command-wrapper failures remain recorded rather than being replaced with the new scoped result.
+
+<details><summary>Original PR test record and failure tails</summary>
+
+## Test results (cloud agent sandbox)
+
+Bun `1.3.9` (`cf6cdbbb`). All mandatory commands were attempted in AGENTS order. A first inherited wrapper returned exit 127 without executing its commands because a login shell dropped Bun from PATH. The corrected run started during disk exhaustion; generated cache cleanup restored 14 GB. Lint/typecheck and the affected full unit run were retried under the shared validation lock. Earlier failures remain below. Passing commands were not repeated.
+
+| Command | Actual local result |
+| --- | --- |
+| `bun --version` | PASS: `1.3.9` |
+| `bun install --frozen-lockfile` | PASS exit 0: checked 1033 installs across 1079 packages, no changes |
+| Scoped Biome formatting/check (three implementation files) | PASS: 3 checked, 2 formatted, no errors |
+| Clean-child bundle smoke | PASS: `{"bundle":{"pass":true}}` |
+| Focused mounted browser/capture fixture `bun test tests/unit/kb-75.test.tsx` | PASS: 22 pass, 0 fail, 23 expectations; 157.88 seconds |
+| `bun run lint` | PASS exit 0 after disk repair; original ENOSPC exit 1 preserved |
+| `bun run typecheck` | PASS exit 0, 5/5 tasks after disk repair; original ENOSPC exit 1 preserved |
+| `bun run test` | FAIL after disk repair: 3321 pass, 3 todo, 2 fail; earlier history timeouts passed this time; current failures are unchanged page-summary dashes/backslashes performance assertions; both runs retained below |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS exit 0: all four OK, 66 notices entries |
+| `CI=1 bunx playwright test --reporter=line` | FAIL exit 1: 27 passed, 89 skipped, 1 failed (4.3 minutes); unchanged task-view navigation timed out at `/tasks/energy` |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS exit 0, 1/1 build task |
+
+The build used tool-only `TURBO_CACHE=local:r` to avoid packaging a large cache archive; the exact build command above ran. Browser/build checks were serialized using the shared locks. No test configuration, baseline, route, shared Button, backend, package or lockfile changed.
+
+Local gate status: **blocked**. The full unit rerun still fails two unchanged performance assertions in `packages/utils/src/page-summary.test.ts:1204` (dashes 6494.84 ms and backslashes 3017.13 ms against a 3000 ms ceiling), while both original history UTF-8 cases now pass. All 22 KB-75 cases pass in both full runs. The local task-view E2E navigation timeout is also unresolved. No further source attempt or broad rerun is made.
+
+## Current-head GitHub checks
+
+All five required checks are **green on this head**: `ci`, `e2e-preview`, `secret-scan`, `config-guard`, `scope-guard`. [CI run 39351570233](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39351570233): Typecheck 5/5; Build 1/1; Test **3323 pass, 3 todo, 0 fail** across 202 files (57.23 seconds); E2E **28 pass, 89 skip** (52.2 seconds); lint/scans/notices pass. [Preview smoke](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39351570129): **4 passed** (8.0 seconds). GitHub results do not erase the local E2E timeout above.
+
+The mounted KB-75 fixture verifies exact mutation arguments, one call for rapid repeat submission, independent deferred A/B requests through success/error, retry, safe messages, discarded removed-row responses, query-driven status/order, focus recovery without late theft, one main/h1, 44 px targets, no overflow, RTL/email isolation, explicit localized dates and reduced motion. The existing wiring tests also ran unchanged in the full local E2E command. The two named production views are counted separately from the gallery/helpers; this is narrow admin residual polish, not a complete inventory audit.
+
+UNKNOWN: device screen-reader behavior; live admin authorization/writes; Amit’s native Hebrew review. No live account was read/changed, and no merge or deployment to live was performed.
+
+## Earlier failures retained
+
+First head: Typecheck failed at 4/5 tasks on `AdminApprovals.tsx` lines 127 and 130 (`string` versus `Id<"users">`); Build failed on the same typed-set mismatch, `ci` failed and preview waiting reported a failed Vercel deployment. The explicit set element type is corrected and all these checks pass on the current head.
+
+<details><summary>First-head Typecheck: actual last 20 log lines</summary>
+
+```text
+2026-10-19T21:40:21.8605704Z   Time:    23.535s
+2026-10-19T21:40:21.8606167Z Failed:    tempo-rhythm-web#typecheck
+2026-10-19T21:40:21.8606454Z
+2026-10-19T21:40:21.8645391Z ##[error]Process completed with exit code 2.
+2026-10-19T21:40:21.8787688Z Post job cleanup.
+2026-10-19T21:40:21.9656849Z [command]/usr/bin/git version
+2026-10-19T21:40:21.9698890Z git version 2.55.0
+2026-10-19T21:40:21.9737028Z Temporarily overriding HOME='/home/runner/work/_temp/9fbdfecb-7891-419b-aed0-821df8dbd552' before making global git config changes
+2026-10-19T21:40:21.9739039Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T21:40:21.9742642Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/tempo-rhythm/tempo-rhythm
+2026-10-19T21:40:21.9783644Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T21:40:21.9819553Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T21:40:22.0099324Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T21:40:22.0128334Z http.https://github.com/.extraheader
+2026-10-19T21:40:22.0139540Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T21:40:22.0178902Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T21:40:22.0462823Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T21:40:22.0505285Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T21:40:22.0974018Z Cleaning up orphan processes
+2026-10-19T21:40:22.1281427Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+```
+</details>
+
+<details><summary>First-head Build: actual last 20 log lines</summary>
+
+```text
+2026-10-19T21:40:17.7488359Z  ERROR  tempo-rhythm-web#build: command (/home/runner/work/tempo-rhythm/tempo-rhythm/apps/web) /home/runner/.bun/bin/bun run build exited (1)
+2026-10-19T21:40:17.7504704Z  ERROR  run failed: command  exited (1)
+2026-10-19T21:40:17.7580054Z error: script "build" exited with code 1
+2026-10-19T21:40:17.7589066Z ##[error]Process completed with exit code 1.
+2026-10-19T21:40:17.7679085Z Post job cleanup.
+2026-10-19T21:40:17.8221159Z [command]/usr/bin/git version
+2026-10-19T21:40:17.8251629Z git version 2.55.0
+2026-10-19T21:40:17.8273240Z Temporarily overriding HOME='/home/runner/work/_temp/4820f558-a59d-406d-b090-bee5374d7169' before making global git config changes
+2026-10-19T21:40:17.8274182Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T21:40:17.8276496Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/tempo-rhythm/tempo-rhythm
+2026-10-19T21:40:17.8307051Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T21:40:17.8333959Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T21:40:17.8545541Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T21:40:17.8561598Z http.https://github.com/.extraheader
+2026-10-19T21:40:17.8569866Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-19T21:40:17.8599588Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T21:40:17.8798253Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-19T21:40:17.8833188Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-19T21:40:17.9131522Z Cleaning up orphan processes
+2026-10-19T21:40:17.9325241Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+```
+</details>
+
+<details><summary>First-head preview: actual last 20 log lines</summary>
+
+```text
+2026-10-19T21:39:53.2411346Z env:
+2026-10-19T21:39:53.2414665Z   GH_TOKEN: ***
+2026-10-19T21:39:53.2415045Z   HEAD_SHA: 947e49f1b1bf06f7d63468881e48ce72d1e62b18
+2026-10-19T21:39:53.2415472Z   PREVIEW_ENVIRONMENT:
+2026-10-19T21:39:53.2415811Z   PREVIEW_STATUS_CONTEXT:
+2026-10-19T21:39:53.2416149Z ##[endgroup]
+2026-10-19T21:40:14.5995041Z FAIL: Vercel deployment Preview is failure: https://tempo-66cxc6nls-amit-levins-projects.vercel.app
+2026-10-19T21:40:14.6057279Z ##[error]Process completed with exit code 1.
+2026-10-19T21:40:14.6268783Z Post job cleanup.
+2026-10-19T21:40:14.7229952Z [command]/usr/bin/git version
+2026-10-19T21:40:14.7283668Z git version 2.55.0
+2026-10-19T21:40:14.7333594Z Temporarily overriding HOME='/home/runner/work/_temp/4de7a4fd-4694-4e9d-b9d1-abc6ad2f39e5' before making global git config changes
+2026-10-19T21:40:14.7335373Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-19T21:40:14.7339819Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/tempo-rhythm/tempo-rhythm
+2026-10-19T21:40:14.7396358Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-19T21:40:14.7443636Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-19T21:40:14.7725709Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-19T21:40:14.7767905Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-19T21:40:14.8280318Z Cleaning up orphan processes
+2026-10-19T21:40:14.8594006Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955, actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+```
+</details>
+
+<details><summary>Local lint during disk exhaustion: actual last 20 lines</summary>
+
+```text
+$ turbo run lint
+• turbo 2.9.6
+
+   • Packages in scope: @tempo/config, @tempo/types, @tempo/ui, @tempo/utils, tempo-rhythm-mobile, tempo-rhythm-web
+   • Running lint in 6 packages
+   • Remote caching disabled, using shared worktree cache
+
+@tempo/utils:lint: cache miss, executing 7bb9c6ffbbcaf7f7
+@tempo/types:lint: cache miss, executing 6f069e4050d2348a
+ WARNING  error creating log file directory: Custom { kind: StorageFull, error: Error { kind: CreateDir, source: Os { code: 28, kind: StorageFull, message: "No space left on device" }, path: "/workspace/work/kb-75/packages/utils/.turbo" } }
+ WARNING  error creating log file directory: Custom { kind: StorageFull, error: Error { kind: CreateDir, source: Os { code: 28, kind: StorageFull, message: "No space left on device" }, path: "/workspace/work/kb-75/packages/types/.turbo" } }
+  x Internal errors encountered: error with cache: Failed to replay logs:
+  | Cannot write logs: failed to create directory `/workspace/work/kb-75/
+  | packages/types/.turbo`,error with cache: Failed to replay logs: Cannot
+  | write logs: failed to create directory `/workspace/work/kb-75/packages/
+  | utils/.turbo`
+
+error: script "lint" exited with code 1
+```
+</details>
+
+<details><summary>Local typecheck during disk exhaustion: actual last 20 lines</summary>
+
+```text
+$ turbo run typecheck
+• turbo 2.9.6
+
+   • Packages in scope: @tempo/config, @tempo/types, @tempo/ui, @tempo/utils, tempo-rhythm-mobile, tempo-rhythm-web
+   • Running typecheck in 6 packages
+   • Remote caching disabled, using shared worktree cache
+
+@tempo/utils:typecheck: cache miss, executing 69682310453edbda
+@tempo/types:typecheck: cache miss, executing c33422a84068a5ff
+ WARNING  error creating log file directory: Custom { kind: StorageFull, error: Error { kind: CreateDir, source: Os { code: 28, kind: StorageFull, message: "No space left on device" }, path: "/workspace/work/kb-75/packages/utils/.turbo" } }
+  x Internal errors encountered: error with cache: Failed to replay logs:
+  | Cannot write logs: failed to create directory `/workspace/work/kb-75/
+  | packages/utils/.turbo`
+
+error: script "typecheck" exited with code 1
+```
+</details>
+
+<details><summary>First local full test: actual last 20 lines (3321 pass, 3 todo, 2 fail)</summary>
+
+```text
+(pass) module boundary > does not load React, a renderer, state adapters, storage or the network [0.46ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+2 tests failed:
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [19700.83ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [5372.33ms]
+  ^ this test timed out after 5000ms.
+
+ 3321 pass
+ 3 todo
+ 2 fail
+ 81041 expect() calls
+Ran 3326 tests across 202 files. [171.13s]
+error: script "test" exited with code 1
+```
+</details>
+
+<details><summary>Second local full test after disk repair: actual last 20 lines (3321 pass, 3 todo, 2 fail)</summary>
+
+```text
+(pass) json-render 0.21.0 behaviour that makes validateBlockSpec necessary > it does reject an element type outside the catalog [0.43ms]
+(pass) module boundary > imports only the pinned json-render entry points, the shared codec, zod and the catalog [0.70ms]
+(pass) module boundary > does not load React, a renderer, state adapters, storage or the network [0.65ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+2 tests failed:
+(fail) pathological bodies stay linear > dashes [6528.39ms]
+(fail) pathological bodies stay linear > backslashes [3048.69ms]
+
+ 3321 pass
+ 3 todo
+ 2 fail
+ 81041 expect() calls
+Ran 3326 tests across 202 files. [172.38s]
+error: script "test" exited with code 1
+```
+</details>
+
+<details><summary>Local E2E: actual last 20 lines</summary>
+
+```text
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[109/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[110/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[111/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[112/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[113/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:179031) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:179092) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  1 failed
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  27 passed (4.3m)
+```
+</details>
+
+<details><summary>Local E2E failure context</summary>
+
+```text
+  1) [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+
+    Test timeout of 30000ms exceeded.
+
+    Tearing down "context" exceeded the test timeout of 30000ms.
+
+    Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
+    Call log:
+      - navigating to "http://localhost:3000/tasks/energy", waiting until "load"
+
+
+      48 |     await expect(page.getByText("Done")).toBeVisible();
+      49 |
+    > 50 |     await page.goto("/tasks/energy");
+         |                ^
+      51 |     await expect(main.getByRole("heading", { name: "Energy", exact: true })).toBeVisible();
+      52 |     await expect(main.getByRole("heading", { name: "Low energy" })).toBeVisible();
+      53 |     await expect(page.getByText(updatedTitle)).toBeVisible();
+        at /workspace/work/kb-75/tests/e2e/task-views-core.spec.ts:50:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context:
+```
+</details>
+
+<details><summary>Inherited wrapper command failure (one-line tails; six commands exited 127)</summary>
+
+```text
+lint/typecheck/test/scans: bash: line 1: bun: command not found
+e2e: env: ‘bunx’: No such file or directory
+build: env: ‘bun’: No such file or directory
+```
+</details>
+
+
+
+</details>
+
+
+## Review repair — 21 October 2026
+
+Verified CodeRabbit findings [4335106299](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179#discussion_r4335106299) and [4335106347](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179#discussion_r4335106347) against the checked-in source. The gallery's inactive endonym inherited the page language; each endonym now has its own `lang="en"` or `lang="he"` span. The conditional language switch and existing labels are preserved. The fixture now resolves `postcss` and `@tailwindcss/postcss` through `Bun.resolveSync(name, web)` from the declaring `apps/web` workspace, supporting both local and hoisted layouts without dependency/configuration edits.
+
+The new hydrated case, **language endonyms declare their own language through both switches**, verifies the Hebrew label's language before switching to Hebrew, the gallery language after that switch, the English label's language, and the return to English. All 22 existing cases and assertions remain. PostCSS and Tailwind still compile the real application styles, and the existing size/focus/RTL matrix still tests real shared Button output.
+
+This fixture already executes bundling, serving, browser imports and checks only in `KB75_FIXTURE_CHILD`. The parent still rejects any nonzero child exit and checks every named result; added cleanup kills and awaits a surviving child. The existing 240s/480s setup limits and all browser assertions are unchanged. The merged KB-67 sequence is absent from this worktree and remains for root validation after reconciliation.
+
+The review baseline host was frozen at `b9d2b51c48933f4f65772760a6e3477d9eaaa1f5` before the endonym edit. The lower contact sheet pairs this exact mounted host and gallery with the repaired views at 390/1280 px, en/he, light/dark. Captures use the same fictional accounts, real components, LocaleProvider and compiled v3/Tailwind styles. Language attributes are verified by browser assertions; their pronunciation on physical screen readers remains UNKNOWN.
+
+Repair source commit: `a67d8d12fd396940a75b8447ed501e2be39d0336`.
+
+## Test results (cloud agent sandbox, review repair)
+
+Bun **1.3.9**. The checked `.bun` directory is real and local to this worktree; workspace package links remain local. No production environment, backend, shared Button, configuration, dependency or lockfile changed. `RULES.md` referenced in the ticket is absent from this checkout; current AGENTS/HARD_RULES/SLOTS were followed.
+
+| Command | Exit | Current repair result |
+|---|---:|---|
+| `bun --version` | 0 | 1.3.9 |
+| `timeout -k 5 120 bun install --frozen-lockfile` | 124 | UNKNOWN: resolver remained at “Resolving dependencies”; stopped at the authorized 120s bound |
+| `bun test tests/unit/kb-75.test.tsx` (before endonym repair) | 1 | 22 pass, 1 fail, 24 expectations; only the new language-span regression failed as expected. All 16 pre-edit host/gallery captures completed. |
+| `bun run lint` | 0 | 5/5 tasks; 0 errors, 9 existing web warnings |
+| `bun run typecheck` | 0 | 5/5 tasks successful |
+| `bun test tests/unit/kb-75.test.tsx` (after repair) | 0 | 23 pass, 0 fail, 24 expectations in 113.46s; new switch regression and all 22 existing cases pass. All 16 after captures completed. |
+| `bun run test` | — | UNKNOWN: pending root handoff |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | — | UNKNOWN: pending root handoff |
+| `CI=1 bunx playwright test --reporter=line` | — | UNKNOWN: pending root handoff; no dedicated /admin/approvals wiring spec was found |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | — | UNKNOWN: pending root handoff |
+
+Heavy commands each acquire `/workspace/work/kb-finish/heavy-check.lock`. Logs and exit files are under `/workspace/work/kb-finish/kb75-review/`. Full-suite compatibility with the reconciled tree, remaining mandatory gates and remote checks are root-owned; scoped fixture evidence does not mark the ticket done or prove live admin changes. Physical VoiceOver/TalkBack and native Hebrew review remain UNKNOWN.
+
+Frozen-install output (all available lines):
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+[exit 124 at the 120-second bound]
+```
+
+
+Before-repair regression failure tail (last 20 lines):
+
+```text
++ Call log:
++   - Expect "to.have.attribute.value" with timeout 5000ms
++   - waiting for getByRole('button', { name: 'עברית', exact: true }).locator('span')
++ "
++ ,
++   "pass": false,
+  }
+
+- Expected  - 1
++ Received  + 14
+
+(fail) KB-75 mounted admin approvals > language endonyms declare their own language through both switches [1.19ms]
+
+1 tests failed:
+(fail) KB-75 mounted admin approvals > language endonyms declare their own language through both switches [1.19ms]
+
+ 22 pass
+ 1 fail
+ 24 expect() calls
+Ran 23 tests across 1 file. [173.43s]
+```
+
+
+Review capture timing: before 2026-10-21 11:06:37 UTC to 2026-10-21 11:07:58 UTC; after 2026-10-21 11:16:59 UTC to 2026-10-21 11:17:44 UTC. All 16 expected files exist in each phase; the retained historical sheet uses the earlier provenance above.
+
+After-repair focused result:
+
+```text
+23 pass
+0 fail
+24 expect() calls
+Ran 23 tests across 1 file. [113.46s]
+```
