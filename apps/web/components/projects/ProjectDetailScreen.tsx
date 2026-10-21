@@ -443,7 +443,7 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
   const [title, setTitle] = useState(kb09t(lang, "gallery.initialProject"));
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
-  const [done, setDone] = useState(false);
+  const [completedTasks, setCompletedTasks] = useState<Set<number>>(() => new Set());
   const [notice, setNotice] = useState<"idle" | "pending" | "saved" | "error" | "firstTask">("idle");
   const [tasks, setTasks] = useState<string[]>([kb09t(lang, "gallery.initialTask")]);
   const addButton = useRef<HTMLButtonElement>(null);
@@ -494,7 +494,17 @@ export function Kb09Gallery({ lang = "en" }: { lang?: "en" | "he" }) {
             {tasks.map((task, index) => (
               <li className="tp-task-row kb09-task-row" key={`${task}-${index}`}>
                 <span className="tp-task-row__title" dir="auto">{view === "overflow" ? `${task} ${kb09t(lang, "gallery.longText").repeat(12)}` : task}</span>
-                <ProjectTaskActions title={task} done={done} lang={lang} onToggle={() => setDone(!done)} disabled={view === "disabled"} />
+                <ProjectTaskActions
+                  title={task}
+                  done={completedTasks.has(index)}
+                  lang={lang}
+                  onToggle={() => setCompletedTasks((previous) => {
+                    const next = new Set(previous);
+                    if (!next.delete(index)) next.add(index);
+                    return next;
+                  })}
+                  disabled={view === "disabled"}
+                />
               </li>
             ))}
           </ul>

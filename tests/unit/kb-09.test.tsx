@@ -201,6 +201,30 @@ describe.serial("KB-09 project detail", () => {
     await page.close();
   });
 
+  test("gallery tasks complete and reopen independently, including newly added rows", async () => {
+    const page = await pageFor("gallery");
+    const first = page.getByRole("checkbox", { name: /Plan with Dana/ });
+    const addTask = async (title: string) => {
+      await page.getByRole("button", { name: en["gallery.add"] }).click();
+      await page.getByRole("textbox", { name: en["gallery.taskLabel"] }).fill(title);
+      await page.getByRole("button", { name: en["gallery.add"] }).click();
+    };
+    await addTask("Read with Yoni");
+    const second = page.getByRole("checkbox", { name: /Read with Yoni/ });
+    await first.click();
+    await pwExpect(first).toHaveAttribute("aria-checked", "true");
+    await pwExpect(second).toHaveAttribute("aria-checked", "false");
+    await second.click();
+    await pwExpect(first).toHaveAttribute("aria-checked", "true");
+    await pwExpect(second).toHaveAttribute("aria-checked", "true");
+    await addTask("Walk with Maya");
+    await pwExpect(page.getByRole("checkbox", { name: /Walk with Maya/ })).toHaveAttribute("aria-checked", "false");
+    await first.click();
+    await pwExpect(first).toHaveAttribute("aria-checked", "false");
+    await pwExpect(second).toHaveAttribute("aria-checked", "true");
+    await page.close();
+  });
+
   test("long title wraps with no phone overflow", async () => {
     const page = await pageFor("gallery");
     await page.getByRole("button", { name: en["gallery.overflow"] }).click();
