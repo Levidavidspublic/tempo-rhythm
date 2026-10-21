@@ -1,8 +1,11 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { en, he, tKb06 } from "../../apps/web/lib/i18n-groups/kb-06";
+
+import { isolatedBrowserBuild } from "../helpers/kitchen-browser";
+import { fixtureCleanup, fixturePhase } from "../helpers/kitchen-fixture";
 
 const repo = process.cwd();
 const web = join(repo, "apps/web");
@@ -11,6 +14,7 @@ let browser: Browser;
 let server: ReturnType<typeof Bun.serve>;
 let origin: string;
 let temp: string;
+let cleanup: (() => Promise<void>) | undefined;
 
 const stubs: Record<string, string> = {
   "convex/react": `export const useConvexAuth=()=>({isAuthenticated:true,isLoading:false});export const useQuery=ref=>{if(ref?.__kb==="profile")return {_id:"fictional-user"};const state=new URLSearchParams(location.search).get("scenario");if(state==="loading")return undefined;if(state==="missing")return [];return [{_id:"fictional-goal",title:state==="long"?"A calm home with a thoughtful place for every book and every visit from Dana and Yoni, without rushing into a decision":"A calmer home for Maya",description:state==="long"?"A smaller place close to work where evenings feel calm, guests can stay, books have room, and the choice has time to feel right.":"A smaller place near work, with room for Dana and Yoni to visit.",progressPercent:new URLSearchParams(location.search).has("progress")?Number(new URLSearchParams(location.search).get("progress")):35,status:state==="completed"?"completed":"active",createdAt:1,updatedAt:1}]};export const useMutation=()=>async patch=>{window.__kbCalls.push(patch);return null};`,
@@ -20,21 +24,27 @@ const stubs: Record<string, string> = {
   "./shared": `export{StatusBadge,ScreenBoundary,SignedOutState}from"${web}/components/goals/shared.tsx";export const useOnline=()=>new URLSearchParams(location.search).get("scenario")!=="offline";export const useSignedIn=()=>"ready";`,
 };
 
-async function makeFixture() {
+async function makeFixture(setupDeadline: number) {
+  fixturePhase("KB-06 fixture files");
   const fixtureParent = join(repo, "work");
   mkdirSync(fixtureParent, { recursive: true });
   temp = mkdtempSync(join(fixtureParent, "kb06-"));
   symlinkSync(join(web, "node_modules"), join(temp, "node_modules"), "dir");
   writeFileSync(join(temp, "entry.tsx"), `import React from "${web}/node_modules/react";import{createRoot}from"${web}/node_modules/react-dom/client";import{TpIconSprite}from"${web}/components/tempo/TpIcon.tsx";import{GoalDetailScreen,GoalProgressSummary,Kb06Gallery}from"${component}";window.__kbCalls=[];const params=new URLSearchParams(location.search);const gallery=params.has("gallery");createRoot(document.getElementById("root")!).render(<><TpIconSprite/>{gallery?<Kb06Gallery/>:params.has("summary")?<main><h1>Progress fixture</h1><GoalProgressSummary progress={Number(params.get("progress"))} lang={document.documentElement.lang==="he"?"he":"en"}/></main>:<main><GoalDetailScreen goalId="fictional-goal"/></main>}</>);`);
-  const result = await Bun.build({
-    entrypoints: [join(temp, "entry.tsx")], outdir: temp, target: "browser", define: { "process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS": '"0"' },
-    plugins: [{ name: "kb06-fictional-data", setup(build) {
-      build.onResolve({ filter: /^(convex\/react|next\/link|@\/components\/providers\/LocaleProvider|@\/convex\/_generated\/api|\.\/shared)$/ }, args => ({ path: args.path, namespace: "kb06" }));
-      build.onLoad({ filter: /.*/, namespace: "kb06" }, args => ({ contents: stubs[args.path], loader: "tsx", resolveDir: web }));
-    } }],
+  const aliases: Record<string, string> = {};
+  for (const [index, [specifier, contents]] of Object.entries(stubs).entries()) {
+    const path = join(temp, `stub-${index}.tsx`);
+    writeFileSync(path, contents);
+    aliases[specifier] = path;
+  }
+  const outdir = join(temp, "bundle");
+  await isolatedBrowserBuild({
+    cwd: repo, entrypoints: [join(temp, "entry.tsx")], outdir, resolveFrom: web, aliases,
+    define: { "process.env.NEXT_PUBLIC_TEMPO_E2E_AUTH_BYPASS": '"0"' },
+    // Build execution and child cleanup fit inside the unchanged setup deadline.
+    timeoutMs: Math.max(1, setupDeadline - Date.now() - 5_000), cleanupMs: 5_000,
   });
-  if (!result.success) throw new Error(result.logs.map(String).join("\n"));
-  const files = result.outputs.map(output => basename(output.path));
+  const files = readdirSync(outdir);
   const css = files.filter(file => file.endsWith(".css"));
   server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
     const url = new URL(request.url);
@@ -45,7 +55,7 @@ async function makeFixture() {
       const theme = url.searchParams.get("theme") === "dark" ? "dark" : "light";
       return new Response(`<!doctype html><html lang="${lang}" dir="${dir}" data-text-size="${textSize}" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/globals.css">${css.map(file => `<link rel="stylesheet" href="/${file}">`).join("")}</head><body><div id="root"></div><script type="module" src="/entry.js"></script></body></html>`, { headers: { "content-type": "text/html" } });
     }
-    const path = url.pathname === "/globals.css" ? join(web, "app/globals.css") : files.includes(url.pathname.slice(1)) ? join(temp, url.pathname) : join(web, "app", url.pathname);
+    const path = url.pathname === "/globals.css" ? join(web, "app/globals.css") : files.includes(url.pathname.slice(1)) ? join(outdir, url.pathname) : join(web, "app", url.pathname);
     const file = Bun.file(path);
     return file.exists().then(exists => exists ? new Response(file, { headers: { "content-type": path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "text/javascript" : "application/octet-stream" } }) : new Response("not found", { status: 404 }));
   } });
@@ -75,10 +85,23 @@ async function capture(page: Page, name: string) {
 }
 
 beforeAll(async () => {
-  await makeFixture();
+  const setupDeadline = Date.now() + 60_000;
+  cleanup = fixtureCleanup({
+    browser: () => browser?.close(),
+    server: () => server?.stop(true),
+    directory: () => { if (temp) rmSync(temp, { recursive: true, force: true }); },
+  }, 5_000);
+  await makeFixture(setupDeadline);
+  fixturePhase("KB-06 server ready; browser launch");
   browser = await chromium.launch({ executablePath: browserExecutable(), headless: true, args: ["--no-sandbox"] });
+  fixturePhase("KB-06 browser ready");
 }, 60_000);
-afterAll(async () => { await browser?.close(); server?.stop(); if (temp) rmSync(temp, { recursive: true, force: true }); });
+beforeEach(() => fixturePhase("KB-06 browser case start"));
+afterAll(async () => {
+  fixturePhase("KB-06 cleanup start");
+  await cleanup?.();
+  fixturePhase("KB-06 cleanup complete");
+});
 
 const noOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
 
