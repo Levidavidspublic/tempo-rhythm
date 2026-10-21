@@ -164,3 +164,37 @@ changed: scoped BrainDumpScreen, local kb-02 dictionary/CSS, kb-02 test, two sco
 unknowns: exact online frozen install; signed-in backend; device screen reader; focus/motion correctness after failing assertions
 notes for ticket sync: third attempt exhausted; preserve stuck; reconcile #1053 overlap before integration; task Undo outside existing contract; Hebrew machine-drafted for native review
 ```
+
+<!-- KB-FINISH-KB02-HELD-RESULTS -->
+## AWAY — completed full test and refreshed review hold
+
+Bun 1.3.9, source head `407f2e1` rebased on integration `542f2cf`. Full `bun run test` exited 1: **3,426 pass / 3 todo / 12 fail / 1 error**, 81,340 assertions across 208 files in 1,245.99 seconds. Failures concern the existing KB-64/74 browser fixtures and history/page-summary timing checks; they are retained, not reported as passes. The KB-02 isolated child completed successfully. All four scans/notices then exited 0.
+
+Remaining local E2E/build are **UNKNOWN: paused before starting**, to prioritize eligible tickets after the refreshed review identified a valid rejected-edit dead end and inaccurate per-case child-fixture reporting. Existing historical E2E/build results above are not new runs. Hosted checks passed at this head, but the review findings remain unresolved and the PR has returned to draft.
+
+AT-07 on planning PR #1140 requests a further scoped repair because the authorized additional pass has been used. Rejecting the currently edited idea hides its controls while leaving `editingIndex` set, blocking both submission buttons. No further product/test edit or merge was made.
+
+Last 20 lines of full-test failure:
+
+```text
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [120001.76ms]
+  ^ this test timed out after 120000ms.
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [30007.27ms]
+  ^ this test timed out after 30000ms.
+(fail) (unnamed) [5000.92ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [5325.70ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > deepQuoteLines [18394.65ms]
+(fail) pathological bodies stay linear > deepListLines [6117.80ms]
+(fail) pathological bodies stay linear > blocksInHtmlBlocks [3298.85ms]
+(fail) pathological bodies stay linear > definitionStarts [3081.14ms]
+
+ 3426 pass
+ 3 todo
+ 12 fail
+ 1 error
+ 81340 expect() calls
+Ran 3441 tests across 208 files. [1245.99s]
+error: script "test" exited with code 1
+```
