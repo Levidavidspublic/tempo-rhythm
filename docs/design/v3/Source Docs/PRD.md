@@ -1,6 +1,6 @@
 # Tempo Flow — PRD
 
-> **Version:** 5 Oct 2026. **Owner:** Amit Levin. Replaces the April verbatim copy of this file (Phase 06 Step 2).
+> **Version:** 5 Oct 2026, patched 21 Oct 2026 (context tagger, crisis ladder, runtime model, auto-subagents; see §13). **Owner:** Amit Levin. Replaces the April verbatim copy of this file (Phase 06 Step 2).
 > **Built from:** `04-PRD-TEMPO-FLOW.md` (16 Sep), `01-PRD-PATCH.md` (20 Sep, with the 30 Sep decision update), and Amit's interview of 5 Oct 2026. Where they disagree, this file wins.
 > Items in the April master document that none of these carry forward count as superseded.
 > **Precedence:** HARD_RULES > ticket > PRD > chat prompt.
@@ -12,6 +12,7 @@ Tempo Flow is an executive-function coach and daily planner: an agent-first, mod
 Every page is markdown with JSON blocks inside it. json-render draws each block as its own element, and the user never sees JSON.
 The coach talks (live voice, English and Hebrew), reads your pages and memory, and changes the app for you.
 It writes notes, adds tasks to Today, and builds new templates and modules, the way Claude Code writes its own mods (§5).
+**(21 Oct)** Every message, memory and brain dump is auto-tagged in several lanes at once (projects, life areas, state with a confidence score, severity). The coach reads the tags; the user sees them only on memories. Severity drives a fixed-card crisis ladder (F-24). A request that spans several projects is split across subagents, one per project (F-29).
 
 **Next week's target:** a real person opens `preview.tempoflow.dev`, signs in with a magic link, writes a note, and talks or types to the coach. This works in English or Hebrew, right-to-left or left-to-right, and the coach can act on their notes and Today. It is built in 2–3 days and polished for the rest of the week.
 
@@ -67,6 +68,7 @@ This is the web PWA as a product people can pay for: the next-week build plus th
 - Nags in the user's own words.
 - View modules.
 - Memory view, forget and export.
+- **(21 Oct)** The context tagger (F-56–F-58), the crisis ladder (F-24a) and auto-subagents (F-29).
 - English speech-to-speech on NVIDIA once its licence is verified.
 - Visible billing on Polar (web).
 - Runtime models back on the Nemotron + Inkling ladder.
@@ -107,6 +109,8 @@ The boundary is Claude's reading of "V0.5 polished" in the 16 Sep PRD plus the p
 | F-22 | **Coach actions:** create a note, add a task to Today, fill a template. Each action shows in the chat with a 5-minute Undo. | NW | Amit 5 Oct; 16 Sep undo rule |
 | F-23 | The coach builds and edits templates and modules on request (§5). | NW | Amit 5 Oct |
 | F-24 | Fixed crisis card: when a user signals crisis, the coach stops coaching and shows real resources. The card text is fixed, never model-written. | NW minimal [EXTRAPOLATED horizon]; per-country data MVP | 16 Sep §2; 20 Sep |
+| F-24a | **(21 Oct) Crisis ladder.** Two checks run on every user message. (1) The existing fixed word list, with no model call, stays the instant first line. (2) A safety classifier (gpt-oss-safeguard-20b, reading a crisis policy Tempo writes) returns a severity. Severity picks one **fixed** card, never model-written text: **low** → a guided breathing exercise card; **medium** → "contact your therapist", shown only when the user has saved a therapist contact themselves, otherwise the hotline card; **high** → the hotline for the user's country (Israel: **ERAN**, per Dr. Hozmi; the equivalent line elsewhere) and the coach stops coaching. Thresholds: UNKNOWN; placeholder values need clinical sign-off before any deploy [EXTRAPOLATED]. Each country's number is verified before it ships. | MVP | Amit 21 Oct; Hozmi |
+| F-29 | **(21 Oct) Auto-subagents.** When a message or brain dump touches more than one lane (project), the coach splits it and runs one subagent per lane in parallel. Each subagent sees only its own lane's pages and memories, so nothing gets mixed or invented. The coach merges the results into one proposal; the user Accepts it (5-minute Undo). | MVP | Amit 21 Oct |
 | F-25 | Adaptive coach: dial 0–10, panic button, bad-day detection, 10-second action, realism checker, forgiveness contract, graduated load 2→4. | MVP | 16 Sep §4 |
 | F-26 | Anti-slop verification; Socratic questioning on the ADHD-tax category. | END | 16 Sep SHOULD |
 | F-27 | Cron accountability with partial credit; self-rules (trial → lock → cooldown). | END | 16 Sep SHOULD |
@@ -150,6 +154,9 @@ The full model is in §5.
 | F-53 | Import of ChatGPT, Claude or Markdown content (not just memory). | END | 16 Sep SHOULD |
 | F-54 | **Life graph:** people, projects, goals, places and habits, linked. Links the user wrote (`[[links]]`, blocks) are kept apart from links the AI guessed, which are marked as guesses. Search by meaning + keyword + links + time. This is a Graphify / Understand Anything-style graph, but for life projects instead of code, built on Convex. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
 | F-55 | **Reflect:** a scheduled pass turns many memories into observations ("gym slips after late nights"), the way Hindsight's reflect step does. Observations are shown to the user and can be deleted. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
+| F-56 | **(21 Oct) Context tagger.** Every user message, memory and brain dump gets tags in four kinds at once: **lane** (which projects it belongs to; several allowed, each weighted by how much that project matters to the user), **life area** (school, work, health, family and so on), **state** with a confidence score (e.g. overwhelmed 51% vs 90%) plus relevance, and **severity** (F-24a). Inspired by how Fish Audio auto-tags a script with delivery tags. | MVP | Amit 21 Oct |
+| F-57 | **(21 Oct) Tags are hidden in chat, visible on memories.** Chat messages carry their tags invisibly; the coach uses them. Memories show their tags as chips. In Advanced settings the user can edit, add and remove tags and set how much each lane matters. A tag the user edits is never overwritten by the tagger. These context tags are separate from the chat Library tags the user types (KB-01/KB-28) and never appear in them. | MVP | Amit 21 Oct |
+| F-58 | **(21 Oct) Sensitive tags.** Health and therapist tags are special-category data: visible, editable, forgettable and included in memory export, like every memory. GDPR is the baseline (13 Oct). | MVP | Amit 13 + 21 Oct |
 
 ### 4.6 Nags
 
@@ -256,8 +263,10 @@ Tempo does the same for a daily planner, with one deliberate difference: **data 
 
 | Use | Model | Horizon |
 |---|---|---|
-| Text, interim | DeepSeek V4.1 Flash on DeepInfra, "in the meantime". When it ends is UNKNOWN. | NW |
-| Text, target ladder | Nemotron 3.5 Lightning (fast) · Nemotron 3 Super (balanced) · Inkling (deep), on DeepInfra; Together as failover | MVP |
+| Text: coach, tagger reasoning, subagents | **(21 Oct, Amit's decision)** GLM 5.3 Flash (`zai-org/GLM-5.3-Flash`) on DeepInfra. Replaces the DeepSeek V4.1 Flash interim. Together lists the same model but showed "launching soon" on 21 Oct, so Together failover is UNKNOWN. | NW |
+| Text, target ladder | Nemotron 3.5 Lightning (fast) · Nemotron 3 Super (balanced) · Inkling (deep), on DeepInfra; Together as failover. **(21 Oct)** Whether this ladder still applies after the GLM decision: UNKNOWN (§10). | MVP |
+| Tag scores (lane, area, state) | **(21 Oct)** `Qwen/Qwen3-Reranker-8B` on DeepInfra: one score per label for each message. Scores are not true percentages until calibrated on example messages Amit labels himself. | MVP |
+| Crisis severity | **(21 Oct)** `openai/gpt-oss-safeguard-20b`, an open-weight classifier that reads a policy Tempo writes. Not found on DeepInfra or Together on 21 Oct; Groq hosts it (OpenRouter is banned). Host: UNKNOWN, Amit decides (§10). The fixed word list works without it. | MVP |
 | Speech-to-text, English | Deepgram Flux | NW |
 | Speech-to-text, Hebrew | Deepgram Nova-3 `he` (Flux has no Hebrew) | NW |
 | Text-to-speech, both | Chatterbox multilingual on DeepInfra (Hebrew included) | NW [EXTRAPOLATED for English] |
@@ -297,6 +306,38 @@ Channels: web PWA first (MVP), then APK + TestFlight (Gen 1), then the stores (V
 10. Testers beyond Amit and the mom test.
 11. How a Playwright run receives the magic link on preview.
 12. The DeepInfra Service Order.
+13. **(21 Oct)** Crisis thresholds: who sets the values that send a user to breathing, their therapist or the hotline — Amit, or Beit Issie's clinical team before deploy?
+14. **(21 Oct)** Where gpt-oss-safeguard-20b runs: add Groq as a provider, wait for DeepInfra or Together, or self-host.
+15. **(21 Oct)** Does the Nemotron + Inkling ladder (MVP) still stand, or is GLM 5.3 Flash the text model through MVP?
+16. **(21 Oct)** Contradiction: 16 Oct says Tempo's chat cards use OpenUI plus templates; the 17 Oct UI-kit choice puts OpenUI only in OmniAgent and Agentwright. Which wins for Tempo?
+17. **(21 Oct)** The starting lists of life areas and states for the tagger (§13 has an EXTRAPOLATED draft).
+
+## 10a. Decisions since 5 Oct (folded in 21 Oct)
+
+These were decided in chats after 5 Oct and were missing from this file. Where a line changes a feature above, the feature ID is named.
+
+| Date | Decision | Changes |
+|---|---|---|
+| 5 Oct (late), 14 Oct | PayPal as the just-in-case web processor (replaces Polar); one crypto provider shared with Agentwright | F-110 |
+| 12 Oct | Guest sign-in exists only on preview, never on live; live access is the free trial | F-01 |
+| 12 Oct | Look: Anthropic-style beige with less orange, open fonts, Craft-like markdown components, liquid glass | F-80 |
+| 13 Oct | Chat-first redesign: deep research, deep think, and an open-source Canvas-style surface for Tempo's markdown outputs. Dr. Hozmi: push toward everyday executive-function decisions (which bus, what order — Goblin Tools-like); Amit starts with daily planning and chat | F-20–F-28 |
+| 13 Oct | Planning passes need advanced web search (Apify, Firecrawl, or open-source alternatives for the public release) | F-20 |
+| 13 Oct | Privacy: GDPR baseline, then California's equivalent, then HIPAA or similar | F-58 |
+| 13 Oct | Beit Issie Shapiro's tech division wants to publish and approve Tempo with clinical backing once it is a real beta | F-24a |
+| 16 Oct | Deepgram does all listening; Fish Audio is not used in the product; the speaking voice comes from DeepInfra or Together (undecided) | F-32, F-33 |
+| 16 Oct | Live voice-to-voice is English only; Hebrew gets read-aloud TTS that pronounces Hebrew properly | F-30, F-33 |
+| 16 Oct | Bring-your-own voice: any provider (name + key, or OAuth), including the user's own ChatGPT (GPT Live) or Gemini Live key | F-35, F-102 |
+| 16 Oct | One-to-one StudyFetch feature parity, except Arcade (study tools only) | F-90 |
+| 16 Oct | A coach plus a "council" of personas (e.g. daily-planner coach, strict military-style coach); reference Open Council | F-20 |
+| 16 Oct | One unified component kit across Amit's apps: Open WebUI chat behaviour, json-render, anti-slop rules | F-80 |
+| 16 Oct | "AI Max" plan priced at $20 or $50 a month (undecided); voice is about an hour a day per heavy user, so voice must be the cheapest setup that works | F-110 |
+| 21 Oct | Context tagger, crisis ladder, GLM 5.3 Flash, auto-subagents | F-24a, F-29, F-56–F-58, §7 |
+
+**Tagger starting lists [EXTRAPOLATED, Amit to confirm]:**
+- Life areas: school, work, health, family, money, home, social, creative, admin.
+- States: overwhelmed, avoiding, low energy, focused, frustrated, anxious, calm, motivated.
+- Lanes are not a fixed list: they are the user's own projects and goals.
 
 ## 11. Ideas to ask me about later (Claude's own — NOT in scope)
 
@@ -316,6 +357,7 @@ Channels: web PWA first (MVP), then APK + TestFlight (Gen 1), then the stores (V
 - DeepInfra embeddings catalogue; Graphify, Understand Anything and Hindsight READMEs (read 5 Oct)
 - Deepgram changelog, models-and-languages page and token-auth guide; NVIDIA Nemotron Voicechat model card; DeepInfra DeepSeek V4.1 Flash and Chatterbox pages (read 5 Oct)
 - Amit's interview, 5 Oct 2026
+- **(21 Oct)** Amit's chat of 21 Oct 2026 (tagger, crisis ladder, models, subagents); Amit's decisions of 5–17 Oct from his memory notes; DeepInfra GLM-5.3-Flash page and Together GLM-5.3-Flash page (read 21 Oct); DeepInfra `Qwen/Qwen3-Reranker-8B` API page; Groq `openai/gpt-oss-safeguard-20b` model page; OpenAI "Introducing gpt-oss-safeguard"
 
 
 ---
