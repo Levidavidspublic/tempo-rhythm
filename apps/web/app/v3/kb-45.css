@@ -72,9 +72,10 @@
   width: 100%;
 }
 
-.kb45-signup[data-variant="modal"] .kb45-privacy,
-.kb45-signup[data-variant="modal"] .kb45-privacy a {
-  color: var(--tp-on-accent);
+.kb45-signup[data-variant="modal"] .kb45-privacy {
+  padding: var(--tp-space-2) var(--tp-space-3);
+  border-radius: var(--tp-radius-md);
+  background: var(--tp-paper);
 }
 
 .kb45-gallery {

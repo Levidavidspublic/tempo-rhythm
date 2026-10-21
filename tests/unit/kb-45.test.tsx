@@ -1,11 +1,12 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createElement, type ReactElement } from "../../apps/web/node_modules/react";
 import { renderToStaticMarkup } from "../../apps/web/node_modules/react-dom/server";
 import { chromium } from "@playwright/test";
+import postcss from "../../apps/web/node_modules/postcss";
+import tailwindcss from "../../apps/web/node_modules/@tailwindcss/postcss/dist/index.js";
 import { en, he, kb45t } from "../../apps/web/lib/i18n-groups/kb-45";
 import { Kb45Gallery, SignUpPrivacyLine, SignUpStatus } from "../../apps/web/components/auth/SignUpForm";
 
@@ -79,15 +80,17 @@ afterAll(async () => {
   if (directory) await rm(directory, { recursive: true, force: true });
 }, 30_000);
 
-test("hydrated gallery uses real sign-up form for validation, pending, retry, Hebrew links, and 44 px controls", async () => {
-  directory = await mkdtemp(join(tmpdir(), "tempo-kb45-"));
+test("hydrated gallery and mounted modal preserve validation, retry, Hebrew links, contrast, and 44 px controls", async () => {
+  const work = join(repo, "work");
+  await mkdir(work, { recursive: true });
+  directory = await mkdtemp(join(work, "tempo-kb45-"));
   const entry = join(directory, "entry.tsx");
   const authStub = join(directory, "auth-stub.ts");
   const linkStub = join(directory, "link-stub.ts");
   const reactPath = join(repo, "apps/web/node_modules/react");
   await writeFile(authStub, `export function useAuthActions() { return { signIn: async (_provider: string, args: { email: string }) => { (window as any).__kb45Emails.push(args.email); const mode = (window as any).__kb45Mode; if (mode === "pending") await new Promise(() => {}); if (mode === "error") throw new Error("send failed"); } }; }`);
   await writeFile(linkStub, `import React from ${JSON.stringify(reactPath)}; export default function Link({href,children,...rest}: any) { return React.createElement("a", {href: typeof href === "string" ? href : href.pathname, ...rest}, children); }`);
-  await writeFile(entry, `import React from ${JSON.stringify(reactPath)}; import {createRoot} from ${JSON.stringify(join(repo, "apps/web/node_modules/react-dom/client"))}; import {LocaleProvider} from ${JSON.stringify(join(repo, "apps/web/components/providers/LocaleProvider.tsx"))}; import {Kb45Gallery,SignUpForm} from ${JSON.stringify(join(repo, "apps/web/components/auth/SignUpForm.tsx"))}; function ProductionMount(){return React.createElement("main",{className:"tp-auth",id:"main",lang:"en",dir:"ltr"},React.createElement(SignUpForm,{variant:"page",nextPath:"/today"}));} const view=new URLSearchParams(location.search).get("mount")==="production"?React.createElement(ProductionMount):React.createElement(Kb45Gallery);createRoot(document.getElementById("root")!).render(React.createElement(LocaleProvider,null,view));`);
+  await writeFile(entry, `import React from ${JSON.stringify(reactPath)}; import {createRoot} from ${JSON.stringify(join(repo, "apps/web/node_modules/react-dom/client"))}; import {LocaleProvider} from ${JSON.stringify(join(repo, "apps/web/components/providers/LocaleProvider.tsx"))}; import {Kb45Gallery,SignUpForm} from ${JSON.stringify(join(repo, "apps/web/components/auth/SignUpForm.tsx"))}; import SignUpModal from ${JSON.stringify(join(repo, "apps/web/components/SignUpModal.tsx"))}; function ProductionMount(){return React.createElement("main",{className:"tp-auth",id:"main",lang:"en",dir:"ltr"},React.createElement(SignUpForm,{variant:"page",nextPath:"/today"}));} const mount=new URLSearchParams(location.search).get("mount");const view=mount==="modal"?React.createElement(SignUpModal,{open:true,onOpenChange(){}}):mount==="production"?React.createElement(ProductionMount):React.createElement(Kb45Gallery);createRoot(document.getElementById("root")!).render(React.createElement(LocaleProvider,null,view));`);
   const bundle = await Bun.build({
     entrypoints: [entry], target: "browser", outdir: directory, minify: false,
     plugins: [{ name: "kb45-fixture-stubs", setup(build) {
@@ -98,6 +101,12 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
   if (!bundle.success) throw new Error(`KB-45 fixture failed to build: ${bundle.logs.map(String).join(" | ")}`);
   const assets = new Map<string, Uint8Array>();
   for (const output of bundle.outputs) assets.set(`/${output.path.split("/").at(-1)}`, new Uint8Array(await output.arrayBuffer()));
+  // Compile only the existing modal's utility classes, without app routes or a Next build.
+  const modalUtilities = await postcss([tailwindcss()]).process(
+    '@import "tailwindcss" source(none); @source "./components/SignUpModal.tsx"; @source "./components/auth/SignInForm.tsx"; @source "./components/ui/dialog.tsx";',
+    { from: join(repo, "apps/web/kb45-fixture.css") },
+  );
+  assets.set("/modal-utilities.css", new TextEncoder().encode(modalUtilities.css));
   for (const [url, file] of [
     ["/tokens.css", "docs/design/v3/tokens.css"],
     ["/tempo.css", "docs/design/v3/tempo.css"],
@@ -115,6 +124,7 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
   const browserPath = [chromium.executablePath(), "/usr/bin/chromium", "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable"].find(existsSync);
   if (!browserPath) throw new Error("KB-45 browser fixture needs Playwright Chromium or an installed chromium/google-chrome binary");
   browser = await chromium.launch({ executablePath: browserPath, headless: true, args: ["--no-sandbox"] });
+  const modalContrasts: number[] = [];
   for (const lang of ["en", "he"] as const) for (const width of [390, 1280]) {
     const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
     const errors: string[] = [];
@@ -127,6 +137,8 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
     expect(await page.locator("main").getAttribute("dir")).toBe(lang === "he" ? "rtl" : "ltr");
     expect(await page.locator('[data-component="SignUpStatus"]').count()).toBe(1);
     expect(await page.locator('[data-component="SignUpPrivacyLine"]').count()).toBe(1);
+    expect(await page.locator(".kb45-gallery__status").getAttribute("aria-atomic")).toBe("true");
+    expect(await page.locator(".kb45-gallery__status").getAttribute("aria-live")).toBe("polite");
     expect(await page.locator('.kb45-privacy a[href="/terms"]').count()).toBe(1);
     expect(await page.locator('.kb45-privacy a[href="/privacy"]').count()).toBe(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -159,7 +171,8 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
     expect(await page.locator('#sign-up-email').inputValue()).toBe("dana@example.com");
     await page.evaluate(() => { (window as any).__kb45Mode = "ok"; });
     await page.locator('form button[type="submit"]').click();
-    await page.getByRole("heading", { name: "Check your email" }).waitFor();
+    await page.locator(".tp-auth-card strong").filter({ hasText: "dana@example.com" }).waitFor();
+    expect(await page.locator('form button[type="submit"]').count()).toBe(0);
     expect(await page.evaluate(() => (window as any).__kb45Emails)).toEqual(["dana@example.com", "dana@example.com"]);
     for (const [phase, key] of [
       ["empty", "signup.gallery.emptyText"], ["loading", "signup.gallery.loadingText"],
@@ -177,6 +190,15 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
     await page.getByRole("button", { name: kb45t(lang, "signup.gallery.retry") }).first().click();
     expect(await page.locator('.kb45-gallery__status [data-phase="error"]').count()).toBe(0);
     await page.waitForFunction(() => document.activeElement?.getAttribute("aria-pressed") === "false");
+    await page.getByRole("button", { name: kb45t(lang, "signup.gallery.error") }).click();
+    const loadingChoice = page.getByRole("button", { name: kb45t(lang, "signup.gallery.loading"), exact: true });
+    await loadingChoice.evaluate((choice) => {
+      const retry = document.querySelector<HTMLButtonElement>(".kb45-gallery__retry")!;
+      retry.addEventListener("click", () => { (choice as HTMLButtonElement).focus(); }, { once: true });
+      retry.click();
+    });
+    await page.waitForFunction(() => !document.querySelector('.kb45-gallery__status [data-phase="error"]'));
+    expect(await loadingChoice.evaluate((node) => document.activeElement === node)).toBe(true);
     const lightPaper = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--tp-paper"));
     await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
     const darkPaper = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--tp-paper"));
@@ -191,5 +213,40 @@ test("hydrated gallery uses real sign-up form for validation, pending, retry, He
     }
     expect(errors).toEqual([]);
     await page.close();
+    const modal = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+    await modal.goto(`http://127.0.0.1:${server.port}/?lang=${lang}&mount=modal`);
+    await modal.locator(`.kb45-signup[data-variant="modal"][lang="${lang}"]`).waitFor();
+    for (const theme of ["light", "dark"]) {
+      await modal.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+      if (capture) await modal.screenshot({ path: join(capture, `modal-${lang}-${width}-${theme}.png`), fullPage: true });
+      const ratios = await modal.locator(".kb45-privacy").evaluate((privacy) => {
+        const luminance = (color: string) => {
+          const channels = color.match(/[\d.]+/g)!.slice(0, 3).map(Number).map((value) => {
+            const channel = value / 255;
+            return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+          return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+        };
+        // The caller's fixed gray-800 is the brightest point behind the old transparent line.
+        const background = getComputedStyle(privacy).backgroundColor;
+        const backdrop = background === "rgba(0, 0, 0, 0)" ? "rgb(31, 41, 55)" : background;
+        return [privacy, ...privacy.querySelectorAll("a")].map((node) => {
+          const values = [luminance(getComputedStyle(node).color), luminance(backdrop)].sort((a, b) => a - b);
+          return (values[1] + 0.05) / (values[0] + 0.05);
+        });
+      });
+      modalContrasts.push(...ratios);
+      expect(await modal.locator(".kb45-privacy a").count()).toBe(2);
+      for (const link of await modal.locator(".kb45-privacy a").all()) {
+        await link.focus();
+        expect(await link.evaluate((node) => document.activeElement === node)).toBe(true);
+        expect(await link.evaluate((node) => getComputedStyle(node).outlineStyle)).toBe("solid");
+        expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        expect((await link.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+      }
+      expect(await modal.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    }
+    await modal.close();
   }
+  for (const ratio of modalContrasts) expect(ratio).toBeGreaterThanOrEqual(4.5);
 }, 240_000);

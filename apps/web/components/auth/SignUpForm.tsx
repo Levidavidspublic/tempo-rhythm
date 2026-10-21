@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { PRIVACY_URL, TERMS_URL } from "@/config/appConfig";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { kb45t, type Kb45Lang } from "@/lib/i18n-groups/kb-45";
@@ -119,6 +119,14 @@ export function Kb45Gallery() {
   const { lang } = useLocale();
   const [phase, setPhase] = useState<SignUpStatusPhase>("overview");
   const errorControl = useRef<HTMLButtonElement>(null);
+  const retryFocusPending = useRef(false);
+  useEffect(() => {
+    if (!retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (phase === "overview" && document.activeElement === document.body) {
+      errorControl.current?.focus();
+    }
+  }, [phase]);
   const choices: readonly { phase: SignUpStatusPhase; label: Parameters<typeof kb45t>[1] }[] = [
     { phase: "overview", label: "signup.gallery.default" },
     { phase: "empty", label: "signup.gallery.empty" },
@@ -146,12 +154,12 @@ export function Kb45Gallery() {
         ))}
       </fieldset>
       <SignUpForm variant="page" nextPath="/today" />
-      <div className="kb45-gallery__status">
+      <div className="kb45-gallery__status" aria-live="polite" aria-atomic="true">
         {phase === "overview" ? null : (
           <SignUpStatus
             lang={lang}
             phase={phase}
-            onRetry={() => { setPhase("overview"); requestAnimationFrame(() => errorControl.current?.focus()); }}
+            onRetry={() => { retryFocusPending.current = true; setPhase("overview"); }}
           />
         )}
       </div>
