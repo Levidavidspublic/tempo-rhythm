@@ -1,0 +1,34 @@
+# Landing hero entrance evidence
+
+WALK — Ticket #1206, `TEMPO-FEATURE-HERO`, Lane 2. Baseline: integration `39b564ec329705587df5262ed5a061bbec9a1e8f`.
+
+The existing public landing hero enters once using the existing slow-duration, easing and spacing tokens. With reduced motion, no entrance animation is applied. Copy, final geometry, routes, controls and provider behavior are unchanged. No language strings, dependencies or environment settings were added.
+
+## Browser proof
+
+Real local Next.js `/` route, signed out, placeholder Convex URL, no live account or model call. Before screenshots were captured before importing the new stylesheet or adding hero classes. The initial cold-compile navigation exceeded the capture helper's 30-second timeout; after the route returned HTTP 200, the four baseline captures completed. This was a capture warm-up failure, not a passing test.
+
+| Capture | English | Hebrew |
+|---|---|---|
+| Before, 390 × 844 | [image](before-390-en-light.png) | [image](before-390-he-light.png) |
+| Before, 1280 × 844 | [image](before-1280-en-light.png) | [image](before-1280-he-light.png) |
+| After, 390 × 844 | [image](after-390-en-light.png) | [image](after-390-he-light.png) |
+| After, 1280 × 844 | [image](after-1280-en-light.png) | [image](after-1280-he-light.png) |
+
+The focused test covers 390 and 1280 widths, English and Hebrew, default and reduced motion, one main and h1, correct RTL, one finite entrance, unchanged settled position, no horizontal overflow, keyboard focus and phone-sized hero controls. All data shown is the existing fictional public demo; no account data was used.
+
+First focused candidate: 4 passed / 4 failed, authoritative exit 1. Chromium serialized the completed transform as an identity matrix rather than the string `none`. The correction checks `DOMMatrix.isIdentity`, preserving the intended no-displacement assertion and all cases/deadlines. [Original failure log](focused-first.log).
+
+Second focused candidate: 7 passed / 1 failed, authoritative exit 1 (3.0 minutes). The 390-pixel Hebrew reduced-motion case reached and passed the keyboard-focus assertion, then exhausted its unchanged 30-second overall deadline during the focus-style read. [Second-run log](focused-second.log). The third candidate starts from the adjacent preceding navigation control, uses a real Tab key into the hero and preserves every focus, outline, target-size and geometry assertion. No test is skipped and no deadline increased.
+
+Third focused candidate: **8 passed / 0 failed**, authoritative exit 0 (1.7 minutes). The test also waits for the rendered landing root to commit the chosen locale before measuring geometry. [Final log](focused-final.log).
+
+After images are from the four passing normal-motion cases in this final run. The visible focus ring is intentional keyboard evidence.
+
+## Validation status
+
+- Bun: 1.3.9.
+- `git diff --check`: passed.
+- `bunx playwright test tests/e2e/landing-motion.spec.ts --reporter=line --workers=1`: 8 passed / 0 failed (1.7 minutes), exit 0; existing Chromium cache, no browser download. All original eight cases and 30-second deadlines retained.
+- Mandatory lint/typecheck/test/scans/E2E/build: pending the lead's serialized gate. No all-green claim.
+- Preview deployment and authenticated product behavior: UNKNOWN; this evidence is local public-route proof only.

@@ -1,0 +1,56 @@
+
+Running 8 tests using 1 worker
+
+(node:160661) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en no-preference
+[2/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en reduce
+[3/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he no-preference
+[4/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he reduce
+  1) [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he reduce ───────────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.evaluate: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.tempo-hero').locator('a[href="/sign-up"]').first()
+        - locator resolved to visible <a href="/sign-up" class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3.5 text-small font-medium text-primary-foreground hover:brightness-105">הצטרפות לבטא</a>
+
+
+      53 |         }
+      54 |         await expect(action).toBeFocused();
+    > 55 |         const focus = await action.evaluate((element) => {
+         |                                    ^
+      56 |           const style = getComputedStyle(element);
+      57 |           const rect = element.getBoundingClientRect();
+      58 |           return { visible: element.matches(":focus-visible"), outline: style.outlineStyle, width: Number.parseFloat(style.outlineWidth), height: rect.height, targetWidth: rect.width };
+        at /workspace/work/lane2-features/tests/e2e/landing-motion.spec.ts:55:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-390-he-reduce-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/landing-motion-landing-hero-390-he-reduce-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/landing-motion-landing-hero-390-he-reduce-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/landing-motion-landing-hero-390-he-reduce-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:161037) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[5/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en no-preference
+[6/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en reduce
+[7/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he no-preference
+[8/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he reduce
+  1 failed
+    [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he reduce ────────────────
+  7 passed (3.0m)
