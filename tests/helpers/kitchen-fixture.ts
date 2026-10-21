@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { constants } from "node:os";
 
@@ -49,7 +50,7 @@ while True:
     if pid:
         if pid == child.pid:
             main_status = os.waitstatus_to_exitcode(status)
-            print("KITCHEN_CHILD_EXIT=" + json.dumps({"token":token,"code":main_status}), file=sys.stderr, flush=True)
+            print("\nKITCHEN_CHILD_EXIT=" + json.dumps({"token":token,"code":main_status}), file=sys.stderr, flush=True)
             cancel(signal.SIGTERM, None)
         continue
 signal.setitimer(signal.ITIMER_REAL, 0)
@@ -125,6 +126,16 @@ export function fixtureCleanup(resources: Record<string, () => unknown>, timeout
 }
 
 type ProcessIdentity = { pid: number; start: string };
+function linuxIdentity(pid: number): (ProcessIdentity & { state: string; parent: number }) | null {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/);
+    return { pid, start: fields[19], state: fields[0], parent: Number(fields[1]) };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
 async function identity(pid: number): Promise<ProcessIdentity | null> {
   try {
     const stat = await readFile(`/proc/${pid}/stat`, "utf8");
@@ -156,7 +167,7 @@ function signalProcess(pid: number, signal: NodeJS.Signals): void {
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error; }
 }
 
-/** Node's OS exit event is authoritative; pipe EOF and printed pass records never imply success. */
+/** OS exit events or an owned waitpid result are authoritative; EOF and printed passes never are. */
 export async function runIsolatedFixture(options: FixtureOptions): Promise<FixtureRun> {
   if (!(options.timeoutMs > 0) || !(options.cleanupMs > 0)) throw new Error("Fixture deadlines must be positive");
   options.signal?.throwIfAborted();
@@ -168,7 +179,11 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
     detached: process.platform !== "win32", stdio: ["ignore", "pipe", "pipe"],
   });
   const result: FixtureRun = { pid: child.pid ?? 0, code: null, signal: null, out: "", err: "", timedOut: false, cancelled: false, cleanupErrors: [], outputTruncated: false };
+  const spawnedIdentity = supervised && result.pid > 0 ? linuxIdentity(result.pid) : null;
   let exited = false;
+  let checkingExit = false;
+  let interruptedSignal: "SIGINT" | "SIGTERM" | undefined;
+  const drained = new Set<string>();
   let supervisorSignal: NodeJS.Signals | null = null;
   let receipt = "";
   let receiptCount = 0;
@@ -176,9 +191,11 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
   let forceTimer: ReturnType<typeof setTimeout> | undefined;
   const owned: ProcessIdentity[] = [];
   const recordError = (error: unknown) => result.cleanupErrors.push(error);
-  const exit = new Promise<void>((resolve, reject) => {
-    child.once("error", reject);
-    child.once("exit", (code, signal) => {
+  let resolveExit!: () => void;
+  let resolveClosed!: () => void;
+  const finishDrain = () => { if (exited && drained.size === 2) resolveClosed(); };
+  const recordExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      if (exited) return;
       exited = true;
       if (supervised) {
         result.supervisorCode = code;
@@ -188,10 +205,49 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
         result.signal = signal;
       }
       fixturePhase(`exit pid=${result.pid} code=${code} signal=${signal ?? "none"}`);
-      resolve();
-    });
+      resolveExit();
+      finishDrain();
+  };
+  const exit = new Promise<void>((resolve, reject) => {
+    resolveExit = resolve;
+    child.once("error", reject);
+    child.once("exit", recordExit);
   });
-  const closed = new Promise<void>((resolve) => child.once("close", () => resolve()));
+  const closed = new Promise<void>((resolve) => {
+    resolveClosed = resolve;
+    child.once("close", () => resolve());
+  });
+  // Bun can leave an owned zombie without delivering its ChildProcess exit event.
+  // EOF/SIGCHLD trigger an OS wait; neither EOF, /proc nor the fixture receipt is
+  // accepted as exit evidence. A matching waitpid return both proves and reaps it.
+  const observeOsExit = async () => {
+    if (!spawnedIdentity || exited || checkingExit) return;
+    checkingExit = true;
+    const stillOwnedZombie = () => {
+      const current = linuxIdentity(result.pid);
+      return current?.parent === process.pid && current.start === spawnedIdentity.start && current.state === "Z";
+    };
+    try {
+      if (!stillOwnedZombie()) return;
+      const { dlopen, ptr } = await import("bun:ffi");
+      if (exited || !stillOwnedZombie()) return;
+      const libc = dlopen("libc.so.6", { waitpid: { args: ["i32", "ptr", "i32"], returns: "i32" } });
+      try {
+        const status = new Int32Array(1);
+        const reaped = libc.symbols.waitpid(result.pid, ptr(status), 1);
+        if (reaped === result.pid) {
+          const signum = status[0] & 0x7f;
+          const signal = signum ? Object.entries(constants.signals).find(([, value]) => value === signum)?.[0] as NodeJS.Signals : null;
+          fixturePhase(`waitpid reaped owned supervisor pid=${reaped} status=${status[0]}`);
+          recordExit(signum ? null : (status[0] >>> 8) & 0xff, signal);
+          child.unref();
+        }
+        // Zero means still running; ECHILD can mean Bun won the reap race. In
+        // either case its event or another real signal must supply the status.
+      } finally { libc.close(); }
+    } catch (error) { recordError(error); }
+    finally { checkingExit = false; }
+  };
   for (const [name, stream] of [["stdout", child.stdout], ["stderr", child.stderr]] as const) {
     stream.setEncoding("utf8");
     stream.on("data", (chunk: string) => {
@@ -228,7 +284,10 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
       try { options.onOutput?.(name, chunk); } catch (error) { recordError(error); void stop(); }
     });
     stream.on("end", () => {
+      drained.add(name);
       fixturePhase(`${name} EOF pid=${result.pid} exit-observed=${exited}`);
+      finishDrain();
+      void observeOsExit();
       if (!exited && process.platform === "linux") {
         void Promise.all([readFile(`/proc/${result.pid}/stat`, "utf8"), readFile(`/proc/${result.pid}/wchan`, "utf8")])
           .then(([stat, wchan]) => fixturePhase(`EOF OS pid=${result.pid} stat=${stat.trim()} wchan=${wchan.trim()}`))
@@ -258,11 +317,19 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
     await killOwned();
   })();
   const abort = () => { result.cancelled = true; void stop(); };
-  const parentSignal = () => { result.cancelled = true; void stop(); };
+  const parentSignal = (signal: "SIGINT" | "SIGTERM") => {
+    interruptedSignal ??= signal;
+    result.cancelled = true;
+    void stop();
+  };
+  const onInterrupt = () => parentSignal("SIGINT");
+  const onTerminate = () => parentSignal("SIGTERM");
+  const onChildSignal = () => { void observeOsExit(); };
   options.signal?.addEventListener("abort", abort, { once: true });
   if (options.signal?.aborted) abort();
-  process.on("SIGINT", parentSignal);
-  process.on("SIGTERM", parentSignal);
+  process.on("SIGINT", onInterrupt);
+  process.on("SIGTERM", onTerminate);
+  if (supervised) process.on("SIGCHLD", onChildSignal);
   const timer = setTimeout(() => { result.timedOut = true; void stop(); }, options.timeoutMs);
   fixturePhase(`start pid=${result.pid}`);
   try {
@@ -281,12 +348,14 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
     clearTimeout(timer);
     clearTimeout(forceTimer);
     options.signal?.removeEventListener("abort", abort);
-    process.off("SIGINT", parentSignal);
-    process.off("SIGTERM", parentSignal);
+    process.off("SIGINT", onInterrupt);
+    process.off("SIGTERM", onTerminate);
+    if (supervised) process.off("SIGCHLD", onChildSignal);
     // Kill any owned process group even after a successful direct child exit.
     await killOwned();
     child.stdout.destroy();
     child.stderr.destroy();
+    if (interruptedSignal && process.listenerCount(interruptedSignal) === 0) process.kill(process.pid, interruptedSignal);
   }
   return result;
 }
