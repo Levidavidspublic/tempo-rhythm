@@ -1,6 +1,6 @@
 # Shared Kitchen fixture harness
 
-PR open — the shared harness has 15 passing focused cases; worker adoption and hosted verification are still required. No existing fixture, case, assertion, timeout or deadline changes in this ticket.
+PR open — the shared harness has 18 passing focused cases; worker adoption and hosted verification are still required. No existing fixture, case, assertion, timeout or deadline changes in this ticket.
 
 Date: 2026-10-21. Role: WORKHORSE. Ticket: TEMPO-KB-HARNESS, #1202. Tracking: planning PR #1140.
 
@@ -35,8 +35,8 @@ Bun 1.3.9. The official Bun release download returned 403; the same version was 
 | Focused test, importer-relative resolver | 10 pass / 0 fail |
 | Focused test, initial Linux supervisor | 8 pass / 4 fail / 1 error; empty task-children listing prevented cleanup |
 | Focused test, stat-parent enumeration | PASS; 12 pass / 0 fail, 37 assertions, 3.03 s |
-| Final signal-based supervisor plus nested-runner proof | PASS on `511065b`; 13 pass / 0 fail, 43 assertions, 2.50 s; installed browser discovered without an environment override |
-| Scoped TypeScript compile | PASS on final implementation source `511065b` |
+| Earlier signal-based supervisor plus nested-runner proof | PASS on `511065b`; 13 pass / 0 fail, 43 assertions, 2.50 s; installed browser discovered without an environment override |
+| Scoped TypeScript compile | PASS on earlier implementation source `511065b` |
 | `bun run test` | INCOMPLETE on `c5fd530`: observed 1534 pass lines / 1 fail / 3 todo before cancellation, exit 143; unchanged KB-66 cached child promise exceeded 240000 ms |
 | Four scans/notices | PASS: forbidden-tech, RAM-only audit, design-tokens and notices |
 | `CI=1 bunx playwright test --reporter=line` | UNKNOWN infrastructure: 1 pass / 28 fail / 88 skip; required bundled browser absent; lead independently verified Chromium CDN 403. No config or skips changed |
@@ -48,7 +48,7 @@ Before versus after counts above are controlled harness tests, not a claim that 
 
 ## Full-suite limitation and failure tails
 
-The full local run loaded the helper tests from `c5fd530` and passed all 12. It also passed every KB-64 case. It then reached unchanged KB-66 and timed out its first case at 240017.58 ms while awaiting its cached child promise. The run was cancelled before repeating that same pending lifecycle for later cases. At cancellation, a `/proc` stat-parent inventory found no descendant under the test runner. This supports an exit-delivery stall hypothesis; it does not prove a browser or product defect. The remaining suite has no authoritative final totals and is UNKNOWN. The final shared implementation subsequently passed its expanded 13-case focused proof. Hosted CI and worker migrations remain the integration gate.
+The full local run loaded the helper tests from `c5fd530` and passed all 12. It also passed every KB-64 case. It then reached unchanged KB-66 and timed out its first case at 240017.58 ms while awaiting its cached child promise. The run was cancelled before repeating that same pending lifecycle for later cases. At cancellation, a `/proc` stat-parent inventory found no descendant under the test runner. This supports an exit-delivery stall hypothesis; it does not prove a browser or product defect. The remaining suite has no authoritative final totals and is UNKNOWN. The subsequent `511065b` implementation passed its then-expanded 13-case focused proof; later review corrections below expand coverage to 18 cases. Hosted CI and worker migrations remain the integration gate.
 
 Full test final 20 lines:
 
@@ -107,3 +107,20 @@ Fixed — the runner now records the OS exit immediately but validates the token
 Fixed — a failed spawn has no owned PID. Cancellation returns without signaling it, and the signal helper refuses zero/noninteger process IDs. A controlled child runs with a nonexistent executable search path, verifies the spawn error remains a failure, and proves its caller survives; no caller process group is signaled.
 
 The first added delayed-drain regression captured a live import binding that its own mock replaced, causing recursion: **14 pass / 1 fail**, 44 assertions. That scaffolding failure is retained. Capturing the native spawn function before installing the isolated mock completed the same authorized review correction. The corrected proof is **15 pass / 0 fail**, 45 assertions, 2.96 seconds. Every previous case, assertion and timeout remains. The current full hosted run remains required; earlier local full-suite and E2E limitations above remain unchanged.
+
+
+## Hosted exit-delivery fault and scoped OS recovery
+
+Fixed locally — the original 15 cases and assertions remain; three additional fault cases now pass. Final focused validation: **18 passed / 0 failed, 53 assertions, 4.33 seconds**, exit 0. Scoped helper/test TypeScript compilation passed. No existing deadline was increased, including the delayed-drain case's 5000 ms deadline.
+
+Hosted receipts before this correction remain failures. Shared source `4d30965` completed with 3487 passed, 1 failed and 3 todos across 3491 tests / 212 files in 729.37 seconds. Its sole failure was unchanged KB-61's 480028.61 ms hook timeout. A consumer run on KB-03 with the same helper completed with 3522 passed, 1 failed and 3 todos in 291.66 seconds: the shared delayed-drain regression timed out at 5002.98 ms.
+
+The KB-03 job log (job 119437017848) shows the inner delayed receipt was accepted after its real OS exit and pipe drain. The outer Python supervisor then printed its own receipt and reaped-descendants marker, both pipes ended, and its `/proc` state was zombie, but Bun never delivered the outer ChildProcess exit event before the unchanged test deadline. This observed outer exit-delivery failure is distinct from the deliberately delayed inner stderr; the original regression remains unchanged.
+
+On Linux, EOF and SIGCHLD now trigger a nonblocking `waitpid` for only that invocation's direct supervisor. Its captured process start identity and current parent must still match before calling libc through Bun's built-in FFI. Only a matching `waitpid` return supplies authoritative wait status and proves reaping; `/proc`, EOF and printed receipts never imply success. If Bun wins the reaping race, its normal event remains authoritative. Completion also requires both streams to drain before receipt validation. This Linux path requires the existing glibc runtime (`libc.so.6`) used by Ubuntu CI; no package or configuration was added.
+
+The added fault proof creates a real direct child through POSIX spawn inside a fresh fixture process, deliberately omitting Bun's process watcher and all synthetic exit/close events. The runner must recover actual OS status, retain the fixture's exit 23 as failure, drain both channels and leave no supervisor PID. The preliminary OS probe returned the exact owned PID with wait status 5888 (exit 23). The full controlled case passed in 184.66 ms. No fixed readiness sleep is used.
+
+The supervisor receipt now begins with a newline so a fixture's unfinished stderr line cannot swallow it. A separate controlled case preserves such stderr and accepts exactly one authoritative receipt. Parent SIGINT/SIGTERM is recorded and re-raised after cleanup if no remaining listener owns that signal; a controlled case proves both default termination and survival when another listener explicitly owns it. The transition helper computes its remaining budget after the Playwright import. Earlier 13-case receipts are labeled as historical rather than final.
+
+Hosted checks on this correction remain required. The earlier 14/1 mock-binding scaffolding failure, local incomplete full run, and earlier missing-browser E2E receipt remain in the ledger above. The later KB-05 consumer run with helper `4d30965` passed all 15 shared cases and all 13 consumer cases locally, and its runtime-repaired E2E passed 28 tests with 89 expected skips; that is separate consumer evidence, not a replacement for the shared PR's current-head CI.
