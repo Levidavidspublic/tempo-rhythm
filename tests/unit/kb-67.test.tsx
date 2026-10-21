@@ -1,18 +1,111 @@
-import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test as unitTest } from "bun:test";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { chromium, expect as pwExpect, type Browser, type Page } from "@playwright/test";
+import type { Browser, Page } from "@playwright/test";
 import { en, he, kb67t } from "../../apps/web/lib/i18n-groups/kb-67";
 
-const root = process.cwd();
+const root = join(import.meta.dir, "../..");
 const web = join(root, "apps/web");
-const temp = join(root, "work/kb67-fixture");
+const fixtureChild = process.env.KB67_FIXTURE_CHILD === "1";
+const resultMarker = "KB67_FIXTURE_RESULTS=";
+const runToken = fixtureChild ? process.env.KB67_FIXTURE_TOKEN! : crypto.randomUUID();
+type CaseResult = { pass: true } | { pass: false; error: string };
+type FixtureResults = { token: string; cases: Record<string, CaseResult>; cleanupComplete: boolean };
+type ChildRun = { code: number; out: string; err: string };
+const caseResults: Record<string, CaseResult> = {};
+const caseNames: string[] = [];
+let cleanupComplete = false;
+let temp = "";
 setDefaultTimeout(60_000);
-let browser: Browser;
-let server: ReturnType<typeof Bun.serve>;
+let browser: Browser | undefined;
+let server: ReturnType<typeof Bun.serve> | undefined;
 let beforeJs: string | null = null;
 let beforeCss = "";
+// Build, server, Playwright and production imports belong to a clean process, outside suite mocks.
+const { chromium, expect: pwExpect } = fixtureChild
+  ? await import("@playwright/test")
+  : {} as typeof import("@playwright/test");
+
+async function releaseFixture(
+  stopServer: () => unknown,
+  closeBrowser: () => unknown,
+  removeDirectory: () => unknown
+): Promise<void> {
+  // Start every release independently: a stuck/rejected browser close cannot block server/temp cleanup.
+  const releases = await Promise.allSettled(
+    [stopServer, closeBrowser, removeDirectory].map((release) => Promise.resolve().then(release))
+  );
+  const errors = releases.flatMap((release) => release.status === "rejected" ? [release.reason] : []);
+  if (errors.length) throw new AggregateError(errors, "KB-67 fixture cleanup failed");
+}
+
+function resultsFrom(run: ChildRun, token: string): FixtureResults {
+  const records = run.out.split("\n").filter((line) => line.startsWith(resultMarker));
+  if (records.length !== 1) throw new Error(`KB-67 child returned ${records.length} result records`);
+  const results = JSON.parse(records[0].slice(resultMarker.length)) as FixtureResults;
+  if (results.token !== token) throw new Error("KB-67 child returned results from another invocation");
+  return results;
+}
+
+function passedByRunner(run: ChildRun, name: string): boolean {
+  const title = ` > ${name}`;
+  return run.err.replace(/\u001b\[[0-9;]*m/g, "").split("\n").some((line) =>
+    line.startsWith("(pass) ") && (line.endsWith(title) || line.includes(`${title} [`))
+  );
+}
+
+function requireSuccessfulExit(run: ChildRun, results: FixtureResults, names: string[]): void {
+  if (run.code !== 0) throw new Error(`KB-67 isolated fixture exited ${run.code}:\n${run.err.slice(-12000)}`);
+  if (!results.cleanupComplete) throw new Error("KB-67 child exited without completing cleanup");
+  expect(Object.keys(results.cases).sort()).toEqual([...names].sort());
+  for (const name of names) {
+    expect(results.cases[name]).toEqual({ pass: true });
+    expect(passedByRunner(run, name)).toBe(true);
+  }
+}
+
+// Original deadlines remain authoritative inside Bun's child runner. Awaiting it at module load
+// adds no larger aggregate deadline and does not turn a failed hook into a successful fixture.
+let childRun: ChildRun | undefined;
+let childResults: FixtureResults | undefined;
+let resultError: unknown;
+if (!fixtureChild) {
+  const child = Bun.spawn([process.execPath, "test", import.meta.path], {
+    cwd: root,
+    env: { ...process.env, KB67_FIXTURE_CHILD: "1", KB67_FIXTURE_TOKEN: runToken },
+    stdout: "pipe", stderr: "pipe",
+  });
+  const [out, err, code] = await Promise.all([
+    new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+  ]);
+  childRun = { code, out, err };
+  try { childResults = resultsFrom(childRun, runToken); } catch (error) { resultError = error; }
+  console.info(`KB-67 isolated child exit ${code}; ${Object.keys(childResults?.cases ?? {}).length} named results; cleanup ${childResults?.cleanupComplete ?? false}`);
+  console.info(`KB-67 child assertion summary:\n${err.trim().split("\n").slice(-5).join("\n")}`);
+}
+
+function test(name: string, run: () => unknown | Promise<unknown>, timeout?: number): void {
+  caseNames.push(name);
+  unitTest(name, async () => {
+    if (!fixtureChild) {
+      if (resultError) throw resultError;
+      const result = childResults?.cases[name];
+      if (result?.pass === false) throw new Error(`KB-67 child case failed: ${result.error}`);
+      if (!childRun || !passedByRunner(childRun, name))
+        throw new Error(`KB-67 child runner did not pass ${name}:\n${childRun?.err.slice(-12000) ?? "missing child"}`);
+      expect(result).toEqual({ pass: true });
+      return;
+    }
+    try {
+      await run();
+      caseResults[name] = { pass: true };
+    } catch (error) {
+      caseResults[name] = { pass: false, error: error instanceof Error ? error.stack ?? error.message : String(error) };
+      throw error;
+    }
+  }, timeout);
+}
 
 const backend = `
 import { useSyncExternalStore } from "react";
@@ -89,7 +182,8 @@ function html(mode: string, lang: string): string {
   return `<!doctype html><html lang="${lang}" dir="${lang === "he" ? "rtl" : "ltr"}"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:var(--tp-ground);font-family:var(--tp-font-sans)}*{box-sizing:border-box}</style><link rel="stylesheet" href="/base.css"><link rel="stylesheet" href="/${before ? "before" : "bundle"}.css"></head><body><div id="app"></div><script>window.process={env:{NODE_ENV:"test"}}</script><script type="module" src="/${before ? "before" : "bundle"}.js"></script></body></html>`;
 }
 async function buildFixture() {
-  await mkdir(temp, { recursive: true });
+  await mkdir(join(root, "work"), { recursive: true });
+  temp = await mkdtemp(join(root, "work/kb67-fixture-"));
   await Promise.all([
     writeFile(join(temp, "backend.ts"), backend),
     writeFile(join(temp, "api.ts"), api),
@@ -218,6 +312,7 @@ async function pageFor(
   lang: "en" | "he" = "en",
   width = 390
 ): Promise<Page> {
+  if (!browser || !server) throw new Error("KB-67 fixture is not ready");
   const page = await browser.newPage({
     viewport: { width, height: 844 },
     reducedMotion: "reduce",
@@ -253,10 +348,15 @@ const select = (page: Page) => page.locator("#ng-add-nag");
 
 // Every browser case mounts the real screen or real gallery views with fictional query/action boundaries.
 describe.serial("KB-67 selected-nag phrase editing", () => {
-  beforeAll(buildFixture, 120_000);
+  beforeAll(async () => { if (fixtureChild) await buildFixture(); }, 120_000);
   afterAll(async () => {
-    await browser?.close();
-    server?.stop(true);
+    if (!fixtureChild) return;
+    await releaseFixture(
+      () => server?.stop(true),
+      () => browser?.close(),
+      () => temp ? rm(temp, { recursive: true, force: true }) : undefined
+    );
+    cleanupComplete = true;
   });
 
   test("English and Hebrew keys match and named views mount", async () => {
@@ -693,7 +793,7 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
   });
 
   test("source-derived before and mounted after evidence covers widths, locales and themes", async () => {
-    const shots = join(root, "work/kb67-captures");
+    const shots = join(temp, "captures");
     await mkdir(shots, { recursive: true });
     for (const width of [390, 1280])
       for (const lang of ["en", "he"] as const)
@@ -718,4 +818,80 @@ describe.serial("KB-67 selected-nag phrase editing", () => {
           }
         }
   }, 300_000);
+});
+
+describe.serial("KB-67 fixture lifecycle", () => {
+  if (!fixtureChild) {
+    unitTest("isolated fixture exits successfully after every named case and cleanup", () => {
+      if (resultError) throw resultError;
+      if (!childRun || !childResults) throw new Error("KB-67 child did not return results");
+      requireSuccessfulExit(childRun, childResults, caseNames);
+    });
+  }
+
+  test("pending browser close cannot delay server or directory release", async () => {
+    let finishBrowser!: () => void;
+    const pendingBrowser = new Promise<void>((resolve) => { finishBrowser = resolve; });
+    const released: string[] = [];
+    const cleanup = releaseFixture(
+      () => { released.push("server"); },
+      () => pendingBrowser,
+      () => { released.push("directory"); }
+    );
+    try {
+      await Promise.resolve();
+      expect(released).toEqual(["server", "directory"]);
+    } finally {
+      finishBrowser();
+      await cleanup;
+    }
+  });
+
+  test("browser close rejection still stops the real server and removes its unique directory", async () => {
+    await mkdir(join(root, "work"), { recursive: true });
+    const directory = await mkdtemp(join(root, "work/kb67-cleanup-regression-"));
+    const fixtureServer = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: () => new Response("KB-67 cleanup probe") });
+    const serverUrl = fixtureServer.url.href;
+    try {
+      expect(await (await fetch(serverUrl)).text()).toBe("KB-67 cleanup probe");
+      await expect(releaseFixture(
+        () => fixtureServer.stop(true),
+        () => Promise.reject(new Error("controlled browser close rejection")),
+        () => rm(directory, { recursive: true, force: true })
+      )).rejects.toThrow("KB-67 fixture cleanup failed");
+      await expect(fetch(serverUrl)).rejects.toThrow();
+      expect(existsSync(directory)).toBe(false);
+    } finally {
+      await fixtureServer.stop(true);
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  test("successful case records cannot hide a real child exit failure", async () => {
+    const token = crypto.randomUUID();
+    const results: FixtureResults = { token, cases: { completed: { pass: true } }, cleanupComplete: true };
+    const child = Bun.spawn([process.execPath, "-e", `console.log(${JSON.stringify(resultMarker + JSON.stringify(results))}); process.exit(1);`], {
+      cwd: root, stdout: "pipe", stderr: "pipe",
+    });
+    const [out, err, code] = await Promise.all([
+      new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited,
+    ]);
+    const run = { code, out, err };
+    expect(code).toBe(1);
+    expect(() => requireSuccessfulExit(run, resultsFrom(run, token), ["completed"])).toThrow("exited 1");
+    expect(() => resultsFrom(run, "different invocation")).toThrow("another invocation");
+    const successfulRun = { ...run, code: 0, err: "(pass) KB-67 controlled runner > completed [1.00ms]" };
+    expect(() => requireSuccessfulExit(successfulRun, results, ["completed"])).not.toThrow();
+    expect(() => requireSuccessfulExit({ ...successfulRun, err: "(fail) KB-67 controlled runner > completed [60000.00ms]" }, results, ["completed"]))
+      .toThrow();
+    expect(() => requireSuccessfulExit({ ...run, code: 0 }, { ...results, cleanupComplete: false }, ["completed"]))
+      .toThrow("without completing cleanup");
+    expect(() => requireSuccessfulExit({ ...run, code: 0 }, { ...results, cases: { completed: { pass: false, error: "controlled assertion failure" } } }, ["completed"]))
+      .toThrow();
+  });
+});
+
+afterAll(() => {
+  // Report actual case outcomes even on cleanup rejection; parent also requires exit 0.
+  if (fixtureChild) console.info(resultMarker + JSON.stringify({ token: runToken, cases: caseResults, cleanupComplete }));
 });
