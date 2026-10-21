@@ -20,7 +20,9 @@ In progress — The run is not finished. Shared harness #1202 precedes ticket re
 
 Shared #1202 is PR open: [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), waiting for current green CI and CodeRabbit. KB-05 adoption has started.
 
-CodeRabbit found and verified two shared-helper blockers (early receipt validation and PID-zero signaling on spawn failure). Both are fixed at4d30965 with two isolated regressions: **15/0**,45assertions,2.96s. The failed new regression scaffolding run14/1 is retained; its binding correction was part of the same scoped review pass. Current hosted checks/review are pending; no merge.
+CodeRabbit found and verified two shared-helper blockers (early receipt validation and PID-zero signaling on spawn failure). Both are fixed at4d30965 with two isolated regressions: **15/0**,45assertions,2.96s. The failed new regression scaffolding run14/1 is retained; its binding correction was part of the same scoped review pass. Current hosted Test is pending. The next CodeRabbit review found two minor corrections: deadline accounting after dynamic import and an obsolete “final” evidence label. These are being corrected; no merge.
+
+E2E runtime recovery: the exact command now uses installed Chromium 151 through its local executable cache path, with no repository/configuration change. Planning baseline **27 pass / 1 fail / 89 skip**; remaining task-view failure is retained. KB-67 separately reports **28 pass / 0 fail / 89 skip**. Neither result erases earlier launch failures or proves another source head.
 
 ## Per ticket
 
@@ -43,7 +45,7 @@ CodeRabbit found and verified two shared-helper blockers (early receipt validati
 | KB-69 | 1161 | 1164 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-66 | 1165 | [1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | PR open — corrective adapter focused child19/0 and parent19/0; full3,489pass/17fail/3todo (KB-64 browser-close baseline), scans/build pass. Final shared+own34/0 at b5a483e; hosted gates/shared merge pending; issue remains reopened. |
 | KB-70 | 1166 | 1196 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
-| KB-67 | 1169 | 1197 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
+| KB-67 | 1169 | 1197 | PR open — final shared + own 46/0 at 7095f66; E2E 28/0/89 skip. Earlier full 3457/32/3 todo includes 31 old-parser failures and KB-61 timeout. Shared dependency, full-suite and current CI/review block merge. |
 | KB-73 | 1170 | 1173 | Merged previously; retained. |
 | KB-74 | 1171 | 1200 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |
 | KB-71 | 1175 | 1177 | PR open — waiting for shared harness, then authorized scoped pass and all merge gates. |

@@ -477,3 +477,10 @@ Last20lines — plan-4.log
   88 skipped
   1 passed (13.3s)
 ```
+
+
+## Installed Chromium recovery — 2026-10-21
+
+Partial — The exact E2E command can run without repository or test-configuration changes. The installed system browser is Chromium 151.0.7922.173, the same major as Playwright's requested 151 browser. The missing local Playwright headless executable cache path points to `/usr/bin/chromium`; the blocked CDN and initial missing-browser run remain recorded above. This uses AGENTS.md's explicit allowance for installed Chromium, without changing assertions, timeouts, skips or deadlines.
+
+`CI=1 bunx playwright test --reporter=line` on the planning branch: **27 pass / 1 fail / 89 skip**, 1.3 minutes, exit 1. The remaining failure is the unchanged `tests/e2e/task-views-core.spec.ts:14` persisted-task navigation flow. This result replaces the launch limitation with actual browser evidence, not an all-green claim. Other worktrees' results belong to their own source heads.
