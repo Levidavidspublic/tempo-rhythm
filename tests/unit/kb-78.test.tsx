@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+
+import type { Browser } from "@playwright/test";
+import { fixtureCleanup, fixturePhase, requireFixtureSuccess, runIsolatedFixture } from "../helpers/kitchen-fixture";
 
 const repo = resolve(import.meta.dir, "../..");
 const child = process.env.KB78_FIXTURE_CHILD === "1";
@@ -58,27 +61,44 @@ createRoot(document.getElementById('app')).render(<LocaleProvider><TpIconSprite/
 const beforeEntry = common + host + `createRoot(document.getElementById('app')).render(<LocaleProvider><TpIconSprite/><Host/></LocaleProvider>);`;
 
 async function runFixture(): Promise<Results> {
+  let temp: string | undefined;
+  let browser: Browser | undefined;
+  let server: ReturnType<typeof Bun.serve> | undefined;
+  const cleanup = fixtureCleanup({
+    browser: () => browser?.close(),
+    server: () => server?.stop(true),
+    directory: () => temp ? rm(temp, { recursive: true, force: true }) : undefined,
+  }, 5_000);
+  try {
+  fixturePhase("KB-78 fixture imports");
   const { chromium, expect: pw } = await import("@playwright/test");
   const {translate} = await import("../../apps/web/lib/i18n");
   const {kb78Copy} = await import("../../apps/web/lib/i18n-groups/kb-78");
   const postcss = (await import("../../apps/web/node_modules/postcss/lib/postcss.mjs")).default;
   const tailwind = (await import("../../apps/web/node_modules/@tailwindcss/postcss/dist/index.mjs")).default;
-  const web = join(repo, "apps/web"), temp = join(repo, "work/kb78-fixture");
-  await mkdir(temp, { recursive: true });
-  await Promise.all([writeFile(join(temp,"backend.ts"),backend),writeFile(join(temp,"api.ts"),api),writeFile(join(temp,"router.ts"),router),writeFile(join(temp,"current.tsx"),currentEntry),writeFile(join(temp,"before.tsx"),beforeEntry),writeFile(join(temp,"original-controls.tsx"),originalControls)]);
+  const web = join(repo, "apps/web");
+  await mkdir(join(repo, "work"), { recursive: true });
+  temp = await mkdtemp(join(repo, "work/kb78-fixture-"));
+  const directory = temp;
+  fixturePhase("KB-78 fixture files");
+  await Promise.all([writeFile(join(directory,"backend.ts"),backend),writeFile(join(directory,"api.ts"),api),writeFile(join(directory,"router.ts"),router),writeFile(join(directory,"current.tsx"),currentEntry),writeFile(join(directory,"before.tsx"),beforeEntry),writeFile(join(directory,"original-controls.tsx"),originalControls)]);
+  fixturePhase("KB-78 stylesheet start");
   const globals=join(web,"app/globals.css");
   const baseCss=(await postcss([tailwind({base:repo})]).process(await readFile(globals,"utf8"),{from:globals})).css;
+  fixturePhase("KB-78 stylesheet complete");
   const layoutFonts=`@font-face{font-family:Kb78Newsreader;src:url('/fonts/newsreader/Newsreader-latin.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}:root{--font-newsreader:Kb78Newsreader;--font-ibm-mono:monospace}`;
   const build=async(before:boolean)=>{
-    const built=await Bun.build({entrypoints:[join(temp,before?"before.tsx":"current.tsx")],target:"browser",define:{"process.env.NODE_ENV":'"test"'},plugins:[{name:"kb78-clean-fixture",setup(b){
+    fixturePhase(`KB-78 ${before ? "original" : "current"} build start`);
+    const built=await Bun.build({entrypoints:[join(directory,before?"before.tsx":"current.tsx")],target:"browser",define:{"process.env.NODE_ENV":'"test"'},plugins:[{name:"kb78-clean-fixture",setup(b){
       b.onResolve({filter:/^(react|react-dom\/client|react\/jsx-runtime|react\/jsx-dev-runtime)$/},({path})=>({path:Bun.resolveSync(path,web)}));
-      b.onResolve({filter:/^convex\/react$/},()=>({path:join(temp,"backend.ts")}));
-      b.onResolve({filter:/^next\/navigation$/},()=>({path:join(temp,"router.ts")}));
-      b.onResolve({filter:/^@\/convex\/_generated\/api$/},()=>({path:join(temp,"api.ts")}));
-      if(before)b.onResolve({filter:/^@\/components\/you\/Controls$/},()=>({path:join(temp,"original-controls.tsx")}));
+      b.onResolve({filter:/^convex\/react$/},()=>({path:join(directory,"backend.ts")}));
+      b.onResolve({filter:/^next\/navigation$/},()=>({path:join(directory,"router.ts")}));
+      b.onResolve({filter:/^@\/convex\/_generated\/api$/},()=>({path:join(directory,"api.ts")}));
+      if(before)b.onResolve({filter:/^@\/components\/you\/Controls$/},()=>({path:join(directory,"original-controls.tsx")}));
       b.onResolve({filter:/^@\//},({path})=>({path:Bun.resolveSync(path,web)}));
     }}]});
     if(!built.success)throw Error(built.logs.map(String).join("\n"));
+    fixturePhase(`KB-78 ${before ? "original" : "current"} build complete`);
     return {js:await built.outputs.find(o=>o.path.endsWith(".js"))!.text(),css:(await Promise.all(built.outputs.filter(o=>o.path.endsWith(".css")).map(o=>o.text()))).join("\n")};
   };
   const current=await build(false),before=await build(true);
@@ -86,7 +106,7 @@ async function runFixture(): Promise<Results> {
   const fontFiles=new Map<string,string>();
   for await(const name of new Bun.Glob("**/*.woff*").scan({cwd:join(web,"fonts")}))fontFiles.set("/fonts/"+name,join(web,"fonts",name));
   const fontRequests=new Set<string>();
-  const server=Bun.serve({hostname:"127.0.0.1",port:0,fetch(request){
+  server=Bun.serve({hostname:"127.0.0.1",port:0,fetch(request){
     const url=new URL(request.url),phase=url.searchParams.get("phase")==="before"?before:current;
     if(fontFiles.has(url.pathname)){fontRequests.add(url.pathname);return new Response(Bun.file(fontFiles.get(url.pathname)!),{headers:{"content-type":url.pathname.endsWith(".woff2")?"font/woff2":"font/woff"}})}
     if(url.pathname==="/app.js")return new Response(phase.js,{headers:{"content-type":"text/javascript; charset=utf-8"}});
@@ -96,23 +116,28 @@ async function runFixture(): Promise<Results> {
     const lang=url.searchParams.get("lang")==="he"?"he":"en",theme=url.searchParams.get("theme")==="dark"?"dark":"light",tag=url.searchParams.get("phase")==="before"?"before":"current";
     return new Response(`<!doctype html><html lang="${lang}" dir="${lang==='he'?'rtl':'ltr'}" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KB-78 fixture</title><link rel="stylesheet" href="/styles.css?phase=${tag}"></head><body><div id="app"></div><script src="/app.js?phase=${tag}"></script></body></html>`,{headers:{"content-type":"text/html; charset=utf-8"}});
   }});
+  fixturePhase("KB-78 server ready; browser launch");
   const executable=[chromium.executablePath(),"/usr/bin/chromium","/usr/bin/google-chrome","/usr/bin/chromium-browser"].find(existsSync);
   if(!executable)throw Error("KB78 needs installed Chromium/Chrome; browser cases never skip");
-  const browser=await chromium.launch({executablePath:executable,args:["--no-sandbox"]});
+  browser=await chromium.launch({executablePath:executable,args:["--no-sandbox"]});
+  fixturePhase("KB-78 browser ready");
   const results:Results={},traces:Record<string,unknown>={};
   const errors:string[]=[];
   const page=async(mode="host",phase="current",lang="en",theme="light",width=390)=>{
-    const p=await browser.newPage({viewport:{width,height:844},reducedMotion:"reduce"});p.setDefaultTimeout(7000);
+    const p=await browser!.newPage({viewport:{width,height:844},reducedMotion:"reduce"});p.setDefaultTimeout(7000);
     p.on("pageerror",e=>errors.push(e.message));p.on("console",m=>{if(m.type()==="error")errors.push(m.text())});
-    await p.goto(`${server.url}?mode=${mode}&phase=${phase}&lang=${lang}&theme=${theme}`);await p.locator("h1").waitFor();await p.evaluate(()=>document.fonts.ready);
+    await p.goto(`${server!.url}?mode=${mode}&phase=${phase}&lang=${lang}&theme=${theme}`);await p.locator("h1").waitFor();await p.evaluate(()=>document.fonts.ready);
     return p;
   };
-  const record=async(name:string,fn:()=>Promise<void>)=>{try{await fn();results[name]={pass:true}}catch(e){results[name]={pass:false,detail:String(e)}}};
+  const record=async(name:string,fn:()=>Promise<void>)=>{
+    fixturePhase(`KB-78 case start: ${name}`);
+    try{await fn();results[name]={pass:true}}catch(e){results[name]={pass:false,detail:String(e)}}
+    fixturePhase(`KB-78 case ${results[name].pass ? "pass" : "fail"}: ${name}`);
+  };
   const inside=(p:any)=>p.evaluate(()=>!!document.activeElement?.closest('[role="alertdialog"]'));
   const openHost=async(p:any)=>{await p.locator('[data-action="disconnect"]').click();await p.getByRole("alertdialog").waitFor()};
   const openDirect=async(p:any)=>{await p.locator("#opener").click();await p.getByRole("alertdialog").waitFor()};
   const confirm=(p:any)=>p.locator('[role="alertdialog"] .tp-sheet__foot button').last();
-  try{
     await record("actual caller original escape and current Enter pending Tab containment",async()=>{
       for(const phase of ["before","current"]){const p=await page("host",phase);await openHost(p);await confirm(p).focus();await p.keyboard.press("Enter");
         await pw(p.getByRole("alertdialog")).toBeVisible();await p.waitForFunction(()=>window.__backend.state.calls.length===1);
@@ -161,9 +186,13 @@ async function runFixture(): Promise<Results> {
       }
     });
     await record("real fonts are served and fixture console stays clean",async()=>{pw(fontRequests.size).toBeGreaterThanOrEqual(4);pw(errors).toEqual([])});
-  }finally{await browser.close();server.stop(true)}
-  await writeFile(join(temp,"traces.json"),JSON.stringify({traces,fontRequests:[...fontRequests],errors},null,2));
+  await writeFile(join(repo,"work/kb78-fixture-traces.json"),JSON.stringify({traces,fontRequests:[...fontRequests],errors},null,2));
   return results;
+  } finally {
+    fixturePhase("KB-78 cleanup start");
+    await cleanup();
+    fixturePhase("KB-78 cleanup complete");
+  }
 }
 
 if(child){try{console.log(JSON.stringify(await runFixture()))}catch(e){console.error(e);process.exitCode=1}}
@@ -171,7 +200,17 @@ else{
   const {beforeAll,describe,expect,test}=await import("bun:test");
   const {kb78Copy}=await import("../../apps/web/lib/i18n-groups/kb-78");
   let results:Results={};
-  beforeAll(async()=>{const p=Bun.spawn([process.execPath,import.meta.path],{cwd:repo,env:{...process.env,KB78_FIXTURE_CHILD:"1"},stdout:"pipe",stderr:"pipe"});const[out,err,code]=await Promise.all([new Response(p.stdout).text(),new Response(p.stderr).text(),p.exited]);if(code!==0)throw Error(`KB78 clean child ${code}: ${err.slice(-6000)}`);results=JSON.parse(out.trim().split("\n").at(-1)??"{}");},process.env.KB78_CAPTURE_DIR?480_000:240_000);
+  beforeAll(async()=>{
+    const deadline = process.env.KB78_CAPTURE_DIR ? 480_000 : 240_000;
+    const run = await runIsolatedFixture({
+      command: [process.execPath, import.meta.path], cwd: repo,
+      env: { ...process.env, KB78_FIXTURE_CHILD: "1" },
+      // Reserve cleanup and result delivery inside the unchanged setup deadline.
+      timeoutMs: deadline - 10_000, cleanupMs: 5_000,
+    });
+    requireFixtureSuccess(run);
+    results=JSON.parse(run.out.trim().split("\n").at(-1)??"{}");
+  },process.env.KB78_CAPTURE_DIR?480_000:240_000);
   describe("KB-78 actual confirm pending focus",()=>{
     test("dictionary parity and exact frozen source preserve the other exports",async()=>{
       expect(Object.keys(kb78Copy.en).sort()).toEqual(Object.keys(kb78Copy.he).sort());expect(kb78Copy.he.title).toContain("אישור");
