@@ -1,0 +1,52 @@
+/* Preserve native input behavior and desktop density. Only this primitive gains phone targets. */
+@layer components {
+  @media (max-width: 767px) {
+    .kb77-input {
+      min-block-size: var(--tp-touch);
+      min-inline-size: var(--tp-touch);
+    }
+  }
+}
+
+.kb77-gallery {
+  display: grid;
+  align-content: start;
+  gap: var(--tp-space-4);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: var(--tp-space-6) var(--tp-space-4);
+  background: var(--tp-ground);
+  color: var(--tp-ink);
+}
+
+.kb77-gallery__fields {
+  display: grid;
+  gap: var(--tp-space-4);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.kb77-gallery__field {
+  display: grid;
+  align-content: start;
+  gap: var(--tp-space-2);
+  min-inline-size: 0;
+}
+
+.kb77-gallery label {
+  overflow-wrap: anywhere;
+}
+
+.kb77-gallery__error {
+  color: var(--tp-danger);
+}
+
+@media (min-width: 768px) {
+  .kb77-gallery__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.kb77-gallery h1 {
+  font-size: var(--tp-text-2xl);
+}
