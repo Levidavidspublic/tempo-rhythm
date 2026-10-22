@@ -30,7 +30,7 @@ export function SignInForm({ variant = "modal", nextPath, flow = "sign-in", onSu
   const isPage = variant === "page";
   const isSignUp = flow === "sign-up";
   const Heading = isPage ? "h1" : "h2";
-  const fieldId = `${flow}-${variant}-email`;
+  const fieldId = isPage ? `${flow}-email` : `${flow}-modal-email`;
   const errorId = `${fieldId}-error`;
   const otherPath = isSignUp ? "/sign-in" : "/sign-up";
   const otherHref = nextPath ? { pathname: otherPath, query: { next: nextPath } } : otherPath;

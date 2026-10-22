@@ -61,7 +61,7 @@ createRoot(document.getElementById("root")).render(<React.StrictMode><App/></Rea
   await writeFile(builder, `
 import{readFileSync,existsSync,statSync,writeFileSync}from"node:fs";import{join,resolve,basename}from"node:path";
 const stubs=${JSON.stringify(stubs)},web=${JSON.stringify(web)},root=${JSON.stringify(root)},dir=${JSON.stringify(directory)},baseline=${JSON.stringify(baseline ?? null)};
-const result=await Bun.build({entrypoints:[${JSON.stringify(entry)}],outdir:dir,target:"browser",plugins:[{name:"synthetic-beta-boundaries",setup(build){
+const result=await Bun.build({entrypoints:[${JSON.stringify(entry)}],outdir:dir,target:"browser",minify:true,plugins:[{name:"synthetic-beta-boundaries",setup(build){
 build.onResolve({filter:/^(@\\/|@convex-dev\\/auth\\/react$|convex\\/react$|next\\/(navigation|link)$)/},args=>{if(args.path in stubs)return{path:args.path,namespace:"fixture"};if(args.path.startsWith("@/")){const base=resolve(web,args.path.slice(2));const found=[base,base+".ts",base+".tsx",join(base,"index.ts"),join(base,"index.tsx")].find(p=>existsSync(p)&&statSync(p).isFile());if(found)return{path:found}}});
 build.onLoad({filter:/.*/,namespace:"fixture"},args=>({contents:stubs[args.path],loader:"tsx",resolveDir:web}));
 if(baseline)build.onLoad({filter:/components\\/(auth\\/SignInForm|approval\\/WaitingForApproval)\\.tsx$/},args=>({contents:readFileSync(join(baseline,basename(args.path)),"utf8"),loader:"tsx",resolveDir:args.path.slice(0,args.path.lastIndexOf("/"))}));

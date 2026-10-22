@@ -1,0 +1,24 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/releaseOnboardingGate.test.tsx:
+(pass) ApprovalGate > does not mount protected children while approval is loading [85.51ms]
+(pass) ApprovalGate > mounts children only after a delayed approval [18.13ms]
+Encountered two children with the same key, `a@b.co`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+(pass) ApprovalGate > delayed pending shows the waiting screen and never mounts children [48.28ms]
+(pass) ApprovalGate > delayed revoked shows the waiting screen and never mounts children [17.11ms]
+(pass) ApprovalGate > loading shows a labelled placeholder, not an empty page [5.16ms]
+Encountered two children with the same key, `a@b.co`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version.
+(pass) ApprovalGate > pending says what happens next: hand approval, no email, the page opens by itself [9.41ms]
+(pass) ApprovalGate > revoked shows the paused notice without the next steps [2.53ms]
+(pass) ApprovalGate > signed-out (null) still passes children through [1.87ms]
+(pass) OnboardingFlow skip paths > brain-dump Skip keeps the trimmed entered name [127.98ms]
+(pass) OnboardingFlow skip paths > brain-dump Skip with an empty name sends no name [41.56ms]
+(pass) OnboardingFlow skip paths > brain-dump Skip with a whitespace-only name sends no name [175.69ms]
+(pass) OnboardingFlow skip paths > name-step Skip still finishes without a name [25.55ms]
+(pass) OnboardingFlow skip paths > a failed finish stays on the step and retry keeps the name [115.98ms]
+(pass) OnboardingFlow skip paths > does not double-submit while a save is in flight [54.00ms]
+
+ 14 pass
+ 0 fail
+ 46 expect() calls
+Ran 14 tests across 1 file. [2.08s]

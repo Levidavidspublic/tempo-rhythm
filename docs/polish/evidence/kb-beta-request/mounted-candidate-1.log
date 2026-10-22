@@ -1,0 +1,137 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-beta-request.test.tsx:
+killed 1 dangling process
+
+# Unhandled error between tests
+-------------------------------
+ 95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+ 96 |   errors = [];
+ 97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+ 98 |   page.on("pageerror", error => errors.push(error.message));
+ 99 |   await page.route("**/*", route => new URL(route.request().url()).hostname === "127.0.0.1" ? route.continue() : route.abort());
+100 |   await page.goto(`http://127.0.0.1:${server.port}/?screen=${screen}&lang=${lang}&theme=${theme}`);
+                   ^
+error: goto: net::ERR_ABORTED at http://127.0.0.1:36999/?screen=signin&lang=en&theme=light
+Call log:
+  - navigating to "http://127.0.0.1:36999/?screen=signin&lang=en&theme=light", waiting until "load"
+
+  log: [ "  - navigating to \"http://127.0.0.1:36999/?screen=signin&lang=en&theme=light\", waiting until \"load\"" ],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:100:14)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:109:13
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+(fail) mounted beta request > beta sign-in sends only a Resend magic link and keeps the entered email on error [5880.18ms]
+  ^ this test timed out after 5000ms.
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:125:8
+(fail) mounted beta request > ordinary signup discloses the trial/off switch without making a beta request [18.06ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:136:21
+(fail) mounted beta request > a deliberate request shows queued only after success and suppresses duplicate clicks [16.96ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:147:8
+(fail) mounted beta request > a failed request preserves the name draft and can retry [15.56ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:157:11
+(fail) mounted beta request > persisted queue state and server approval are honest without bypassing the gate [15.70ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:166:13
+(fail) mounted beta request > revocation and account switches ignore a stale successful request [20.43ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:175:13
+(fail) mounted beta request > an unavailable response leaves no queued claim and no request button [12.25ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:183:20
+(fail) mounted beta request > an unmounted sign-in result cannot change a new form [22.55ms]
+92 | afterEach(async () => { try { expect(errors).toEqual([]); } finally { await page?.close(); page = undefined; } });
+93 | afterAll(async () => { await browser?.close(); server?.stop(true); if (directory) await rm(directory, { recursive: true, force: true }); });
+94 | 
+95 | async function open(screen = "waiting", lang = "en", width = 390, theme = "light") {
+96 |   errors = [];
+97 |   page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                            ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:97:24)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:195:21
+(fail) mounted beta request > screenshots of real mounted EN/HE screens at 390 and 1280 [22.31ms]
+
+ 0 pass
+ 9 fail
+ 1 error
+ 9 expect() calls
+Ran 9 tests across 1 file. [63.43s]

@@ -112,9 +112,9 @@ function BetaRequest() {
   return (
     <div className="tp-field text-start" data-testid="beta-request">
       <p className="tp-help">{t("betaAuth.maxHelp")}</p>
-      {unavailable ? <p role="status">{t("betaAuth.unavailable")}</p> :
-        approved || state === "approved" ? <p role="status">{t("betaAuth.approved")}</p> :
-        queued ? <p role="status">{t("betaAuth.queued")}</p> : (
+      {unavailable ? <output className="block">{t("betaAuth.unavailable")}</output> :
+        approved || state === "approved" ? <output className="block">{t("betaAuth.approved")}</output> :
+        queued ? <output className="block">{t("betaAuth.queued")}</output> : (
           <button type="button" className="tp-btn tp-btn--primary tp-btn--block" disabled={state === "sending"}
             onClick={() => void submit()} style={{ minBlockSize: "var(--tp-touch)" }}>
             {t(state === "sending" ? "betaAuth.requesting" : "betaAuth.request")}

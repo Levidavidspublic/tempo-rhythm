@@ -1,0 +1,10 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-beta-request.test.tsx:
+(pass) mounted beta request > screenshots of real mounted EN/HE screens at 390 and 1280 [114315.60ms]
+
+ 1 pass
+ 8 filtered out
+ 0 fail
+ 33 expect() calls
+Ran 1 test across 1 file. [142.02s]
