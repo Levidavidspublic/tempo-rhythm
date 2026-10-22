@@ -1,0 +1,45 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/components/billing-plan/BillingPlan.test.tsx:
+(pass) BillingPlan > early access: Max is the current plan, every price shows, and nothing can be bought [872.20ms]
+8387 |         destroy: function (error) {
+8388 |           didFatal = !0;
+8389 |           fatalError = error;
+8390 |         }
+8391 |       });
+8392 |       if (didFatal && fatalError !== abortReason) throw fatalError;
+                                                               ^
+error: useLocale must be used inside <LocaleProvider>
+      at renderToStringImpl (/workspace/tempo-rhythm/node_modules/.bun/react-dom@19.2.3+83d5fd7b249dbeef/node_modules/react-dom/cjs/react-dom-server-legacy.browser.development.js:8392:57)
+      at <anonymous> (/workspace/work/overnight/trial-copy-oct22/apps/web/components/billing-plan/BillingPlan.test.tsx:96:21)
+(fail) BillingPlan > a live paid plan is named and marked; loading shows no prices [313.07ms]
+(pass) BillingPlan > every paid card has the catalog trial amount and duration in both billing periods [35.72ms]
+(pass) BillingPlan > the standalone trial retains its catalog price and no longer promises Basic-only conversion [3.26ms]
+8387 |         destroy: function (error) {
+8388 |           didFatal = !0;
+8389 |           fatalError = error;
+8390 |         }
+8391 |       });
+8392 |       if (didFatal && fatalError !== abortReason) throw fatalError;
+                                                               ^
+error: useLocale must be used inside <LocaleProvider>
+      at renderToStringImpl (/workspace/tempo-rhythm/node_modules/.bun/react-dom@19.2.3+83d5fd7b249dbeef/node_modules/react-dom/cjs/react-dom-server-legacy.browser.development.js:8392:57)
+      at <anonymous> (/workspace/work/overnight/trial-copy-oct22/apps/web/components/billing-plan/BillingPlan.test.tsx:127:18)
+(fail) BillingPlan > public pricing preserves all monthly prices and keeps account access separate from checkout [33.68ms]
+8387 |         destroy: function (error) {
+8388 |           didFatal = !0;
+8389 |           fatalError = error;
+8390 |         }
+8391 |       });
+8392 |       if (didFatal && fatalError !== abortReason) throw fatalError;
+                                                               ^
+error: useLocale must be used inside <LocaleProvider>
+      at renderToStringImpl (/workspace/tempo-rhythm/node_modules/.bun/react-dom@19.2.3+83d5fd7b249dbeef/node_modules/react-dom/cjs/react-dom-server-legacy.browser.development.js:8392:57)
+      at <anonymous> (/workspace/work/overnight/trial-copy-oct22/apps/web/components/billing-plan/BillingPlan.test.tsx:154:18)
+(fail) BillingPlan > Hebrew cards isolate the trial amount and translate every new pricing message [10.95ms]
+(pass) BillingPlan > account copy grants free Max only to approved testers and makes payment unavailability explicit [212.36ms]
+
+ 4 pass
+ 3 fail
+ 66 expect() calls
+Ran 7 tests across 1 file. [2.81s]

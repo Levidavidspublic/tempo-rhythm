@@ -1,29 +1,37 @@
-# WALK — Trial-copy preparation, 22 October 2026
+# WALK — Trial-copy candidate 2, 22 October 2026
 
-Ticket #1281 (TEMPO-KB-TRIAL-COPY), stacked on pricing PR #1220 at `97dcc874460568a89152fad0ae5f85ef4132d6b0` and serialized after #1275's settings translations. This is preparation, not a shipped billing or browser-validation claim.
+Ticket #1281 / draft PR #1285. State: locally tested focused copy, not shipped or browser verified. Publication/full gates remain with root.
 
-## Intended deliverables
+## Final changes
 
-- `apps/web/components/marketing-pages/PublicPricing.tsx`
-- `apps/web/components/billing-plan/PlanCard.tsx`
-- `apps/web/lib/i18n-groups/settings.ts` — #1275 frozen candidate 2 plus billing-only delta.
-- `apps/web/components/billing-plan/BillingPlan.test.tsx`
-- Approved evidence under `docs/polish/evidence/kb-trial-copy/`.
+Public pricing now states the current rollout truth: Account access currently needs approval. Beta requests wait for approval. The main Sign up or request access link uses the existing /sign-up magic-link route; the header retains /sign-in. This fixes the unchanged rootEntry regression and grants no access. Checkout stays OFF and the UI does not claim a working paid rollout. English and Hebrew remain aligned, with Hebrew machine-drafted for Amit's native read.
 
-The translation delta is in `translation-delta.json`. The prior owner explicitly froze #1275 candidate 2 before the settings snapshot was copied. Its adminApproval keys and every nonbilling key are preserved, verified against the frozen parent. No active checkout or shared translation source was edited. Dependency snapshots of i18n.ts and BillingPlan.tsx, symlinked dependencies and test-resolution.json are scratch harness files only, not deliverables.
+Every Basic, Pro and Max card still derives its $1 / three-week trial note from the unchanged catalog, in both billing periods. Monthly $10/$20/$40 and annual $100/$200/$400 remain unchanged. The standalone trial no longer includes the contradictory Everything in Basic bullet; it uses the existing chosen-plan confirmation and no-automatic-payment EN/HE keys. Pro and Max retain their truthful Everything in Basic benefit. No entitlement, catalog, schema, route, environment, provider, package or payment operation changed.
 
-## Behavior
+The billing translation overlay uses #1275's final frozen settings parent, SHA256 a35bc3133c961bee453e33a1f475ea13f66767efc91ec92d937da4099190bba0. All nonbilling keys are preserved, including its corrected neutral adminApproval.revokeBody. The only added billing key remains set.billing.planTrial; the existing billing copy changes remain as documented in candidate 1.
 
-Every Basic, Pro and Max card gains a trial note derived from the unchanged catalog's trial price and duration, for both monthly and annual display. The amount is isolated with bdi for Hebrew/RTL. Existing prices stay $1 for three weeks, $10/$20/$40 monthly and $100/$200/$400 annually. No catalog number, feature entitlement or billing operation changes.
+## Test results (cloud agent sandbox)
 
-The trial description no longer promises that every trial becomes Basic. Checkout copy explicitly says payments are unavailable and no details are collected here; the old unsupported payment-provider claim is removed. The public account link uses the existing /sign-in route. Beta requests await approval; approved beta testers and existing testers get Max free. This is not a marketed free plan or self-approval control.
+Bun 1.3.9. Candidate 2:
 
-No new component, CSS file, raw color, pixel value, route, backend, schema, package, environment variable, provider ID or network payment action. Existing card and responsive classes are reused. Payment controls remain absent; billing-period buttons only change the display.
+- Existing BillingPlan suite plus its previously added cases: 7 pass, 0 fail, 93 assertions, 1.384s. Six additional assertions cover the restored rollout/link contract and no Basic-only trial claim in English/Hebrew.
+- Unchanged rootEntry and global i18n regressions: 16 pass, 0 fail, 2172 assertions, 4.99s. This includes the real installed public-route matcher, isolated public pricing render, all EN/HE keys and forbidden-copy checks.
+- Scoped Biome: 4 files checked, no errors or fixes. The actual web Biome configuration was used with explicit config path; no configuration changed.
+- Parent dictionary preservation: PASS, all nonbilling values retained.
 
-## Validation / limitations
+The initial scratch overlay accidentally split the LocaleProvider context between copied and linked modules: BillingPlan 4 pass/3 fail and rootEntry+i18n 15 pass/1 fail. Those receipts are retained. Only readonly scratch dependency copies/resolution were corrected, not source behavior, tests, checks or deadlines. The corrected overlay uses the published parent rootEntry tests unchanged and one shared LocaleProvider throughout. The published parent i18n source was already byte-identical to the readonly scratch snapshot; an attempted redundant overwrite was denied and left it unchanged.
 
-PASS: the isolated BillingPlan suite reports 7 pass, 0 fail, 87 assertions in 1263 ms, using Bun 1.3.9. This is the first actual test run and candidate 1: the original 2 tests plus 5 new cases. Coverage includes early-access/paid-plan/loading states, per-plan trial notes in both billing periods, unchanged catalog amounts, standalone trial, public copy/links, Hebrew/RTL amount isolation and OFF checkout. Translation verification confirms only the 9 intended billing keys per language changed and no adminApproval/nonbilling key changed. Two initial scratch harness invocations failed before tests ran (typed Hebrew-export boundary and Bun tsconfig override invocation); only scratch preparation scripts/configuration were corrected, not checks or source behavior.
+No browser or full TypeScript graph ran. No real account, email, model, provider or billing request was made.
 
-UNKNOWN: actual browser evidence at 390 and 1280 px in English/Hebrew, overflow, target sizes, focus painting, and inherited reduced-motion behavior. Static markup tests do not prove rendered geometry. Root must allocate the gallery/screenshot slot and take fictional-data screenshots; do not edit routes or e2eWiringRoutes.ts for evidence.
+## Delivery boundary
 
-UNKNOWN: mandatory actual-checkout Bun install, full lint/typecheck/tests, four scans, Playwright/build, hosted CI, CodeRabbit and guards. Root owns publication and review. Hebrew copy is machine-drafted in plural/impersonal forms and remains for Amit's native read; no live account or billing provider was contacted.
+Publish only the four files in manifest.json and docs/polish/evidence/kb-trial-copy/. Everything else in this scratch directory is dependency snapshots, helper scripts, old candidate backups or test configuration, not deliverables. In particular rootEntry.ts/rootEntry.test.ts/i18n.ts/i18n.test.ts, LocaleProvider, MarketingChrome, settings controls/states and BillingPlan.tsx are readonly validation dependencies and MUST NOT be published.
+
+UNKNOWN: actual 390/1280 EN/HE browser screenshots, rendered focus/touch/overflow behavior, mandatory full install/lint/typecheck/tests/four scans/local Playwright/build, hosted CI, CodeRabbit and guards. Existing SSR checks prove markup/copy, not rendered geometry or live payments.
+
+status: blocked (full validation, browser evidence and review remain)
+ticket: #1281
+evidence: 23 focused/regression tests pass; scoped lint passes
+changed: PublicPricing.tsx, PlanCard.tsx, settings.ts, BillingPlan.test.tsx, scoped evidence
+unknowns: full gates and browser/preview behavior
+notes for ticket sync: preserve #1275 final settings parent during dependency reconciliation; payment activation remains OFF.

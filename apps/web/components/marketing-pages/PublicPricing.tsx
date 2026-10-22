@@ -16,16 +16,16 @@ const COPY = {
     availability: "Checkout is not open yet. No payment is collected on this page.",
     plans: "Planned pricing",
     beta: "Approved beta testers and existing testers get Max free.",
-    account: "Sign in or request access",
-    access: "Beta requests wait for approval.",
+    account: "Sign up or request access",
+    access: "Account access currently needs approval. Beta requests wait for approval.",
   },
   he: {
     title: "המסלולים, בצורה ברורה.",
     availability: "התשלום עדיין לא זמין. לא נגבה תשלום בעמוד הזה.",
     plans: "תמחור מתוכנן",
     beta: "בודקי בטא שאושרו והבודקים הקיימים מקבלים Max בחינם.",
-    account: "כניסה או בקשת גישה",
-    access: "בקשות בטא ממתינות לאישור.",
+    account: "הרשמה או בקשת גישה",
+    access: "הגישה לחשבון עדיין דורשת אישור. בקשות בטא ממתינות לאישור.",
   },
 } as const;
 
@@ -60,7 +60,7 @@ export function PublicPricing() {
           <p className="tp-hero__lede">{copy.availability}</p>
           <p>{copy.beta}</p>
           <div className="tp-hero__actions">
-            <Link className="tp-btn tp-btn--primary" href="/sign-in">{copy.account}</Link>
+            <Link className="tp-btn tp-btn--primary" href="/sign-up">{copy.account}</Link>
           </div>
           <p className="tp-hero__note">{copy.access}</p>
         </header>

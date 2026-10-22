@@ -37,7 +37,6 @@ const PER = { "3w": "set.billing.per3w", month: "set.billing.perMonth", year: "s
 function featuresFor(tier: Tier): Feature[] {
   if (tier.id === "trial") {
     return [
-      { icon: "check", text: "set.billing.fBasicAll" },
       { icon: "check", text: "set.billing.fTrialThen" },
       { icon: "bell", text: "set.billing.fTrialNote" },
     ];

@@ -1,14 +1,14 @@
 {
   "ticket": 1281,
-  "candidate": 1,
-  "basePricingHead": "97dcc874460568a89152fad0ae5f85ef4132d6b0",
-  "settingsParent": "#1275 frozen candidate 2",
-  "settingsParentSha256": "a56b6a21f67cd10c08832d4d4669a77ac7e01de0d669e665c62b20a1b0bb3cd2",
+  "candidate": 2,
+  "basePricingHead": "0c0fc27e2fc9d84acbf8fc57a460b337c47c2b9e",
+  "settingsParent": "#1275 frozen final candidate 3",
+  "settingsParentSha256": "a35bc3133c961bee453e33a1f475ea13f66767efc91ec92d937da4099190bba0",
   "files": {
-    "apps/web/components/marketing-pages/PublicPricing.tsx": "762b17422f1bc78af13aa755795cf7281254717ec009e55cef1e635a6df46aa8",
-    "apps/web/components/billing-plan/PlanCard.tsx": "b814e70a3be368e24111a29e187a670d70262f2885e33e41acdbf0aa2c1e0a50",
-    "apps/web/lib/i18n-groups/settings.ts": "b2a255fe075ebe989c4d890778783d6b94ec1fe3eeab3db3ddd379e3515dd868",
-    "apps/web/components/billing-plan/BillingPlan.test.tsx": "fc4381d66787298864417f1710d0fc7ffd703d9c64125d87060395d89ef58e34"
+    "apps/web/components/marketing-pages/PublicPricing.tsx": "c721eb1b53d281d428dce26ae9da11b17d2edb1171dd1e88b8e6fde8b3a8971d",
+    "apps/web/components/billing-plan/PlanCard.tsx": "b5f461237c22a55e2cd6596f7dd9fd38059466b3bf485d91030e14a37ef87bc1",
+    "apps/web/lib/i18n-groups/settings.ts": "6b7649a9e213ae4f315448299bcd4823f461a6dde23d10016777cec495781f18",
+    "apps/web/components/billing-plan/BillingPlan.test.tsx": "894bd52fb7ff1bd0aa7015a8bb3408e93edd518c40457e117af40c379cf0a39e"
   },
   "schema": "NONE",
   "environment": "NONE"

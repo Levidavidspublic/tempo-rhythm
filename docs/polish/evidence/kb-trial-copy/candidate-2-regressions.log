@@ -1,0 +1,26 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/lib/rootEntry.test.ts:
+(pass) default entry > treats / as a public route for the marketing page [0.16ms]
+(pass) default entry > does not redirect /api/mcp to /sign-in when signed out [1.20ms]
+(pass) default entry > shows the marketing page to a signed-out visitor on / [0.06ms]
+(pass) default entry > sends a signed-in visitor on / to /today [0.02ms]
+(pass) default entry > leaves a magic-link code on / so Convex Auth can exchange it [0.04ms]
+(pass) default entry > keeps the listed auth and legal routes public for signed-out visitors [0.10ms]
+(pass) default entry > still sends signed-out visitors on app routes to /sign-in [0.02ms]
+(pass) default entry > does not treat a code query on other routes as a free pass [0.02ms]
+(pass) default entry > makes only the pricing route public using the real middleware matcher [43.86ms]
+(pass) default entry > public pricing renders its catalog and checkout status without an account [4188.28ms]
+
+apps/web/lib/i18n.test.ts:
+(pass) resolveLang > the URL parameter wins, then the stored choice, then English [1.44ms]
+(pass) resolveLang > unknown values are ignored [0.04ms]
+(pass) direction > Hebrew is right-to-left, English left-to-right [0.04ms]
+(pass) messages > every English key has a non-empty Hebrew string [16.58ms]
+(pass) messages > copy never uses shaming words (HARD_RULES §1) [4.69ms]
+(pass) messages > translate returns the language's string [0.09ms]
+
+ 16 pass
+ 0 fail
+ 2172 expect() calls
+Ran 16 tests across 2 files. [4.99s]

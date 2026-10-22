@@ -1,0 +1,15 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/components/billing-plan/BillingPlan.test.tsx:
+(pass) BillingPlan > early access: Max is the current plan, every price shows, and nothing can be bought [339.90ms]
+(pass) BillingPlan > a live paid plan is named and marked; loading shows no prices [30.20ms]
+(pass) BillingPlan > every paid card has the catalog trial amount and duration in both billing periods [17.01ms]
+(pass) BillingPlan > the standalone trial retains its catalog price and no longer promises Basic-only conversion [3.02ms]
+(pass) BillingPlan > public pricing preserves all monthly prices and keeps account access separate from checkout [19.19ms]
+(pass) BillingPlan > Hebrew cards isolate the trial amount and translate every new pricing message [32.00ms]
+(pass) BillingPlan > account copy grants free Max only to approved testers and makes payment unavailability explicit [23.15ms]
+
+ 7 pass
+ 0 fail
+ 93 expect() calls
+Ran 7 tests across 1 file. [1384.00ms]

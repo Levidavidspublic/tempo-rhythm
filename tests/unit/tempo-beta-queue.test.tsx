@@ -655,6 +655,16 @@ if (process.env.TEMPO_BETA_QUEUE_FIXTURE_CHILD !== "1") {
         .find((node) => node.textContent === t("adminApproval.revoke"))!;
       await click(pause);
       expect(attr("role", "alertdialog")?.textContent).toContain(t("adminApproval.revokeBody"));
+      expect(attr("role", "alertdialog")?.textContent).toContain("a new request");
+      const queueCopy = Object.entries(en)
+        .filter(([key]) => key.startsWith("adminApproval."))
+        .map(([, value]) => value)
+        .join(" ")
+        .toLowerCase();
+      for (const word of ["failed", "overdue", "streak lost", "must"]) {
+        expect(queueCopy.includes(word)).toBe(false);
+      }
+      expect(he["adminApproval.revokeBody"]).toContain("בקשה חדשה");
       await click(confirm());
       expect(calls).toEqual([{ userId: "beta-one", status: "revoked" }]);
     });

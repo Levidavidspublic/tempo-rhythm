@@ -119,6 +119,7 @@ describe("BillingPlan", () => {
     expect(html).toContain("A trial for your chosen plan.");
     expect(html).toContain("Continue with your chosen plan only after confirmation");
     expect(html).not.toContain("Then Basic at");
+    expect(html).not.toContain("Everything in Basic");
     expect(html).toContain("Checkout is not open yet.");
   });
 
@@ -127,8 +128,9 @@ describe("BillingPlan", () => {
     for (const tier of TIERS) expect(html).toContain(`<span class="tp-tier__amount tp-num">${formatUsd(tier.monthly)}</span>`);
     expect(html.match(/Starts with a <bdi/g)).toHaveLength(3);
     expect(html).toContain("Checkout is not open yet. No payment is collected on this page.");
-    expect(html).toContain('href="/sign-in">Sign in or request access</a>');
-    expect(html).not.toContain('href="/sign-up"');
+    expect(html).toContain('href="/sign-up">Sign up or request access</a>');
+    expect(html).toContain('href="/sign-in"');
+    expect(html).toContain("Account access currently needs approval.");
     expect(html).toContain("Beta requests wait for approval.");
     expect(html).toContain("Approved beta testers and existing testers get Max free.");
     expect(html).not.toMatch(/free plan|free forever|start for free/i);
@@ -145,8 +147,14 @@ describe("BillingPlan", () => {
       expect(html).toContain("התשלום עדיין לא זמין. לא נגבה כאן תשלום.");
       expect(html).not.toMatch(/Starts with|Checkout|\{amount\}|\{period\}|set\.billing\.planTrial/);
     }
+    const trial = TIERS.find((tier) => tier.id === "trial")!;
+    const trialHtml = renderToStaticMarkup(createElement(PlanCard, { tier: trial, interval: "month", current: false, early: false }));
+    expect(trialHtml).toContain("ממשיכים במסלול שנבחר רק אחרי אישור");
+    expect(trialHtml).not.toContain("כל מה שיש ב־Basic");
     const html = renderToStaticMarkup(createElement(PublicPricing));
     expect(html).toContain('lang="he" dir="rtl"');
+    expect(html).toContain("הגישה לחשבון עדיין דורשת אישור.");
+    expect(html).toContain('href="/sign-up">הרשמה או בקשת גישה</a>');
     expect(html).toContain("בקשות בטא ממתינות לאישור.");
     expect(html).toContain("בודקי בטא שאושרו והבודקים הקיימים מקבלים Max בחינם.");
     expect(html).not.toContain("מסלול חינמי");
