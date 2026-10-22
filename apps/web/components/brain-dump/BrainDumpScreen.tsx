@@ -19,6 +19,8 @@ import { addedNotice, nowTaskIds } from "@/lib/brain-dump-today";
 import { dayTokens } from "@/lib/editor/markdown-model";
 import { localIsoDate } from "@/lib/period-pages";
 import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
+import { tKb02, type Kb02Key } from "@/lib/i18n-groups/kb-02";
+import "@/app/v3/kb-02.css";
 import {
   acceptedItems,
   canSubmit,
@@ -34,6 +36,35 @@ type ResourcesCard = {
   body: string;
   resources: { label: string; detail: string }[];
 };
+
+export type CaptureState = "empty" | "draft" | "sorting" | "ready" | "error" | "offline" | "disabled";
+
+const CAPTURE_KEY: Record<CaptureState, Kb02Key> = {
+  empty: "kb02.empty",
+  draft: "kb02.kept",
+  sorting: "kb02.sorting",
+  ready: "kb02.ready",
+  error: "kb02.error",
+  offline: "kb02.offline",
+  disabled: "kb02.disabled",
+};
+
+/** The same short status view sits below the mounted capture box and in the gallery. */
+export function CaptureStatus({ lang, state }: { lang: "en" | "he"; state: CaptureState }) {
+  return <output className="kb02-capture-status" data-state={state} aria-live="polite">{tKb02(lang, CAPTURE_KEY[state])}</output>;
+}
+
+/** Shown only when a real tab draft has been restored; dismiss returns focus to the draft. */
+export function DraftRecoveryNotice({ lang, onDismiss, disabled = false, withChoices = false }: { lang: "en" | "he"; onDismiss: () => void; disabled?: boolean; withChoices?: boolean }) {
+  return (
+    <output className="kb02-recovery">
+      <span className="kb02-recovery__text">{tKb02(lang, withChoices ? "kb02.recovered" : "kb02.recoveredDraft")}</span>
+      <button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" onClick={onDismiss} disabled={disabled}>
+        {tKb02(lang, "kb02.dismiss")}
+      </button>
+    </output>
+  );
+}
 
 /** A saved page can be undone in one click for 5 minutes (HARD_RULES: AI-made changes stay reversible). */
 const SAVE_UNDO_MS = 5 * 60 * 1000;
@@ -87,6 +118,7 @@ const URGENCY_TONE: Record<Urgency, string | undefined> = { now: "caution", soon
  */
 export function BrainDumpScreen() {
   const textareaId = `${useId()}-brain-dump`;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { t, lang } = useLocale();
   const convex = useConvex();
   const prioritize = useAction(api.brain_dump.prioritize);
@@ -107,6 +139,21 @@ export function BrainDumpScreen() {
   const [isSorting, setIsSorting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const editButtonRefs = useRef(new Map<number, HTMLButtonElement>());
+  const [recovered, setRecovered] = useState(false);
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
   // Pages "Save as a page" made here, newest first: each keeps its Open link and its own Undo
   // until `undoUntil`. Null until the pages still in their window are read back after mount.
   const [savedState, setSavedPages] = useState<SavedPage[] | null>(null);
@@ -124,6 +171,7 @@ export function BrainDumpScreen() {
 
   // Back then Forward, or a reload, brings back the dump, the sorted plan and the choices made.
   const restoreKept = useCallback((kept: BrainDumpSession) => {
+    setRecovered(true);
     setDraft(kept.draft);
     setPlan(kept.plan);
     setAccepted(kept.accepted);
@@ -145,6 +193,7 @@ export function BrainDumpScreen() {
     setError("");
     setDoneMessage("");
     setPlan(null);
+    setEditingIndex(null);
     setAccepted([]);
     setRejected([]);
     setCrisisCard(null);
@@ -175,6 +224,23 @@ export function BrainDumpScreen() {
   const handleReject = useCallback((index: number) => {
     setAccepted((prev) => prev.filter((i) => i !== index));
     setRejected((prev) => (prev.includes(index) ? prev : [...prev, index]));
+    setEditingIndex((current) => current === index ? null : current);
+  }, []);
+
+  const saveEdit = useCallback(() => {
+    const title = editValue.trim();
+    if (editingIndex === null || !title) return;
+    setPlan((prev) => prev ? {
+      ...prev,
+      priorities: prev.priorities.map((item, index) => index === editingIndex ? { ...item, title } : item),
+    } : prev);
+    setEditingIndex(null);
+    requestAnimationFrame(() => editButtonRefs.current.get(editingIndex)?.focus());
+  }, [editingIndex, editValue]);
+
+  const cancelEdit = useCallback((index: number) => {
+    setEditingIndex(null);
+    requestAnimationFrame(() => editButtonRefs.current.get(index)?.focus());
   }, []);
 
   const handleAddAccepted = useCallback(async () => {
@@ -193,7 +259,9 @@ export function BrainDumpScreen() {
       setDoneMessage(addedNotice(result.created, onToday, t));
       setDoneOnToday(onToday > 0);
       setDraft("");
+      setRecovered(false);
       setPlan(null);
+      setEditingIndex(null);
       setAccepted([]);
       setRejected([]);
     } catch (err) {
@@ -246,7 +314,7 @@ export function BrainDumpScreen() {
 
   if (crisisCard) {
     return (
-      <div className="tp-page tp-page--narrow" data-component="PageLayout">
+      <div className="tp-page tp-page--narrow kb02-screen" data-component="PageLayout">
         <section className="tp-surface" aria-label={crisisCard.title}>
           <h1 className="tp-pagehead__title">{crisisCard.title}</h1>
           <p>{crisisCard.body}</p>
@@ -269,7 +337,7 @@ export function BrainDumpScreen() {
   }
 
   return (
-    <div className="tp-page tp-page--narrow" data-component="PageLayout">
+    <div className="tp-page tp-page--narrow kb02-screen" data-component="PageLayout">
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
           <h1 className="tp-pagehead__title">{t("bd.title")}</h1>
@@ -284,11 +352,12 @@ export function BrainDumpScreen() {
           </label>
           <textarea
             className="tp-textarea"
+            ref={textareaRef}
             id={textareaId}
             rows={7}
             dir="auto"
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => { setDraft(event.target.value); if (!event.target.value.trim() && !plan) setRecovered(false); }}
             disabled={busy}
             placeholder={t("bd.ph")}
             aria-describedby={`${textareaId}-help`}
@@ -297,6 +366,16 @@ export function BrainDumpScreen() {
             {t("bd.help")}
           </p>
         </div>
+        {recovered && (draft.trim() || plan) ? (
+          <DraftRecoveryNotice lang={lang} disabled={busy} withChoices={Boolean(plan)} onDismiss={() => {
+            setRecovered(false);
+            textareaRef.current?.focus();
+          }} />
+        ) : null}
+        <CaptureStatus
+          lang={lang}
+          state={!online ? "offline" : isSorting ? "sorting" : error ? "error" : plan ? "ready" : draft.trim() ? "draft" : "empty"}
+        />
         {error ? (
           <p role="alert" className="tp-notice" data-tone="caution">
             <span className="tp-notice__text">{error}</span>
@@ -323,7 +402,7 @@ export function BrainDumpScreen() {
         <div className="bd-actions">
           <button
             type="button"
-            className="tp-btn tp-btn--primary"
+            className={plan ? "tp-btn tp-btn--secondary" : "tp-btn tp-btn--primary"}
             onClick={() => void handleSort()}
             // Not disabled when empty: the press itself shows the "type something first" hint.
             disabled={busy}
@@ -338,7 +417,9 @@ export function BrainDumpScreen() {
               disabled={busy}
               onClick={() => {
                 setDraft("");
+                setRecovered(false);
                 setPlan(null);
+                setEditingIndex(null);
                 setAccepted([]);
                 setRejected([]);
                 setError("");
@@ -394,9 +475,15 @@ export function BrainDumpScreen() {
                     const isAccepted = accepted.includes(index);
                     return (
                       <li key={index} className="tp-import-row" data-choice={isAccepted ? "keep" : undefined}>
-                        <p className="tp-import-row__text" dir="auto">
-                          <strong>{item.title}</strong>
-                        </p>
+                        {editingIndex === index ? (
+                          <label className="tp-field kb02-edit-row">
+                            <span className="tp-label">{tKb02(lang, "kb02.editLabel")}</span>
+                            <input className="tp-input" dir="auto" value={editValue} onChange={(event) => setEditValue(event.target.value)}
+                              onKeyDown={(event) => { if (event.key === "Enter") saveEdit(); if (event.key === "Escape") cancelEdit(index); }} />
+                          </label>
+                        ) : (
+                          <p className="tp-import-row__text" dir="auto"><strong>{item.title}</strong></p>
+                        )}
                         <div className="tp-import-row__bar">
                           {item.reason ? (
                             <span className="tp-chip" dir="auto">
@@ -404,6 +491,14 @@ export function BrainDumpScreen() {
                             </span>
                           ) : null}
                           <span className="bd-row__actions">
+                            {editingIndex === index ? (
+                              <>
+                                <button type="button" className="tp-btn tp-btn--secondary tp-btn--sm" disabled={!editValue.trim() || busy} onClick={saveEdit}>{tKb02(lang, "kb02.saveEdit")}</button>
+                                <button type="button" className="tp-btn tp-btn--ghost tp-btn--sm" onClick={() => cancelEdit(index)}>{tKb02(lang, "kb02.cancelEdit")}</button>
+                              </>
+                            ) : (
+                              <button ref={(node) => { if (node) editButtonRefs.current.set(index, node); else editButtonRefs.current.delete(index); }} type="button" className="tp-btn tp-btn--ghost tp-btn--sm" disabled={busy} onClick={() => { setEditingIndex(index); setEditValue(item.title); }}>{tKb02(lang, "kb02.edit")}</button>
+                            )}
                             <button
                               type="button"
                               className={isAccepted ? "tp-btn tp-btn--primary tp-btn--sm" : "tp-btn tp-btn--secondary tp-btn--sm"}
@@ -437,7 +532,7 @@ export function BrainDumpScreen() {
               type="button"
               className="tp-btn tp-btn--primary"
               onClick={() => void handleAddAccepted()}
-              disabled={toAdd.length === 0 || busy}
+              disabled={toAdd.length === 0 || busy || editingIndex !== null}
             >
               <TpIcon name="plus" size="sm" />
               <span>
@@ -450,7 +545,7 @@ export function BrainDumpScreen() {
                 type="button"
                 className="tp-btn tp-btn--secondary"
                 onClick={() => void handleSavePage()}
-                disabled={busy || savedPageId !== null}
+                disabled={busy || savedPageId !== null || editingIndex !== null}
               >
                 <TpIcon name="page" size="sm" />
                 <span>{isSaving ? t("bd.saving") : t("bd.savePage")}</span>
@@ -573,4 +668,55 @@ function useKeptBrainDump(session: BrainDumpSession, restore: (kept: BrainDumpSe
 function keepPending(pending: { current: BrainDumpSession | null }) {
   if (pending.current) saveBrainDumpSession(tabSessionStore(), pending.current, Date.now());
   pending.current = null;
+}
+
+/** Isolated, fictional states for browser review; the route mounts the same two views above. */
+export function Kb02Gallery() {
+  const [lang, setLang] = useState<"en" | "he">(() =>
+    typeof document !== "undefined" && document.documentElement.lang === "he" ? "he" : "en",
+  );
+  const [scenario, setScenario] = useState<"default" | "empty" | "loading" | "error" | "offline" | "disabled" | "overflow">("default");
+  const [draft, setDraft] = useState("Maya wants a calmer week and time to see Dana and Yoni.");
+  const [recovered, setRecovered] = useState(true);
+  const [tries, setTries] = useState(0);
+  const draftRef = useRef<HTMLTextAreaElement>(null);
+  const state: CaptureState = scenario === "loading" ? "sorting" : scenario === "error" ? "error" : scenario === "offline" ? "offline"
+    : scenario === "disabled" ? "disabled" : !draft ? "empty" : "draft";
+  const scenarios = ["default", "empty", "loading", "error", "offline", "disabled", "overflow"] as const;
+  const labels: Record<(typeof scenarios)[number], Kb02Key> = {
+    default: "kb02.galleryDefault", empty: "kb02.galleryEmpty", loading: "kb02.galleryLoading",
+    error: "kb02.galleryError", offline: "kb02.galleryOffline", disabled: "kb02.galleryDisabled", overflow: "kb02.galleryOverflow",
+  };
+
+  return (
+    <main className="tp-page kb02-screen kb02-gallery" dir={lang === "he" ? "rtl" : "ltr"} lang={lang}>
+      <h1 className="tp-pagehead__title">{tKb02(lang, "kb02.galleryTitle")}</h1>
+      <fieldset className="kb02-gallery__controls">
+        <legend className="tp-sr-only">{tKb02(lang, "kb02.galleryScenario")}</legend>
+        {scenarios.map((choice) => (
+          <button key={choice} type="button" className="tp-btn tp-btn--secondary" aria-pressed={scenario === choice}
+            onClick={() => {
+              setScenario(choice);
+              setDraft(choice === "empty" ? "" : choice === "overflow"
+                ? "Maya and Dana and Yoni want a gentle plan that leaves room for an unusually long thought about work, home, travel, books and every small thing that matters without pushing any decision too soon. ".repeat(3)
+                : "Maya wants a calmer week and time to see Dana and Yoni.");
+            }}>
+            {tKb02(lang, labels[choice])}
+          </button>
+        ))}
+        <button type="button" className="tp-btn tp-btn--secondary" onClick={() => setLang(lang === "en" ? "he" : "en")}>{tKb02(lang, lang === "en" ? "kb02.galleryHe" : "kb02.galleryEn")}</button>
+      </fieldset>
+      <section className="tp-surface" aria-label={tKb02(lang, "kb02.galleryDraft")}>
+        <label className="tp-label" htmlFor="kb02-gallery-draft">{tKb02(lang, "kb02.galleryDraft")}</label>
+        <textarea id="kb02-gallery-draft" ref={draftRef} className="tp-textarea" dir="auto" value={draft}
+          disabled={scenario === "disabled" || scenario === "loading"} onChange={(event) => setDraft(event.target.value)} />
+        {recovered ? <DraftRecoveryNotice lang={lang} withChoices disabled={scenario === "disabled" || scenario === "loading"} onDismiss={() => { setRecovered(false); draftRef.current?.focus(); }} />
+          : <button type="button" className="tp-btn tp-btn--ghost" onClick={() => setRecovered(true)}>{tKb02(lang, "kb02.galleryRestored")}</button>}
+        <CaptureStatus lang={lang} state={state} />
+        <button type="button" className="tp-btn tp-btn--primary" disabled={scenario === "disabled" || scenario === "loading"}
+          onClick={() => setTries((count) => count + 1)}>{tKb02(lang, "kb02.galleryTry")}</button>
+        {tries > 0 ? <output className="tp-notice">{tKb02(lang, "kb02.galleryTried")} <bdi>{tries}</bdi></output> : null}
+      </section>
+    </main>
+  );
 }
