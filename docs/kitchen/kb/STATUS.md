@@ -1,5 +1,25 @@
 # KB finish status
 
+## WALK — Current checkpoint, 22 October 2026, 09:05 UTC
+
+No new merge. Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**. Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 23 open**. NEEDS-AMIT has **13 current actions**; historical entries are superseded, not additional questions.
+
+- **Lane 1:** #1280 compatibility is hosted-green and actual CodeRabbit-clear at c8cd3e8. Frozen install/lint/typecheck pass; its full suite is running and all69 own lifecycle cases passed. Scans, exact local E2E and build follow without reruns. Shared #1203 remains frozen after the authorized extra pass failed; downstream fixture work waits. Architecture PRs #1262/#1282/#1269 are prepared with schema decisions recorded and owner labels/dependencies outstanding.
+- **Lane 2:** live transport is published as draft #1291 at23484d4. Final26pure cases pass, but mounted setup fails and strict types report17new test-only diagnostics. Three candidates consumed; activation OFF, no fourth repair. Durable bridge #1289 has own synthetic-fixture scan failures, distinct from inherited gateway failures.
+- Composer #1279 and beta-request UI #1283 are frozen after final mounted validation failures. Queue #1284 final7bcb245 passes21DOMcases plus6global i18n tests; pricing #1285 final4840799 passes23focused/regression cases. Current full/review/dependency gates still apply.
+- Voice research #1256 final45e55f7 has actual CodeRabbit clearance; hosted Test is still pending at the last check. No merge while pending. Its publicly verified non-Flash model identifier does not prove Flash/account capability, prices or live quality.
+- Page-save #1250 mandatory sequence is published: all32owncases pass; full suite3467pass/34fail/3todo/2errors, E2E11pass/89skip/17fail. Install/lint/typecheck/scans/build pass. No completion claim.
+- Source audit confirms intensity and current-page chat exist. Notebook sources/shared structured rendering depend on KA. Goal-record onboarding, user-added sidebar sections and habit/goal template starters are not demonstrated by the current implementations; existing ownership is being reconciled before new tickets. The exact preview error badge cause and every-page route coverage remain UNKNOWN.
+
+### Done
+Dated approvals applied; scoped changes, tests, draft PRs and failure evidence pushed. Four worktrees remain. Protected #1193/#1198, production, environment values and live charges were not touched.
+
+### Needs Amit (AT, in order)
+The13 current actions in NEEDS-AMIT.md: architecture labels; shared-harness retry; model settings; search setup/cap; payment IDs; Hebrew clinical grounding; Executor connection; pre-production native/device read; gateway fixture remediation; router review repair; composer fixture repair; voice bridge fixture remediation; voice transport fixture/type repair.
+
+### UNKNOWN
+Final local gates, pending actual reviews, preview behavior, live provider conformance/latency/Hebrew quality, model account capability and service cost enforcement. Prepared code and mock tests are not proof of preview operation.
+
 ## WALK — Validation and source audit, 22 October 2026, 08:22 UTC
 
 No new merge. Current tracked counts: Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**; Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 22 open**. Ten current owner actions; historical ledgers are not additional pending questions.
@@ -64,11 +84,11 @@ Full checkout gates for prepared drafts; current-head CodeRabbit clearance where
 | 2 | #1270 gateway setting | #1271 | Gateway parent |
 | 2 | #1272 beta request UI | #1283 | #1273 and #1277 translation parent; browser pending |
 | 2 | #1275 admin beta queue | #1284 | #1273; 21 focused cases pass |
-| 2 | #1278 voice bridge | Not opened yet | Candidate 3 safety corrections; strict graph candidate 2 passes |
+| 2 | #1278 voice bridge | #1289 | Final152focused passes; own synthetic-fixture scan failure; attempt exception |
 | 2 | #1281 trial copy | #1285 | #1220 pricing and #1284 translations; 7 focused cases pass |
-| 2 | #1253 live voice transport | Not opened yet | #1278, #1279, #1260, OFF flag; provider conformance UNKNOWN |
-| 2 | #1286 smoke caller | Not opened yet | Scoped preparation on router; cannot clear router's own blocked repair |
-| 2 | #1287 voice OFF declaration | Not opened yet | #1271 template; no activation |
+| 2 | #1253 live voice transport | #1291 | #1289/#1279/#1290; final mounted setup/type failures; attempt exception |
+| 2 | #1286 smoke caller | #1288 | 8focused passes; router parent remains blocked |
+| 2 | #1287 voice OFF declaration | #1290 | #1271 template; no activation |
 
 New issues #1286 and #1287 raise Lane 2 open issues to 23; Lane 1 remains 56. Current PR totals remain Lane 1 11 merged / 26 open, Lane 2 0 merged / 19 open. #1276 is an unrelated capability-test draft and is excluded and untouched.
 
