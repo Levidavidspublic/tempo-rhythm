@@ -1,5 +1,20 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Validation and publication checkpoint, 22 October 2026
+
+No additional merge. Page-save #1250 mandatory full tests finished: **3,467 pass / 34 fail / 3 todo / 2 errors**, 81,521 assertions, 3,504 tests across 212 files, exit 1, 2,291.58 seconds. All 32 own page-save cases passed; failures include KB-74 timeouts/hooks, KB-59 hook timeout, KB-66 wrapper failure and unchanged history/markdown performance cases. Four scans pass. Local E2E and build remain pending. Shell execution then stalled even on basic read-only commands; new local work is paused while existing calls resolve.
+
+Published preparation since the earlier checkpoint:
+- Lane 1: KB-01 #1262; KB-31 #1269. Strict two-version schema/lifecycle compatibility #1280 preserves all original cases and passes 69/0 on both original and KB-01 schemas; it must precede KB-01's rebase to resolve the hosted stale-schema assertion.
+- Lane 2: model router #1260, disabled Hebrew matcher #1261, research lifecycle #1264, gateway #1267, account policy #1268, gateway-name declaration #1271, beta approval #1273, Executor hub #1277, and mounted composer #1279. Voice research #1256 remains published.
+- Router #1260 received actual CodeRabbit coverage of d4f0271 with no merge-blocking finding; documentation/template warnings remain addressed or in progress, full actual-checkout gates pending. No draft-skip status is counted as review.
+- Research backend #1264's one-line literal-union correction is pushed at6cd9bf5; 86 focused cases and strict generated API graph pass. Composer #1279 is rebased on it at4e7c7c7;22 focused cases pass,13 mounted browser cases prepared but unrun.
+- Gateway #1267 hosted app checks pass but scope is dependency-stacked and secret scan flags two synthetic credential-URL fixtures. The third failure boundary is consumed; no fourth repair, suppression or waiver.
+- Beta request UI #1272 is prepared, including9 unrun mounted browser cases. Beta queue #1275 and trial-copy #1281 are in preparation. Durable voice bridge #1278 is assigned; live provider conformance remains UNKNOWN.
+- KB-16 implementation is frozen with107 passing focused tests and no schema change; publication is awaiting the stalled file-read command.
+
+Worktrees remain four: page-save, Plan, Hero, composer. Harness be1fec2 is pushed and preserved while its worktree was rotated to composer; remaining mandatory harness checks are still pending. Browser/full validation remains serialized. No production/manual deploy/environment mutation, real email, provider call or live charge.
+
 ## WALK — Current checkpoint, 22 October 2026, 07:21 UTC
 
 No new merge in this continuation. Integration remains `7d1a0f6`. These are preparation and validation results, not preview-readiness claims.
