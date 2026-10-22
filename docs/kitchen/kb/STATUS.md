@@ -1,5 +1,17 @@
 # KB finish status
 
+## WALK — Independent parser work and active hero validation, 2026-10-22 11:38 UTC
+
+No new merge. Lane 1 remains **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2 is now **0 closed / 29 open issues; 0 merged / 27 open PRs**. There are16current Needs Amit actions; no additional owner decision was inferred for this engineering work.
+
+- New **#1301 TEMPO-KB-PAGE-SUMMARY-PERF**, labelled kitchen-kb, maps to branch t/1301-page-summary-perf in the reused root worktree; draft PR not yet opened. Scope is only existing page-summary.ts, justified additions to its test, and scoped evidence. It addresses a distinct required performance failure; it does not revive held#803 or reopen/further repair the frozen shared harness. Fresh149open-PR path audit found no writer of these two files; blocks.ts remains owned by#1081 and excluded.
+- The separately labelled quiet baseline diagnostic failed: **7016.86ms versus the existing<3000ms assertion**,0pass/1fail/297filtered, exit1. The actual existing wrapper is30000ms, unchanged. Source/test hashes match integration7d1a0f6; no OOM was observed and measured throttling alone does not explain the elapsed result. Static code reading found linear scans and allocations, not a proved quadratic mechanism. The broader#1300failure remains unchanged.
+- Worker preparation for1301 is source-only while hero#1210 owns the sole heavy/browser slot. Source contract, output limits, all298existing cases, assertions and deadlines must remain; no fixture-specific bypass or codec/index/config change. The initial failed receipts are preserved outsidecheckout. Only a separately granted quiet slot can run candidate benchmarks/types/tests.
+- Hero#1210 is clean at6a9f539316d85249e88fad7bbbfad7f6e2055271 and its original mandatory frozen install is running. After allhero stages/reporting, the lead will sequence parser-focused validation and the remaining voice-research#1256 / Executor#1277 mandatory checks. All four worktrees and former branch histories are preserved.
+- #1300 remains blocked on completed full tests3484pass/4fail/3todo/1error and localE2E15pass/13fail/89skip; othermandatory stages pass, currentCodeRabbitclear, hostedTestpending. Final dated PR/issue report supersedes initialREADME unknowns without changing head761eb91.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Completed validation and remaining queue, 2026-10-22 11:31 UTC
 
 No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 28 open issues; 0 merged / 27 open PRs**. **16 current owner actions** remain ordered in NEEDS-AMIT. All 59 written queue entries have matching GitHub issues; no written ticket is missing from the issue register.
