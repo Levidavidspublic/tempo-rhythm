@@ -1,5 +1,39 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Current checkpoint, 22 October 2026, 08:09 UTC
+
+No new merge in this continuation. Integration remains `7d1a0f6`. Prepared code is not a claim of preview readiness.
+
+| Lane | Issues closed / open | PRs merged / open |
+| --- | --- | --- |
+| 1 — KB and shared prerequisites | 6 / 56 | 11 / 26 |
+| 2 — feature work | 0 / 21 | 0 / 19 |
+
+Counts include the existing run history, the new schema-compatibility prerequisite, and drafts through #1285. There are ten current owner actions in NEEDS-AMIT.md; older numbered entries are historical.
+
+- Lane 1: shared harness #1203 remains frozen after the authorized extra pass failed. Clean replacement #1254 preserves old #1197. KB-01 #1262, KB-16 #1282 and KB-31 #1269 are prepared; schema changes are recorded and owner labels/dependencies remain gates. Schema compatibility #1280 has all hosted checks green and is now ready for actual CodeRabbit review; local mandatory checks remain pending.
+- Lane 2: beta request UI #1283, beta admin queue #1284 and trial copy #1285 are now draft PRs. Queue's 21 focused mounted DOM cases and pricing's 7 focused cases pass. New browser/full checks are not yet run.
+- Page-save #1250: all 32 own cases pass; full suite 3,467 pass / 34 fail / 3 todo / 2 errors. Four scans pass. Exact local Playwright finished 11 pass / 89 skip / 17 fail, 14.1 minutes. Placeholder build is next; failures remain recorded without reruns or weakening.
+- Composer #1279 has 13 mounted browser cases queued immediately after the page gate releases the slot. Plan #1211 and hero #1210 repairs have passing focused evidence; full mandatory checks remain queued.
+- Router #1260's actual current review has two verified findings; it is NOT review-clear. Its three-candidate budget is exhausted and the next correction is an owner exception. The Hebrew matcher #1261 has a valid zero-width word-separator finding; its second scoped candidate is in progress, default OFF unchanged.
+- Voice bridge #1278 preparation passes 148 focused cases, with 33 new cases; strict type graph and transport wiring remain pending. No live provider/session, deployment or paid check has been run.
+
+### Done
+
+Dated approvals applied; bounded source preparation, focused tests, draft publication, dependency mapping, and current failure reporting continued in both lanes. Four worktrees maximum remains enforced.
+
+### Needs Amit (AT, in order)
+
+Architecture labels; shared-harness retry exception; verified model settings; supported search upstream/credential and hosting cap; payment identifiers with checkout OFF; Hebrew clinical grounding/review; Executor environment connection; pre-production language/device read; gateway scan-fixture retry exception; router review-fix retry exception. Exact questions/setup are in NEEDS-AMIT.md.
+
+### UNKNOWN
+
+Full checkout gates for prepared drafts; current-head CodeRabbit clearance where pending; actual preview behavior; primary Hebrew crisis source verification; Deepgram callback anchor retention and live voice conformance; model availability/configuration; search-service availability/cost cap. Local execution recovered from the earlier stall; its cause is not established.
+
+
+## Historical checkpoints (superseded where noted)
+
+
 ## WALK — Validation and publication checkpoint, 22 October 2026
 
 No additional merge. Page-save #1250 mandatory full tests finished: **3,467 pass / 34 fail / 3 todo / 2 errors**, 81,521 assertions, 3,504 tests across 212 files, exit 1, 2,291.58 seconds. All 32 own page-save cases passed; failures include KB-74 timeouts/hooks, KB-59 hook timeout, KB-66 wrapper failure and unchanged history/markdown performance cases. Four scans pass. Local E2E and build remain pending. Shell execution then stalled even on basic read-only commands; new local work is paused while existing calls resolve.
