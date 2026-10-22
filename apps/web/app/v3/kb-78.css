@@ -1,0 +1,52 @@
+.kb78-confirm {
+  overflow-wrap: anywhere;
+}
+
+.kb78-confirm button,
+.kb78-gallery > button {
+  min-block-size: var(--tp-touch, 44px);
+  min-inline-size: var(--tp-touch, 44px);
+}
+
+.kb78-confirm button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.kb78-confirm :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+.kb78-gallery > button:focus-visible {
+  outline: var(--tp-focus-w, 2px) solid var(--tp-accent);
+  outline-offset: var(--tp-focus-gap, 2px);
+}
+
+.kb78-gallery {
+  max-inline-size: var(--tp-paper-max);
+  margin-inline: auto;
+  padding: var(--tp-space-6, 24px);
+  color: var(--tp-ink);
+  font-family: var(--tp-font-sans);
+}
+
+.kb78-gallery > p,
+.kb78-gallery-result {
+  display: block;
+  margin-block: var(--tp-space-4, 16px);
+  color: var(--tp-ink-muted);
+}
+
+.kb78-gallery-settle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tp-space-2, 8px);
+  margin-block-start: var(--tp-space-4, 16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb78-confirm,
+  .kb78-confirm *,
+  .kb78-gallery,
+  .kb78-gallery * {
+    animation-duration: 0ms;
+    transition-duration: 0ms;
+  }
+}

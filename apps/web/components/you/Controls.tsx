@@ -1,8 +1,10 @@
 "use client";
 
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
+import { kb78Copy } from "@/lib/i18n-groups/kb-78";
+import "@/app/v3/kb-78.css";
 
 export type SegmentedOption<T extends string> = { value: T; label: string; icon?: TpIconName };
 
@@ -138,7 +140,13 @@ export function ConfirmSheet({
   const sheetRef = useRef<HTMLElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  const confirmRef = useRef(onConfirm);
+  const busyRef = useRef(busy);
+  useLayoutEffect(() => {
+    closeRef.current = onClose;
+    confirmRef.current = onConfirm;
+    busyRef.current = busy;
+  }, [busy, onClose, onConfirm]);
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -150,12 +158,21 @@ export function ConfirmSheet({
         return;
       }
       if (event.key !== "Tab" || !sheetRef.current) return;
+      const sheet = sheetRef.current;
       const focusable = Array.from(
-        sheetRef.current.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]")
-      );
+        sheet.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((node) => node.tabIndex >= 0 && node.getClientRects().length > 0);
       const first = focusable[0];
       const last = focusable.at(-1);
       if (!first || !last) return;
+      // Native disabled controls, browser chrome or a caller can leave focus outside the sheet.
+      if (!sheet.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+        return;
+      }
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -176,9 +193,10 @@ export function ConfirmSheet({
       <div className="tp-sheet-scrim" aria-hidden="true" />
       <section
         ref={sheetRef}
-        className="tp-sheet tp-glass"
+        className="tp-sheet tp-glass kb78-confirm"
         role="alertdialog"
         aria-modal="true"
+        aria-busy={busy ? true : undefined}
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-body`}
         data-component="MobileSheet"
@@ -192,7 +210,7 @@ export function ConfirmSheet({
             className="tp-btn tp-btn--ghost tp-btn--icon tp-sheet__close"
             type="button"
             aria-label={t("you.close")}
-            onClick={onClose}
+            onClick={() => closeRef.current()}
           >
             <TpIcon name="x" />
           </button>
@@ -205,20 +223,85 @@ export function ConfirmSheet({
             ref={cancelRef}
             className="tp-btn tp-btn--secondary"
             type="button"
-            onClick={onClose}
+            onClick={() => closeRef.current()}
           >
             {cancelLabel}
           </button>
           <button
             className="tp-btn tp-btn--danger"
             type="button"
-            disabled={busy}
-            onClick={onConfirm}
+            aria-disabled={busy ? true : undefined}
+            onClick={() => {
+              if (!busyRef.current) confirmRef.current();
+            }}
           >
             {confirmLabel}
           </button>
         </div>
       </section>
     </>
+  );
+}
+
+/** Fictional, interactive examples of the existing confirmation; not a primary app view. */
+export function Kb78Gallery() {
+  const { lang } = useLocale();
+  const copy = kb78Copy[lang];
+  const [open, setOpen] = useState(false);
+  const [phase, setPhase] = useState<"ready" | "pending" | "success" | "error">("ready");
+  const launch = () => {
+    setPhase("ready");
+    setOpen(true);
+  };
+  return (
+    <main className="kb78-gallery" data-testid="kb78-gallery">
+      <h1>{copy.title}</h1>
+      <p>{copy.fictional}</p>
+      <button type="button" className="tp-btn tp-btn--secondary" onClick={launch}>
+        {copy.open}
+      </button>
+      <output className="kb78-gallery-result">
+        {phase === "success" ? copy.success : phase === "error" ? copy.error : copy.guidance}
+      </output>
+      {open ? (
+        <ConfirmSheet
+          title={copy.confirmTitle}
+          body={
+            <>
+              {phase === "pending" ? copy.pending : copy.body}
+              {phase === "pending" ? (
+                <span className="kb78-gallery-settle">
+                  <button
+                    type="button"
+                    className="tp-btn tp-btn--secondary"
+                    onClick={() => {
+                      setPhase("success");
+                      setOpen(false);
+                    }}
+                  >
+                    {copy.finish}
+                  </button>
+                  <button
+                    type="button"
+                    className="tp-btn tp-btn--secondary"
+                    onClick={() => {
+                      setPhase("error");
+                      setOpen(false);
+                    }}
+                  >
+                    {copy.reject}
+                  </button>
+                </span>
+              ) : null}
+            </>
+          }
+          confirmLabel={phase === "pending" ? copy.pending : copy.confirm}
+          cancelLabel={copy.cancel}
+          busy={phase === "pending"}
+          onConfirm={() => setPhase("pending")}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </main>
   );
 }
