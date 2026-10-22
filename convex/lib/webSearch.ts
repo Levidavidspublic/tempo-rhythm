@@ -38,7 +38,7 @@ export type WebSearchResult = {
 };
 
 export type WebSearchProvider = {
-  search(query: string, options: { maxResults: number }): Promise<WebSearchResult[]>;
+  search(query: string, options: { maxResults: number; signal?: AbortSignal }): Promise<WebSearchResult[]>;
 };
 
 export const WEB_SEARCH_LIMITS = {
@@ -53,7 +53,7 @@ export const WEB_SEARCH_LIMITS = {
   timeoutMs: 20_000,
 } as const;
 
-export type WebSearchErrorKind = "timeout" | "network" | "auth" | "rate_limited" | "upstream" | "bad_response";
+export type WebSearchErrorKind = "cancelled" | "timeout" | "network" | "auth" | "rate_limited" | "upstream" | "bad_response";
 
 /** A failed search. Its message is only the kind: no key, query or provider text. */
 export class WebSearchError extends Error {
@@ -187,15 +187,31 @@ function errorKindForStatus(status: number): WebSearchErrorKind {
 /** The Mistral provider. `fetchImpl` is for tests; the key is only ever put in the auth header. */
 export function mistralWebSearch(apiKey: string, fetchImpl: typeof fetch = fetch): WebSearchProvider {
   return {
-    async search(query, { maxResults }) {
+    async search(query, { maxResults, signal }) {
+      if (signal?.aborted) throw new WebSearchError("cancelled");
       const q = searchQuery(query);
       if (!q) return [];
       const controller = new AbortController();
+      const cancel = () => controller.abort();
+      signal?.addEventListener("abort", cancel, { once: true });
+      const abortedKind = () => signal?.aborted ? "cancelled" as const : "timeout" as const;
+      const during = <T>(work: () => Promise<T>): Promise<T> => new Promise((resolve, reject) => {
+        const abort = () => {
+          controller.signal.removeEventListener("abort", abort);
+          reject(new WebSearchError(abortedKind()));
+        };
+        if (controller.signal.aborted) { abort(); return; }
+        controller.signal.addEventListener("abort", abort, { once: true });
+        Promise.resolve().then(() => {
+          if (controller.signal.aborted) throw new WebSearchError(abortedKind());
+          return work();
+        }).then(resolve, reject).finally(() => controller.signal.removeEventListener("abort", abort));
+      });
       const timer = setTimeout(() => controller.abort(), WEB_SEARCH_LIMITS.timeoutMs);
       try {
         let response: Response;
         try {
-          response = await fetchImpl(MISTRAL_CONVERSATIONS_URL, {
+          response = await during(() => fetchImpl(MISTRAL_CONVERSATIONS_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -215,22 +231,23 @@ export function mistralWebSearch(apiKey: string, fetchImpl: typeof fetch = fetch
               store: false,
             }),
             signal: controller.signal,
-          });
+          }));
         } catch {
-          throw new WebSearchError(controller.signal.aborted ? "timeout" : "network");
+          throw new WebSearchError(controller.signal.aborted ? abortedKind() : "network");
         }
         if (!response.ok) {
           throw new WebSearchError(errorKindForStatus(response.status));
         }
         let json: unknown;
         try {
-          json = await response.json();
+          json = await during(() => response.json());
         } catch {
-          throw new WebSearchError(controller.signal.aborted ? "timeout" : "bad_response");
+          throw new WebSearchError(controller.signal.aborted ? abortedKind() : "bad_response");
         }
         return readMistralSearch(json, maxResults);
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener("abort", cancel);
       }
     },
   };
