@@ -1,0 +1,24 @@
+/* KB-10: auth card refinements shared by the mounted page and modal. */
+.kb10-card { max-width: 100%; min-width: 0; color: var(--tp-ink); }
+.kb10-card[data-variant="modal"] { width: min(100%, 480px); }
+.kb10-card .tp-auth-card__lede { margin-block: var(--tp-space-2) 0; line-height: 1.5; overflow-wrap: anywhere; }
+.kb10-card .tp-form { display: grid; gap: var(--tp-space-4); }
+.kb10-card .tp-field { display: grid; gap: var(--tp-space-2); min-width: 0; }
+.kb10-card .kb10-email { min-width: 0; width: 100%; min-height: 44px; }
+.kb10-card .kb10-error { display: flex; gap: var(--tp-space-2); align-items: flex-start; color: var(--tp-danger); font-size: var(--tp-text-sm); overflow-wrap: anywhere; }
+.kb10-card .kb10-error svg { flex: none; }
+.kb10-card .kb10-target { min-height: 44px; }
+.kb10-card .kb10-status { display: grid; gap: var(--tp-space-4); min-width: 0; }
+.kb10-card .kb10-status bdi { overflow-wrap: anywhere; }
+.kb10-card .kb10-help { display: grid; justify-items: center; gap: var(--tp-space-3); min-width: 0; }
+.kb10-card .kb10-help .tp-auth-card__foot { margin: 0; }
+.kb10-card .kb10-text-link { color: var(--tp-accent); text-decoration: underline; text-underline-offset: 3px; font: inherit; font-weight: 600; }
+.kb10-card .kb10-language { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--tp-space-2); margin: 0; padding: 0; border: 0; font-size: var(--tp-text-sm); }
+.kb10-card .kb10-language button { padding-inline: var(--tp-space-3); border-radius: var(--tp-radius-pill); }
+.kb10-card .kb10-language button[aria-pressed="true"] { background: var(--tp-accent-wash); font-weight: 700; }
+.kb10-card :is(button, a, input):focus-visible, .kb10-gallery button:focus-visible, .kb10-card .tp-auth-card__title:focus { outline: var(--tp-focus-w, 2px) solid var(--tp-accent); outline-offset: var(--tp-focus-gap, 2px); }
+.kb10-gallery { display: grid; justify-items: center; gap: var(--tp-space-6); padding: var(--tp-space-5); min-width: 0; }
+.kb10-gallery > h1 { font-family: var(--tp-font-serif); font-size: var(--tp-text-2xl); }
+.kb10-gallery__states { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--tp-space-2); max-width: 100%; }
+.kb10-gallery__states button { min-height: 44px; padding: var(--tp-space-2) var(--tp-space-3); border: 1px solid var(--tp-line); border-radius: var(--tp-radius-pill); }
+.kb10-gallery__states button[aria-pressed="true"] { background: var(--tp-accent-wash); }
