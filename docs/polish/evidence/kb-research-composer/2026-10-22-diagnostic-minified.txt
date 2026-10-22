@@ -1,0 +1,61 @@
+Fixture JS bytes 1178289
+{
+  "timings": [
+    {
+      "name": "new page",
+      "ms": 532
+    },
+    {
+      "name": "goto",
+      "ms": 799
+    },
+    {
+      "name": "textarea ready",
+      "ms": 872
+    },
+    {
+      "name": "capabilities ready",
+      "ms": 82
+    },
+    {
+      "name": "set deferred preparation",
+      "ms": 69
+    },
+    {
+      "name": "fill original",
+      "ms": 275
+    },
+    {
+      "name": "send click",
+      "ms": 433
+    },
+    {
+      "name": "prepared request observed",
+      "ms": 10
+    },
+    {
+      "name": "switch chat",
+      "ms": 38
+    },
+    {
+      "name": "new chat enabled",
+      "ms": 30
+    },
+    {
+      "name": "fill other draft",
+      "ms": 73
+    },
+    {
+      "name": "resolve old preparation",
+      "ms": 80
+    },
+    {
+      "name": "old cancellation observed",
+      "ms": 12
+    }
+  ],
+  "totalMs": 3305,
+  "errors": [],
+  "draft": "Draft in the other chat",
+  "actionCalls": 0
+}

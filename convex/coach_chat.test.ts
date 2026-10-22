@@ -16,6 +16,7 @@ import {
   WebSearchError,
   type WebSearchResult,
   stubWebSearch,
+  mistralWebSearch,
 } from "./lib/webSearch";
 
 /**
@@ -112,6 +113,7 @@ function makeWorld() {
     "coach:releaseTurn": coach.releaseTurn,
     "coach:saveReply": coach.saveReply,
     "coach:reserveWebSearch": coach.reserveWebSearch,
+    "coach:researchRequestState": coach.researchRequestState,
   };
   /** An action ctx whose runQuery / runMutation run the named handler as the same user. */
   const actionAs = (userId: string) => {
@@ -1487,3 +1489,446 @@ describe("coach.webSearchStatus", () => {
     }
   });
 });
+
+const REQUEST = "00000000-0000-4000-8000-000000000001";
+const OTHER_REQUEST = "00000000-0000-4000-8000-000000000002";
+const CONTROL_REPLY = '{"reply":"A small first step.","proposal":null}';
+async function prepared(world: World, research = { useWeb: false, thinkHard: false }) {
+  const conversationId = await seedConversation(world);
+  await say(world, conversationId, "What should I try first?");
+  const begun = await run(coach.beginReply, world.as(A), { conversationId, requestId: REQUEST, research });
+  expect(begun.status).toBe("ready");
+  return { conversationId, requestId: REQUEST, replyTo: begun.replyTo as Id<"messages"> };
+}
+function researchTimers() {
+  const pending: Array<{ fn: () => void | Promise<void>; ms: number }> = [];
+  const timer = spyOn(globalThis, "setTimeout").mockImplementation(((fn: () => void, ms: number) => {
+    pending.push({ fn, ms });
+    return pending.length;
+  }) as typeof setTimeout);
+  const clear = spyOn(globalThis, "clearTimeout").mockImplementation(() => {});
+  return {
+    pending,
+    restore: () => {
+      timer.mockRestore();
+      clear.mockRestore();
+    },
+  };
+}
+
+describe("owned research controls", () => {
+  const names = ["MISTRAL_API_KEY", "DEEPINFRA_API_KEY", "TEMPO_AI_MODEL", "TEMPO_AI_THINK_HARD_MODEL"] as const;
+  let previous: Array<string | undefined> = [];
+  beforeEach(() => {
+    previous = names.map((name) => process.env[name]);
+    for (const name of names) process.env[name] = `fictional-${name}`;
+  });
+  afterEach(() => {
+    names.forEach((name, index) => {
+      if (previous[index] === undefined) delete process.env[name];
+      else process.env[name] = previous[index];
+    });
+  });
+  test("prepare is idempotent, preserves unrelated metadata and creates no extra message", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    const row = world.row(key.replyTo);
+    await world.db.patch(key.replyTo, { toolCalls: { ...(row?.toolCalls as object), unrelated: "kept" } });
+    const args = {
+      conversationId: key.conversationId,
+      requestId: REQUEST,
+      research: { useWeb: false, thinkHard: false },
+    };
+    expect(await run(coach.beginReply, world.as(A), args)).toEqual({
+      status: "ready",
+      requestId: REQUEST,
+      replyTo: key.replyTo,
+    });
+    expect(world.rows("messages")).toHaveLength(1);
+    expect((world.row(key.replyTo)?.toolCalls as Record<string, unknown>).unrelated).toBe("kept");
+    await expect(
+      run(coach.beginReply, world.as(A), { ...args, research: { useWeb: true, thinkHard: false } }),
+    ).rejects.toBeInstanceOf(ConvexError);
+  });
+  test("owner-only prepare, state, execution and cancellation preserve approval", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    for (const user of [B, PENDING]) {
+      await expect(
+        run(coach.beginReply, world.as(user), {
+          conversationId: key.conversationId,
+          requestId: OTHER_REQUEST,
+          research: { useWeb: false, thinkHard: false },
+        }),
+      ).rejects.toThrow();
+      await expect(run(coach.researchRequestState, world.as(user), key)).rejects.toThrow();
+      await expect(run(coach.cancelReply, world.as(user), key)).rejects.toThrow();
+      const model = fakeModel(CONTROL_REPLY);
+      await expect(coach.runControlledReply(world.actionAs(user), key, model.call, null)).rejects.toThrow();
+      expect(model.calls).toHaveLength(0);
+    }
+  });
+  test("a foreign or deleted page cannot become controlled context", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "Look at my page");
+    for (const page of [{ userId: B }, { userId: A, deletedAt: 1 }]) {
+      const noteId = await world.db.insert("notes", {
+        ...page,
+        title: "Fictional",
+        body: "",
+        createdAt: 1,
+        updatedAt: 1,
+      });
+      await expect(
+        run(coach.beginReply, world.as(A), {
+          conversationId,
+          requestId: REQUEST,
+          noteId,
+          research: { useWeb: false, thinkHard: false },
+        }),
+      ).rejects.toBeInstanceOf(ConvexError);
+    }
+  });
+  test("cancel before execution is monotonic and the legacy reply cannot revive it", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    expect(await run(coach.cancelReply, world.as(A), key)).toEqual({ status: "cancelled" });
+    expect(await run(coach.cancelReply, world.as(A), key)).toEqual({ status: "cancelled" });
+    const model = fakeModel(CONTROL_REPLY);
+    expect(await coach.runControlledReply(world.actionAs(A), key, model.call, null)).toBe("cancelled");
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId: key.conversationId }, model.call, null)).toBe(
+      "idle",
+    );
+    expect(model.calls).toHaveLength(0);
+    expect((world.row(key.replyTo)?.toolCalls as Record<string, unknown>).coachClaim).toBeUndefined();
+  });
+  test("stale and missing request identities fail with the same error and cannot cancel a newer turn", async () => {
+    const world = makeWorld();
+    const old = await prepared(world);
+    await say(world, old.conversationId, "A newer question");
+    const next = await run(coach.beginReply, world.as(A), {
+      conversationId: old.conversationId,
+      requestId: OTHER_REQUEST,
+      research: { useWeb: false, thinkHard: false },
+    });
+    const key = { conversationId: old.conversationId, replyTo: next.replyTo, requestId: OTHER_REQUEST };
+    await expect(run(coach.cancelReply, world.as(A), { ...key, requestId: REQUEST })).rejects.toThrow(
+      "This reply is unavailable.",
+    );
+    await expect(run(coach.cancelReply, world.as(A), { ...key, replyTo: "messages:missing" })).rejects.toThrow(
+      "This reply is unavailable.",
+    );
+    await run(coach.cancelReply, world.as(A), old);
+    expect((await run(coach.researchRequestState, world.as(A), key)).state).toBe("prepared");
+  });
+  test("control execution uses settings mode and a bounded high-reasoning deadline", async () => {
+    const world = makeWorld();
+    const key = await prepared(world, { useWeb: false, thinkHard: true });
+    const model = fakeModel(CONTROL_REPLY);
+    const start = Date.now();
+    expect(await coach.runControlledReply(world.actionAs(A), key, model.call, null)).toBe("replied");
+    expect(model.calls[0]?.mode).toBe("think_hard");
+    expect(model.calls[0]?.reasoning).toBe("high");
+    expect(model.calls[0]?.deadlineAtMs).toBeGreaterThanOrEqual(start + coach.RESEARCH_ACTION_MS);
+    expect(model.calls[0]?.deadlineAtMs).toBeLessThanOrEqual(Date.now() + coach.RESEARCH_ACTION_MS);
+    expect((await run(coach.researchRequestState, world.as(A), key)).state).toBe("finished");
+    expect(await run(coach.cancelReply, world.as(A), key)).toEqual({ status: "idle" });
+  });
+  test("search false suppresses even an enabled preference and true grants only this turn", async () => {
+    const world = makeWorld();
+    await world.db.insert("preferences", { userId: A, coachWebSearch: true, locale: "en" });
+    const key = await prepared(world);
+    const search = stubWebSearch([]);
+    const model = fakeModel('{"reply":"Let me check.","search":"fictional query","proposal":null}');
+    expect(await coach.runControlledReply(world.actionAs(A), key, model.call, search.provider)).toBe("replied");
+    expect(search.calls).toHaveLength(0);
+    const other = makeWorld();
+    const permitted = await prepared(other, { useWeb: true, thinkHard: false });
+    const searched = stubWebSearch([]);
+    expect(await coach.runControlledReply(other.actionAs(A), permitted, model.call, searched.provider)).toBe("replied");
+    expect(searched.calls).toHaveLength(1);
+    expect(other.rows("coachWebSearches")).toHaveLength(1);
+    expect(other.rows("preferences")).toHaveLength(0);
+  });
+  test("unconfigured or exhausted controls are unavailable before any claim", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "A question");
+    delete process.env.TEMPO_AI_THINK_HARD_MODEL;
+    const args = { conversationId, requestId: REQUEST, research: { useWeb: false, thinkHard: true } };
+    expect(await run(coach.beginReply, world.as(A), args)).toEqual({ status: "unsupported", control: "thinkHard" });
+    for (let i = 0; i < 10; i++)
+      await world.db.insert("coachWebSearches", {
+        userId: A,
+        utcDateKey: new Date().toISOString().slice(0, 10),
+        createdAt: 1,
+        updatedAt: 1,
+      });
+    expect(await run(coach.beginReply, world.as(A), { ...args, research: { useWeb: true, thinkHard: false } })).toEqual(
+      { status: "unsupported", control: "web" },
+    );
+    expect(await run(coach.researchCapabilities, world.as(A), {})).toEqual({ useWeb: false, thinkHard: false });
+    expect(world.rows("messages")[0]?.toolCalls).toBeUndefined();
+  });
+  test("crisis text creates only the fixed card and no prepared research turn", async () => {
+    const world = makeWorld();
+    const conversationId = await seedConversation(world);
+    await say(world, conversationId, "I want to kill myself");
+    expect(
+      await run(coach.beginReply, world.as(A), {
+        conversationId,
+        requestId: REQUEST,
+        research: { useWeb: true, thinkHard: true },
+      }),
+    ).toEqual({ status: "idle" });
+    const model = fakeModel(CONTROL_REPLY);
+    const search = stubWebSearch([]);
+    expect(await coach.runCoachReply(world.actionAs(A), { conversationId }, model.call, search.provider)).toBe("idle");
+    expect(model.calls).toHaveLength(0);
+    expect(search.calls).toHaveLength(0);
+  });
+  test("two action deliveries execute a prepared request only once", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    let started!: () => void;
+    const entered = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const model = fakeModel(CONTROL_REPLY);
+    const call: typeof callLLM = async (opts) => {
+      started();
+      await pending;
+      return model.call(opts);
+    };
+    const first = coach.runControlledReply(world.actionAs(A), key, call, null);
+    await entered;
+    expect(await coach.runControlledReply(world.actionAs(A), key, call, null)).toBe("busy");
+    finish();
+    expect(await first).toBe("replied");
+    expect(model.calls).toHaveLength(1);
+  });
+  test("a model resolving before the next poll still reports cancellation and cannot save", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    const model = fakeModel(CONTROL_REPLY);
+    expect(
+      await coach.runControlledReply(
+        world.actionAs(A),
+        key,
+        async (opts) => {
+          await run(coach.cancelReply, world.as(A), key);
+          return model.call(opts);
+        },
+        null,
+      ),
+    ).toBe("cancelled");
+    expect(messages(world, key.conversationId)).toHaveLength(1);
+  });
+  test("cancellation aborts an outstanding model body and never stores a late answer", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    const timers = researchTimers();
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let finish!: () => void;
+    const body = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    let signal: AbortSignal | undefined;
+    const model = fakeModel(CONTROL_REPLY);
+    try {
+      const result = coach.runControlledReply(
+        world.actionAs(A),
+        key,
+        async (opts) => {
+          signal = opts.signal;
+          entered();
+          await body;
+          return model.call(opts);
+        },
+        null,
+      );
+      await started;
+      await run(coach.cancelReply, world.as(A), key);
+      await timers.pending.find((item) => item.ms === coach.RESEARCH_POLL_MS)?.fn();
+      expect(await result).toBe("cancelled");
+      expect(signal?.aborted).toBe(true);
+      finish();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(messages(world, key.conversationId)).toHaveLength(1);
+    } finally {
+      finish?.();
+      timers.restore();
+    }
+  });
+  test("cancellation during retrieval forwards its signal and suppresses the second model and persistence", async () => {
+    const world = makeWorld();
+    const key = await prepared(world, { useWeb: true, thinkHard: false });
+    const timers = researchTimers();
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let finish!: () => void;
+    const response = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    let signal: AbortSignal | undefined;
+    const model = fakeModel('{"reply":"Let me check.","search":"fictional query","proposal":null}');
+    try {
+      const result = coach.runControlledReply(world.actionAs(A), key, model.call, {
+        search: async (_query, options) => {
+          signal = options.signal;
+          entered();
+          await response;
+          return [];
+        },
+      });
+      await started;
+      await run(coach.cancelReply, world.as(A), key);
+      await timers.pending.find((item) => item.ms === coach.RESEARCH_POLL_MS)?.fn();
+      expect(await result).toBe("cancelled");
+      expect(signal?.aborted).toBe(true);
+      finish();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(model.calls).toHaveLength(1);
+      expect(messages(world, key.conversationId)).toHaveLength(1);
+    } finally {
+      finish?.();
+      timers.restore();
+    }
+  });
+  test("deadline stops an uncooperative provider, removes the save claim and cleans watcher timers", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    const timers = researchTimers();
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let finish!: () => void;
+    const body = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const model = fakeModel(CONTROL_REPLY);
+    try {
+      const result = coach.runControlledReply(
+        world.actionAs(A),
+        key,
+        async (opts) => {
+          entered();
+          await body;
+          return model.call(opts);
+        },
+        null,
+      );
+      await started;
+      await timers.pending.find((item) => item.ms === coach.RESEARCH_ACTION_MS)?.fn();
+      expect(await result).toBe("unavailable");
+      expect((world.row(key.replyTo)?.toolCalls as Record<string, unknown>).coachClaim).toBeUndefined();
+      const scheduled = timers.pending.length;
+      await timers.pending.find((item) => item.ms === coach.RESEARCH_POLL_MS)?.fn();
+      expect(timers.pending).toHaveLength(scheduled);
+      finish();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(messages(world, key.conversationId)).toHaveLength(1);
+    } finally {
+      finish?.();
+      timers.restore();
+    }
+  });
+  test("the cancellation watcher never schedules more than its bounded query budget", async () => {
+    const world = makeWorld();
+    const key = await prepared(world);
+    const timers = researchTimers();
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    let finish!: () => void;
+    const body = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const model = fakeModel(CONTROL_REPLY);
+    try {
+      const result = coach.runControlledReply(
+        world.actionAs(A),
+        key,
+        async (opts) => {
+          entered();
+          await body;
+          return model.call(opts);
+        },
+        null,
+      );
+      await started;
+      for (let i = 0; i < coach.RESEARCH_MAX_POLLS; i++)
+        await timers.pending.filter((item) => item.ms === coach.RESEARCH_POLL_MS)[i]?.fn();
+      expect(timers.pending.filter((item) => item.ms === coach.RESEARCH_POLL_MS)).toHaveLength(285);
+      await run(coach.cancelReply, world.as(A), key);
+      finish();
+      expect(await result).not.toBe("replied");
+      expect(messages(world, key.conversationId)).toHaveLength(1);
+    } finally {
+      finish?.();
+      timers.restore();
+    }
+  });
+});
+
+describe("web search transport cancellation", () => {
+  test("an abort before the transport microtask sends no network request", async () => {
+    const controller = new AbortController();
+    let calls = 0;
+    const provider = mistralWebSearch("fictional", (async () => {
+      calls++;
+      return new Response("{}");
+    }) as typeof fetch);
+    const result = provider.search("query", { maxResults: 5, signal: controller.signal });
+    controller.abort();
+    await expect(result).rejects.toMatchObject({ kind: "cancelled" });
+    expect(calls).toBe(0);
+  });
+  test("pre-aborted search sends no network request", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    let calls = 0;
+    const provider = mistralWebSearch("fictional", (async () => {
+      calls++;
+      return new Response("{}");
+    }) as typeof fetch);
+    await expect(provider.search("query", { maxResults: 5, signal: controller.signal })).rejects.toMatchObject({
+      kind: "cancelled",
+    });
+    expect(calls).toBe(0);
+  });
+  test("abort covers an uncooperative response body and retains sanitized errors", async () => {
+    const controller = new AbortController();
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const provider = mistralWebSearch("fictional", (async () => ({
+      ok: true,
+      json: () => {
+        entered();
+        return new Promise(() => {});
+      },
+    })) as unknown as typeof fetch);
+    const result = provider.search("fictional query", { maxResults: 5, signal: controller.signal });
+    await started;
+    controller.abort();
+    await expect(result).rejects.toMatchObject({ kind: "cancelled", message: "web search failed (cancelled)" });
+  });
+});
+
