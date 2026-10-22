@@ -1,0 +1,13 @@
+{
+  "head": "62390387a298d255a4af65a2a8b358902e70203a",
+  "exits": {
+    "bun-version": 0,
+    "install": 0,
+    "lint": 0,
+    "typecheck": 0,
+    "test": 1,
+    "scans": 0,
+    "e2e": 1,
+    "build": 0
+  }
+}

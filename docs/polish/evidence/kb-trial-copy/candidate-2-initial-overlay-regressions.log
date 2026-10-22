@@ -1,0 +1,39 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/lib/rootEntry.test.ts:
+(pass) default entry > treats / as a public route for the marketing page [0.10ms]
+(pass) default entry > does not redirect /api/mcp to /sign-in when signed out [20.79ms]
+(pass) default entry > shows the marketing page to a signed-out visitor on / [0.06ms]
+(pass) default entry > sends a signed-in visitor on / to /today [0.07ms]
+(pass) default entry > leaves a magic-link code on / so Convex Auth can exchange it [0.05ms]
+(pass) default entry > keeps the listed auth and legal routes public for signed-out visitors [0.08ms]
+(pass) default entry > still sends signed-out visitors on app routes to /sign-in [0.03ms]
+(pass) default entry > does not treat a code query on other routes as a free pass [0.02ms]
+(pass) default entry > makes only the pricing route public using the real middleware matcher [219.56ms]
+128 |       import { renderToStaticMarkup } from "react-dom/server";
+129 |       import { LocaleProvider } from "./components/providers/LocaleProvider";
+130 |       import { PublicPricing } from "./components/marketing-pages/PublicPricing";
+131 |       console.log(renderToStaticMarkup(createElement(LocaleProvider, null, createElement(PublicPricing))));
+132 |     `], { cwd: `${import.meta.dir}/..`, timeout: 10_000 });
+133 |     expect(result.exitCode).toBe(0);
+                                  ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/workspace/work/overnight/trial-copy-oct22/apps/web/lib/rootEntry.test.ts:133:29)
+(fail) default entry > public pricing renders its catalog and checkout status without an account [973.54ms]
+
+apps/web/lib/i18n.test.ts:
+(pass) resolveLang > the URL parameter wins, then the stored choice, then English [0.51ms]
+(pass) resolveLang > unknown values are ignored [0.03ms]
+(pass) direction > Hebrew is right-to-left, English left-to-right [0.03ms]
+(pass) messages > every English key has a non-empty Hebrew string [2.84ms]
+(pass) messages > copy never uses shaming words (HARD_RULES §1) [1.41ms]
+(pass) messages > translate returns the language's string [0.08ms]
+
+ 15 pass
+ 1 fail
+ 2153 expect() calls
+Ran 16 tests across 2 files. [1.59s]

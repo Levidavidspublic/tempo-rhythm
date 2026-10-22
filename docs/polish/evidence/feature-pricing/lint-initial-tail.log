@@ -1,0 +1,20 @@
+tempo-rhythm-web:lint: Found 1 error.
+tempo-rhythm-web:lint: Found 9 warnings.
+tempo-rhythm-web:lint:     You can ignore more globals using the javascript.globals configuration.
+tempo-rhythm-web:lint:   
+tempo-rhythm-web:lint: 
+tempo-rhythm-web:lint: lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint: 
+tempo-rhythm-web:lint:   × Some errors were emitted while running checks.
+tempo-rhythm-web:lint:   
+tempo-rhythm-web:lint: 
+tempo-rhythm-web:lint: error: script "lint" exited with code 1
+ ERROR  tempo-rhythm-web#lint: command (/workspace/tempo-rhythm/apps/web) /workspace/work/kb/bin/bun run lint exited (1)
+
+ Tasks:    4 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    16.023s 
+Failed:    tempo-rhythm-web#lint
+
+ ERROR  run failed: command  exited (1)
+error: script "lint" exited with code 1

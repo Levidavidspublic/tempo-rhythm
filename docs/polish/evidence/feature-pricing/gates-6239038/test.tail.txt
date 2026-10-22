@@ -1,0 +1,20 @@
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+4 tests failed:
+(fail) gap-free hash-linked chain > the intervening bound is 256: 256 plan, 257 do not [10312.23ms]
+  ^ this test timed out after 5000ms.
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [53864.31ms]
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [30000.86ms]
+  ^ this test timed out after 30000ms.
+(fail) (unnamed) [5000.73ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3492 pass
+ 3 todo
+ 4 fail
+ 81525 expect() calls
+Ran 3499 tests across 211 files. [756.31s]
+error: script "test" exited with code 1

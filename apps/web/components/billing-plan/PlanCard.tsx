@@ -3,7 +3,7 @@
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, type TpIconName } from "@/components/tempo/TpIcon";
 import type { MessageKey } from "@/lib/i18n";
-import { type BillingInterval, formatUsd, type Tier, type TierId, tierPrice } from "@/lib/settings/billing";
+import { type BillingInterval, formatUsd, type Tier, type TierId, tierPrice, TIERS } from "@/lib/settings/billing";
 
 /** Shape returned by `api.users.getMyPlan` when someone is signed in. */
 export type CurrentPlan = {
@@ -37,7 +37,6 @@ const PER = { "3w": "set.billing.per3w", month: "set.billing.perMonth", year: "s
 function featuresFor(tier: Tier): Feature[] {
   if (tier.id === "trial") {
     return [
-      { icon: "check", text: "set.billing.fBasicAll" },
       { icon: "check", text: "set.billing.fTrialThen" },
       { icon: "bell", text: "set.billing.fTrialNote" },
     ];
@@ -72,6 +71,9 @@ export function PlanCard({
 }) {
   const { t } = useLocale();
   const price = tierPrice(tier, interval);
+  const trialTier = TIERS.find((candidate) => candidate.id === "trial");
+  const trialPrice = trialTier ? tierPrice(trialTier, interval) : null;
+  const trialCopy = trialPrice ? t("set.billing.planTrial").replace("{period}", t(PER[trialPrice.per])).split("{amount}") : null;
   const nameId = `t-${tier.id}`;
   let cta: MessageKey | null = "set.billing.chooseLater";
   if (tier.id === "trial") cta = "set.billing.trialCta";
@@ -95,6 +97,11 @@ export function PlanCard({
         <span className="tp-tier__amount tp-num">{formatUsd(price.amount)}</span>
         <span className="tp-tier__per">{t(PER[price.per])}</span>
       </p>
+      {tier.id !== "trial" && trialPrice && trialCopy ? (
+        <p className="tp-tier__desc">
+          {trialCopy[0]}<bdi className="tp-num">{formatUsd(trialPrice.amount)}</bdi>{trialCopy[1]}
+        </p>
+      ) : null}
       <ul className="tp-tier__features">
         {featuresFor(tier).map((feature) => (
           <li key={"text" in feature ? feature.text : "live"}>
