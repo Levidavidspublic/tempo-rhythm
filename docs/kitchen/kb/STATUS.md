@@ -1,5 +1,17 @@
 # KB finish status
 
+## WALK — Parser draft published; hero harness stall recorded, 2026-10-22 11:56 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues (6 closed, 85 open), 65 PRs (11 merged, 54 open). NEEDS-AMIT still has 16 current ordered actions.
+
+- **#1301 → draft #1302**, head 1acc05a15cb5951e706b7b325ebb6a24a37d0a99: page-summary parser candidate 1 published in exactly three scoped files. All 298 original cases and existing deadlines/assertions remain; five semantic regression cases were added. Independent source review found no concrete correctness defect. Only diff whitespace validation passes so far; all 303 scoped cases and mandatory runtime checks remain UNKNOWN pending the exclusive validation slot. The failed 7016.86ms isolated baseline remains recorded. No claim that the performance fix works yet.
+- **Hero #1210**, unchanged head 6a9f539: frozen install, lint and typecheck pass. The original full suite stalled in KB07 after 1186 observed passes, zero named failures and three todos; these are partial observations, not an aggregate. Its child was absent/reaped and browser gone, while the parent awaited an unbounded top-level output/exit Promise beyond the child's existing 240s bound. Owned-only termination was authorized to preserve the failure and allow remaining mandatory scans, E2E and build to run once. Exact pending promise and root cause remain UNKNOWN. No deadline, source, assertion or check was changed.
+- **Lane 1:** shared #1203 remains frozen after its additional authorized repair failed. Dependencies and owner labels remain gates. The new parser work neither reopens that repair budget nor changes the held original parser ticket.
+- **Next:** complete hero's remaining validation and report, then grant parser candidate 1 a quiet validation slot. Voice research #1256 and Executor #1277 remain queued for their first complete current-source mandatory validation. No concurrent heavy/compiler/browser jobs; exactly four worktrees.
+- **Done:** published parser draft and preserved current failure evidence. **Needs Amit:** existing 16 actions, ordered in NEEDS-AMIT. **UNKNOWN:** parser runtime outcome, remaining mandatory checks, pending CI/reviews and actual preview/provider/device behavior. Protected #1193/#1198 remain untouched; no production/default direct push, deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Independent parser work and active hero validation, 2026-10-22 11:38 UTC
 
 No new merge. Lane 1 remains **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2 is now **0 closed / 29 open issues; 0 merged / 27 open PRs**. There are16current Needs Amit actions; no additional owner decision was inferred for this engineering work.
