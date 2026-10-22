@@ -52,3 +52,15 @@ Draft #1289 (ticket #1278) at `88e9e26` adds only optional `voiceSessions.agentB
 The exact canonical message link and one-time character reservation are committed atomically when an answer is saved. Exhausted speech allowance preserves text/proposals but makes the voice receipt failed and undeliverable. Repeated callbacks cannot reserve twice. Stop/revocation/cancel fences remain authoritative; crisis bypasses unrelated typed-turn busy state and produces the existing fixed card without model/TTS output. Hebrew live crisis remains OFF.
 
 #1253 owns HTTP/audio wiring after these APIs. Callback history is not Tempo context; unknown completed-parent anchoring fails closed. Deployment/provider conformance is UNKNOWN. #1287 documents a blank, default-OFF `TEMPO_VOICE_AGENT_ENABLED` flag; no actual setting changes are performed. No new schema may be treated as deployed because focused fixtures pass.
+
+## WALK — Billing deletion fence prepared, 22 October 2026
+
+Issue #1299 / draft PR #1300 at285e32c9087aa8354f03a44db51be8639333ba4b adds only two optional fields to existing users: `billingDeletionEpoch: v.optional(v.number())` and `billingDeletedAt: v.optional(v.number())`. No tables, indexes, other fields, validators, environment settings or deployment change.
+
+The existing live-user deletion transaction increments the generation once and stamps the same server deletion instant as deletedAt/updatedAt. Missing generation becomes1; malformed or saturated values use Number.MAX_SAFE_INTEGER without preventing privacy deletion. Repeated deletion does not advance it. Restore remains unchanged and preserves both fields. All child cleanup/subscription deactivation is unchanged. Legacy rows remain valid without a backfill.
+
+This is prepared code, not an applied migration or deployed behavior. Removal of the new writer can stop future markers but must not erase retained deletion history; any rollback/removal of fields requires a separate schema review. Future payment consumers must check the markers before/after fetch and fail closed on a lifecycle change. Absence does not prove a legacy account was never deleted; historical restoration/recovery remains an activation prerequisite.
+
+Serialize schema integration with #1262/#1273/#1289 and retain every unrelated approved field/index. The actual CodeRabbit/current CI/label guards remain mandatory. Local evidence:16new/66unchanged lifecycle cases pass, scoped lint passes; full publication-checkout gates pending. Candidate2 changes only a new-test type annotation.
+
+Issue #1294 is still on hold. Its proposed providerSnapshot/providerReceipts/independentGrant and first-provider-application timing fields are **not implemented schema changes**. The old event-only design has been superseded; complete authoritative snapshots, independent beta evidence, expiry and recovery require the reviewed follow-up contract before activation. #1298's unmounted helpers add no schema.
