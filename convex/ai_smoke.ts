@@ -6,7 +6,9 @@ import { callLLM, resolveAiModel } from "./lib/ai_router";
 export const pingModel = internalAction({
   args: {},
   handler: async () => {
+    let model = "";
     try {
+      model = resolveAiModel();
       const result = await callLLM({
         tier: "fast",
         messages: [{ role: "user", content: "Reply with exactly: pong" }],
@@ -21,7 +23,7 @@ export const pingModel = internalAction({
       };
     } catch (err) {
       const e = err as Error;
-      return { model: resolveAiModel(), content: "", totalTokens: 0, ok: false, error: `${e.name}: ${e.message}` };
+      return { model, content: "", totalTokens: 0, ok: false, error: `${e.name}: ${e.message}` };
     }
   },
 });
