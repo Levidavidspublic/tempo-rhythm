@@ -1,5 +1,28 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Current checkpoint, 22 October 2026, 07:21 UTC
+
+No new merge in this continuation. Integration remains `7d1a0f6`. These are preparation and validation results, not preview-readiness claims.
+
+| Lane | Work | Current result |
+| --- | --- | --- |
+| 1 | Shared harness #1203 | Extra authorized candidate `be1fec2` pushed; focused 16 pass / 4 fail / 1 error. Process traversal caused cleanup regressions. Frozen at the retry boundary; dependent fixture work cannot merge. |
+| 1 | Clean KB-67 replacement #1254 | Pushed `3dfd993` with one clean commit above integration; old #1197 remains open and linked. Depends on #1203. |
+| 1 | KB-01 #1262 | Prepared `cfd5200`; 21 focused tests pass, 891 assertions. Four optional schema fields recorded in DECISIONS. Full gates, dependencies and owner label pending. |
+| 1 | KB-31 #1214 | Bulk/Undo/export preparation stacked on frozen KB-01; no schema change. Export batch cap corrected to 25 so all selected chats can be revalidated within the read bound. |
+| 2 | Page save #1250 | `f2fdfb1`: 32 focused tests pass, including two new revision-race cases. Mandatory install/lint/typecheck pass; full suite running, followed by scans/E2E/build. |
+| 2 | Plan #1211 | `9abee89` pushed; 13 focused child cases and 10 heading-contract cases pass. Mandatory validation queued. |
+| 2 | Hero #1210 | `6a9f539` pushed; all 8 focused route cases pass with committed initial-state/geometry assertions. Mandatory validation queued. |
+| 2 | Voice research #1256 | Official protocol comparison published; current prices, measured latency and Hebrew quality remain UNKNOWN. |
+| 2 | Model router #1260 | `d4f0271`; 38 focused tests and scoped TypeScript pass. Settings-selected models, reasoning and real abort/deadline handling; full branch gates pending. |
+| 2 | Hebrew crisis #1261 | `eb10800`; 17 focused tests pass. Flag remains OFF. Primary guidance sites blocked; wording is not clinically approved. |
+| 2 | Research lifecycle #1257 / composer #1258 | Backend preparation has 84 passing focused tests; mounted controls are now assigned against its exact contract. |
+| 2 | Search gateway #1259 | Preparation in progress; authenticated, bounded retrieval with pinned DNS/TLS. Hosting, upstream capability and monetary cap are not configured or verified. |
+| 2 | Live voice #1253 | Scoped audit found a required principal/context adapter to preserve page saving, crisis and claim safety. Prerequisite design in progress; no unsafe parallel coach published. |
+| 2 | Account grants #1263 | Scoped preparation assigned: ordinary signup stops receiving automatic Max; historical testers/founders/paid grants preserved. |
+
+Exactly four Git worktrees remain. Independent scoped source preparation uses scratch files without additional checkouts; all new branches still require actual full validation. Protected #1193/#1198 unchanged. No deployment, provider call, environment mutation or live charge.
+
 ## WALK — Active continuation, 22 October 2026
 
 Amit's dated approvals are recorded in NEEDS-AMIT.md. AT-21/22/27/28/29 are authorized scoped work, not pending permission. Architecture KB-01/16/31 is approved for preparation; Amit still supplies the merge-gating labels. Product defaults now require settings-selected GLM models, Resend magic links, $1 trials and approved beta Max access; checkout remains OFF. The earlier final snapshot is historical.
