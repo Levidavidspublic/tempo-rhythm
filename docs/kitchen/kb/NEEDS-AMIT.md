@@ -21,7 +21,7 @@ WALK — These answers supersede the corresponding pending decisions below. The 
 
 The approvals above are applied. This is the current list; the old numbered ledger below is historical.
 
-1. **Architecture labels:** add `convex-arch` to KB-01 #1262 and the eventual KB-16/KB-31 PRs when their dependencies and guards are ready. Preparation is already authorized.
+1. **Architecture labels:** add `convex-arch` to KB-01 #1262, KB-16 #1282 and KB-31 #1269 when their dependencies and guards are ready. Preparation is already authorized.
 2. **Shared harness retry boundary:** the one additional AT-21 candidate `be1fec2` in #1203 failed 4 focused cases plus 1 error after the Linux process-tree optimization. It is pushed and frozen. A further scoped source correction requires another explicit exception to AGENTS' attempt limit; checks remain unchanged.
 3. **Model deployment settings:** configure verified DeepInfra serving identifiers for `TEMPO_AI_MODEL` (GLM 5.3 Flash) and `TEMPO_AI_THINK_HARD_MODEL` (GLM 5.3), distinct as requested. #1260 reads settings and never substitutes a hard-coded model. No values are requested in public.
 4. **Search setup:** once #1259 and its Convex adapter pass, provide a supported SearXNG upstream plus dedicated server credential through the existing configurator, and verify the Vercel hosting stop at $10/month. The gateway alone proves neither retrieval availability nor a global spend cap. No manual deploy is performed here.
