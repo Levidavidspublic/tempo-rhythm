@@ -1,6 +1,6 @@
 # WALK — account billing deletion fence
 
-Date: 2026-10-22. Ticket #1299. Candidate 2 prepared from integration
+Date: 2026-10-22. Ticket #1299. Final candidate 3 prepared from integration
 `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`.
 
 Verdict: local mocked lifecycle tests pass. Account deletion now records a
@@ -16,7 +16,8 @@ does not implement payment recovery, authorize provider access or enable billing
   saturated/malformed values use Number.MAX_SAFE_INTEGER without blocking privacy
   deletion. Both markers commit with deletedAt/isActive/updatedAt in the same
   existing user patch; deletedCount still counts one user row.
-- `convex/lib/billing_deletion_fence.test.ts`: 16 new fictional mocked tests.
+- `convex/lib/billing_deletion_fence.test.ts`: 20 new fictional mocked tests,
+  including four negative structural schema-regression cases.
 
 `softDeleteUserAccount`'s signature, all child cleanup, subscription deactivation
 and missing-user behavior are unchanged. Repeated deletion of an already-deleted
@@ -65,27 +66,51 @@ this worker ran only the permitted lightweight checks below.
 | 1: root's minimal strict/noResolve fixture diagnostic | TS2559 at weak-shape-diagnostic.ts:4:9; this is a minimal reproduction, not a full-file/backend typecheck |
 | 2: `bun test convex/lib/billing_deletion_fence.test.ts` | Exit 0; 16 pass, 0 fail, 102 assertions, 287ms |
 | 2: scoped Biome lint | Exit 0; 0 errors/warnings |
+| 2: authorized actual backend strict check | Exit 1; 2 TS2339 diagnostics in the new test's validator comparison; 5 local source/declaration files, 245 total real source/type files |
+| 3: `bun test convex/lib/billing_deletion_fence.test.ts` | Exit 0; 20 pass, 0 fail, 114 assertions, 522ms |
+| 3: scoped Biome lint | Exit 0; 0 errors/warnings |
+| 3: same actual backend strict check | Exit 0; 0 diagnostics; 5 local source/declaration files, 245 total real source/type files |
 
 Root identified a concrete weak-type error in candidate 1's fictional Row shape
 through a minimal TypeScript reproduction. Candidate 2 adds explicit optional
 `deletedAt: number` and `isActive: boolean` lifecycle fields to that test type;
 all assertions and product source are unchanged. It reran only the permitted
 16 focused tests and scoped lint. The unchanged 66-case lifecycle result still
-applies to the identical product source. Two candidates used; no third attempted.
+applies to the identical product source.
 The four-line minimal reproduction is included as `minimal-weak-shape.fixture.txt`.
 `minimal-weak-shape.failure.log` is the authentic complete original failure
 output, saved by root from tool receipt chunk85aa40 (exit 2, 6.661665806 seconds).
 Its command used Bun 1.3.9 and `tsc --noEmit --strict --skipLibCheck --noResolve
 --types bun --lib ES2021 weak-shape-diagnostic.ts` with the absolute scratch path.
 It establishes the fixture defect only, not a full-file/backend graph result.
+After the exclusive slot was released, the prepared actual backend check ran
+exactly once. It copied real pinned generated declarations, resolved their
+dataModel schema import to the actual modified schema and retained existing
+ES2021/DOM/Bun settings. No stubs or application/API consumers were included.
+The authentic complete output is `strict-backend-candidate-2.log` (exit 1).
+Both diagnostics are TS2339 at new test line 203: validators do not declare a
+`json` property. **Correction to the earlier review inference:** an explicit
+runtime probe established that installed string, optional-number and union
+validators do expose a runtime `json` object. The old comparison was not proven
+ineffective; its defect was relying on a property absent from the public declared
+types. The authentic probe output is in `validator-runtime-probe.log`.
+
+Root authorized final candidate 3 to use a typed complete structural comparison
+of the pinned legacy kinds, optional flags, union members and literal values.
+No cast or suppression bypasses the diagnostics. All 16 cases remain, and four
+negative cases prove rejection of changed kind, enum literal, union membership
+and required/optional flags. Product source is unchanged. The same real-type graph
+was then run once and passed; the static slot is released. Three candidates are
+consumed; no fourth attempted. Both original failure logs remain included.
 Focused/lifecycle/lint/delta logs accompany this report. Scratch validation uses
 read-only dependency links to installed packages and existing support modules;
 only manifest-listed files are publication candidates.
 
 UNKNOWN: publication-checkout `bun install --frozen-lockfile`, `bun run lint`,
 `bun run typecheck`, `bun run test`, forbidden-tech/RAM-only/design-token/notices
-checks, local Playwright and build (parent-serialized mandatory gate). No strict
-app/Convex graph was run by this worker. Local mock tests do not replace hosted
+checks, local Playwright and build (parent-serialized mandatory gate). The narrow
+actual backend graph passes on final candidate 3; no application graph was run.
+Local mock tests do not replace hosted
 CI/guards or current CodeRabbit review. Screenshots are not applicable here.
 
 ## Frozen source fingerprints
@@ -94,7 +119,7 @@ CI/guards or current CodeRabbit review. Screenshots are not applicable here.
 | --- | --- |
 | convex/schema.ts | e2216e0ae62e9ac55bb056af84bb7b04287f2648d755ad50992d5e334d7d9894 |
 | convex/lib/accountDeletion.ts | 212ff6c4840c4db1ec3c57a0c736fa9ef2274670637072c5dee75e6c01c99e28 |
-| convex/lib/billing_deletion_fence.test.ts | 63e7e4e1ba481e1e0b6da1aa6187f133cbd7ecd507275954509ec0a640f0d491 |
+| convex/lib/billing_deletion_fence.test.ts | 13a2cde94e8d2fa573c82976896ff982cbd745bb31c6654c3f5c1e332842a853 |
 
 Unmodified scratch lifecycle test fingerprint:
 `1f0fee1cf085b12385c0996f0198d531a1bbeb021f11aaa7ded3919153568bab`.
@@ -114,7 +139,7 @@ preparation itself does not wire or enforce that future billing path.
 
 status: blocked
 ticket: #1299
-evidence: 16 new + 66 unchanged lifecycle tests pass; scoped lint and exact source-delta verification pass
+evidence: 20 new + 66 unchanged lifecycle tests pass; scoped lint/source-delta verification pass; actual backend strict check 0 diagnostics
 changed: schema.ts, accountDeletion.ts, billing_deletion_fence.test.ts, scoped evidence
 unknowns: full publication-checkout/hosted gates and current CodeRabbit
-notes for ticket sync: root records two optional users fields in DECISIONS; later billing recovery/migration remains held; no scope correction required
+notes for ticket sync: final candidate uses typed structural validator assertions with negative regression proof; root records two optional users fields in DECISIONS; later billing recovery/migration remains held; no scope correction required

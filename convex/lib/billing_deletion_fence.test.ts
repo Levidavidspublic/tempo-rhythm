@@ -193,6 +193,34 @@ const users = schema.tables.users as unknown as {
   " indexes"(): { indexDescriptor: string; fields: string[] }[];
 };
 
+type LegacyValidatorShape = {
+  kind: string;
+  optional: "optional" | "required";
+  value?: unknown;
+  members?: LegacyValidatorShape[];
+};
+
+/** All kinds in the pinned users contract, using declared validator properties only. */
+function legacyValidatorShape(validator: GenericValidator): LegacyValidatorShape {
+  const common = { kind: validator.kind, optional: validator.isOptional };
+  switch (validator.kind) {
+    case "string":
+    case "float64":
+    case "boolean":
+      return common;
+    case "literal":
+      return { ...common, value: validator.value };
+    case "union":
+      return { ...common, members: validator.members.map(legacyValidatorShape) };
+    default:
+      throw new Error(`Unexpected legacy users validator kind: ${validator.kind}`);
+  }
+}
+
+function assertLegacyValidator(actual: GenericValidator, expected: GenericValidator) {
+  expect(legacyValidatorShape(actual)).toEqual(legacyValidatorShape(expected));
+}
+
 describe("billing deletion schema compatibility", () => {
   test("both fence fields are optional numbers and all existing user validators remain unchanged", () => {
     for (const name of ["billingDeletionEpoch", "billingDeletedAt"]) {
@@ -200,7 +228,7 @@ describe("billing deletion schema compatibility", () => {
       expect(users.validator.fields[name].isOptional).toBe("optional");
     }
     for (const [name, validator] of Object.entries(legacyUsers.fields)) {
-      expect(users.validator.fields[name].json).toEqual(validator.json);
+      assertLegacyValidator(users.validator.fields[name], validator);
       expect(users.validator.fields[name].isOptional).toBe(validator.isOptional);
     }
     expect(Object.entries(users.validator.fields).filter(([, field]) => field.isOptional === "required").map(([name]) => name)).toEqual(["email"]);
@@ -211,5 +239,26 @@ describe("billing deletion schema compatibility", () => {
     for (const [indexDescriptor, field] of [["by_email", "email"], ["by_approvalStatus", "approvalStatus"], ["by_role", "role"], ["by_userType", "userType"], ["by_betaAccess", "betaAccess"], ["by_deletedAt", "deletedAt"]]) {
       expect(indexes.find(index => index.indexDescriptor === indexDescriptor)).toEqual({ indexDescriptor, fields: [field] });
     }
+  });
+
+  test("legacy compatibility rejects changing a validator kind", () => {
+    expect(() => assertLegacyValidator(v.number(), legacyUsers.fields.email)).toThrow();
+  });
+
+  test("legacy compatibility rejects changing an enum literal value", () => {
+    const changed = v.optional(v.union(v.literal("admin"), v.literal("fictional-other-role")));
+    expect(() => assertLegacyValidator(changed, legacyUsers.fields.role)).toThrow();
+  });
+
+  test("legacy compatibility rejects adding or removing union members", () => {
+    const added = v.optional(v.union(v.literal("admin"), v.literal("user"), v.literal("fictional-extra-role")));
+    const removed = v.optional(v.union(v.literal("admin")));
+    expect(() => assertLegacyValidator(added, legacyUsers.fields.role)).toThrow();
+    expect(() => assertLegacyValidator(removed, legacyUsers.fields.role)).toThrow();
+  });
+
+  test("legacy compatibility rejects changing either required or optional flags", () => {
+    expect(() => assertLegacyValidator(v.optional(v.string()), legacyUsers.fields.email)).toThrow();
+    expect(() => assertLegacyValidator(v.number(), legacyUsers.fields.createdAt)).toThrow();
   });
 });
