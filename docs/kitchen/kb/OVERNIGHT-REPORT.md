@@ -1,5 +1,17 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Active continuation, 22 October 2026
+
+Amit's dated approvals are recorded in NEEDS-AMIT.md. AT-21/22/27/28/29 are authorized scoped work, not pending permission. Architecture KB-01/16/31 is approved for preparation; Amit still supplies the merge-gating labels. Product defaults now require settings-selected GLM models, Resend magic links, $1 trials and approved beta Max access; checkout remains OFF. The earlier final snapshot is historical.
+
+Four active worktrees and disjoint owners:
+- Lane 1 shared harness #1203: /workspace/work/lane2-features; shared fixture helper/test/evidence. First validation slot.
+- Lane 2 page recovery #1250: /workspace/tempo-rhythm; NotesScreen, its test and evidence.
+- Lane 2 Plan #1211: /workspace/work/lane2-recovery; PlanScreen hidden heading and evidence.
+- Lane 2 hero #1210: /workspace/work/lane2-pages; landing-motion test and evidence.
+
+Read-only research and contract mapping use scratch files, not additional worktrees. Browser/full validation is serialized to avoid overlapping local servers and resource interference. Fresh KB-67 replacement will omit the old receipt history, retain old #1197 open and link both PRs. New labeled tickets: Hebrew crisis keywords #1252 (OFF pending clinical review), Deepgram Agent voice #1253 (guarded router bridge), and no-spend voice comparison #1251.
+
 WALK — Final publication snapshot, 2026-10-22 00:37 UTC: KB issues **6 closed / 55 open**; KB PRs **11 merged / 21 open**. Lane 2: **0 closed / 6 open issues; 0 merged / 6 open draft PRs**, all final evidence commits pushed. NEEDS-AMIT.md has **14 numbered owner actions**. All four live worktrees are clean and all delegated workers have stopped at recorded blockers. No production release, manual deployment or environment change occurred. Mandatory feature validation attempts are recorded; failures prevent completion and merge. Integration remains `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`.
 
 Partially complete — The authorized v3 pass finished on 21 October 2026. KB-70 corrective #1196 merged into integration; six KB tickets are closed in total. All nine fixture reruns and seven scoped passes are recorded, and all 34 remaining written specifications are filed. The shared harness is still stuck, so dependent work remains open. This is not a completed kitchen or production-readiness claim. Prior receipts remain in STATUS.md.
