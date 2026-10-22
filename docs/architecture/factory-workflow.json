@@ -10,13 +10,17 @@
       "url": "https://github.com/Levidavidspublic/tempo-rhythm",
       "provider": "github",
       "link_mode": "web",
-      "revision": "5f9cf22443ed7a15881f1214b3b31ac203c82a21"
+      "revision": "d52a527ebaaf57394cca882533c79010236d9866"
     }
   },
   "lanes": [
     {
       "id": "flow",
       "label": "Factory path"
+    },
+    {
+      "id": "live",
+      "label": "Live release (Amit)"
     },
     {
       "id": "control",
@@ -61,7 +65,8 @@
     "lanes",
     "checks",
     "bugbot",
-    "ship"
+    "ship",
+    "release"
   ],
   "nodes": [
     {
@@ -194,6 +199,35 @@
       ]
     },
     {
+      "id": "release",
+      "lane": "live",
+      "col": 5,
+      "type": "cloud",
+      "label": "Release by go",
+      "sublabel": "Amit comments go",
+      "tag": "Amit only",
+      "sources": [
+        {
+          "path": ".github/workflows/release-go.yml",
+          "line": 1,
+          "end_line": 3,
+          "label": "release-go"
+        },
+        {
+          "path": ".github/workflows/preview-acceptance.yml",
+          "line": 1,
+          "end_line": 2,
+          "label": "synthetic-account preview acceptance"
+        },
+        {
+          "path": ".github/workflows/convex-test-admin.yml",
+          "line": 1,
+          "end_line": 2,
+          "label": "test-only approval of synthetic account"
+        }
+      ]
+    },
+    {
       "id": "pause",
       "lane": "control",
       "col": 1,
@@ -289,6 +323,12 @@
       "variant": "emphasis"
     },
     {
+      "from": "ship",
+      "to": "release",
+      "label": "go",
+      "variant": "emphasis"
+    },
+    {
       "from": "bugbot",
       "to": "lanes",
       "label": "fix loop",
@@ -327,7 +367,7 @@
       "items": [
         "Batch loop (factory-batch, factory/LOOP.md): component PRs merge into batch/<loop-id>; ONE Cursor Bugbot review runs on the batch PR. factory-review-fix sends findings back to the lane, max 3 rounds, then blocked:amit.",
         "Ship: batch PR enters the GitHub merge queue (enqueue via GraphQL) into integration, then Vercel preview plus convex-deploy-test to ceaseless-dog-617. Queue enabled on the repo: UNKNOWN.",
-        "Live: Amit runs Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans, Playwright and Bugbot, deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
+        "Live: Amit comments exactly `go` on the open Release PR after checking preview (release-go.yml). Its guard checks author Division6066, factory not paused, a green candidate comment for the current integration head (CI, secret scans, signed-in preview-acceptance on test ceaseless-dog-617) and a `go` under 30 minutes old, then dispatches Release to production (release.yml). It opens one integration to master release PR, re-runs CI, secret scans and Playwright, asks ONE code review (Bugbot, or CodeRabbit when RELEASE_REVIEWER=coderabbit), deploys Convex prod only if convex/ changed, merges, then checks www.tempoflow.dev/api/health. Rollback is manual. deploy-live.yml also exists."
       ]
     },
     {
