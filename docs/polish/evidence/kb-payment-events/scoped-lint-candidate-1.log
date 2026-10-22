@@ -1,0 +1,44 @@
+convex/lib/revenuecat_events.test.ts:65:10 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    63 │     ["EXPIRATION", "expiration"],
+    64 │   ]) {
+  > 65 │     test("normalizes " + type + " with exact server-owned fields", () => {
+       │          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    66 │       expect(parseRevenueCatEvent(eventEnvelope({ type }), FIXTURE_CATALOG)).toEqual({
+    67 │         ok: true,
+  
+  i Unsafe fix: Use a template literal.
+  
+     63  63 │       ["EXPIRATION", "expiration"],
+     64  64 │     ]) {
+     65     │ - ····test("normalizes·"·+·type·+·"·with·exact·server-owned·fields",·()·=>·{
+         65 │ + ····test(`normalizes·${type}·with·exact·server-owned·fields`,·()·=>·{
+     66  66 │         expect(parseRevenueCatEvent(eventEnvelope({ type }), FIXTURE_CATALOG)).toEqual({
+     67  67 │           ok: true,
+  
+
+convex/lib/revenuecat_events.test.ts:181:7 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    179 │       'let writes = 0, calls = 0; const responses = [];',
+    180 │       'globalThis.fetch = async () => { calls++; throw new Error("Provider calls forbidden"); };',
+  > 181 │       'for (const payload of ' + JSON.stringify(payloads) + ') {',
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    182 │       'const request = new Request("https://tempo.example/api/revenuecat-webhook", { method: "POST", body: JSON.stringify(payload) });',
+    183 │       'const response = await revenueCatWebhook._handler({ runMutation: async () => { writes++; } }, request);',
+  
+  i Unsafe fix: Use a template literal.
+  
+    179 179 │         'let writes = 0, calls = 0; const responses = [];',
+    180 180 │         'globalThis.fetch = async () => { calls++; throw new Error("Provider calls forbidden"); };',
+    181     │ - ······'for·(const·payload·of·'·+·JSON.stringify(payloads)·+·')·{',
+        181 │ + ······`for·(const·payload·of·${JSON.stringify(payloads)})·{`,
+    182 182 │         'const request = new Request("https://tempo.example/api/revenuecat-webhook", { method: "POST", body: JSON.stringify(payload) });',
+    183 183 │         'const response = await revenueCatWebhook._handler({ runMutation: async () => { writes++; } }, request);',
+  
+
+Checked 3 files in 133ms. No fixes applied.
+Found 2 infos.

@@ -1,0 +1,9 @@
+convex/lib/revenuecat_events.test.ts(66,78): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(expected: { ok: true; event: ParsedRevenueCatEvent; } | { ok: false; reason: "malformed" | "unsupported-event" | "unmapped-product"; }): void', gave the following error.
+    Type 'string' is not assignable to type 'RevenueCatEventKind'.
+  Overload 2 of 2, '(expected: NoInfer<{ ok: true; event: ParsedRevenueCatEvent; } | { ok: false; reason: "malformed" | "unsupported-event" | "unmapped-product"; }>): void', gave the following error.
+    Argument of type '{ ok: true; event: { eventId: string; eventAtMs: number; appUserId: string; productId: string; plan: "basic"; billingCycle: "monthly"; kind: string; paidThroughMs: number; }; }' is not assignable to parameter of type '{ ok: true; event: ParsedRevenueCatEvent; } | { ok: false; reason: "malformed" | "unsupported-event" | "unmapped-product"; }'.
+      The types of 'event.kind' are incompatible between these types.
+        Type 'string' is not assignable to type 'RevenueCatEventKind'.
+convex/lib/revenuecat_events.ts(65,15): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+convex/lib/revenuecat_events.ts(73,15): error TS2550: Property 'hasOwn' does not exist on type 'ObjectConstructor'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
