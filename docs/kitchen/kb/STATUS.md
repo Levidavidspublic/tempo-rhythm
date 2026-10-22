@@ -1,0 +1,497 @@
+# KB finish status
+
+## WALK — Two-lane validation checkpoint, 2026-10-22 14:02 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 30 open issues; 0 merged / 29 open PRs**. Total: **92 issues, 66 PRs**; **16 remaining owner actions**. Integration remains 7d1a0f6. Counts include historical work and do not mean these features are complete on preview.
+
+| Lane / work | Current evidence | Merge gate |
+| --- | --- | --- |
+| 1 — shared harness #1203 | Approved extra candidate be1fec2 is pushed; 16 focused passes, 4 failures, 1 error. | Frozen at authorized retry boundary; no weaker checks or further source repair. |
+| 1 — planning #1140 | Current 68fd5b2 has green hosted CI/guards and actual CodeRabbit review. Nine verified specification findings are corrected by this scoped documentation pass, including repeated consumer contracts; current checks and actual review must run again. | Current corrected-head hosted checks and actual review pending. |
+| 2 — parser #1301 / PR #1302 | Candidate2 6c7519b is pushed. Current hosted CI and actual CodeRabbit review are clear. Candidate1 full local tests failed 3489/10/3 todo/1 error, exact E2E 11 pass/17 fail/89 skip; its build and four scans passed. | Candidate2 local focused and mandatory checks are still UNKNOWN. Earlier failures remain evidence. |
+| 2 — Habit/Goal #1303 / draft #1304 | Final candidate3 8ce1a0c is pushed to draft #1304: native status output and isolated bounded fixture compilation. Prior eea93b9 hosted lint/test failures are retained; types, build, E2E and scans had passed. | Current-head gates, 22 intended new cases and before/after evidence remain unverified; all three candidates are consumed. This is not a built-in seeded gallery or real-preview proof. |
+| 2 — voice research #1251 / #1256 | Frozen 45e55f7: local install, lint and typecheck pass. Original full suite continues after KB61's 481221.99ms setup timeout. | Full aggregate, scans, exact E2E and build pending; hosted Test remains pending at latest read. No rerun or failure erasure. |
+| 2 — Executor #1265 / #1277 | Frozen 13752d9: 15 earlier mounted DOM cases pass; real-page browser fixture prepared. Hosted Test cancelled after approximately six hours; aggregate CI failed. | Full local sequence and prepared browser fixture unrun; actual CodeRabbit review outstanding. No real OAuth or external-tool call. |
+| 2 — hero #1206 / #1210 | Own 8 E2E cases pass. Full suite incomplete with exit143 after an unbounded fixture wait; exact E2E 28 pass/8 fail/89 skip; scans pass and build is a cached pass. | Incomplete and failing broader validation retained; no preview-completion claim. |
+
+**Done:** dated approvals applied; architecture drafts #1262/#1282/#1269 prepared with schema decisions; clean KB67 replacement #1254 pushed and old #1197 preserved; approved Plan/hero/page-save corrections pushed. New parser and template candidates are reviewable. **Needs Amit:** the existing16 ordered actions in NEEDS-AMIT.md; no renewed approval request for an already authorized step. **UNKNOWN:** remaining current-head checks, actual preview/provider/device behavior, exact preview error-badge cause, and overall feature readiness.
+
+All31 original KB tickets without implementation PRs retain explicit unmet WHEN dependencies, as detailed below. No150-components or complete-polish claim. Four worktrees, disjoint writers, one local heavy check at a time. Protected #1193/#1198 remain untouched. No default-branch direct push, production merge, manual deployment, environment change or paid provider call.
+
+Earlier checkpoints below are historical.
+
+## WALK — Current validation and dependency audit, 2026-10-22 12:58 UTC
+
+No new merge. Fresh GitHub census confirms Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues, 65 PRs; NEEDS-AMIT retains 16 ordered actions. Integration remains 7d1a0f6.
+
+- **Parser #1302 / #1301**, unchanged candidate 1 at 1acc05a: actual CodeRabbit coverage is clear and hosted full tests pass 3498/0/3 todo. Separate mandatory local tests finished **3489 pass / 10 fail / 3 todo / 1 error**, 81,608 assertions, 3502 tests across 211 files, 2097.75s. The targeted closing-tag case passes, but backslash and tab performance limits fail; page cleanup, history normalization and fixture failures also remain. The earlier 303 scoped passes do not erase these failures. Install, lint, typecheck and all four scans pass; exact E2E is running, with build next. No merge, rerun or source correction has followed these results.
+- **Planning #1140** incorporated integration through ordinary history-preserving merge 8656f81. All 77 changed paths remain under docs/kitchen/kb/. Hosted CI/guards passed on that head; actual current CodeRabbit review remains outstanding. Cheap documentation checks pass all 59 actual front-matter comparisons, dependency/scope rules, 71 retained KA overlap mappings and all 262 current inventory paths. The refreshed PR body retains historical application failure receipts and distinguishes them from current documentation checks. This register update will require its own current hosted checks and review.
+- **Written KB queue:** all 59 entries have filed issues. All 31 tickets without implementation PRs have explicit unmet WHEN conditions: nine SearchAnswer tickets wait on KA #1126; eleven web Library tickets wait on KB-01/KA #1104 and serial descendants; five composer tickets wait on KB-16 and listed KA work; Discover waits on KB-03/KB-16; five native Library tickets wait on KB-01/KA #1107/#1122. Architecture preparation exceptions are already represented by #1262/#1282/#1269. This is not a blanket restriction on independent Lane 2 work; that feature-gap audit continues.
+- **Remaining independent validation:** voice research #1256 at 45e55f7 is prepared for its first mandatory sequence; Executor #1277 at 13752d9 has a prepared, unrun real-page fictional browser fixture and still needs full validation and actual review. Both wait for the parser's exclusive heavy slot. Hero #1210's completed report preserves an incomplete full suite and eight global E2E failures despite all eight own browser cases passing.
+- **Done:** exact failure reporting, planning base refresh, documentation validation and written-ticket dependency audit. **Needs Amit:** existing 16 ordered actions, unchanged; dated approvals remain applied. **UNKNOWN:** remaining local/hosted results and reviews, precise failure causes, actual preview/provider/device behavior and complete feature readiness. Exactly four worktrees; no protected #1193/#1198 edits, default direct push, production change, manual deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
+## WALK — Parser scoped validation and hosted CI pass, 2026-10-22 12:16 UTC
+
+No new merge. Counts remain Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**; Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. NEEDS-AMIT has 16 current ordered actions.
+
+- **#1302 / #1301**, unchanged candidate 1 at 1acc05a: all **303 scoped tests pass**, 40,582 assertions, 17.20s Bun time. The unchanged malformed-closing-tag case took 246.29ms versus the separately preserved failed 7016.86ms baseline; its limit remains 3000ms. All 298 original cases and five added regression cases pass. The definition-start case took 2724.67ms, also within its unchanged limit; no claim that every performance margin is large. Scoped Biome lint and the real utils TypeScript project pass.
+- Current hosted Test job 119806879297 completed **3498 pass / 0 fail / 3 todo**, 81,713 assertions, 3501 tests across 211 files in 191.28s. It checked the merge of 1acc05a into integration 7d1a0f6. Other hosted checks and the corrected scope guard pass. Actual CodeRabbit coverage was draft-skipped, so the PR was marked ready for review to obtain real coverage; no bot command or auto-merge was enabled. Local mandatory validation and actual review remain separate merge gates.
+- The original local frozen install passed after 319.127s, with no lockfile changes or retry. Mandatory lint passes 5/5; typecheck and remaining stages are proceeding once. Prior ignored goal browser artifacts were preserved outside the checkout before fresh output. No product change followed the successful scoped run.
+- Hero #1210's final current-source report is published on the PR and issue #1206 comment 6340301398. Own eight browser cases pass, while the full suite remains incomplete and global E2E has eight failures. These remain merge blockers. Voice research #1256 is prepared in the pages worktree at 45e55f7, and Executor #1277's real-page fictional browser fixture is prepared at 13752d9; both await their serialized validation slots.
+- **Done:** parser scoped validation, hosted-log verification, hero reporting and preserved artifacts. **Needs Amit:** existing 16 actions, unchanged. **UNKNOWN:** remaining local mandatory results, actual parser/Executor CodeRabbit coverage, pending earlier hosted jobs and preview/provider/device behavior. Exactly four worktrees; no production/default direct push, deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
+## WALK — Hero validation completed; parser validation started, 2026-10-22 12:05 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: **91 issues and 65 PRs**, with 16 current ordered actions in NEEDS-AMIT.
+
+- **Hero #1210 / issue #1206**, unchanged head 6a9f539: every required local stage has now been attempted once. Frozen install, lint, typecheck, all four scans and build pass. Build used cache (1/1 cached, 3.602s), so this is not a fresh compilation claim. Full tests are **INCOMPLETE**, exit 143 after documented owned-only termination of an unbounded KB07 parent wait; 1,186 observed pass lines / zero named failures / three todos are not an aggregate. Exact Playwright finished **28 pass / 8 fail / 89 skip**; **all eight own hero cases pass**. Global failures and incomplete full tests still block merge.
+- Hero's 37 Playwright artifact files were archived outside the checkout before the guarded ignored dev-cache cleanup. After the build, no owned process remained and port 3000 was free. No source change, rerun, check waiver or reporting-only commit changed the tested head. The dated PR/issue report will supersede initial README unknowns while retaining earlier failure receipts.
+- The KB07 diagnosis and proposed authoritative exit/output-drain fault cases are recorded on #1203, comment 6340150946. The helper's authorized extra attempt remains consumed; no further implementation was made.
+- **Parser #1301 → #1302**, candidate 1 at 1acc05a: its issue-only front-matter placement was corrected without changing scope. A rerun of only the affected scope guard passed (job 119809486946); no application test was rerun for that correction. The worker now owns the quiet slot for all 303 parser cases and scoped lint/types. Runtime results remain pending; the original 7016.86ms baseline failure remains recorded.
+- **Next independent work:** #1256 voice research still needs its first full local validation; actual CodeRabbit coverage is clear. #1277 Executor still needs full validation, actual CodeRabbit review and browser evidence. Its real-settings-page fixture is being prepared with fictional responses and blocked external networking; no browser or compiler runs concurrently with the parser. The existing features worktree now holds frozen Executor head 13752d9; the old payment branch is preserved. Exactly four worktrees remain.
+- **Lane 1 blocked:** #1203, downstream dependencies, required architecture labels and retained validation failures remain unchanged. Protected #1193/#1198 are untouched.
+- **Done:** hero validation and artifact preservation, parser scope correction, bounded harness diagnosis. **Needs Amit:** the existing 16 actions in order. **UNKNOWN:** parser runtime results, remaining validation/hosted CI/reviews and actual preview/provider/device behavior. No production/default direct push, deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
+## WALK — Parser draft published; hero harness stall recorded, 2026-10-22 11:53 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues (6 closed, 85 open), 65 PRs (11 merged, 54 open). NEEDS-AMIT still has 16 current ordered actions.
+
+- **#1301 → draft #1302**, head 1acc05a15cb5951e706b7b325ebb6a24a37d0a99: page-summary parser candidate 1 published in exactly three scoped files. All 298 original cases and existing deadlines/assertions remain; five semantic regression cases were added. Independent source review found no concrete correctness defect. Only diff whitespace validation passes so far; all 303 scoped cases and mandatory runtime checks remain UNKNOWN pending the exclusive validation slot. The failed 7016.86ms isolated baseline remains recorded. No claim that the performance fix works yet.
+- **Hero #1210**, unchanged head 6a9f539: frozen install, lint and typecheck pass. The original full suite stalled in KB07 after 1186 observed passes, zero named failures and three todos; these are partial observations, not an aggregate. Its child was absent/reaped and browser gone, while the parent awaited an unbounded top-level output/exit Promise beyond the child's existing 240s bound. Owned-only termination was authorized to preserve the failure and allow remaining mandatory scans, E2E and build to run once. Exact pending promise and root cause remain UNKNOWN. No deadline, source, assertion or check was changed.
+- **Lane 1:** shared #1203 remains frozen after its additional authorized repair failed. Dependencies and owner labels remain gates. The new parser work neither reopens that repair budget nor changes the held original parser ticket.
+- **Next:** complete hero's remaining validation and report, then grant parser candidate 1 a quiet validation slot. Voice research #1256 and Executor #1277 remain queued for their first complete current-source mandatory validation. No concurrent heavy/compiler/browser jobs; exactly four worktrees.
+- **Done:** published parser draft and preserved current failure evidence. **Needs Amit:** existing 16 actions, ordered in NEEDS-AMIT. **UNKNOWN:** parser runtime outcome, remaining mandatory checks, pending CI/reviews and actual preview/provider/device behavior. Protected #1193/#1198 remain untouched; no production/default direct push, deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
+## WALK — Independent parser work and active hero validation, 2026-10-22 11:38 UTC
+
+No new merge. Lane 1 remains **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2 is now **0 closed / 29 open issues; 0 merged / 27 open PRs**. There are16current Needs Amit actions; no additional owner decision was inferred for this engineering work.
+
+- New **#1301 TEMPO-KB-PAGE-SUMMARY-PERF**, labelled kitchen-kb, maps to branch t/1301-page-summary-perf in the reused root worktree; draft PR not yet opened. Scope is only existing page-summary.ts, justified additions to its test, and scoped evidence. It addresses a distinct required performance failure; it does not revive held#803 or reopen/further repair the frozen shared harness. Fresh149open-PR path audit found no writer of these two files; blocks.ts remains owned by#1081 and excluded.
+- The separately labelled quiet baseline diagnostic failed: **7016.86ms versus the existing<3000ms assertion**,0pass/1fail/297filtered, exit1. The actual existing wrapper is30000ms, unchanged. Source/test hashes match integration7d1a0f6; no OOM was observed and measured throttling alone does not explain the elapsed result. Static code reading found linear scans and allocations, not a proved quadratic mechanism. The broader#1300failure remains unchanged.
+- Worker preparation for1301 is source-only while hero#1210 owns the sole heavy/browser slot. Source contract, output limits, all298existing cases, assertions and deadlines must remain; no fixture-specific bypass or codec/index/config change. The initial failed receipts are preserved outsidecheckout. Only a separately granted quiet slot can run candidate benchmarks/types/tests.
+- Hero#1210 is clean at6a9f539316d85249e88fad7bbbfad7f6e2055271 and its original mandatory frozen install is running. After allhero stages/reporting, the lead will sequence parser-focused validation and the remaining voice-research#1256 / Executor#1277 mandatory checks. All four worktrees and former branch histories are preserved.
+- #1300 remains blocked on completed full tests3484pass/4fail/3todo/1error and localE2E15pass/13fail/89skip; othermandatory stages pass, currentCodeRabbitclear, hostedTestpending. Final dated PR/issue report supersedes initialREADME unknowns without changing head761eb91.
+
+Earlier checkpoints below are historical.
+
+## WALK — Completed validation and remaining queue, 2026-10-22 11:31 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 28 open issues; 0 merged / 27 open PRs**. **16 current owner actions** remain ordered in NEEDS-AMIT. All 59 written queue entries have matching GitHub issues; no written ticket is missing from the issue register.
+
+- **Lane 1 open/blocked:** shared #1203 remains frozen after its authorized additional repair failed; architecture labels, KA dependencies and retained local failures still gate its descendants. No change to protected #1193/#1198.
+- **Lane 2 #1300 / issue #1299:** completed every mandatory local stage once on unchanged head761eb917597ef408d7e306d5a613eaef4a0327d8. Install/lint/typecheck/four scans pass; build passes from cache (986ms). Full tests: **3484 pass / 4 fail / 3 todo / 1 error**,81607assertions,3491tests/212files,1665.38s. The20new fence cases and66unchanged lifecycle cases pass. Exact local Playwright: **15 pass / 13 fail / 89 skip**,117cases,10.6min. These failures block merge despite actual current CodeRabbit coverage with no actionable comments. Hosted Test remains pending.
+- Current results and sanitized failure tails are published in #1300 and issue1299 comment6339643257, superseding the evidence README's initial UNKNOWN snapshot. No reporting-only commit changed the tested/reviewed head.57raw receipts are preserved losslessly outsidecheckout;30Playwright artifacts are archived with per-file/archive hashes. Owned browser/server processes were gone and port3000free before reuse. Only guarded ignored .next/dev was removed for the build disk guard.
+- **Failure diagnosis:** KB74's60s matrix timeout and following reduced-motion failure remain. KB59's child exited0 but its parent waited until the existing600s hook timeout, then the original runner advanced itself. The exact unresolved output/exit promise is UNKNOWN; childexit0 does not prove its caught assertions passed. KB59's historical feature-repair allowance does not automatically restrict a distinct future harness-adoption scope; shared-harness-first ordering still applies. No extra owner question was inferred solely from the closed feature ticket.
+- The fourth full-suite failure is the existing page-summary parser3s performance assertion, distinct from the fixture waits. One separately labelled, isolated diagnostic is scheduled with the original assertion/deadline unchanged, before hero validation. It cannot replace the required full-run failure or establish an environmental cause by itself.
+- **Next validation:** hero #1210 at6a9f539, then voice research #1256 at45e55f7, then Executor #1277 at13752d9. All include currentintegration7d1a0f6; all have no unmerged implementation dependency. Each still needs its first complete mandatory local sequence on current source. The Executor read-only contract review found no introduced authorization/flag/status issue; actual current CodeRabbit and browser evidence remain separate gates.
+- **Done:** required fence validation/reporting, artifacts preserved, queue-to-issue reconciliation, bounded failure diagnosis. **Needs Amit:** the existing16ordered actions; prior approvals remain applied. **UNKNOWN:** remaining validation/CI/reviews, precise fixture/performance causes, real preview/device/provider behavior. Exactly4worktrees; no production/default direct push, manual deploy, real account/provider call or environment-value access.
+
+Earlier checkpoints below are historical.
+
+## WALK — Validation queue, 2026-10-22 10:59 UTC
+
+No new merge; counts remain Lane 1: 6 closed / 56 open issues and 11 merged / 26 open PRs; Lane 2: 0 closed / 28 open issues and 0 merged / 27 open PRs. NEEDS-AMIT has 16 current actions.
+
+- #1300 at 761eb917597ef408d7e306d5a613eaef4a0327d8 now has actual completed CodeRabbit coverage with no actionable comments. Install, lint and typecheck pass; the original full suite remains running, including 20 new and 66 unchanged lifecycle cases passing. Hosted Test remains pending. Remaining local stages will run once, without source edits or deadline changes.
+- Read-only eligibility audit corrected an overly broad blocked classification: #1210 hero at 6a9f539316d85249e88fad7bbbfad7f6e2055271, #1256 voice research at 45e55f7dbbc993bf2d3e60fafa0eda5e9cf5df07 and #1277 Executor at 13752d9679098b42dd1f554cf6c27f386d2c51fd have no unmerged implementation dependency and still need their first complete mandatory validation on current source. Queue them in that order after #1300, using an existing worktree and one browser-heavy run at a time.
+- Their hosted Test checks remain pending. #1256 has current actual CodeRabbit clearance; #1210 coverage is older and #1277 is draft-skipped. None is merge-eligible yet. No further source repair is authorized by this validation queue.
+- Current-head final results will be reported in the PR body and issue, explicitly superseding the evidence README's initial UNKNOWN snapshot; no evidence-only commit is needed solely to duplicate those results. Failed receipts remain preserved.
+- Four worktrees remain; protected #1193/#1198, production, deployment and environment values are unchanged.
+
+Earlier checkpoints below are historical.
+
+## WALK — Current checkpoint, 22 October 2026, 10:43 UTC
+
+No new merge; integration remains7d1a0f6. Lane1: **6closed/56open issues;11merged/26open PRs**. Lane2: **0closed/28open issues;0merged/27open PRs**. **16 current owner actions**, in the order in NEEDS-AMIT.
+
+- **Lane1:** shared#1203 remains frozen after the authorized extra pass failed. #1280 source c8cd3e8 passed its69 own cases but failed mandatory full tests/E2E; evidence-only cleanup wording corrections are pushed at3b3bb90. Architecture labels and KA dependencies still block downstream work.
+- **Lane2 #1296/onboarding:** completed required sequence once; evidence-onlyb3140f8 is pushed. Install/lint/typecheck/scans/freshbuild pass. Full3481pass/11fail/3todo/2errors, own14/0. ExactE2E14pass/14fail/89skip. No merge or rerun; source stayed1522103. Goal viewport evidence/current reviews remain pending.
+- **Lane2 #1300/#1299 deletion fence:** finalcandidate3 pushed at761eb917597ef408d7e306d5a613eaef4a0327d8. Product schema/helper unchanged sincecandidate1;20focused tests pass, scopedlint0, actual narrow backend types0diagnostics across5local/245real source/type files. Candidate2 TS2339 errors were declarations lacking a real runtime validator property; final typed structural comparisons preserve16cases and add4negativecases. Full local mandatory validation has now started in clean lane2-pages, without DEBUG; no other heavy/browser worker runs.
+- Prior #1300 hosted CI/guards all passed on285e32c. PR moved to review, not merged; actual CodeRabbit coverage and CI must clear again on final761eb91. No review-bot command was posted. Three source candidates consumed and frozen.
+- **Other Lane2 open/blocked:** #1298's frozen dot-segment endpoint finding is AT16; no helper activation. #1295's ES2021 correction8bf87c2 is pushed,18pure tests/narrow types pass, broader current gates and parent remain. #1294's proposed complete-snapshot contract stays held; no subscription schema from that proposal has been implemented. All billing switches remain OFF.
+- **Done:** published exact validation evidence, corrected typed schema assertions, started the next independent candidate's required validation. **Needs Amit:** existing16ordered actions, including scoped retry exceptions, architecture labels, configuration and clinical review; previous approvals remain applied. **UNKNOWN:** current unfinished validation/reviews, preview/live behavior, unresolved test timing/closure causes and payment recovery/legacy migration decisions.
+- Exactly4worktrees; former compatibility checkout reused cleanly while its branch/history remains. No production/default direct push, manual deployment, real-account/provider call, secret/config mutation or protected#1193/#1198 change.
+
+Earlier checkpoints below are historical.
+
+## WALK — Current checkpoint, 22 October 2026, 10:23 UTC
+
+No new merge; integration remains 7d1a0f6. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 28 open issues; 0 merged / 27 open PRs**. **16 current owner actions** in NEEDS-AMIT; older ledger entries are historical.
+
+- **Lane 1 merged:** none in this continuation. **Open/blocked:** shared #1203's authorized extra pass failed and remains frozen. #1280's mandatory full tests/E2E failed despite all69 own cases passing; later evidence-only wording fixes3b3bb90 address CodeRabbit's cleanup-language comments without changing tests. Current reviews/guards remain required.
+- **Lane 2 merged:** none. **New open draft #1300 → #1299**, head285e32c, preserves two optional users deletion markers across restoration.16new and66unchanged lifecycle cases pass; scopedlint passes. Candidate2 corrects only a new-test type annotation; actualbackend types and full gates pending. Exact schema delta and lifecycle/rollback limits recorded in DECISIONS. No payment recovery/activation.
+- **Open draft #1298 → #1297**, head5b25277:29mocked tests pass, narrow types pass, helper unmounted. Independent review found exact customer IDs dot/dot-dot normalize away from the fixed resource. Three source candidates are consumed; AT16 records one scoped reject-before-fetch correction request. No provider call or cross-origin/authority bypass was established.
+- **Open #1295 → #1292**, head8bf87c2: candidate2 changes two own-key calls for ES2021 compatibility and one new test-table type annotation. Narrow strict types now pass;18pure cases pass. Earlier28/0 actualcheckout result belongs to candidate1 and remains labelled as such. Parent#1248, broader gates and actual review block merge; processing stays OFF.
+- **Open #1296 → #1293**, frozen1522103: required install/lint/typecheck/four scans pass. Full original run completed normally: **3481pass /11fail /3todo /2errors**, own14/0, no rerun or termination. Exact E2E is active with failures observed; build follows. Frozen source unchanged.
+- **Validation diagnosis:** KB74's existing60s matrix timeout precedes a closed-browser cascade; source equals integration. KB64 in this run passed the earlier failure cluster but later hit an existing30s gallery timeout and two closure failures. KB59's child exited0, then the parent hook reached its existing600s bound before continuing. These observations do not establish a common cause or a fix. A concurrent6.66s minimal type diagnostic for1299 is disclosed; causation of later5s failures is unproven.
+- **Contract hold #1294:** replaced the unsafe event-only design with proposed complete-snapshot ordering, independent-beta evidence and deletion-fence requirements. No proposed subscription schema has been implemented. Equal-time later beta decisions, historic restoration/recovery and read-time/AI/voice expiry remain explicit engineering/activation gaps.
+- **Other gaps:** habit/goal templates depend on open KA#1095/#1104; page-sidebar representation needs a codec/render/editor contract. Notebook/source/shared-renderer dependencies remain open. No feature-parity or full-page-coverage claim.
+- **Done:** two new payment/lifecycle draft PRs published, parser compatibility pushed, schema/issue evidence and census updated. **Needs Amit:** the16 ordered current actions, including the new frozen-helper finding; no approval was requested again. **UNKNOWN:** preview/live behavior, unresolved timing/closure causes, unrun full checks, provider settings and pending actual reviews.
+- Exactly four worktrees. Protected#1193/#1198 unchanged; no production push, deployment, secrets, live-account data or provider spending.
+
+Earlier checkpoints below are historical.
+
+## WALK — Current checkpoint, 22 October 2026, 10:02 UTC
+
+No new merge; integration remains 7d1a0f6. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 27 open issues; 0 merged / 26 open PRs**. **15 current owner actions** in NEEDS-AMIT; historical entries are not additional questions.
+
+- **Lane 1:** #1280 published its completed mandatory run: install/lint/typecheck/scans/build pass; full tests 3484 pass / 12 fail / 3 todo, including all 69 own cases passing; exact E2E 23 pass / 5 fail / 89 skip. Shared #1203 remains frozen after its authorized extra pass failed. Architecture labels and KA dependencies remain blocking.
+- **Lane 2 merged:** none. **Open:** new #1298 maps to #1297, head 5b252774a94a81bab6c032af1fcabb874e9aa142, two unmounted subscription helpers plus test/evidence. Focused 29 pass / 0 fail / 110 assertions; standalone types pass; scoped lint has one advisory. Full checkout gates and actual CodeRabbit are pending. No payment activation, provider requests, schema changes or shipped IDs.
+- **Lane 2 validation:** #1296 onboarding goal head1522103 has required frozen install, repository lint and typecheck passing. Its original full test run is still active; two KB74 failures observed so far, not an aggregate. Earlier standalone root-test Bun-global lint errors are advisory invocation history, not failure of the actual required repository lint. Source frozen; remaining gates will run even after failures.
+- **Lane 2 payment:** #1295 evidence head df11c1d records the controlled actual-checkout result: 28 pass / 0 fail / 253 assertions. Earlier two child-startup failures remain preserved, cause UNKNOWN. Parent #1248 and broader gates block merge. Held #1294 is being rewritten around complete authoritative snapshots; its earlier event-only design is not authorized for implementation.
+- **Audit:** habit/goal templates are absent and depend on open KA #1095/#1104; no implementation PR found in the searched timelines/titles. Current locale wiring also needs coordination. A true page sidebar has no compatible persisted block/container representation yet; a codec/render/editor contract is required. These features are not claimed complete.
+- **Review/CI:** #1256 has actual CodeRabbit clearance but its hosted Test step is still in progress (started 08:40 UTC), so it cannot merge. Draft-skipped bot messages on other PRs are not approval. Full/scan/retry/dependency failures remain blocking; no check was weakened.
+- **Done:** published the helper draft, preserved failed candidate evidence, refreshed issue-to-PR census. **Needs Amit:** the existing 15 ordered actions in NEEDS-AMIT, no repeated approval request. **UNKNOWN:** live/preview behavior, unresolved browser exit causes, pending CI/reviews, product/provider configuration and full page-type coverage.
+- Exactly four worktrees remain. No changes to protected #1193/#1198, production, deployment, real account data or secrets.
+
+Earlier checkpoints below are historical.
+
+## WALK — Current checkpoint, 22 October 2026, 09:38 UTC
+
+No new merge; integration remains7d1a0f6. Lane1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane2: **0 closed / 27 open issues; 0 merged / 25 open PRs**. **15 current owner actions** in NEEDS-AMIT; historical items do not add to that count.
+
+- **Lane1 shared/KB:** #1280 evidence-only362f917 publishes the completed c8cd3e8 mandatory run: install/lint/typecheck/scans/build pass; full3484pass/12fail/3todo, own69pass; exactE2E23pass/5fail/89skip. No merge while those failures remain. KB64's nine closed-browser errors follow18passing cases with no preceding assertion timeout; cause UNKNOWN, no OOM evidence. Shared #1203 remains frozen after the authorized extra pass failed. Architecture labels/dependencies still gate #1262/#1282/#1269.
+- **Lane2 new drafts:** #1295 payment parser (issue1292) now has actual-checkout28pass/0fail/253assertions; all9old+19new cases unchanged, evidence pusheddf11c1d. Earlier scratch two child timeouts remain recorded, cause UNKNOWN. Payment processing false/catalog empty. #1296 optional real onboarding goal (issue1293) pushed1522103: new14DOM + existing25cases pass; standalone root-test Biome reports5Bun-global errors; actual mandatory checkout sequence is now running, required-lint result not inferred from that advisory command.
+- **Payment correctness:** issue1294 is held before implementation. Event-only admission cannot safely cover refunds/overlapping entitlements. New issue1297 prepares a bounded authoritative snapshot parser/reader with no handler/schema/account mutation or live customer request. Checkout remains OFF; IDs remain Amit's later setup.
+- **Other feature gates:** live transport #1291 remains frozen on mounted setup/type failures; bridge #1289 has synthetic-fixture scan failures; composer #1279 and beta request #1283 have final mounted failures. Queue #1284 and pricing #1285 have inherited schema/scope blockers (queue also has a KB67 timeout). Plan #1211's current scan flags synthetic receipt hashes; remediation requires another attempt exception. No guard waiver.
+- **Actual review:** #1210/#1211/#1277/#1284/#1285 current CodeRabbit statuses are draft-skipped, not clearance. Voice research #1256 has actual clearance at45e55f7, but its hosted Test remains in progress (started08:40UTC); no merge while pending.
+- Four worktrees: onboarding goal, payment parser, completed schema compatibility and frozen Plan. No fifth checkout; heavy/browser validation is serialized. Source-only helpers prepare in scratch.
+
+### Done
+Approvals applied; scoped repairs, new implementations, passing focused evidence, failed receipts, drafts and source-backed gap analysis pushed. Both lanes remain unfinished. Production, protected PRs and environment values unchanged; no paid provider/customer call or deployment.
+
+### Needs Amit (AT, in order)
+Architecture labels; harness retry; model settings; search setup/cap; payment IDs; Hebrew clinical grounding; Executor setup; before-production native/device read; gateway fixture remediation; router repair; composer fixture repair; bridge fixture remediation; voice transport fixture/type repair; Plan evidence/history remediation; beta request fixture repair. Exact actions/questions are in NEEDS-AMIT.md.
+
+### UNKNOWN
+Final onboarding mandatory results; pending current reviews/CI; browser closure cause; actual preview and real-device behavior; authoritative provider reconciliation ordering/identity; model account capability, service cost enforcement and live voice conformance.
+
+## WALK — Current checkpoint, 22 October 2026, 09:05 UTC
+
+No new merge. Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**. Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 23 open**. NEEDS-AMIT has **13 current actions**; historical entries are superseded, not additional questions.
+
+- **Lane 1:** #1280 compatibility is hosted-green and actual CodeRabbit-clear at c8cd3e8. Frozen install/lint/typecheck pass; its full suite is running and all69 own lifecycle cases passed. Scans, exact local E2E and build follow without reruns. Shared #1203 remains frozen after the authorized extra pass failed; downstream fixture work waits. Architecture PRs #1262/#1282/#1269 are prepared with schema decisions recorded and owner labels/dependencies outstanding.
+- **Lane 2:** live transport is published as draft #1291 at23484d4. Final26pure cases pass, but mounted setup fails and strict types report17new test-only diagnostics. Three candidates consumed; activation OFF, no fourth repair. Durable bridge #1289 has own synthetic-fixture scan failures, distinct from inherited gateway failures.
+- Composer #1279 and beta-request UI #1283 are frozen after final mounted validation failures. Queue #1284 final7bcb245 passes21DOMcases plus6global i18n tests; pricing #1285 final4840799 passes23focused/regression cases. Current full/review/dependency gates still apply.
+- Voice research #1256 final45e55f7 has actual CodeRabbit clearance; hosted Test is still pending at the last check. No merge while pending. Its publicly verified non-Flash model identifier does not prove Flash/account capability, prices or live quality.
+- Page-save #1250 mandatory sequence is published: all32owncases pass; full suite3467pass/34fail/3todo/2errors, E2E11pass/89skip/17fail. Install/lint/typecheck/scans/build pass. No completion claim.
+- Source audit confirms intensity and current-page chat exist. Notebook sources/shared structured rendering depend on KA. Goal-record onboarding, user-added sidebar sections and habit/goal template starters are not demonstrated by the current implementations; existing ownership is being reconciled before new tickets. The exact preview error badge cause and every-page route coverage remain UNKNOWN.
+
+### Done
+Dated approvals applied; scoped changes, tests, draft PRs and failure evidence pushed. Four worktrees remain. Protected #1193/#1198, production, environment values and live charges were not touched.
+
+### Needs Amit (AT, in order)
+The13 current actions in NEEDS-AMIT.md: architecture labels; shared-harness retry; model settings; search setup/cap; payment IDs; Hebrew clinical grounding; Executor connection; pre-production native/device read; gateway fixture remediation; router review repair; composer fixture repair; voice bridge fixture remediation; voice transport fixture/type repair.
+
+### UNKNOWN
+Final local gates, pending actual reviews, preview behavior, live provider conformance/latency/Hebrew quality, model account capability and service cost enforcement. Prepared code and mock tests are not proof of preview operation.
+
+## WALK — Validation and source audit, 22 October 2026, 08:22 UTC
+
+No new merge. Current tracked counts: Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**; Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 22 open**. Ten current owner actions; historical ledgers are not additional pending questions.
+
+- Page-save #1250 mandatory sequence is complete and published at `6f7cd38`: install/lint/typecheck/scans/build pass; full tests and E2E fail as recorded. All32 own cases pass; no source/test change in the evidence commit.
+- New drafts: #1288 smoke caller compatibility (8 focused passes), #1289 durable voice bridge (152 focused passes; final full/typecheck pending), #1290 blank OFF flag declaration (exact diff verified). Live audio/HTTP #1253 remains in preparation.
+- Composer #1279 mounted run:3 pass then one5-second case timeout, followed by browser-close cascade; final3pass/10fail/1error. A diagnostic reproduced correct thread-switch behavior with no application console errors in4,871ms after page creation, close to the unchanged bound. No deadline increase or unchanged rerun; fixture performance is under investigation. EN/HE390/1280 before/after captures exist but do not erase the failed suite.
+- Lane1 next-work audit: no unstarted written ticket is currently ready. KB-11/#1215 needs open KA-43/#1126 and missing SearchAnswer mount. Library#1218 still needs same-file KA#1104. Mobile#1242 needs open #1107/#1122 and absent CoachChats mount. Other descendants inherit held search/architecture/harness roots.
+- Existing integration already mounts and persists coaching intensity0–10 and passes it into coach prompts. No duplicate slider is needed; preview verification remains UNKNOWN.
+- Structured UI is partial: mounted proposal cards use the existing OpenUI renderer; decision steps use pinned json-render. General answers remain text and shared page-block rendering is absent, with KA#1128 still open. No named Open WebUI rendering skill was found. This does not establish general feature parity.
+- #1256 actual review asks for sourced licensing/hosting columns; scoped documentation correction is underway. #1261 word-boundary correction is pushed at7d2a577; current review and clinical activation gates remain.
+
+
+## WALK — Current checkpoint, 22 October 2026, 08:09 UTC
+
+No new merge in this continuation. Integration remains `7d1a0f6`. Prepared code is not a claim of preview readiness.
+
+| Lane | Issues closed / open | PRs merged / open |
+| --- | --- | --- |
+| 1 — KB and shared prerequisites | 6 / 56 | 11 / 26 |
+| 2 — feature work | 0 / 21 | 0 / 19 |
+
+Counts include the existing run history, the new schema-compatibility prerequisite, and drafts through #1285. There are ten current owner actions in NEEDS-AMIT.md; older numbered entries are historical.
+
+- Lane 1: shared harness #1203 remains frozen after the authorized extra pass failed. Clean replacement #1254 preserves old #1197. KB-01 #1262, KB-16 #1282 and KB-31 #1269 are prepared; schema changes are recorded and owner labels/dependencies remain gates. Schema compatibility #1280 has all hosted checks green and is now ready for actual CodeRabbit review; local mandatory checks remain pending.
+- Lane 2: beta request UI #1283, beta admin queue #1284 and trial copy #1285 are now draft PRs. Queue's 21 focused mounted DOM cases and pricing's 7 focused cases pass. New browser/full checks are not yet run.
+- Page-save #1250: all 32 own cases pass; full suite 3,467 pass / 34 fail / 3 todo / 2 errors. Four scans pass. Exact local Playwright finished 11 pass / 89 skip / 17 fail, 14.1 minutes. Placeholder build is next; failures remain recorded without reruns or weakening.
+- Composer #1279 has 13 mounted browser cases queued immediately after the page gate releases the slot. Plan #1211 and hero #1210 repairs have passing focused evidence; full mandatory checks remain queued.
+- Router #1260's actual current review has two verified findings; it is NOT review-clear. Its three-candidate budget is exhausted and the next correction is an owner exception. The Hebrew matcher #1261 has a valid zero-width word-separator finding; its second scoped candidate is in progress, default OFF unchanged.
+- Voice bridge #1278 preparation passes 148 focused cases, with 33 new cases; strict type graph and transport wiring remain pending. No live provider/session, deployment or paid check has been run.
+
+### Done
+
+Dated approvals applied; bounded source preparation, focused tests, draft publication, dependency mapping, and current failure reporting continued in both lanes. Four worktrees maximum remains enforced.
+
+### Needs Amit (AT, in order)
+
+Architecture labels; shared-harness retry exception; verified model settings; supported search upstream/credential and hosting cap; payment identifiers with checkout OFF; Hebrew clinical grounding/review; Executor environment connection; pre-production language/device read; gateway scan-fixture retry exception; router review-fix retry exception. Exact questions/setup are in NEEDS-AMIT.md.
+
+### UNKNOWN
+
+Full checkout gates for prepared drafts; current-head CodeRabbit clearance where pending; actual preview behavior; primary Hebrew crisis source verification; Deepgram callback anchor retention and live voice conformance; model availability/configuration; search-service availability/cost cap. Local execution recovered from the earlier stall; its cause is not established.
+
+
+## WALK — Published prerequisite and feature map, 22 October 2026
+
+| Lane | Issue | PR | Dependency / remaining gate |
+| --- | --- | --- | --- |
+| 1 | #1212 KB-01 | #1262 | KA prerequisites, #1280 compatibility, owner architecture label |
+| 1 | #1213 KB-16 | #1282 | #1267 gateway, #1271 setting, #1264 controls, owner label |
+| 1 | #1214 KB-31 | #1269 | #1262, owner label |
+| 1 | #1274 lifecycle compatibility | #1280 | Actual review and local mandatory gates |
+| 2 | #1251 voice comparison | #1256 | Actual review and applicable validation |
+| 2 | #1252 Hebrew matcher | #1261 | Candidate 2 pushed; current review, clinical activation hold |
+| 2 | #1255 router | #1260 | Valid review findings; attempt exception |
+| 2 | #1257 controlled research | #1264 | Router dependency; app CI green, stacked scope blocked |
+| 2 | #1258 composer | #1279 | #1264; 13 mounted browser cases running |
+| 2 | #1259 search gateway | #1267 | Synthetic fixture scan failure; attempt exception |
+| 2 | #1263 account policy | #1268 | Coordinated beta rollout and checks |
+| 2 | #1265 Executor UI | #1277 | Browser/full checks, actual provider availability UNKNOWN |
+| 2 | #1266 beta approval data | #1273 | KB-01 schema and account policy parents |
+| 2 | #1270 gateway setting | #1271 | Gateway parent |
+| 2 | #1272 beta request UI | #1283 | #1273 and #1277 translation parent; browser pending |
+| 2 | #1275 admin beta queue | #1284 | #1273; 21 focused cases pass |
+| 2 | #1278 voice bridge | #1289 | Final152focused passes; own synthetic-fixture scan failure; attempt exception |
+| 2 | #1281 trial copy | #1285 | #1220 pricing and #1284 translations; 7 focused cases pass |
+| 2 | #1253 live voice transport | #1291 | #1289/#1279/#1290; final mounted setup/type failures; attempt exception |
+| 2 | #1286 smoke caller | #1288 | 8focused passes; router parent remains blocked |
+| 2 | #1287 voice OFF declaration | #1290 | #1271 template; no activation |
+
+New issues #1286 and #1287 raise Lane 2 open issues to 23; Lane 1 remains 56. Current PR totals remain Lane 1 11 merged / 26 open, Lane 2 0 merged / 19 open. #1276 is an unrelated capability-test draft and is excluded and untouched.
+
+## Historical checkpoints (superseded where noted)
+
+
+## WALK — Current checkpoint, 22 October 2026, 07:21 UTC
+
+No new merge in this continuation. Integration remains `7d1a0f6`. These are preparation and validation results, not preview-readiness claims.
+
+| Lane | Work | Current result |
+| --- | --- | --- |
+| 1 | Shared harness #1203 | Extra authorized candidate `be1fec2` pushed; focused 16 pass / 4 fail / 1 error. Process traversal caused cleanup regressions. Frozen at the retry boundary; dependent fixture work cannot merge. |
+| 1 | Clean KB-67 replacement #1254 | Pushed `3dfd993` with one clean commit above integration; old #1197 remains open and linked. Depends on #1203. |
+| 1 | KB-01 #1262 | Prepared `cfd5200`; 21 focused tests pass, 891 assertions. Four optional schema fields recorded in DECISIONS. Full gates, dependencies and owner label pending. |
+| 1 | KB-31 #1214 | Bulk/Undo/export preparation stacked on frozen KB-01; no schema change. Export batch cap corrected to 25 so all selected chats can be revalidated within the read bound. |
+| 2 | Page save #1250 | `f2fdfb1`: 32 focused tests pass, including two new revision-race cases. Mandatory install/lint/typecheck pass; full suite running, followed by scans/E2E/build. |
+| 2 | Plan #1211 | `9abee89` pushed; 13 focused child cases and 10 heading-contract cases pass. Mandatory validation queued. |
+| 2 | Hero #1210 | `6a9f539` pushed; all 8 focused route cases pass with committed initial-state/geometry assertions. Mandatory validation queued. |
+| 2 | Voice research #1256 | Official protocol comparison published; current prices, measured latency and Hebrew quality remain UNKNOWN. |
+| 2 | Model router #1260 | `d4f0271`; 38 focused tests and scoped TypeScript pass. Settings-selected models, reasoning and real abort/deadline handling; full branch gates pending. |
+| 2 | Hebrew crisis #1261 | `eb10800`; 17 focused tests pass. Flag remains OFF. Primary guidance sites blocked; wording is not clinically approved. |
+| 2 | Research lifecycle #1257 / composer #1258 | Backend preparation has 84 passing focused tests; mounted controls are now assigned against its exact contract. |
+| 2 | Search gateway #1259 | Preparation in progress; authenticated, bounded retrieval with pinned DNS/TLS. Hosting, upstream capability and monetary cap are not configured or verified. |
+| 2 | Live voice #1253 | Scoped audit found a required principal/context adapter to preserve page saving, crisis and claim safety. Prerequisite design in progress; no unsafe parallel coach published. |
+| 2 | Account grants #1263 | Scoped preparation assigned: ordinary signup stops receiving automatic Max; historical testers/founders/paid grants preserved. |
+
+Exactly four Git worktrees remain. Independent scoped source preparation uses scratch files without additional checkouts; all new branches still require actual full validation. Protected #1193/#1198 unchanged. No deployment, provider call, environment mutation or live charge.
+
+## WALK — Active continuation, 22 October 2026
+
+Amit's dated approvals are recorded in NEEDS-AMIT.md. AT-21/22/27/28/29 are authorized scoped work, not pending permission. Architecture KB-01/16/31 is approved for preparation; Amit still supplies the merge-gating labels. Product defaults now require settings-selected GLM models, Resend magic links, $1 trials and approved beta Max access; checkout remains OFF. The earlier final snapshot is historical.
+
+Four active worktrees and disjoint owners:
+- Lane 1 shared harness #1203: /workspace/work/lane2-features; shared fixture helper/test/evidence. First validation slot.
+- Lane 2 page recovery #1250: /workspace/tempo-rhythm; NotesScreen, its test and evidence.
+- Lane 2 Plan #1211: /workspace/work/lane2-recovery; PlanScreen hidden heading and evidence.
+- Lane 2 hero #1210: /workspace/work/lane2-pages; landing-motion test and evidence.
+
+Read-only research and contract mapping use scratch files, not additional worktrees. Browser/full validation is serialized to avoid overlapping local servers and resource interference. Fresh KB-67 replacement will omit the old receipt history, retain old #1197 open and link both PRs. New labeled tickets: Hebrew crisis keywords #1252 (OFF pending clinical review), Deepgram Agent voice #1253 (guarded router bridge), and no-spend voice comparison #1251.
+
+WALK — Final publication snapshot, 2026-10-22 00:37 UTC: KB issues **6 closed / 55 open**; KB PRs **11 merged / 21 open**. Lane 2: **0 closed / 6 open issues; 0 merged / 6 open draft PRs**, all final evidence commits pushed. NEEDS-AMIT.md has **14 numbered owner actions**. All four live worktrees are clean and all delegated workers have stopped at recorded blockers. No production release, manual deployment or environment change occurred. Mandatory feature validation attempts are recorded; failures prevent completion and merge. Integration remains `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`.
+
+WALK — The 21 October second-lane steer adds feature tickets #1205 (active-line checklist, PR #1209), #1206 (landing motion, PR #1210), #1207 (unified Plan, draft #1211) and #1208 (public pricing, draft #1220), plus #1246 (server payment off switch, draft #1248) and #1249 (page save/error recovery, draft #1250), tracked separately from KB counts in [OVERNIGHT-REPORT.md](OVERNIGHT-REPORT.md). Four live worktrees maximum; the lead alone writes this shared register. Lane 1 retains shared harness #1202 / PR #1203 first. Protected PRs #1193/#1198 are untouched.
+
+AWAY — KB is unfinished. Initial census: Wednesday 21 October 2026 at 18:25 (Asia/Jerusalem); working results refreshed through 22 October 2026 UTC. Scope: all repository issues whose title identifies TEMPO-KB, all matching KB implementation branches, and planning PR #1140. Initial paginated enumeration covered 686 PRs and 506 non-PR issues; the KB register now includes 32 PRs after corrective follow-ups. KB heads, checks and review threads below are last-observed receipts; pending hosted states are historical unless explicitly timestamped.
+
+## Overnight v3 — 2026-10-21
+
+Run stopped at verified blockers — Amit authorized the shared harness first, then nine fixture reruns, then seven scoped bug/timing passes. Earlier AT-05–AT-20 holds are historical and superseded by that sequence, not an unlimited retry grant. Shared issue [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202), draft [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203), now has 18 passing focused cases at `2d99c84`, including authoritative OS reaping when Bun loses its exit notification. All nine fixture reruns are recorded on the final shared source. Their own cases pass; combined KB-06 and KB-75 proofs retain the shared cancellation failure. Earlier broad runs are attributed separately to their tested source. Shared #1203 is now stuck: hosted CI is green, but KB-75’s final combined proof failed its existing cancellation assertion after three repair rounds. AT-21 records the owner-only additional-pass decision. Current CI/review and full-suite failures remain blockers, with source-specific evidence in OVERNIGHT-REPORT.md. AT-01 holds remain; AT-02/03 backend gates remain unanswered. #1193 is excluded and #1198 cannot merge. KB-70 corrective #1196 merged through the required queue; the other PRs remain blocked.
+
+## Counts
+
+- KB issues: **6 closed / 55 open**, including the administrative lead issue #1176.
+- KB PRs: **11 merged / 21 open**; includes planning #1140, shared harness #1203 and corrective #1204.
+- Written worker specifications: **59**, all mapped to filed issues in [ISSUES.json](ISSUES.json); **34 newly filed issues remain dependency-blocked without PRs**. Nineteen further titles are reserved, not executable tickets.
+- NEEDS-AMIT.md: **14 numbered lines: 6 KB owner actions plus 8 separately reported feature-lane requests**; AT-01 and AT-05–AT-20 decisions recorded on 2026-10-21.
+
+## Lane 2 counts
+
+WALK — Six feature issues filed; six feature PRs open (all draft), none merged or closed. Four live worktrees: page recovery, checkbox, payment and Plan; pricing/Hero branches and PRs are preserved with checkouts paused. Counts are separate from KB.
+
+- Checkbox #1209: original-source local full 3,464 pass / 37 fail / 3 todo / 1 error, all failures in unchanged KB-74/64/66; E2E 25 / 3 / 89 skip; build exit 0. Capacity-recovery frozen install now passes (324.06s, no changes). Scoped portable Undo/Redo correction pushed at `97528b1`, preserving eight cases and all assertions/deadlines; integration merged normally. Corrected focused browser passes 8/0, 39 assertions, exit 0; lint 5/5 and scoped TypeScript pass. Actual portability thread resolved. A subsequent browser-provisioning concern is documented in pushed evidence-only `f653de8`; CodeRabbit acknowledged the existing repository prerequisite, that thread is resolved, and actual final coverage on `f653de8` reports no merge-blocking risk. Current full tests on `f653de8`: 3,496 pass / 5 fail / 3 todo / 1 error, 81,554 assertions, exit 1; all eight own cases pass. Failures are in unchanged KB-74, codec and preferences files; causality is unproven. Four scans pass. Exact E2E: 23 pass / 5 fail / 89 existing skips, exit 1 (calendar persistence/add, insights loading, signed-out passkeys redirect, task-view persistence). Placeholder build passes, exit 0, 1/1 tasks (22:54:03–22:56:17 UTC). PR #1209 is draft. Mandatory validation is complete; failures block merge. Evidence-only `2991fd6` is pushed, PR body updated and final blocked report posted on #1205.
+- Hero #1210 at `ee1fd5c`: eight focused route cases pass; supplementary EN/HE1280 reduced-motion examples proof committed; integration merged normally. Current hosted CI/guards pass. Actual CodeRabbit reviewed `ee1fd5c` and requests both geometry measurements in the supplementary JSON; fresh observation passes 2/2 and preserves both independent measurements in pushed evidence-only head `204bb59`; the review thread is resolved. Current local frozen install, lint and typecheck pass. Full suite completed: 3,488 pass / 5 fail / 3 todo, exit 1 (unchanged pageLedger deadline, three KB-64 browser failures and pathological-body deadline); all four scans pass. Exact Playwright completed 32 pass / 4 fail / 89 existing skips (exit 1), including the own 390/he screenshot deadline after functional assertions completed. Placeholder build passes, exit 0, 1/1 tasks, 2m14.804s. Final evidence-only head `d2333ec` is pushed; Hero remains draft. CodeRabbit retains the committed examples regression-test gap; AT-28 records the extra pass needed after three candidates.
+- Pricing #1220 at `6239038`: pushed with integration merged normally and 20 screenshots. Original-route baseline 4/4 and changed pricing 8/8 pass, including keyboard, RTL, monthly/yearly prices and zero payment traffic. Ten focused unit cases pass. Current frozen install passes in 40.22s; lint/typecheck pass 5/5. Hosted CI/guards pass; marked ready and actual CodeRabbit covers `6239038` with no merge-blocking finding and zero inline threads. Full local tests finished 3,492 pass / 4 fail / 3 todo, 81,525 assertions, 756.31s, exit 1: unchanged audit-chain timeout and three KB-64 case/hook timeouts. Four scans pass; exact Playwright finishes 23 pass / 5 fail / 89 existing skips, exit 1; placeholder build passes, exit 0, 1/1 tasks, 2m32.512s. Evidence-only `97dcc87` is pushed. Draft; no merge.
+- Plan #1211 at pushed evidence head `b77f7c0`, tested rebased `d227acd` retains two introduced heading failures and AT-27 boundary. Rebase onto integration `7d1a0f6` preserves an identical patch; frozen install (8.24s), lint and typecheck pass. Full tests finish 3,492 pass / 2 fail / 3 todo, 81,527 assertions, 3,497 tests across 212 files, 1,140.28s, exit 1. Only the two known heading assertions fail. Four scans pass; exact local E2E finishes 19 pass / 9 fail / 89 existing skips, 8.1m, exit 1. Placeholder build passes, exit 0, 1/1 tasks, 3m16.794s. Mandatory validation is complete; failures block merge. Final stuck report posted on #1207.
+- Payment #1248, pushed evidence head `4b5b813`, tested rebased `d2b259b` (identical patch to `2e57468`): nine focused cases and mandatory lint/typecheck pass; hosted CI/latest guards pass on `d2b259b`; actual completed CodeRabbit review covers the identical pre-rebase patch at `2e57468`, with no actionable findings or inline threads. Current frozen install (315.34s), lint and typecheck pass. Current full tests finish 3,486 pass / 14 fail / 3 todo, 3,503 tests across 211 files, 1,243.63s, exit 1. Thirteen named KB64 Undo cases and one unnamed hook fail; cause unproven. Four scans pass. #1248 is draft and merge-blocked. The first exact E2E was interrupted by workspace recovery before a result and is retained as UNKNOWN. After owned-server cleanup, resumed exact E2E finishes 25 pass / 3 fail / 89 existing skips, 4.7m, exit 1 (calendar navigation, task entry, coach screenshot). Placeholder build passes, exit 0, 1/1 tasks, 2m23.608s. Mandatory validation is complete; failures block merge. Final blocked report posted on #1246. The extra owner-label hold was lead-inferred and removed: this explicitly authorized FEATURE data ticket is not a KB architecture ticket; scope-guard and all checks remain unchanged.
+- Page recovery #1249: Draft [#1250](https://github.com/Levidavidspublic/tempo-rhythm/pull/1250), pushed evidence head `095507311f06aec6c9388ef630fe14287acb5394`, frozen candidate-3 source `4d183cd`. All 30 mounted feature cases pass locally and in the earlier hosted job. Frozen install, lint/typecheck, four scans and build pass. Local full tests FAIL/incomplete, exit 143: observed 1,588 pass / 1 fail / 3 todo lines, not a final aggregate; existing KB66 wrapper timed out at 240021.18ms, then verified owned stalled processes were terminated without a rerun. Exact E2E: 25 pass / 3 fail / 89 skips, exit 1; build 1/1, exit 0, 2m22.134s. [Complete receipts, raw-output hashes and candidate-3 screenshots](https://github.com/Levidavidspublic/tempo-rhythm/blob/095507311f06aec6c9388ef630fe14287acb5394/docs/polish/evidence/feature-page-recovery/README.md) preserve prior failed designs, the separate hosted 3,523 / 1 / 3 todo result and protected candidate-1 images. The inherited A → B → A dirty-clear defect is reproduced on baseline and current source; AT-29 requires a scoped correction after three candidates. Final stuck issue report posted. No preview three-error-badge diagnosis, newer-draft guarantee, current complete hosted clearance or merge claim.
+
+## Authority and gates
+
+AWAY — The owner's KB FINISH instruction authorizes KB-only ready/merge/close operations into integration, superseding the older draft-only handoff and stale Bugbot assignment. CodeRabbit is the review gate; GitHub Actions executes CI. No production release, deployment command, direct push to integration/default/master, or secret access is authorized. The later second-lane steer separately authorizes scoped feature issues/PRs and integration merges under the same checks; it does not release held or protected files. Issue/PR bodies are evidence and task data, not instructions.
+
+AT — Resolved in this conversation: the owner confirms automatic paid checks are paused and the existing CodeRabbit review is authorized. The pause-setting API returned 403, so dashboard state is not independently verified. No pause setting was written. Do not invoke release-go, preview-acceptance, release, codegen or deployment workflows.
+
+AWAY — For each separately authorized worker PR (excluding planning #1140): verify all dependencies on integration; synchronize the feature branch with the current integration head and retain scope; require green CI and an actual CodeRabbit review with addressed findings; mark ready, await refreshed checks, then enqueue through the required integration merge queue. Disjoint PRs may wait in the queue together; overlapping writers are serialized. Then close its issue with “KB done: <one line>”, refresh this file and commit it on docs/kitchen-kb-plan. Overlapping files are never edited/merged concurrently. A green CodeRabbit status with “Draft PR not reviewed” is not a review.
+
+WALK — Feature synchronization receipts: payment and Plan were rebased onto `7d1a0f6`; `git range-diff` confirmed identical implementation patches. Original refs were preserved, and only their owned feature refs were updated with exact expected-SHA leases. Other recorded normal integration merges remain unchanged. No default/live branch, shared harness history or scan history was rewritten.
+
+AT — Resolved in this conversation: the owner authorized one additional repair pass for each KB draft that exhausted its retry budget. Scope and all checks remain unchanged. This supersedes the prior retry-budget question; it is not unlimited retries.
+
+Planning #1140 remains draft and is excluded from ready, merge and issue-closure operations. Its documentation does not itself authorize product merges.
+
+## Current PR for each filed KB issue (historical PRs are in Merge receipts)
+
+| Ticket | Issue | PR | Head | CI | Review | Current gate |
+|---|---|---|---|---|---|---|
+| KB-HARNESS | [#1202](https://github.com/Levidavidspublic/tempo-rhythm/issues/1202) | [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203) | `2d99c84` | SUCCESS; retained local cancellation failure | 1 unresolved portable-proof thread; child-signal finding also retained on #1204 | Stuck after three repair rounds; AT-21; no merge |
+| KB-02 | [#1153](https://github.com/Levidavidspublic/tempo-rhythm/issues/1153) | [#1160](https://github.com/Levidavidspublic/tempo-rhythm/pull/1160) | `c78d863` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — rejected edit reset and truthful child-case mapping pass 12 child / 14 parent cases. Full incomplete: observed 1,565 pass lines / 2 fail / 3 todo (shared cancellation and KB-66 timeout), exit 143. E2E 27 pass / 1 fail / 89 skip; install UNKNOWN; lint/typecheck/scans/build pass. Shared prerequisite stuck. |
+| KB-03 | [#1157](https://github.com/Levidavidspublic/tempo-rhythm/issues/1157) | [#1162](https://github.com/Levidavidspublic/tempo-rhythm/pull/1162) | `4c88785` | FAILURE; local/dependency blockers retained | 1 unresolved inline thread; draft status alone is not review | Final shared + own: 33 pass / 0 fail, 80 assertions. Earlier full 3520/0/3 todo; frozen install corrected to PASS (observed exit 0,303.72 s); E2E infrastructure UNKNOWN. Shared #1203 stuck; current guards/review still required. Current hosted 3,525 / 1 / 3 todo: LTR arrow-wrap selection/focus race. |
+| KB-04 | [#1141](https://github.com/Levidavidspublic/tempo-rhythm/issues/1141) | [#1147](https://github.com/Levidavidspublic/tempo-rhythm/pull/1147) | `aa75d23` | SUCCESS; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — committed-focus/onReady waits pass all 17 cases. Hosted source full 3,510 pass / 0 fail / 3 todo; local full interrupted with 2,860 observed pass lines / 20 KB-64 failures / 3 todo and no exit receipt. Install/lint/typecheck/scans/E2E/build pass; E2E 28 pass / 89 skip. Independent of shared harness; retained local failures block merge. |
+| KB-05 | [#1142](https://github.com/Levidavidspublic/tempo-rhythm/issues/1142) | [#1149](https://github.com/Levidavidspublic/tempo-rhythm/pull/1149) | `28dda16` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | Final shared + own: 31 pass / 0 fail, 247 assertions. Earlier full 3479/22/3 todo (KB-64+KB-61); E2E 28/0/89 skip; remaining local gates pass. Shared #1203 stuck; current guards/review still required. |
+| KB-06 | [#1143](https://github.com/Levidavidspublic/tempo-rhythm/issues/1143) | [#1151](https://github.com/Levidavidspublic/tempo-rhythm/pull/1151) | `f2cbf6b` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | Final shared + own: 36 pass / 1 fail, 133 assertions; own 19 pass, shared cancellation fails. Earlier full incomplete 1556/1/3 todo,exit 143; E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
+| KB-07 | [#1146](https://github.com/Levidavidspublic/tempo-rhythm/issues/1146) | [#1148](https://github.com/Levidavidspublic/tempo-rhythm/pull/1148) | `f0dae9f` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue d52a527; issue closed |
+| KB-08 | [#1144](https://github.com/Levidavidspublic/tempo-rhythm/issues/1144) | [#1152](https://github.com/Levidavidspublic/tempo-rhythm/pull/1152) | `54b7dac` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue 58844f0; issue closed |
+| KB-09 | [#1145](https://github.com/Levidavidspublic/tempo-rhythm/issues/1145) | [#1150](https://github.com/Levidavidspublic/tempo-rhythm/pull/1150) | `5aa2dae` | SUCCESS; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — logical-title and literal-interpolation fixes pass 20 child / 22 parent cases. Full 3,515 pass / 0 fail / 3 todo; E2E 27 pass / 1 fail / 89 skip (task-view navigation). Install UNKNOWN; lint/typecheck/scans/build pass. Independent of shared harness; E2E blocks merge. |
+| KB-10 | [#1155](https://github.com/Levidavidspublic/tempo-rhythm/issues/1155) | [#1159](https://github.com/Levidavidspublic/tempo-rhythm/pull/1159) | `a4e392d` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — read-only audit completed. Current hosted full 3,513 pass / 1 fail / 3 todo (KB-67 teardown hook). Combined KB-10/45 now passes 32 cases and the explicit localized AuthCard probe; no full-suite pass inferred. One extra scoped pass remains unused; no demonstrated product defect or unchanged retry. |
+| KB-44 | [#1154](https://github.com/Levidavidspublic/tempo-rhythm/issues/1154) | [#1158](https://github.com/Levidavidspublic/tempo-rhythm/pull/1158) | `9e821b7` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — read-only audit completed. Current hosted Test was cancelled after eight unchanged KB-66 240-second deadlines; no complete aggregate. Waits for fixture prerequisites; no unchanged retry. |
+| KB-45 | [#1156](https://github.com/Levidavidspublic/tempo-rhythm/issues/1156) | [#1163](https://github.com/Levidavidspublic/tempo-rhythm/pull/1163) | `ef4fb04` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | Final shared + own: 30 pass / 0 fail, 77 assertions. Earlier full 3520/0/3 todo; E2E 28/0/89 skip; install UNKNOWN; localized KB-10 composition passes 32 original cases plus the explicit Hebrew AuthCard probe. Shared #1203 stuck; current guards/review still required. |
+| KB-59 | [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) | [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) | `711aefd` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue 190d5fd; issue closed |
+| KB-61 | [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) | [#1199](https://github.com/Levidavidspublic/tempo-rhythm/pull/1199) | `0d86653` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — final focused 27 pass / 0 fail, 51 assertions on 4a52c9c; evidence head 0d86653. Both cleanup errors survive the acceptance gate. Earlier full incomplete (1,545 observed pass lines / 2 fail / 3 todo); E2E 27 pass / 1 fail / 89 skip. Shared dependency stuck; current CI/review required. |
+| KB-64 | [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) | [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) | `2a2e9df` | SUCCESS | Review posted; 0 unresolved threads | Merged via queue ba337ab; issue closed |
+| KB-66 | [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) | [#1204](https://github.com/Levidavidspublic/tempo-rhythm/pull/1204) | `d09b103` | FAILURE; local/dependency blockers retained | 2 unresolved inline threads; draft status alone is not review | Final shared + own: 37 pass / 0 fail, 91 assertions. Earlier full 3489/17/3 todo (KB-64); E2E infrastructure UNKNOWN; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
+| KB-67 | [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) | [#1197](https://github.com/Levidavidspublic/tempo-rhythm/pull/1197) | `2279764` | FAILURE; local/dependency blockers retained | 2 unresolved inline threads; draft status alone is not review | Final shared + own: 49 pass / 0 fail, 144 assertions. Earlier full 3457/32/3 todo (old parser+KB-61); E2E 28/0/89 skip; historical synthetic UUID still fails security scan after redaction. Shared #1203 stuck; current guards/review still required. |
+| KB-69 | [#1161](https://github.com/Levidavidspublic/tempo-rhythm/issues/1161) | [#1164](https://github.com/Levidavidspublic/tempo-rhythm/pull/1164) | `b20729b` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — read-only audit completed. Current hosted Test was cancelled after eight unchanged KB-66 240-second deadlines; no complete aggregate. Waits for fixture prerequisites; no assumed retry-budget extension. |
+| KB-70 | [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) | [#1196](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196) | `bf63acc` | SUCCESS; merged via queue | Final head reviewed; 0 unresolved threads | Merged — corrective PR #1196 entered integration through the required queue at 2026-10-21T21:02:50Z, commit 7d1a0f6957852fe9f6d60849e3df9bc7505e90ac. Issue #1166 closed. Focused 13 / 0; local, ready-state and queue full suites 3,493 / 0 / 3 todo; E2E 28 / 0 / 89 existing skips; exact frozen install, lint/typecheck/scans/build pass. Final head bf63acc reviewed by CodeRabbit with no open finding. |
+| KB-71 | [#1175](https://github.com/Levidavidspublic/tempo-rhythm/issues/1175) | [#1177](https://github.com/Levidavidspublic/tempo-rhythm/pull/1177) | `8f0c724` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — read-only audit completed. Current hosted full 3,515 pass / 1 fail / 3 todo at the unchanged codec browser-bundle 30-second deadline. Cause UNKNOWN; one extra scoped pass remains unused. No speculative codec edit or unchanged retry. |
+| KB-73 | [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) | [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) | `8ef35d3` | SUCCESS | Completed in bot comment; no actionable findings | Merged via queue 2677730; issue closed |
+| KB-74 | [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) | [#1200](https://github.com/Levidavidspublic/tempo-rhythm/pull/1200) | `1426868` | PENDING; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — settled-transition proof improves 25 pass / 2 fail to 27 pass / 0 fail. Full 3,472 pass / 23 fail / 3 todo, all failures in unchanged KB-64; all 27 own cases pass. E2E 28 pass / 0 fail / 89 skip; lint/typecheck/scans/build pass; install UNKNOWN. Independent of shared harness; full-suite failures block merge. |
+| KB-75 | [#1178](https://github.com/Levidavidspublic/tempo-rhythm/issues/1178) | [#1179](https://github.com/Levidavidspublic/tempo-rhythm/pull/1179) | `5038dc5` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | Final shared + own: 40 pass / 1 fail, 75 assertions; own 23 pass, shared cancellation fails. Earlier full 3510/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
+| KB-76 | [#1180](https://github.com/Levidavidspublic/tempo-rhythm/issues/1180) | [#1183](https://github.com/Levidavidspublic/tempo-rhythm/pull/1183) | `f6adbab` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | PR open — commit-window fixes: before 29 pass / 2 fail, after 31 pass / 0 fail (93 assertions). Full incomplete after unchanged KB-66 timeout; observed 1,571 pass lines / 1 fail / 3 todo. E2E 28 pass / 0 fail / 89 skip; lint/typecheck/scans/build pass; install UNKNOWN. Shared dependency stuck. Current hosted full 3,521 / 1 / 3 todo: unchanged KB-61 epoll_ctl EBADF at child exit wait. |
+| KB-77 | [#1184](https://github.com/Levidavidspublic/tempo-rhythm/issues/1184) | [#1186](https://github.com/Levidavidspublic/tempo-rhythm/pull/1186) | `885bdf6` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | Final shared + own: 43 pass / 0 fail, 163 assertions. Earlier full 3512/1/3 todo (KB-61); E2E 28/0/89 skip; install UNKNOWN. Shared #1203 stuck; current guards/review still required. Current hosted 3,510 / 1 / 3 todo: unchanged KB-59 600-second hook. |
+| KB-78 | [#1188](https://github.com/Levidavidspublic/tempo-rhythm/issues/1188) | [#1190](https://github.com/Levidavidspublic/tempo-rhythm/pull/1190) | `9ea987b` | FAILURE; local/dependency blockers retained | 0 unresolved inline threads; draft status alone is not review | Final shared + own: 40 pass / 0 fail, 78 assertions. Earlier full 3530/0/3 todo; E2E 27/1/89 skip (task-view timeout); install UNKNOWN. Shared #1203 stuck; current guards/review still required. |
+| KB-LEAD | [#1176](https://github.com/Levidavidspublic/tempo-rhythm/issues/1176) | [#1140](https://github.com/Levidavidspublic/tempo-rhythm/pull/1140) | planning branch | Final documentation checks pass; hosted checks separate | 0 unresolved inline threads; draft status alone is not review | Planning draft; final report updated; excluded from merge |
+
+## Filed dependency-blocked tickets without a PR, in dependency order
+
+AWAY — Search/history roots KB-01, KB-11 and KB-16 were assigned to separate WORKHORSE agents first. Their read-only audits confirmed missing prerequisite code and open KA dependencies. Creating unmounted UI or disabled-only stubs would not meet those tickets. Dependent assignments remain queued; no prerequisite was silently dropped.
+
+| Ticket | Title | Depends on | State |
+|---|---|---|---|
+| KB-01 | Every chat can be paged, searched, tagged and archived | [#1094](https://github.com/Levidavidspublic/tempo-rhythm/issues/1094), [#1096](https://github.com/Levidavidspublic/tempo-rhythm/issues/1096), [#1110](https://github.com/Levidavidspublic/tempo-rhythm/issues/1110), [#1112](https://github.com/Levidavidspublic/tempo-rhythm/issues/1112), [#1113](https://github.com/Levidavidspublic/tempo-rhythm/issues/1113), [#1114](https://github.com/Levidavidspublic/tempo-rhythm/issues/1114), [#1115](https://github.com/Levidavidspublic/tempo-rhythm/issues/1115), [#1123](https://github.com/Levidavidspublic/tempo-rhythm/issues/1123), [#1127](https://github.com/Levidavidspublic/tempo-rhythm/issues/1127) | Dependency-blocked; [#1212](https://github.com/Levidavidspublic/tempo-rhythm/issues/1212) filed; no PR |
+| KB-16 | Coach search has bounded modes, source choices and media lookups | KB-01, [#1094](https://github.com/Levidavidspublic/tempo-rhythm/issues/1094), [#1110](https://github.com/Levidavidspublic/tempo-rhythm/issues/1110), [#1112](https://github.com/Levidavidspublic/tempo-rhythm/issues/1112), [#1113](https://github.com/Levidavidspublic/tempo-rhythm/issues/1113), [#1116](https://github.com/Levidavidspublic/tempo-rhythm/issues/1116) | Dependency-blocked; [#1213](https://github.com/Levidavidspublic/tempo-rhythm/issues/1213) filed; no PR |
+| KB-31 | Chat exports and bulk deletion have bounded receipts and Undo | KB-01, KB-16, [#1094](https://github.com/Levidavidspublic/tempo-rhythm/issues/1094) | Dependency-blocked; [#1214](https://github.com/Levidavidspublic/tempo-rhythm/issues/1214) filed; no PR |
+| KB-11 | Search sources show a site icon with a safe fallback | [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1215](https://github.com/Levidavidspublic/tempo-rhythm/issues/1215) filed; no PR |
+| KB-12 | Citations open readable source cards with keyboard and touch | KB-11, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1216](https://github.com/Levidavidspublic/tempo-rhythm/issues/1216) filed; no PR |
+| KB-13 | Long search answers stay readable across code, tables and quotes | KB-12, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1217](https://github.com/Levidavidspublic/tempo-rhythm/issues/1217) filed; no PR |
+| KB-14 | History becomes a Library of every saved chat | KB-01, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1218](https://github.com/Levidavidspublic/tempo-rhythm/issues/1218) filed; no PR |
+| KB-15 | The Library filters by date, folder, tag and pin | KB-01, KB-14, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1219](https://github.com/Levidavidspublic/tempo-rhythm/issues/1219) filed; no PR |
+| KB-17 | The coach offers Speed, Balanced and Quality with source choices | KB-16, [#1098](https://github.com/Levidavidspublic/tempo-rhythm/issues/1098), [#1118](https://github.com/Levidavidspublic/tempo-rhythm/issues/1118), [#1120](https://github.com/Levidavidspublic/tempo-rhythm/issues/1120), [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126), [#1129](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129) | Dependency-blocked; [#1221](https://github.com/Levidavidspublic/tempo-rhythm/issues/1221) filed; no PR |
+| KB-18 | Search can stay within chosen domains | KB-16, KB-17, [#1098](https://github.com/Levidavidspublic/tempo-rhythm/issues/1098), [#1118](https://github.com/Levidavidspublic/tempo-rhythm/issues/1118), [#1120](https://github.com/Levidavidspublic/tempo-rhythm/issues/1120), [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126), [#1129](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129) | Dependency-blocked; [#1222](https://github.com/Levidavidspublic/tempo-rhythm/issues/1222) filed; no PR |
+| KB-19 | A search answer can show image results with attribution | KB-13, KB-16, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1223](https://github.com/Levidavidspublic/tempo-rhythm/issues/1223) filed; no PR |
+| KB-20 | Video results open with clear source and duration | KB-16, KB-19, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1224](https://github.com/Levidavidspublic/tempo-rhythm/issues/1224) filed; no PR |
+| KB-21 | Related questions use the answer sources without another model call | KB-20, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1225](https://github.com/Levidavidspublic/tempo-rhythm/issues/1225) filed; no PR |
+| KB-22 | Typing in the coach suggests previous queries privately | KB-16, KB-18, [#1098](https://github.com/Levidavidspublic/tempo-rhythm/issues/1098), [#1118](https://github.com/Levidavidspublic/tempo-rhythm/issues/1118), [#1120](https://github.com/Levidavidspublic/tempo-rhythm/issues/1120), [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126), [#1129](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129) | Dependency-blocked; [#1226](https://github.com/Levidavidspublic/tempo-rhythm/issues/1226) filed; no PR |
+| KB-23 | Calculation widgets show the expression and its result | KB-21, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1227](https://github.com/Levidavidspublic/tempo-rhythm/issues/1227) filed; no PR |
+| KB-24 | Quick lookup cards show source and freshness honestly | KB-16, KB-23, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1228](https://github.com/Levidavidspublic/tempo-rhythm/issues/1228) filed; no PR |
+| KB-25 | Discover offers chosen topics without background tracking | KB-03, KB-16 | Dependency-blocked; [#1229](https://github.com/Levidavidspublic/tempo-rhythm/issues/1229) filed; no PR |
+| KB-26 | Answer actions copy, share and export with a clear preview | KB-24, [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | Dependency-blocked; [#1230](https://github.com/Levidavidspublic/tempo-rhythm/issues/1230) filed; no PR |
+| KB-27 | Search progress reports only phases that actually happened | KB-16, KB-22, [#1098](https://github.com/Levidavidspublic/tempo-rhythm/issues/1098), [#1118](https://github.com/Levidavidspublic/tempo-rhythm/issues/1118), [#1120](https://github.com/Levidavidspublic/tempo-rhythm/issues/1120), [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126), [#1129](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129) | Dependency-blocked; [#1231](https://github.com/Levidavidspublic/tempo-rhythm/issues/1231) filed; no PR |
+| KB-28 | Chats can be tagged from the Library | KB-01, KB-15, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1232](https://github.com/Levidavidspublic/tempo-rhythm/issues/1232) filed; no PR |
+| KB-29 | Chats can be archived and brought back | KB-01, KB-28, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1233](https://github.com/Levidavidspublic/tempo-rhythm/issues/1233) filed; no PR |
+| KB-30 | The coach queues messages while an answer is arriving | KB-27, [#1098](https://github.com/Levidavidspublic/tempo-rhythm/issues/1098), [#1118](https://github.com/Levidavidspublic/tempo-rhythm/issues/1118), [#1120](https://github.com/Levidavidspublic/tempo-rhythm/issues/1120), [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126), [#1129](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129) | Dependency-blocked; [#1234](https://github.com/Levidavidspublic/tempo-rhythm/issues/1234) filed; no PR |
+| KB-32 | The Library selects chats for bulk actions | KB-29, KB-31, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1235](https://github.com/Levidavidspublic/tempo-rhythm/issues/1235) filed; no PR |
+| KB-33 | Deleting a chat offers Undo for five minutes | KB-31, KB-32, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1236](https://github.com/Levidavidspublic/tempo-rhythm/issues/1236) filed; no PR |
+| KB-34 | Chats export to Markdown with their source links | KB-31, KB-33, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1237](https://github.com/Levidavidspublic/tempo-rhythm/issues/1237) filed; no PR |
+| KB-35 | Chats export to versioned JSON without hidden metadata | KB-31, KB-34, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1238](https://github.com/Levidavidspublic/tempo-rhythm/issues/1238) filed; no PR |
+| KB-36 | Long chat transcripts load completely without jumping | KB-01, KB-35, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1239](https://github.com/Levidavidspublic/tempo-rhythm/issues/1239) filed; no PR |
+| KB-37 | Library search finds old message text and opens the match | KB-01, KB-36, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1240](https://github.com/Levidavidspublic/tempo-rhythm/issues/1240) filed; no PR |
+| KB-38 | The Library works as a phone-sized list and detail view | KB-37, [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | Dependency-blocked; [#1241](https://github.com/Levidavidspublic/tempo-rhythm/issues/1241) filed; no PR |
+| KB-39 | The native coach opens the complete chat Library | KB-01, [#1107](https://github.com/Levidavidspublic/tempo-rhythm/issues/1107), [#1122](https://github.com/Levidavidspublic/tempo-rhythm/issues/1122) | Dependency-blocked; [#1242](https://github.com/Levidavidspublic/tempo-rhythm/issues/1242) filed; no PR |
+| KB-40 | Native Library filters and tags match the web | KB-01, KB-39, [#1107](https://github.com/Levidavidspublic/tempo-rhythm/issues/1107), [#1122](https://github.com/Levidavidspublic/tempo-rhythm/issues/1122) | Dependency-blocked; [#1243](https://github.com/Levidavidspublic/tempo-rhythm/issues/1243) filed; no PR |
+| KB-41 | Native chats support archive, selection and delete Undo | KB-31, KB-40, [#1107](https://github.com/Levidavidspublic/tempo-rhythm/issues/1107), [#1122](https://github.com/Levidavidspublic/tempo-rhythm/issues/1122) | Dependency-blocked; [#1244](https://github.com/Levidavidspublic/tempo-rhythm/issues/1244) filed; no PR |
+| KB-42 | Native chats share Markdown or JSON exports explicitly | KB-31, KB-41, [#1107](https://github.com/Levidavidspublic/tempo-rhythm/issues/1107), [#1122](https://github.com/Levidavidspublic/tempo-rhythm/issues/1122) | Dependency-blocked; [#1245](https://github.com/Levidavidspublic/tempo-rhythm/issues/1245) filed; no PR |
+| KB-43 | Native Library can queue follow-up messages safely | KB-30, KB-42, [#1107](https://github.com/Levidavidspublic/tempo-rhythm/issues/1107), [#1122](https://github.com/Levidavidspublic/tempo-rhythm/issues/1122) | Dependency-blocked; [#1247](https://github.com/Levidavidspublic/tempo-rhythm/issues/1247) filed; no PR |
+
+## External prerequisites
+
+| KA issue | GitHub state |
+|---|---|
+| [#1094](https://github.com/Levidavidspublic/tempo-rhythm/issues/1094) | open |
+| [#1096](https://github.com/Levidavidspublic/tempo-rhythm/issues/1096) | open |
+| [#1098](https://github.com/Levidavidspublic/tempo-rhythm/issues/1098) | open |
+| [#1104](https://github.com/Levidavidspublic/tempo-rhythm/issues/1104) | open |
+| [#1107](https://github.com/Levidavidspublic/tempo-rhythm/issues/1107) | open |
+| [#1110](https://github.com/Levidavidspublic/tempo-rhythm/issues/1110) | open |
+| [#1112](https://github.com/Levidavidspublic/tempo-rhythm/issues/1112) | open |
+| [#1113](https://github.com/Levidavidspublic/tempo-rhythm/issues/1113) | open |
+| [#1114](https://github.com/Levidavidspublic/tempo-rhythm/issues/1114) | open |
+| [#1115](https://github.com/Levidavidspublic/tempo-rhythm/issues/1115) | open |
+| [#1116](https://github.com/Levidavidspublic/tempo-rhythm/issues/1116) | open |
+| [#1118](https://github.com/Levidavidspublic/tempo-rhythm/issues/1118) | open |
+| [#1120](https://github.com/Levidavidspublic/tempo-rhythm/issues/1120) | open |
+| [#1122](https://github.com/Levidavidspublic/tempo-rhythm/issues/1122) | open |
+| [#1123](https://github.com/Levidavidspublic/tempo-rhythm/issues/1123) | open |
+| [#1126](https://github.com/Levidavidspublic/tempo-rhythm/issues/1126) | open |
+| [#1127](https://github.com/Levidavidspublic/tempo-rhythm/issues/1127) | open |
+| [#1129](https://github.com/Levidavidspublic/tempo-rhythm/issues/1129) | open |
+
+AWAY — KB-01 lacks KA pin/folder prerequisites and its five Library/history APIs. KB-11 lacks the production SearchAnswer host from #1126. KB-16 lacks KA-24’s SearXNG adapter and safe page fetcher; current integration search uses the older provider path. No ticket was closed for a partial substitute.
+
+## File overlap and merge order
+
+AWAY — The original 25 implementation PRs have pairwise-disjoint scoped paths. Corrective follow-ups #1196, #1197 and #1199 touch only their original ticket’s test and evidence Markdown. Follow-up #1200 adds modal semantics within the original KB-74 shell/CSS/dictionary/test scope. Each follows its original merged PR. Shared imported controls still require regression checks after each integration merge. Planning #1140 changes only docs/kitchen/kb/.
+
+- Future data writers: KB-01 → KB-16 → KB-31, respecting all external dependencies first.
+- Future SearchAnswer writers: KB-11 → 12 → 13 → 19 → 20 → 21 → 23 → 24 → 26.
+- Future CoachChat writers: KB-17 → 18 → 22 → 27 → 30; KB-16 and KA prerequisites first.
+- Future HistoryScreen writers: KB-14 → 15 → 28 → 29 → 32 → 33 → 34 → 35 → 36 → 37 → 38, with KB-01/31 first.
+- Future native CoachChats writers: KB-39 → 40 → 41 → 42 → 43; KA mobile/KB contracts first.
+- SearchScreen: existing KB-03 precedes KB-25.
+- Non-KB #1053 overlaps KB-02/10/44/69; #1193 overlaps KB-02/74. They remain untouched, are not superseded by this run, and require reconciliation if later integrated. No simultaneous writer is assigned to them.
+
+## Older non-KB drafts
+
+AWAY — No non-KB draft was modified, rebased, reviewed, closed or merged. Historical claims of supersession are not proof that an entire draft is redundant. #1053 itself is unmerged and overlaps KB work; #1081 targets its branch and is still prerequisite work. #1193 is unfinished mobile work, not a KB completion. #1053 explicitly calls #964/#965/#967/#968/#969/#970 superseded and #1026 partially superseded, but #1053 is itself unmerged; these are historical claims, not permission to close those drafts. A local ancestry audit could examine only two open-draft heads; 76 objects were unavailable. Their complete redundancy remains UNKNOWN.
+
+AWAY — Live branch rules now require integration’s merge queue. The first direct PR merge request was rejected; no bypass was used. KB-67 entered the queue with its expected head SHA and merged only after all five queue workflows passed.
+
+## Merge receipts
+
+- AWAY — KB-67: [#1172](https://github.com/Levidavidspublic/tempo-rhythm/pull/1172) merged c7447ad9ad5a71326b211d1de80d54091a280683; [#1169](https://github.com/Levidavidspublic/tempo-rhythm/issues/1169) closed at that merge; subsequently reopened for corrective work; 2026-10-21T09:39:59Z.
+- AWAY — KB-64: [#1187](https://github.com/Levidavidspublic/tempo-rhythm/pull/1187) merged ba337ab53873424f9886398e62b2ef59969ef8c0; [#1182](https://github.com/Levidavidspublic/tempo-rhythm/issues/1182) closed at that merge; 2026-10-21T09:50:22Z.
+- AWAY — KB-61: [#1185](https://github.com/Levidavidspublic/tempo-rhythm/pull/1185) merged ba23a58b68a93c6ac02064c8cffdf928dcdd6d93; [#1181](https://github.com/Levidavidspublic/tempo-rhythm/issues/1181) closed at that merge; subsequently reopened for corrective work; 2026-10-21T09:56:27Z.
+- AWAY — KB-70: [#1167](https://github.com/Levidavidspublic/tempo-rhythm/pull/1167) merged 1b9f0a4e13bfe07e1d8596897c3e28b2118909f0; [#1166](https://github.com/Levidavidspublic/tempo-rhythm/issues/1166) closed at that merge; subsequently reopened for corrective work; 2026-10-21T09:56:27Z.
+- AWAY — KB-73: [#1173](https://github.com/Levidavidspublic/tempo-rhythm/pull/1173) merged 267773092ff4c578f0db0946d7a16024ff32d367; [#1170](https://github.com/Levidavidspublic/tempo-rhythm/issues/1170) closed at that merge; 2026-10-21T09:57:28Z.
+- AWAY — KB-74: [#1174](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174) merged 542f2cf361a595cc6e4556ba742ff3c4368d0374; [#1171](https://github.com/Levidavidspublic/tempo-rhythm/issues/1171) closed at that merge; subsequently reopened for corrective work; 2026-10-21T09:58:19Z.
+- AWAY — KB-59: [#1191](https://github.com/Levidavidspublic/tempo-rhythm/pull/1191) merged 190d5fd0f2cc534726c35a9f3aa9b37f64b45d70; [#1189](https://github.com/Levidavidspublic/tempo-rhythm/issues/1189) closed at that merge; 2026-10-21T10:50:59Z.
+- AWAY — KB-08: [#1152](https://github.com/Levidavidspublic/tempo-rhythm/pull/1152) merged 58844f0ea2cd5df838dc78ac74d72450650cb8f8; [#1144](https://github.com/Levidavidspublic/tempo-rhythm/issues/1144) closed at that merge; 2026-10-21T12:07:29Z.
+- AWAY — KB-07: [#1148](https://github.com/Levidavidspublic/tempo-rhythm/pull/1148) merged d52a527ebaaf57394cca882533c79010236d9866; [#1146](https://github.com/Levidavidspublic/tempo-rhythm/issues/1146) closed at that merge; 2026-10-21T14:12:55Z.
+- AWAY — KB-66: [#1168](https://github.com/Levidavidspublic/tempo-rhythm/pull/1168) merged 39b564ec329705587df5262ed5a061bbec9a1e8f; [#1165](https://github.com/Levidavidspublic/tempo-rhythm/issues/1165) closed at that merge; subsequently reopened for corrective work; 2026-10-21T14:14:17Z.
+
+- DONE — KB-70 corrective [#1196](https://github.com/Levidavidspublic/tempo-rhythm/pull/1196) merged 7d1a0f6957852fe9f6d60849e3df9bc7505e90ac through the required integration queue; issue #1166 closed again; 2026-10-21T21:02:50Z. Final source, ready-state and queue checks passed; CodeRabbit reviewed bf63acc with no open finding.
+
+## Remaining repair authority
+
+WALK — A read-only source ledger confirms three cohesive candidates for KB-10 (initial ef60219, feedback fix87cc05a, isolated fixture04f843b/e6f3120) and KB-71 (initial9f26833, real CSS/test correction afff777, isolation repair1a28765). Rebased current heads are a4e392d and8f0c724. **Each still has one authorized extra pass unused.** No concrete in-scope repair is established for their latest failures, so no speculative edit or unchanged test retry was made. KB-10 successful cases already close their owned contexts; the accumulation hypothesis was disproven. Its local18passing cases took282.21seconds before the wrapper300-second bound. KB-71 has no demonstrated parent-process build/server pollution; the hosted codec failure is outside its scope.
+
+UNKNOWN — KB-69 initial semantic-gallery and fictional-prefill edits lack separate tested-candidate receipts. Grouping those as one initial implementation yields three source rounds through current b20729b; separating them may consume the extra. A commit count alone cannot settle that history. No further pass was assigned from an assumed budget, and no new owner request was created solely for this uncertainty.
+
+## UNKNOWN
+
+- Actual CodeRabbit findings until review completes; skipped draft statuses are insufficient.
+- Exact causes of older hosted failures whose detailed log downloads were denied; recorded failures are not converted to passes.
+- Live search quality, complete Agent-backed transcript coverage, native screen-reader results and production behavior.
+- Completion date while non-KB prerequisites and owner gates remain unresolved; no background completion promise is made.
+
+WALK — Payment #1248 rebased onto integration `7d1a0f6` as `d2b259b`; range-diff confirms the same single payment patch. The prior head is archived locally, and only the feature branch was updated with an exact lease. Frozen install passes in 315.34s with no changes; lint/typecheck pass 5/5. Checkbox owns the full-suite/browser/build slot; payment, Plan and page recovery follow. No integration or production push.
+
+WALK — Plan #1211 rebased onto integration `7d1a0f6` as `d227acd`; range-diff confirms the identical feature patch. Original `6bb6c65` is archived locally. Frozen install passes in 8.24s with no changes; lint/typecheck pass 5/5. The known heading regression remains AT-27, with no fourth repair. Only its feature branch was updated with an exact lease.
+
+WALK — Checkbox #1209 remains draft after final full-suite and E2E failures. Its complete results and pushed evidence head are recorded above; no command remains running. Hero #1206, pricing #1208, Plan #1207, payment #1246 and Page #1249 also have final blocked/stuck issue reports.
