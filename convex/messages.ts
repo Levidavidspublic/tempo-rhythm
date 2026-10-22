@@ -5,6 +5,8 @@ import { PENDING_APPROVAL_MESSAGE, isApproved, requireApprovedUser } from "./lib
 import { modelSafeContent } from "./lib/connections/lookup";
 import { requireLiveConversation } from "./lib/pagePrivacy";
 import { requireUser } from "./lib/requireUser";
+import { getPage, type IndexKey } from "convex-helpers/server/pagination";
+import schema from "./schema";
 
 /**
  * Legacy chat compatibility while Agent-backed chat activates (TEMPO-B06-SUPPORT-CHAT-COMPAT, #809).
@@ -194,7 +196,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     // Chat write: pending/revoked accounts are rejected (sign-up approval gate).
     const user = await requireApprovedUser(ctx);
-    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const conversation = await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
 
     if (args.role !== "user") {
       throw new Error("Only user messages can be created from the client");
@@ -211,7 +213,7 @@ export const create = mutation({
     });
 
     await ctx.db.patch(args.conversationId, {
-      updatedAt: Date.now(),
+      updatedAt: Math.max(Date.now(), conversation.updatedAt + 1),
     });
 
     return messageId;
@@ -243,6 +245,8 @@ export const remove = mutation({
 
     if (message.deletedAt === undefined) {
       await ctx.db.patch(args.messageId, { deletedAt: Date.now() });
+      // Export snapshots must notice deletion of any message, not just the newest.
+      await ctx.db.patch(conversation._id, { updatedAt: Math.max(Date.now(), conversation.updatedAt + 1) });
     }
     return { success: true as const };
   },
@@ -311,3 +315,339 @@ export async function readLegacyHistoryForAgentContext(
   }
   return { items, truncated };
 }
+
+// KB-01: bounded native-index traversal. Cursor v1 binds owner and normalized inputs.
+// Ordering is native createdAt/updatedAt, _creationTime, _id (descending), not a
+// page-local re-sort. getPage reads one lookahead row: 24+1 chats, 99+1 messages.
+export const libraryPaginationValidator = v.object({ cursor: v.union(v.string(), v.null()), numItems: v.number() });
+export const libraryFiltersValidator = v.object({
+  fromMs: v.optional(v.number()), beforeMs: v.optional(v.number()), folder: v.optional(v.string()),
+  tags: v.optional(v.array(v.string())), pinned: v.optional(v.boolean()),
+  archive: v.optional(v.union(v.literal("active"), v.literal("archived"), v.literal("all"))),
+});
+export type LibraryFilters = {
+  fromMs?: number; beforeMs?: number; folder?: string; tags?: string[]; pinned?: boolean;
+  archive?: "active" | "archived" | "all";
+};
+export const libraryChatValidator = v.object({
+  id: v.id("conversations"), title: v.string(), createdAt: v.number(), updatedAt: v.number(),
+  folder: v.union(v.string(), v.null()), pinnedAt: v.union(v.number(), v.null()),
+  tags: v.array(v.string()), archivedAt: v.union(v.number(), v.null()),
+  chatMode: v.union(v.literal("legacy"), v.literal("agent")),
+});
+const libraryMessageValidator = v.object({
+  id: v.id("messages"), conversationId: v.id("conversations"),
+  role: v.union(v.literal("user"), v.literal("assistant")), content: v.string(), createdAt: v.number(),
+  sources: v.array(v.object({ title: v.string(), site: v.string(), url: v.string() })),
+});
+export function libraryError(code: string): never { throw new ConvexError({ code }); }
+
+export async function libraryUser(ctx: QueryCtx | MutationCtx, write = false) {
+  try { return await (write ? requireApprovedUser(ctx) : requireUser(ctx)); }
+  catch { return libraryError("unavailable"); }
+}
+
+/** Unicode 15.1 default full case folding using runtime casing, independently implemented.
+ * Dotless i is unchanged; capital sharp S expands; Cherokee folds to uppercase.
+ * No locale-dependent casing or NFKC compatibility normalization. See KB-01 evidence.
+ */
+export function libraryFold(text: string): string {
+  let result = "";
+  for (const char of text.normalize("NFC")) {
+    const point = char.codePointAt(0)!;
+    result += point === 0x131 ? char : point === 0x1e9e ? "ss"
+      : ((point >= 0x13a0 && point <= 0x13ff) || (point >= 0xab70 && point <= 0xabbf))
+        ? char.toUpperCase() : char.toUpperCase().toLowerCase();
+  }
+  return result.normalize("NFC");
+}
+
+/** The hit spans complete original graphemes; offsets are UTF-16, never folded indexes. */
+export function libraryMatch(text: string, foldedQuery: string): { matchStart: number; matchEnd: number } | null {
+  const starts: number[] = [], ends: number[] = [];
+  let folded = "";
+  const segmenter = new Intl.Segmenter("und", { granularity: "grapheme" });
+  for (const part of segmenter.segment(text)) {
+    const segment = libraryFold(part.segment);
+    folded += segment;
+    for (let i = 0; i < segment.length; i++) {
+      starts.push(part.index); ends.push(part.index + part.segment.length);
+    }
+  }
+  const at = folded.indexOf(foldedQuery);
+  return at < 0 ? null : { matchStart: starts[at]!, matchEnd: ends[at + foldedQuery.length - 1]! };
+}
+
+export function libraryTags(tags: string[]): string[] {
+  if (tags.length > 10) return libraryError("invalid_tag");
+  const result: string[] = [], seen = new Set<string>();
+  for (const value of tags) {
+    if (/[\p{Cc}\p{Cf}\p{Cs}]/u.test(value)) return libraryError("invalid_tag");
+    const tag = value.normalize("NFC").trim().replace(/\s+/gu, " ");
+    if ([...tag].length < 1 || [...tag].length > 32) return libraryError("invalid_tag");
+    const key = libraryFold(tag);
+    if (!seen.has(key)) { seen.add(key); result.push(tag); }
+  }
+  return result;
+}
+
+export function normalizedLibraryFilters(filters: LibraryFilters): LibraryFilters {
+  if ((filters.fromMs !== undefined && !Number.isFinite(filters.fromMs)) ||
+      (filters.beforeMs !== undefined && !Number.isFinite(filters.beforeMs)) ||
+      (filters.fromMs !== undefined && filters.beforeMs !== undefined && filters.fromMs >= filters.beforeMs) ||
+      (filters.folder !== undefined && (filters.folder.length > 128 || /[\p{Cc}\p{Cf}\p{Cs}]/u.test(filters.folder)))) {
+    return libraryError("invalid_filter");
+  }
+  let tags: string[];
+  try { tags = libraryTags(filters.tags ?? []).map(libraryFold).sort(); }
+  catch { return libraryError("invalid_filter"); }
+  return {
+    ...(filters.fromMs !== undefined ? { fromMs: filters.fromMs } : {}),
+    ...(filters.beforeMs !== undefined ? { beforeMs: filters.beforeMs } : {}),
+    ...(filters.folder !== undefined ? { folder: filters.folder } : {}),
+    ...(filters.pinned !== undefined ? { pinned: filters.pinned } : {}),
+    tags, archive: filters.archive ?? "active",
+  };
+}
+
+export function libraryChat(conversation: Doc<"conversations">) {
+  // KA-01 has not landed on this preparation base. Read its future optional metadata
+  // without introducing duplicate fields/writers; null is the truthful legacy fallback.
+  const ka = conversation as Doc<"conversations"> & { folder?: string; pinnedAt?: number };
+  return { id: conversation._id, title: conversation.title, createdAt: conversation.createdAt,
+    updatedAt: conversation.updatedAt, folder: ka.folder ?? null, pinnedAt: ka.pinnedAt ?? null,
+    tags: conversation.tags ?? [], archivedAt: conversation.archivedAt ?? null,
+    chatMode: hasAgentThread(conversation) ? "agent" as const : "legacy" as const };
+}
+
+export function libraryFilterMatches(conversation: Doc<"conversations">, filters: LibraryFilters): boolean {
+  if (conversation.deletedAt !== undefined) return false;
+  const row = libraryChat(conversation), tags = new Set(row.tags.map(libraryFold));
+  return (filters.fromMs === undefined || row.updatedAt >= filters.fromMs) &&
+    (filters.beforeMs === undefined || row.updatedAt < filters.beforeMs) &&
+    (filters.folder === undefined || row.folder === filters.folder) &&
+    (filters.pinned === undefined || (row.pinnedAt !== null) === filters.pinned) &&
+    (filters.archive === "all" || (row.archivedAt !== null) === (filters.archive === "archived")) &&
+    (filters.tags ?? []).every((tag) => tags.has(libraryFold(tag)));
+}
+
+export type LibraryCursor = { v: 1; owner: string; kind: string; fingerprint: string;
+  chatKey: IndexKey | null; current?: string; messageKey?: IndexKey | null; titleDone?: boolean; legacy?: boolean };
+export function libraryCursor(input: string | null, owner: string, kind: string, fingerprint: string): LibraryCursor {
+  const fresh: LibraryCursor = { v: 1, owner, kind, fingerprint, chatKey: null };
+  if (input === null) return fresh;
+  try {
+    if (input.length > 8192) throw new Error();
+    const x = JSON.parse(input) as LibraryCursor;
+    if (x.v !== 1 || x.owner !== owner || x.kind !== kind || x.fingerprint !== fingerprint ||
+      !(x.chatKey === null || validLibraryKey(x.chatKey, owner)) ||
+      (x.current !== undefined && typeof x.current !== "string") ||
+      (x.messageKey !== undefined && x.messageKey !== null && !validLibraryKey(x.messageKey, x.current ?? "")) ||
+      (x.titleDone !== undefined && typeof x.titleDone !== "boolean") ||
+      (x.legacy !== undefined && typeof x.legacy !== "boolean")) throw new Error();
+    return x;
+  } catch { return libraryError("invalid_cursor"); }
+}
+function validLibraryKey(value: unknown, parent: string): value is IndexKey {
+  return Array.isArray(value) && value.length === 4 && value[0] === parent &&
+    typeof value[1] === "number" && Number.isFinite(value[1]) &&
+    typeof value[2] === "number" && Number.isFinite(value[2]) && typeof value[3] === "string" && value[3].length <= 128;
+}
+export function libraryPageSize(numItems: number): number {
+  if (!Number.isInteger(numItems) || numItems < 1 || numItems > 50) return libraryError("invalid_filter");
+  return numItems;
+}
+export function libraryConversationSlice(ctx: QueryCtx, owner: Id<"users">, key: IndexKey | null, count: number) {
+  return getPage(ctx, { table: "conversations", schema, index: "by_userId_updatedAt", order: "desc",
+    startIndexKey: key ?? [owner], startInclusive: key === null, endIndexKey: [owner],
+    targetMaxRows: Math.min(24, count), absoluteMaxRows: Math.min(24, count) });
+}
+function libraryMessageSlice(ctx: QueryCtx, conversationId: Id<"conversations">, key: IndexKey | null, count: number) {
+  return getPage(ctx, { table: "messages", schema, index: "by_conversationId_createdAt", order: "desc",
+    startIndexKey: key ?? [conversationId], startInclusive: key === null, endIndexKey: [conversationId],
+    targetMaxRows: Math.min(99, count), absoluteMaxRows: Math.min(99, count) });
+}
+function libraryMessage(message: Doc<"messages">) {
+  return { id: message._id, conversationId: message.conversationId,
+    role: message.role as "user" | "assistant", content: message.content, createdAt: message.createdAt,
+    sources: message.sources ?? [] };
+}
+
+export const historyPage = query({
+  args: { conversationId: v.id("conversations"), paginationOpts: libraryPaginationValidator },
+  returns: v.object({ page: v.array(libraryMessageValidator), continueCursor: v.string(), isDone: v.boolean(),
+    coverage: v.union(v.literal("complete"), v.literal("legacy_only")) }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx), conversation = await ctx.db.get(args.conversationId);
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) return libraryError("unavailable");
+    const count = libraryPageSize(args.paginationOpts.numItems), fingerprint = JSON.stringify([args.conversationId]);
+    const cursor = libraryCursor(args.paginationOpts.cursor, user._id, "history", fingerprint);
+    if (cursor.current !== undefined && cursor.current !== args.conversationId) return libraryError("invalid_cursor");
+    const result = await libraryMessageSlice(ctx, args.conversationId, cursor.messageKey ?? null, count);
+    const next: LibraryCursor = { ...cursor, current: args.conversationId,
+      messageKey: result.indexKeys.at(-1) ?? cursor.messageKey ?? null };
+    return { page: result.page.filter((m) => m.deletedAt === undefined && m.role !== "system").map(libraryMessage),
+      continueCursor: result.hasMore ? JSON.stringify(next) : "", isDone: !result.hasMore,
+      coverage: hasAgentThread(conversation) ? "legacy_only" as const : "complete" as const };
+  },
+});
+
+export const searchPage = query({
+  args: { query: v.string(), filters: libraryFiltersValidator, paginationOpts: libraryPaginationValidator },
+  returns: v.object({ page: v.array(v.object({ chat: libraryChatValidator, message: v.union(libraryMessageValidator, v.null()),
+    matchStart: v.number(), matchEnd: v.number(), historyCursor: v.union(v.string(), v.null()) })),
+    continueCursor: v.string(), isDone: v.boolean(), coverage: v.union(v.literal("complete"), v.literal("legacy_only")) }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx), filters = normalizedLibraryFilters(args.filters);
+    const queryText = args.query.trim().normalize("NFC");
+    if (!queryText || [...queryText].length > 200 || /[\p{Cc}\p{Cs}]/u.test(queryText)) return libraryError("invalid_filter");
+    const needle = libraryFold(queryText), count = libraryPageSize(args.paginationOpts.numItems);
+    const fingerprint = JSON.stringify([filters, needle]);
+    const cursor = libraryCursor(args.paginationOpts.cursor, user._id, "search", fingerprint);
+    let conversation: Doc<"conversations"> | null = null;
+    if (cursor.current) {
+      const id = ctx.db.normalizeId("conversations", cursor.current);
+      if (!id) return libraryError("invalid_cursor");
+      conversation = await ctx.db.get(id);
+      if (!conversation || conversation.userId !== user._id) return libraryError("invalid_cursor");
+      if (!libraryFilterMatches(conversation, filters)) {
+        cursor.current = undefined; cursor.messageKey = undefined; cursor.titleDone = undefined;
+        return { page: [], continueCursor: JSON.stringify(cursor), isDone: false, coverage: cursor.legacy ? "legacy_only" as const : "complete" as const };
+      }
+    } else {
+      const chats = await libraryConversationSlice(ctx, user._id, cursor.chatKey, 24);
+      const index = chats.page.findIndex((chat) => libraryFilterMatches(chat, filters));
+      if (index < 0) {
+        cursor.chatKey = chats.indexKeys.at(-1) ?? cursor.chatKey;
+        return { page: [], continueCursor: chats.hasMore ? JSON.stringify(cursor) : "", isDone: !chats.hasMore,
+          coverage: cursor.legacy ? "legacy_only" as const : "complete" as const };
+      }
+      conversation = chats.page[index]!;
+      cursor.chatKey = chats.indexKeys[index]!; cursor.current = conversation._id; cursor.messageKey = null; cursor.titleDone = false;
+    }
+    cursor.legacy ||= hasAgentThread(conversation);
+    const chat = libraryChat(conversation);
+    const page: Array<{ chat: typeof chat; message: ReturnType<typeof libraryMessage> | null;
+      matchStart: number; matchEnd: number; historyCursor: string | null }> = [];
+    if (!cursor.titleDone) {
+      const match = libraryMatch(conversation.title, needle);
+      if (match) page.push({ chat, message: null, ...match, historyCursor: null });
+      cursor.titleDone = true;
+    }
+    if (page.length < count) {
+      const result = await libraryMessageSlice(ctx, conversation._id, cursor.messageKey ?? null, 99);
+      let consumed = 0;
+      for (let i = 0; i < result.page.length; i++) {
+        const message = result.page[i]!;
+        const before = cursor.messageKey ?? null;
+        cursor.messageKey = result.indexKeys[i]!; consumed += 1;
+        if (message.deletedAt !== undefined || message.role === "system") continue;
+        const match = libraryMatch(message.content, needle);
+        if (!match) continue;
+        const history: LibraryCursor = { v: 1, owner: user._id, kind: "history", fingerprint: JSON.stringify([conversation._id]),
+          chatKey: null, current: conversation._id, messageKey: before };
+        page.push({ chat, message: libraryMessage(message), ...match, historyCursor: JSON.stringify(history) });
+        if (page.length === count) break;
+      }
+      if (!result.hasMore && consumed === result.page.length) {
+        cursor.current = undefined; cursor.messageKey = undefined; cursor.titleDone = undefined;
+      }
+    }
+    // A following bounded chat read determines global exhaustion, including an empty last chat.
+    return { page, continueCursor: JSON.stringify(cursor), isDone: false,
+      coverage: cursor.legacy ? "legacy_only" as const : "complete" as const };
+  },
+});
+
+// KB-31 snapshot v1: export batches contain 1..25 chats, unlike the 1..50 bulk
+// mutation selection. Every page rechecks every selected owner/version/fence.
+// One live-message fence read per chat leaves at least 75 message reads for the
+// current transcript (including pagination lookahead). No server export state.
+const exportConversationValidator = v.object({ kind: v.literal("conversation"), id: v.string(), title: v.string(),
+  createdAt: v.number(), updatedAt: v.number(), folder: v.union(v.string(), v.null()), tags: v.array(v.string()),
+  pinnedAt: v.union(v.number(), v.null()), archivedAt: v.union(v.number(), v.null()) });
+const exportMessageValidator = v.object({ kind: v.literal("message"), id: v.string(), conversationId: v.string(),
+  role: v.union(v.literal("user"), v.literal("assistant")), content: v.string(), createdAt: v.number(),
+  sources: v.array(v.object({ title: v.string(), site: v.string(), url: v.string() })) });
+function exportConversation(conversation: Doc<"conversations">) {
+  const row = libraryChat(conversation);
+  return { kind: "conversation" as const, id: row.id, title: row.title, createdAt: row.createdAt,
+    updatedAt: row.updatedAt, folder: row.folder, tags: row.tags, pinnedAt: row.pinnedAt, archivedAt: row.archivedAt };
+}
+type ExportFence = { id: string; updatedAt: number; revision: number; header: string; newest: string | null };
+type ExportSnapshot = { v: 1; owner: string; fences: ExportFence[] };
+type ExportCursor = { v: 1; snapshot: string; index: number; header: boolean; key: IndexKey | null };
+async function exportDigest(value: unknown): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(value));
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", data)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function parseExportSnapshot(value: string, owner: string, ids: string[]): ExportSnapshot {
+  try {
+    if (value.length > 24_000) throw new Error();
+    const snapshot = JSON.parse(value) as ExportSnapshot;
+    if (snapshot.v !== 1 || snapshot.owner !== owner || !Array.isArray(snapshot.fences) || snapshot.fences.length !== ids.length) throw new Error();
+    snapshot.fences.forEach((fence, index) => {
+      if (fence.id !== ids[index] || !Number.isFinite(fence.updatedAt) || !Number.isSafeInteger(fence.revision) ||
+          fence.revision < 0 || !/^[a-f0-9]{64}$/.test(fence.header) ||
+          !(fence.newest === null || (typeof fence.newest === "string" && fence.newest.length <= 128))) throw new Error();
+    });
+    return snapshot;
+  } catch { return libraryError("invalid_cursor"); }
+}
+function parseExportCursor(value: string | null, snapshot: string, ids: string[]): ExportCursor {
+  if (value === null) return { v: 1, snapshot, index: 0, header: false, key: null };
+  try {
+    if (value.length > 2048) throw new Error();
+    const cursor = JSON.parse(value) as ExportCursor;
+    if (cursor.v !== 1 || cursor.snapshot !== snapshot || !Number.isInteger(cursor.index) || cursor.index < 0 ||
+        cursor.index >= ids.length || typeof cursor.header !== "boolean" ||
+        !(cursor.key === null || validLibraryKey(cursor.key, ids[cursor.index]!)) || (!cursor.header && cursor.key !== null)) throw new Error();
+    return cursor;
+  } catch { return libraryError("invalid_cursor"); }
+}
+
+export const exportPage = query({
+  args: { conversationIds: v.array(v.id("conversations")), cursor: v.union(v.string(), v.null()),
+    snapshot: v.union(v.string(), v.null()), numItems: v.number() },
+  returns: v.object({ records: v.array(v.union(exportConversationValidator, exportMessageValidator)),
+    cursor: v.union(v.string(), v.null()), snapshot: v.string(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx);
+    if (args.conversationIds.length < 1 || args.conversationIds.length > 25 || new Set(args.conversationIds).size !== args.conversationIds.length ||
+        !Number.isInteger(args.numItems) || args.numItems < 1 || args.numItems > 100) return libraryError("invalid_selection");
+    if (args.snapshot === null && args.cursor !== null) return libraryError("invalid_cursor");
+    const snapshot = args.snapshot === null ? null : parseExportSnapshot(args.snapshot, user._id, args.conversationIds);
+    const conversations: Doc<"conversations">[] = [], fences: ExportFence[] = [];
+    for (const id of args.conversationIds) {
+      const conversation = await ctx.db.get(id);
+      if (!conversation || conversation.userId !== user._id) return libraryError("unavailable");
+      if (conversation.deletedAt !== undefined) return libraryError(snapshot ? "export_changed" : "unavailable");
+      if (hasAgentThread(conversation)) return libraryError("export_unsupported");
+      const newest = await ctx.db.query("messages").withIndex("by_conversationId_deletedAt",
+        (q) => q.eq("conversationId", id).eq("deletedAt", undefined)).order("desc").first();
+      conversations.push(conversation);
+      fences.push({ id, updatedAt: conversation.updatedAt, revision: conversation.libraryRevision ?? 0,
+        header: await exportDigest(exportConversation(conversation)), newest: newest?._id ?? null });
+    }
+    // Validate the entire selection before returning any header or transcript.
+    if (snapshot && JSON.stringify(snapshot.fences) !== JSON.stringify(fences)) return libraryError("export_changed");
+    const snapshotText = args.snapshot ?? JSON.stringify({ v: 1, owner: user._id, fences });
+    const cursor = parseExportCursor(args.cursor, await exportDigest(snapshotText), args.conversationIds);
+    const conversation = conversations[cursor.index]!;
+    const records: Array<ReturnType<typeof exportConversation> | ({ kind: "message" } & ReturnType<typeof libraryMessage>)> = [];
+    if (!cursor.header) { records.push(exportConversation(conversation)); cursor.header = true; }
+    if (records.length < args.numItems) {
+      const maximum = Math.min(args.numItems - records.length, 99 - args.conversationIds.length);
+      const result = await getPage(ctx, { table: "messages", schema, index: "by_conversationId_createdAt", order: "asc",
+        startIndexKey: cursor.key ?? [conversation._id], startInclusive: cursor.key === null,
+        endIndexKey: [conversation._id], targetMaxRows: maximum, absoluteMaxRows: maximum });
+      cursor.key = result.indexKeys.at(-1) ?? cursor.key;
+      for (const message of result.page) {
+        if (message.deletedAt === undefined && message.role !== "system") records.push({ kind: "message", ...libraryMessage(message) });
+      }
+      if (!result.hasMore) { cursor.index += 1; cursor.header = false; cursor.key = null; }
+    }
+    const isDone = cursor.index === args.conversationIds.length;
+    return { records, cursor: isDone ? null : JSON.stringify(cursor), snapshot: snapshotText, isDone };
+  },
+});
