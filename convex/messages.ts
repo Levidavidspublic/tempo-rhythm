@@ -196,7 +196,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     // Chat write: pending/revoked accounts are rejected (sign-up approval gate).
     const user = await requireApprovedUser(ctx);
-    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    const conversation = await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
 
     if (args.role !== "user") {
       throw new Error("Only user messages can be created from the client");
@@ -213,7 +213,7 @@ export const create = mutation({
     });
 
     await ctx.db.patch(args.conversationId, {
-      updatedAt: Date.now(),
+      updatedAt: Math.max(Date.now(), conversation.updatedAt + 1),
     });
 
     return messageId;
@@ -245,6 +245,8 @@ export const remove = mutation({
 
     if (message.deletedAt === undefined) {
       await ctx.db.patch(args.messageId, { deletedAt: Date.now() });
+      // Export snapshots must notice deletion of any message, not just the newest.
+      await ctx.db.patch(conversation._id, { updatedAt: Math.max(Date.now(), conversation.updatedAt + 1) });
     }
     return { success: true as const };
   },
@@ -554,5 +556,98 @@ export const searchPage = query({
     // A following bounded chat read determines global exhaustion, including an empty last chat.
     return { page, continueCursor: JSON.stringify(cursor), isDone: false,
       coverage: cursor.legacy ? "legacy_only" as const : "complete" as const };
+  },
+});
+
+// KB-31 snapshot v1: export batches contain 1..25 chats, unlike the 1..50 bulk
+// mutation selection. Every page rechecks every selected owner/version/fence.
+// One live-message fence read per chat leaves at least 75 message reads for the
+// current transcript (including pagination lookahead). No server export state.
+const exportConversationValidator = v.object({ kind: v.literal("conversation"), id: v.string(), title: v.string(),
+  createdAt: v.number(), updatedAt: v.number(), folder: v.union(v.string(), v.null()), tags: v.array(v.string()),
+  pinnedAt: v.union(v.number(), v.null()), archivedAt: v.union(v.number(), v.null()) });
+const exportMessageValidator = v.object({ kind: v.literal("message"), id: v.string(), conversationId: v.string(),
+  role: v.union(v.literal("user"), v.literal("assistant")), content: v.string(), createdAt: v.number(),
+  sources: v.array(v.object({ title: v.string(), site: v.string(), url: v.string() })) });
+function exportConversation(conversation: Doc<"conversations">) {
+  const row = libraryChat(conversation);
+  return { kind: "conversation" as const, id: row.id, title: row.title, createdAt: row.createdAt,
+    updatedAt: row.updatedAt, folder: row.folder, tags: row.tags, pinnedAt: row.pinnedAt, archivedAt: row.archivedAt };
+}
+type ExportFence = { id: string; updatedAt: number; revision: number; header: string; newest: string | null };
+type ExportSnapshot = { v: 1; owner: string; fences: ExportFence[] };
+type ExportCursor = { v: 1; snapshot: string; index: number; header: boolean; key: IndexKey | null };
+async function exportDigest(value: unknown): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(value));
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", data)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function parseExportSnapshot(value: string, owner: string, ids: string[]): ExportSnapshot {
+  try {
+    if (value.length > 24_000) throw new Error();
+    const snapshot = JSON.parse(value) as ExportSnapshot;
+    if (snapshot.v !== 1 || snapshot.owner !== owner || !Array.isArray(snapshot.fences) || snapshot.fences.length !== ids.length) throw new Error();
+    snapshot.fences.forEach((fence, index) => {
+      if (fence.id !== ids[index] || !Number.isFinite(fence.updatedAt) || !Number.isSafeInteger(fence.revision) ||
+          fence.revision < 0 || !/^[a-f0-9]{64}$/.test(fence.header) ||
+          !(fence.newest === null || (typeof fence.newest === "string" && fence.newest.length <= 128))) throw new Error();
+    });
+    return snapshot;
+  } catch { return libraryError("invalid_cursor"); }
+}
+function parseExportCursor(value: string | null, snapshot: string, ids: string[]): ExportCursor {
+  if (value === null) return { v: 1, snapshot, index: 0, header: false, key: null };
+  try {
+    if (value.length > 2048) throw new Error();
+    const cursor = JSON.parse(value) as ExportCursor;
+    if (cursor.v !== 1 || cursor.snapshot !== snapshot || !Number.isInteger(cursor.index) || cursor.index < 0 ||
+        cursor.index >= ids.length || typeof cursor.header !== "boolean" ||
+        !(cursor.key === null || validLibraryKey(cursor.key, ids[cursor.index]!)) || (!cursor.header && cursor.key !== null)) throw new Error();
+    return cursor;
+  } catch { return libraryError("invalid_cursor"); }
+}
+
+export const exportPage = query({
+  args: { conversationIds: v.array(v.id("conversations")), cursor: v.union(v.string(), v.null()),
+    snapshot: v.union(v.string(), v.null()), numItems: v.number() },
+  returns: v.object({ records: v.array(v.union(exportConversationValidator, exportMessageValidator)),
+    cursor: v.union(v.string(), v.null()), snapshot: v.string(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx);
+    if (args.conversationIds.length < 1 || args.conversationIds.length > 25 || new Set(args.conversationIds).size !== args.conversationIds.length ||
+        !Number.isInteger(args.numItems) || args.numItems < 1 || args.numItems > 100) return libraryError("invalid_selection");
+    if (args.snapshot === null && args.cursor !== null) return libraryError("invalid_cursor");
+    const snapshot = args.snapshot === null ? null : parseExportSnapshot(args.snapshot, user._id, args.conversationIds);
+    const conversations: Doc<"conversations">[] = [], fences: ExportFence[] = [];
+    for (const id of args.conversationIds) {
+      const conversation = await ctx.db.get(id);
+      if (!conversation || conversation.userId !== user._id) return libraryError("unavailable");
+      if (conversation.deletedAt !== undefined) return libraryError(snapshot ? "export_changed" : "unavailable");
+      if (hasAgentThread(conversation)) return libraryError("export_unsupported");
+      const newest = await ctx.db.query("messages").withIndex("by_conversationId_deletedAt",
+        (q) => q.eq("conversationId", id).eq("deletedAt", undefined)).order("desc").first();
+      conversations.push(conversation);
+      fences.push({ id, updatedAt: conversation.updatedAt, revision: conversation.libraryRevision ?? 0,
+        header: await exportDigest(exportConversation(conversation)), newest: newest?._id ?? null });
+    }
+    // Validate the entire selection before returning any header or transcript.
+    if (snapshot && JSON.stringify(snapshot.fences) !== JSON.stringify(fences)) return libraryError("export_changed");
+    const snapshotText = args.snapshot ?? JSON.stringify({ v: 1, owner: user._id, fences });
+    const cursor = parseExportCursor(args.cursor, await exportDigest(snapshotText), args.conversationIds);
+    const conversation = conversations[cursor.index]!;
+    const records: Array<ReturnType<typeof exportConversation> | ({ kind: "message" } & ReturnType<typeof libraryMessage>)> = [];
+    if (!cursor.header) { records.push(exportConversation(conversation)); cursor.header = true; }
+    if (records.length < args.numItems) {
+      const maximum = Math.min(args.numItems - records.length, 99 - args.conversationIds.length);
+      const result = await getPage(ctx, { table: "messages", schema, index: "by_conversationId_createdAt", order: "asc",
+        startIndexKey: cursor.key ?? [conversation._id], startInclusive: cursor.key === null,
+        endIndexKey: [conversation._id], targetMaxRows: maximum, absoluteMaxRows: maximum });
+      cursor.key = result.indexKeys.at(-1) ?? cursor.key;
+      for (const message of result.page) {
+        if (message.deletedAt === undefined && message.role !== "system") records.push({ kind: "message", ...libraryMessage(message) });
+      }
+      if (!result.hasMore) { cursor.index += 1; cursor.header = false; cursor.key = null; }
+    }
+    const isDone = cursor.index === args.conversationIds.length;
+    return { records, cursor: isDone ? null : JSON.stringify(cursor), snapshot: snapshotText, isDone };
   },
 });

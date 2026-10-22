@@ -287,3 +287,108 @@ export const undoLibraryChange = mutation({
     return { restored: true as const, conversationIds: [conversation._id] };
   },
 });
+
+// KB-31 adds no schema. Bulk operations reuse KB-01's per-chat receipts; all
+// preflight checks complete before patches so one invalid member aborts the set.
+const libraryOperationValidator = v.union(
+  v.object({ kind: v.literal("archive"), archived: v.boolean() }),
+  v.object({ kind: v.literal("tags"), tags: v.array(v.string()) }),
+  v.object({ kind: v.literal("delete") }),
+);
+function libraryDistinctSelection(values: string[], maximum = 50): void {
+  if (values.length < 1 || values.length > maximum || new Set(values).size !== values.length) libraryError("invalid_selection");
+}
+
+export const libraryBulk = mutation({
+  args: { conversationIds: v.array(v.id("conversations")), operation: libraryOperationValidator, requestKey: v.string() },
+  returns: v.object({ affected: v.number(), receipts: v.array(v.object({ token: v.string(), undoUntilMs: v.number() })) }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx, true);
+    libraryDistinctSelection(args.conversationIds);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(args.requestKey)) return libraryError("invalid_request_key");
+    const tags = args.operation.kind === "tags" ? libraryTags(args.operation.tags) : undefined;
+    const operation = args.operation.kind === "tags" ? { kind: "tags", tags: args.operation.tags }
+      : args.operation.kind === "archive" ? { kind: "archive", archived: args.operation.archived } : { kind: "delete" };
+    const digest = await libraryPayloadDigest(["KB-31", JSON.stringify(args.conversationIds), JSON.stringify(operation)], undefined);
+    const now = Date.now();
+    const plans: Array<{ conversation: Doc<"conversations">; receipt: LibraryReceipt; receipts: LibraryReceipt[]; repeated: boolean }> = [];
+    for (const id of args.conversationIds) {
+      const conversation = await ctx.db.get(id);
+      if (!conversation || conversation.userId !== user._id) return libraryError("unavailable");
+      const receipts = (conversation.libraryReceipts ?? []).filter((r) => r.undoUntilMs >= now);
+      const repeated = receipts.find((r) => r.requestKey === args.requestKey);
+      if (repeated) {
+        if (repeated.token.split(".").at(-1) !== digest) return libraryError("conflict");
+        plans.push({ conversation, receipt: repeated, receipts, repeated: true });
+        continue;
+      }
+      if (conversation.deletedAt !== undefined && args.operation.kind !== "delete") return libraryError("unavailable");
+      if (receipts.length >= LIBRARY_MAX_RECEIPTS) return libraryError("receipt_limit");
+      const previous = metadata(conversation), result = { ...previous };
+      if (args.operation.kind === "tags") result.tags = tags;
+      if (args.operation.kind === "archive") {
+        if (args.operation.archived) result.archivedAt = conversation.archivedAt ?? now;
+        else delete result.archivedAt;
+      }
+      if (args.operation.kind === "delete") result.deletedAt = conversation.deletedAt ?? now;
+      const receipt: LibraryReceipt = { token: `${id}.${crypto.randomUUID()}.${digest}`, requestKey: args.requestKey,
+        appliedRevision: libraryRevision(conversation) + 1, undoUntilMs: now + LIBRARY_UNDO_MS, previous, result };
+      plans.push({ conversation, receipt, receipts, repeated: false });
+    }
+    for (const plan of plans) {
+      if (plan.repeated) continue;
+      await ctx.db.patch(plan.conversation._id, { tags: plan.receipt.result.tags, archivedAt: plan.receipt.result.archivedAt,
+        deletedAt: plan.receipt.result.deletedAt, libraryRevision: plan.receipt.appliedRevision,
+        libraryReceipts: [...plan.receipts, plan.receipt], updatedAt: Math.max(now, plan.conversation.updatedAt + 1) });
+    }
+    return { affected: plans.length, receipts: plans.map(({ receipt }) => ({ token: receipt.token, undoUntilMs: receipt.undoUntilMs })) };
+  },
+});
+
+export const undoLibraryBulk = mutation({
+  args: { tokens: v.array(v.string()) },
+  returns: v.object({ restored: v.literal(true), conversationIds: v.array(v.id("conversations")) }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx, true);
+    libraryDistinctSelection(args.tokens);
+    const now = Date.now(), plans: Array<{ conversation: Doc<"conversations">; receipt: LibraryReceipt }> = [];
+    for (const token of args.tokens) {
+      if (token.length > 180) return libraryError("unavailable");
+      const separator = token.indexOf("."), id = ctx.db.normalizeId("conversations", token.slice(0, separator));
+      if (separator < 1 || !id) return libraryError("unavailable");
+      const conversation = await ctx.db.get(id);
+      if (!conversation || conversation.userId !== user._id) return libraryError("unavailable");
+      const receipt = conversation.libraryReceipts?.find((r) => r.token === token);
+      if (!receipt) return libraryError("unavailable");
+      if (now > receipt.undoUntilMs) return libraryError("expired");
+      if (libraryRevision(conversation) !== receipt.appliedRevision || !sameMetadata(conversation, receipt.result)) return libraryError("conflict");
+      plans.push({ conversation, receipt });
+    }
+    libraryDistinctSelection(plans.map(({ conversation }) => conversation._id));
+    for (const { conversation, receipt } of plans) {
+      await ctx.db.patch(conversation._id, { tags: receipt.previous.tags, archivedAt: receipt.previous.archivedAt,
+        deletedAt: receipt.previous.deletedAt, libraryRevision: receipt.appliedRevision + 1,
+        updatedAt: Math.max(now, conversation.updatedAt + 1) });
+    }
+    return { restored: true as const, conversationIds: plans.map(({ conversation }) => conversation._id) };
+  },
+});
+
+export const libraryUndoReceipts = query({
+  args: { paginationOpts: libraryPaginationValidator },
+  returns: v.object({ page: v.array(v.object({ token: v.string(), undoUntilMs: v.number(), conversationIds: v.array(v.id("conversations")) })),
+    continueCursor: v.string(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx), now = Date.now();
+    const cursor = libraryCursor(args.paginationOpts.cursor, user._id, "receipts", "KB-31");
+    const result = await libraryConversationSlice(ctx, user._id, cursor.chatKey, libraryPageSize(args.paginationOpts.numItems));
+    cursor.chatKey = result.indexKeys.at(-1) ?? cursor.chatKey;
+    const page = result.page.flatMap((conversation) => {
+      // Only the current revision can be undone; at most one receipt per chat.
+      const receipt = conversation.libraryReceipts?.find((r) => r.undoUntilMs >= now &&
+        r.appliedRevision === (conversation.libraryRevision ?? 0) && sameMetadata(conversation, r.result));
+      return receipt ? [{ token: receipt.token, undoUntilMs: receipt.undoUntilMs, conversationIds: [conversation._id] }] : [];
+    });
+    return { page, continueCursor: result.hasMore ? JSON.stringify(cursor) : "", isDone: !result.hasMore };
+  },
+});
