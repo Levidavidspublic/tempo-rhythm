@@ -20,7 +20,7 @@ AT — Amit approves preparation of KB-01, KB-16 and KB-31; he will add convex-a
 | Ticket | Proposed change from written contract | Applied change / PR |
 | --- | --- | --- |
 | KB-01 #1212 | Add optional conversations.tags, archivedAt, libraryRevision and bounded libraryReceipts. Preserve existing owner indexes and KA fields; no parallel chat store | Prepared in #1262; exact field types and defaults below, not deployed |
-| KB-16 #1213 | Pending code-map verification of current written contract and prerequisite schema | None; do not infer a schema change |
+| KB-16 #1213 | No schema change | Prepared in #1282; no deploy |
 | KB-31 #1214 | No schema change; reuse KB-01 receipts | Preparation underway; bounded export contract corrected below |
 
 Each architecture PR must list every added/changed table, field, validator and index, compatibility/default behavior, owner isolation and rollout/rollback limits here. An unchanged schema must say so explicitly. Fixtures never authorize a live migration.
@@ -34,3 +34,13 @@ WALK — 22 October KB-01 cursor correction: use the existing native index's det
 - Model router #1260 has no schema change. Convex deployment settings are the existing settings mechanism: `TEMPO_AI_MODEL` and `TEMPO_AI_THINK_HARD_MODEL`; identifiers are never hard-coded. Missing settings produce unavailable/configuration errors. Normal reasoning is medium, high for a deterministic long-prompt rule; think-hard is high with a distinct configured model and ten-minute total ceiling. No values were configured; provider-backed behavior remains unverified.
 - Search #1259 uses Node's built-in HTTPS transport for a validated, pinned DNS address with normal TLS hostname verification and no redirects. Native fetch preflight alone cannot prevent DNS rebinding between validation and connection. This scoped transport decision adds no dependency. A gateway does not establish a working upstream or an enforced hosting cap.
 - Account #1263 changes no schema: pending ordinary signup is not a marketed free plan. Existing tester grants remain; explicit cancellations and independent purchases must not be overwritten.
+
+## WALK — Prepared architecture and beta schema, 22 October 2026
+
+- KB-01 is draft #1262 at cfd5200. KB-16 is draft #1282 at f9f4882. KB-31 is draft #1269 at07da7e8. All three are prepared under AT-02; none is deployed or merged. Amit's owner labels and original dependencies remain merge gates.
+- KB-16: **schema NONE**. Supports configured web Speed/Balanced only through gateway#1267. Quality/page-fetch/media/Discover/academic/discussions are unsupported. Canonical URL name is declared by#1271. Legacy callers retain their prior path; explicit owned research preserves cancellation and claim fences.
+- KB-31: **schema NONE beyond KB-01**. Export1–25/bulk1–50 and monotonic parent-version decisions above are implemented.
+- Beta approval#1273 adds only `users.betaRequestedAt: v.optional(v.number())` and index `by_deletedAt_betaRequestedAt` on `["deletedAt","betaRequestedAt"]`. Absence means no outstanding request; no backfill. An admin decision consumes the request. Existing `subscriptionStates` stores a one-time active lifetime Max grant with source `beta_approval`; no new table. Independent paid/founder records survive.
+- Ordinary approval without an explicit beta request grants no beta subscription. Account#1268, request UI#1272 and approval#1273 require coordinated rollout so ordinary automatic Max removal never substitutes for the new deliberate approval path.
+- Schema compatibility#1280 accepts exactly two approved complete conversation shapes, original and original+all-four Library fields, with exact legacy/index/nested validators. It rejects partial, unknown and mistyped fields; all66 original cases remain. It can merge independently before KB-01, avoiding a circular green-check dependency.
+- Voice bridge#1278 is preparation in progress, not an applied schema change. Any final optional lease receipt fields must be listed here before merge. The proposed deterministic Deepgram function bridge leaves GLM execution in the existing browser-authenticated coach path and does not trust callback history as Tempo context. Provider follow-up/anchor conformance remains UNKNOWN.
