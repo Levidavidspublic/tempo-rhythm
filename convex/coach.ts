@@ -517,7 +517,7 @@ export const researchRequestState = internalQuery({
       .order("desc")
       .first();
     const live = newest?._id === message._id && (claimOf(message.toolCalls)?.until ?? 0) > Date.now();
-    const state =
+    const state: ResearchRecord["state"] | "superseded" =
       research.state === "cancelled" || research.state === "finished"
         ? research.state
         : live
