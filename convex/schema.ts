@@ -36,6 +36,8 @@ export default defineSchema({
     ),
     isGodTier: v.optional(v.boolean()),
     betaApprovedAt: v.optional(v.number()),
+    /** Pending explicit beta request; consumed by an administrator's decision. */
+    betaRequestedAt: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
@@ -58,6 +60,7 @@ export default defineSchema({
     .index("by_role", ["role"])
     .index("by_userType", ["userType"])
     .index("by_betaAccess", ["betaAccess"])
+    .index("by_deletedAt_betaRequestedAt", ["deletedAt", "betaRequestedAt"])
     .index("by_deletedAt", ["deletedAt"]),
 
   subscriptionStates: defineTable({
