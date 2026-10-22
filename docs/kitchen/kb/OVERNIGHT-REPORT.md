@@ -1,5 +1,17 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Parser scoped validation and hosted CI pass, 2026-10-22 12:16 UTC
+
+No new merge. Counts remain Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**; Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. NEEDS-AMIT has 16 current ordered actions.
+
+- **#1302 / #1301**, unchanged candidate 1 at 1acc05a: all **303 scoped tests pass**, 40,582 assertions, 17.20s Bun time. The unchanged malformed-closing-tag case took 246.29ms versus the separately preserved failed 7016.86ms baseline; its limit remains 3000ms. All 298 original cases and five added regression cases pass. The definition-start case took 2724.67ms, also within its unchanged limit; no claim that every performance margin is large. Scoped Biome lint and the real utils TypeScript project pass.
+- Current hosted Test job 119806879297 completed **3498 pass / 0 fail / 3 todo**, 81,713 assertions, 3501 tests across 211 files in 191.28s. It checked the merge of 1acc05a into integration 7d1a0f6. Other hosted checks and the corrected scope guard pass. Actual CodeRabbit coverage was draft-skipped, so the PR was marked ready for review to obtain real coverage; no bot command or auto-merge was enabled. Local mandatory validation and actual review remain separate merge gates.
+- The original local frozen install passed after 319.127s, with no lockfile changes or retry. Mandatory lint passes 5/5; typecheck and remaining stages are proceeding once. Prior ignored goal browser artifacts were preserved outside the checkout before fresh output. No product change followed the successful scoped run.
+- Hero #1210's final current-source report is published on the PR and issue #1206 comment 6340301398. Own eight browser cases pass, while the full suite remains incomplete and global E2E has eight failures. These remain merge blockers. Voice research #1256 is prepared in the pages worktree at 45e55f7, and Executor #1277's real-page fictional browser fixture is prepared at 13752d9; both await their serialized validation slots.
+- **Done:** parser scoped validation, hosted-log verification, hero reporting and preserved artifacts. **Needs Amit:** existing 16 actions, unchanged. **UNKNOWN:** remaining local mandatory results, actual parser/Executor CodeRabbit coverage, pending earlier hosted jobs and preview/provider/device behavior. Exactly four worktrees; no production/default direct push, deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Hero validation completed; parser validation started, 2026-10-22 12:05 UTC
 
 No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: **91 issues and 65 PRs**, with 16 current ordered actions in NEEDS-AMIT.
@@ -14,7 +26,7 @@ No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. La
 
 Earlier checkpoints below are historical.
 
-## WALK — Parser draft published; hero harness stall recorded, 2026-10-22 11:56 UTC
+## WALK — Parser draft published; hero harness stall recorded, 2026-10-22 11:53 UTC
 
 No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues (6 closed, 85 open), 65 PRs (11 merged, 54 open). NEEDS-AMIT still has 16 current ordered actions.
 
