@@ -1,0 +1,9 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-beta-queue.test.tsx:
+(pass) Beta queue mounted behavior (isolated child) [3932.48ms]
+
+ 1 pass
+ 0 fail
+ 2 expect() calls
+Ran 1 test across 1 file. [4.19s]

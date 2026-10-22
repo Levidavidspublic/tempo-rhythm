@@ -1,0 +1,67 @@
+apps/web/components/approval/AdminApprovals.tsx:33:55 lint/a11y/useSemanticElements ━━━━━━━━━━━━━━━━
+
+  × The elements with this role can be changed to the following elements:
+    <output>
+  
+    31 │   const { t } = useLocale();
+    32 │   const me = useQuery(api.approval.myStatus);
+  > 33 │   if (me === undefined) return <p className="tp-help" role="status">{t("adminApproval.loading")}</p>;
+       │                                                       ^^^^^^^^^^^^^
+    34 │   if (!me?.isAdmin) return (
+    35 │     <div className="tp-page tp-page--narrow">
+  
+  i For examples and more information, see WAI-ARIA Roles
+  
+
+apps/web/components/approval/AdminApprovals.tsx:118:54 lint/a11y/useSemanticElements ━━━━━━━━━━━━━━━
+
+  × The elements with this role can be changed to the following elements:
+    <output>
+  
+    116 │           <p className="tp-settings-section__desc">{t("adminApproval.accountsBody")}</p>
+    117 │         </div>
+  > 118 │         {rows === undefined ? <p className="tp-help" role="status">{t("adminApproval.loadingAccounts")}</p> : (
+        │                                                      ^^^^^^^^^^^^^
+    119 │           <ul className="tp-list">
+    120 │             {rows.map((row) => (
+  
+  i For examples and more information, see WAI-ARIA Roles
+  
+
+apps/web/components/approval/AdminApprovals.tsx:187:52 lint/a11y/useSemanticElements ━━━━━━━━━━━━━━━
+
+  × The elements with this role can be changed to the following elements:
+    <output>
+  
+    185 │         <p className="tp-settings-section__desc">{t("adminApproval.queueBody")}</p>
+    186 │       </div>
+  > 187 │       {page === undefined ? <p className="tp-help" role="status">{t("adminApproval.loadingQueue")}</p> : <>
+        │                                                    ^^^^^^^^^^^^^
+    188 │         {!page.page.length ? <p className="tp-help" role="status">{t(page.isDone ? cursor === null ? "adminApproval.empty" : "adminApproval.endPage" : hops.current >= EMPTY_PAGE_HOPS ? "adminApproval.morePages" : "adminApproval.checkingMore")}</p> : null}
+    189 │         <ul className="tp-list">
+  
+  i For examples and more information, see WAI-ARIA Roles
+  
+
+apps/web/components/approval/AdminApprovals.tsx:188:53 lint/a11y/useSemanticElements ━━━━━━━━━━━━━━━
+
+  × The elements with this role can be changed to the following elements:
+    <output>
+  
+    186 │       </div>
+    187 │       {page === undefined ? <p className="tp-help" role="status">{t("adminApproval.loadingQueue")}</p> : <>
+  > 188 │         {!page.page.length ? <p className="tp-help" role="status">{t(page.isDone ? cursor === null ? "adminApproval.empty" : "adminApproval.endPage" : hops.current >= EMPTY_PAGE_HOPS ? "adminApproval.morePages" : "adminApproval.checkingMore")}</p> : null}
+        │                                                     ^^^^^^^^^^^^^
+    189 │         <ul className="tp-list">
+    190 │           {page.page.map((row) => {
+  
+  i For examples and more information, see WAI-ARIA Roles
+  
+
+Checked 3 files in 151ms. No fixes applied.
+Found 4 errors.
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

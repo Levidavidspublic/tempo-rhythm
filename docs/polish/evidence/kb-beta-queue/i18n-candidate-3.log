@@ -1,0 +1,14 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/lib/i18n.test.ts:
+(pass) resolveLang > the URL parameter wins, then the stored choice, then English [0.99ms]
+(pass) resolveLang > unknown values are ignored [0.19ms]
+(pass) direction > Hebrew is right-to-left, English left-to-right [0.11ms]
+(pass) messages > every English key has a non-empty Hebrew string [28.59ms]
+(pass) messages > copy never uses shaming words (HARD_RULES §1) [28.63ms]
+(pass) messages > translate returns the language's string [2.59ms]
+
+ 6 pass
+ 0 fail
+ 2120 expect() calls
+Ran 6 tests across 1 file. [664.00ms]
