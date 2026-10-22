@@ -1,0 +1,10 @@
+{
+  "command": "bun test tests/unit/tempo-page-error-recovery.test.tsx",
+  "exit": 0,
+  "startedAt": "2026-10-22T06:53:40Z",
+  "endedAt": "2026-10-22T06:55:57Z",
+  "baseCommit": "095507311f06aec6c9388ef630fe14287acb5394",
+  "sourceBlob": "b9eb921f5f019689f530f2ac8e8ed4cb5420157f",
+  "testBlob": "d4d8baad7ed35c2b05a4c38c96b973dcb98b7567",
+  "bunVersion": "1.3.9"
+}

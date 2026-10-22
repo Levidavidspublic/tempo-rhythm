@@ -1,0 +1,365 @@
+# Page action recovery — #1249
+
+WALK — AT-29 correction locally tested; completion/merge remains blocked. Both deferred title/body A→B→A regressions fail before the approved correction, then all 32 focused cases pass and all 32 also pass within the mandatory full run. Current install, lint, typecheck, four scans and the placeholder build pass. The current full suite exits 1 with 3,467 pass / 34 fail / 3 todo / 2 errors; local Playwright exits 1 with 11 pass / 17 fail / 89 skip. The placeholder build passes (1/1 task, 3m27.37s). Underlying failure causes, complete remote CI and actual CodeRabbit clearance remain unverified. No source/test repair or command rerun followed these failures. Historical candidate 3 receipts are preserved separately. No production or preview completion claim.
+
+Captured 2026-10-21 UTC; remaining local gates completed 2026-10-22 UTC with Bun 1.3.9. Base: `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`. Original NotesScreen blob: `b9435f54157cc49a746aa07944f6fe615bf96708` (unchanged between the saved original base and this base). Candidate 1 tested NotesScreen blob: `ae6cab36d00cbae11109f6440e3229d952a8e258`. Candidate 1 test blob: `743d928492dc2140acda5720402f5a63a4e4d4a6`. Source, test and evidence are committed together; no provider, account or deployed environment was called.
+
+The fixture mounts the actual NotePage, PageEditorView, CodeMirror editor and CoachPageProvider. Stable synthetic query/mutation boundaries provide fictional notes and controllable rejections. The `Flush fixture page` button is test instrumentation. These are browser component tests, not authenticated persistence E2E.
+
+## Review and retry ledger
+
+1. Candidate 1, commit `a458b04`: baseline 3/3 and current 19/19 passed. Independent review then found a queued outgoing draft could be dropped when navigation invalidated its UI owner after the debounce cleared. The original screenshots and logs remain in that commit.
+2. Candidate 2, inspected before browser execution: an immutable outgoing snapshot repaired that loss, but review found a second ordering gap. Reopening the same note created a new queue owner, so an older outgoing write could run after a newer reopened draft and overwrite it.
+3. Candidate 3: a private per-note promise queue registers immutable snapshots immediately across remounts; owner and queue cleanup compare request identity. UI/ref settlement remains ownership-fenced. Pending-debounce cleanup uses the same writer, and clean reopened coach/delete paths wait for outgoing writes. The independent reviewer found both prior defects resolved and no further blocking introduced defect. Thirty feature cases preserve the original nineteen and add navigation/unmount, rejected predecessors, same-note A→B→C→D ordering, distinct-note independence, and clean coach/delete waits. Source and tests were frozen after candidate 3 until Amit approved AT-29 on 2026-10-22; that approval permits one additional scoped correction, recorded below.
+
+Candidate 3 source blob: `fef2920792d718dd07c8855556450014b31413af`. Candidate 3 test blob: `46617ece5085285b2a49910400dae1c9d9d4dff8`. The scratch static log filenames initially said candidate2; this ledger uses the corrected conservative candidate3 count.
+
+4. Owner-approved AT-29, 2026-10-22: one additional scoped correction adds per-field edit revisions to the existing note owner and immutable save snapshots. A successful request clears a dirty field only when that field's revision and value still match. This preserves dirty-field isolation when only the other field changes. Two deferred title/body regressions were observed failing before the source edit, then all 32 focused cases passed. No further correction candidate is authorized by this approval.
+
+AT-29 source blob: `b9eb921f5f019689f530f2ac8e8ed4cb5420157f`. AT-29 test blob: `d4d8baad7ed35c2b05a4c38c96b973dcb98b7567`. Lock blob remains `aaa67ac9516b6a324de35af1771b3d1524713d19`.
+
+## Historical A→B→A limit — original and candidate 3
+
+Source comparison and the actual scratch browser comparison on 2026-10-21 found the following edge in both the saved original and candidate 3:
+
+1. Save title A and keep its mutation pending.
+2. Edit title B and let its debounce run. The original submits B immediately; candidate 3 enqueues B behind A.
+3. Edit back to A, leaving the final debounce pending.
+4. Resolve the first A save. Both implementations clear the title dirty flag solely because the current value equals the old snapshot, without checking its edit revision.
+5. The final debounce can see no dirty patch and submit no final A. The outstanding B write can leave B stored while the last typed value was A; a Saved indicator or reactive adoption can then conceal the missed edit.
+
+This is a pre-existing value-equality clearing defect, not a newly introduced queue defect. It limited the ticket's stated newer-draft guarantee before AT-29. No source/test repair was made at that stage. The proposed revision-owned correction and regressions were subsequently authorized and are now recorded in the AT-29 section below.
+
+Both scratch runs reproduced the defect: final typed title A, submitted writes `[A, B]`, persisted title B. The original run took 28.78 s and candidate 3 took 13.56 s. Each exited 0 because its assertion deliberately verifies the observed defect; these are negative diagnostics, not correctness/acceptance passes. The scratch-only diagnostic uses the same actual editor fixture, preserves all thirty committed cases and does not replace an acceptance check. No screenshot was overwritten during this comparison. Both owned browser/server instances closed and their temporary fixture directories were removed. Candidate 3's thirty feature cases passed both in the earlier hosted CI job and in the local full test on 2026-10-22; no standalone focused run was repeated. The local full test failed/incompletely terminated after the unrelated KB66 wrapper stall, and local Playwright has three failures. That candidate 3 draft remained blocked. AT-29 below records the subsequently authorized correction; current mandatory gates and review clearance remain required.
+
+## AT-29 approved correction — 2026-10-22
+
+The title and body each retain their own last edit revision on the existing mounted note owner. A save snapshot captures both field revisions with its immutable values. A successful response may clear a field's dirty flag only if that field has not been edited since the snapshot and its value still matches. A→B→A therefore keeps the final A dirty even though it equals the first submitted A. An edit to the other field does not keep an otherwise successfully saved field dirty. The 500 ms debounce, per-note queue, mutation arguments and all previous ownership guards remain unchanged.
+
+The new tests use the actual mounted editor and deferred mutations. Each submits A, queues B, types A while its final debounce is pending, then resolves the first A. It must show no Saved state. After B settles the third immutable A request must exist, stored B must not replace the visible A, and Saved appears only after the third A persists. Both fields assert exact [A, B, A] mutation arguments. The 30 existing cases and every existing deadline are unchanged; this is one approved source correction.
+
+| Command | AT-29 result |
+| --- | --- |
+| Bun version | 1.3.9. |
+| `bun test tests/unit/tempo-page-error-recovery.test.tsx --test-name-pattern 'deferred (title|body) A to B to A'` before source edit | Expected RED, exit 1; 0 pass, 2 fail, 30 filtered out, 4 expectations, 21.25 s. Both failures are the expected premature Saved count 1 versus 0. This diagnostic filter does not replace the full focused run. [Log](at29-red.log), [receipt](at29-red.json), [lossless output](at29-red.log.raw.gz). |
+| `bun test tests/unit/tempo-page-error-recovery.test.tsx` after correction | Exit 0; 32 pass, 0 fail, 130 expectations, 136.95 s. The original 30 remain passing. [Log](at29-focused.log), [receipt](at29-focused.json), [lossless output](at29-focused.log.raw.gz). |
+| Scoped Biome lint on source and test, from apps/web | Exit 0; two files checked, no fixes. [Log](at29-scoped-lint.log). |
+| `git diff --check` | Exit 0 on this scoped correction and evidence. |
+| `bun install --frozen-lockfile` | Exit 0; 1,033 installs checked across 1,079 packages, no changes; 316.24s. [Log](at29-mandatory-install.log), [receipt](at29-mandatory-install.json). |
+| `bun run lint` | Exit 0; 5/5 tasks, nine existing warnings; 2.569s. [Log](at29-mandatory-lint.log), [receipt](at29-mandatory-lint.json). |
+| `bun run typecheck` | Exit 0; 5/5 tasks, 1m26.81s. [Log](at29-mandatory-typecheck.log), [receipt](at29-mandatory-typecheck.json). |
+| `bun run test` | Exit 1; authoritative aggregate 3,467 pass / 34 fail / 3 todo / 2 errors; 81,521 expectations; 3,504 tests in 212 files; 2291.58s. All 32 Page recovery cases pass. [Full log](at29-mandatory-test.log), [receipt](at29-mandatory-test.json), [all failure names](at29-mandatory-test-failures.txt), [last 20 lines](at29-mandatory-test.tail.txt). |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | Exit 0; all four OK, 66 dependencies documented. [Log](at29-mandatory-scans.log), [receipt](at29-mandatory-scans.json). |
+| `CI=1 bunx playwright test --reporter=line` | Exit 1; 11 pass / 17 fail / 89 skip; 14.1m. [Full log](at29-mandatory-e2e.log), [receipt](at29-mandatory-e2e.json), [all failure names](at29-mandatory-e2e-failures.txt), [last 20 lines](at29-mandatory-e2e.tail.txt). |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Exit 0; 1/1 task, 3m27.37s. [Full log](at29-mandatory-build.log), [receipt](at29-mandatory-build.json). |
+| Current remote CI and CodeRabbit | UNKNOWN: pending checks/review on the new commit. |
+
+Readable AT-29 logs normalize only output whitespace; byte-exact originals are retained losslessly with [SHA256 mapping](at29-output-sha256.json). The focused run's afterAll completed without cleanup error. At 06:56:28 UTC, no live root/fixture processes or temporary page fixture directories remained; the browser slot was released. [Cleanup receipt](at29-focused-cleanup.json). No live/preview URL, real account, provider or environment was used.
+
+### AT-29 mandatory failures and ownership
+
+The mandatory sequence ran once on frozen commit f2fdfb170b2eb356e2bee7040b0eedf0e082e369 with the source/test/lock blobs recorded in every command receipt. Full tests completed normally with exit 1; unlike the older candidate 3 run, this run was not terminated and has an authoritative final aggregate. The 34 failures include six KB74 named 60-second timeouts, KB74 and KB59 unnamed hook timeouts, nineteen KB66 parent reports after the child failure, three history-normalization timeouts, and four pathological-Markdown performance assertions. Two between-test errors are separately counted: KB74 fixture page.goto timeout and KB66 clean-child rejection. Child diagnostics repeated inside parent errors are not counted as additional tests. Their underlying causes have not been established. No source, tests, deadlines, configs, guards or baselines were changed to alter these outcomes.
+
+All 17 Playwright failures are named below, including calendar, sign-out, task views and route wiring. Auth/account-dependent cases skipped under the existing local configuration; no live/preview URL or account storage was supplied. Slow shell monitoring did not restart or replace either original command.
+
+After Playwright ended, its owned groups had no live members and port 3000 was free. Only the exact ignored, realpath-matched, nonsymlink apps/web/.next/dev cache was removed with guarded Bun rmSync recursive true / force false to recover build space. [Cache receipt](at29-mandatory-dev-cache-cleanup.json). [Post-test process snapshot](at29-mandatory-post-test-processes.json), [final process snapshot](at29-mandatory-final-processes.json). Raw outputs and failure summaries remain losslessly archived with original SHA256 values in [the map](at29-output-sha256.json). No additional source correction or failed-command rerun was made.
+
+<details>
+<summary>All 34 full-test failure names and final aggregate</summary>
+
+```text
+34 tests failed:
+(fail) KB-74 real shell drawer focus > desktop static rail stays accessible without modal trapping [60001.60ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > StrictMode reopen still focuses the drawer after dismissal [60001.39ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > Hebrew RTL drawer opens on the leading edge and restores focus [60001.31ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > gallery language and theme controls update the real shell [60001.29ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > mounted shell and gallery fit both languages, themes and widths [60096.74ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > reduced motion uses the existing near-zero CSS policy [60036.07ms]
+  ^ this test timed out after 60000ms.
+(fail) (unnamed) [60003.85ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) (unnamed) [600631.77ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) load-more view names the currently visible count and preserves LTR numerals [240000.99ms]
+  ^ this test timed out after 240000ms.
+(fail) end view describes the current snapshot rather than all history [398.36ms]
+(fail) Hebrew count and end message keep numbers isolated [23.07ms]
+(fail) Hebrew load-more control remains a real button [1.40ms]
+(fail) gallery statically mounts the actual activity heading and feed views [1.25ms]
+(fail) mounted caller and exact query contract remain wired [0.22ms]
+(fail) English and machine-drafted Hebrew keys have parity [0.64ms]
+(fail) no entries retain the mounted empty view and no paging control [0.38ms]
+(fail) exactly 20 items show a current-snapshot end without a button [0.06ms]
+(fail) 21 items focus the new row after final-button removal [0.09ms]
+(fail) 30 exactly completes in one chunk and keeps the new row in view [0.39ms]
+(fail) 31 items require two chunks and focus rows 21 then 31 [0.31ms]
+(fail) focus moved elsewhere during a load remains there [0.09ms]
+(fail) Hebrew direction, time and counts remain readable [0.05ms]
+(fail) StrictMode announces each loaded count once and transfers focus once [1.02ms]
+(fail) reactive insertion alone does not steal focus and next chunk uses its stable boundary [0.68ms]
+(fail) pending load keeps its older boundary when the anchor disappears beside a new top row [0.54ms]
+(fail) gallery controls and retry callback remain operable [0.30ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [0.24ms]
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [8986.71ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [11470.24ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > duplicate identities compare large and deep malformed fields structurally [11783.44ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > fencesInItems [3074.20ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [4461.71ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [4599.96ms]
+(fail) pathological bodies stay linear > definitionStarts [3699.89ms]
+
+ 3467 pass
+ 3 todo
+ 34 fail
+ 2 errors
+ 81521 expect() calls
+Ran 3504 tests across 212 files. [2291.58s]
+error: script "test" exited with code 1
+```
+
+</details>
+
+<details>
+<summary>All 17 Playwright failure names and final aggregate</summary>
+
+```text
+  17 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  89 skipped
+  11 passed (14.1m)
+```
+
+</details>
+
+Full-test last 20 lines ([lossless original](at29-mandatory-test.tail.txt.raw.gz)):
+
+```text
+(fail) gallery controls and retry callback remain operable [0.30ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [0.24ms]
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [8986.71ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [11470.24ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > duplicate identities compare large and deep malformed fields structurally [11783.44ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > fencesInItems [3074.20ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [4461.71ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [4599.96ms]
+(fail) pathological bodies stay linear > definitionStarts [3699.89ms]
+
+ 3467 pass
+ 3 todo
+ 34 fail
+ 2 errors
+ 81521 expect() calls
+Ran 3504 tests across 212 files. [2291.58s]
+error: script "test" exited with code 1
+```
+
+Playwright last 20 lines ([lossless original](at29-mandatory-e2e.tail.txt.raw.gz)):
+
+```text
+  17 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  89 skipped
+  11 passed (14.1m)
+```
+
+## Historical candidate 1–3 results
+
+| Command | Result |
+| --- | --- |
+| `PAGE_RECOVERY_BASELINE=<saved-original-NotesScreen.tsx> bun test tests/unit/tempo-page-error-recovery.test.tsx` | Exit 0; 3 pass, 0 fail; 26 expectations; 111.68 s. [Log](baseline.log). |
+| `bun test tests/unit/tempo-page-error-recovery.test.tsx` | Exit 0; 19 pass, 0 fail; 83 expectations; 191.67 s. First browser candidate. [Log](candidate-1.log). |
+| Scoped Biome lint from `apps/web`: `bun run node_modules/.bin/biome lint components/notes/NotesScreen.tsx ../../tests/unit/tempo-page-error-recovery.test.tsx` | Exit 0, two files checked. Earlier root-cwd invocation failed resolving the existing shared config; correct package cwd fixed invocation without changing configuration. |
+| Scoped `tsc --noEmit --pretty false --project <scratch-config-extending-web-tsconfig>` | Initial exit 2: fixture Response received a Buffer type unsupported by this DOM signature. Fixed with an owned ArrayBuffer. Subsequent pre-browser exit 0; this is not full repository typecheck. |
+| Generated fixture entry/build TypeScript syntax parsing | Both parse without diagnostics. |
+| `git diff --check` (source/test and README before adding raw command receipts) | Exit 0. |
+| `git diff --cached --check` before evidence normalization | Exit 2, limited to original output whitespace in the build/E2E logs/tails. [Diagnostic](candidate-3-pre-normalization-diff-check.log), [exit](candidate-3-pre-normalization-diff-check.exit), [lossless original](candidate-3-pre-normalization-diff-check.log.raw.gz). |
+| `git diff --cached --check` after evidence normalization | Exit 0 for the full staged diff, including all evidence. Raw output remains losslessly archived; no product/test/guard/command change. |
+| `bun install --frozen-lockfile` (Bun 1.3.9; 360-second bound) | Candidate 3: exit 0, 1,033 installs checked across 1,079 packages, no changes; 346.44 s. [Log](candidate-3-install.log). |
+| `bun run lint` | Candidate 3: exit 0, 5/5 tasks, zero errors; nine existing web warnings. [Log](candidate-3-lint.log). |
+| `bun run typecheck` | Candidate 3: exit 0, 5/5 tasks; 2m44.571s. [Log](candidate-3-typecheck.log). |
+| Scoped Biome lint on source plus new test | Candidate 3 final: exit 0, two files checked. [Log](candidate-3-scoped-lint.log). Initial hook dependency errors and template-literal info were corrected without suppression; [retained diagnostic excerpt](candidate-3-scoped-lint-initial.log). |
+| Hosted Test job on `8bd013c` | All 30 feature cases pass. Global result: 3,523 pass, 1 fail, 3 todo; 81,646 assertions; 373.10 s; exit 1. Sole failure: unchanged KB67 unnamed beforeEach/afterEach hook at 60,000.67 ms. [Run 39681857160 / job 119506069603](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39681857160/job/119506069603). [Connector-verified excerpt](candidate-3-hosted-test-excerpt.log) includes all 30 feature pass lines and the global failure/exit. This worker independently inspected that saved excerpt after direct log retrieval returned HTTP 403 from the Actions results receiver. No claim of green global CI. |
+| `PAGE_RECOVERY_BASELINE=<saved original> bun --no-env-file test <scratch>/page-recovery-aba-diagnostic.test.tsx` | Defect reproduced on original source; exit 0; 1 diagnostic, 3 expectations; 28.78 s. Last typed A, submitted [A, B], persisted B. [Log](aba-original.log), [exit receipt](aba-original.exit). |
+| `env -u PAGE_RECOVERY_BASELINE bun --no-env-file test <scratch>/page-recovery-aba-diagnostic.test.tsx` | Same defect reproduced on frozen candidate 3; exit 0; 1 diagnostic, 4 expectations; 13.56 s. Last typed A, submitted [A, B], persisted B. [Log](aba-current.log), [exit receipt](aba-current.exit). |
+| `bun run test` (local frozen candidate 3) | FAIL/incomplete; exit 143 after the actual KB66 wrapper timeout and an authorized termination of the verified stalled owned Bun parent. All 30 feature cases pass. Observed named log lines: 1588 pass, 1 fail, 3 todo; these are not a final aggregate. No final aggregate exists. [Full log](candidate-3-full-test.log), [receipt](candidate-3-full-test.json), [observed counts](candidate-3-full-test-observed-counts.json), [last 20 lines](candidate-3-full-test.tail.txt). |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | Exit 0; all four report OK, 66 dependencies documented. [Log](candidate-3-scans.log), [receipt](candidate-3-scans.json). |
+| `CI=1 bunx playwright test --reporter=line` | Exit 1; 25 passed, 89 skipped, 3 failed; 5.4 minutes. Calendar Add event click, sign-out visibility and task-view navigation each exceed the existing 30,000 ms test timeout. No root cause is asserted. [Full log](candidate-3-local-e2e.log), [receipt](candidate-3-local-e2e.json), [last 20 lines](candidate-3-local-e2e.tail.txt). |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Exit 0; 1/1 task, 2m22.134s. [Log](candidate-3-build.log), [receipt](candidate-3-build.json). |
+
+The baseline proves the original save rejection leaves Saving visible and the original pin rejection produces an unhandled fictional error. The current tests prove retained dirty title/body, explicit retry, duplicate suppression, ordered saves, stale-note isolation, dirty flush before delete, canceled delete intent, failure without URL/Undo change, successful deletion plus existing Undo, real coach flush rejection, pagehide/visibility recovery, and exact Markdown preservation for plain/daily/weekly/project/template pages. No caught action path emitted a console/page error. Only a successful removal changes the URL and starts the existing five-minute Undo.
+
+## Local remaining gates — 2026-10-22
+
+The human-readable command logs/tails below normalize only CRLF/CR to LF, trailing spaces/tabs and terminal blank lines. Every original is preserved losslessly in its corresponding `.raw.gz` artifact; the [SHA256 map](candidate-3-raw-output-sha256.json) records each original filename, original hash, byte count, archive filename and normalized hash. The pre-normalization whitespace-check failure is retained the same way. No command result, failure content or test was changed.
+
+These commands ran once, in mandatory order, on [frozen head 7c59ad11d212ceadc080b220f2d6e0faf8e5e2b5](https://github.com/Levidavidspublic/tempo-rhythm/tree/7c59ad11d212ceadc080b220f2d6e0faf8e5e2b5). Product source remains the third candidate in [4d183cdfe5a168c6ab1988276960f3454e6aaa30](https://github.com/Levidavidspublic/tempo-rhythm/commit/4d183cdfe5a168c6ab1988276960f3454e6aaa30); later commits before this run changed evidence only. Source blob `fef2920792d718dd07c8855556450014b31413af`, test blob `46617ece5085285b2a49910400dae1c9d9d4dff8` and lock blob `aaa67ac9516b6a324de35af1771b3d1524713d19` matched before and after. There was no source/test/config/deadline repair or failed-command rerun.
+
+The full test began at 00:00:02 UTC. All 30 Page recovery cases passed, including its eight current screenshots. At KB66, an existing parent wrapper at tests/unit/kb-66.test.tsx:35 timed out after 240021.18 ms against its existing 240000 ms deadline. The log states “killed 1 dangling process.” The child born at 00:14:24 was a zombie, and at 00:18:23 and 00:19:02 the parent remained in epoll wait with unchanged 00:03:49 CPU time. The wrapper reuses one result promise for subsequent cases; it remained unsettled. These observations establish the stall; they do not establish its underlying cause. With lead authorization, only the reverified owned Bun processes were terminated; the untouched runner captured exit 143 at 00:19:35. [Before snapshot](candidate-3-test-stall-before.txt), [after snapshot](candidate-3-test-stall-after.txt), [termination ownership](candidate-3-test-termination-ownership.txt). A transient exec transport failure occurred during monitoring; the original test process continued and was not restarted.
+
+Playwright completed normally with its failing exit. The owned local server had no live group members and port 3000 was free before cleanup. Only the exact ignored, realpath-matched, nonsymlink apps/web/.next/dev directory was removed to recover build space, using Bun rmSync with recursive true and force false after all ownership checks. [Cleanup receipt](candidate-3-dev-cache-cleanup.json). The build then passed. At 00:28:59 UTC all owned command groups had no live members and port 3000 remained free; the heavy slot was released. [Final process snapshot](candidate-3-final-owned-processes.txt). No live/preview URL or account storage was supplied.
+
+Full-test last 20 lines ([lossless original tail](candidate-3-full-test.tail.txt.raw.gz) and original SHA256 preserved):
+
+```text
+(pass) KB-59 web search preference request ownership > synchronous callback throw is recoverable
+(pass) KB-59 web search preference request ownership > unmounted request cannot announce into surviving SettingsScreen
+(pass) KB-59 web search preference request ownership > older mount cannot change replacement row
+(pass) KB-59 web search preference request ownership > parent removal commit fences a settling request
+(pass) KB-59 web search preference request ownership > StrictMode lifecycle still permits current success
+(pass) KB-59 web search preference request ownership > unavailable provider stays off and locked
+(pass) KB-59 web search preference request ownership > daily remaining count stays clamped without a new quota lock
+(pass) KB-59 web search preference request ownership > UTC midnight refresh preserves latest intent and cleans timer
+(pass) KB-59 web search preference request ownership > query boundary keeps the preferences page usable
+(pass) KB-59 web search preference request ownership > keyboard switching retains focus and phone targets
+(pass) KB-59 web search preference request ownership > caller and gallery render English Hebrew responsive theme matrix
+(pass) KB-59 web search preference request ownership > gallery shares production save and recover behavior
+(pass) KB-59 web search preference request ownership > fixture interactions avoid uncaught app errors and extra operations
+(pass) KB-59 web search preference request ownership > request settlement during either query loading retains feedback ownership
+
+tests/unit/kb-66.test.tsx:
+killed 1 dangling process
+(fail) load-more view names the currently visible count and preserves LTR numerals [240021.18ms]
+  ^ this test timed out after 240000ms.
+error: script "test" was terminated by signal SIGTERM (Polite quit request)
+```
+
+Playwright last 20 lines (display whitespace trimmed; [lossless original tail](candidate-3-local-e2e.tail.txt.raw.gz) and its original SHA256 are preserved):
+
+```text
+[110/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[111/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[112/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[113/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:261439) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:261487) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  3 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  25 passed (5.4m)
+```
+
+## Actual candidate 1 screenshots
+
+These dedicated local images prove candidate 1 only. The original images were preserved before the local candidate 3 run and their SHA256 hashes still match the [protected-image manifest](candidate-3-candidate-1-screenshots.sha256). The eight candidate-1 after images are preserved under dedicated filenames before any future local full test can overwrite the harness's generic after filenames. Each pair uses the same fictional body, retains the original page-meta bytes and was captured from the actual editor. Before images load the saved original NotesScreen; after images load the tested source. Both matrices use reduced motion. The after matrix also verifies visible keyboard focus, Enter retry, at least 44px retry height, EN/HE direction and no horizontal overflow.
+
+| Width / language / theme | Before | After |
+| --- | --- | --- |
+| 390 / EN / light | [Before](before-390-en-light.png) | [After](candidate-1-after-390-en-light.png) |
+| 390 / EN / dark | [Before](before-390-en-dark.png) | [After](candidate-1-after-390-en-dark.png) |
+| 390 / HE / light | [Before](before-390-he-light.png) | [After](candidate-1-after-390-he-light.png) |
+| 390 / HE / dark | [Before](before-390-he-dark.png) | [After](candidate-1-after-390-he-dark.png) |
+| 1280 / EN / light | [Before](before-1280-en-light.png) | [After](candidate-1-after-1280-en-light.png) |
+| 1280 / EN / dark | [Before](before-1280-en-dark.png) | [After](candidate-1-after-1280-en-dark.png) |
+| 1280 / HE / light | [Before](before-1280-he-light.png) | [After](candidate-1-after-1280-he-light.png) |
+| 1280 / HE / dark | [Before](before-1280-he-dark.png) | [After](candidate-1-after-1280-he-dark.png) |
+
+Visual inspection: the EN desktop notice sits above the existing page; the HE mobile dark notice flows RTL and retains the focused retry target. Existing translated copy and token classes are reused; Hebrew remains for Amit's native read before production.
+
+## Actual candidate 3 screenshots
+
+The full local test captured these eight images from frozen candidate 3 after successful recovery. The existing 30-case fixture still mounts the actual editor with synthetic boundaries; these images do not prove authenticated persistence. Dedicated filenames distinguish them from the protected candidate 1 matrix, even where the rendered pixels match.
+
+| Width / language / theme | Candidate 3 after |
+| --- | --- |
+| 390 / EN / light | [Candidate 3](candidate-3-after-390-en-light.png) |
+| 390 / EN / dark | [Candidate 3](candidate-3-after-390-en-dark.png) |
+| 390 / HE / light | [Candidate 3](candidate-3-after-390-he-light.png) |
+| 390 / HE / dark | [Candidate 3](candidate-3-after-390-he-dark.png) |
+| 1280 / EN / light | [Candidate 3](candidate-3-after-1280-en-light.png) |
+| 1280 / EN / dark | [Candidate 3](candidate-3-after-1280-en-dark.png) |
+| 1280 / HE / light | [Candidate 3](candidate-3-after-1280-he-light.png) |
+| 1280 / HE / dark | [Candidate 3](candidate-3-after-1280-he-dark.png) |
+
+## AT-29 focused screenshots
+
+The 32-case AT-29 focused run captured the actual editor recovery matrix below. Candidate 1 and candidate 3 images remain preserved under their own filenames. Fictional fixture boundaries do not prove authenticated persistence.
+
+| Width / language / theme | AT-29 after |
+| --- | --- |
+| 390 / EN / light | [AT-29](at29-after-390-en-light.png) |
+| 390 / EN / dark | [AT-29](at29-after-390-en-dark.png) |
+| 390 / HE / light | [AT-29](at29-after-390-he-light.png) |
+| 390 / HE / dark | [AT-29](at29-after-390-he-dark.png) |
+| 1280 / EN / light | [AT-29](at29-after-1280-en-light.png) |
+| 1280 / EN / dark | [AT-29](at29-after-1280-en-dark.png) |
+| 1280 / HE / light | [AT-29](at29-after-1280-he-light.png) |
+| 1280 / HE / dark | [AT-29](at29-after-1280-he-dark.png) |
+
+## Preserved diagnostic failures
+
+Initial scoped type diagnostic (full output in [scoped-types-initial.log](scoped-types-initial.log)):
+
+```text
+tests/unit/tempo-page-error-recovery.test.tsx(92,36): error TS2345: Argument of type 'Buffer<ArrayBufferLike>' is not assignable to parameter of type 'BodyInit | null | undefined'.
+  Type 'Buffer<ArrayBufferLike>' is missing the following properties from type 'URLSearchParams': size, append, delete, get, and 2 more.
+```
+
+Initial scoped lint invocation, from the wrong directory:
+
+```text
+Failed to resolve the configuration from ../../packages/config/biome.json
+module not found
+```
+
+No product check was weakened. Browser cleanup closed owned pages, browser and server and removed only its temporary fixture build directory.
+
+## UNKNOWN and follow-ups
+
+- Exact cause of the preview red three-error badge.
+- Authenticated persistence, deployed preview behavior and real-device screen-reader behavior.
+- Current full-test / Playwright failures remain blocking, and their underlying causes remain unverified. Current complete remote CI and actual CodeRabbit disposition are unverified. Historical candidate 3 local commands failed/incompleted on the KB66 wrapper stall and three Playwright timeouts; the earlier hosted candidate 3 global test job was red on KB67's hook timeout.
+- Existing wiki-link creation and broader unmount recovery remain outside this ticket. Cleanup changed only as necessary to prevent the introduced write-order/lost-draft regressions. No sidebar/codec, checkbox, route, backend, model, schema or environment change.
+- Older overlapping #1053/#1081 and held migration drafts #795/#805 were left untouched and need later reconciliation. KA #1101 expressly excludes NotesScreen. Protected #1193/#1198 and held #1110/#1112/#1129 were untouched.

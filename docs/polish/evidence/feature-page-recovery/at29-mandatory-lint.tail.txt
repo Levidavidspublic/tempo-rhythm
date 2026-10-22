@@ -1,0 +1,19 @@
+tempo-rhythm-web:lint: lib/editor/today-live-preview.test.ts:111:89 lint/suspicious/noTemplateCurlyInString ━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Unexpected template string placeholder.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     110 │   test("/week opens its page at /notes/[id]", () => {
+tempo-rhythm-web:lint:   > 111 │     expect(source("components/today/WeekOpener.tsx")).toContain("router.replace(`/notes/${state.noteId}`)");
+tempo-rhythm-web:lint:         │                                                                                         ^^^^^^^^^^^^^^^
+tempo-rhythm-web:lint:     112 │   });
+tempo-rhythm-web:lint:     113 │
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Turn the string into a template string.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: Checked 480 files in 1303ms. No fixes applied.
+tempo-rhythm-web:lint: Found 9 warnings.
+
+ Tasks:    5 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    2.569s

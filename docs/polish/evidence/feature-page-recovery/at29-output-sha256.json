@@ -1,0 +1,135 @@
+[
+  {
+    "file": "at29-red.log",
+    "originalSha256": "37499515d1e12c89cce824cf1a3bd59a79b03fb036cff13baa10de5b2998a3e6",
+    "rawGzip": "at29-red.log.raw.gz",
+    "originalBytes": 3698,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-focused.log",
+    "originalSha256": "0bd2eca003261c07818f217e16fd9bf75e1e1624116f8a253fc806b2643b6d5d",
+    "rawGzip": "at29-focused.log.raw.gz",
+    "originalBytes": 3699,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-scoped-lint.log",
+    "originalSha256": "e3e5042445aefece166a2dbe0e75481879c8a4cba07b237191c1d3970ea066e8",
+    "rawGzip": "at29-scoped-lint.log.raw.gz",
+    "originalBytes": 44,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-install.log",
+    "originalSha256": "f86512e4b46301112a156a3ee27f4334bfd5029bdd262531d772e20d624847a4",
+    "rawGzip": "at29-mandatory-install.log.raw.gz",
+    "originalBytes": 160,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-install.tail.txt",
+    "originalSha256": "f86512e4b46301112a156a3ee27f4334bfd5029bdd262531d772e20d624847a4",
+    "rawGzip": "at29-mandatory-install.tail.txt.raw.gz",
+    "originalBytes": 160,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-lint.log",
+    "originalSha256": "84fcfaf6743676c0aaae267c6b0237ecd84eb9175f283b87d0649e19b7316be0",
+    "rawGzip": "at29-mandatory-lint.log.raw.gz",
+    "originalBytes": 15595,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-lint.tail.txt",
+    "originalSha256": "4cfb6fe3510e746cf6256fc17ab76ef24a072aa674eca4f445dfe57b90c98b96",
+    "rawGzip": "at29-mandatory-lint.tail.txt.raw.gz",
+    "originalBytes": 1057,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-typecheck.log",
+    "originalSha256": "5dd7197d34be0f1a1d0ec6cf46d3014d3d6cdee6c6764be34482e22e71e33f5f",
+    "rawGzip": "at29-mandatory-typecheck.log.raw.gz",
+    "originalBytes": 855,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-typecheck.tail.txt",
+    "originalSha256": "d22939834238b4ba28e9c850e6260d52e308d1da5b79f207970ac52b3f412c18",
+    "rawGzip": "at29-mandatory-typecheck.tail.txt.raw.gz",
+    "originalBytes": 817,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-test.log",
+    "originalSha256": "ee5602fdf7039181d7c6702dc9e5d40003bea291cf29534fc8f5b34160ff2589",
+    "rawGzip": "at29-mandatory-test.log.raw.gz",
+    "originalBytes": 471989,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-test.tail.txt",
+    "originalSha256": "c84f5046af6fd19737090f1e783ea8493f890821972e11bd85f3b5cee6409700",
+    "rawGzip": "at29-mandatory-test.tail.txt.raw.gz",
+    "originalBytes": 1125,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-scans.log",
+    "originalSha256": "69e266a48dd9cf3df8575e0bed6adff0a7afa19f84c8f1e3893ebb0ef040b069",
+    "rawGzip": "at29-mandatory-scans.log.raw.gz",
+    "originalBytes": 507,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-scans.tail.txt",
+    "originalSha256": "69e266a48dd9cf3df8575e0bed6adff0a7afa19f84c8f1e3893ebb0ef040b069",
+    "rawGzip": "at29-mandatory-scans.tail.txt.raw.gz",
+    "originalBytes": 507,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-e2e.log",
+    "originalSha256": "1967bbcd17f64e3d7133a09e9c8a91edd8d07b9d5998b9b9b2b0983f6935b28a",
+    "rawGzip": "at29-mandatory-e2e.log.raw.gz",
+    "originalBytes": 49336,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-e2e.tail.txt",
+    "originalSha256": "b32eaa857fe624a9a3b69dd7e8b7807394df7e68f239aceba5cdff941a43a94d",
+    "rawGzip": "at29-mandatory-e2e.tail.txt.raw.gz",
+    "originalBytes": 2498,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-build.log",
+    "originalSha256": "69c11661ac4d945e875fa86d85037a1f36926b4c97ef1a75d5f0b3e941127757",
+    "rawGzip": "at29-mandatory-build.log.raw.gz",
+    "originalBytes": 4640,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-build.tail.txt",
+    "originalSha256": "e336edd7b18d1d071cc711c47dc838ef9e8a44bbe5ce404214d9ec9f579bee37",
+    "rawGzip": "at29-mandatory-build.tail.txt.raw.gz",
+    "originalBytes": 698,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-test-failures.txt",
+    "originalSha256": "cc81b540361ce42b50df43c7fa5a28e70673762372556210a2f3616fac3daa69",
+    "rawGzip": "at29-mandatory-test-failures.txt.raw.gz",
+    "originalBytes": 3591,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-mandatory-e2e-failures.txt",
+    "originalSha256": "b32eaa857fe624a9a3b69dd7e8b7807394df7e68f239aceba5cdff941a43a94d",
+    "rawGzip": "at29-mandatory-e2e-failures.txt.raw.gz",
+    "originalBytes": 2498,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  }
+]

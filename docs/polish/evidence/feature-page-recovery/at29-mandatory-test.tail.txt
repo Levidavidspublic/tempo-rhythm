@@ -1,0 +1,20 @@
+(fail) gallery controls and retry callback remain operable [0.30ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [0.24ms]
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [8986.71ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [11470.24ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > duplicate identities compare large and deep malformed fields structurally [11783.44ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > fencesInItems [3074.20ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [4461.71ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [4599.96ms]
+(fail) pathological bodies stay linear > definitionStarts [3699.89ms]
+
+ 3467 pass
+ 3 todo
+ 34 fail
+ 2 errors
+ 81521 expect() calls
+Ran 3504 tests across 212 files. [2291.58s]
+error: script "test" exited with code 1

@@ -1,0 +1,74 @@
+[
+  {
+    "file": "candidate-3-full-test.log",
+    "originalSha256": "425c03b4bfc2faed08dc7541b17033d9edd4a10ff584696c8c7265c664aa98f1",
+    "originalBytes": 184769,
+    "rawGzip": "candidate-3-full-test.log.raw.gz",
+    "readableSha256": "425c03b4bfc2faed08dc7541b17033d9edd4a10ff584696c8c7265c664aa98f1",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-full-test.tail.txt",
+    "originalSha256": "62d7fddc44496303782e0d18c5b7d615e0d510b3b3f2768200afa15de5952049",
+    "originalBytes": 1808,
+    "rawGzip": "candidate-3-full-test.tail.txt.raw.gz",
+    "readableSha256": "62d7fddc44496303782e0d18c5b7d615e0d510b3b3f2768200afa15de5952049",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-scans.log",
+    "originalSha256": "69e266a48dd9cf3df8575e0bed6adff0a7afa19f84c8f1e3893ebb0ef040b069",
+    "originalBytes": 507,
+    "rawGzip": "candidate-3-scans.log.raw.gz",
+    "readableSha256": "69e266a48dd9cf3df8575e0bed6adff0a7afa19f84c8f1e3893ebb0ef040b069",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-scans.tail.txt",
+    "originalSha256": "69e266a48dd9cf3df8575e0bed6adff0a7afa19f84c8f1e3893ebb0ef040b069",
+    "originalBytes": 507,
+    "rawGzip": "candidate-3-scans.tail.txt.raw.gz",
+    "readableSha256": "69e266a48dd9cf3df8575e0bed6adff0a7afa19f84c8f1e3893ebb0ef040b069",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-local-e2e.log",
+    "originalSha256": "f8e56f4345e240e9fd81930f3e1edd4854d6e52d1e22db8cb6718bebe328ac61",
+    "originalBytes": 23339,
+    "rawGzip": "candidate-3-local-e2e.log.raw.gz",
+    "readableSha256": "541e28dbe2193280c8532b2b791b8d0b6bb3e7674e938b52f4a6992d82ca27b4",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-local-e2e.tail.txt",
+    "originalSha256": "3418cb5ca10f8805aaa31a17acc9aae7d3f4dee5263715c5d3630aa7e05b36e0",
+    "originalBytes": 2038,
+    "rawGzip": "candidate-3-local-e2e.tail.txt.raw.gz",
+    "readableSha256": "0048712fc3b1824c2278d590b4794364b030b9a20aed289cce46a3d7d7100200",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-build.log",
+    "originalSha256": "dfb2f03e79a7d8737c2694e43e017142968476bdef40797eafe213f838fe8b6c",
+    "originalBytes": 4640,
+    "rawGzip": "candidate-3-build.log.raw.gz",
+    "readableSha256": "fc68fc2504d673687a42b1219f31582f699172a85d1752c2b1fe8d44ce017ef4",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-build.tail.txt",
+    "originalSha256": "4300814270004e3a35ceba226fd1a9d81dd5da2557f5d2ee264cfdd9957de4fe",
+    "originalBytes": 699,
+    "rawGzip": "candidate-3-build.tail.txt.raw.gz",
+    "readableSha256": "879f7e1ee56dda66db4a57bb25d2c7a82cab4f5f986fec31d893cc5d74ac1c94",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  },
+  {
+    "file": "candidate-3-pre-normalization-diff-check.log",
+    "originalSha256": "f95222633b2a2185e64968bb4c5f32d15b2686de6d798e429de5c6a7cb8e158f",
+    "originalBytes": 3581,
+    "rawGzip": "candidate-3-pre-normalization-diff-check.log.raw.gz",
+    "readableSha256": "d5596f6aeaad393a13b2d6574fe14a6af48ae6f52aab364a3d9718f3d6d46cab",
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline; no other change"
+  }
+]

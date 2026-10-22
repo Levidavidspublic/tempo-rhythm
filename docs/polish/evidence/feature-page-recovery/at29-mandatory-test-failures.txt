@@ -1,0 +1,55 @@
+34 tests failed:
+(fail) KB-74 real shell drawer focus > desktop static rail stays accessible without modal trapping [60001.60ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > StrictMode reopen still focuses the drawer after dismissal [60001.39ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > Hebrew RTL drawer opens on the leading edge and restores focus [60001.31ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > gallery language and theme controls update the real shell [60001.29ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > mounted shell and gallery fit both languages, themes and widths [60096.74ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > reduced motion uses the existing near-zero CSS policy [60036.07ms]
+  ^ this test timed out after 60000ms.
+(fail) (unnamed) [60003.85ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) (unnamed) [600631.77ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) load-more view names the currently visible count and preserves LTR numerals [240000.99ms]
+  ^ this test timed out after 240000ms.
+(fail) end view describes the current snapshot rather than all history [398.36ms]
+(fail) Hebrew count and end message keep numbers isolated [23.07ms]
+(fail) Hebrew load-more control remains a real button [1.40ms]
+(fail) gallery statically mounts the actual activity heading and feed views [1.25ms]
+(fail) mounted caller and exact query contract remain wired [0.22ms]
+(fail) English and machine-drafted Hebrew keys have parity [0.64ms]
+(fail) no entries retain the mounted empty view and no paging control [0.38ms]
+(fail) exactly 20 items show a current-snapshot end without a button [0.06ms]
+(fail) 21 items focus the new row after final-button removal [0.09ms]
+(fail) 30 exactly completes in one chunk and keeps the new row in view [0.39ms]
+(fail) 31 items require two chunks and focus rows 21 then 31 [0.31ms]
+(fail) focus moved elsewhere during a load remains there [0.09ms]
+(fail) Hebrew direction, time and counts remain readable [0.05ms]
+(fail) StrictMode announces each loaded count once and transfers focus once [1.02ms]
+(fail) reactive insertion alone does not steal focus and next chunk uses its stable boundary [0.68ms]
+(fail) pending load keeps its older boundary when the anchor disappears beside a new top row [0.54ms]
+(fail) gallery controls and retry callback remain operable [0.30ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [0.24ms]
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [8986.71ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [11470.24ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > duplicate identities compare large and deep malformed fields structurally [11783.44ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > fencesInItems [3074.20ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [4461.71ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [4599.96ms]
+(fail) pathological bodies stay linear > definitionStarts [3699.89ms]
+
+ 3467 pass
+ 3 todo
+ 34 fail
+ 2 errors
+ 81521 expect() calls
+Ran 3504 tests across 212 files. [2291.58s]
+error: script "test" exited with code 1

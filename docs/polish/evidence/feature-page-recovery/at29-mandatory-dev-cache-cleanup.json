@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-22T08:07:42.547Z",
+  "path": "/workspace/tempo-rhythm/apps/web/.next/dev",
+  "realpathMatched": true,
+  "ignored": true,
+  "nonsymlinkAncestors": true,
+  "ownedProcesses": [
+    {
+      "pid": 282830,
+      "group": 282829,
+      "state": "Z"
+    },
+    {
+      "pid": 282831,
+      "group": 282829,
+      "state": "Z"
+    },
+    {
+      "pid": 282843,
+      "group": 282829,
+      "state": "Z"
+    },
+    {
+      "pid": 282865,
+      "group": 282829,
+      "state": "Z"
+    }
+  ],
+  "port3000Free": true,
+  "removed": true
+}
