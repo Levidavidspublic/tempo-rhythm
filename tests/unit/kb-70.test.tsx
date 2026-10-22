@@ -26,6 +26,7 @@ if (process.env.KB70_ISOLATED !== "1") {
     "hydrated gallery: controls, RTL, themes, targets, reduced motion and overflow",
   ];
   let output: string | undefined;
+  let childExit: number | undefined;
   for (const name of names) {
     test(`KB-70 isolated: ${name}`, () => {
       if (output === undefined) {
@@ -35,8 +36,9 @@ if (process.env.KB70_ISOLATED !== "1") {
           stdout: "pipe", stderr: "pipe",
         });
         output = `${run.stdout.toString()}${run.stderr.toString()}`;
-        if (run.exitCode !== 0) throw new Error(`KB-70 clean test process failed:\n${output}`);
+        childExit = run.exitCode;
       }
+      if (childExit !== 0) throw new Error(`KB-70 clean test process failed:\n${output}`);
       expect(output).toContain(name);
     }, 300_000);
   }
@@ -196,13 +198,20 @@ render();`);
           state.notices = state.notices.map((row) => row._id === "fictional-maya" ? { ...row, readAt: Date.now() } : row);
           state.render(); state.readResolve(null);
         });
-        await page.locator('button[data-unread="true"]').waitFor();
+        // root.render schedules a commit; Dana being unread does not prove Maya became read.
+        await page.locator('.tp-list-row[tabindex="-1"]').filter({ hasText: "Maya shared an update" }).waitFor();
         expect(await page.evaluate(() => (document.activeElement as HTMLElement)?.getAttribute("href"))).toBe("/settings/preferences");
         await page.getByRole("button", { name: /Dana has a reminder/ }).click();
         await page.evaluate(() => {
           const state = (window as unknown as { __kb70: { notices: Array<{ _id: string; readAt?: number }>; render: () => void; readResolve: (value: null) => void } }).__kb70;
           state.notices = state.notices.map((row) => row._id === "fictional-dana" ? { ...row, readAt: Date.now() } : row);
           state.render(); state.readResolve(null);
+        });
+        // The read-row commit precedes NoticeRow's focus effect.
+        await page.waitForFunction(() => {
+          const row = Array.from(document.querySelectorAll<HTMLElement>('.tp-list-row[tabindex="-1"]'))
+            .find((node) => node.textContent?.includes("Dana has a reminder"));
+          return row !== undefined && document.activeElement === row;
         });
         await page.locator('button[data-unread="true"]').waitFor({ state: "detached" });
         expect(await page.locator('.tp-list-row[tabindex="-1"]').last().evaluate((node) => document.activeElement === node)).toBe(true);
@@ -211,7 +220,7 @@ render();`);
           state.notices = state.notices.map((row, index) => index === 0 ? { ...row, readAt: undefined } : row);
           state.render();
         });
-        await page.locator('button[data-unread="true"]').waitFor();
+        await page.getByRole("button", { name: /Maya shared an update/ }).waitFor();
         await page.evaluate(() => {
           const button = Array.from(document.querySelectorAll("button")).find((node) => node.textContent?.includes("Mark all read"));
           if (!button) throw new Error("Mark all read missing");
