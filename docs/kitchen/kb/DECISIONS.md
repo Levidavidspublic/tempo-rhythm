@@ -24,3 +24,5 @@ AT — Amit approves preparation of KB-01, KB-16 and KB-31; he will add convex-a
 | KB-31 #1214 | Pending code-map verification of current written contract and prerequisite schema | None; do not infer a schema change |
 
 Each architecture PR must list every added/changed table, field, validator and index, compatibility/default behavior, owner isolation and rollout/rollback limits here. An unchanged schema must say so explicitly. Fixtures never authorize a live migration.
+
+WALK — 22 October KB-01 cursor correction: use the existing native index's deterministic updatedAt/_creationTime/_id tie order. The older updatedAt/ID-only promise could require an unbounded equal-timestamp scan and conflicts with the 25-conversation cap. No index is added; page-local resorting must not skip or repeat tied rows. The issue contract is updated before implementation and tests must cover ties across page boundaries.
