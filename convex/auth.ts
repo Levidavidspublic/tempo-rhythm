@@ -8,6 +8,7 @@ import {
   buildReturningUserPatch,
   GRANTED_SUBSCRIPTION,
   newUserFields,
+  type ReturningUserSnapshot,
   shouldGrantSubscription,
 } from "./lib/entitlements";
 import { sendSignInEmail } from "./lib/signInEmail";
@@ -43,13 +44,13 @@ async function findUserIdByEmail(
  * Idempotent. Grants a missing row or the exact pre-open-signup beta
  * placeholder. A cancelled, inactive, or otherwise billed row is left alone.
  */
-async function ensureGrantedSubscription(db: AppDb, userId: Id<"users">, now: number) {
+async function ensureGrantedSubscription(db: AppDb, userId: Id<"users">, now: number, user: ReturningUserSnapshot) {
   const existing = await db
     .query("subscriptionStates")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
 
-  if (!shouldGrantSubscription(existing)) {
+  if (!shouldGrantSubscription(existing, user)) {
     return;
   }
 
@@ -114,25 +115,27 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // subscription back onto an account that is staying inactive.
         const restore = existing ? signInRestorePatch(existing, now) : null;
         const staysInactive = existing ? isInactiveAccount(existing) && restore === null : false;
+        const subscription = await db.query("subscriptionStates")
+          .withIndex("by_userId", (q) => q.eq("userId", existingUserId)).unique();
         await db.patch(existingUserId, {
-          ...buildReturningUserPatch(existing ?? {}, profile, now),
+          ...buildReturningUserPatch(existing ?? {}, profile, now, subscription),
           ...(restore ?? {}),
         });
         if (!staysInactive) {
-          await ensureGrantedSubscription(db, existingUserId, now);
+          await ensureGrantedSubscription(db, existingUserId, now, existing ?? {});
         }
 
         return existingUserId;
       }
 
-      // Every new account is granted the max entitlement tier by newUserFields(),
-      // but starts "pending" until an admin approves it (sign-up approval gate,
-      // convex/lib/approval.ts). Emails in TEMPO_ADMIN_EMAILS start approved.
+      // Ordinary signup is pending without a paid grant or active subscription.
+      // The existing explicit admin-email approval path keeps its grant.
+      const fields = newUserFields(profile, now, initialApprovalStatus(profile.email));
       const userId = await db.insert(
         "users",
-        newUserFields(profile, now, initialApprovalStatus(profile.email)),
+        fields,
       );
-      await ensureGrantedSubscription(db, userId, now);
+      await ensureGrantedSubscription(db, userId, now, fields);
 
       return userId;
     },
