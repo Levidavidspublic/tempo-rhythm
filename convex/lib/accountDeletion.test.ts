@@ -33,6 +33,7 @@ import {
 } from "./pagePrivacy";
 import { makeFakeCtx, run } from "./testFakeCtx";
 import * as coach from "../coach";
+import * as conversations from "../conversations";
 import type { Doc, Id, TableNames } from "../_generated/dataModel";
 import * as mcp from "../mcp";
 import * as nags from "../nags";
@@ -1082,12 +1083,27 @@ describe("chat lifecycle schema contract (#807)", () => {
     activeChatRequestId: "id:chatRequests?",
   };
 
-  test("conversations gain exactly four optional fields and keep every legacy field and index", () => {
-    expect(fieldShape("conversations")).toEqual({
-      ...LEGACY_CONVERSATION_SHAPE,
-      ...CHAT_CONVERSATION_FIELDS,
-    });
-    for (const shape of Object.values(CHAT_CONVERSATION_FIELDS)) {
+  const LIBRARY_CONVERSATION_FIELDS = {
+    tags: "array?",
+    archivedAt: "float64?",
+    libraryRevision: "float64?",
+    libraryReceipts: "array?",
+  };
+  const ORIGINAL_CONVERSATION_SHAPE = { ...LEGACY_CONVERSATION_SHAPE, ...CHAT_CONVERSATION_FIELDS };
+  const APPROVED_LIBRARY_SHAPE = { ...ORIGINAL_CONVERSATION_SHAPE, ...LIBRARY_CONVERSATION_FIELDS };
+
+  // The independent compatibility PR can land before KB-01. Only these two complete approved
+  // versions are valid: any Library field requires all four, with no extra or mistyped field.
+  // KB-01's own tests require the new version; this lifecycle contract preserves both bases.
+  function assertConversationVersion(shape: Record<string, string>): "original" | "library" {
+    const library = Object.keys(LIBRARY_CONVERSATION_FIELDS).some(name => Object.hasOwn(shape, name));
+    expect(shape).toEqual(library ? APPROVED_LIBRARY_SHAPE : ORIGINAL_CONVERSATION_SHAPE);
+    return library ? "library" : "original";
+  }
+
+  test("conversations keep the exact four Agent fields, optionally the exact four approved Library fields, and every legacy index", () => {
+    assertConversationVersion(fieldShape("conversations"));
+    for (const shape of Object.values({ ...CHAT_CONVERSATION_FIELDS, ...LIBRARY_CONVERSATION_FIELDS })) {
       expect(shape.endsWith("?")).toBe(true);
     }
     expect(indexesOf("conversations")).toEqual([
@@ -1095,6 +1111,41 @@ describe("chat lifecycle schema contract (#807)", () => {
       { indexDescriptor: "by_userId_updatedAt", fields: ["userId", "updatedAt"] },
       { indexDescriptor: "by_userId_deletedAt", fields: ["userId", "deletedAt"] },
     ]);
+  });
+
+  test("the compatibility contract accepts only the two complete approved schema versions", () => {
+    expect(assertConversationVersion({ ...ORIGINAL_CONVERSATION_SHAPE })).toBe("original");
+    expect(assertConversationVersion({ ...APPROVED_LIBRARY_SHAPE })).toBe("library");
+    for (const name of Object.keys(LIBRARY_CONVERSATION_FIELDS)) {
+      const partial: Record<string, string> = { ...APPROVED_LIBRARY_SHAPE };
+      delete partial[name];
+      expect(() => assertConversationVersion(partial)).toThrow();
+      expect(() => assertConversationVersion({ ...ORIGINAL_CONVERSATION_SHAPE, [name]: "float64?" })).toThrow();
+    }
+    for (const original of [ORIGINAL_CONVERSATION_SHAPE, APPROVED_LIBRARY_SHAPE]) {
+      for (const name of Object.keys(ORIGINAL_CONVERSATION_SHAPE)) {
+        const missing: Record<string, string> = { ...original };
+        delete missing[name];
+        expect(() => assertConversationVersion(missing)).toThrow();
+      }
+      expect(() => assertConversationVersion({ ...original, unapprovedField: "string?" })).toThrow();
+      expect(() => assertConversationVersion({ ...original, userId: "string" })).toThrow();
+    }
+    for (const name of Object.keys(LIBRARY_CONVERSATION_FIELDS)) {
+      expect(() => assertConversationVersion({ ...APPROVED_LIBRARY_SHAPE, [name]: "any?" })).toThrow();
+    }
+  });
+
+  test("approved Library receipts have the exact nested metadata shape with no required backfill", () => {
+    const version = assertConversationVersion(fieldShape("conversations"));
+    const deep = deepFieldShape("conversations");
+    const actual = Object.fromEntries(Object.keys(LIBRARY_CONVERSATION_FIELDS).map(name => [name, deep[name]]));
+    expect(actual).toEqual(version === "library" ? {
+      tags: "array<string>?",
+      archivedAt: "float64?",
+      libraryRevision: "float64?",
+      libraryReceipts: "array<{token:string,requestKey:string,appliedRevision:float64,undoUntilMs:float64,previous:{tags?:array<string>,archivedAt?:float64,deletedAt?:float64},result:{tags?:array<string>,archivedAt?:float64,deletedAt?:float64}}>?",
+    } : { tags: undefined, archivedAt: undefined, libraryRevision: undefined, libraryReceipts: undefined });
   });
 
   test("a legacy conversation row validates: every field it lacks is optional", () => {
@@ -1772,6 +1823,54 @@ describe("page ledger schema contract (#828)", () => {
     ];
     expect(operationPayloads).toHaveLength(4);
     expect(proposalPayloads).toHaveLength(3);
+  });
+});
+
+describe("Library metadata survives deletion only as inert history (#1274)", () => {
+  test("owner conversations and messages stay tombstoned after account restoration; foreign metadata stays unchanged", async () => {
+    const { ctx, forbiddenCalls } = lifecycleCtx("users:library-owner", ["users:library-other"]);
+    const userId = asUserId("users:library-owner");
+    await ctx.db.patch(userId, { approvalStatus: "approved", isActive: true });
+    const now = Date.now();
+    const makeConversation = async (owner: Id<"users">) => {
+      const id = await ctx.db.insert("conversations", {
+        userId: owner, title: "Example garden chat", tags: ["garden"], archivedAt: now - 100,
+        libraryRevision: 1, createdAt: now - 200, updatedAt: now - 100,
+      });
+      const receipt = {
+        token: [id, "fictional-receipt"].join("."), requestKey: "fictional_metadata_change",
+        appliedRevision: 1, undoUntilMs: now + 300_000,
+        previous: {}, result: { tags: ["garden"], archivedAt: now - 100 },
+      };
+      await ctx.db.patch(id, { libraryReceipts: [receipt] });
+      const messageId = await ctx.db.insert("messages", { conversationId: id, role: "user", content: "Plan a short garden visit", createdAt: now - 150 });
+      return { id: id as Id<"conversations">, messageId, receipt };
+    };
+    const owner = await makeConversation(userId);
+    const foreign = await makeConversation(asUserId("users:library-other"));
+    const foreignBefore = structuredClone(await readAll(ctx, [foreign.id, foreign.messageId, "users:library-other"]));
+    const ownerBefore = structuredClone(await ctx.db.get(owner.id));
+    await softDeleteUserAccount(ctx, userId, now);
+    expect(await ctx.db.get(owner.id)).toEqual({ ...ownerBefore, deletedAt: now, updatedAt: now });
+    expect((await ctx.db.get(owner.messageId)).deletedAt).toBe(now);
+    await expect(requireLiveConversation(ctx, userId, owner.id)).rejects.toMatchObject({ code: "account_unavailable" });
+
+    // Before KB-01 this API does not exist. On the additive schema it is mandatory, and its
+    // actual receipt path must reject both a deleted owner and a restored-but-deleted chat.
+    const undo = "undoLibraryChange" in conversations ? conversations.undoLibraryChange : undefined;
+    const hasLibrary = Object.hasOwn(fieldShape("conversations"), "libraryReceipts");
+    expect(typeof undo === "function").toBe(hasLibrary);
+    if (undo) await expect(run(undo, ctx, { token: owner.receipt.token })).rejects.toMatchObject({ data: { code: "unavailable" } });
+
+    const restore = signInRestorePatch(await ctx.db.get(userId), now + 1);
+    expect(restore).toEqual({ deletedAt: undefined, isActive: true });
+    await ctx.db.patch(userId, restore);
+    await expect(requireLiveConversation(ctx, userId, owner.id)).rejects.toMatchObject({ code: "conversation_unavailable" });
+    if (undo) await expect(run(undo, ctx, { token: owner.receipt.token })).rejects.toMatchObject({ data: { code: "conflict" } });
+    expect(await ctx.db.get(owner.id)).toEqual({ ...ownerBefore, deletedAt: now, updatedAt: now });
+    expect((await ctx.db.get(owner.messageId)).deletedAt).toBe(now);
+    expect(await readAll(ctx, [foreign.id, foreign.messageId, "users:library-other"])).toEqual(foreignBefore);
+    expect(forbiddenCalls).toEqual([]);
   });
 });
 
