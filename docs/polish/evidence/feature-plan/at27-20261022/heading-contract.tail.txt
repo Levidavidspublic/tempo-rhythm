@@ -1,0 +1,18 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/one-h1.test.tsx:
+(pass) one h1 per page (en) > /plan names itself once, visually hidden [111.73ms]
+(pass) one h1 per page (en) > /templates/builder (blank form) names itself once, visually hidden [12.13ms]
+(pass) one h1 per page (en) > /templates/builder?from=<template> (copy form) names itself once [3.34ms]
+(pass) one h1 per page (en) > /templates/builder while the template loads names itself once [2.15ms]
+(pass) one h1 per page (en) > /templates/builder not found: one h1, and the error title keeps its look as an h2 [2.82ms]
+(pass) one h1 per page (he) > /plan names itself once, visually hidden [7.85ms]
+(pass) one h1 per page (he) > /templates/builder (blank form) names itself once, visually hidden [3.61ms]
+(pass) one h1 per page (he) > /templates/builder?from=<template> (copy form) names itself once [2.55ms]
+(pass) one h1 per page (he) > /templates/builder while the template loads names itself once [2.04ms]
+(pass) one h1 per page (he) > /templates/builder not found: one h1, and the error title keeps its look as an h2 [2.17ms]
+
+ 10 pass
+ 0 fail
+ 36 expect() calls
+Ran 10 tests across 1 file. [2.11s]

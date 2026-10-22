@@ -41,6 +41,7 @@ import { useLocalDayBounds } from "@/lib/useLocalDayBounds";
 
 type BoardTask = Doc<"tasks">;
 type Dir = "prev" | "next";
+type BoardProps = ({ projectSlug: string; scope?: never } | { scope: "all"; projectSlug?: never }) & { embedded?: boolean };
 
 const COLUMN_NAME = { todo: "kb.todo", in_progress: "kb.doing", done: "kb.done" } as const;
 const COLUMN_EMPTY = { todo: "kb.empty.todo", in_progress: "kb.empty.doing", done: "kb.empty.done" } as const;
@@ -51,18 +52,18 @@ const COLUMN_EMPTY = { todo: "kb.empty.todo", in_progress: "kb.empty.doing", don
  * the task's status with tasks.update, keeps focus on the same button, is announced in words and
  * has a 5-minute Undo.
  */
-export function TaskKanbanBoard({ projectSlug }: { projectSlug: string }) {
+export function TaskKanbanBoard(props: BoardProps) {
   const { t } = useLocale();
   return (
     <ScreenBoundary
       fallback={(retry) => (
         <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
-          <BackLink projectId={projectIdFromSlug(projectSlug)} />
+          {props.projectSlug !== undefined ? <BackLink projectId={projectIdFromSlug(props.projectSlug)} /> : null}
           <StateError title={t("kb.error")} onRetry={retry} />
         </div>
       )}
     >
-      <BoardContent projectSlug={projectSlug} />
+      <BoardContent {...props} />
     </ScreenBoundary>
   );
 }
@@ -77,12 +78,12 @@ function BackLink({ projectId }: { projectId: string }) {
   );
 }
 
-function BoardContent({ projectSlug }: { projectSlug: string }) {
+function BoardContent({ projectSlug, embedded = false }: BoardProps) {
   const { t, lang } = useLocale();
   const signedIn = useSignedIn();
   const online = useOnline();
   const bounds = useLocalDayBounds();
-  const projectId = projectIdFromSlug(projectSlug);
+  const projectId = projectSlug === undefined ? undefined : projectIdFromSlug(projectSlug);
   const tasks = useQuery(api.tasks.list, signedIn === "ready" ? {} : "skip");
   // Optimistic: the card is in its new column before the server answers, so focus can follow it.
   const updateTask = useMutation(api.tasks.update).withOptimisticUpdate((store, { taskId, status }) => {
@@ -121,7 +122,7 @@ function BoardContent({ projectSlug }: { projectSlug: string }) {
   if (signedIn === "signedOut") {
     return (
       <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
-        <BackLink projectId={projectId} />
+        {projectId !== undefined ? <BackLink projectId={projectId} /> : null}
         <SignedOutState />
       </div>
     );
@@ -129,17 +130,18 @@ function BoardContent({ projectSlug }: { projectSlug: string }) {
   if (tasks === undefined) {
     return (
       <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
-        <BackLink projectId={projectId} />
+        {projectId !== undefined ? <BackLink projectId={projectId} /> : null}
         <StateLoading label={t("kb.loading")} />
       </div>
     );
   }
 
-  const projectTasks = tasksForProject(tasks as BoardTask[], projectSlug).sort((a, b) => b.createdAt - a.createdAt);
+  const projectTasks = (projectSlug === undefined ? [...tasks] : tasksForProject(tasks as BoardTask[], projectSlug))
+    .sort((a, b) => b.createdAt - a.createdAt);
   const columns = groupBoard(projectTasks);
   const onBoard = columns.todo.length + columns.in_progress.length + columns.done.length;
   const name =
-    projectTasks.length > 0
+    projectId === undefined ? t("nav.tasks") : projectTasks.length > 0
       ? projectNameFor(projectTasks, projectId)
       : isNewProjectId(projectId)
         ? t("pj.draft")
@@ -173,26 +175,24 @@ function BoardContent({ projectSlug }: { projectSlug: string }) {
   };
 
   const addCard = async (title: string) => {
-    const taskId = await createTask({ title, projectId, projectName: name, status: "todo" });
+    const taskId = await createTask({ title, ...(projectId === undefined ? {} : { projectId, projectName: name }), status: "todo" });
     setToast(makeToast(t("kb.added"), () => removeTask({ taskId })));
   };
 
   const startAdding = () => setAdding(true);
 
   return (
-    <div className="tp-page tp-page--wide kb-stack" data-component="PageLayout">
-      <BackLink projectId={projectId} />
+    <div className={embedded ? "kb-stack" : "tp-page tp-page--wide kb-stack"} data-component="PageLayout">
+      {projectId !== undefined ? <BackLink projectId={projectId} /> : null}
 
       <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
-          <h1 className="tp-pagehead__title" dir="auto">
-            {name}
-          </h1>
+          {embedded ? <h2 className="tp-section__title" dir="auto">{name}</h2> : <h1 className="tp-pagehead__title" dir="auto">{name}</h1>}
           <div className="tp-pagehead__sub kb-meta">
-            <StatusBadge
+            {projectId !== undefined ? <StatusBadge
               kind="project"
               status={projectStatusFor(columns.done.length, projectTasks.filter((x) => x.status !== "cancelled").length)}
-            />
+            /> : null}
             <span>{t("kb.hint")}</span>
           </div>
         </div>

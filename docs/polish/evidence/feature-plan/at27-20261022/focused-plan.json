@@ -1,0 +1,1 @@
+{"command":"TEMPO_PLAN_EVIDENCE_DIR=/workspace/work/overnight/plan-gates/at27-20261022/fixture bun test tests/unit/tempo-plan-views.test.tsx","exit":0,"startedAt":"2026-10-22T06:57:27Z","endedAt":"2026-10-22T06:58:13Z","elapsedSeconds":46,"baseHead":"b77f7c022aec0b236d312f05dd65151599ad136b","sourceBlob":"e0f79d9d8ec622f5a3c6cd5cc8bc6d16e9a3d892"}

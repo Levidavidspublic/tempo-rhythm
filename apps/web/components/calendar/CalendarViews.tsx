@@ -1,6 +1,7 @@
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -74,6 +75,73 @@ type DisplayCalendarEvent = {
   title: string;
   startsAtMs: number;
 };
+
+type DueTask = { _id: string; title: string; dueAt?: number; status: string };
+type AgendaItem =
+  | { kind: "event"; id: string; time: number; event: DisplayCalendarEvent }
+  | { kind: "task"; id: string; time: number; task: DueTask };
+
+/** Local calendar groups, with a half-open range and stable ordering even when IDs overlap. */
+export function groupPlanAgenda(
+  tasks: readonly DueTask[],
+  events: readonly DisplayCalendarEvent[],
+  range: { startMs: number; endMs: number },
+): Array<{ date: string; items: AgendaItem[] }> {
+  const rows: AgendaItem[] = events.map((event) => ({ kind: "event", id: event.id, time: event.startsAtMs, event }));
+  for (const task of tasks) {
+    if (task.dueAt !== undefined && task.status !== "cancelled") {
+      rows.push({ kind: "task", id: task._id, time: task.dueAt, task });
+    }
+  }
+  const groups = new Map<string, AgendaItem[]>();
+  for (const row of rows.filter((item) => Number.isFinite(item.time) && item.time >= range.startMs && item.time < range.endMs)
+    .sort((a, b) => a.time - b.time || a.kind.localeCompare(b.kind) || a.id.localeCompare(b.id))) {
+    const date = toDateInputValue(new Date(row.time));
+    const group = groups.get(date);
+    if (group) group.push(row);
+    else groups.set(date, [row]);
+  }
+  return Array.from(groups, ([date, items]) => ({ date, items }));
+}
+
+/** Reuses event editing and keeps task destinations beside the corresponding calendar day. */
+function PlanAgenda({ tasks, events, range, actions }: {
+  tasks: readonly DueTask[];
+  events: readonly DisplayCalendarEvent[];
+  range: { startMs: number; endMs: number };
+  actions?: EventRowActions;
+}) {
+  const { lang, t } = useLocale();
+  const groups = groupPlanAgenda(tasks, events, range);
+  return (
+    <div className="tp-section" data-testid="plan-agenda">
+      {groups.length === 0 ? <p className="tp-empty tp-surface">{t("tasks.empty.title")}</p> : null}
+      {groups.map(({ date, items }) => (
+        <section className="tp-section" key={date} aria-labelledby={`plan-date-${date}`}>
+          <h2 className="tp-section__title" id={`plan-date-${date}`}>
+            {parseDateInputValue(date)?.toLocaleDateString(intlLocale(lang), { weekday: "long", month: "long", day: "numeric" })}
+          </h2>
+          <ul className="tp-list tp-surface cal-list" data-plan-date={date}>
+            {items.map((item) => item.kind === "event" ? (
+              <EventRow key={`event-${item.id}`} event={item.event} actions={actions} />
+            ) : (
+              <li className="tp-list-row" key={`task-${item.id}`} data-plan-task={item.id}>
+                <span className="tp-list-row__icon"><TpIcon name={item.task.status === "done" ? "check" : "checklist"} size="sm" /></span>
+                <span className="tp-list-row__body">
+                  <Link className="tp-list-row__title tp-btn tp-btn--ghost" style={{ whiteSpace: "normal", textAlign: "start", justifyContent: "flex-start" }} dir="auto" href="/tasks">{item.task.title}</Link>
+                  <span className="tp-list-row__meta">
+                    {t("timeBlock.kind.task")} · <time className="tp-num" dateTime={new Date(item.time).toISOString()}>{new Date(item.time).toLocaleTimeString(intlLocale(lang), { hour: "numeric", minute: "2-digit" })}</time>
+                    {item.task.status === "done" ? ` · ${t("cal.due.done")}` : ""}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
 
 function DueTaskList({
   tasks,
@@ -156,10 +224,20 @@ function EventList({
   );
 }
 
-export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" | "local" }) {
+export function CalendarViews({ eventSourceMode, embedded = false, unified = false, viewMode, dateValue, onDateChange }: {
+  eventSourceMode: "convex" | "local";
+  embedded?: boolean;
+  unified?: boolean;
+  viewMode?: CalendarViewMode;
+  dateValue?: string;
+  onDateChange?: (date: string) => void;
+}) {
   const { lang, t } = useLocale();
-  const [view, setView] = useState<CalendarViewMode>("day");
-  const [selectedDateValue, setSelectedDateValue] = useState(() => toDateInputValue(new Date()));
+  const [ownView, setView] = useState<CalendarViewMode>("day");
+  const [ownDateValue, setOwnDateValue] = useState(() => toDateInputValue(new Date()));
+  const view = viewMode ?? ownView;
+  const selectedDateValue = dateValue ?? ownDateValue;
+  const setSelectedDateValue = onDateChange ?? setOwnDateValue;
   const [title, setTitle] = useState("");
   const [localEvents, setLocalEvents] = useState<StoredCalendarEvent[]>([]);
   // A key, not text, so a message already on screen follows a language switch.
@@ -300,13 +378,13 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
   }
 
   return (
-    <div className="tp-page tp-page--wide cal-screen" data-component="PageLayout">
-      <header className="tp-pagehead" data-component="PageHeader">
+    <div className={embedded ? "tp-section cal-screen" : "tp-page tp-page--wide cal-screen"} data-component="PageLayout">
+      {embedded ? null : <header className="tp-pagehead" data-component="PageHeader">
         <div className="tp-pagehead__text">
           <h1 className="tp-pagehead__title">{t("nav.calendar")}</h1>
           <p className="tp-pagehead__sub">{t("cal.sub")}</p>
         </div>
-      </header>
+      </header>}
 
       <form className="tp-surface cal-add" data-component="Form" onSubmit={handleSubmit}>
         <div className="cal-add__row">
@@ -356,7 +434,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
               {error === "cal.err.signedOut" ? (
                 <>
                   {" "}
-                  <a className="tp-btn--link" href="/sign-in?redirect=/calendar">
+                  <a className="tp-btn--link" href={embedded ? "/sign-in?redirect=/plan" : "/sign-in?redirect=/calendar"}>
                     {t("cal.signIn")}
                   </a>
                 </>
@@ -367,7 +445,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
       </form>
 
       <div className="tp-toolbar cal-toolbar">
-        <fieldset className="cal-views">
+        {viewMode === undefined ? <fieldset className="cal-views">
           <legend className="tp-sr-only">{t("cal.views")}</legend>
           <div className="tp-segmented">
             {viewOptions.map((option) => (
@@ -382,7 +460,7 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
               </button>
             ))}
           </div>
-        </fieldset>
+        </fieldset> : null}
         <p className="tp-muted tp-small tp-toolbar__end">
           {formatRange(view, range, intlLocale(lang))}
         </p>
@@ -393,6 +471,8 @@ export function CalendarViews({ eventSourceMode }: { eventSourceMode: "convex" |
           <div className="tp-skeleton tp-skeleton--w40" />
           <div className="tp-skeleton tp-skeleton--block" />
         </section>
+      ) : unified ? (
+        <PlanAgenda tasks={hasConvexUser ? dueTasks ?? [] : []} events={visibleEvents} range={range} actions={rowActions} />
       ) : (
         <>
           <EventList actions={rowActions} events={visibleEvents} mode={view} />

@@ -1,0 +1,85 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-plan-views.test.tsx:
+
+tests/unit/tempo-plan-views.test.tsx:
+(pass) Plan calendar boundaries > groups mixed entries chronologically and does not collide on task/event IDs [25.99ms]
+(pass) Plan calendar boundaries > excludes absent/non-finite dates, cancelled tasks and the range's next midnight [7.76ms]
+(pass) Plan calendar boundaries > day/week/month preserve local DST boundaries across supported browser zones [30.33ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/390 [6293.98ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/1280 [10302.70ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/390 [12478.70ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/1280 [6863.43ms]
+(pass) all-task Board persists movement and Undo without assigning a project [5856.99ms]
+(pass) existing project Board stays filtered and has its original back link [7697.56ms]
+(pass) changing the selected day updates both the mixed agenda and time-block target [6243.25ms]
+273 |     try {
+274 |       await page.clock.install({ time: new Date("2026-10-21T23:59:58Z") });
+275 |       await page.goto(server.url.href);
+276 |       const date = page.locator('input[type="date"]').first();
+277 |       await date.waitFor();
+278 |       expect(await date.inputValue()).toBe("2026-10-21");
+                                            ^
+error: expect(received).toBe(expected)
+
+Expected: "2026-10-21"
+Received: "2026-10-22"
+
+      at <anonymous> (/workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx:278:39)
+(fail) Today rolls over at midnight while an explicitly selected other day stays selected [3318.48ms]
+(pass) mixed agenda keeps event editing and a failed save keeps the draft [4133.57ms]
+(pass) signed-out, loading and empty Plan states stay distinct [6035.19ms]
+
+ 12 pass
+ 1 fail
+ 182 expect() calls
+Ran 13 tests across 1 file. [90.46s]
+ 5 | import { join } from "node:path";
+ 6 | 
+ 7 | // Other suites mock React and Convex process-wide. The mounted proof owns a clean process.
+ 8 | if (process.env.TEMPO_PLAN_ISOLATED !== "1") {
+ 9 |   test("Plan mounted and calendar-boundary regressions in a clean process", () => {
+10 |     const output = execFileSync(process.execPath, ["test", import.meta.path], {
+                        ^
+error: Command failed: /workspace/work/kb/bun139 test /workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx
+
+tests/unit/tempo-plan-views.test.tsx:
+(pass) Plan calendar boundaries > groups mixed entries chronologically and does not collide on task/event IDs [25.99ms]
+(pass) Plan calendar boundaries > excludes absent/non-finite dates, cancelled tasks and the range's next midnight [7.76ms]
+(pass) Plan calendar boundaries > day/week/month preserve local DST boundaries across supported browser zones [30.33ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/390 [6293.98ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: en/1280 [10302.70ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/390 [12478.70ms]
+(pass) mounted Plan mixes dated tasks/events and preserves Board, time blocks and layout: he/1280 [6863.43ms]
+(pass) all-task Board persists movement and Undo without assigning a project [5856.99ms]
+(pass) existing project Board stays filtered and has its original back link [7697.56ms]
+(pass) changing the selected day updates both the mixed agenda and time-block target [6243.25ms]
+273 |     try {
+274 |       await page.clock.install({ time: new Date("2026-10-21T23:59:58Z") });
+275 |       await page.goto(server.url.href);
+276 |       const date = page.locator('input[type="date"]').first();
+277 |       await date.waitFor();
+278 |       expect(await date.inputValue()).toBe("2026-10-21");
+                                            ^
+error: expect(received).toBe(expected)
+
+Expected: "2026-10-21"
+Received: "2026-10-22"
+
+      at <anonymous> (/workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx:278:39)
+(fail) Today rolls over at midnight while an explicitly selected other day stays selected [3318.48ms]
+(pass) mixed agenda keeps event editing and a failed save keeps the draft [4133.57ms]
+(pass) signed-out, loading and empty Plan states stay distinct [6035.19ms]
+
+ 12 pass
+ 1 fail
+ 182 expect() calls
+Ran 13 tests across 1 file. [90.46s]
+
+      at execFileSync (node:child_process:271:14)
+      at <anonymous> (/workspace/work/lane2-plan/tests/unit/tempo-plan-views.test.tsx:10:20)
+(fail) Plan mounted and calendar-boundary regressions in a clean process [90562.40ms]
+
+ 0 pass
+ 1 fail
+Ran 1 test across 1 file. [90.92s]

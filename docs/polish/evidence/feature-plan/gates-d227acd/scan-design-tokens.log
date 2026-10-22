@@ -1,0 +1,2 @@
+$ bun scripts/scan-design-tokens.ts
+scan:design-tokens OK — arbitrary hex 4/18, raw hex 2/2 (at or below baseline).

@@ -1,0 +1,31 @@
+194 |         const { html, found } = render(createElement(PlanPage));
+195 |         expect(html).toContain('data-testid="day-timeline"');
+196 |         const h1 = onlyH1(found);
+197 |         expect(h1.name).toBe(translate(language, "nav.plan"));
+198 |         expect(h1.className).toBe("tp-sr-only");
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: "tp-sr-only"
+Received: "tp-pagehead__title"
+
+      at <anonymous> (/workspace/work/lane2-recovery/tests/unit/one-h1.test.tsx:198:30)
+(fail) one h1 per page (en) > /plan names itself once, visually hidden [108.90ms]
+(pass) one h1 per page (en) > /templates/builder (blank form) names itself once, visually hidden [28.81ms]
+(pass) one h1 per page (en) > /templates/builder?from=<template> (copy form) names itself once [10.90ms]
+(pass) one h1 per page (en) > /templates/builder while the template loads names itself once [4.10ms]
+(pass) one h1 per page (en) > /templates/builder not found: one h1, and the error title keeps its look as an h2 [4.24ms]
+193 |       test("/plan names itself once, visually hidden", () => {
+194 |         const { html, found } = render(createElement(PlanPage));
+195 |         expect(html).toContain('data-testid="day-timeline"');
+196 |         const h1 = onlyH1(found);
+197 |         expect(h1.name).toBe(translate(language, "nav.plan"));
+198 |         expect(h1.className).toBe("tp-sr-only");
+                                   ^
+error: expect(received).toBe(expected)
+
+Expected: "tp-sr-only"
+Received: "tp-pagehead__title"
+
+      at <anonymous> (/workspace/work/lane2-recovery/tests/unit/one-h1.test.tsx:198:30)
+(fail) one h1 per page (he) > /plan names itself once, visually hidden [12.31ms]
