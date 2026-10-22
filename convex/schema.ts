@@ -36,6 +36,8 @@ export default defineSchema({
     ),
     isGodTier: v.optional(v.boolean()),
     betaApprovedAt: v.optional(v.number()),
+    /** Pending explicit beta request; consumed by an administrator's decision. */
+    betaRequestedAt: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
@@ -58,6 +60,7 @@ export default defineSchema({
     .index("by_role", ["role"])
     .index("by_userType", ["userType"])
     .index("by_betaAccess", ["betaAccess"])
+    .index("by_deletedAt_betaRequestedAt", ["deletedAt", "betaRequestedAt"])
     .index("by_deletedAt", ["deletedAt"]),
 
   subscriptionStates: defineTable({
@@ -94,6 +97,18 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     deletedAt: v.optional(v.number()),
+    // KB-01 additive library metadata. Absent fields preserve existing rows; no backfill.
+    tags: v.optional(v.array(v.string())),
+    archivedAt: v.optional(v.number()),
+    libraryRevision: v.optional(v.number()),
+    libraryReceipts: v.optional(v.array(v.object({
+      token: v.string(),
+      requestKey: v.string(),
+      appliedRevision: v.number(),
+      undoUntilMs: v.number(),
+      previous: v.object({ tags: v.optional(v.array(v.string())), archivedAt: v.optional(v.number()), deletedAt: v.optional(v.number()) }),
+      result: v.object({ tags: v.optional(v.array(v.string())), archivedAt: v.optional(v.number()), deletedAt: v.optional(v.number()) }),
+    }))),
     // TEMPO-B06-SUPPORT-CHAT-STATE (#807) — host-owned Agent lifecycle metadata.
     // All four are optional, so existing rows stay valid with no backfill. Missing
     // `nextChatSequence` / `chatGenerationEpoch` mean zero to future consumers.
@@ -152,6 +167,17 @@ export default defineSchema({
     conversationId: v.id("conversations"),
     /** The client's key for this start, so a repeated start returns the same lease. */
     clientKey: v.string(),
+    /** Bounded, content-free deferred voice function receipts; absent on existing leases. */
+    agentBridge: v.optional(v.object({
+      version: v.literal(1),
+      capabilityHash: v.optional(v.string()),
+      receipts: v.array(v.object({
+        id: v.string(), parentId: v.optional(v.string()), inputDigest: v.string(),
+        state: v.union(v.literal("pending"), v.literal("running"), v.literal("done"), v.literal("cancelled"), v.literal("failed")),
+        requestId: v.optional(v.string()), userMessageId: v.optional(v.id("messages")),
+        assistantMessageId: v.optional(v.id("messages")),
+      })),
+    })),
     status: v.union(v.literal("active"), v.literal("ended")),
     language: v.union(v.literal("en"), v.literal("he")),
     startedAt: v.number(),
