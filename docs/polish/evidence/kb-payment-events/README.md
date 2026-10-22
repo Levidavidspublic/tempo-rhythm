@@ -79,6 +79,23 @@ Timeout cause is UNKNOWN; resource contention is an unverified hypothesis.
 All nine original test bodies and assertions were also compared byte for byte
 against the pinned parent and are unchanged.
 
+### Controlled actual-checkout diagnostic
+
+On 2026-10-22 root granted one exclusive focused validation slot with other
+heavy work paused. Actual checkout /workspace/work/lane2-features was clean at
+published PR #1295 head 2e3f81966c6d9fc508e3c84def0ae0d61f0cd961.
+
+Command: `/workspace/work/kb/bin/bun test convex/lib/revenuecat_events.test.ts`
+(Bun 1.3.9). Result: **28 pass, 0 fail, 253 assertions, 1.68 seconds, exit 0**.
+All nine original cases and nineteen new cases passed unchanged. Full output:
+focused-actual-checkout-candidate-1.log; numeric exit:
+focused-actual-checkout-candidate-1.exit. No source, assertion or deadline changes.
+This was one controlled rerun under a changed validation condition, not a repair
+candidate. The earlier timeout cause remains UNKNOWN. Checkout remained clean
+afterward; a process inspection found no surviving matching payment-test children.
+The exclusive slot was released. Full typecheck/tests/lint/scans and review remain
+pending; this result establishes only the focused file.
+
 All fixtures are fictional. Test-only ingress bypass occurs inside a fresh Bun
 child process to exercise malformed/unsupported/unmapped rejection through the
 actual handler. Production gate source is never changed. Existing gate tests

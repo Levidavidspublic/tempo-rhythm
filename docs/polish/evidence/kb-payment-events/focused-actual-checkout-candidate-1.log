@@ -1,0 +1,36 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/revenuecat_events.test.ts:
+(pass) mapRevenueCatEventToUserType > maps purchase lifecycle events to paid [0.26ms]
+(pass) mapRevenueCatEventToUserType > maps churn events to free [0.09ms]
+(pass) mapRevenueCatEventToUserType > defaults unknown or missing events to free [0.04ms]
+(pass) parseRevenueCatEvent > normalizes INITIAL_PURCHASE with exact server-owned fields [0.97ms]
+(pass) parseRevenueCatEvent > normalizes RENEWAL with exact server-owned fields [0.03ms]
+(pass) parseRevenueCatEvent > normalizes PRODUCT_CHANGE with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes UNCANCELLATION with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes CANCELLATION with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes EXPIRATION with exact server-owned fields
+(pass) parseRevenueCatEvent > rejects non-object envelopes and missing or non-object event fields [0.19ms]
+(pass) parseRevenueCatEvent > requires bounded nonempty string IDs without padding or control characters [5.77ms]
+(pass) parseRevenueCatEvent > accepts 256-character IDs without changing identity [0.25ms]
+(pass) parseRevenueCatEvent > requires finite nonnegative safe integral millisecond timestamps [0.59ms]
+(pass) parseRevenueCatEvent > accepts zero and safe integer timestamp boundaries without converting seconds [0.47ms]
+(pass) parseRevenueCatEvent > rejects aliases, transfers and unknown kinds without inventing a downgrade [0.62ms]
+(pass) parseRevenueCatEvent > shipping catalog is frozen, empty, and rejects otherwise valid events [0.07ms]
+(pass) parseRevenueCatEvent > rejects unknown products and inherited catalog entries [0.20ms]
+(pass) parseRevenueCatEvent > uses each fictional server mapping rather than claimed tier or entitlements [0.32ms]
+(pass) parseRevenueCatEvent > product changes retain the current product and never grant a deferred product [0.25ms]
+(pass) parseRevenueCatEvent > cancellation preserves expiry and does not infer access revocation [0.07ms]
+(pass) parseRevenueCatEvent > ignores additive provider fields without copying raw payloads [0.22ms]
+(pass) parseRevenueCatEvent > parser rejections cannot reach the legacy updater with test-only ingress bypass [193.90ms]
+(pass) payment webhook stays off > missing or empty configuration keeps the existing 503 response [287.96ms]
+(pass) payment webhook stays off > missing or wrong authorization keeps the existing 401 response [305.23ms]
+(pass) payment webhook stays off > authenticated processing-off requests explicitly return disabled [116.07ms]
+(pass) payment webhook stays off > disabled malformed and throwing request bodies are never read [293.60ms]
+(pass) payment webhook stays off > client query, body, headers and environment flags cannot enable processing [110.41ms]
+(pass) payment webhook stays off > the actual registered action stays off without writes, provider calls or payload logs [246.16ms]
+
+ 28 pass
+ 0 fail
+ 253 expect() calls
+Ran 28 tests across 1 file. [1.68s]
