@@ -31,6 +31,34 @@ Architecture labels; shared-harness retry exception; verified model settings; su
 Full checkout gates for prepared drafts; current-head CodeRabbit clearance where pending; actual preview behavior; primary Hebrew crisis source verification; Deepgram callback anchor retention and live voice conformance; model availability/configuration; search-service availability/cost cap. Local execution recovered from the earlier stall; its cause is not established.
 
 
+## WALK — Published prerequisite and feature map, 22 October 2026
+
+| Lane | Issue | PR | Dependency / remaining gate |
+| --- | --- | --- | --- |
+| 1 | #1212 KB-01 | #1262 | KA prerequisites, #1280 compatibility, owner architecture label |
+| 1 | #1213 KB-16 | #1282 | #1267 gateway, #1271 setting, #1264 controls, owner label |
+| 1 | #1214 KB-31 | #1269 | #1262, owner label |
+| 1 | #1274 lifecycle compatibility | #1280 | Actual review and local mandatory gates |
+| 2 | #1251 voice comparison | #1256 | Actual review and applicable validation |
+| 2 | #1252 Hebrew matcher | #1261 | Candidate 2 pushed; current review, clinical activation hold |
+| 2 | #1255 router | #1260 | Valid review findings; attempt exception |
+| 2 | #1257 controlled research | #1264 | Router dependency; app CI green, stacked scope blocked |
+| 2 | #1258 composer | #1279 | #1264; 13 mounted browser cases running |
+| 2 | #1259 search gateway | #1267 | Synthetic fixture scan failure; attempt exception |
+| 2 | #1263 account policy | #1268 | Coordinated beta rollout and checks |
+| 2 | #1265 Executor UI | #1277 | Browser/full checks, actual provider availability UNKNOWN |
+| 2 | #1266 beta approval data | #1273 | KB-01 schema and account policy parents |
+| 2 | #1270 gateway setting | #1271 | Gateway parent |
+| 2 | #1272 beta request UI | #1283 | #1273 and #1277 translation parent; browser pending |
+| 2 | #1275 admin beta queue | #1284 | #1273; 21 focused cases pass |
+| 2 | #1278 voice bridge | Not opened yet | Candidate 3 safety corrections; strict graph candidate 2 passes |
+| 2 | #1281 trial copy | #1285 | #1220 pricing and #1284 translations; 7 focused cases pass |
+| 2 | #1253 live voice transport | Not opened yet | #1278, #1279, #1260, OFF flag; provider conformance UNKNOWN |
+| 2 | #1286 smoke caller | Not opened yet | Scoped preparation on router; cannot clear router's own blocked repair |
+| 2 | #1287 voice OFF declaration | Not opened yet | #1271 template; no activation |
+
+New issues #1286 and #1287 raise Lane 2 open issues to 23; Lane 1 remains 56. Current PR totals remain Lane 1 11 merged / 26 open, Lane 2 0 merged / 19 open. #1276 is an unrelated capability-test draft and is excluded and untouched.
+
 ## Historical checkpoints (superseded where noted)
 
 
