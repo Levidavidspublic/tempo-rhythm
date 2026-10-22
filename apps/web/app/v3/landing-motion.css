@@ -1,0 +1,18 @@
+/* The hero settles into its existing layout once; reduced motion starts there. */
+@media (prefers-reduced-motion: no-preference) {
+  .tempo-hero__copy,
+  .tempo-hero__examples {
+    animation: tempo-hero-enter var(--tp-dur-slow) var(--tp-ease-out) both;
+  }
+}
+
+@keyframes tempo-hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--tp-space-2));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
