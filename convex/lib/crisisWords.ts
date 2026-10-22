@@ -29,12 +29,62 @@ function normalise(text: string): string {
   return text.toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
 }
 
-export function isCrisisText(text: string): boolean {
+/**
+ * Machine-drafted candidates, NOT a clinically reviewed lexicon. No production caller
+ * enables these. See docs/research/hebrew-crisis-phrases.md for source-access limits,
+ * false positives/negatives and the owner review required before live activation.
+ */
+export const HEBREW_CRISIS_CANDIDATES: readonly string[] = [
+  "רוצה למות",
+  "רוצים למות",
+  "רוצות למות",
+  "רוצה להתאבד",
+  "רוצים להתאבד",
+  "רוצות להתאבד",
+  "חושב על התאבדות",
+  "חושבת על התאבדות",
+  "חושבים על התאבדות",
+  "חושבות על התאבדות",
+  "מתכוון להתאבד",
+  "מתכוונת להתאבד",
+  "מתכוונים להתאבד",
+  "מתכוונות להתאבד",
+  "להרוג את עצמי",
+  "לפגוע בעצמי",
+  "לחתוך את עצמי",
+  "אין לי סיבה לחיות",
+  "לא רוצה לחיות",
+  "לא רוצים לחיות",
+  "לא רוצות לחיות",
+  "לשים קץ לחיי",
+];
+
+export type CrisisTextOptions = {
+  /** OFF unless a reviewed caller explicitly opts in; this is not a public endpoint flag. */
+  hebrewEnabled?: boolean;
+};
+
+function normaliseHebrew(text: string): string {
+  return text
+    .normalize("NFKD")
+    // Hebrew accents/vowel points, excluding punctuation such as the maqaf separator.
+    .replace(/[\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7]/g, "")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+export function isCrisisText(text: string, options: CrisisTextOptions = {}): boolean {
   const t = normalise(text);
   if (!t) {
     return false;
   }
-  return CRISIS_PHRASES.some((phrase) => t.includes(phrase));
+  if (CRISIS_PHRASES.some((phrase) => t.includes(phrase))) return true;
+  if (options.hebrewEnabled !== true) return false;
+  // Whole tokens avoid matching a candidate inside a longer unrelated word. This
+  // intentionally makes no claim to resolve negation, quoted speech or other context.
+  const hebrew = ` ${normaliseHebrew(text)} `;
+  return HEBREW_CRISIS_CANDIDATES.some((phrase) => hebrew.includes(` ${phrase} `));
 }
 
 export type CrisisCard = {
