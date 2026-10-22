@@ -1,5 +1,17 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Current validation and dependency audit, 2026-10-22 12:58 UTC
+
+No new merge. Fresh GitHub census confirms Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues, 65 PRs; NEEDS-AMIT retains 16 ordered actions. Integration remains 7d1a0f6.
+
+- **Parser #1302 / #1301**, unchanged candidate 1 at 1acc05a: actual CodeRabbit coverage is clear and hosted full tests pass 3498/0/3 todo. Separate mandatory local tests finished **3489 pass / 10 fail / 3 todo / 1 error**, 81,608 assertions, 3502 tests across 211 files, 2097.75s. The targeted closing-tag case passes, but backslash and tab performance limits fail; page cleanup, history normalization and fixture failures also remain. The earlier 303 scoped passes do not erase these failures. Install, lint, typecheck and all four scans pass; exact E2E is running, with build next. No merge, rerun or source correction has followed these results.
+- **Planning #1140** incorporated integration through ordinary history-preserving merge 8656f81. All 77 changed paths remain under docs/kitchen/kb/. Hosted CI/guards passed on that head; actual current CodeRabbit review remains outstanding. Cheap documentation checks pass all 59 actual front-matter comparisons, dependency/scope rules, 71 retained KA overlap mappings and all 262 current inventory paths. The refreshed PR body retains historical application failure receipts and distinguishes them from current documentation checks. This register update will require its own current hosted checks and review.
+- **Written KB queue:** all 59 entries have filed issues. All 31 tickets without implementation PRs have explicit unmet WHEN conditions: nine SearchAnswer tickets wait on KA #1126; eleven web Library tickets wait on KB-01/KA #1104 and serial descendants; five composer tickets wait on KB-16 and listed KA work; Discover waits on KB-03/KB-16; five native Library tickets wait on KB-01/KA #1107/#1122. Architecture preparation exceptions are already represented by #1262/#1282/#1269. This is not a blanket restriction on independent Lane 2 work; that feature-gap audit continues.
+- **Remaining independent validation:** voice research #1256 at 45e55f7 is prepared for its first mandatory sequence; Executor #1277 at 13752d9 has a prepared, unrun real-page fictional browser fixture and still needs full validation and actual review. Both wait for the parser's exclusive heavy slot. Hero #1210's completed report preserves an incomplete full suite and eight global E2E failures despite all eight own browser cases passing.
+- **Done:** exact failure reporting, planning base refresh, documentation validation and written-ticket dependency audit. **Needs Amit:** existing 16 ordered actions, unchanged; dated approvals remain applied. **UNKNOWN:** remaining local/hosted results and reviews, precise failure causes, actual preview/provider/device behavior and complete feature readiness. Exactly four worktrees; no protected #1193/#1198 edits, default direct push, production change, manual deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Parser scoped validation and hosted CI pass, 2026-10-22 12:16 UTC
 
 No new merge. Counts remain Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**; Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. NEEDS-AMIT has 16 current ordered actions.
