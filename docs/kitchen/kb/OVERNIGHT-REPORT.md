@@ -1,5 +1,21 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Current validation checkpoint, 22 October 2026, 08:40 UTC
+
+Counts unchanged: Lane1 issues6closed/56open, PRs11merged/26open; Lane2 issues0closed/23open, PRs0merged/22open. **No new merge**. Current NEEDS-AMIT list has12 actions; historical entries are not counted.
+
+- Composer#1279 finalcandidate3 `e4126e8` is pushed and frozen: unchanged five-second bound timed out;0pass/13fail/1error after browser closure. Eight separate before/after captures do not prove behavior acceptance.
+- Beta request#1283 finalcandidate3 `dedeb70` restores established page email IDs, semantic status outputs and honest hand-approval copy. Existing14approval cases and scopedlint pass. Both mounted attempts failed before application assertions at navigation;16before/11after captures exist, after capture hit its120-second bound. Complete timing cause remains UNKNOWN. No deadline increase.
+- Voice bridge#1289 has hosted typecheck/build passing; full test3770pass/1fail is the inherited schema assertion addressed by#1280. Its own secret scan flags two verified synthetic idempotency fixture strings; three candidates consumed, no fourth patch/history waiver. Inherited gateway scan failure is separate.
+- Voice transport#1253 candidate2 has26pure mock tests passing and strict actual API/typegraph0diagnostics across543files. Its bounded synthetic mounted run is underway; actual provider conformance remains UNKNOWN and activation OFF.
+- Research#1256 finalcandidate3 `45e55f7` cites two pinned official DeepInfra guides establishing the public GLM5.3 serving identifier. Price rates/Flash/Tempo account compatibility/session cost remain UNKNOWN. Runtime model identifiers still come from settings.
+- Queue#1284 has a real global copy-guard failure under repair within its last candidate. Pricing#1285 inherits that copy issue and needs its existing public-entry approval notice restored; sequential source ownership is enforced.
+- #1280 is hosted-green and actual CodeRabbit-clear, mergeable. Its actual checkout is allocated for the next mandatory local sequence after the short voice window. Plan and hero full checks remain unrun; their earlier focused results are not generalized.
+
+### Done / Needs Amit / UNKNOWN
+
+Prepared changes, scoped fixes, reports and failed receipts are pushed. No release, actual environment changes, paid provider calls or protected-PR edits occurred. Twelve ordered owner actions are in NEEDS-AMIT.md. All listed failure/review/dependency gates still apply; no claim that all KB work or preview features are complete.
+
 ## WALK — Validation and source audit, 22 October 2026, 08:22 UTC
 
 No new merge. Current tracked counts: Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**; Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 22 open**. Ten current owner actions; historical ledgers are not additional pending questions.
