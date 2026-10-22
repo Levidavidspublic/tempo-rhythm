@@ -43,6 +43,7 @@ const DEFAULT_DEADLINE_MS = 30_000;
 const MAX_DEADLINE_MS = 600_000;
 const RETRY_DELAY_MS = 500;
 
+/** Read and validate a deployment's model identifier without supplying a fallback. */
 function configuredModel(name: "TEMPO_AI_MODEL" | "TEMPO_AI_THINK_HARD_MODEL"): string {
   const value = process.env[name]?.trim();
   // A model identifier is data, not a URL, header, prompt or arbitrary configuration object.
@@ -52,6 +53,7 @@ function configuredModel(name: "TEMPO_AI_MODEL" | "TEMPO_AI_THINK_HARD_MODEL"): 
   return value;
 }
 
+/** Resolve the configured mode; think-hard requires a separate identifier from the default. */
 export function resolveAiModel(mode: "default" | "think_hard" = "default"): string {
   const normal = configuredModel("TEMPO_AI_MODEL");
   if (mode === "default") return normal;
@@ -63,6 +65,7 @@ export function resolveAiModel(mode: "default" | "think_hard" = "default"): stri
   return thinking;
 }
 
+/** Think-hard uses high effort; other calls use explicit effort or the latest user message length. */
 function reasoningFor(opts: AiCallOptions): "medium" | "high" {
   if (opts.reasoning !== undefined && opts.reasoning !== "medium" && opts.reasoning !== "high") {
     throw new AiConfigurationError("Unsupported reasoning effort");
@@ -81,7 +84,10 @@ function reasoningFor(opts: AiCallOptions): "medium" | "high" {
   return latest.length >= 8_000 ? "high" : "medium";
 }
 
-/** One timer/controller covers fetch headers, response consumption and the one retry. */
+/**
+ * Share one cancellable budget across fetch, body reads and retry: 30 seconds by default,
+ * ten minutes for think-hard, shortened by any earlier caller deadline.
+ */
 function callBudget(opts: AiCallOptions) {
   if (opts.deadlineAtMs !== undefined && !Number.isFinite(opts.deadlineAtMs)) {
     throw new AiConfigurationError("The model request deadline must be finite");
@@ -90,23 +96,28 @@ function callBudget(opts: AiCallOptions) {
   const duration = opts.mode === "think_hard" ? MAX_DEADLINE_MS : DEFAULT_DEADLINE_MS;
   const deadline = Math.min(Date.now() + duration, opts.deadlineAtMs ?? Number.POSITIVE_INFINITY);
   let failure: AiCancelledError | AiUpstreamError | undefined;
+  /** Preserve the first cancellation or timeout reason while aborting the provider transport. */
   const abort = (error: AiCancelledError | AiUpstreamError) => {
     if (controller.signal.aborted) return;
     failure = error;
     controller.abort();
   };
+  /** Translate the caller's signal into the router's cancellation error. */
   const cancelled = () => abort(new AiCancelledError("The model request was cancelled"));
   opts.signal?.addEventListener("abort", cancelled, { once: true });
   if (opts.signal?.aborted) cancelled();
+  /** Mark the shared deadline as exhausted without including provider response text. */
   const timeout = () => abort(new AiUpstreamError("The model request timed out", 0, ""));
   const remaining = deadline - Date.now();
   const timer = remaining > 0 ? setTimeout(timeout, remaining) : undefined;
   if (remaining <= 0) timeout();
 
+  /** Refuse expired or cancelled work even if a timer or transport callback arrived late. */
   const check = () => {
     if (!controller.signal.aborted && Date.now() >= deadline) timeout();
     if (failure) throw failure;
   };
+  /** Bound one asynchronous operation and reject late results after cancellation or expiry. */
   async function run<T>(work: () => Promise<T>): Promise<T> {
     check();
     // Racing the abort also bounds a body/mock transport that does not honor AbortSignal.
@@ -129,6 +140,7 @@ function callBudget(opts: AiCallOptions) {
     signal: controller.signal,
     check,
     run,
+    /** Wait 500 ms before the sole retry, consuming the same deadline and cancellation budget. */
     async backoff() {
       let retryTimer: ReturnType<typeof setTimeout> | undefined;
       try {
@@ -137,6 +149,7 @@ function callBudget(opts: AiCallOptions) {
         if (retryTimer !== undefined) clearTimeout(retryTimer);
       }
     },
+    /** Release the deadline timer and caller listener after success or final failure. */
     close() {
       if (timer !== undefined) clearTimeout(timer);
       opts.signal?.removeEventListener("abort", cancelled);
@@ -146,11 +159,14 @@ function callBudget(opts: AiCallOptions) {
 
 const CONTEXT_TOO_LARGE_PHRASES = ["context_length_exceeded", "too long", "maximum context length"];
 
+/** Recognize known context-limit phrases in an HTTP 400 body without retaining that body. */
 function isContextTooLarge(body: string): boolean {
   return CONTEXT_TOO_LARGE_PHRASES.some((phrase) => body.toLowerCase().includes(phrase));
 }
 
+/** Validate nonempty reply text and nonnegative integer usage before returning the chosen model. */
 function responseResult(json: unknown, opts: AiCallOptions, model: string): AiResult {
+  /** Produce one safe validation error rather than echoing malformed provider content. */
   const invalid = () => new AiUpstreamError("The model returned an invalid response", 200, "");
   if (!json || typeof json !== "object") throw invalid();
   const body = json as { choices?: { message?: { content?: unknown } }[]; usage?: unknown };
@@ -161,6 +177,7 @@ function responseResult(json: unknown, opts: AiCallOptions, model: string): AiRe
     throw invalid();
   }
   const usage = (body.usage ?? {}) as Record<string, unknown>;
+  /** Missing usage counts mean zero; malformed or negative counts invalidate the response. */
   const count = (name: string) => {
     const value = usage[name];
     if (value === undefined) return 0;
@@ -181,6 +198,7 @@ function responseResult(json: unknown, opts: AiCallOptions, model: string): AiRe
   };
 }
 
+/** Make one provider attempt within the shared budget and classify failures without raw bodies. */
 async function attemptCall(
   opts: AiCallOptions,
   apiKey: string,
@@ -231,6 +249,11 @@ async function attemptCall(
   return responseResult(json, opts, model);
 }
 
+/**
+ * Call the configured text model, retrying at most once for rate limits or transient failures.
+ * The model and reasoning choice stay fixed across retries; cancellation and the total deadline
+ * cover every attempt and body read. Missing settings fail before any provider request.
+ */
 export async function callLLM(opts: AiCallOptions): Promise<AiResult> {
   if (opts.signal?.aborted) throw new AiCancelledError("The model request was cancelled");
   const apiKey = process.env.DEEPINFRA_API_KEY;

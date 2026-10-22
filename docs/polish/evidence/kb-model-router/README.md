@@ -1,6 +1,6 @@
 # Model router — preparation receipt
 
-WALK — Candidate 2 is prepared against integration `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac` for issue #1255. This scratch preparation is not a deployed configuration or a passing repository validation claim. Candidate 1 passed all 38 runtime tests but the additional strict scoped TypeScript check found test mock typing errors (inherited fetch.preconnect omissions and new timer-hook parameter overloads). Candidate 2 corrects only test typing; implementation and all assertions/deadlines are unchanged. Both candidates' logs are preserved.
+WALK — Candidate 3 adds documentation to the reviewed candidate 2 for issue #1255 / PR #1260. The original integration base is `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`. This scratch preparation is not a deployed configuration or a passing repository validation claim. Candidate 1 passed all 38 runtime tests but the additional strict scoped TypeScript check found test mock typing errors (inherited fetch.preconnect omissions and new timer-hook parameter overloads). Candidate 2 corrected only test typing. Candidate 3 changes only JSDoc in ai_router.ts and ai_errors.ts; runtime code, tests and configuration are unchanged. All candidates' logs are preserved.
 
 The router now requires configured model identifiers, uses medium reasoning by default (high for substantial newest user input or an explicit caller), and requires a distinct configured model for high-reasoning think-hard requests. One total abort budget covers request headers, response bodies and the one transient retry/backoff: thirty seconds normally, at most ten minutes for think-hard, shortened by an earlier caller deadline. Explicit cancellation has its own typed error and is never retried. Invalid provider responses fail with typed generic errors; provider bodies, transport details and abort reasons are not exposed.
 
@@ -45,3 +45,14 @@ The scoped TypeScript invocation used the repository-installed TypeScript throug
 | `.env.example` | `ba46f1a95b7e138b97fe7d0182d4694fb8c2b8630fbef66ab74b30481340fa19` |
 
 Machine-readable manifest: `source-hashes.json`. Mandatory repository commands and actual review remain required before merging.
+
+## Candidate 3 — CodeRabbit documentation follow-up
+
+CodeRabbit's review of `d4f0271ba745601853a5947fdfeb21b7fa04049f` reported no actionable merge-blocking issue, but warned that touched-function docstring coverage was 10% against an 80% threshold. This pass documents the scoped model resolution, reasoning selection, shared deadline, retry, response validation and error classification boundaries. It does not change the review configuration or claim a measured new CodeRabbit coverage percentage.
+
+- Existing `bun test convex/lib/ai_router.test.ts`: **38 pass, 0 fail, 116 assertions, 3.09 s**, exit 0 (`focused-candidate-3.log`).
+- TypeScript emits identical runtime JavaScript before and after for both source files with comments and empty lines removed (`comment-only-candidate-3.log`). Test and configuration hashes are unchanged.
+- Auxiliary verification initially used a nonexistent root TypeScript symlink, then a raw lexer that cannot handle context-sensitive template tokens correctly. Neither attempt reached tests or prompted a source change; the final verification uses the installed TypeScript parser/emitter. These are verification-tool corrections, not additional source candidates.
+- No new tests, runtime behavior, settings, provider call, schema or configuration change. Full mandatory repository checks and review of the final commit remain the coordinator's gates.
+
+`source-hashes.json` now identifies candidate 3. Candidate 2 hashes above remain historical evidence. The two `*.candidate2.ts` backup files at the scratch root are local comparison artifacts and must not be published.
