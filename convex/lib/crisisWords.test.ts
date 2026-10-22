@@ -67,6 +67,15 @@ describe("Hebrew crisis candidates, clinically unreviewed and OFF by default", (
 		expect(isCrisisText("אני ר\uFB35צה למ\uFB35ת", { hebrewEnabled: true })).toBe(true);
 	});
 
+	test("zero-width spaces preserve word boundaries only when Hebrew is enabled", () => {
+		const text = "רוצה\u200Bלמות";
+		expect(isCrisisText(text, { hebrewEnabled: true })).toBe(true);
+		expect(isCrisisText("רוצה\u200B\u200Bלמות", { hebrewEnabled: true })).toBe(true);
+		expect(isCrisisText("רוצה\u200Bלמותם", { hebrewEnabled: true })).toBe(false);
+		expect(isCrisisText(text)).toBe(false);
+		expect(isCrisisText(text, { hebrewEnabled: false })).toBe(false);
+	});
+
 	test("whole-token matching does not match a candidate inside another word", () => {
 		expect(isCrisisText("רוצה למותם", { hebrewEnabled: true })).toBe(false);
 		expect(isCrisisText("לפגוע בעצמיות", { hebrewEnabled: true })).toBe(false);

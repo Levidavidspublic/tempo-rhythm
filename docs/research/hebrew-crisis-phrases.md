@@ -48,7 +48,7 @@ Standalone broad words such as `התאבדות` are not added: an educational di
 
 The existing `isCrisisText(text)` English path is unchanged. The optional second argument `{ hebrewEnabled: true }` enables candidate matching only inside that call. Omitted options, an empty object, explicit `false` and non-boolean truthy values do not activate it. There is no new public endpoint parameter, environment setting, persisted flag or production caller change in this ticket.
 
-For the opt-in Hebrew path only, matching applies compatibility decomposition, removes Hebrew niqqud/cantillation and formatting controls, turns punctuation/whitespace into token separators, and checks whole-token candidate sequences. This covers pointed text, maqaf, repeated whitespace, directional marks and Hebrew presentation forms. It avoids matching `רוצה למות` inside `רוצה למותם` or `לפגוע בעצמי` inside `לפגוע בעצמיות`.
+For the opt-in Hebrew path only, matching applies compatibility decomposition, removes Hebrew niqqud/cantillation, preserves U+200B ZERO WIDTH SPACE as a word separator before removing other formatting controls, turns punctuation/whitespace into token separators, and checks whole-token candidate sequences. This covers pointed text, maqaf, repeated whitespace, directional marks and Hebrew presentation forms. It avoids matching `רוצה למות` inside `רוצה למותם` or `לפגוע בעצמי` inside `לפגוע בעצמיות`.
 
 This is lexical matching, not an assessment of intent or risk. In particular:
 
@@ -67,7 +67,22 @@ After that review, a separate scoped activation must wire the approved flag thro
 
 ## Validation status
 
-WALK — Isolated Bun 1.3.9 test run: **17 pass, 0 fail, 163 assertions**, including all six existing cases and eleven new cases. The new cases cover default-OFF behavior for every candidate, explicit opt-in, gender/plural forms, niqqud/cantillation, punctuation/maqaf/spacing, directional/presentation forms, token boundaries, ordinary text, existing English compatibility, known lexical limitations and strict boolean opt-in. Fictional phrase fragments only.
+WALK — Candidate 1 isolated Bun 1.3.9 test run: **17 pass, 0 fail, 163 assertions**, including all six existing cases and eleven new cases. Those new cases cover default-OFF behavior for every candidate, explicit opt-in, gender/plural forms, niqqud/cantillation, punctuation/maqaf/spacing, directional/presentation forms, token boundaries, ordinary text, existing English compatibility, known lexical limitations and strict boolean opt-in. Fictional phrase fragments only.
+
+WALK — Candidate 2, 22 October 2026: addressed the verified CodeRabbit finding on PR #1261 at commit `eb10800918de9962d88a486140bc7fedb9a52d3b`. Removing all format characters previously joined words separated by U+200B. The Hebrew-only normalization now converts that character to a space before the remaining format controls are removed. One added regression covers a single separator, repeated separators, longer-word non-matching, omitted options and explicit disabled options. All previous 17 cases remain unchanged. Attempt ledger: one initial implementation candidate, then this first review-fix candidate; two candidates total, no fourth attempt.
+
+### Test results (cloud agent sandbox)
+
+Command: `bun --no-env-file test convex/lib/crisisWords.test.ts`, Bun 1.3.9. Exit 0; focused test output summary:
+
+```text
+ 18 pass
+ 0 fail
+ 168 expect() calls
+Ran 18 tests across 1 file. [168.00ms]
+```
+
+Scoped whitespace inspection produced no diagnostics. No browser, full dependency graph, full repository check or provider call was run for this correction; those gates remain allocated to the coordinator. No primary-source research claim changed.
 
 The prepared source, test and this document are the only ticket changes. Schema, routes, production callers, environment values and voice policy are unchanged. Mandatory repository lint/typecheck/full tests/scans/Playwright/build and current hosted CI/CodeRabbit/guards still require the coordinator's available checkout and validation slot. The isolated test is not a whole-product or live-voice acceptance claim.
 

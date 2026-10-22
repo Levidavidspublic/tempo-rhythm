@@ -69,6 +69,8 @@ function normaliseHebrew(text: string): string {
     .normalize("NFKD")
     // Hebrew accents/vowel points, excluding punctuation such as the maqaf separator.
     .replace(/[\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7]/g, "")
+    // Preserve zero-width word separators before removing other formatting controls.
+    .replace(/\u200B/g, " ")
     .replace(/\p{Cf}/gu, "")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
