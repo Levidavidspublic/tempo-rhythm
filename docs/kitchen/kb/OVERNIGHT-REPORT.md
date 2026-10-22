@@ -1,5 +1,18 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Validation and source audit, 22 October 2026, 08:22 UTC
+
+No new merge. Current tracked counts: Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**; Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 22 open**. Ten current owner actions; historical ledgers are not additional pending questions.
+
+- Page-save #1250 mandatory sequence is complete and published at `6f7cd38`: install/lint/typecheck/scans/build pass; full tests and E2E fail as recorded. All32 own cases pass; no source/test change in the evidence commit.
+- New drafts: #1288 smoke caller compatibility (8 focused passes), #1289 durable voice bridge (152 focused passes; final full/typecheck pending), #1290 blank OFF flag declaration (exact diff verified). Live audio/HTTP #1253 remains in preparation.
+- Composer #1279 mounted run:3 pass then one5-second case timeout, followed by browser-close cascade; final3pass/10fail/1error. A diagnostic reproduced correct thread-switch behavior with no application console errors in4,871ms after page creation, close to the unchanged bound. No deadline increase or unchanged rerun; fixture performance is under investigation. EN/HE390/1280 before/after captures exist but do not erase the failed suite.
+- Lane1 next-work audit: no unstarted written ticket is currently ready. KB-11/#1215 needs open KA-43/#1126 and missing SearchAnswer mount. Library#1218 still needs same-file KA#1104. Mobile#1242 needs open #1107/#1122 and absent CoachChats mount. Other descendants inherit held search/architecture/harness roots.
+- Existing integration already mounts and persists coaching intensity0–10 and passes it into coach prompts. No duplicate slider is needed; preview verification remains UNKNOWN.
+- Structured UI is partial: mounted proposal cards use the existing OpenUI renderer; decision steps use pinned json-render. General answers remain text and shared page-block rendering is absent, with KA#1128 still open. No named Open WebUI rendering skill was found. This does not establish general feature parity.
+- #1256 actual review asks for sourced licensing/hosting columns; scoped documentation correction is underway. #1261 word-boundary correction is pushed at7d2a577; current review and clinical activation gates remain.
+
+
 ## WALK — Current checkpoint, 22 October 2026, 08:09 UTC
 
 No new merge in this continuation. Integration remains `7d1a0f6`. Prepared code is not a claim of preview readiness.
