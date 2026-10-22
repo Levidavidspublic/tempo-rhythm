@@ -649,11 +649,14 @@ function createProseState(): ProseState {
 
 /** Expands tabs to 4-column stops, so tab-indented container content lines up as CommonMark reads it. */
 function detab(line: string): string {
-  let out = "";
-  for (const char of line) {
-    out += char === "\t" ? " ".repeat(4 - (out.length % 4)) : char;
-  }
-  return out;
+  let expansion = 0;
+  return line.replace(/\t+/g, (tabs: string, at: number) => {
+    // Match offsets and the former out.length both count UTF-16 units. After the first tab
+    // reaches its next stop, every remaining tab in this run contributes four spaces.
+    const width = 4 - ((at + expansion) % 4) + 4 * (tabs.length - 1);
+    expansion += width - tabs.length;
+    return " ".repeat(width);
+  });
 }
 
 /** How many of the open containers continue on this line, and the line without their prefixes. */
@@ -1404,7 +1407,14 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   if (definition === "follow") return "";
   if (THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
   if (FENCE_SYNTAX.test(line.replace(ALL_FORMAT, ""))) return "";
-  if (text === "" || TABLE_RULE.test(text) || looksLikeJson(line) || looksLikeJson(text)) return "";
+  if (
+    text === "" ||
+    TABLE_RULE.test(text) ||
+    looksLikeJson(line) ||
+    (text !== line && looksLikeJson(text))
+  ) {
+    return "";
+  }
 
   const plain = collapse(stripMarkdownInline(withoutLinks));
   return plain === "" || isUnsafe(plain) ? "" : plain;

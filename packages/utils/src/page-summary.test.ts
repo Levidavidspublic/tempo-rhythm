@@ -1165,6 +1165,68 @@ describe("repeated lines preserve parser transitions", () => {
   });
 });
 
+describe("tab expansion and JSON classification preserve projection", () => {
+  test("tab runs align list and nested quote fences with their continuation columns", () => {
+    const bodies = [
+      `-\t${TICKS}js\n\tPRIVATE\n\t${TICKS}\nAfter`,
+      `>\t-\t${TICKS}js\n>\t\tPRIVATE\n>\t\t${TICKS}\n\nAfter`,
+    ];
+    for (const body of bodies) {
+      expect(project(body).searchText).toBe("After");
+    }
+  });
+
+  test("a tab run on a blank quote line still ends its paragraph before a fence", () => {
+    const body = `> before\n>\t\t\n>\t${TICKS}js\n>\tPRIVATE\n>\t${TICKS}\n\nAfter`;
+    expect(project(body).searchText).toBe("before After");
+  });
+
+  test("mixed tab runs preserve Unicode and match their explicit UTF-16 space columns", () => {
+    const cases = [
+      ["A\t🇮🇱\t\tשלום\tZ", "A   🇮🇱        שלום    Z", "A 🇮🇱 שלום Z"],
+      [`${HIGH}\tב\t\t${LOW}ג`, `${HIGH}   ב       ${LOW}ג`, "ב ג"],
+      ["ab\tc\u{0000}\tZ", "ab  c\u{0000}  Z", "ab c Z"],
+      ["א\u{2028}\tב", "א\u{2028}  ב", "א ב"],
+    ] as const;
+    for (const [body, expanded, text] of cases) {
+      const result = project(body);
+      expect(result).toEqual(project(expanded));
+      expect(result.searchText).toBe(text);
+    }
+  });
+
+  test("unchanged JSON-looking text remains hidden after retained format marks are removed", () => {
+    for (const line of [
+      '\u{200D}{"secret":"PRIVATE"}',
+      '["PRIVATE"]\u{200C}',
+      '"\u{200D}key": 1,',
+    ]) {
+      expect(project(`Before\n\n${line}\n\nAfter`).searchText).toBe("Before After");
+    }
+  });
+
+  test("JSON revealed by tabbed headings and checkboxes still receives its separate check", () => {
+    for (const line of [
+      '#\t{"secret":"PRIVATE"}',
+      '##\t\u{200D}["PRIVATE"]',
+      '- [x]\t{"secret":"PRIVATE"}',
+    ]) {
+      expect(project(`Before\n\n${line}\n\nAfter`).searchText).toBe("Before After");
+    }
+  });
+
+  test("non-JSON quoted prose and unfinished backslash runs remain visible", () => {
+    const lines = [
+      '"'.concat("\\".repeat(9), "still open"),
+      '"ordinary" trailing words',
+      'שָׁלוֹם "quoted" trailing',
+    ];
+    for (const line of lines) {
+      expect(project(line).searchText).toBe(line);
+    }
+  });
+});
+
 describe("pathological bodies stay linear", () => {
   const size = 1_000_000;
   /**
