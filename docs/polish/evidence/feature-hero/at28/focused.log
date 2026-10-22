@@ -1,0 +1,30 @@
+[WebServer] $ next dev --turbopack
+
+[WebServer] (node:266881) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:266893) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:266940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:266956) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 8 tests using 1 worker
+
+(node:267012) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en no-preference
+[2/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 en reduce
+[3/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he no-preference
+[4/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 390 he reduce
+[5/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en no-preference
+[6/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 en reduce
+[7/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he no-preference
+[8/8] [chromium] › tests/e2e/landing-motion.spec.ts:6:11 › landing hero 1280 he reduce
+  8 passed (2.6m)
