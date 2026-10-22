@@ -1,0 +1,14 @@
+{
+  "ticket": 1293,
+  "candidate": 3,
+  "branch": "t/1293-onboarding-goal",
+  "base": "a49aecff60ee53ead608bf56b0a2b1a7f6bd058b",
+  "files": {
+    "apps/web/components/onboarding/OnboardingFlow.tsx": "c8490fc95cbee0d5fcd2890dfa410c575fc5ee91912461825dd6c2f7dc788398",
+    "apps/web/components/onboarding/OnboardingGoal.tsx": "97fa48eff53dff3424ed4415df9bab13093c02f6747cacbd2de9e96bbfe90d0f",
+    "apps/web/lib/i18n-groups/onboarding-goal.ts": "91625096a9252fbbb006af38b13132cfcbfde4d66a1ce984d1659901f01b344b",
+    "tests/unit/tempo-onboarding-goal.test.tsx": "aa08cd1b64fda83465a6091483230a2d5a3c4d4b110df8aaf3612c9cb1b2add9"
+  },
+  "schema": "NONE",
+  "environment": "NONE"
+}

@@ -1,0 +1,22 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/releaseOnboardingGate.test.tsx:
+(pass) ApprovalGate > does not mount protected children while approval is loading [43.68ms]
+(pass) ApprovalGate > mounts children only after a delayed approval [9.57ms]
+(pass) ApprovalGate > delayed pending shows the waiting screen and never mounts children [138.65ms]
+(pass) ApprovalGate > delayed revoked shows the waiting screen and never mounts children [16.47ms]
+(pass) ApprovalGate > loading shows a labelled placeholder, not an empty page [5.37ms]
+(pass) ApprovalGate > pending says what happens next: hand approval, no email, the page opens by itself [16.11ms]
+(pass) ApprovalGate > revoked shows the paused notice without the next steps [12.41ms]
+(pass) ApprovalGate > signed-out (null) still passes children through [7.42ms]
+(pass) OnboardingFlow skip paths > brain-dump Skip keeps the trimmed entered name [141.32ms]
+(pass) OnboardingFlow skip paths > brain-dump Skip with an empty name sends no name [112.25ms]
+(pass) OnboardingFlow skip paths > brain-dump Skip with a whitespace-only name sends no name [290.47ms]
+(pass) OnboardingFlow skip paths > name-step Skip still finishes without a name [24.33ms]
+(pass) OnboardingFlow skip paths > a failed finish stays on the step and retry keeps the name [141.00ms]
+(pass) OnboardingFlow skip paths > does not double-submit while a save is in flight [95.48ms]
+
+ 14 pass
+ 0 fail
+ 46 expect() calls
+Ran 14 tests across 1 file. [2.19s]

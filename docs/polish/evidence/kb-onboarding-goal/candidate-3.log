@@ -1,0 +1,22 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-onboarding-goal.test.tsx:
+(pass) optional onboarding goal > mount and blank or whitespace title never create a goal [698.52ms]
+(pass) optional onboarding goal > explicit Add goal submits only trimmed title and description [127.79ms]
+(pass) optional onboarding goal > an empty optional description is omitted on create [210.88ms]
+(pass) optional onboarding goal > two immediate clicks share one pending mutation [359.77ms]
+(pass) optional onboarding goal > an unconfirmed create keeps the draft and never announces Saved [173.10ms]
+(pass) optional onboarding goal > editing a successful goal updates that ID and can clear its description [246.26ms]
+(pass) optional onboarding goal > Skip creates neither a drafted goal nor a drafted brain-dump page [152.38ms]
+(pass) optional onboarding goal > Finish never creates an unsaved goal [97.73ms]
+(pass) optional onboarding goal > Back and Continue retain the successful goal ID and draft [91.96ms]
+(pass) optional onboarding goal > a pending request survives step unmount without a duplicate submission [93.00ms]
+(pass) optional onboarding goal > an update rejection preserves the saved identity for a deliberate retry [1280.53ms]
+(pass) optional onboarding goal > the existing brain dump still creates and updates one note independently [141.57ms]
+(pass) optional onboarding goal > English fields have labels and the explicit keyboard action is a normal button [20.58ms]
+(pass) optional onboarding goal > Hebrew uses RTL copy while entered text keeps automatic direction [46.04ms]
+
+ 14 pass
+ 0 fail
+ 56 expect() calls
+Ran 14 tests across 1 file. [5.14s]
