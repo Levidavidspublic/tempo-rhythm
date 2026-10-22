@@ -1,7 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { mkdir, readFile, rm } from "node:fs/promises";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium, expect as browserExpect, type Browser, type Page } from "@playwright/test";
@@ -52,20 +51,18 @@ function Harness(){const {setLang,lang}=useLocale();const mode=new URLSearchPara
 createRoot(document.getElementById("root")).render(<ThemeProvider><LocaleProvider><Harness/></LocaleProvider></ThemeProvider>);
 `;
 
-let browser: Browser | undefined;
-let server: ReturnType<typeof Bun.serve> | undefined;
-let ownedFixtureDirectory: string | undefined;
-let page: Page | undefined;
-let browserErrors: string[] = [];
-let externalRequests: string[] = [];
-
-async function prepareFixture() {
-  const scratch = mkdtempSync(join(process.env.TEMPO1303_SCRATCH ?? tmpdir(), "tempo-habit-goal-"));
-  ownedFixtureDirectory = scratch;
-  const fixtureEntry = join(scratch, "entry.tsx");
-  writeFileSync(fixtureEntry, entry);
+// Only this standalone child compiles the browser fixture; it imports no test module.
+const bundleBuilder = String.raw`
+import { writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { join } from "node:path";
+const [root, scratch] = Bun.argv.slice(2);
+if (!root || !scratch) throw new Error("Fixture builder requires exact root and owned scratch paths");
+const web = join(root, "apps/web");
+const backend = await readFile(join(scratch, "backend.tsx"), "utf8");
   const bundled = await Bun.build({
-    entrypoints: [fixtureEntry], target: "browser", outdir: scratch,
+    entrypoints: [join(scratch, "entry.tsx")], target: "browser", outdir: scratch,
     define: { "process.env.NODE_ENV": '"test"' },
     plugins: [{ name: "habit-goal-external-boundaries", setup(build) {
       build.onResolve({ filter: /^(convex\/react|next\/navigation|next\/link)$/ }, ({ path }) => ({ path: path === "next/link" ? path : "backend", namespace: "fixture" }));
@@ -85,10 +82,75 @@ async function prepareFixture() {
   const require = createRequire(join(web, "package.json"));
   const globals = join(web, "app/globals.css");
   const css = await require("postcss")([require("@tailwindcss/postcss")()]).process(await readFile(globals, "utf8"), { from: globals });
+  writeFileSync(join(scratch, "fixture.js"), js);
+  writeFileSync(join(scratch, "fixture.css"), css.css);
+`;
+
+async function within<T>(promise: Promise<T>, milliseconds: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([promise, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label)), milliseconds);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
+async function buildInChild(scratch: string) {
+  const builderPath = join(scratch, "build-fixture.ts");
+  writeFileSync(builderPath, bundleBuilder);
+  const stdoutPath = join(scratch, "builder.stdout.log");
+  const stderrPath = join(scratch, "builder.stderr.log");
+  const child = Bun.spawn([process.execPath, builderPath, root, scratch], {
+    cwd: root, stdin: "ignore", stdout: Bun.file(stdoutPath), stderr: Bun.file(stderrPath),
+  });
+  const errors: unknown[] = [];
+  let exit: number | undefined;
+  try {
+    exit = await within(child.exited, 90_000, "Fixture builder exit deadline exceeded");
+  } catch (error) {
+    errors.push(error);
+    try { child.kill("SIGTERM"); } catch (killError) { errors.push(killError); }
+    try { exit = await within(child.exited, 5_000, "Fixture builder did not exit after TERM"); }
+    catch (termError) {
+      errors.push(termError);
+      try { child.kill("SIGKILL"); } catch (killError) { errors.push(killError); }
+      try { exit = await within(child.exited, 2_000, "Fixture builder exit notification missing after KILL"); }
+      catch (killError) { errors.push(killError); }
+    }
+  }
+  // Regular owned files replace pipes, so descendants cannot hold a stream drain open.
+  const logs = await Promise.allSettled([stdoutPath, stderrPath].map(async (path) => {
+    const file = Bun.file(path);
+    const text = await within(file.slice(0, 262_144).text(), 5_000, "Fixture builder log read deadline exceeded");
+    if (file.size > 262_144) errors.push(new Error("Fixture builder diagnostic exceeds 256 KiB: " + path));
+    return text;
+  }));
+  for (const result of logs) if (result.status === "rejected") errors.push(result.reason);
+  const stdout = logs[0]?.status === "fulfilled" ? logs[0].value : "<stdout unavailable>";
+  const stderr = logs[1]?.status === "fulfilled" ? logs[1].value : "<stderr unavailable>";
+  if (exit !== 0) errors.push(new Error("Fixture builder authoritative exit: " + String(exit)));
+  if (stdout || stderr || errors.length) console.info("Habit/Goal fixture builder exit=" + String(exit) + "\nstdout:\n" + stdout + "\nstderr:\n" + stderr);
+  if (errors.length) throw new AggregateError(errors, "Isolated fixture builder failed: " + errors.map(String).join("; "));
+}
+
+let browser: Browser | undefined;
+let server: ReturnType<typeof Bun.serve> | undefined;
+let ownedFixtureDirectory: string | undefined;
+let page: Page | undefined;
+let browserErrors: string[] = [];
+let externalRequests: string[] = [];
+
+async function prepareFixture() {
+  const scratch = mkdtempSync(join(process.env.TEMPO1303_SCRATCH ?? tmpdir(), "tempo-habit-goal-"));
+  ownedFixtureDirectory = scratch;
+  writeFileSync(join(scratch, "entry.tsx"), entry);
+  writeFileSync(join(scratch, "backend.tsx"), backend);
+  await buildInChild(scratch);
+  const [js, css] = await Promise.all([readFile(join(scratch, "fixture.js"), "utf8"), readFile(join(scratch, "fixture.css"), "utf8")]);
   server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === "/fixture.js") return new Response(js, { headers: { "content-type": "text/javascript" } });
-    if (url.pathname === "/fixture.css") return new Response(css.css, { headers: { "content-type": "text/css" } });
+    if (url.pathname === "/fixture.css") return new Response(css, { headers: { "content-type": "text/css" } });
     if (/^\/fonts\/(source-sans-3|assistant|frank-ruhl-libre|opendyslexic)\/[\w.-]+\.(woff2?|ttf)$/.test(url.pathname)) {
       return new Response(Bun.file(join(web, url.pathname.slice(1))));
     }

@@ -34,7 +34,7 @@ export function HabitGoalTemplates({
     <section className="tp-section" aria-labelledby={`${id}-heading`} data-component="HabitGoalTemplates">
       <h2 className="tp-section__title" id={`${id}-heading`}>{text("title")}</h2>
       <p className="tp-muted tp-small">{text("hint")}</p>
-      {blocked ? <p className="tp-help" id={`${id}-reason`} role="status">{text(blocked)}</p> : null}
+      {blocked ? <output className="tp-help" id={`${id}-reason`}>{text(blocked)}</output> : null}
       <div className="tp-cards">
         {HABIT_GOAL_OUTLINES.map((outline) => {
           const draft = habitGoalDraft(lang, outline);
