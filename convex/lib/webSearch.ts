@@ -26,6 +26,7 @@
 
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { ConvexError, v } from "convex/values";
 
 export type WebSearchResult = {
   title: string;
@@ -38,7 +39,7 @@ export type WebSearchResult = {
 };
 
 export type WebSearchProvider = {
-  search(query: string, options: { maxResults: number }): Promise<WebSearchResult[]>;
+  search(query: string, options: { maxResults: number; signal?: AbortSignal }): Promise<WebSearchResult[]>;
 };
 
 export const WEB_SEARCH_LIMITS = {
@@ -53,7 +54,7 @@ export const WEB_SEARCH_LIMITS = {
   timeoutMs: 20_000,
 } as const;
 
-export type WebSearchErrorKind = "timeout" | "network" | "auth" | "rate_limited" | "upstream" | "bad_response";
+export type WebSearchErrorKind = "cancelled" | "timeout" | "network" | "auth" | "rate_limited" | "upstream" | "bad_response";
 
 /** A failed search. Its message is only the kind: no key, query or provider text. */
 export class WebSearchError extends Error {
@@ -187,15 +188,31 @@ function errorKindForStatus(status: number): WebSearchErrorKind {
 /** The Mistral provider. `fetchImpl` is for tests; the key is only ever put in the auth header. */
 export function mistralWebSearch(apiKey: string, fetchImpl: typeof fetch = fetch): WebSearchProvider {
   return {
-    async search(query, { maxResults }) {
+    async search(query, { maxResults, signal }) {
+      if (signal?.aborted) throw new WebSearchError("cancelled");
       const q = searchQuery(query);
       if (!q) return [];
       const controller = new AbortController();
+      const cancel = () => controller.abort();
+      signal?.addEventListener("abort", cancel, { once: true });
+      const abortedKind = () => signal?.aborted ? "cancelled" as const : "timeout" as const;
+      const during = <T>(work: () => Promise<T>): Promise<T> => new Promise((resolve, reject) => {
+        const abort = () => {
+          controller.signal.removeEventListener("abort", abort);
+          reject(new WebSearchError(abortedKind()));
+        };
+        if (controller.signal.aborted) { abort(); return; }
+        controller.signal.addEventListener("abort", abort, { once: true });
+        Promise.resolve().then(() => {
+          if (controller.signal.aborted) throw new WebSearchError(abortedKind());
+          return work();
+        }).then(resolve, reject).finally(() => controller.signal.removeEventListener("abort", abort));
+      });
       const timer = setTimeout(() => controller.abort(), WEB_SEARCH_LIMITS.timeoutMs);
       try {
         let response: Response;
         try {
-          response = await fetchImpl(MISTRAL_CONVERSATIONS_URL, {
+          response = await during(() => fetchImpl(MISTRAL_CONVERSATIONS_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -215,22 +232,23 @@ export function mistralWebSearch(apiKey: string, fetchImpl: typeof fetch = fetch
               store: false,
             }),
             signal: controller.signal,
-          });
+          }));
         } catch {
-          throw new WebSearchError(controller.signal.aborted ? "timeout" : "network");
+          throw new WebSearchError(controller.signal.aborted ? abortedKind() : "network");
         }
         if (!response.ok) {
           throw new WebSearchError(errorKindForStatus(response.status));
         }
         let json: unknown;
         try {
-          json = await response.json();
+          json = await during(() => response.json());
         } catch {
-          throw new WebSearchError(controller.signal.aborted ? "timeout" : "bad_response");
+          throw new WebSearchError(controller.signal.aborted ? abortedKind() : "bad_response");
         }
         return readMistralSearch(json, maxResults);
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener("abort", cancel);
       }
     },
   };
@@ -294,4 +312,148 @@ export function stubWebSearch(results: WebSearchResult[] | (() => never)) {
     },
   };
   return { provider, calls };
+}
+
+// KB-16 uses the authenticated Vercel gateway; it never falls back to the legacy
+// model-backed search above. No safe page fetcher or category engine exists yet.
+export type SearchMode = "speed" | "balanced" | "quality";
+export type SearchFamily = "web" | "discussions" | "academic";
+export type SearchCategory = "web" | "images" | "videos" | "discover";
+export type SearchOptions = { mode: SearchMode; sources: SearchFamily[]; domains: string[] };
+export const searchOptionsValidator = v.object({
+  mode: v.union(v.literal("speed"), v.literal("balanced"), v.literal("quality")),
+  sources: v.array(v.union(v.literal("web"), v.literal("discussions"), v.literal("academic"))), domains: v.array(v.string()),
+});
+export const searchCategoryValidator = v.union(v.literal("web"), v.literal("images"), v.literal("videos"), v.literal("discover"));
+export const DEFAULT_SEARCH_OPTIONS: SearchOptions = { mode: "balanced", sources: ["web"], domains: [] };
+export type SearchRow = WebSearchResult & { imageUrl: null; thumbnailUrl: null; durationSeconds: null; publishedAt: null };
+export type SearchLookup = { status: "ok" | "off" | "limit" | "unavailable" | "unsupported" | "crisis";
+  rows: SearchRow[]; retrievedAt: number | null; truncated: boolean };
+export function emptySearchLookup(status: SearchLookup["status"]): SearchLookup {
+  return { status, rows: [], retrievedAt: null, truncated: false };
+}
+const NON_PUBLIC_SUFFIXES = ["localhost", "local", "internal", "test", "invalid", "example", "onion", "home.arpa"];
+/** Hostname syntax only. This never authorizes a server page fetch or DNS destination. */
+export function searchHostname(input: string): string | null {
+  if (!input || input.length > 253 || /[\s/@:#?\\]/u.test(input)) return null;
+  try {
+    const host = new URL(`https://${input}`).hostname.toLowerCase().replace(/\.$/, "");
+    if (!host.includes(".") || /^[\d.]+$/.test(host) || NON_PUBLIC_SUFFIXES.some((s) => host === s || host.endsWith(`.${s}`)) ||
+        !host.split(".").every((part) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(part))) return null;
+    return host;
+  } catch { return null; }
+}
+export function normalizeSearchOptions(options: SearchOptions): SearchOptions {
+  if (!options || !["speed", "balanced", "quality"].includes(options.mode) || !Array.isArray(options.sources) ||
+      options.sources.length < 1 || options.sources.length > 3 || new Set(options.sources).size !== options.sources.length ||
+      options.sources.some((s) => !["web", "discussions", "academic"].includes(s)) ||
+      !Array.isArray(options.domains) || options.domains.length > 5) throw new ConvexError({ code: "invalid_search_options" });
+  const domains: string[] = [];
+  for (const domain of options.domains) {
+    const normalized = typeof domain === "string" ? searchHostname(domain) : null;
+    if (!normalized) throw new ConvexError({ code: "invalid_search_options" });
+    if (!domains.includes(normalized)) domains.push(normalized);
+  }
+  return { mode: options.mode, sources: [...options.sources], domains };
+}
+export function validateLookupQuery(query: string): string {
+  const normalized = query.trim().normalize("NFC");
+  if (!normalized || [...normalized].length > 200 || /[\p{Cc}\p{Cf}\p{Cs}]/u.test(normalized)) throw new ConvexError({ code: "invalid_query" });
+  return normalized;
+}
+function searchGatewaySettings(env: Env): { url: string; token: string } | null {
+  const token = env.TEMPO_SEARCH_SERVICE_TOKEN?.trim(), endpoint = env.TEMPO_SEARCH_SERVICE_URL?.trim();
+  if (!token || token.length < 32 || token.length > 2048 || /\s/.test(token) || !endpoint || endpoint.length > 2048) return null;
+  try {
+    const url = new URL(endpoint), hostname = searchHostname(url.hostname);
+    // Convex cannot pin arbitrary DNS resolutions. Only the operator's exact Vercel
+    // deployment is contacted; the gateway pins its upstream connection separately.
+    if (url.protocol !== "https:" || !hostname || !hostname.endsWith(".vercel.app") ||
+        url.username || url.password || url.port || url.pathname !== "/api/search" || url.search || url.hash) return null;
+    url.hostname = hostname;
+    return { url: url.href, token };
+  } catch { return null; }
+}
+export function kbSearchConfigured(env: Env = process.env): boolean { return searchGatewaySettings(env) !== null; }
+export function kbSearchCapabilities(env: Env = process.env) {
+  const enabled = kbSearchConfigured(env);
+  return { enabled, modes: enabled ? ["speed", "balanced"] as SearchMode[] : [],
+    sources: enabled ? ["web"] as SearchFamily[] : [], categories: enabled ? ["web"] as SearchCategory[] : [] };
+}
+export function kbSearchSupport(options: SearchOptions, category: SearchCategory, env: Env = process.env): "ready" | "off" | "unsupported" {
+  if (!kbSearchConfigured(env)) return "off";
+  return options.mode === "quality" || category !== "web" || options.sources.length !== 1 || options.sources[0] !== "web" ? "unsupported" : "ready";
+}
+function lookupText(input: unknown, max: number): string {
+  return typeof input === "string" ? [...input.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<[^>]*>/g, " ")
+    .replace(/&(?:amp|lt|gt|quot|apos|#39|nbsp);/gi, (entity) => ({ "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&apos;": "'", "&#39;": "'", "&nbsp;": " " })[entity.toLowerCase()] ?? " ")
+    .replace(/[\p{Cc}\p{Cf}]/gu, " ").replace(/\s+/g, " ").trim()].slice(0, max).join("") : "";
+}
+function lookupRows(input: unknown, options: SearchOptions): { rows: SearchRow[]; truncated: boolean } {
+  if (!Array.isArray(input)) throw new WebSearchError("bad_response");
+  const rows: SearchRow[] = [], seen = new Set<string>(), cap = options.mode === "speed" ? 3 : 5;
+  for (const value of input) {
+    if (!value || typeof value !== "object") continue;
+    const row = value as Record<string, unknown>;
+    if (typeof row.url !== "string" || row.url.length > WEB_SEARCH_LIMITS.urlChars) continue;
+    let url: URL;
+    try { url = new URL(row.url); } catch { continue; }
+    const host = searchHostname(url.hostname), title = lookupText(row.title, 200);
+    if (!host || !title || !["http:", "https:"].includes(url.protocol) || url.username || url.password || url.port ||
+        (options.domains.length && !options.domains.some((domain) => host === domain || host.endsWith(`.${domain}`)))) continue;
+    url.hostname = host;
+    if (seen.has(url.href)) continue;
+    seen.add(url.href);
+    if (rows.length === cap) return { rows, truncated: true };
+    rows.push({ title, site: host, url: url.href, snippet: lookupText(row.snippet, 400),
+      imageUrl: null, thumbnailUrl: null, durationSeconds: null, publishedAt: null });
+  }
+  return { rows, truncated: false };
+}
+
+export async function lookupConfiguredSearch(query: string, options: SearchOptions, category: SearchCategory,
+  signal?: AbortSignal, env: Env = process.env, fetchImpl: typeof fetch = fetch): Promise<SearchLookup> {
+  const normalized = normalizeSearchOptions(options), text = validateLookupQuery(query);
+  const support = kbSearchSupport(normalized, category, env);
+  if (support !== "ready") return emptySearchLookup(support);
+  const settings = searchGatewaySettings(env)!;
+  if (signal?.aborted) throw new WebSearchError("cancelled");
+  const controller = new AbortController(), cancel = () => controller.abort();
+  signal?.addEventListener("abort", cancel, { once: true });
+  const timer = setTimeout(cancel, normalized.mode === "speed" ? 8000 : 12000);
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const stopBody = () => { void reader?.cancel().catch(() => {}); };
+  controller.signal.addEventListener("abort", stopBody, { once: true });
+  try {
+    const response = await fetchImpl(settings.url, { method: "POST", redirect: "error", signal: controller.signal,
+      headers: { Authorization: `Bearer ${settings.token}`, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ query: text, ...normalized, category }) });
+    if (response.status === 429) return emptySearchLookup("limit");
+    if (![200, 422, 503].includes(response.status) || !(response.headers.get("content-type") ?? "").includes("application/json") || !response.body) return emptySearchLookup("unavailable");
+    reader = response.body.getReader();
+    const chunks: Uint8Array[] = []; let bytes = 0;
+    while (true) {
+      if (controller.signal.aborted) throw new WebSearchError(signal?.aborted ? "cancelled" : "timeout");
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 65_536) throw new WebSearchError("bad_response");
+      chunks.push(chunk.value);
+    }
+    if (controller.signal.aborted) throw new WebSearchError(signal?.aborted ? "cancelled" : "timeout");
+    const data = new Uint8Array(bytes); let offset = 0;
+    for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
+    const body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(data)) as Partial<SearchLookup>;
+    if (["off", "unsupported", "unavailable"].includes(body.status ?? "")) return emptySearchLookup(body.status as "off" | "unsupported" | "unavailable");
+    if (response.status !== 200 || body.status !== "ok" || !Number.isFinite(body.retrievedAt) || typeof body.truncated !== "boolean") return emptySearchLookup("unavailable");
+    const result = lookupRows(body.rows, normalized);
+    return { status: "ok", rows: result.rows, retrievedAt: body.retrievedAt!, truncated: body.truncated || result.truncated };
+  } catch {
+    if (signal?.aborted) throw new WebSearchError("cancelled");
+    return emptySearchLookup("unavailable");
+  } finally {
+    controller.abort(); stopBody(); reader?.releaseLock(); clearTimeout(timer);
+    signal?.removeEventListener("abort", cancel); controller.signal.removeEventListener("abort", stopBody);
+  }
 }

@@ -31,8 +31,9 @@ import { CoachThreads } from "./CoachThreads";
 import { useFlushCoachPage } from "./CoachPage";
 import { CoachSources } from "./CoachSources";
 import { VoiceCall } from "./voice/VoiceCall";
-import { useVoiceCall, type VoiceSendResult } from "./voice/useVoiceCall";
+import { useVoiceCall, runAgentCoachTurn, type AgentTurn, type AgentTurnResult, type VoiceSendResult } from "./voice/useVoiceCall";
 import { ExecutorLookup, ExecutorLookupCard } from "./ExecutorLookup";
+import { CoachResearchControls, createResearchReply, type ResearchChoice } from "./CoachResearchControls";
 
 export type CoachDelivery = "resources" | "sent";
 
@@ -165,6 +166,18 @@ function WebSearchProbe({ onChange }: { onChange: (on: boolean) => void }) {
   return null;
 }
 
+function ResearchProbe({ onChange }: { onChange: (value: ResearchChoice | undefined) => void }) {
+  const capabilities = useQuery(api.coach.researchCapabilities, {});
+  useEffect(() => { onChange(capabilities); }, [capabilities, onChange]);
+  return null;
+}
+
+type ComposerResearchTurn = {
+  scope: string;
+  controller: ReturnType<typeof createResearchReply>;
+  cancelFailed: boolean;
+};
+
 /**
  * The coach conversation (coach.html / coach-thread.html): the thread and the composer, on v3
  * classes. Used by the /coach page, by the coach panel beside any page, and inline on Today; the
@@ -206,6 +219,12 @@ export function CoachConversation({
   const createConversation = useMutation(api.conversations.create);
   const sendMessage = useMutation(api.coach.sendMessage);
   const requestReply = useAction(api.coach.reply);
+  const beginReply = useMutation(api.coach.beginReply);
+  const requestControlledReply = useAction(api.coach.replyWithControls);
+  const cancelReply = useMutation(api.coach.cancelReply);
+  const beginAgentTurn = useMutation(api.voice.beginAgentTurn);
+  const completeAgentTurn = useMutation(api.voice.completeAgentTurn);
+  const cancelAgentTurn = useMutation(api.voice.cancelAgentTurn);
   const flushPage = useFlushCoachPage();
   const { guard } = useCrisisGuard();
   const bounds = useLocalDayBounds();
@@ -227,7 +246,19 @@ export function CoachConversation({
     () => (conversations && removed && removed.size > 0 ? conversations.filter((c) => !removed.has(c._id)) : conversations),
     [conversations, removed],
   );
-  const [input, setInput] = useState("");
+  // Drafts belong to the account and thread. A late request from another view cannot replace
+  // the current draft; a failed picked follow-up also never overwrites text typed meanwhile.
+  const draftScope = `${profile?._id ?? "signed-out"}:${conversationId ?? "none"}:${pageId ?? "none"}`;
+  const drafts = useRef(new Map<string, { value: string; revision: number }>());
+  const draftRevision = useRef(0);
+  const [, renderDraft] = useState(0);
+  const input = drafts.current.get(draftScope)?.value ?? "";
+  const setInput = useCallback((value: string | ((current: string) => string)) => {
+    const previous = drafts.current.get(draftScope)?.value ?? "";
+    const next = typeof value === "function" ? value(previous) : value;
+    drafts.current.set(draftScope, { value: next, revision: ++draftRevision.current });
+    renderDraft((revision) => revision + 1);
+  }, [draftScope]);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [crisisHold, setCrisisHold] = useState(false);
@@ -237,6 +268,35 @@ export function CoachConversation({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [researchChoice, setResearchChoice] = useState<ResearchChoice>({ useWeb: false, thinkHard: false });
+  const [researchCapabilities, setResearchCapabilities] = useState<ResearchChoice | undefined>(undefined);
+  const [researchTurn, setResearchTurn] = useState<ComposerResearchTurn | null>(null);
+  const researchRef = useRef<ComposerResearchTurn | null>(null);
+  const currentScope = useRef(draftScope);
+  const [stopping, setStopping] = useState(false);
+
+  useEffect(() => {
+    currentScope.current = draftScope;
+    const previous = researchRef.current;
+    if (previous && previous.scope !== draftScope) {
+      researchRef.current = null;
+      void previous.controller.stop().catch(() => {});
+    }
+    setResearchTurn(null);
+    setIsSending(false);
+    setReplying(false);
+    setStopping(false);
+    setSendError(null);
+    setUnavailable(false);
+    setPageUnsaved(false);
+    setCrisisHold(false);
+  }, [draftScope]);
+
+  useEffect(() => () => {
+    const previous = researchRef.current;
+    researchRef.current = null;
+    if (previous) void previous.controller.stop().catch(() => {});
+  }, []);
 
   // Once the list shows a conversation the shared create is done with: a later create (every chat
   // deleted on /coach) makes a new one instead of reopening the first.
@@ -347,6 +407,47 @@ export function CoachConversation({
     // back to listening instead of waiting for a message that won't come.
     return (await reply(conversationId)) ? { kind: "reply" } : { kind: "none" };
   };
+  // The receipt inserts exactly one canonical user message. Do not also sendMessage here.
+  // The authenticated coach action retains its normal context, proposals and Accept/Undo path.
+  const sendAgent = async (turn: AgentTurn): Promise<AgentTurnResult> => {
+    const scope = draftScope;
+    const live = () => currentScope.current === scope && isAuthenticated && !!conversationId;
+    if (!live() || !conversationId) return { kind: "none" };
+    setReplying(true);
+    setUnavailable(false);
+    setPageUnsaved(false);
+    try {
+      // Keep the existing immediate resource-card guard ahead of page persistence. A failed
+      // page save must not hide crisis help. Backend admission independently checks again.
+      const checked = await guard(turn.text);
+      if (!live() || turn.signal.aborted) return { kind: "none" };
+      if (checked.isCrisis) { setCrisisHold(true); return { kind: "crisis" }; }
+      const result = await runAgentCoachTurn(turn, {
+        live,
+        flush: async () => {
+          if (!pageId) return;
+          try { await flushPage(); }
+          catch (error) { if (live()) setPageUnsaved(true); throw error; }
+        },
+        begin: () => beginAgentTurn({
+          sessionId: turn.sessionId, functionId: turn.functionId, receipt: turn.receipt, text: turn.text,
+          ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
+          dayStartMs: bounds.startMs, dayEndMs: bounds.endMs, todayDate: localIsoDate(new Date(bounds.startMs)),
+        }),
+        reply: (key) => requestControlledReply({ conversationId, ...key }),
+        complete: (key) => completeAgentTurn({ sessionId: turn.sessionId, functionId: turn.functionId, ...key }),
+        cancel: () => cancelAgentTurn({ sessionId: turn.sessionId, functionId: turn.functionId }),
+      });
+      if (live()) {
+        setCrisisHold(result.kind === "crisis");
+        if (result.kind === "none" && !turn.signal.aborted) setUnavailable(true);
+      }
+      return result;
+    } catch {
+      if (live() && !turn.signal.aborted) setUnavailable(true);
+      return { kind: "none" };
+    } finally { if (live()) setReplying(false); }
+  };
   // Voice never reads out a lookup answer: it names apps from Executor (TEMPO-B07-08).
   const lastAssistant = [...(messages ?? [])].reverse().find((m) => m.role === "assistant" && m.modelUsed !== "crisis-card" && m.modelUsed !== "executor-lookup");
   // A reply asked for by another surface (the panel beside Today's chat, another tab) holds this
@@ -355,35 +456,141 @@ export function CoachConversation({
   const voice = useVoiceCall({
     conversationId,
     send: sendSpoken,
+    sendAgent,
+    scopeKey: draftScope,
     latestReply: lastAssistant ? { id: lastAssistant._id, content: lastAssistant.content } : null,
     replyInFlight: inFlightUntil !== null,
   });
 
-  // The one send path: the composer, and on /coach a starter card or a follow-up (`fromComposer`
-  // false). A picked text that didn't send lands in an empty composer, so it is still there to retry.
-  const deliver = async (text: string, fromComposer: boolean) => {
-    if (!text || !conversationId || isSending || replying || waitingForPage) return;
-    if (fromComposer) setInput("");
-    setIsSending(true);
+  const finishResearch = (turn: ComposerResearchTurn) => {
+    if (researchRef.current !== turn) return;
+    researchRef.current = null;
+    if (currentScope.current !== turn.scope) return;
+    setResearchTurn(null);
+    setIsSending(false);
+    setReplying(false);
+    setStopping(false);
+  };
+
+  const stopResearch = async () => {
+    const turn = researchRef.current;
+    if (!turn || turn.scope !== currentScope.current) return;
+    setStopping(true);
+    setSendError(null);
     try {
-      const outcome = await deliverCoachMessage(text, guard, async (content) => {
-        await sendMessage({ conversationId, content });
-      });
-      if (outcome === "resources") {
-        setCrisisHold(true);
-        setSendError(null);
-        return;
-      }
-      setCrisisHold(false);
-      setSendError(null);
-      setIsSending(false);
-      await reply(conversationId);
+      await turn.controller.stop();
+      turn.cancelFailed = false;
+      // A preparation still in flight has no replyTo yet. Its continuation sends the queued
+      // cancellation with that exact key before it can launch the model action.
+      if (turn.controller.key) finishResearch(turn);
     } catch {
-      if (fromComposer) setInput(text);
-      else setInput((current) => (current.trim() ? current : text));
-      setSendError(t("coachChat.sendError"));
-    } finally {
+      turn.cancelFailed = true;
+      if (researchRef.current === turn && currentScope.current === turn.scope) {
+        setStopping(false);
+        setSendError(t("cc.cancelError"));
+      }
+    }
+  };
+
+  // Typed, starter and follow-up messages share the controlled reply protocol. Voice retains
+  // its existing separately guarded path above. Null text retries an unsent reply, never sends
+  // another copy of a saved message; the server refuses replay of completed controlled turns.
+  const deliver = async (text: string | null, fromComposer: boolean) => {
+    if (text === "" || !conversationId || isSending || replying || waitingForPage || researchRef.current) return;
+    if ((researchChoice.useWeb && !researchCapabilities?.useWeb) ||
+      (researchChoice.thinkHard && !researchCapabilities?.thinkHard)) {
+      setSendError(t("cc.researchUnavailable"));
+      return;
+    }
+    const id = conversationId;
+    const scope = draftScope;
+    const originalRevision = drafts.current.get(scope)?.revision;
+    const requestId = crypto.randomUUID();
+    const turn: ComposerResearchTurn = {
+      scope,
+      cancelFailed: false,
+      controller: createResearchReply({
+        conversationId: id,
+        requestId,
+        begin: () => beginReply({
+          conversationId: id,
+          requestId,
+          ...(pageId ? { noteId: pageId as Id<"notes"> } : {}),
+          dayStartMs: bounds.startMs,
+          dayEndMs: bounds.endMs,
+          todayDate: localIsoDate(new Date(bounds.startMs)),
+          research: { ...researchChoice },
+        }),
+        reply: (key) => requestControlledReply(key),
+        cancel: (key) => cancelReply(key),
+      }),
+    };
+    researchRef.current = turn;
+    setResearchTurn(turn);
+    setIsSending(true);
+    setSendError(null);
+    setUnavailable(false);
+    setPageUnsaved(false);
+    const live = () => researchRef.current === turn && currentScope.current === scope;
+    let sent = text === null;
+    try {
+      if (text !== null) {
+        let serverCrisis = false;
+        const outcome = await deliverCoachMessage(text, guard, async (content) => {
+          if (!live() || turn.controller.cancelled) return;
+          const result = await sendMessage({ conversationId: id, content });
+          sent = true;
+          serverCrisis = result.crisis === true;
+          // Clear only the exact submitted revision, and only in the same mounted view.
+          if (live() && fromComposer && drafts.current.get(scope)?.revision === originalRevision) setInput("");
+        });
+        if (!live()) return;
+        if (outcome === "resources" || serverCrisis) {
+          setCrisisHold(true);
+          return;
+        }
+        setCrisisHold(false);
+      }
+      if (!live() || !sent || turn.controller.cancelled) return;
       setIsSending(false);
+      setReplying(true);
+      // Saving the current page is still a prerequisite for grounding the reply.
+      if (pageId) {
+        try { await flushPage(); }
+        catch { if (live()) setPageUnsaved(true); return; }
+      }
+      if (!live() || turn.controller.cancelled) return;
+      const result = await turn.controller.run();
+      if (!live()) return;
+      if (result.status === "unsupported") setSendError(t("cc.researchUnavailable"));
+      setUnavailable(result.status === "unavailable" || result.status === "superseded");
+    } catch {
+      if (!live()) return;
+      if (turn.controller.cancelled && turn.controller.key) {
+        turn.cancelFailed = true;
+        setStopping(false);
+        setSendError(t("cc.cancelError"));
+      } else if (turn.controller.key) {
+        // A dropped action response does not prove server work stopped. Cancel the same key;
+        // if that transport also fails, leave Cancel reachable rather than losing its identity.
+        try {
+          await turn.controller.stop();
+          if (live()) setUnavailable(true);
+        } catch {
+          turn.cancelFailed = true;
+          if (live()) {
+            setStopping(false);
+            setSendError(t("cc.cancelError"));
+          }
+        }
+      } else if (!sent && text !== null) {
+        if (!fromComposer) setInput((current) => current.trim() ? current : text);
+        setSendError(t("coachChat.sendError"));
+      } else {
+        setUnavailable(true);
+      }
+    } finally {
+      if (!turn.cancelFailed) finishResearch(turn);
     }
   };
   const handleSend = () => deliver(input.trim(), true);
@@ -403,6 +610,9 @@ export function CoachConversation({
   // The newest message is the user's and no reply is on its way: a reply failed, or the page
   // reloaded while one was running. Either way the message is saved and can be answered again.
   const waiting = !busy && !crisisHold && messages !== undefined && messages.at(-1)?.role === "user";
+  const lastMetadata = messages?.at(-1)?.toolCalls;
+  const controlledLast = lastMetadata && typeof lastMetadata === "object" &&
+    "coachResearch" in lastMetadata && lastMetadata.coachResearch !== undefined;
 
   // /coach only, below: Copy, follow-ups, day dividers, starters and the worded waiting line.
   const onPage = variant === "page";
@@ -530,13 +740,13 @@ export function CoachConversation({
         {waiting && conversationId ? (
           <div className="tp-msg tp-muted" data-component="CoachUnavailable">
             <p className="tp-msg__text">
-              {pageUnsaved ? t("coachChat.pageUnsaved") : unavailable ? t("coachChat.unavailable") : t("coachChat.noReply")}
+              {controlledLast ? t("cc.researchNoReply") : pageUnsaved ? t("coachChat.pageUnsaved") : unavailable ? t("coachChat.unavailable") : t("coachChat.noReply")}
             </p>
             <div className="tp-msg__actions">
-              <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={() => void reply(conversationId)}>
+              {!controlledLast ? <button className="tp-btn tp-btn--ghost tp-btn--sm" type="button" onClick={() => void deliver(null, false)}>
                 <TpIcon name="refresh" size="sm" />
                 <span>{t("coachChat.retry")}</span>
-              </button>
+              </button> : null}
             </div>
           </div>
         ) : null}
@@ -548,6 +758,7 @@ export function CoachConversation({
           <WebSearchProbe onChange={setWebSearchOn} />
         </QuietBoundary>
       ) : null}
+      {isAuthenticated && profile ? <QuietBoundary><ResearchProbe onChange={setResearchCapabilities} /></QuietBoundary> : null}
       {conversationId && variant !== "today" ? <ExecutorLookup conversationId={conversationId} disabled={busy || waitingForPage} /> : null}
 
       <form
@@ -559,6 +770,10 @@ export function CoachConversation({
         }}
       >
         <div className="tp-composer__box">
+          <CoachResearchControls id={inputId} value={researchChoice} capabilities={researchCapabilities}
+            disabled={!conversationId || busy || waitingForPage || voice.open}
+            active={researchTurn?.scope === draftScope} stopping={stopping}
+            onChange={setResearchChoice} onCancel={() => void stopResearch()} />
           <label className="tp-sr-only" htmlFor={inputId}>
             {t("coachChat.message")}
           </label>

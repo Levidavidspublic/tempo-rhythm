@@ -3,7 +3,10 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, type QueryCtx, query } from "./_generated/server";
 import { requireApprovedUser } from "./lib/approval";
 import { requireUser } from "./lib/requireUser";
-import { CONVERSATION_UNAVAILABLE_MESSAGE, hasAgentThread } from "./messages";
+import { CONVERSATION_UNAVAILABLE_MESSAGE, hasAgentThread,
+  libraryChat, libraryChatValidator, libraryConversationSlice, libraryCursor, libraryError,
+  libraryFilterMatches, libraryFiltersValidator, libraryPageSize, libraryPaginationValidator,
+  libraryTags, libraryUser, normalizedLibraryFilters } from "./messages";
 
 async function requireOwnedLiveConversation(
   ctx: QueryCtx | MutationCtx,
@@ -81,7 +84,7 @@ export const list = query({
       .collect();
 
     conversations.sort((a, b) => b.updatedAt - a.updatedAt);
-    return conversations.map(toPublicConversation);
+    return conversations.filter((conversation) => conversation.archivedAt === undefined).map(toPublicConversation);
   },
 });
 
@@ -185,5 +188,102 @@ export const remove = mutation({
     }
 
     return { success: true as const };
+  },
+});
+
+export const libraryPage = query({
+  args: { filters: libraryFiltersValidator, paginationOpts: libraryPaginationValidator },
+  returns: v.object({ page: v.array(libraryChatValidator), continueCursor: v.string(), isDone: v.boolean() }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx), filters = normalizedLibraryFilters(args.filters);
+    const cursor = libraryCursor(args.paginationOpts.cursor, user._id, "library", JSON.stringify(filters));
+    const result = await libraryConversationSlice(ctx, user._id, cursor.chatKey, libraryPageSize(args.paginationOpts.numItems));
+    cursor.chatKey = result.indexKeys.at(-1) ?? cursor.chatKey;
+    return { page: result.page.filter((chat) => libraryFilterMatches(chat, filters)).map(libraryChat),
+      continueCursor: result.hasMore ? JSON.stringify(cursor) : "", isDone: !result.hasMore };
+  },
+});
+
+const LIBRARY_UNDO_MS = 300_000;
+const LIBRARY_MAX_RECEIPTS = 32;
+type LibraryMetadata = { tags?: string[]; archivedAt?: number; deletedAt?: number };
+type LibraryReceipt = NonNullable<Doc<"conversations">["libraryReceipts"]>[number];
+function metadata(row: LibraryMetadata): LibraryMetadata {
+  return { ...(row.tags !== undefined ? { tags: row.tags } : {}),
+    ...(row.archivedAt !== undefined ? { archivedAt: row.archivedAt } : {}),
+    ...(row.deletedAt !== undefined ? { deletedAt: row.deletedAt } : {}) };
+}
+function sameMetadata(a: LibraryMetadata, b: LibraryMetadata): boolean {
+  return JSON.stringify(a.tags ?? null) === JSON.stringify(b.tags ?? null) &&
+    a.archivedAt === b.archivedAt && a.deletedAt === b.deletedAt;
+}
+function libraryRevision(conversation: Doc<"conversations">): number {
+  const value = conversation.libraryRevision ?? 0;
+  if (!Number.isSafeInteger(value) || value < 0 || value === Number.MAX_SAFE_INTEGER) return libraryError("conflict");
+  return value;
+}
+async function libraryPayloadDigest(tags: string[] | undefined, archived: boolean | undefined): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify([tags ?? null, archived ?? null]));
+  const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export const setLibraryMetadata = mutation({
+  args: { conversationId: v.id("conversations"), tags: v.optional(v.array(v.string())),
+    archived: v.optional(v.boolean()), requestKey: v.string() },
+  returns: v.object({ token: v.string(), undoUntilMs: v.number(), conversation: libraryChatValidator }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx, true);
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(args.requestKey)) return libraryError("invalid_request_key");
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation || conversation.userId !== user._id || conversation.deletedAt !== undefined) return libraryError("unavailable");
+    if (args.tags === undefined && args.archived === undefined) return libraryError("invalid_filter");
+    const tags = args.tags === undefined ? undefined : libraryTags(args.tags);
+    const payloadDigest = await libraryPayloadDigest(args.tags, args.archived);
+    const now = Date.now(), receipts = (conversation.libraryReceipts ?? []).filter((r) => r.undoUntilMs >= now);
+    const repeated = receipts.find((r) => r.requestKey === args.requestKey);
+    if (repeated) {
+      if (repeated.token.split(".").at(-1) !== payloadDigest) return libraryError("conflict");
+      return { token: repeated.token, undoUntilMs: repeated.undoUntilMs, conversation: libraryChat(conversation) };
+    }
+    if (receipts.length >= LIBRARY_MAX_RECEIPTS) return libraryError("receipt_limit");
+    const previous = metadata(conversation), result = { ...previous };
+    if (tags !== undefined) result.tags = tags;
+    if (args.archived !== undefined) {
+      if (args.archived) result.archivedAt = conversation.archivedAt ?? now;
+      else delete result.archivedAt;
+    }
+    const revision = libraryRevision(conversation) + 1;
+    // Opaque compound locator: random nonce is verified against the stored receipt. The
+    // embedded row id only bounds lookup; possession never authorizes access.
+    const token = `${conversation._id}.${crypto.randomUUID()}.${payloadDigest}`;
+    const receipt: LibraryReceipt = { token, requestKey: args.requestKey, appliedRevision: revision,
+      undoUntilMs: now + LIBRARY_UNDO_MS, previous, result };
+    const patch = { tags: result.tags, archivedAt: result.archivedAt,
+      libraryRevision: revision, libraryReceipts: [...receipts, receipt], updatedAt: now };
+    await ctx.db.patch(conversation._id, patch);
+    return { token, undoUntilMs: receipt.undoUntilMs, conversation: libraryChat({ ...conversation, ...patch }) };
+  },
+});
+
+export const undoLibraryChange = mutation({
+  args: { token: v.string() },
+  returns: v.object({ restored: v.literal(true), conversationIds: v.array(v.id("conversations")) }),
+  handler: async (ctx, args) => {
+    const user = await libraryUser(ctx, true);
+    if (args.token.length > 180) return libraryError("unavailable");
+    const separator = args.token.indexOf("."), rowId = ctx.db.normalizeId("conversations", args.token.slice(0, separator));
+    if (separator < 1 || !rowId) return libraryError("unavailable");
+    const conversation = await ctx.db.get(rowId);
+    if (!conversation || conversation.userId !== user._id) return libraryError("unavailable");
+    const receipt = conversation.libraryReceipts?.find((r) => r.token === args.token);
+    if (!receipt) return libraryError("unavailable");
+    const now = Date.now();
+    if (now > receipt.undoUntilMs) return libraryError("expired");
+    if (libraryRevision(conversation) !== receipt.appliedRevision || !sameMetadata(conversation, receipt.result)) return libraryError("conflict");
+    await ctx.db.patch(conversation._id, { tags: receipt.previous.tags,
+      archivedAt: receipt.previous.archivedAt, deletedAt: receipt.previous.deletedAt,
+      libraryRevision: receipt.appliedRevision + 1, updatedAt: now });
+    return { restored: true as const, conversationIds: [conversation._id] };
   },
 });
