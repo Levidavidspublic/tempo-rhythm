@@ -1,0 +1,53 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-beta-request.test.tsx:
+killed 1 dangling process
+
+# Unhandled error between tests
+-------------------------------
+9676 | 
+9677 | // packages/utils/stackTrace.ts
+9678 | function captureRawStack() {
+9679 |   const stackTraceLimit = Error.stackTraceLimit;
+9680 |   Error.stackTraceLimit = 50;
+9681 |   const error = new Error();
+                           ^
+error: expect(locator).toHaveCount(expected) failed
+
+Locator:  locator('h1')
+Expected: 1
+Received: undefined
+
+Call log:
+  - Expect "to.have.count" with timeout 5000ms
+  - waiting for locator('h1')
+  - Protocol error (Runtime.callFunctionOn): Internal server error, session closed.
+
+ matcherResult: {
+  actual: undefined,
+  expected: 1,
+  message: "expect(locator).toHaveCount(expected) failed\n\nLocator:  locator('h1')\nExpected: 1\nReceived: undefined\n\nCall log:\n  - Expect \"to.have.count\" with timeout 5000ms\n  - waiting for locator('h1')\n  - Protocol error (Runtime.callFunctionOn): Internal server error, session closed.\n",
+  name: "toHaveCount",
+  pass: false,
+  log: [ "  - Expect \"to.have.count\" with timeout 5000ms", "  - waiting for locator('h1')",
+    "  - Protocol error (Runtime.callFunctionOn): Internal server error, session closed."
+  ],
+  timeout: undefined,
+  ariaSnapshot: undefined,
+},
+
+      at captureRawStack (/workspace/tempo-rhythm/node_modules/.bun/playwright-core@1.62.1/node_modules/playwright-core/lib/coreBundle.js:9681:21)
+      at callMatcherAsStep (/workspace/tempo-rhythm/node_modules/.bun/playwright@1.62.1/node_modules/playwright/lib/matchers/expect.js:13310:57)
+      at /workspace/tempo-rhythm/tests/unit/tempo-beta-request.test.tsx:196:28
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+(fail) mounted beta request > screenshots of real mounted EN/HE screens at 390 and 1280 [120584.41ms]
+  ^ this test timed out after 120000ms.
+
+ 0 pass
+ 8 filtered out
+ 1 fail
+ 1 error
+ 97 expect() calls
+Ran 1 test across 1 file. [143.84s]
