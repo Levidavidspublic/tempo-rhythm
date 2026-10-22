@@ -1131,6 +1131,40 @@ describe("limits", () => {
   });
 });
 
+describe("repeated lines preserve parser transitions", () => {
+  test("stable prose still emits every repeated Unicode line", () => {
+    const line = "שָׁלוֹם 🇮🇱";
+    const result = project(`${line}\n`.repeat(6));
+    expect(result.searchText).toBe(Array(6).fill(line).join(" "));
+    expect(result.truncated).toBe(false);
+  });
+
+  test("identical fence lines keep alternating between opening and closing", () => {
+    expect(project(`${TICKS}\n`.repeat(4).concat("Visible")).searchText).toBe("Visible");
+    expect(project(`${TICKS}\n`.repeat(5).concat("Hidden")).searchText).toBe("");
+  });
+
+  test("a stable malformed closing-tag run resumes text at its later terminator", () => {
+    const body = "</a\n".repeat(6).concat("PRIVATE > Visible\nVisible\nVisible");
+    expect(project(body).searchText).toBe("Visible Visible Visible");
+  });
+
+  test("stable raw HTML lines still end at their own closing marker", () => {
+    for (const [open, close] of [["<!--", "-->"], ["<?php", "?>"], ["<pre>", "</pre>"]]) {
+      const body = `${open}\n${"PRIVATE\n".repeat(6)}${close}\nVisible`;
+      expect(project(body).searchText).toBe("Visible");
+    }
+  });
+
+  test("a full collector still changes emit mode and follows a later broken block", () => {
+    const body = `before\n${"word\n".repeat(8)}${TICKS}json tempo\n{ nope }\n${TICKS}\n`;
+    const result = project(body, { searchChars: 9 });
+    expect(result.searchText).toBe("before wo");
+    expect(result.truncated).toBe(true);
+    expect(result.omittedBlocks).toBe(1);
+  });
+});
+
 describe("pathological bodies stay linear", () => {
   const size = 1_000_000;
   /**
