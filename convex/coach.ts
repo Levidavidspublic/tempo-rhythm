@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { BLOCK_CODEC_LIMITS, parseTempoBlocks, projectPageText, type TempoBlock } from "@tempo/utils";
 import { internal } from "./_generated/api";
+import { bridgeTurnLive, linkBridgeAnswer } from "./voice";
 import type { Doc, Id } from "./_generated/dataModel";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
@@ -106,13 +107,8 @@ const AVAILABLE_MINUTES_BAD_DAY = 60;
 /** Longest message the coach takes. */
 export const MAX_MESSAGE_CHARS = 4000;
 
-export const sendMessage = mutation({
-  args: {
-    conversationId: v.id("conversations"),
-    content: v.string(),
-  },
-  returns: v.object({ success: v.literal(true), crisis: v.optional(v.boolean()) }),
-  handler: async (ctx, args) => {
+/** Shared authenticated admission; bridge and typed messages use the same crisis boundary. */
+export async function sendCoachMessage(ctx: MutationCtx, args: { conversationId: Id<"conversations">; content: string }) {
     // Coach chat is an AI surface: pending/revoked accounts are rejected server-side.
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
@@ -125,7 +121,7 @@ export const sendMessage = mutation({
     }
 
     const now = Date.now();
-    await ctx.db.insert("messages", {
+    const replyTo = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "user",
       content: text,
@@ -143,7 +139,14 @@ export const sendMessage = mutation({
       });
     }
     await ctx.db.patch(args.conversationId, { updatedAt: crisis ? now + 1 : now });
-    return crisis ? { success: true as const, crisis: true } : { success: true as const };
+    return { replyTo, crisis };
+}
+export const sendMessage = mutation({
+  args: { conversationId: v.id("conversations"), content: v.string() },
+  returns: v.object({ success: v.literal(true), crisis: v.optional(v.boolean()) }),
+  handler: async (ctx, args) => {
+    const sent = await sendCoachMessage(ctx, args);
+    return sent.crisis ? { success: true as const, crisis: true } : { success: true as const };
   },
 });
 
@@ -395,21 +398,10 @@ export const researchCapabilities = query({
   },
 });
 /** Called after sendMessage; never inserts user content or accepts client-supplied history. */
-export const beginReply = mutation({
-  args: {
-    conversationId: v.id("conversations"),
-    requestId: v.string(),
-    noteId: v.optional(v.id("notes")),
-    ...dayBoundsArgs,
-    todayDate: v.optional(v.string()),
-    research: researchControlsValidator,
-  },
-  returns: v.union(
-    v.object({ status: v.literal("ready"), requestId: v.string(), replyTo: v.id("messages") }),
-    v.object({ status: v.union(v.literal("busy"), v.literal("idle")) }),
-    v.object({ status: v.literal("unsupported"), control: v.union(v.literal("web"), v.literal("thinkHard")) }),
-  ),
-  handler: async (ctx, args) => {
+/** No client history or alternate coach; used atomically by the voice receipt admission. */
+export async function prepareCoachReply(ctx: MutationCtx, args: ResearchContext & {
+ conversationId: Id<"conversations">; requestId: string; research: {useWeb:boolean;thinkHard:boolean};
+}) {
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
     if (!requestIdValid(args.requestId)) throw new ConvexError("This reply is unavailable.");
@@ -466,8 +458,24 @@ export const beginReply = mutation({
       },
     });
     return { status: "ready" as const, requestId, replyTo: newest._id };
+}
+export const beginReply = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    requestId: v.string(),
+    noteId: v.optional(v.id("notes")),
+    ...dayBoundsArgs,
+    todayDate: v.optional(v.string()),
+    research: researchControlsValidator,
   },
+  returns: v.union(
+    v.object({ status: v.literal("ready"), requestId: v.string(), replyTo: v.id("messages") }),
+    v.object({ status: v.union(v.literal("busy"), v.literal("idle")) }),
+    v.object({ status: v.literal("unsupported"), control: v.union(v.literal("web"), v.literal("thinkHard")) }),
+  ),
+  handler: prepareCoachReply,
 });
+
 async function ownedResearch(ctx: QueryCtx | MutationCtx, args: ResearchKey) {
   const user = await requireApprovedUser(ctx);
   await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
@@ -518,7 +526,7 @@ export const researchRequestState = internalQuery({
       )
       .order("desc")
       .first();
-    const live = newest?._id === message._id && (claimOf(message.toolCalls)?.until ?? 0) > Date.now();
+    const live = newest?._id === message._id && (claimOf(message.toolCalls)?.until ?? 0) > Date.now() && await bridgeTurnLive(ctx, message);
     const state: ResearchRecord["state"] | "superseded" =
       research.state === "cancelled" || research.state === "finished"
         ? research.state
@@ -665,6 +673,7 @@ export const claimTurn = internalMutation({
     if (!last || last.role !== "user" || isCrisisText(last.content)) {
       return null;
     }
+    if (!(await bridgeTurnLive(ctx, last))) return null;
     const now = Date.now();
     const research = researchOf(last.toolCalls);
     if (args.requestId !== undefined) {
@@ -741,7 +750,7 @@ async function holdsTurn(
     )
     .order("desc")
     .first();
-  return newest !== null && newest._id === args.replyTo && claimOf(newest.toolCalls)?.token === args.claim && (claimOf(newest.toolCalls)?.until ?? 0) > Date.now()
+  return newest !== null && newest._id === args.replyTo && claimOf(newest.toolCalls)?.token === args.claim && (claimOf(newest.toolCalls)?.until ?? 0) > Date.now() && await bridgeTurnLive(ctx, newest)
     ? newest
     : null;
 }
@@ -821,7 +830,7 @@ export const saveReply = internalMutation({
     if (researchOf(newest.toolCalls)) await ctx.db.patch(newest._id, { toolCalls: finishMetadata(newest.toolCalls) });
     const now = Math.max(Date.now(), newest.createdAt + 1);
     const sources = (args.sources ?? []).slice(0, WEB_SEARCH_LIMITS.maxResults);
-    await ctx.db.insert("messages", {
+    const assistantMessageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       role: "assistant",
       content: args.content,
@@ -830,6 +839,7 @@ export const saveReply = internalMutation({
       ...(sources.length > 0 ? { sources } : {}),
       createdAt: now,
     });
+    await linkBridgeAnswer(ctx, newest, assistantMessageId);
     await ctx.db.patch(args.conversationId, { updatedAt: now });
     return true;
   },

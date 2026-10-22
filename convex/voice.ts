@@ -1,7 +1,10 @@
 import { ConvexError, v } from "convex/values";
+import { MAX_MESSAGE_CHARS, sendCoachMessage, prepareCoachReply } from "./coach";
+import { isCrisisText } from "./lib/crisisWords";
+import { isValidLocalDate } from "./lib/pageLedger";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { action, internalMutation, mutation, query } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireApprovedForAi } from "./lib/aiGate";
 import { isApproved, requireApprovedUser } from "./lib/approval";
@@ -137,7 +140,11 @@ async function endLease(ctx: MutationCtx, lease: Lease, reason: EndReason, now: 
     now,
     lease.startedAt + VOICE_LIMITS.maxSessionMs,
   );
+  if (lease.agentBridge) for (const receipt of lease.agentBridge.receipts) {
+    if (receipt.state === "pending" || receipt.state === "running") await fenceAgentReceipt(ctx, receipt);
+  }
   await ctx.db.patch(lease._id, {
+    ...(lease.agentBridge ? { agentBridge: { version: 1 as const, receipts: lease.agentBridge.receipts.map((receipt) => receipt.state === "pending" || receipt.state === "running" ? { ...receipt, state: "cancelled" as const } : receipt) } } : {}),
     status: "ended",
     endedAt,
     durationMs: Math.max(0, endedAt - lease.startedAt),
@@ -559,3 +566,419 @@ async function synthesize(key: string, text: string, language: string): Promise<
   }
   return audio;
 }
+
+/** Deferred provider callbacks carry only this purpose-bound, lease-local capability. */
+export const AGENT_RECEIPT_LIMIT = 128;
+type AgentBridge = NonNullable<Lease["agentBridge"]>;
+type AgentReceipt = AgentBridge["receipts"][number];
+type BridgeKey = { sessionId: Id<"voiceSessions">; functionId: string };
+const bridgeKeyArgs = { sessionId: v.id("voiceSessions"), functionId: v.string() };
+const unavailable = { status: "unavailable" as const };
+
+async function bridgeDigest(value: string): Promise<string> {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function speechText(text: string): string | null {
+  const normalized = text.normalize("NFC").trim().replace(/\s+/gu, " ");
+  return normalized.length > 0 && normalized.length <= MAX_MESSAGE_CHARS ? normalized : null;
+}
+function bridgeMetadata(message: Doc<"messages">): Record<string, unknown> {
+  return message.toolCalls && typeof message.toolCalls === "object" && !Array.isArray(message.toolCalls)
+    ? (message.toolCalls as Record<string, unknown>)
+    : {};
+}
+function bridgeKeyOf(message: Doc<"messages">): BridgeKey | null {
+  const raw = bridgeMetadata(message).voiceBridge;
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Record<string, unknown>;
+  return typeof value.sessionId === "string" && typeof value.functionId === "string"
+    ? { sessionId: value.sessionId as Id<"voiceSessions">, functionId: value.functionId }
+    : null;
+}
+/** Same caps as voice start/renew, checked again at every model/save/answer boundary. */
+async function agentLeaseLive(ctx: Db, lease: Lease | null): Promise<boolean> {
+  if (
+    !lease ||
+    (lease.agentBridge?.receipts.length ?? 0) > AGENT_RECEIPT_LIMIT ||
+    lease.deletedAt !== undefined ||
+    lease.status !== "active" ||
+    lease.language !== "en" ||
+    !voiceConfigured()
+  )
+    return false;
+  const now = Date.now();
+  if (leaseExpired(lease, now)) return false;
+  const user = await ctx.db.get(lease.userId);
+  if (!user || user.deletedAt !== undefined || !isApproved(user) || dailyCapMs(user) <= 0) return false;
+  const prefs = await preferencesOf(ctx, user._id);
+  if (
+    !laneFor(prefs?.locale) ||
+    lease.dateKey !== localDateKey(now, prefs?.timeZone) ||
+    lease.utcDateKey !== utcDateKey(now)
+  )
+    return false;
+  try {
+    await requireLegacyWritableConversation(ctx, user._id, lease.conversationId);
+  } catch {
+    return false;
+  }
+  if ((await usedTodayMs(ctx, user._id, lease.dateKey, now)) >= dailyCapMs(user)) return false;
+  return (await usedGlobalMs(ctx, lease.utcDateKey, now)) < GLOBAL_CAP_MS;
+}
+/** Function-only imports with coach preserve one admission/prompt/model implementation. */
+export async function bridgeTurnLive(ctx: Db, message: Doc<"messages">): Promise<boolean> {
+  const key = bridgeKeyOf(message);
+  if (!key) return bridgeMetadata(message).voiceBridge === undefined;
+  const lease = await ctx.db.get(key.sessionId);
+  if (!(await agentLeaseLive(ctx, lease)) || !lease) return false;
+  const receipt = lease.agentBridge?.receipts.find((item) => item.id === key.functionId);
+  const research = bridgeMetadata(message).coachResearch as { requestId?: unknown } | undefined;
+  return (
+    lease.conversationId === message.conversationId &&
+    message.role === "user" &&
+    message.deletedAt === undefined &&
+    receipt?.state === "running" &&
+    receipt.userMessageId === message._id &&
+    research?.requestId === receipt.requestId
+  );
+}
+export async function linkBridgeAnswer(
+  ctx: MutationCtx,
+  message: Doc<"messages">,
+  assistantMessageId: Id<"messages">,
+) {
+  const key = bridgeKeyOf(message);
+  if (!key) return;
+  const lease = await ctx.db.get(key.sessionId);
+  if (!lease?.agentBridge || !(await bridgeTurnLive(ctx, message))) throw voiceError("voice_session_ended");
+  const answer = await ctx.db.get(assistantMessageId);
+  if (
+    !answer ||
+    answer.role !== "assistant" ||
+    answer.conversationId !== lease.conversationId ||
+    answer.deletedAt !== undefined ||
+    answer.modelUsed === "crisis-card"
+  )
+    throw voiceError("voice_session_ended");
+  // Reserve the exact canonical answer once, in the same transaction as running→done.
+  // Network/delivery failure does not refund it; retries only read the completed relation.
+  // If speech is exhausted, the text/proposal still saves normally but voice fails closed.
+  const chars = answer.content.length;
+  const spokenToday = await ttsCharsToday(ctx, lease.userId, lease.dateKey);
+  const canSpeak = chars > 0 && spokenToday + chars <= VOICE_LIMITS.dailyTtsCharsPerUser;
+  await ctx.db.patch(lease._id, {
+    ...(canSpeak ? { ttsChars: lease.ttsChars + chars } : {}),
+    agentBridge: {
+      ...lease.agentBridge,
+      receipts: lease.agentBridge.receipts.map((item) =>
+        item.id === key.functionId
+          ? { ...item, state: canSpeak ? ("done" as const) : ("failed" as const), assistantMessageId }
+          : item,
+      ),
+    },
+  });
+}
+async function fenceAgentReceipt(ctx: MutationCtx, receipt: AgentReceipt) {
+  if (!receipt.userMessageId) return;
+  const message = await ctx.db.get(receipt.userMessageId);
+  if (!message) return;
+  const data = bridgeMetadata(message);
+  const research = data.coachResearch;
+  if (
+    !research ||
+    typeof research !== "object" ||
+    (research as { requestId?: unknown }).requestId !== receipt.requestId
+  )
+    return;
+  const { coachClaim: _claim, coachClaimUntil: _until, ...rest } = data;
+  await ctx.db.patch(message._id, {
+    toolCalls: { ...rest, coachResearch: { ...research, state: "cancelled" } },
+  });
+}
+async function receiptProof(bridge: AgentBridge, receipt: AgentReceipt) {
+  return bridgeDigest(
+    JSON.stringify(["tempo-voice-receipt-v1", bridge.capabilityHash, receipt.id, receipt.inputDigest]),
+  );
+}
+async function capabilityLease(ctx: Db, sessionId: Id<"voiceSessions">, capability: string) {
+  if (capability.length !== 73) return null;
+  const lease = await ctx.db.get(sessionId);
+  if (!lease?.agentBridge?.capabilityHash || !(await agentLeaseLive(ctx, lease))) return null;
+  const digest = await bridgeDigest(`tempo-voice-agent-v1:${capability}`);
+  return digest === lease.agentBridge.capabilityHash ? lease : null;
+}
+/** Once per lease. Reconnecting requires stop + a new clientKey; raw capabilities are never stored. */
+export const agentCapability = mutation({
+  args: { sessionId: v.id("voiceSessions") },
+  returns: v.object({ capability: v.string() }),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    const lease = await ownedLease(ctx, user._id, args.sessionId);
+    if (!(await agentLeaseLive(ctx, lease)) || lease.agentBridge) throw voiceError("voice_session_ended");
+    const capability = `${crypto.randomUUID()}.${crypto.randomUUID()}`;
+    await ctx.db.patch(lease._id, {
+      agentBridge: {
+        version: 1,
+        capabilityHash: await bridgeDigest(`tempo-voice-agent-v1:${capability}`),
+        receipts: [],
+      },
+    });
+    return { capability };
+  },
+});
+/** HTTP adapter supplies only normalized new speech and a verified completed-parent anchor. */
+export const prepareAgentFunction = internalMutation({
+  args: {
+    sessionId: v.id("voiceSessions"),
+    capability: v.string(),
+    text: v.string(),
+    parentId: v.optional(v.string()),
+  },
+  returns: v.union(
+    v.object({ status: v.literal("ready"), functionId: v.string(), receipt: v.string() }),
+    v.object({ status: v.literal("unavailable") }),
+  ),
+  handler: async (ctx, args) => {
+    const lease = await capabilityLease(ctx, args.sessionId, args.capability);
+    const text = speechText(args.text);
+    if (!lease?.agentBridge || !text) return unavailable;
+    const bridge = lease.agentBridge;
+    const inputDigest = await bridgeDigest(JSON.stringify(["tempo-voice-input-v1", text]));
+    const prior = bridge.receipts.find(
+      (item) => item.parentId === args.parentId && item.inputDigest === inputDigest,
+    );
+    if (prior)
+      return prior.state === "cancelled" || prior.state === "failed"
+        ? unavailable
+        : { status: "ready" as const, functionId: prior.id, receipt: await receiptProof(bridge, prior) };
+    const last = bridge.receipts.at(-1);
+    if (
+      bridge.receipts.length >= AGENT_RECEIPT_LIMIT ||
+      (last ? last.state !== "done" || last.id !== args.parentId : args.parentId !== undefined)
+    )
+      return unavailable;
+    if (last && !(await linkedAnswer(ctx, lease, last))) return unavailable;
+    const receipt: AgentReceipt = {
+      id: crypto.randomUUID(),
+      ...(args.parentId ? { parentId: args.parentId } : {}),
+      inputDigest,
+      state: "pending",
+    };
+    await ctx.db.patch(lease._id, { agentBridge: { ...bridge, receipts: [...bridge.receipts, receipt] } });
+    return { status: "ready" as const, functionId: receipt.id, receipt: await receiptProof(bridge, receipt) };
+  },
+});
+export const beginAgentTurn = mutation({
+  args: {
+    ...bridgeKeyArgs,
+    receipt: v.string(),
+    text: v.string(),
+    noteId: v.optional(v.id("notes")),
+    dayStartMs: v.number(),
+    dayEndMs: v.number(),
+    todayDate: v.string(),
+  },
+  returns: v.union(
+    v.object({ status: v.literal("ready"), requestId: v.string(), replyTo: v.id("messages") }),
+    v.object({
+      status: v.union(v.literal("busy"), v.literal("cancelled"), v.literal("done"), v.literal("crisis")),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    const lease = await ownedLease(ctx, user._id, args.sessionId);
+    if (!(await agentLeaseLive(ctx, lease))) return { status: "cancelled" as const };
+    const bridge = lease.agentBridge;
+    const receipt = bridge?.receipts.find((item) => item.id === args.functionId);
+    const text = speechText(args.text);
+    if (
+      !bridge ||
+      !receipt ||
+      !text ||
+      args.receipt !== (await receiptProof(bridge, receipt)) ||
+      receipt.inputDigest !== (await bridgeDigest(JSON.stringify(["tempo-voice-input-v1", text])))
+    )
+      throw voiceError("voice_session_ended");
+    if (receipt.state === "done") return { status: "done" as const };
+    if (receipt.state === "cancelled" || receipt.state === "failed") return { status: "cancelled" as const };
+    if (receipt.state === "running") {
+      // A lost admission response can resume the same prepared request. The existing coach
+      // claim mutation serializes action deliveries; no new message or context is written.
+      const prior = receipt.userMessageId ? await ctx.db.get(receipt.userMessageId) : null;
+      const research = prior
+        ? (bridgeMetadata(prior).coachResearch as { state?: unknown; requestId?: unknown } | undefined)
+        : undefined;
+      const until = prior ? bridgeMetadata(prior).coachClaimUntil : undefined;
+      return prior &&
+        receipt.requestId &&
+        research?.requestId === receipt.requestId &&
+        research.state === "prepared" &&
+        typeof until === "number" &&
+        until > Date.now() &&
+        (await bridgeTurnLive(ctx, prior))
+        ? { status: "ready" as const, requestId: receipt.requestId, replyTo: prior._id }
+        : { status: "busy" as const };
+    }
+    if (
+      !Number.isFinite(args.dayStartMs) ||
+      !Number.isFinite(args.dayEndMs) ||
+      args.dayEndMs <= args.dayStartMs ||
+      args.dayEndMs - args.dayStartMs > 26 * 60 * 60_000 ||
+      !isValidLocalDate(args.todayDate)
+    )
+      throw voiceError("voice_session_ended");
+    if (args.noteId) {
+      const note = await ctx.db.get(args.noteId);
+      if (!note || note.deletedAt !== undefined || note.userId !== user._id)
+        throw voiceError("voice_session_ended");
+    }
+    const newest = await ctx.db
+      .query("messages")
+      .withIndex("by_conversationId_deletedAt", (q) =>
+        q.eq("conversationId", lease.conversationId).eq("deletedAt", undefined),
+      )
+      .order("desc")
+      .first();
+    if (newest?.role === "user" && !isCrisisText(text)) {
+      const prior = bridgeMetadata(newest).coachResearch as { state?: unknown } | undefined;
+      if (prior?.state !== "cancelled" && prior?.state !== "finished") return { status: "busy" as const };
+    }
+    const sent = await sendCoachMessage(ctx, { conversationId: lease.conversationId, content: text });
+    if (sent.crisis) {
+      await endLease(ctx, lease, "stopped", Date.now());
+      return { status: "crisis" as const };
+    }
+    const requestId = crypto.randomUUID();
+    const prepared = await prepareCoachReply(ctx, {
+      conversationId: lease.conversationId,
+      requestId,
+      ...(args.noteId ? { noteId: args.noteId } : {}),
+      dayStartMs: args.dayStartMs,
+      dayEndMs: args.dayEndMs,
+      todayDate: args.todayDate,
+      research: { useWeb: false, thinkHard: false },
+    });
+    if (prepared.status !== "ready" || prepared.replyTo !== sent.replyTo)
+      throw voiceError("voice_session_ended");
+    const message = await ctx.db.get(sent.replyTo);
+    if (!message) throw voiceError("voice_session_ended");
+    await ctx.db.patch(message._id, {
+      toolCalls: {
+        ...bridgeMetadata(message),
+        voiceBridge: { sessionId: lease._id, functionId: receipt.id },
+      },
+    });
+    await ctx.db.patch(lease._id, {
+      agentBridge: {
+        ...bridge,
+        receipts: bridge.receipts.map((item) =>
+          item.id === receipt.id
+            ? { ...item, state: "running" as const, requestId, userMessageId: sent.replyTo }
+            : item,
+        ),
+      },
+    });
+    return prepared;
+  },
+});
+export const cancelAgentTurn = mutation({
+  args: bridgeKeyArgs,
+  returns: v.object({ status: v.union(v.literal("cancelled"), v.literal("done")) }),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const lease = await ownedLease(ctx, user._id, args.sessionId);
+    const bridge = lease.agentBridge;
+    const receipt = bridge?.receipts.find((item) => item.id === args.functionId);
+    if (receipt?.state === "done") return { status: "done" as const };
+    if (bridge && receipt) {
+      await fenceAgentReceipt(ctx, receipt);
+      await ctx.db.patch(lease._id, {
+        agentBridge: {
+          ...bridge,
+          receipts: bridge.receipts.map((item) =>
+            item.id === receipt.id ? { ...item, state: "cancelled" as const } : item,
+          ),
+        },
+      });
+    }
+    return { status: "cancelled" as const };
+  },
+});
+async function linkedAnswer(ctx: Db, lease: Lease, receipt: AgentReceipt) {
+  if (receipt.state !== "done" || !receipt.assistantMessageId || !receipt.userMessageId || !receipt.requestId)
+    return null;
+  const [message, userMessage] = await Promise.all([
+    ctx.db.get(receipt.assistantMessageId),
+    ctx.db.get(receipt.userMessageId),
+  ]);
+  const key = userMessage ? bridgeKeyOf(userMessage) : null;
+  if (
+    !message ||
+    !userMessage ||
+    message.deletedAt !== undefined ||
+    userMessage.deletedAt !== undefined ||
+    message.role !== "assistant" ||
+    userMessage.role !== "user" ||
+    message.modelUsed === "crisis-card" ||
+    message.conversationId !== lease.conversationId ||
+    userMessage.conversationId !== lease.conversationId ||
+    key?.sessionId !== lease._id ||
+    key.functionId !== receipt.id
+  )
+    return null;
+  return message;
+}
+export const completeAgentTurn = mutation({
+  args: { ...bridgeKeyArgs, requestId: v.string(), replyTo: v.id("messages") },
+  returns: v.union(
+    v.object({ status: v.literal("ready"), assistantMessageId: v.id("messages") }),
+    v.object({ status: v.union(v.literal("cancelled"), v.literal("unavailable")) }),
+  ),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    const lease = await ownedLease(ctx, user._id, args.sessionId);
+    if (!(await agentLeaseLive(ctx, lease))) return { status: "cancelled" as const };
+    const receipt = lease.agentBridge?.receipts.find((item) => item.id === args.functionId);
+    if (!receipt || receipt.requestId !== args.requestId || receipt.userMessageId !== args.replyTo)
+      return unavailable;
+    if (receipt.state === "cancelled") return { status: "cancelled" as const };
+    const answer = await linkedAnswer(ctx, lease, receipt);
+    if (!answer && receipt.state === "running" && receipt.userMessageId && lease.agentBridge) {
+      const message = await ctx.db.get(receipt.userMessageId);
+      const research = message
+        ? (bridgeMetadata(message).coachResearch as { state?: unknown } | undefined)
+        : undefined;
+      if (research?.state === "cancelled" || research?.state === "finished") {
+        const state = research.state === "cancelled" ? ("cancelled" as const) : ("failed" as const);
+        await fenceAgentReceipt(ctx, receipt);
+        await ctx.db.patch(lease._id, {
+          agentBridge: {
+            ...lease.agentBridge,
+            receipts: lease.agentBridge.receipts.map((item) =>
+              item.id === receipt.id ? { ...item, state } : item,
+            ),
+          },
+        });
+        if (state === "cancelled") return { status: "cancelled" as const };
+      }
+    }
+    return answer ? { status: "ready" as const, assistantMessageId: answer._id } : unavailable;
+  },
+});
+export const canonicalAgentAnswer = internalQuery({
+  args: { ...bridgeKeyArgs, capability: v.string() },
+  returns: v.union(
+    v.object({ status: v.literal("ready"), content: v.string(), assistantMessageId: v.id("messages") }),
+    v.object({ status: v.literal("unavailable") }),
+  ),
+  handler: async (ctx, args) => {
+    const lease = await capabilityLease(ctx, args.sessionId, args.capability);
+    const receipt = lease?.agentBridge?.receipts.find((item) => item.id === args.functionId);
+    if (!lease || !receipt || lease.agentBridge?.receipts.at(-1)?.id !== receipt.id) return unavailable;
+    const answer = await linkedAnswer(ctx, lease, receipt);
+    return answer
+      ? { status: "ready" as const, content: answer.content, assistantMessageId: answer._id }
+      : unavailable;
+  },
+});
