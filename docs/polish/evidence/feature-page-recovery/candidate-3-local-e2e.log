@@ -1,0 +1,256 @@
+[WebServer] $ next dev --turbopack
+
+[WebServer] (node:259826) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:259838) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:259858) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[WebServer] (node:259874) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+
+Running 117 tests using 2 workers
+
+[1/117] [chromium] › tests/e2e/acceptance/alpha.spec.ts:69:7 › preview acceptance (synthetic approved account) › today: main content loads for the signed-in account
+[2/117] [chromium] › tests/e2e/acceptance/alpha.spec.ts:76:7 › preview acceptance (synthetic approved account) › notes: a new note keeps its title, body and pin across reloads
+[3/117] [chromium] › tests/e2e/acceptance/alpha.spec.ts:119:7 › preview acceptance (synthetic approved account) › tasks: a ticked task stays ticked after reload and is listed once
+[4/117] [chromium] › tests/e2e/acceptance/alpha.spec.ts:144:7 › preview acceptance (synthetic approved account) › coach: one message gets a new, non-empty assistant reply
+[5/117] [chromium] › tests/e2e/acceptance/alpha.spec.ts:191:7 › preview acceptance (synthetic approved account) › settings/memory: the memory screen loads
+[6/117] [chromium] › tests/e2e/approval-gate.spec.ts:15:7 › approval gate (approved user) › an approved user reaches the app, not the waiting screen
+[7/117] [chromium] › tests/e2e/approval-gate.spec.ts:22:7 › approval gate (approved user) › /admin/approvals shows the admin list or 'Admins only'
+[8/117] [chromium] › tests/e2e/demo-per-user.spec.ts:34:7 › demo: notes stay per user › user A's note is invisible to user B
+[9/117] [chromium] › tests/e2e/demo-per-user.spec.ts:97:7 › demo: chat stays per user › user A's conversation is invisible to user B
+(node:259889) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[10/117] [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+(node:259890) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[11/117] [chromium] › tests/e2e/feature-sweep.spec.ts:199:7 › logged-in feature sweep › DayPlanPanel
+[12/117] [chromium] › tests/e2e/feature-sweep.spec.ts:236:7 › logged-in feature sweep › CarryOverStrip
+[13/117] [chromium] › tests/e2e/feature-sweep.spec.ts:273:7 › logged-in feature sweep › HabitCheckInStrip
+[14/117] [chromium] › tests/e2e/feature-sweep.spec.ts:327:7 › logged-in feature sweep › DayPlanSummary
+[15/117] [chromium] › tests/e2e/feature-sweep.spec.ts:367:7 › logged-in feature sweep › DayTimeline
+[16/117] [chromium] › tests/e2e/feature-sweep.spec.ts:385:7 › logged-in feature sweep › TimeBlockDialog
+[17/117] [chromium] › tests/e2e/feature-sweep.spec.ts:418:7 › logged-in feature sweep › HabitsLibrary
+[18/117] [chromium] › tests/e2e/feature-sweep.spec.ts:452:7 › logged-in feature sweep › HabitDetail
+[19/117] [chromium] › tests/e2e/feature-sweep.spec.ts:482:7 › logged-in feature sweep › Brain dump sort and accept
+[20/117] [chromium] › tests/e2e/feature-sweep.spec.ts:525:7 › logged-in feature sweep › Brain dump crisis card
+[21/117] [chromium] › tests/e2e/feature-sweep.spec.ts:552:7 › logged-in feature sweep › Coach dial and panic
+[22/117] [chromium] › tests/e2e/feature-sweep.spec.ts:581:7 › logged-in feature sweep › Coach daily proposal
+[23/117] [chromium] › tests/e2e/feature-sweep.spec.ts:611:7 › logged-in feature sweep › Coach crisis card
+[24/117] [chromium] › tests/e2e/feature-sweep.spec.ts:658:7 › logged-in feature sweep › Coach chat send and reload
+[25/117] [chromium] › tests/e2e/feature-sweep.spec.ts:700:7 › logged-in feature sweep › Nag list
+[26/117] [chromium] › tests/e2e/feature-sweep.spec.ts:724:7 › logged-in feature sweep › Nag phrases
+[27/117] [chromium] › tests/e2e/feature-sweep.spec.ts:762:7 › logged-in feature sweep › Memory settings
+[28/117] [chromium] › tests/e2e/feature-sweep.spec.ts:804:7 › logged-in feature sweep › TemplatesLibrary
+[29/117] [chromium] › tests/e2e/feature-sweep.spec.ts:823:7 › logged-in feature sweep › TemplateRun
+[30/117] [chromium] › tests/e2e/feature-sweep.spec.ts:845:7 › logged-in feature sweep › Template builder and editor
+[31/117] [chromium] › tests/e2e/feature-sweep.spec.ts:871:7 › logged-in feature sweep › Onboarding name step
+[32/117] [chromium] › tests/e2e/feature-sweep.spec.ts:910:7 › logged-in feature sweep › Profile name and delete guard
+[33/117] [chromium] › tests/e2e/feature-sweep.spec.ts:946:7 › logged-in feature sweep › Preferences and notifications
+[34/117] [chromium] › tests/e2e/feature-sweep.spec.ts:977:7 › logged-in feature sweep › Billing plan card
+[35/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1000:7 › logged-in feature sweep › Search grouped results
+[36/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1025:7 › logged-in feature sweep › Calendar events
+[37/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1054:7 › logged-in feature sweep › Focus blocks
+[38/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1081:7 › logged-in feature sweep › Insights
+[39/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1115:7 › logged-in feature sweep › Notes list
+[40/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /tasks
+[41/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /tasks/energy
+[42/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /tasks/checklists
+[43/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /tasks/priority
+[44/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /journal
+[45/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /routines
+[46/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /routines/missing-sweep-id
+[47/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /goals
+[48/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /goals/progress
+[49/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /goals/missing-sweep-id
+[50/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /projects
+[51/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /projects/missing-sweep-id
+[52/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /projects/missing-sweep-id/kanban
+[53/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /activity
+[54/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /history
+[55/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /command
+[56/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /ask-founder
+[57/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /empty-states
+[58/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /daily-note
+[59/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /settings/integrations
+[60/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /settings/passkeys
+[61/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /templates/sketch
+[62/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /billing/trial-end
+[63/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /dashboard
+[64/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /about
+[65/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /changelog
+[66/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /contact
+[67/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /privacy
+[68/117] [chromium] › tests/e2e/feature-sweep.spec.ts:1183:9 › other routes smoke › smoke /terms
+[69/117] [chromium] › tests/e2e/fix/calendar-add.spec.ts:7:7 › calendar add event › signed in: adds an event, it survives reload, no false sign-in message
+[70/117] [chromium] › tests/e2e/fix/calendar-add.spec.ts:26:7 › calendar add event › local mode: form renders and adds without a sign-in message
+[71/117] [chromium] › tests/e2e/fix/insights-loads.spec.ts:5:5 › /insights leaves the loading placeholders within 8 s
+  1) [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Add event' })
+        - locator resolved to <button type="submit" class="tp-btn tp-btn--primary">…</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+
+
+      18 |   await page.getByRole("textbox", { name: "Event title" }).fill("Boundary planning call");
+      19 |   await page.getByLabel("Event date").fill("2026-08-01");
+    > 20 |   await page.getByRole("button", { name: "Add event" }).click();
+         |                                                         ^
+      21 |
+      22 |   await expect(page.getByTestId("day-events")).toContainText("Boundary planning call");
+      23 |
+        at /workspace/tempo-rhythm/tests/e2e/calendar-views.spec.ts:20:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/calendar-views-event-creat-2a98f-d-Month-views-for-that-date-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[72/117] [chromium] › tests/e2e/fix/notes-pin.spec.ts:15:7 › notes pin › Pin becomes Unpin, sorts first and survives reload
+[73/117] [chromium] › tests/e2e/mcp.spec.ts:14:5 › POST /api/mcp without a token is not redirected to /sign-in
+(node:260244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[74/117] [chromium] › tests/e2e/mcp.spec.ts:32:7 › signed in › create a token, call tools, revoke
+[75/117] [chromium] › tests/e2e/preview-smoke.spec.ts:14:7 › preview smoke › sign-in shows magic link only
+[76/117] [chromium] › tests/e2e/preview-smoke.spec.ts:21:7 › preview smoke › sign-up shows magic link only
+[77/117] [chromium] › tests/e2e/preview-smoke.spec.ts:28:7 › preview smoke › signed-out /today redirects
+[78/117] [chromium] › tests/e2e/preview-smoke.spec.ts:36:7 › preview smoke › sign-in LCP
+[79/117] [chromium] › tests/e2e/screens/activity.spec.ts:14:7 › activity screen › shows newly created items newest first and links to them
+[80/117] [chromium] › tests/e2e/screens/activity.spec.ts:48:7 › activity screen › renders the feed or its empty state without console errors
+[81/117] [chromium] › tests/e2e/screens/coach.spec.ts:15:7 › coach screen › send a message and see a reply; thread survives reload
+[82/117] [chromium] › tests/e2e/screens/command.spec.ts:30:7 › command screen › filters by title and opens the first match with Enter
+[83/117] [chromium] › tests/e2e/screens/command.spec.ts:42:7 › command screen › moves the selection with arrow keys and opens it
+[84/117] [chromium] › tests/e2e/screens/command.spec.ts:56:7 › command screen › opens a matching screen when clicked
+[85/117] [chromium] › tests/e2e/screens/integrations.spec.ts:25:7 › integrations screen › shows planned integrations without fake connect controls
+[86/117] [chromium] › tests/e2e/screens/integrations.spec.ts:42:7 › integrations screen › opens Ask the founder from the request link
+[87/117] [chromium] › tests/e2e/screens/notes-save.spec.ts:15:7 › notes save race › title typed then body typed within 500ms both persist
+[88/117] [chromium] › tests/e2e/screens/notes.spec.ts:15:7 › notes screen › create, open, edit, pin and delete a note; survives reload
+[89/117] [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible
+[90/117] [chromium] › tests/e2e/fix/passkeys-signed-in.spec.ts:14:9 › passkeys settings › signed in › opens instead of the sign-in wall
+[91/117] [chromium] › tests/e2e/fix/passkeys-signed-in.spec.ts:22:7 › passkeys settings › signed out goes to /sign-in
+[92/117] [chromium] › tests/e2e/screens/tasks-edit.spec.ts:28:7 › task editing › edit priority, energy and steps
+[93/117] [chromium] › tests/e2e/screens/tasks-edit.spec.ts:61:7 › task editing › due date
+[94/117] [chromium] › tests/e2e/screens/tasks-edit.spec.ts:84:7 › task editing › delete
+[95/117] [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  2) [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ──
+
+    Test timeout of 30000ms exceeded.
+
+    Error Context: test-results/screens-sign-out-sign-out-sign-out-button-is-visible-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/screens-sign-out-sign-out-sign-out-button-is-visible-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/screens-sign-out-sign-out-sign-out-button-is-visible-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+[96/117] [chromium] › tests/e2e/screens/sign-out.spec.ts:26:9 › sign out › signed in › sign out lands on sign-in
+(node:260476) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[97/117] [chromium] › tests/e2e/wiring/coach.spec.ts:8:7 › coach wiring › /coach renders dial/panic and proposal markers next to Coach chat
+  3) [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/tasks", waiting until "load"
+
+
+      27 |     await expect(page.getByText(taskTitle)).toBeVisible();
+      28 |
+    > 29 |     await page.goto("/tasks");
+         |                ^
+      30 |     await expect(main.getByRole("heading", { name: "Inbox" })).toBeVisible();
+      31 |     await expect(page.getByText(taskTitle)).toBeVisible();
+      32 |
+        at /workspace/tempo-rhythm/tests/e2e/task-views-core.spec.ts:29:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/task-views-core-core-task--ccb5c-e-one-persisted-task-record-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:260609) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[98/117] [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:8:7 › habits, brain dump and search wiring › /habits mounts the habits screen
+[99/117] [chromium] › tests/e2e/wiring/harness.spec.ts:8:7 › wiring E2E harness › signed-out /plan is not sent to /sign-in under the dev E2E bypass
+[100/117] [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:14:7 › habits, brain dump and search wiring › /habits/[id] mounts HabitDetail
+[101/117] [chromium] › tests/e2e/wiring/harness.spec.ts:14:7 › wiring E2E harness › a route outside the wiring list still redirects
+[WebServer] (node:260834) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[102/117] [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+[103/117] [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+[104/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+[105/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+[106/117] [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+[107/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+[108/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+[109/117] [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+[110/117] [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+[111/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+[112/117] [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+[113/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+[114/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+[115/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/editor/[id] mounts its component
+[WebServer] (node:261439) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[116/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+[WebServer] (node:261487) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[117/117] [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /onboarding mounts its component
+  3 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+  89 skipped
+  25 passed (5.4m)

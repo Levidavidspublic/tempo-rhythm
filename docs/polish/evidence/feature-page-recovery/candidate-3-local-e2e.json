@@ -1,0 +1,1 @@
+{"command":"CI=1 bunx playwright test --reporter=line","exit":1,"startedAt":"2026-10-22T00:19:48Z","endedAt":"2026-10-22T00:25:18Z","head":"7c59ad11d212ceadc080b220f2d6e0faf8e5e2b5"}

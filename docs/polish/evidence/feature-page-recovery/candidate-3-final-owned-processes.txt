@@ -1,0 +1,10 @@
+Thu Oct 22 00:28:59 UTC 2026
+    PID    PPID    PGID     SID STAT     ELAPSED COMMAND
+ 258847       1  248383  248383 Z          14:34 bun139
+ 259826       1  259824  259824 Z          09:05 MainThread
+ 259838       1  259824  259824 Z          09:04 next-server (v1
+ 259858       1  259824  259824 Z          08:29 MainThread
+ 259874       1  259824  259824 Z          08:26 MainThread
+ 261676       1  261607  261568 Z          02:18 MainThread
+ 261688       1  261607  261568 Z          02:16 MainThread
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
