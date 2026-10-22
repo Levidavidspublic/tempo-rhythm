@@ -1,6 +1,23 @@
 # Needs Amit
 
-Blocked — These owner actions remain. Decisions recorded below apply from 2026-10-21 (Asia/Jerusalem). The previous twenty-question ledger remains in git history and VALIDATION.md; it is not a pending approval list.
+## Amit's answers — 2026-10-22
+
+WALK — These answers supersede the corresponding pending decisions below. The earlier ledger remains as history, not a renewed permission request.
+
+- AT-21: one additional scoped shared-harness pass authorized for #1203, including the preserved portability and process-signal fixes. Existing checks and deadlines remain unchanged.
+- AT-22: a fresh clean replacement PR for KB-67 #1197 is authorized. Keep #1197 open and link both PRs; delete nothing.
+- AT-27 / AT-28 / AT-29: one scoped correction each authorized for Plan's hidden heading, hero's regression test and the page-save revision race.
+- AT-02: KB-01, KB-16 and KB-31 architecture implementation is approved. Prepare their PRs and document every schema change in DECISIONS; Amit supplies the convex-arch labels himself before any label-gated merge.
+- AT-03: implement a small Vercel search service with a maximum $10/month hosting budget. Default Together and DeepInfra usage is authorized. No production release or manual deployment is authorized by this run.
+- AT-23: Lane 2 owns chat research and cancellation. Implement use-the-web, think-hard and cancel; protected PRs #1193 and #1198 remain untouched.
+- AT-24: default requested model is GLM 5.3 Flash with medium reasoning, escalating to high when needed. Think hard requests GLM 5.3 (not Flash), high reasoning, maximum ten minutes. Model identifiers come from Convex settings. Verify provider support; do not invent unavailable identifiers or substitute silently.
+- AT-25: Resend magic-link email is the only sign-in method. No free plan; every plan starts with a $1 trial. Beta requests require Amit's approval; approved and existing testers receive Max free. RevenueCat/provider identifiers remain pending and checkout stays OFF.
+- Hebrew voice: imperfect phonetic Hebrew is acceptable; native review is later. A researched Hebrew crisis keyword list must stay behind a flag and its live voice crisis path stays OFF until Amit's clinical review.
+- Executor: implement an Integrations screen and server connection behind a flag using the documented MCP endpoint. Environment connection setup remains recorded once below if unavailable.
+- New authorized kitchen-kb tickets: researched Hebrew crisis phrases; Deepgram Voice Agent voice-to-voice with GLM brain (key already in Convex; no value access); and a no-spend comparison of Deepgram, Inworld, ElevenLabs and open-weight voice options in docs/research/voice.md.
+- Preserve both lanes, maximum four parallel worktrees, one draft PR per ticket, disjoint writers, green CI plus addressed CodeRabbit and all guards before integration merge. No production, protected-PR edits, secrets or spending beyond the stated authorizations.
+
+Historical decision ledger — Superseded entries below are resolved by the dated answers above; only unresolved setup, labels, provider identifiers and clinical review remain owner actions. Decisions recorded below apply from 2026-10-21 (Asia/Jerusalem). The previous twenty-question ledger remains in git history and VALIDATION.md; it is not a pending approval list.
 
 1. AT-21 — Decide whether to authorize one more scoped shared-harness correction in [#1203](https://github.com/Levidavidspublic/tempo-rhythm/pull/1203). Three top-level rounds are consumed: initial implementation, review correction, and OS-exit recovery. On current `2d99c84`, KB-75’s combined proof failed the existing cancellation assertion: the supervisor was killed before supplying the child receipt, so the child signal remains UNKNOWN. Keep every deadline and assertion. The latest CodeRabbit platform finding must also be addressed without its suggested test skips; the child fixtureCleanup signal handler must preserve termination semantics (open finding on #1204). Parent signal propagation is already corrected and verified. AGENTS.md says “After the 3rd failure: stop and report `stuck`”; this run does not authorize itself a fourth round or merge the known failure. Hosted green CI does not erase it.
 2. AT-22 — Authorize a history-remediation path for [KB-67 #1197](https://github.com/Levidavidspublic/tempo-rhythm/pull/1197), such as a clean replacement PR. The current file and PR body redact the synthetic fixture UUID, but gitleaks on current `2279764` still flags its addition in commit `7095f66`. It is a generated test receipt, not a credential. A normal follow-up commit cannot remove it from the scan’s history range; shared force-pushes, scope/baseline exceptions and bypassing the scan are not authorized. Preserve the existing review and failure receipts when choosing a replacement path.
