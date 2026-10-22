@@ -116,10 +116,20 @@ export async function softDeleteUserAccount(
   let deletedCount = 0;
 
   if (user.deletedAt === undefined) {
+    // Retained across restoration. Malformed/saturated epochs must never block
+    // privacy deletion or wrap into an apparently fresh billing generation.
+    const epoch = user.billingDeletionEpoch;
+    const billingDeletionEpoch = epoch === undefined
+      ? 1
+      : Number.isSafeInteger(epoch) && epoch >= 0 && epoch < Number.MAX_SAFE_INTEGER
+        ? epoch + 1
+        : Number.MAX_SAFE_INTEGER;
     await ctx.db.patch(userId, {
       deletedAt: now,
       isActive: false,
       updatedAt: now,
+      billingDeletionEpoch,
+      billingDeletedAt: now,
     });
     deletedCount += 1;
   }

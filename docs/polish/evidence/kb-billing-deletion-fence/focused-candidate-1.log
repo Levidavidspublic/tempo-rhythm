@@ -1,0 +1,24 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/billing_deletion_fence.test.ts:
+(pass) durable account billing deletion fence > first live deletion writes both fence fields atomically in the existing user patch [3.53ms]
+(pass) durable account billing deletion fence > repeated deletion leaves generation and deletion instant unchanged [16.64ms]
+(pass) durable account billing deletion fence > the unchanged restore patch preserves both fence fields [0.88ms]
+(pass) durable account billing deletion fence > restore and deletion advance exactly once even in the same millisecond [0.91ms]
+(pass) durable account billing deletion fence > a later real deletion replaces only the last fence timestamp and increments generation [0.30ms]
+(pass) durable account billing deletion fence > an absent subscription still creates a durable deletion fence [1.27ms]
+(pass) durable account billing deletion fence > already-inactive subscription retains its row and timestamps while user gains the fence [0.45ms]
+(pass) durable account billing deletion fence > missing users produce zero writes and no child queries [0.08ms]
+(pass) durable account billing deletion fence > child cleanup, provider deactivation, tenant isolation and deletedCount stay intact [1.64ms]
+(pass) durable account billing deletion fence > saturated generation never wraps or prevents privacy deletion [1.67ms]
+(pass) durable account billing deletion fence > malformed persisted generations saturate and still allow deletion [6.82ms]
+(pass) durable account billing deletion fence > zero and the last unsaturated safe integer each advance once [1.33ms]
+(pass) durable account billing deletion fence > legacy already-deleted user receives no invented marker while cleanup can finish [1.24ms]
+(pass) durable account billing deletion fence > existing markers on an already-deleted user are never repaired or rewritten [0.94ms]
+(pass) billing deletion schema compatibility > both fence fields are optional numbers and all existing user validators remain unchanged [1.00ms]
+(pass) billing deletion schema compatibility > all six legacy users indexes preserve their exact indexed fields [0.13ms]
+
+ 16 pass
+ 0 fail
+ 102 expect() calls
+Ran 16 tests across 1 file. [522.00ms]
