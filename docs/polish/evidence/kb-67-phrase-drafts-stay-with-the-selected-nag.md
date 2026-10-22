@@ -60,3 +60,190 @@ Repeated Add submits produce exactly one `nags:addPhrase` call; repeated Suggest
 25. gallery changes real form and notice views with A/B selection
 26. long fictional nag text fits phone and desktop
 27. source-derived before and mounted after evidence covers widths, locales and themes
+
+## Third normal repair: isolated fixture lifecycle
+
+The retained source/test ledger contains two implemented rounds: `6666fb0` (initial implementation) and `1551b5f` (feedback/focus repair). `bc6c4d4` and `f8514d7` changed evidence only. The owner-authorized KB FINISH handoff explicitly permits one third normal candidate for this fixture correction, with no fourth attempt presumed. Root will reopen issue #1169 and handle a follow-up draft PR because merged PR #1172 cannot be amended. This is an explicit procedural exception for the same scoped repair; it does not expand the product scope or authorize another repair round.
+
+Merged source `c7447ad` has the same fixture bytes as `1551b5f`. Hosted PR #1159 job `119187961678` finished the named KB-67 cases, then failed its unnamed cleanup hook after 60 seconds (3472 pass, 3 todo, 1 fail). PR #1168 showed the same 60-second cleanup failure (3471 pass, 3 todo, 1 fail); root reports its unchanged rerun subsequently passed. The hook awaited `browser.close()` before stopping the server, so browser closure was the unresolved boundary and server release was blocked behind it. These receipts establish the failure, but do not establish why Chromium closure stalled or prove every native hang has been reproduced locally.
+
+The third candidate changes only this evidence Markdown and the existing KB-67 test. All 27 original names, callback bodies and assertions remain intact, apart from moving temporary captures into the unique fixture directory. The 60-second default, 120-second setup and 300-second capture deadlines are unchanged. The fixture's Bun build/server, Playwright import and browser run in a fresh child process. Parent cases require both their fresh invocation's result and Bun's corresponding native pass line; a separate lifecycle case requires the exact case set, completed cleanup and authoritative child exit 0. No cached output, success marker or late callback can override a failed native test or exit.
+
+Server stop, browser close and unique temporary-directory removal start independently, and all release results are awaited and propagated. A pending or rejected browser close cannot prevent server/directory cleanup from starting. Captures are temporary and removed with that directory; the existing committed contact sheet remains unchanged. Missing installed Playwright Chromium/system Chrome still fails explicitly.
+
+Three additional isolated regressions cover pending browser close, rejected browser close with a real loopback server and temporary directory, and a real nonzero child exit despite successful-looking case records. The exit regression also checks a valid success, a native failed-case line, a mismatched invocation token, incomplete cleanup and a failed case result. These controlled failures validate cleanup independence and truthful failure reporting; they do not claim to reproduce Chromium's intermittent native shutdown stall.
+
+Validation logs are retained in `/workspace/work/kb-finish/kb67-third/` for root handoff:
+
+| Check | Third-candidate local result |
+| --- | --- |
+| Bun | PASS: 1.3.9 |
+| Frozen install | UNKNOWN: exit 124 after the authorized 120-second resolution bound; tail remains `bun install v1.3.9 (cf6cdbbb)` / `Resolving dependencies` |
+| Lint | PASS: exit 0; 5/5 tasks; 7.352s; 9 existing web warnings and 1 existing UI warning |
+| Typecheck | PASS: exit 0; 5/5 tasks; 2m18.393s |
+| Focused KB-67 fixture and lifecycle regressions | FAIL: exit 1; child 29 pass, 1 fail, 109 assertions (173.25s); parent 29 pass, 2 fail, 29 assertions (173.71s). All 27 original behavioral cases passed; the added rejected-close regression expected stopped `Server.port === -1`, but Bun 1.3.9 returned `0`. The parent exit guard also failed as required. |
+| Full suite, scans/notices, E2E, build | Not launched: third normal candidate failed; stop under the three-attempt rule. Root owns any subsequent decision and remote operations. |
+
+Root owns the subsequent broad suite, scans/notices, E2E, build and remote operations. No product, config, dependency, timeout, skip or contact-sheet change is included.
+
+
+Third-candidate disposition: **stuck**. This is an assertion/candidate failure, not an environment-only diagnostic. At the third-candidate handoff, no source/test correction or rerun had been made after that failed run, and no fourth attempt was presumed; the subsequent explicit authorization is recorded below. The native Chromium hang did not occur in this run: the child reported `cleanupComplete: true` and exited 1 because of the new regression's unsupported port assumption. The controlled pending-close and real nonzero-child-exit regressions passed. The directory-removal assertion follows the failed port assertion and therefore was not reached in that regression; its `finally` still awaited server stop and directory removal. It would be incorrect to claim that the entire regression passed or that this candidate is green.
+
+Failure tail retained in `focused.log`:
+
+```text
+Expected: -1
+Received: 0
+at tests/unit/kb-67.test.tsx:861:34
+(fail) KB-67 fixture lifecycle > browser close rejection still stops the real server and removes its unique directory
+(fail) KB-67 fixture lifecycle > isolated fixture exits successfully after every named case and cleanup
+29 pass
+2 fail
+29 expect() calls
+Ran 31 tests across 1 file. [173.71s]
+```
+
+## Fourth and final candidate: existing owner-authorized additional pass
+
+After receiving the third-candidate failure, root explicitly reconciled the authorization: KB-67 has three normal source/test candidates and zero additional passes consumed. The owner's KB FINISH instruction grants one additional repair pass to exhausted KB drafts; its named stuck-ticket list is inclusive, not an exclusive limit. Root therefore explicitly authorized this fourth and final source candidate under that existing authority. No fifth candidate is authorized or presumed. Root retains the reopened-issue/follow-up-PR procedural exception and all remote operations.
+
+This additional pass changes only the added regression's unsupported stopped-port assumption. It captures the real server URL before shutdown, proves that URL serves the probe before cleanup, then requires a real fetch to that same URL to reject after the controlled browser-close rejection. The existing directory-removal assertion remains and must execute. All 27 original behavioral cases, their assertions, the 60/120/300-second deadlines, missing-browser failure, clean-child isolation and authoritative exit checks remain unchanged. The third-candidate failure above remains historical failure evidence and is not relabelled as a pass.
+
+Fourth-candidate logs are retained in `/workspace/work/kb-finish/kb67-final/`:
+
+| Check | Fourth/final-candidate local result |
+| --- | --- |
+| Bun | 1.3.9; unchanged from the retained version proof |
+| Frozen install | UNKNOWN retained from the unchanged dependency graph: exit 124 after 120s; no resolution retry |
+| Lint | PASS: exit 0; 5/5 tasks; 632ms (cached); existing warning results retained |
+| Typecheck | PASS: exit 0; 5/5 tasks; 681ms (cached) |
+| `bun test tests/unit/kb-67.test.tsx` under its individual heavy lock | PASS: parent 31 pass, 0 fail, 91 assertions, 121.39s; child 30 pass, 0 fail, 110 assertions, 121.08s, authoritative exit 0 and cleanup complete |
+| Full suite, scans/notices, E2E, build | Pending root-owned mandatory gates; no local pass claimed |
+
+The child passed all 27 preserved behavioral cases and all three lifecycle regressions. The rejected-close regression now reached both the actual post-stop fetch rejection and directory-removal assertion. The parent separately verified the exact named case set, each native pass line, completed cleanup and exit 0. The failed third-candidate 29/2 result remains recorded above. This is the one owner-authorized additional pass, not a reset of the normal three-attempt ledger; no further source candidate is authorized here.
+
+After the final proof, no unique `work/kb67-*` directories or executing recorded fixture descendants remained. Two exited Chromium descendants remained as PID-1-owned zombies in the container; they are not executing browser jobs and cannot be reaped by this fixture process. The earlier failed run likewise left two exited PID-1-owned Chromium zombies. No broad runner or remote operation was launched by this handoff.
+
+The native Chromium cleanup hang did not reproduce in either focused run. The controlled pending/rejected close and nonzero child-exit checks support cleanup independence and truthful reporting; they do not prove that every possible native hang is eliminated. Root owns all subsequent mandatory gates and remote operations.
+
+
+## Overnight v3 shared-harness adoption — 2026-10-21
+
+PR open — the owner authorized AT-13 on 2026-10-21: adopt the shared fix, retain the existing cases and deadlines, stream phase evidence, bound cancellation and reap owned resources. This supersedes the earlier exhausted-pass hold above for this one scoped pass. Role: WORKHORSE. Issue #1169 and corrective PR #1197 remain the same; original merged #1172 is not modified.
+
+The adapter imports the shared harness from #1202/#1203. The parent uses the actual child exit and separate supervisor exit, streams build/server/browser/case/cleanup/exit evidence and rejects lifecycle failures before reporting cases. Each browser bundle uses a fresh isolated build process with exact fictional-boundary aliases. Normal exit and cancellation share idempotent cleanup; server, browser and unique-directory release begin independently and preserve errors. The Linux supervisor reaps its owned descendants.
+
+All 27 original behavioral cases, three existing child lifecycle regressions and the parent exit gate remain. A source comparison found the same 31 named parent reports, 55 expect-bearing lines and 62 browser-expect-bearing lines. Every assertion-bearing line is unchanged. The 60-second default, 120-second setup and 300-second capture deadlines remain exactly as before. A finite outer lifetime contains the sum of original worst-case budgets (120-second setup, thirty 60-second slots, 300-second capture, and 60-second cleanup); it does not increase or replace any individual case/hook timeout. No production source, styling, dictionary, route, backend, configuration, dependency or screenshot changes.
+
+The first adoption proof used shared head `1e18455`. Child: **30 pass / 0 fail**, 110 assertions, 54.91 seconds, cleanup complete and OS exit 0. Parent: **0 pass / 31 fail**, 55.14 seconds. This is a retained failed run: the earlier shared parser treated nested build/regression supervisor receipts as invalid outer receipts. Every original child case passed, but the parent correctly refused to report a successful lifecycle. Shared correction `511065b` ignores unrelated invocation tokens while still requiring exactly one matching receipt and authoritative exits; its nested-runner regression is separate shared-ticket evidence. The KB-67 adapter itself is unchanged for the next proof.
+
+Bun 1.3.9. Frozen install stayed at Resolving dependencies and was terminated after approximately 120 seconds (exit143); result UNKNOWN, not a successful install. The bun.lock SHA256 exactly matches the successfully installed shared worktree: `35da413125508b8d1fbbaff0fc48b01dd8db7a437dd3439dc7d2f2edfbfcd1f7`. Its installed dependency trees were copied locally, preserving relative workspace links. No repository package or lock file changed. Local lint and typecheck pass 5/5; the initial full test run is still active, and remaining mandatory gates/results will be appended below.
+
+Logs: `/workspace/kb-run-logs/kb67-focused.log`, `kb67-0.log` through `kb67-5.log`, and `kb67-results.json`. Prior failure receipts above remain unchanged. Live account/model behavior, physical devices and native Hebrew read remain UNKNOWN. The pre-existing derived-Accept Undo gap remains out of scope.
+
+
+### Final shared-helper proof and retained mandatory checks
+
+PR open — focused proof passes; merge gates remain pending. Shared review correction `4d30965` was merged normally at `cc6efc6`. It includes the nested supervisor-receipt fix, drain-before-validation fix and failed-spawn PID guard. The first proof on that shared correction passed all 15 shared cases and all 30 KB-67 child cases, but the parent failed 31 reports: the controlled nonzero-exit regression now streamed its own `KB67_FIXTURE_RESULTS` record as well. This scoped adapter collision is distinct from the earlier shared parser failure. The adapter now selects the exact invocation token while still requiring exactly one matching record; missing, duplicate and wrong-token results remain errors. All pre-existing assertions remain unchanged.
+
+Final command: `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-67.test.tsx` → exit 0, **46 pass / 0 fail**, 136 assertions, 49.75 seconds: 15 shared cases plus 31 KB-67 parent reports. KB-67 child: **30 pass / 0 fail**, 110 assertions, 45.17 seconds. Actual child exit 0, supervisor exit 0, all 30 named results present, cleanup complete. Every original 27 behavioral case and three controlled lifecycle regression cases passed. All 18 recorded runner PIDs were absent after completion; no unique `work/kb67-*` directories remained. Logs stream phase and authoritative exit evidence, including the deliberate nested child exit 1; successful case records do not hide it.
+
+| Command | Actual result |
+| --- | --- |
+| `bun --version` | 1.3.9 |
+| `bun install --frozen-lockfile` | UNKNOWN: resolving dependencies stalled; terminated after approximately 120 seconds, exit 143; matching-lock installed trees copied as documented above |
+| `bun run lint` | PASS, exit 0, 5/5 tasks; final adapter recheck also 5/5 |
+| `bun run typecheck` | PASS, exit 0, 5/5 tasks; final adapter recheck also 5/5 |
+| `bun run test` on `7729613` / shared `1e18455` | FAIL, exit 1, 3457 pass / 32 fail / 3 todo, 81,452 assertions, 3,492 tests across 212 files, 814.71 seconds. Failures: 31 old shared-parser KB-67 parent reports plus one unnamed unchanged KB-61 hook at its original 480-second deadline. No external cancellation. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0, four checks |
+| `CI=1 bunx playwright test --reporter=line` | PASS, exit 0, 28 passed / 0 failed / 89 skipped, 68.33 seconds, serialized under shared browser lock. Runtime uses already installed system Chromium via local browser-cache executable link; no repository or test configuration changed. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0, 1/1 task, cached |
+| Final shared + KB-67 focused proof | PASS as above on shared `4d30965` plus scoped token-selection correction |
+
+The broad run, scans, E2E and build completed before the final shared merge and scoped token-selection correction. No final-head broad-suite pass is claimed. CI and actual CodeRabbit coverage on the pushed head remain required. The initial full failure and two focused failure receipts are retained; the reduction to zero applies to the final focused KB-67 and shared cases, not to the entire repository.
+
+Final logs: `/workspace/kb-run-logs/kb67-final-focused.log` (retained collision failure), `kb67-corrected-focused.log` (final pass), `kb67-final-lint.log`, `kb67-final-typecheck.log`, and the original mandatory logs listed above. PR attachment tool completion remains UNKNOWN after the host call hung; the required call was attempted separately. No approval or owner configuration is needed for this test adapter; repo gates and independent KB-61 diagnosis remain pending.
+
+Initial focused failure, last 20 lines:
+
+```text
+      at processTicksAndRejections (unknown:7:39)
+207 |           const line = receipt.slice(0, newline);
+208 |           receipt = receipt.slice(newline + 1);
+209 |           if (line.startsWith("KITCHEN_CHILD_EXIT=")) {
+210 |             try {
+211 |               const record = JSON.parse(line.slice("KITCHEN_CHILD_EXIT=".length));
+212 |               if (record.token !== token || !Number.isInteger(record.code)) throw new Error("Invalid child exit receipt");
+                                                                                            ^
+error: Invalid child exit receipt
+      at <anonymous> (/workspace/kb67/tests/helpers/kitchen-fixture.ts:212:87)
+      at emit (node:events:95:22)
+      at addChunk (internal:streams/readable:265:47)
+      at readableAddChunkPushByteMode (internal:streams/readable:243:18)
+      at handleNumberResult (internal:streams/native-readable:69:18)
+      at <anonymous> (internal:streams/native-readable:43:68)
+(fail) KB-67 fixture lifecycle > successful case records cannot hide a real child exit failure [0.02ms]
+
+ 0 pass
+ 31 fail
+Ran 31 tests across 1 file. [55.14s]
+```
+
+Shared-corrected adapter collision, last 20 lines:
+
+```text
+[kitchen-fixture] exit pid=76167 code=0 signal=none
+(pass) shared kitchen fixture lifecycle > spawn failure reports the error without signaling PID zero or the caller group [103.45ms]
+[kitchen-fixture] EOF OS pid=76167 stat=76167 (python3) Z 73450 76167 76167 0 -1 4227340 2698 3295 0 0 2 1 2 0 20 0 1 0 207085 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+[kitchen-fixture] EOF OS pid=76167 stat=76167 (python3) Z 73450 76167 76167 0 -1 4227340 2698 3295 0 0 2 1 2 0 20 0 1 0 207085 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+[kitchen-fixture] start pid=76177
+[kitchen-fixture] build start
+[kitchen-fixture] build complete outputs=1
+KITCHEN_CHILD_EXIT={"token": "[synthetic invocation identifier omitted]", "code": 0}
+[kitchen-fixture] supervisor reaped all descendants
+[kitchen-fixture] stderr EOF pid=76177 exit-observed=false
+[kitchen-fixture] stdout EOF pid=76177 exit-observed=false
+[kitchen-fixture] exit pid=76177 code=0 signal=none
+[kitchen-fixture] EOF OS pid=76177 stat=76177 (python3) Z 73450 76177 76177 0 -1 4227340 2665 8403 0 0 2 1 4 3 20 0 1 0 207096 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+(pass) shared kitchen fixture lifecycle > fresh browser builds resolve React scheduler from its actual importing package [163.50ms]
+(pass) shared kitchen fixture lifecycle > committed focus and settled transition use browser signals [1914.56ms]
+
+ 15 pass
+ 31 fail
+ 45 expect() calls
+Ran 46 tests across 2 files. [42.34s]
+```
+
+Mandatory full-suite failure, last 20 lines:
+
+```text
+(fail) KB-67 selected-nag phrase editing > Reject removes a local suggestion without a write [0.03ms]
+(fail) KB-67 selected-nag phrase editing > existing phrase removal still offers five-minute Undo [0.03ms]
+(fail) KB-67 selected-nag phrase editing > Hebrew form and email-free labels are RTL without horizontal overflow [0.03ms]
+(fail) KB-67 selected-nag phrase editing > phone targets and keyboard focus remain visible with reduced motion [0.03ms]
+(fail) KB-67 selected-nag phrase editing > gallery changes real form and notice views with A/B selection [0.03ms]
+(fail) KB-67 selected-nag phrase editing > long fictional nag text fits phone and desktop [0.06ms]
+(fail) KB-67 selected-nag phrase editing > source-derived before and mounted after evidence covers widths, locales and themes [0.03ms]
+(fail) KB-67 fixture lifecycle > isolated fixture exits successfully after every named case and cleanup [0.15ms]
+(fail) KB-67 fixture lifecycle > pending browser close cannot delay server or directory release [0.03ms]
+(fail) KB-67 fixture lifecycle > browser close rejection still stops the real server and removes its unique directory [0.02ms]
+(fail) KB-67 fixture lifecycle > successful case records cannot hide a real child exit failure [0.02ms]
+(fail) (unnamed) [480006.30ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+
+ 3457 pass
+ 3 todo
+ 32 fail
+ 81452 expect() calls
+Ran 3492 tests across 212 files. [814.71s]
+error: script "test" exited with code 1
+```
+
+
+### Final reviewed shared revision and evidence redaction
+
+Shared `2d99c84` was merged normally at `70bf796`; the KB-67 adapter and assertions were unchanged. `bun test tests/unit/kitchen-fixture.test.ts tests/unit/kb-67.test.tsx` → exit 0, **49 pass / 0 fail**, 144 assertions, 26.22 seconds: shared 18 plus KB-67 parent 31. Child: **30 pass / 0 fail**, 110 assertions, 21.47 seconds; actual child and supervisor exit 0, all named results and cleanup complete. All 25 recorded runner PIDs and unique KB-67 fixture directories were absent afterward. Log: `/workspace/kb-run-logs/kb67-reviewed-shared-focused.log`.
+
+This passing run does not erase the same shared revision's retained KB-75 combined-proof failure: shared deadline test expected an authoritative child SIGKILL receipt but received null after the supervisor itself was killed. The actual child's signal remained UNKNOWN. Root froze shared #1203 after its authorized attempt budget; any further shared correction needs the owner's additional-pass decision. No extra shared edit or test weakening is included here.
+
+CodeRabbit's receipt-redaction finding is addressed by replacing one generated synthetic invocation identifier in the retained failure tail with an explicit omission marker. The identifier was never a credential. All exit values, counts and failure meaning remain. The historical commit `7095f66` still contains the synthetic receipt, and the historical-range gitleaks guard can still fail on it; this documentation-only correction does not claim to clear that guard. No history rewrite, baseline exception or force push is made. No final-head full-suite rerun/pass is claimed; earlier broad receipts above remain the applicable prior-source results.
