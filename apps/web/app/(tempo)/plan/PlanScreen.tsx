@@ -27,7 +27,7 @@ export function PlanScreen() {
   return (
     <div className="tp-page tp-page--wide" data-testid="plan-day">
       <header className="tp-pagehead">
-        <h1 className="tp-pagehead__title">{t("nav.plan")}</h1>
+        <h1 className="tp-sr-only">{t("nav.plan")}</h1>
       </header>
       <fieldset className="tp-toolbar cal-views">
         <legend className="tp-sr-only">{t("nav.plan")}</legend>

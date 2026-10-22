@@ -1,5 +1,7 @@
 # Plan views — controlled fixture evidence
 
+22 October update: Amit authorized the single AT-27 heading correction. The unchanged EN/HE heading contract and focused 13-case Plan suite now pass on that corrected candidate; fresh captures and exact receipts are in [at27-20261022](at27-20261022/README.md). Mandatory full validation on the corrected candidate remains pending. The older gate results and attempt-boundary notes below are preserved as historical evidence.
+
 Ticket: #1207 (`TEMPO-FEATURE-PLAN`). Base: `39b564ec329705587df5262ed5a061bbec9a1e8f` on integration. Captured 21 October 2026 with Bun 1.3.9 and local Chromium; no account, hosted backend, model call or preview URL was used.
 
 The mounted proof renders the real PlanScreen, CalendarViews, EventRow, TaskKanbanBoard, LocaleProvider and board primitives. Only Convex/Next boundaries and the existing DayTimeline/TimeBlockDialog are controlled fixtures. The latter two stubs verify date and open callbacks; they do not prove the real timeline or dialog's browser behavior. Existing route wiring tests remain unchanged and require the real timeline to stay visible on initial `/plan`.
@@ -35,6 +37,6 @@ Without that optional evidence directory, the exact same assertions run without 
 
 KA-09 (#1102) and the older study work (#1081) may later overlap CalendarViews/PlanScreen. Their branches were not changed. Their eventual reconciliation must retain controlled/embedded defaults, the unified agenda, Today rollover and all existing time-block behavior. Protected #1193 and #1198 were not touched. No schema, route entry, environment, dependency, global CSS or i18n file changed; every product string and token already existed.
 
-## Final-source disposition
+## Historical disposition before AT-27 approval
 
 Source `d227acd` is rebased onto integration `7d1a0f6` with the implementation patch unchanged; the original fixture comparison base above remains `39b564e`. Final-head frozen install, lint and typecheck passed. Full tests fail the known English/Hebrew h1 class contract (AT27); local E2E has nine failures. Status remains stuck after three source/test candidates. No fourth repair, unchanged failing retry, test/config weakening or deployment was attempted. See the linked gate summary for exact commands, counts and limitations.

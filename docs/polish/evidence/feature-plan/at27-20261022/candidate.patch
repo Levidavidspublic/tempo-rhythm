@@ -1,0 +1,13 @@
+diff --git a/apps/web/app/(tempo)/plan/PlanScreen.tsx b/apps/web/app/(tempo)/plan/PlanScreen.tsx
+index 44e05af..e0f79d9 100644
+--- a/apps/web/app/(tempo)/plan/PlanScreen.tsx
++++ b/apps/web/app/(tempo)/plan/PlanScreen.tsx
+@@ -27,7 +27,7 @@ export function PlanScreen() {
+   return (
+     <div className="tp-page tp-page--wide" data-testid="plan-day">
+       <header className="tp-pagehead">
+-        <h1 className="tp-pagehead__title">{t("nav.plan")}</h1>
++        <h1 className="tp-sr-only">{t("nav.plan")}</h1>
+       </header>
+       <fieldset className="tp-toolbar cal-views">
+         <legend className="tp-sr-only">{t("nav.plan")}</legend>
