@@ -1,0 +1,47 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/ai_router.test.ts:
+(pass) callLLM > throws AiAuthError when DEEPINFRA_API_KEY is missing [2.03ms]
+(pass) callLLM > returns parsed content on success [4.04ms]
+(pass) callLLM > throws AiAuthError on HTTP 401 without retrying [1.27ms]
+(pass) callLLM > retries once on HTTP 429 then succeeds [504.32ms]
+(pass) callLLM > throws AiRateLimitedError after two 429 responses [506.00ms]
+(pass) callLLM > posts to the existing provider with the configured default for every legacy tier [3.97ms]
+(pass) callLLM > TEMPO_AI_MODEL overrides the model in one place [1.62ms]
+(pass) callLLM > context-too-large surfaces without retry (single model, nothing to escalate to) [1.64ms]
+(pass) callLLM > throws AiContextTooLargeError when deep tier still exceeds context [1.14ms]
+(pass) callLLM > retries once on HTTP 503 then surfaces AiUpstreamError [509.59ms]
+(pass) configured reasoning and cancellation > missing model configuration has no fallback and preserves friendly auth handling [1.04ms]
+(pass) configured reasoning and cancellation > invalid model configuration is rejected without echoing it:   [1.23ms]
+(pass) configured reasoning and cancellation > invalid model configuration is rejected without echoing it: fixture/model
+extra [0.27ms]
+(pass) configured reasoning and cancellation > invalid model configuration is rejected without echoing it: https://untrusted.invalid/model [0.13ms]
+(pass) configured reasoning and cancellation > invalid model configuration is rejected without echoing it: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa [0.08ms]
+(pass) configured reasoning and cancellation > normal requests use medium reasoning and preserve request controls [0.94ms]
+(pass) configured reasoning and cancellation > explicit high raises effort without changing the default model [5.32ms]
+(pass) configured reasoning and cancellation > substantial newest user input raises default effort, not system or historical text [6.97ms]
+(pass) configured reasoning and cancellation > think hard uses the separate configured model and always high reasoning [0.72ms]
+(pass) configured reasoning and cancellation > think hard rejects missing or duplicate model settings before any provider call [8.60ms]
+(pass) configured reasoning and cancellation > configuration is frozen across the single transient retry [643.17ms]
+(pass) configured reasoning and cancellation > pre-abort makes no provider call and never exposes the abort reason [3.87ms]
+(pass) configured reasoning and cancellation > abort ends a headers wait even if the transport ignores its signal, without retry [22.77ms]
+(pass) configured reasoning and cancellation > abort remains active while a successful response body is being consumed [16.90ms]
+(pass) configured reasoning and cancellation > abort remains active while an error body is being consumed [12.54ms]
+(pass) configured reasoning and cancellation > abort during retry backoff clears its timer and sends no second request [18.76ms]
+(pass) configured reasoning and cancellation > a shared earlier deadline bounds body consumption without retry [45.44ms]
+(pass) configured reasoning and cancellation > the total deadline includes backoff and cannot restart for the retry [54.07ms]
+(pass) configured reasoning and cancellation > expired and nonfinite deadlines make zero provider requests [5.68ms]
+(pass) configured reasoning and cancellation > think-hard is capped at ten minutes and normal mode at thirty seconds [9.19ms]
+(pass) configured reasoning and cancellation > malformed provider data fails without leaking or retrying: null [7.39ms]
+(pass) configured reasoning and cancellation > malformed provider data fails without leaking or retrying: {} [0.14ms]
+(pass) configured reasoning and cancellation > malformed provider data fails without leaking or retrying: {"choices":[]} [0.09ms]
+(pass) configured reasoning and cancellation > malformed provider data fails without leaking or retrying: {"choices":[{"message":{"content":42}}]} [0.06ms]
+(pass) configured reasoning and cancellation > malformed provider data fails without leaking or retrying: {"choices":[{"message":{"content":" "}}]} [0.05ms]
+(pass) configured reasoning and cancellation > malformed provider data fails without leaking or retrying: {"choices":[{"message":{"content":"ok"}}],"usage":{"total_tokens":-1}} [0.11ms]
+(pass) configured reasoning and cancellation > invalid JSON is a typed nonretrying failure [4.87ms]
+(pass) configured reasoning and cancellation > credential/provider bodies and transport details never escape in errors [503.30ms]
+
+ 38 pass
+ 0 fail
+ 116 expect() calls
+Ran 38 tests across 1 file. [2.98s]

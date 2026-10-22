@@ -1,0 +1,11 @@
+{
+  "ticket": 1286,
+  "candidate": 1,
+  "base": "c12410948edb0e953c58ba7d556dee0564e6765e",
+  "files": {
+    "convex/ai_smoke.ts": "95f4f4daf927b86d5c028fb25f27c9277f1c9d996a0eeb0f8ea9a1073d28730f",
+    "convex/ai_smoke.test.ts": "5186c87e706f400765652dbd513ec0feb509b469a3bb033df33c427da75ee8d2"
+  },
+  "schema": "NONE",
+  "environment": "NONE"
+}
