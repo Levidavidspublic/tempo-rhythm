@@ -1,0 +1,37 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/revenuecat_snapshot.test.ts:
+(pass) authoritative subscription snapshot parser > keeps only server mapping authority and returns a fresh normalized shape [4.13ms]
+(pass) authoritative subscription snapshot parser > complete empty maps differ from absent or malformed maps [2.37ms]
+(pass) authoritative subscription snapshot parser > retains expired grants and overlapping tiers in deterministic order [2.34ms]
+(pass) authoritative subscription snapshot parser > two entitlement IDs may share a product without losing either grant [0.54ms]
+(pass) authoritative subscription snapshot parser > unknown entitlements confer nothing; malformed mapped rows never partially succeed [0.35ms]
+(pass) authoritative subscription snapshot parser > mapped product must be configured and backed by a subscription [0.62ms]
+(pass) authoritative subscription snapshot parser > configured base plan is exact and redundant product data cannot contradict it [0.20ms]
+(pass) authoritative subscription snapshot parser > environment must match a real subscription boolean [0.44ms]
+(pass) authoritative subscription snapshot parser > mapped lifetime grants are explicitly unsupported [0.07ms]
+(pass) authoritative subscription snapshot parser > request timestamp supports either representation and exact agreement [0.29ms]
+(pass) authoritative subscription snapshot parser > invalid or lossy RFC3339 dates are not normalized into valid grants [0.79ms]
+(pass) authoritative subscription snapshot parser > malformed top-level shapes and unsafe map keys fail closed [0.65ms]
+(pass) authoritative subscription snapshot parser > both provider maps are capped at 128 entries [2.87ms]
+(pass) authoritative subscription snapshot parser > 32 mapped grants are accepted, 33 rejected as a whole [4.64ms]
+(pass) server-only bounded snapshot reader > fixed endpoint encodes identity and uses GET/no redirects with a server header [22.29ms]
+(pass) server-only bounded snapshot reader > OFF reads no credential and performs zero fetches [0.68ms]
+(pass) server-only bounded snapshot reader > empty mapping, missing environment or invalid bounded identity never fetch [1.08ms]
+(pass) server-only bounded snapshot reader > missing or rejected credential accessor fails without networking [2.56ms]
+(pass) server-only bounded snapshot reader > non-200, redirect failure and fetch rejection are typed unavailable without retry [5.84ms]
+(pass) server-only bounded snapshot reader > partial or invalid provider response never becomes an empty revocation [14.94ms]
+(pass) server-only bounded snapshot reader > oversized raw stream is canceled and unlocked without parsing partial bytes [2.03ms]
+(pass) server-only bounded snapshot reader > exact 128KiB valid response is accepted [8.85ms]
+(pass) server-only bounded snapshot reader > already-aborted caller causes zero fetches [0.32ms]
+(pass) server-only bounded snapshot reader > external abort cancels a pending reader even if cancellation never settles [34.92ms]
+(pass) server-only bounded snapshot reader > whole-response five-second deadline includes a body that never completes [5008.31ms]
+(pass) server-only bounded snapshot reader > normal completion releases the body lock [3.20ms]
+(pass) server-only bounded snapshot reader > aborted header wait rejects promptly and cancels any late response body [9.07ms]
+(pass) server-only bounded snapshot reader > non-success header response cancels its unread body [0.60ms]
+(pass) server-only bounded snapshot reader > provider errors and raw response contents never reach console output [2.13ms]
+
+ 29 pass
+ 0 fail
+ 110 expect() calls
+Ran 29 tests across 1 file. [5.23s]

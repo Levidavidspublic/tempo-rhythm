@@ -1,0 +1,26 @@
+convex/lib/revenuecat_snapshot.ts:42:9 lint/suspicious/noPrototypeBuiltins  FIXABLE  ━━━━━━━━━━━━━━━
+
+  ! Do not access Object.prototype method 'hasOwnProperty' from target object.
+  
+    41 │ function owns(value: object, key: PropertyKey): boolean {
+  > 42 │ 	return Object.prototype.hasOwnProperty.call(value, key);
+       │ 	       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    43 │ }
+    44 │ 
+  
+  i It's recommended using Object.hasOwn() instead of using Object.hasOwnProperty().
+  
+  i See MDN web docs for more details.
+  
+  i Safe fix: Use 'Object.hasOwn()' instead.
+  
+     40  40 │   
+     41  41 │   function owns(value: object, key: PropertyKey): boolean {
+     42     │ - → return·Object.prototype.hasOwnProperty.call(value,·key);
+         42 │ + → return··Object.hasOwn(value,·key);
+     43  43 │   }
+     44  44 │   
+  
+
+Checked 3 files in 238ms. No fixes applied.
+Found 1 warning.
