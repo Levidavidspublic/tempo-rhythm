@@ -649,11 +649,14 @@ function createProseState(): ProseState {
 
 /** Expands tabs to 4-column stops, so tab-indented container content lines up as CommonMark reads it. */
 function detab(line: string): string {
-  let out = "";
-  for (const char of line) {
-    out += char === "\t" ? " ".repeat(4 - (out.length % 4)) : char;
-  }
-  return out;
+  let expansion = 0;
+  return line.replace(/\t+/g, (tabs: string, at: number) => {
+    // Match offsets and the former out.length both count UTF-16 units. After the first tab
+    // reaches its next stop, every remaining tab in this run contributes four spaces.
+    const width = 4 - ((at + expansion) % 4) + 4 * (tabs.length - 1);
+    expansion += width - tabs.length;
+    return " ".repeat(width);
+  });
 }
 
 /** How many of the open containers continue on this line, and the line without their prefixes. */
@@ -1404,7 +1407,14 @@ function proseLine(rawLine: string, state: ProseState, emit: boolean): string {
   if (definition === "follow") return "";
   if (THEMATIC_BREAK.test(line) || LINK_DEFINITION.test(line)) return "";
   if (FENCE_SYNTAX.test(line.replace(ALL_FORMAT, ""))) return "";
-  if (text === "" || TABLE_RULE.test(text) || looksLikeJson(line) || looksLikeJson(text)) return "";
+  if (
+    text === "" ||
+    TABLE_RULE.test(text) ||
+    looksLikeJson(line) ||
+    (text !== line && looksLikeJson(text))
+  ) {
+    return "";
+  }
 
   const plain = collapse(stripMarkdownInline(withoutLinks));
   return plain === "" || isUnsafe(plain) ? "" : plain;
@@ -1460,18 +1470,49 @@ function createCollector(limit: number) {
 type Collector = ReturnType<typeof createCollector>;
 
 /**
+ * Repeated lines may leave every parser field unchanged. Once that fixed point is observed,
+ * the same raw line and emit mode must produce the same text and state again. Reuse that text,
+ * not the collector result: visible repetitions and a newly full collector still count normally.
+ * The cache belongs to one segment, so a block boundary cannot reuse an earlier paragraph state.
+ */
+function createProseLineReader(state: ProseState): (line: string, emit: boolean) => string {
+  let previousLine: string | undefined;
+  let previousEmit = false;
+  let previousText = "";
+  let stable = false;
+  // ProseState contains only bounded structural data and HTML end-marker regexes. Include the
+  // regex contents too: JSON's default {} would not distinguish their different terminators.
+  const stateKey = () =>
+    JSON.stringify(state, (_key, value: unknown) =>
+      value instanceof RegExp ? [value.source, value.flags, value.lastIndex] : value
+    );
+  return (line, emit) => {
+    const repeated = line === previousLine && emit === previousEmit;
+    if (repeated && stable) return previousText;
+    const before = repeated ? stateKey() : undefined;
+    const text = proseLine(line, state, emit);
+    stable = repeated && before === stateKey();
+    previousLine = line;
+    previousEmit = emit;
+    previousText = text;
+    return text;
+  };
+}
+
+/**
  * Adds the prose of one segment. With `follow` set (a block comes later) it keeps reading lines once
  * `out` is full, because the state at the end of the segment decides whether that block is trusted.
  */
 function addProse(source: string, out: Collector, state: ProseState, follow: boolean): void {
   const lines = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
+  const readLine = createProseLineReader(state);
   for (
     let line = lines.exec(source);
     line !== null && line[0].length > 0;
     line = lines.exec(source)
   ) {
     if (out.full && !follow) return;
-    out.add(proseLine(line[0], state, !out.full));
+    out.add(readLine(line[0], !out.full));
   }
 }
 
@@ -1488,6 +1529,7 @@ function readBlock(
   state: ProseState
 ): { opens: boolean; closesAtEnd: boolean } {
   const lines = /[^\r\n]*(?:\r\n|\r|\n|$)/g;
+  const readLine = createProseLineReader(state);
   let opens = false;
   let closesAtEnd = false;
   let first = true;
@@ -1497,7 +1539,7 @@ function readBlock(
     line = lines.exec(source)
   ) {
     const wasOpen = state.fence !== undefined;
-    out.add(proseLine(line[0], state, !out.full));
+    out.add(readLine(line[0], !out.full));
     const isOpen = state.fence !== undefined;
     if (first) {
       opens = !wasOpen && isOpen && state.containers.length === 0;
