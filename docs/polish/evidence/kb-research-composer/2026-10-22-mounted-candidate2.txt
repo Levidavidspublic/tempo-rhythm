@@ -1,0 +1,189 @@
+bun test v1.3.9 (cf6cdbbb)
+
+components/coach/CoachChat.test.tsx:
+(pass) mounted research composer > typed controls are attached once, and cancellation targets that saved message [3696.02ms]
+(pass) mounted research composer > Cancel during preparation prevents the action and repeated Send never duplicates the message [3476.47ms]
+(pass) mounted research composer > a rejected cancellation remains retryable with the same key [4390.89ms]
+killed 1 dangling process
+
+# Unhandled error between tests
+-------------------------------
+402 |     return page;
+403 |   }
+404 |   async function mode(p: Page, kind: string, value: "resolve" | "reject" | "defer") { await p.evaluate(({kind,value}) => { window.researchFixture.modes[kind] = value; }, {kind,value}); }
+405 |   async function calls(p: Page, kind: string, count: number) { await browserExpect.poll(() => p.evaluate(kind => window.researchFixture.calls.filter(call => call.kind === kind).length, kind)).toBe(count); }
+406 |   async function settle(p: Page, kind: string, success = true) { await p.evaluate(({kind,success}) => window.researchFixture.settle(kind,success), {kind,success}); }
+407 |   async function send(p: Page, text = "Help me plan a short walk") { await p.locator("textarea").fill(text); await p.locator("form").getByRole("button", { name: "Send", exact: true }).click(); }
+                                                                                                                                                                                              ^
+error: click: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /usr/bin/chromium --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-yztbfR --remote-debugging-pipe --no-startup-window
+<launched> pid=287977
+[pid=287977][err] [287977:288019:1022/081546.954754:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=287977][err] [287977:288019:1022/081546.996758:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:288019:1022/081546.996865:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=287977][err] [287977:288019:1022/081547.000370:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=287977][err] [287977:288019:1022/081547.000403:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:288019:1022/081548.381486:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:287977:1022/081548.536364:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:287977:1022/081548.536484:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:288019:1022/081548.537472:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:288019:1022/081548.537714:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:287977:1022/081548.556400:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:288019:1022/081548.587228:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=287977][err] [287977:288019:1022/081548.587619:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=287977][err] [287977:287977:1022/081548.588707:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:287977:1022/081548.588744:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:288019:1022/081548.588912:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:287977:1022/081548.595699:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: unknown error type:
+[pid=287977][err] [287977:287977:1022/081548.595798:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:288019:1022/081548.595968:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:287977:1022/081548.625303:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+[pid=287977][err] [287977:288019:1022/081548.626335:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=287977][err] [287977:287977:1022/081548.632009:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type:
+Call log:
+  - waiting for locator('form').getByRole('button', { name: 'Send', exact: true })
+    - locator resolved to <button type="submit" class="tp-btn tp-btn--primary tp-btn--sm">…</button>
+  - attempting click action
+    - waiting for element to be visible, enabled and stable
+    - element is visible, enabled and stable
+    - scrolling into view if needed
+
+ log: [ "  - waiting for locator('form').getByRole('button', { name: 'Send', exact: true })",
+  "    - locator resolved to <button type=\"submit\" class=\"tp-btn tp-btn--primary tp-btn--sm\">…</button>",
+  "  - attempting click action", "    - waiting for element to be visible, enabled and stable",
+  "    - element is visible, enabled and stable", "    - scrolling into view if needed"
+],
+
+      at send (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:407:185)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:487:11
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+(fail) mounted research composer > late preparation in another chat cannot clear or disable the current draft [5470.83ms]
+  ^ this test timed out after 5000ms.
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:499:21
+(fail) mounted research composer > an account change fences an old rejected send and retains the new account draft [47.28ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:512:19
+(fail) mounted research composer > failed page flush keeps the saved message and retries its reply without sending again [42.33ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:522:34
+(fail) mounted research composer > a dropped action response cancels the known request before freeing the composer [50.65ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:529:11
+(fail) mounted research composer > starters and follow-ups use the selected controls [24.15ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:541:104
+(fail) mounted research composer > capability off is honest and a failed send preserves the typed draft [201.71ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:549:6
+(fail) mounted research composer > en at 390: token touch targets, keyboard controls and no horizontal scroll [556.71ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:549:6
+(fail) mounted research composer > en at 1280: token touch targets, keyboard controls and no horizontal scroll [32.43ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:549:6
+(fail) mounted research composer > he at 390: token touch targets, keyboard controls and no horizontal scroll [26.83ms]
+391 |     const failures = results.filter(result => result.status === "rejected");
+392 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+393 |   }, 15_000);
+394 |   async function open(lang = "en", width = 390) {
+395 |     errors = [];
+396 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:396:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:549:6
+(fail) mounted research composer > he at 1280: token touch targets, keyboard controls and no horizontal scroll [32.60ms]
+
+ 3 pass
+ 22 filtered out
+ 10 fail
+ 1 error
+ 18 expect() calls
+Ran 13 tests across 1 file. [36.29s]

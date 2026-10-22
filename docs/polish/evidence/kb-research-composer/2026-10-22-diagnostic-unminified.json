@@ -1,0 +1,56 @@
+{
+  "timings": [
+    {
+      "name": "goto",
+      "ms": 1696
+    },
+    {
+      "name": "textarea ready",
+      "ms": 1233
+    },
+    {
+      "name": "capabilities ready",
+      "ms": 38
+    },
+    {
+      "name": "set deferred preparation",
+      "ms": 28
+    },
+    {
+      "name": "fill original",
+      "ms": 136
+    },
+    {
+      "name": "send click",
+      "ms": 475
+    },
+    {
+      "name": "prepared request observed",
+      "ms": 898
+    },
+    {
+      "name": "switch chat",
+      "ms": 30
+    },
+    {
+      "name": "new chat enabled",
+      "ms": 100
+    },
+    {
+      "name": "fill other draft",
+      "ms": 142
+    },
+    {
+      "name": "resolve old preparation",
+      "ms": 34
+    },
+    {
+      "name": "old cancellation observed",
+      "ms": 61
+    }
+  ],
+  "totalMs": 4871,
+  "errors": [],
+  "draft": "Draft in the other chat",
+  "actionCalls": 0
+}
