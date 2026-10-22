@@ -14,7 +14,8 @@ import {
   taskMinutes,
 } from "./lib/coachLoad";
 import { CRISIS_CARD, crisisCardText, isCrisisText } from "./lib/crisisWords";
-import { callLLM } from "./lib/ai_router";
+import { callLLM, resolveAiModel } from "./lib/ai_router";
+import { AiCancelledError } from "./lib/ai_errors";
 import { requireApprovedForAi } from "./lib/aiGate";
 import { requireApprovedUser } from "./lib/approval";
 import {
@@ -328,6 +329,315 @@ function claimOf(toolCalls: unknown): { until: number; token: string | null } | 
   return { until: coachClaimUntil, token: typeof coachClaim === "string" ? coachClaim : null };
 }
 
+/** Controlled requests keep only bounded controls/context, never a second copy of chat text. */
+const researchControlsValidator = v.object({ useWeb: v.boolean(), thinkHard: v.boolean() });
+const researchContextValidator = v.object({
+  noteId: v.optional(v.id("notes")),
+  ...dayBoundsArgs,
+  todayDate: v.optional(v.string()),
+});
+const researchKeyArgs = { conversationId: v.id("conversations"), requestId: v.string(), replyTo: v.id("messages") };
+type ResearchKey = { conversationId: Id<"conversations">; requestId: string; replyTo: Id<"messages"> };
+type ResearchContext = { noteId?: Id<"notes">; dayStartMs?: number; dayEndMs?: number; todayDate?: string };
+type ResearchRecord = {
+  requestId: string;
+  state: "prepared" | "running" | "cancelled" | "finished";
+  research: { useWeb: boolean; thinkHard: boolean };
+  context: ResearchContext;
+};
+function metadata(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+function researchOf(value: unknown): ResearchRecord | null {
+  const item = metadata(value).coachResearch as ResearchRecord | undefined;
+  return item &&
+    typeof item.requestId === "string" &&
+    ["prepared", "running", "cancelled", "finished"].includes(item.state) &&
+    typeof item.research?.useWeb === "boolean" &&
+    typeof item.research?.thinkHard === "boolean" &&
+    item.context
+    ? item
+    : null;
+}
+function finishMetadata(value: unknown): Record<string, unknown> | undefined {
+  const copy = { ...metadata(value) };
+  delete copy.coachClaim;
+  delete copy.coachClaimUntil;
+  const research = researchOf(value);
+  if (research) copy.coachResearch = { ...research, state: research.state === "cancelled" ? "cancelled" : "finished" };
+  return Object.keys(copy).length ? copy : undefined;
+}
+function requestIdValid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
+async function researchCapabilitiesFor(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
+  let thinkHard = false;
+  try {
+    resolveAiModel("think_hard");
+    thinkHard = Boolean(process.env.DEEPINFRA_API_KEY?.trim());
+  } catch {
+    /* Unconfigured mode stays off. */
+  }
+  return {
+    useWeb: webSearchConfigured() && (await searchesOn(ctx, userId, utcDay(Date.now()))) < WEB_SEARCH_DAILY_LIMIT,
+    thinkHard,
+  };
+}
+/** Capabilities describe configured providers and this person's remaining search budget. */
+export const researchCapabilities = query({
+  args: {},
+  returns: v.object({ useWeb: v.boolean(), thinkHard: v.boolean() }),
+  handler: async (ctx) => {
+    const user = await requireApprovedUser(ctx);
+    return researchCapabilitiesFor(ctx, user._id);
+  },
+});
+/** Called after sendMessage; never inserts user content or accepts client-supplied history. */
+export const beginReply = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    requestId: v.string(),
+    noteId: v.optional(v.id("notes")),
+    ...dayBoundsArgs,
+    todayDate: v.optional(v.string()),
+    research: researchControlsValidator,
+  },
+  returns: v.union(
+    v.object({ status: v.literal("ready"), requestId: v.string(), replyTo: v.id("messages") }),
+    v.object({ status: v.union(v.literal("busy"), v.literal("idle")) }),
+    v.object({ status: v.literal("unsupported"), control: v.union(v.literal("web"), v.literal("thinkHard")) }),
+  ),
+  handler: async (ctx, args) => {
+    const user = await requireApprovedUser(ctx);
+    await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+    if (!requestIdValid(args.requestId)) throw new ConvexError("This reply is unavailable.");
+    dayBounds(args);
+    if (args.todayDate !== undefined && !isValidLocalDate(args.todayDate))
+      throw new ConvexError("This reply is unavailable.");
+    if (args.noteId) {
+      const note = await ctx.db.get(args.noteId);
+      if (!note || note.userId !== user._id || note.deletedAt !== undefined)
+        throw new ConvexError("This reply is unavailable.");
+    }
+    const newest = await ctx.db
+      .query("messages")
+      .withIndex("by_conversationId_deletedAt", (q) =>
+        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined),
+      )
+      .order("desc")
+      .first();
+    if (!newest || newest.role !== "user" || isCrisisText(newest.content)) return { status: "idle" as const };
+    const { requestId, research } = args;
+    const context: ResearchContext = {
+      ...(args.noteId !== undefined ? { noteId: args.noteId } : {}),
+      ...(args.dayStartMs !== undefined ? { dayStartMs: args.dayStartMs } : {}),
+      ...(args.dayEndMs !== undefined ? { dayEndMs: args.dayEndMs } : {}),
+      ...(args.todayDate !== undefined ? { todayDate: args.todayDate } : {}),
+    };
+    const prior = researchOf(newest.toolCalls);
+    if (prior?.requestId === requestId) {
+      if (
+        JSON.stringify(prior.research) !== JSON.stringify(research) ||
+        JSON.stringify(prior.context) !== JSON.stringify(context)
+      )
+        throw new ConvexError("This reply is unavailable.");
+      return prior.state === "prepared" && (claimOf(newest.toolCalls)?.until ?? 0) > Date.now()
+        ? { status: "ready" as const, requestId, replyTo: newest._id }
+        : { status: prior.state === "running" ? ("busy" as const) : ("idle" as const) };
+    }
+    // A message gets one immutable request identity; a new message is a new request.
+    if (prior)
+      return {
+        status: prior.state === "prepared" || prior.state === "running" ? ("busy" as const) : ("idle" as const),
+      };
+    if ((claimOf(newest.toolCalls)?.until ?? 0) > Date.now()) return { status: "busy" as const };
+    const capabilities = await researchCapabilitiesFor(ctx, user._id);
+    if (research.useWeb && !capabilities.useWeb) return { status: "unsupported" as const, control: "web" as const };
+    if (research.thinkHard && !capabilities.thinkHard)
+      return { status: "unsupported" as const, control: "thinkHard" as const };
+    await ctx.db.patch(newest._id, {
+      toolCalls: {
+        ...metadata(newest.toolCalls),
+        coachClaim: crypto.randomUUID(),
+        coachClaimUntil: Date.now() + TURN_CLAIM_MS,
+        coachResearch: { requestId, research, context, state: "prepared" },
+      },
+    });
+    return { status: "ready" as const, requestId, replyTo: newest._id };
+  },
+});
+async function ownedResearch(ctx: QueryCtx | MutationCtx, args: ResearchKey) {
+  const user = await requireApprovedUser(ctx);
+  await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
+  const message = await ctx.db.get(args.replyTo);
+  const research = message ? researchOf(message.toolCalls) : null;
+  if (
+    !requestIdValid(args.requestId) ||
+    !message ||
+    message.conversationId !== args.conversationId ||
+    message.deletedAt !== undefined ||
+    research?.requestId !== args.requestId
+  )
+    throw new ConvexError("This reply is unavailable.");
+  return { message, research };
+}
+export const cancelReply = mutation({
+  args: researchKeyArgs,
+  returns: v.object({ status: v.union(v.literal("cancelled"), v.literal("idle")) }),
+  handler: async (ctx, args) => {
+    const { message, research } = await ownedResearch(ctx, args);
+    if (research.state === "finished") return { status: "idle" as const };
+    // Atomically remove the same save token checked by reserveWebSearch and saveReply.
+    await ctx.db.patch(message._id, {
+      toolCalls: { ...finishMetadata(message.toolCalls), coachResearch: { ...research, state: "cancelled" } },
+    });
+    return { status: "cancelled" as const };
+  },
+});
+export const researchRequestState = internalQuery({
+  args: researchKeyArgs,
+  returns: v.object({
+    state: v.union(
+      v.literal("prepared"),
+      v.literal("running"),
+      v.literal("cancelled"),
+      v.literal("finished"),
+      v.literal("superseded"),
+    ),
+    research: researchControlsValidator,
+    context: researchContextValidator,
+  }),
+  handler: async (ctx, args) => {
+    const { message, research } = await ownedResearch(ctx, args);
+    const newest = await ctx.db
+      .query("messages")
+      .withIndex("by_conversationId_deletedAt", (q) =>
+        q.eq("conversationId", args.conversationId).eq("deletedAt", undefined),
+      )
+      .order("desc")
+      .first();
+    const live = newest?._id === message._id && (claimOf(message.toolCalls)?.until ?? 0) > Date.now();
+    const state =
+      research.state === "cancelled" || research.state === "finished"
+        ? research.state
+        : live
+          ? research.state
+          : "superseded";
+    return { state, research: research.research, context: research.context };
+  },
+});
+export const RESEARCH_ACTION_MS = 570_000;
+export const RESEARCH_POLL_MS = 2_000;
+export const RESEARCH_MAX_POLLS = 285;
+/** One bounded watcher per executing action; the mutation fences persistence before this poll. */
+export async function runControlledReply(
+  ctx: Pick<ActionCtx, "runQuery" | "runMutation">,
+  key: ResearchKey,
+  call: typeof callLLM = callLLM,
+  provider: WebSearchProvider | null = webSearchProvider(),
+): Promise<"replied" | "cancelled" | "unavailable" | "superseded" | "busy"> {
+  await requireApprovedForAi(ctx as ActionCtx);
+  const initial = await ctx.runQuery(internal.coach.researchRequestState, key);
+  if (initial.state === "cancelled") return "cancelled";
+  if (initial.state === "running") return "busy";
+  if (initial.state !== "prepared") return "superseded";
+  const controller = new AbortController();
+  const deadlineAtMs = Date.now() + RESEARCH_ACTION_MS;
+  let stopped = false;
+  let executionClaim: string | undefined;
+  let polls = 0;
+  let failure: "cancelled" | "unavailable" | "superseded" = "unavailable";
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stop = (reason: typeof failure) => {
+    if (!controller.signal.aborted) {
+      failure = reason;
+      controller.abort();
+    }
+  };
+  const deadline = setTimeout(() => stop("unavailable"), RESEARCH_ACTION_MS);
+  const check = async () => {
+    if (controller.signal.aborted) throw new AiCancelledError("This reply stopped.");
+    const current = await ctx.runQuery(internal.coach.researchRequestState, key);
+    if (current.state !== "prepared" && current.state !== "running")
+      stop(current.state === "cancelled" ? "cancelled" : "superseded");
+    if (controller.signal.aborted) throw new AiCancelledError("This reply stopped.");
+  };
+  const poll = async () => {
+    if (stopped || controller.signal.aborted) return;
+    try {
+      await check();
+    } catch {
+      stop("unavailable");
+    }
+    polls += 1;
+    if (!stopped && !controller.signal.aborted && polls < RESEARCH_MAX_POLLS)
+      timer = setTimeout(poll, RESEARCH_POLL_MS);
+  };
+  timer = setTimeout(poll, RESEARCH_POLL_MS);
+  // Race even an uncooperative transport; real transports also receive the abort signal.
+  let abortListener: (() => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    abortListener = () => reject(new AiCancelledError("This reply stopped."));
+    controller.signal.addEventListener("abort", abortListener, { once: true });
+  });
+  try {
+    const status = await Promise.race([
+      runCoachReply(ctx, { conversationId: key.conversationId, ...initial.context }, call, provider, {
+        key,
+        signal: controller.signal,
+        thinkHard: initial.research.thinkHard,
+        deadlineAtMs,
+        check,
+        claimed: (token) => {
+          executionClaim = token;
+        },
+      }),
+      aborted,
+    ]);
+    if (controller.signal.aborted) return failure;
+    if (status === "idle") {
+      const current = await ctx.runQuery(internal.coach.researchRequestState, key);
+      return current.state === "cancelled" ? "cancelled" : current.state === "running" ? "busy" : "superseded";
+    }
+    if (status !== "replied") {
+      const current = await ctx.runQuery(internal.coach.researchRequestState, key);
+      if (current.state === "cancelled") return "cancelled";
+    }
+    return status;
+  } catch {
+    return failure;
+  } finally {
+    stopped = true;
+    clearTimeout(deadline);
+    if (timer !== undefined) clearTimeout(timer);
+    if (abortListener) controller.signal.removeEventListener("abort", abortListener);
+    if (executionClaim !== undefined) {
+      try {
+        await ctx.runMutation(internal.coach.releaseTurn, {
+          conversationId: key.conversationId,
+          messageId: key.replyTo,
+          claim: executionClaim,
+        });
+      } catch {
+        /* Owner/claim checks fail closed; lease is bounded. */
+      }
+    }
+  }
+}
+export const replyWithControls = action({
+  args: researchKeyArgs,
+  returns: v.object({
+    status: v.union(
+      v.literal("replied"),
+      v.literal("cancelled"),
+      v.literal("unavailable"),
+      v.literal("superseded"),
+      v.literal("busy"),
+    ),
+  }),
+  handler: async (ctx, args) => ({ status: await runControlledReply(ctx, args) }),
+});
+
 /**
  * Claims the newest user message for one reply and returns what the model sees. Mutations are
  * transactional, so of two overlapping replies (two tabs, a double Try again) only one claims
@@ -336,7 +646,7 @@ function claimOf(toolCalls: unknown): { until: number; token: string | null } | 
  * gets the fixed card.
  */
 export const claimTurn = internalMutation({
-  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")), ...dayBoundsArgs },
+  args: { conversationId: v.id("conversations"), noteId: v.optional(v.id("notes")), ...dayBoundsArgs, requestId: v.optional(v.string()), replyTo: v.optional(v.id("messages")) },
   returns: v.union(v.null(), v.literal("busy"), turnContextValidator),
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
@@ -353,13 +663,20 @@ export const claimTurn = internalMutation({
       return null;
     }
     const now = Date.now();
+    const research = researchOf(last.toolCalls);
+    if (args.requestId !== undefined) {
+      if (args.replyTo !== last._id || research?.requestId !== args.requestId || research.state !== "prepared" || (claimOf(last.toolCalls)?.until ?? 0) <= now) return null;
+    } else if (research) {
+      // A legacy retry must never revive a cancelled or otherwise controlled request.
+      return research.state === "prepared" || research.state === "running" ? "busy" as const : null;
+    }
     const held = claimOf(last.toolCalls);
-    if (held !== null && held.until > now) {
+    if (args.requestId === undefined && held !== null && held.until > now) {
       return "busy" as const;
     }
     // Only the reply holding this token may give the turn back or answer it.
     const claim = crypto.randomUUID();
-    await ctx.db.patch(last._id, { toolCalls: { coachClaimUntil: now + TURN_CLAIM_MS, coachClaim: claim } });
+    await ctx.db.patch(last._id, { toolCalls: { ...metadata(last.toolCalls), coachClaimUntil: now + TURN_CLAIM_MS, coachClaim: claim, ...(research ? { coachResearch: { ...research, state: "running" } } : {}) } });
 
     // An earlier reply's card carries what happened to it, so the coach never takes an undone or
     // declined change for one that happened (alpha run, L4: "It's already on your list").
@@ -390,7 +707,8 @@ export const claimTurn = internalMutation({
     const open = day ? await openTasksForDay(ctx, user._id, day) : [];
     const settings = await loadSettings(ctx, user._id);
     const prefs = await preferencesFor(ctx, user._id);
-    const used = prefs.coachWebSearch ? await searchesOn(ctx, user._id, utcDay(now)) : 0;
+    const searchEnabled = research ? research.research.useWeb : prefs.coachWebSearch;
+    const used = searchEnabled ? await searchesOn(ctx, user._id, utcDay(now)) : 0;
     return {
       replyTo: last._id,
       claim,
@@ -400,7 +718,7 @@ export const claimTurn = internalMutation({
       tasks: open.slice(0, COACH_LIMITS.contextTasks),
       openToday: open.map((task) => ({ title: cardTitle(task.title) })),
       locale: prefs.locale,
-      webSearch: { enabled: prefs.coachWebSearch, left: Math.max(0, WEB_SEARCH_DAILY_LIMIT - used) },
+      webSearch: { enabled: searchEnabled, left: Math.max(0, WEB_SEARCH_DAILY_LIMIT - used) },
     };
   },
 });
@@ -420,7 +738,7 @@ async function holdsTurn(
     )
     .order("desc")
     .first();
-  return newest !== null && newest._id === args.replyTo && claimOf(newest.toolCalls)?.token === args.claim
+  return newest !== null && newest._id === args.replyTo && claimOf(newest.toolCalls)?.token === args.claim && (claimOf(newest.toolCalls)?.until ?? 0) > Date.now()
     ? newest
     : null;
 }
@@ -439,10 +757,12 @@ export const reserveWebSearch = internalMutation({
   handler: async (ctx, args) => {
     const user = await requireApprovedUser(ctx);
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
-    if (!(await holdsTurn(ctx, args))) {
+    const turn = await holdsTurn(ctx, args);
+    if (!turn) {
       return "lost" as const;
     }
-    if (!(await preferencesFor(ctx, user._id)).coachWebSearch) {
+    const controlled = researchOf(turn.toolCalls);
+    if (!(controlled ? controlled.state === "running" && controlled.research.useWeb : (await preferencesFor(ctx, user._id)).coachWebSearch)) {
       return "off" as const;
     }
     const now = Date.now();
@@ -466,7 +786,7 @@ export const releaseTurn = internalMutation({
     await requireLegacyWritableConversation(ctx, user._id, args.conversationId);
     const message = await ctx.db.get(args.messageId);
     if (message && message.conversationId === args.conversationId && claimOf(message.toolCalls)?.token === args.claim) {
-      await ctx.db.patch(message._id, { toolCalls: undefined });
+      await ctx.db.patch(message._id, { toolCalls: finishMetadata(message.toolCalls) });
     }
     return null;
   },
@@ -495,6 +815,7 @@ export const saveReply = internalMutation({
     if (!newest) {
       return false;
     }
+    if (researchOf(newest.toolCalls)) await ctx.db.patch(newest._id, { toolCalls: finishMetadata(newest.toolCalls) });
     const now = Math.max(Date.now(), newest.createdAt + 1);
     const sources = (args.sources ?? []).slice(0, WEB_SEARCH_LIMITS.maxResults);
     await ctx.db.insert("messages", {
@@ -582,13 +903,14 @@ export async function runCoachReply(
   },
   call: typeof callLLM = callLLM,
   searchProvider: WebSearchProvider | null = webSearchProvider(),
+  execution?: { key: ResearchKey; signal: AbortSignal; thinkHard: boolean; deadlineAtMs: number; check: () => Promise<void>; claimed: (token: string) => void },
 ): Promise<CoachReplyStatus> {
   await requireApprovedForAi(ctx as ActionCtx);
   const { todayDate, ...turn } = args;
   // The person's date tells the coach whether "Friday" is today. Only a date that is today
   // somewhere on Earth is used; anything else is left out rather than trusted.
   const today = todayDate !== undefined && isTodaySomewhere(todayDate, Date.now()) ? todayDate : undefined;
-  const context = await ctx.runMutation(internal.coach.claimTurn, turn);
+  const context = await ctx.runMutation(internal.coach.claimTurn, { ...turn, ...(execution ? { requestId: execution.key.requestId, replyTo: execution.key.replyTo } : {}) });
   if (context === null) {
     return "idle";
   }
@@ -596,17 +918,21 @@ export async function runCoachReply(
     return "busy";
   }
   const { replyTo, claim, locale, webSearch, openToday, ...prompt } = context;
+  execution?.claimed(claim);
   const release = () =>
     ctx.runMutation(internal.coach.releaseTurn, { conversationId: args.conversationId, messageId: replyTo, claim });
   const base = { ...prompt, ...(today ? { today } : {}) };
-  const ask = (search: CoachWebSearch) =>
-    call({
+  const ask = async (search: CoachWebSearch) => {
+    await execution?.check();
+    return call({
       tier: "balanced",
       messages: buildCoachMessages({ ...base, webSearch: search }),
       maxTokens: 900,
       temperature: 0.4,
       responseFormat: "json_object",
+      ...(execution ? { signal: execution.signal, mode: execution.thinkHard ? "think_hard" as const : "default" as const, ...(execution.thinkHard ? { reasoning: "high" as const } : {}), deadlineAtMs: execution.deadlineAtMs } : {}),
     });
+  };
   // Crisis text anywhere in what the person wrote in the thread: no search this turn.
   const crisis = prompt.history.some((m) => m.role === "user" && isCrisisText(m.content));
   const offer: CoachWebSearch =
@@ -663,7 +989,8 @@ export async function runCoachReply(
     } else {
       let results: WebSearchResult[] | null = null;
       try {
-        results = await searchProvider.search(query, { maxResults: WEB_SEARCH_LIMITS.maxResults });
+        await execution?.check();
+        results = await searchProvider.search(query, { maxResults: WEB_SEARCH_LIMITS.maxResults, ...(execution ? { signal: execution.signal } : {}) });
       } catch (error) {
         console.error(`coach.reply: the web search could not be reached (${searchErrorKind(error)})`);
       }
@@ -707,6 +1034,7 @@ export async function runCoachReply(
   if (answer.proposal) answer.proposal = alignDecisionSteps(answer.proposal, prompt.tasks);
   let saved: boolean;
   try {
+    await execution?.check();
     saved = await ctx.runMutation(internal.coach.saveReply, {
       conversationId: args.conversationId,
       replyTo,
