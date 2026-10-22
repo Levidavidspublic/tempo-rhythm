@@ -1,0 +1,10 @@
+{
+  "ticket": 1287,
+  "candidate": 1,
+  "base": "5d8182924f510409517718375542beb11c44134f",
+  "files": {
+    ".env.example": "634c8c43b316a99360dacab1ea562973f4ef61b7f1f3e90f91d9016482a0c083"
+  },
+  "schema": "NONE",
+  "runtimeEnvironmentChanges": "NONE"
+}
