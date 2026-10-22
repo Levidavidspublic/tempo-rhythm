@@ -9,7 +9,7 @@
 //   NO code review here: release.yml asks for ONE review inside the real release (REVIEWER / RELEASE_REVIEWER).
 //   A release.yml dry run is not used, because its review job has no dry_run guard (it would request that review too).
 // Part 2, `go` (subcommands guard / dispatch / announce). goVerdict() holds every rule. If all hold, release.yml
-//   is dispatched (dry_run=false) on integration with FACTORY_BATCH_TOKEN, so the run's actor is Division6066
+//   is dispatched (dry_run=false, skip_code_review=false) on integration with FACTORY_BATCH_TOKEN, so the run's actor is Division6066
 //   (release.yml's preflight requires that). A failed guard gets one reply naming it; nothing else happens.
 //   The `go` is bound to what Amit read: refused if older than 30 min (re-run of an old comment run) or if the
 //   candidate comment changed at/after it. The started run is identified by pickDispatchedRun (no correlation
@@ -30,6 +30,8 @@ export const CANDIDATE_TAG = "release-candidate";
 export const CANDIDATE_AUTHOR = "github-actions[bot]"; // github.token; nobody else can write as this account
 export const CANDIDATE_WORKFLOW = "release-go.yml";
 export const RELEASE_WORKFLOW = "release.yml";
+// `go` never skips the review. These match release.yml's defaults (skip off, no reason).
+export const RELEASE_DISPATCH_INPUTS = { dry_run: "false", skip_code_review: "false", skip_reason: "" };
 export const ACCEPTANCE_WORKFLOW = "preview-acceptance.yml";
 export const PREVIEW_ALIAS = "https://preview.tempoflow.dev";
 const STATES = ["pending", "pass", "fail"];
@@ -294,7 +296,7 @@ async function dispatch(o, r) {
   const sha = process.env.SHA;
   try {
     if ((await tipOf(o, r, "integration")) !== sha) { out("result", "moved"); return say(`integration moved past \`${short(sha)}\`; not dispatched.`); }
-    const found = await dispatchAndFind(o, r, RELEASE_WORKFLOW, { dry_run: "false" });
+    const found = await dispatchAndFind(o, r, RELEASE_WORKFLOW, RELEASE_DISPATCH_INPUTS);
     const d = dispatchOutcome(found, sha);
     out("result", d.result);
     if (d.result === "unidentified") return say("Dispatched release.yml (started), but its run was not identified within 3 minutes. Cancelled nothing.");

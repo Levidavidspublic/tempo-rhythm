@@ -11,6 +11,8 @@ name: Release to production
 #    Vercel preview, then ONE code review of the whole release PR (Bugbot, or CodeRabbit when repo variable
 #    RELEASE_REVIEWER=coderabbit). Any failure or review finding -> the PR gets blocked:amit + a summary
 #    comment and the run stops. No auto-fix on release. A skipped CodeRabbit status does not pass.
+#    Per-run inputs skip_code_review + skip_reason skip ONLY the review job (CI, scans, preview E2E stay).
+#    An empty reason stops in preflight. Any other skipped or failed review still stops the run.
 # 4. dry_run=true stops after the gate (nothing merged, no Convex deploy, nothing live).
 # 5. Real run: waits until GitHub says the PR is mergeable, deploys Convex prod (precious-wildcat-890) only when
 #    convex/ changed, merges the PR pinned to the gate SHA (Vercel then deploys tempo-web to production), waits for
@@ -27,6 +29,14 @@ on:
         description: "Dry run: run the whole gate, but do NOT merge to master (nothing goes live)"
         type: boolean
         default: false
+      skip_code_review:
+        description: "Skip only the code-review job this run (CI, secret scans, and preview E2E still run)"
+        type: boolean
+        default: false
+      skip_reason:
+        description: "Required when skip code review is ticked: why this run skips the review"
+        type: string
+        default: ""
 
 run-name: "Release to production${{ inputs.dry_run && ' (dry run)' || '' }} by ${{ github.triggering_actor }}"
 
@@ -85,6 +95,8 @@ jobs:
         id: pre
         env:
           GH_TOKEN: ${{ secrets.FACTORY_BATCH_TOKEN || github.token }}
+          SKIP_CODE_REVIEW: ${{ inputs.skip_code_review }}
+          SKIP_REASON: ${{ inputs.skip_reason }}
         run: node scripts/factory/release-gate.mjs preflight
 
   release-pr:
@@ -197,6 +209,8 @@ jobs:
   bugbot:
     name: gate code review (one review)
     # One review, and only after CI, scans and preview E2E are green.
+    # skip_code_review skips this job only. Those three gates have no such input.
+    if: ${{ !inputs.skip_code_review }}
     # REVIEWER comes from repo variable RELEASE_REVIEWER (bugbot by default, or coderabbit).
     needs: [preflight, release-pr, gate-ci, gate-security, gate-e2e-preview]
     runs-on: ubuntu-latest
@@ -242,6 +256,9 @@ jobs:
           PR_NUMBER: ${{ needs.release-pr.outputs.number }}
           CONVEX_CHANGED: ${{ needs.preflight.outputs.convex_changed }}
           PREFLIGHT_BLOCKERS: ${{ needs.preflight.outputs.blockers }}
+          SKIP_CODE_REVIEW: ${{ inputs.skip_code_review }}
+          SKIP_REASON: ${{ inputs.skip_reason }}
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
           RESULTS: >-
             {"release PR": "${{ needs.release-pr.result }}",
              "CI (lint, typecheck, unit, scans, notices, local E2E, build)": "${{ needs.gate-ci.result }}",
