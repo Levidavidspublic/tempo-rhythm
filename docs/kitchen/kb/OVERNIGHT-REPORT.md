@@ -1,5 +1,20 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Current checkpoint, 22 October 2026, 10:02 UTC
+
+No new merge; integration remains 7d1a0f6. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 27 open issues; 0 merged / 26 open PRs**. **15 current owner actions** in NEEDS-AMIT; historical entries are not additional questions.
+
+- **Lane 1:** #1280 published its completed mandatory run: install/lint/typecheck/scans/build pass; full tests 3484 pass / 12 fail / 3 todo, including all 69 own cases passing; exact E2E 23 pass / 5 fail / 89 skip. Shared #1203 remains frozen after its authorized extra pass failed. Architecture labels and KA dependencies remain blocking.
+- **Lane 2 merged:** none. **Open:** new #1298 maps to #1297, head 5b252774a94a81bab6c032af1fcabb874e9aa142, two unmounted subscription helpers plus test/evidence. Focused 29 pass / 0 fail / 110 assertions; standalone types pass; scoped lint has one advisory. Full checkout gates and actual CodeRabbit are pending. No payment activation, provider requests, schema changes or shipped IDs.
+- **Lane 2 validation:** #1296 onboarding goal head1522103 has required frozen install, repository lint and typecheck passing. Its original full test run is still active; two KB74 failures observed so far, not an aggregate. Earlier standalone root-test Bun-global lint errors are advisory invocation history, not failure of the actual required repository lint. Source frozen; remaining gates will run even after failures.
+- **Lane 2 payment:** #1295 evidence head df11c1d records the controlled actual-checkout result: 28 pass / 0 fail / 253 assertions. Earlier two child-startup failures remain preserved, cause UNKNOWN. Parent #1248 and broader gates block merge. Held #1294 is being rewritten around complete authoritative snapshots; its earlier event-only design is not authorized for implementation.
+- **Audit:** habit/goal templates are absent and depend on open KA #1095/#1104; no implementation PR found in the searched timelines/titles. Current locale wiring also needs coordination. A true page sidebar has no compatible persisted block/container representation yet; a codec/render/editor contract is required. These features are not claimed complete.
+- **Review/CI:** #1256 has actual CodeRabbit clearance but its hosted Test step is still in progress (started 08:40 UTC), so it cannot merge. Draft-skipped bot messages on other PRs are not approval. Full/scan/retry/dependency failures remain blocking; no check was weakened.
+- **Done:** published the helper draft, preserved failed candidate evidence, refreshed issue-to-PR census. **Needs Amit:** the existing 15 ordered actions in NEEDS-AMIT, no repeated approval request. **UNKNOWN:** live/preview behavior, unresolved browser exit causes, pending CI/reviews, product/provider configuration and full page-type coverage.
+- Exactly four worktrees remain. No changes to protected #1193/#1198, production, deployment, real account data or secrets.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Current checkpoint, 22 October 2026, 09:38 UTC
 
 No new merge; integration remains7d1a0f6. Lane1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane2: **0 closed / 27 open issues; 0 merged / 25 open PRs**. **15 current owner actions** in NEEDS-AMIT; historical items do not add to that count.
