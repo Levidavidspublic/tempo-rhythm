@@ -1,5 +1,19 @@
 # KB finish status
 
+## WALK — Hero validation completed; parser validation started, 2026-10-22 12:05 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: **91 issues and 65 PRs**, with 16 current ordered actions in NEEDS-AMIT.
+
+- **Hero #1210 / issue #1206**, unchanged head 6a9f539: every required local stage has now been attempted once. Frozen install, lint, typecheck, all four scans and build pass. Build used cache (1/1 cached, 3.602s), so this is not a fresh compilation claim. Full tests are **INCOMPLETE**, exit 143 after documented owned-only termination of an unbounded KB07 parent wait; 1,186 observed pass lines / zero named failures / three todos are not an aggregate. Exact Playwright finished **28 pass / 8 fail / 89 skip**; **all eight own hero cases pass**. Global failures and incomplete full tests still block merge.
+- Hero's 37 Playwright artifact files were archived outside the checkout before the guarded ignored dev-cache cleanup. After the build, no owned process remained and port 3000 was free. No source change, rerun, check waiver or reporting-only commit changed the tested head. The dated PR/issue report will supersede initial README unknowns while retaining earlier failure receipts.
+- The KB07 diagnosis and proposed authoritative exit/output-drain fault cases are recorded on #1203, comment 6340150946. The helper's authorized extra attempt remains consumed; no further implementation was made.
+- **Parser #1301 → #1302**, candidate 1 at 1acc05a: its issue-only front-matter placement was corrected without changing scope. A rerun of only the affected scope guard passed (job 119809486946); no application test was rerun for that correction. The worker now owns the quiet slot for all 303 parser cases and scoped lint/types. Runtime results remain pending; the original 7016.86ms baseline failure remains recorded.
+- **Next independent work:** #1256 voice research still needs its first full local validation; actual CodeRabbit coverage is clear. #1277 Executor still needs full validation, actual CodeRabbit review and browser evidence. Its real-settings-page fixture is being prepared with fictional responses and blocked external networking; no browser or compiler runs concurrently with the parser. The existing features worktree now holds frozen Executor head 13752d9; the old payment branch is preserved. Exactly four worktrees remain.
+- **Lane 1 blocked:** #1203, downstream dependencies, required architecture labels and retained validation failures remain unchanged. Protected #1193/#1198 are untouched.
+- **Done:** hero validation and artifact preservation, parser scope correction, bounded harness diagnosis. **Needs Amit:** the existing 16 actions in order. **UNKNOWN:** parser runtime results, remaining validation/hosted CI/reviews and actual preview/provider/device behavior. No production/default direct push, deployment or real provider call.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Parser draft published; hero harness stall recorded, 2026-10-22 11:56 UTC
 
 No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues (6 closed, 85 open), 65 PRs (11 merged, 54 open). NEEDS-AMIT still has 16 current ordered actions.
