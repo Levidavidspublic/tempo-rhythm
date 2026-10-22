@@ -122,3 +122,128 @@ Last 20 lines of failed `e2e` command:
   89 skipped
   25 passed (3.9m)
 ```
+
+## Authorized modal-semantics follow-up, 21 October 2026
+
+The original PR #1174 merged as `542f2cf`; review finding [4335410232](https://github.com/Levidavidspublic/tempo-rhythm/pull/1174#discussion_r4335410232) remains valid on integration `58844f0`: the narrow drawer traps focus and makes the background inert while its real Sidebar exposes only a navigation landmark. The scoped follow-up belongs to the same issue #1171. It does not change Sidebar, routes, backend calls or overlay policy.
+
+The candidate ledger remains three ordinary candidates (`86e7a97`, `3e97fde`, `62c85a6`, rebased to `361d485`, `ff87205`, `e7b3a31`) followed by **one explicitly authorized extra repair**. Evidence-only commits and the merge did not reset or consume another source candidate. This is the fourth and final cohesive candidate; no additional source repair is authorized after it.
+
+The coordinator's immutable combined checkout `d4f9cf28a7e3da3f90539e6a11b5912e74d8bc5a` contains the old KB-74 source. Its existing mounted matrix timed out at 60,026.71 ms against the unchanged 60,000 ms limit. Bun then killed two dangling processes; reduced-motion failed with a closed browser. Earlier passing cases were also slow (Ctrl K 47,943 ms; Hebrew RTL 33,095 ms). These failures remain evidence and are not attributed to the new semantics change. Passing old cases close their pages, and the matrix closes each completed iteration; the log does not establish the cause of the slowdown. No assertion, deadline or configuration was relaxed to address it.
+
+The new regressions exercise named English/Hebrew modal semantics around the actual navigation, their absence before opening and after dismissal, and nonmodal desktop behavior after responsive resizing. All 25 original named cases, assertions and deadlines remain intact. The two existing palette waits now select the dialog containing its real combobox: the newly announced drawer must not satisfy a wait intended for the palette. After removing those two wait-selector refinements and the two added cases, the original test file is byte-for-byte unchanged. Only the new cases use `finally` to release pages if an assertion fails; this prevents the intentional red proof from retaining a page before the existing capture matrix.
+
+Frozen source/test commit: `3d993460374c3fa4de2a6b69e23e8c50ff044de4`. A stable boundary around the actual Sidebar exposes the localized Navigation/ניווט dialog only while the narrow drawer owns modality. Role, modal state and name are one conditional typed props object, absent together when nonmodal. The real navigation landmark, Sidebar props/callbacks and focus queries remain unchanged. Direct-child inert ownership identifies the boundary; nonmodal `display: contents` preserves the actual nav's desktop grid/sticky placement, and the active dialog box uses the existing rail dimensions and layer. No new lint suppression or check/configuration change remains.
+
+The fresh targeted red run exited 1: **0 pass, 25 filtered, 2 fail, 1 error, 7 assertions; 227.42 seconds**. The new named-dialog assertion expected 1 and received 0. The existing capture matrix separately timed out at 63,976.73 ms against its unchanged 60,000 ms deadline, followed by a 30,000 ms click error. It produced **zero fresh before frames**. The existing committed contact sheet is untouched; its mounted after images preserve the merged-source visual baseline before this correction. They are not represented as newly captured images or evidence of modal announcement.
+
+Scoped web lint, using the unchanged installed Biome rules from `apps/web`, exited 0 on all three changed implementation files: **0 errors, 1 pre-existing unused-router warning**. Earlier diagnostic invocation and conditional-ARIA lint failures remain in the handoff logs; the final conditional props object passes without a suppression. Preservation, source hash and whitespace audits pass.
+
+### Final source hosted failure and stop
+
+The corrective [PR #1200](https://github.com/Levidavidspublic/tempo-rhythm/pull/1200), for the same issue #1171, has a failed [Test job 119268396163](https://github.com/Levidavidspublic/tempo-rhythm/actions/runs/39613536826/job/119268396163) on source `3d99346`. The KB-74 group ran **25 pass, 2 fail**: all 25 original cases passed, including the mounted matrix in 11,968.95 ms. Only the two added cases failed. This is not a green candidate.
+
+The English modal case passed the dialog name, `aria-modal`, actual navigation landmark and focus assertions, then failed exact rectangle equality at line 151:
+
+```text
+Expected Sidebar: { height: 900, width: 263.99999618530273, x: -51.89927291870117, y: 0 }
+Received boundary: { height: 900, width: 264, x: 0, y: 0 }
+(fail) English and Hebrew drawers expose a named modal containing the real navigation [963.00ms]
+```
+
+The desktop case passed its initial and post-resize nonmodal/nav assertions, then failed the English exact leading-edge check at line 176:
+
+```text
+Expected: 0
+Received: -0.09394118189811707
+(fail) desktop navigation has no modal semantics after a mobile drawer resize [965.00ms]
+```
+
+Read-only inspection identifies a missing synchronization condition in the new geometry checks. `tempo.css:500–502` transitions the narrow Sidebar from `translateX(-100%)` to `none`; `--tp-dur-slow` is 240 ms in `globals.css:297`. The new boundary is fixed and unanimated. `openDrawer` waits for the open React state and focused command control, without waiting for the drawer transition to finish; the two rectangle calls are also separate reads. The observed -51.899 px lies inside the Sidebar's -264-to-0 px opening path. The desktop case resizes during that opening and waits for React's closed state, without checking settled geometry. Its small residual offset is consistent with a remaining transform/compositor frame. The hosted log records no computed transform or animation state, so the exact desktop timing cause remains unproven; these failures do not establish a persistent layout defect.
+
+Both new cases stop in their first English iteration. **The new Hebrew modal-name assertion, Hebrew desktop iteration, and sticky-scroll assertion were not reached.** Existing Hebrew/RTL and complete matrix cases passed, but they do not substitute for those unexecuted assertions. Hosted capture variables were not set; no fresh image capture is claimed.
+
+The coordinating agent stopped the final local 27-case waiter only after verifying its log did not exist and it had no child. The queued flock process exited 143; **the local fixture did not start and is NOT RUN because the hosted failure is already known**, rather than a failed or passing local test. No source, test, assertion, timeout, skip or configuration changed after the hosted failure, and no retry was launched. All owned runner/helper sessions are closed.
+
+The three ordinary candidates and one authorized extra are now exhausted. Source/tests remain frozen at `3d99346`; this update changes evidence only. Status: **stuck / AT-17 hold**, pending the owner's synchronization-repair decision. Root owns any further authorization, remote reporting and remaining mandatory current-candidate gates. Old combined results do not validate this source. Device screen readers, native Hebrew review and live authenticated account behavior remain UNKNOWN. Full retained logs, source hashes, preservation audit, budget ledger and final handoff are in `/workspace/work/kb-finish/kb74-modal/`.
+
+Last 20 lines of the failed targeted local red command (full log retained):
+
+```text
+[2m    - performing click action[22m
+
+  log: [ "  - waiting for locator('[data-component=\"Topbar\"] .tp-topbar__menu')", "    - locator resolved to <button type=\"button\" aria-expanded=\"false\" aria-label=\"Open pages\" class=\"tp-btn tp-btn--ghost tp-btn--icon tp-topbar__menu\">…</button>",
+  "  - attempting click action", "    - waiting for element to be visible, enabled and stable",
+  "    - element is visible, enabled and stable", "    - scrolling into view if needed",
+  "    - done scrolling", "    - performing click action"
+],
+
+      at openDrawer (/workspace/work/kb-74/tests/unit/kb-74.test.tsx:98:34)
+      at /workspace/work/kb-74/tests/unit/kb-74.test.tsx:370:10
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+
+ 0 pass
+ 25 filtered out
+ 2 fail
+ 1 error
+ 7 expect() calls
+Ran 2 tests across 1 file. [227.42s]
+```
+
+
+## Overnight v3 authorized settled-transition pass — 21 October 2026
+
+Draft; focused proof passes, but the full suite has unrelated failures and current-head hosted gates remain required. Role: WORKHORSE. The owner authorized the one AT-17 timing correction for reopened #1171 / corrective #1200. Source `c801bc1` normally merges integration at `9583e91`; no shared fixture prerequisite was added. The original merged #1174 and all failure/attempt receipts above remain historical.
+
+The existing correction supplies the named modal boundary while retaining the real navigation landmark and nonmodal desktop layout. This pass changes only the scoped test: before the two exact geometry comparisons, it waits until the real Sidebar has computed `transform: none` and no active Web Animations. Browser animation-frame polling observes the actual transition state; there is no fixed delay, CSS override or animation disabling. Geometry expectations remain exact, including modal rectangle equality, desktop leading edge/height and sticky y=0. Product source, CSS, dictionary and all APIs remain unchanged by this timing pass.
+
+All 27 existing cases, 70 original assertion lines and five explicit timeout/deadline lines are retained exactly. The two geometry checks retain their English and Hebrew loops. Focused command `bun test tests/unit/kb-74.test.tsx` now returns **27 pass / 0 fail**, **163 assertions**, **32.78 seconds**, exit **0**, compared with the prior exact-head hosted **25 pass / 2 fail**. Both previously failing cases completed, including the previously unreached Hebrew modal/name and desktop/sticky assertions. The mounted languages/themes/widths matrix also passes. The actual test process exited after its existing browser/server cleanup; printed passes alone were not used as the result.
+
+Environment receipts: Bun **1.3.9**, installed Chromium. The first frozen install was interrupted during the environment refresh after printing `Resolving dependencies`; no exit receipt exists, so its outcome is UNKNOWN. The recovery `bun install --frozen-lockfile` reached its external 120-second bound, exit124: UNKNOWN. After that exit, dependency directories were copied from the preceding worktree only after byte equality of `bun.lock` and every root/workspace manifest (eight files) was verified. No package/config/lockfile changed and no install success is claimed.
+
+```text
+bun install v1.3.9 (cf6cdbbb)
+Resolving dependencies
+```
+
+Mandatory sequence on `c801bc1`:
+
+| Command | Result |
+|---|---|
+| `bun run lint` | PASS, exit 0; 5/5 tasks. |
+| `bun run typecheck` | PASS, exit 0; 5/5 tasks. |
+| `bun run test` | FAIL, exit 1; **3,472 pass / 23 fail / 3 todo**, 3,498 tests in 211 files, 81,393 assertions, 243.35 seconds. All 27 KB-74 cases passed. |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | PASS, exit 0; all four checks. |
+| `CI=1 bunx playwright test --reporter=line` | PASS, exit 0; **28 pass / 0 fail / 89 existing configuration-gated skips**, 58.0 seconds. Serialized with the shared localhost lock. |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | PASS, exit 0; 1/1 task, 59.599 seconds. |
+
+All 23 broad failures belong to the unchanged KB-64 fixture, with `Target page, context or browser has been closed` when the fixture attempts browser operations. This matches the previously recorded baseline failure class; the exact reason its browser closed is not established by this run. No KB-64 source or test was changed and no failure was reclassified as a pass. The suite completed naturally with exit 1; it was not cancelled. Full logs are `/workspace/kb-run-logs/kb74-{focused,full,lint,typecheck,scans,e2e,build}.log` and `kb74-results.json`.
+
+Last 20 lines of the failed full-suite command:
+
+```text
+(fail) KB64 Undo recovery > fulfillment makes no invented success claim and does not expire early [16.02ms]
+(fail) KB64 Undo recovery > unmount fences a stale rejected request and cancels expiry [16.03ms]
+(fail) KB64 Undo recovery > changed deadline fences an old rejection without leaking error or busy state [16.03ms]
+(fail) KB64 Undo recovery > changed deadline fences an old fulfilled request after the old deadline [15.94ms]
+(fail) KB64 Undo recovery > new inline callback identities do not reset an active request [16.02ms]
+(fail) KB64 Undo recovery > Hebrew recovery has RTL direction and localized action copy [16.02ms]
+(fail) KB64 Undo recovery > an immediate fulfillment crossing the deadline still schedules post-commit expiry [16.00ms]
+(fail) KB64 Undo recovery > late successful real detail restoration keeps the parent navigation authoritative [16.02ms]
+(fail) KB64 Undo recovery > real NotesScreen list callback contains rejection and retries the same note [16.02ms]
+(fail) KB64 Undo recovery > real NotesScreen page callback contains rejection and leaves false fulfillment neutral [15.96ms]
+(fail) KB64 Undo recovery > gallery reuses the notice and supports reject retry expiration and language [7.02ms]
+(fail) KB64 Undo recovery > real caller and gallery fit both widths languages and themes with 44px controls [8.83ms]
+(fail) KB64 Undo recovery > large text wraps and reduced motion has no toast animation [16.02ms]
+
+ 3472 pass
+ 3 todo
+ 23 fail
+ 81393 expect() calls
+Ran 3498 tests across 211 files. [243.35s]
+error: script "test" exited with code 1
+```
+
+ Existing screenshots retain their original provenance; this timing-only test pass adds no visual design and claims no new screenshot. Current-head hosted gates and actual CodeRabbit coverage are required before integration. Native Hebrew and real-device screen-reader checks remain required before production; live accounts remain unverified. No deployment was performed.

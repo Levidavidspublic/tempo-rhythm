@@ -72,6 +72,9 @@ export function TempoShell({ children }: { children: ReactNode }) {
   const paletteOpenRef = useRef(paletteOpen);
   paletteOpenRef.current = paletteOpen;
   const drawerModal = narrow && railOpen && !paletteOpen && !panelOpen;
+  const drawerSemantics = drawerModal
+    ? { role: "dialog" as const, "aria-modal": true as const, "aria-label": kb74t(lang, "kb74.navigation") }
+    : {};
 
   // On /coach the coach is the page, so a panel left open does not come back on the next page.
   useEffect(() => {
@@ -134,7 +137,7 @@ export function TempoShell({ children }: { children: ReactNode }) {
     if (!app) return;
     for (const child of Array.from(app.children)) {
       if (!(child instanceof HTMLElement)) continue;
-      const sidebar = child.getAttribute("data-component") === "Sidebar";
+      const sidebar = child.classList.contains("kb74-rail-boundary");
       const scrim = child.classList.contains("tp-scrim");
       const panel = child.classList.contains("tp-coach-panel");
       const shouldInert = coachModal
@@ -301,11 +304,16 @@ export function TempoShell({ children }: { children: ReactNode }) {
       <a className="tp-skip" href="#main">
         {t("skip")}
       </a>
-      <Sidebar
-        inert={(narrow && !railOpen) || coachModal}
-        onOpenPalette={openPalette}
-        onNavigate={handleRailNavigate}
-      />
+      <div
+        className="kb74-rail-boundary"
+        {...drawerSemantics}
+      >
+        <Sidebar
+          inert={(narrow && !railOpen) || coachModal}
+          onOpenPalette={openPalette}
+          onNavigate={handleRailNavigate}
+        />
+      </div>
       <Topbar
         railOpen={railOpen}
         onToggleRail={() => toggleRail("topbar")}
