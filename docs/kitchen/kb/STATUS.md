@@ -1,5 +1,16 @@
 # KB finish status
 
+## WALK — 22 October continuation checkpoint
+
+- AT21 extra harness candidate `be1fec2` pushed to draft#1203: focused16pass/4fail/1error. The attempted process-tree optimization introduced cleanup regressions; candidate frozen, no weakened assertions or extra rerun. Frozeninstall passes; remaining mandatory gates queued. This is a technical blocker, not an unanswered prior approval.
+- AT22 completed as preparation: clean replacement draft#1254 at`3dfd993`, onlytwoexistingKB67files, soleparentintegration`7d1a0f6`; old#1197keptopenandcrosslinked. #1254stilldependsontheunmergedsharedhelper; freshCI/reviewrequired.
+- AT29 page-save `f2fdfb1` pushed: deferredtitle/bodyABAredproofbothfailasexpected, correctionfocused32/32pass. Fullmandatorygatesrunningnow; nogreenmergeclaim.
+- AT27 Plan: focused13childcasespassandheadingcontract10/0includingENHE. Source/evidencepublicationinprogress; fullgatesqueued.
+- AT28 Hero: all8routecasespasswithdesktopinitialstate/geometryassertions. Source/evidencepublicationinprogress; fullgatesqueued.
+- Researchdraft#1256closes#1251; authoritativeprotocolcomparisonwritten, currentprices/HebrewqualityUNKNOWNdueblockedpublicsites.
+- Newlabeledissues#1252Hebrewcrisis(flagOFF),#1253DeepgramAgent,#1255settingsrouter,#1257researchlifecycle,#1258mountedcontrols.
+- KB01#1212androuter#1255haveisolatedfilepreparationunderwaywithoutadditionalcheckouts;fourliveworktreesremain. DECISIONS.mdrecordsschema/defaultchoices;Amit'sarchlabelsremainmergegates.
+
 ## WALK — Active continuation, 22 October 2026
 
 Amit's dated approvals are recorded in NEEDS-AMIT.md. AT-21/22/27/28/29 are authorized scoped work, not pending permission. Architecture KB-01/16/31 is approved for preparation; Amit still supplies the merge-gating labels. Product defaults now require settings-selected GLM models, Resend magic links, $1 trials and approved beta Max access; checkout remains OFF. The earlier final snapshot is historical.
