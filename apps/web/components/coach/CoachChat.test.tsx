@@ -358,7 +358,8 @@ createRoot(document.getElementById("root")).render(<React.StrictMode><App/></Rea
     await writeFile(builder, `
 import {readFileSync,existsSync,statSync,writeFileSync} from "node:fs";import {join,resolve,basename} from "node:path";
 const stubs=${JSON.stringify(stubs)},web=${JSON.stringify(web)},root=${JSON.stringify(root)},dir=${JSON.stringify(directory)};
-const result=await Bun.build({entrypoints:[${JSON.stringify(entry)}],outdir:dir,target:"browser",plugins:[{name:"fictional-composer-boundaries",setup(build){
+// Reduce fixture parse cost inside the existing five-second case budget.
+const result=await Bun.build({entrypoints:[${JSON.stringify(entry)}],outdir:dir,target:"browser",minify:true,plugins:[{name:"fictional-composer-boundaries",setup(build){
 build.onResolve({filter:/^(@\\/|convex\\/react$|next\\/(navigation|link)$)/},args=>{if(args.path in stubs)return {path:args.path,namespace:"fixture"};if(args.path.startsWith("@/")){const base=resolve(web,args.path.slice(2));const found=[base,base+".ts",base+".tsx",base+".js",join(base,"index.ts"),join(base,"index.tsx")].find(p=>existsSync(p)&&statSync(p).isFile());if(!found)throw new Error("Unresolved fixture import "+args.path);return {path:found}}});
 build.onLoad({filter:/.*/,namespace:"fixture"},args=>({contents:stubs[args.path],loader:"tsx",resolveDir:web}));
 }}]});if(!result.success)throw new Error(result.logs.map(String).join("\\n"));for(const output of result.outputs)writeFileSync(join(dir,basename(output.path)),new Uint8Array(await output.arrayBuffer()));

@@ -1,0 +1,210 @@
+bun test v1.3.9 (cf6cdbbb)
+
+components/coach/CoachChat.test.tsx:
+killed 1 dangling process
+
+# Unhandled error between tests
+-------------------------------
+9676 |
+9677 | // packages/utils/stackTrace.ts
+9678 | function captureRawStack() {
+9679 |   const stackTraceLimit = Error.stackTraceLimit;
+9680 |   Error.stackTraceLimit = 50;
+9681 |   const error = new Error();
+                           ^
+error: expect(locator).toBeEnabled() failed
+
+Locator:  locator('textarea')
+Expected: enabled
+Received: undefined
+
+Call log:
+  - Expect "to.be.enabled" with timeout 5000ms
+  - waiting for locator('textarea')
+  - Protocol error (Runtime.evaluate): Internal server error, session closed.
+
+ matcherResult: {
+  message: "expect(locator).toBeEnabled() failed\n\nLocator:  locator('textarea')\nExpected: enabled\nReceived: undefined\n\nCall log:\n  - Expect \"to.be.enabled\" with timeout 5000ms\n  - waiting for locator('textarea')\n  - Protocol error (Runtime.evaluate): Internal server error, session closed.\n",
+  pass: false,
+  actual: undefined,
+  name: "toBeEnabled",
+  expected: "enabled",
+  log: [ "  - Expect \"to.be.enabled\" with timeout 5000ms", "  - waiting for locator('textarea')",
+    "  - Protocol error (Runtime.evaluate): Internal server error, session closed."
+  ],
+  timeout: undefined,
+  ariaSnapshot: undefined,
+},
+
+      at captureRawStack (/workspace/work/lane2-features/node_modules/.bun/playwright-core@1.62.1/node_modules/playwright-core/lib/coreBundle.js:9681:21)
+      at callMatcherAsStep (/workspace/work/lane2-features/node_modules/.bun/playwright@1.62.1/node_modules/playwright/lib/matchers/expect.js:13310:57)
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:431:38)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:441:11
+      at processTicksAndRejections (native:7:39)
+-------------------------------
+
+(fail) mounted research composer > typed controls are attached once, and cancellation targets that saved message [5320.26ms]
+  ^ this test timed out after 5000ms.
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:460:18
+(fail) mounted research composer > Cancel during preparation prevents the action and repeated Send never duplicates the message [7.72ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:474:18
+(fail) mounted research composer > a rejected cancellation remains retryable with the same key [16.26ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:486:21
+(fail) mounted research composer > late preparation in another chat cannot clear or disable the current draft [10.28ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:500:21
+(fail) mounted research composer > an account change fences an old rejected send and retains the new account draft [9.96ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:513:19
+(fail) mounted research composer > failed page flush keeps the saved message and retries its reply without sending again [11.61ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:523:34
+(fail) mounted research composer > a dropped action response cancels the known request before freeing the composer [23.22ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:530:11
+(fail) mounted research composer > starters and follow-ups use the selected controls [12.63ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:542:104
+(fail) mounted research composer > capability off is honest and a failed send preserves the typed draft [22.41ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:550:6
+(fail) mounted research composer > en at 390: token touch targets, keyboard controls and no horizontal scroll [4.52ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:550:6
+(fail) mounted research composer > en at 1280: token touch targets, keyboard controls and no horizontal scroll [11.29ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:550:6
+(fail) mounted research composer > he at 390: token touch targets, keyboard controls and no horizontal scroll [20.30ms]
+392 |     const failures = results.filter(result => result.status === "rejected");
+393 |     if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Composer fixture cleanup failed");
+394 |   }, 15_000);
+395 |   async function open(lang = "en", width = 390) {
+396 |     errors = [];
+397 |     page = await browser.newPage({ viewport: { width, height: 844 }, reducedMotion: "reduce" });
+                               ^
+error: newPage: Target page, context or browser has been closed
+ log: [],
+
+      at open (/workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:397:26)
+      at /workspace/work/lane2-features/apps/web/components/coach/CoachChat.test.tsx:550:6
+(fail) mounted research composer > he at 1280: token touch targets, keyboard controls and no horizontal scroll [5.28ms]
+
+ 0 pass
+ 22 filtered out
+ 13 fail
+ 1 error
+ 13 expect() calls
+Ran 13 tests across 1 file. [23.99s]
