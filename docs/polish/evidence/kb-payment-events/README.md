@@ -96,6 +96,39 @@ afterward; a process inspection found no surviving matching payment-test childre
 The exclusive slot was released. Full typecheck/tests/lint/scans and review remain
 pending; this result establishes only the focused file.
 
+### Candidate 2: ES2021 compatibility
+
+Root authorized a narrow diagnostic and then the three-line repair on 2026-10-22.
+Before repair, standalone strict compilation of only the parser and its test
+reported exactly three errors: TS2550 at both Object.hasOwn calls under ES2021,
+and TS2769 because the new six-kind test table widened kind to string.
+The parser now uses Object.prototype.hasOwnProperty.call for both own-key checks;
+the new test table has an as-const annotation. No runtime behavior, original test
+body, assertion, deadline, compiler setting or dependency was changed.
+
+Exact standalone command (Bun 1.3.9):
+
+```sh
+/workspace/work/kb/bin/bun /workspace/tempo-rhythm/apps/web/node_modules/typescript/bin/tsc --noEmit --strict --target ESNext --lib ES2021,DOM --types node,bun --module ESNext --moduleResolution Bundler --skipLibCheck --allowSyntheticDefaultImports --isolatedModules --forceConsistentCasingInFileNames convex/lib/revenuecat_events.ts convex/lib/revenuecat_events.test.ts
+```
+
+Before: exit 2, types-before-candidate-2.log. After: exit 0, no diagnostics,
+types-candidate-2.log. Each has a corresponding .exit receipt. Only owned files
+and their type declarations were checked; no application graph was checked.
+
+Exact pure-test command:
+
+```sh
+/workspace/work/kb/bin/bun test convex/lib/revenuecat_events.test.ts --test-name-pattern 'normalizes|rejects non-object|requires bounded|accepts 256|requires finite|accepts zero|rejects aliases|shipping catalog|rejects unknown products|uses each fictional|product changes retain|cancellation preserves|ignores additive'
+```
+
+Result: 18 pass, 0 fail, 10 filtered out, 119 assertions, 281 milliseconds,
+exit 0 (pure-candidate-2.log and .exit). This intentionally excludes child-process
+tests during another worker's heavy validation slot; no test was removed or
+weakened. The full 28-case pass above is for candidate 1, not candidate 2.
+The nine original bodies/assertions were again verified byte for byte unchanged.
+Candidate 2 is frozen for root review/publication; one repair candidate remains.
+
 All fixtures are fictional. Test-only ingress bypass occurs inside a fresh Bun
 child process to exercise malformed/unsupported/unmapped rejection through the
 actual handler. Production gate source is never changed. Existing gate tests

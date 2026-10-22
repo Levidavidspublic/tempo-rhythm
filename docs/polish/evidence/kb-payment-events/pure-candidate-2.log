@@ -1,0 +1,27 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/revenuecat_events.test.ts:
+(pass) parseRevenueCatEvent > normalizes INITIAL_PURCHASE with exact server-owned fields [8.94ms]
+(pass) parseRevenueCatEvent > normalizes RENEWAL with exact server-owned fields [0.43ms]
+(pass) parseRevenueCatEvent > normalizes PRODUCT_CHANGE with exact server-owned fields [0.01ms]
+(pass) parseRevenueCatEvent > normalizes UNCANCELLATION with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes CANCELLATION with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes EXPIRATION with exact server-owned fields
+(pass) parseRevenueCatEvent > rejects non-object envelopes and missing or non-object event fields [0.73ms]
+(pass) parseRevenueCatEvent > requires bounded nonempty string IDs without padding or control characters [8.45ms]
+(pass) parseRevenueCatEvent > accepts 256-character IDs without changing identity [0.83ms]
+(pass) parseRevenueCatEvent > requires finite nonnegative safe integral millisecond timestamps [0.30ms]
+(pass) parseRevenueCatEvent > accepts zero and safe integer timestamp boundaries without converting seconds [1.40ms]
+(pass) parseRevenueCatEvent > rejects aliases, transfers and unknown kinds without inventing a downgrade [0.23ms]
+(pass) parseRevenueCatEvent > shipping catalog is frozen, empty, and rejects otherwise valid events [0.18ms]
+(pass) parseRevenueCatEvent > rejects unknown products and inherited catalog entries [0.13ms]
+(pass) parseRevenueCatEvent > uses each fictional server mapping rather than claimed tier or entitlements [0.61ms]
+(pass) parseRevenueCatEvent > product changes retain the current product and never grant a deferred product [0.95ms]
+(pass) parseRevenueCatEvent > cancellation preserves expiry and does not infer access revocation [0.14ms]
+(pass) parseRevenueCatEvent > ignores additive provider fields without copying raw payloads [0.14ms]
+
+ 18 pass
+ 10 filtered out
+ 0 fail
+ 119 expect() calls
+Ran 18 tests across 1 file. [281.00ms]

@@ -61,7 +61,7 @@ describe("parseRevenueCatEvent", () => {
     ["UNCANCELLATION", "uncancellation"],
     ["CANCELLATION", "cancellation"],
     ["EXPIRATION", "expiration"],
-  ]) {
+  ] as const) {
     test("normalizes " + type + " with exact server-owned fields", () => {
       expect(parseRevenueCatEvent(eventEnvelope({ type }), FIXTURE_CATALOG)).toEqual({
         ok: true,

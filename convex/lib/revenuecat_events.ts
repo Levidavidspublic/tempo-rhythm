@@ -62,7 +62,7 @@ export function parseRevenueCatEvent(
   }
   const event = input.event;
   if (!isIdentifier(event.type)) return { ok: false, reason: "malformed" };
-  if (!Object.hasOwn(EVENT_KINDS, event.type)) {
+  if (!Object.prototype.hasOwnProperty.call(EVENT_KINDS, event.type)) {
     return { ok: false, reason: "unsupported-event" };
   }
   if (!isIdentifier(event.id) || !isIdentifier(event.app_user_id)
@@ -70,7 +70,7 @@ export function parseRevenueCatEvent(
     || !isTimestamp(event.expiration_at_ms)) {
     return { ok: false, reason: "malformed" };
   }
-  if (!Object.hasOwn(catalog, event.product_id)) {
+  if (!Object.prototype.hasOwnProperty.call(catalog, event.product_id)) {
     return { ok: false, reason: "unmapped-product" };
   }
   const product = catalog[event.product_id];
