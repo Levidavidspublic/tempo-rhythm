@@ -1,5 +1,19 @@
 # KB finish status
 
+## WALK — Current checkpoint, 22 October 2026, 10:43 UTC
+
+No new merge; integration remains7d1a0f6. Lane1: **6closed/56open issues;11merged/26open PRs**. Lane2: **0closed/28open issues;0merged/27open PRs**. **16 current owner actions**, in the order in NEEDS-AMIT.
+
+- **Lane1:** shared#1203 remains frozen after the authorized extra pass failed. #1280 source c8cd3e8 passed its69 own cases but failed mandatory full tests/E2E; evidence-only cleanup wording corrections are pushed at3b3bb90. Architecture labels and KA dependencies still block downstream work.
+- **Lane2 #1296/onboarding:** completed required sequence once; evidence-onlyb3140f8 is pushed. Install/lint/typecheck/scans/freshbuild pass. Full3481pass/11fail/3todo/2errors, own14/0. ExactE2E14pass/14fail/89skip. No merge or rerun; source stayed1522103. Goal viewport evidence/current reviews remain pending.
+- **Lane2 #1300/#1299 deletion fence:** finalcandidate3 pushed at761eb917597ef408d7e306d5a613eaef4a0327d8. Product schema/helper unchanged sincecandidate1;20focused tests pass, scopedlint0, actual narrow backend types0diagnostics across5local/245real source/type files. Candidate2 TS2339 errors were declarations lacking a real runtime validator property; final typed structural comparisons preserve16cases and add4negativecases. Full local mandatory validation has now started in clean lane2-pages, without DEBUG; no other heavy/browser worker runs.
+- Prior #1300 hosted CI/guards all passed on285e32c. PR moved to review, not merged; actual CodeRabbit coverage and CI must clear again on final761eb91. No review-bot command was posted. Three source candidates consumed and frozen.
+- **Other Lane2 open/blocked:** #1298's frozen dot-segment endpoint finding is AT16; no helper activation. #1295's ES2021 correction8bf87c2 is pushed,18pure tests/narrow types pass, broader current gates and parent remain. #1294's proposed complete-snapshot contract stays held; no subscription schema from that proposal has been implemented. All billing switches remain OFF.
+- **Done:** published exact validation evidence, corrected typed schema assertions, started the next independent candidate's required validation. **Needs Amit:** existing16ordered actions, including scoped retry exceptions, architecture labels, configuration and clinical review; previous approvals remain applied. **UNKNOWN:** current unfinished validation/reviews, preview/live behavior, unresolved test timing/closure causes and payment recovery/legacy migration decisions.
+- Exactly4worktrees; former compatibility checkout reused cleanly while its branch/history remains. No production/default direct push, manual deployment, real-account/provider call, secret/config mutation or protected#1193/#1198 change.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Current checkpoint, 22 October 2026, 10:23 UTC
 
 No new merge; integration remains 7d1a0f6. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 28 open issues; 0 merged / 27 open PRs**. **16 current owner actions** in NEEDS-AMIT; older ledger entries are historical.
