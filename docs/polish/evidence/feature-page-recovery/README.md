@@ -1,6 +1,6 @@
 # Page action recovery — #1249
 
-WALK — AT-29 correction locally tested in the focused fixture; completion/merge remains blocked pending current mandatory gates, remote CI and CodeRabbit. Amit authorized one additional scoped candidate on 2026-10-22. Both new deferred title/body A→B→A regressions fail on candidate 3 with premature Saved, then all 32 focused cases pass after revision-owned dirty clearing (the original 30 are unchanged). Previous candidate 3 failures below are historical and do not substitute for checks on AT-29. No production or preview completion claim.
+WALK — AT-29 correction locally tested; completion/merge remains blocked. Both deferred title/body A→B→A regressions fail before the approved correction, then all 32 focused cases pass and all 32 also pass within the mandatory full run. Current install, lint, typecheck, four scans and the placeholder build pass. The current full suite exits 1 with 3,467 pass / 34 fail / 3 todo / 2 errors; local Playwright exits 1 with 11 pass / 17 fail / 89 skip. The placeholder build passes (1/1 task, 3m27.37s). Underlying failure causes, complete remote CI and actual CodeRabbit clearance remain unverified. No source/test repair or command rerun followed these failures. Historical candidate 3 receipts are preserved separately. No production or preview completion claim.
 
 Captured 2026-10-21 UTC; remaining local gates completed 2026-10-22 UTC with Bun 1.3.9. Base: `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`. Original NotesScreen blob: `b9435f54157cc49a746aa07944f6fe615bf96708` (unchanged between the saved original base and this base). Candidate 1 tested NotesScreen blob: `ae6cab36d00cbae11109f6440e3229d952a8e258`. Candidate 1 test blob: `743d928492dc2140acda5720402f5a63a4e4d4a6`. Source, test and evidence are committed together; no provider, account or deployed environment was called.
 
@@ -45,10 +45,165 @@ The new tests use the actual mounted editor and deferred mutations. Each submits
 | `bun test tests/unit/tempo-page-error-recovery.test.tsx` after correction | Exit 0; 32 pass, 0 fail, 130 expectations, 136.95 s. The original 30 remain passing. [Log](at29-focused.log), [receipt](at29-focused.json), [lossless output](at29-focused.log.raw.gz). |
 | Scoped Biome lint on source and test, from apps/web | Exit 0; two files checked, no fixes. [Log](at29-scoped-lint.log). |
 | `git diff --check` | Exit 0 on this scoped correction and evidence. |
-| Mandatory install, repository lint/typecheck/full tests, four scans/notices, repository Playwright and placeholder build on AT-29 | UNKNOWN: pending serialized heavy-slot grant. Historical candidate 3 receipts below do not validate this changed source/test. |
+| `bun install --frozen-lockfile` | Exit 0; 1,033 installs checked across 1,079 packages, no changes; 316.24s. [Log](at29-mandatory-install.log), [receipt](at29-mandatory-install.json). |
+| `bun run lint` | Exit 0; 5/5 tasks, nine existing warnings; 2.569s. [Log](at29-mandatory-lint.log), [receipt](at29-mandatory-lint.json). |
+| `bun run typecheck` | Exit 0; 5/5 tasks, 1m26.81s. [Log](at29-mandatory-typecheck.log), [receipt](at29-mandatory-typecheck.json). |
+| `bun run test` | Exit 1; authoritative aggregate 3,467 pass / 34 fail / 3 todo / 2 errors; 81,521 expectations; 3,504 tests in 212 files; 2291.58s. All 32 Page recovery cases pass. [Full log](at29-mandatory-test.log), [receipt](at29-mandatory-test.json), [all failure names](at29-mandatory-test-failures.txt), [last 20 lines](at29-mandatory-test.tail.txt). |
+| `bun run scan:forbidden-tech && bun run scan:ram-only-audit && bun run scan:design-tokens && bun run check:notices` | Exit 0; all four OK, 66 dependencies documented. [Log](at29-mandatory-scans.log), [receipt](at29-mandatory-scans.json). |
+| `CI=1 bunx playwright test --reporter=line` | Exit 1; 11 pass / 17 fail / 89 skip; 14.1m. [Full log](at29-mandatory-e2e.log), [receipt](at29-mandatory-e2e.json), [all failure names](at29-mandatory-e2e-failures.txt), [last 20 lines](at29-mandatory-e2e.tail.txt). |
+| `NEXT_PUBLIC_CONVEX_URL=https://example.convex.cloud bun run build` | Exit 0; 1/1 task, 3m27.37s. [Full log](at29-mandatory-build.log), [receipt](at29-mandatory-build.json). |
 | Current remote CI and CodeRabbit | UNKNOWN: pending checks/review on the new commit. |
 
 Readable AT-29 logs normalize only output whitespace; byte-exact originals are retained losslessly with [SHA256 mapping](at29-output-sha256.json). The focused run's afterAll completed without cleanup error. At 06:56:28 UTC, no live root/fixture processes or temporary page fixture directories remained; the browser slot was released. [Cleanup receipt](at29-focused-cleanup.json). No live/preview URL, real account, provider or environment was used.
+
+### AT-29 mandatory failures and ownership
+
+The mandatory sequence ran once on frozen commit f2fdfb170b2eb356e2bee7040b0eedf0e082e369 with the source/test/lock blobs recorded in every command receipt. Full tests completed normally with exit 1; unlike the older candidate 3 run, this run was not terminated and has an authoritative final aggregate. The 34 failures include six KB74 named 60-second timeouts, KB74 and KB59 unnamed hook timeouts, nineteen KB66 parent reports after the child failure, three history-normalization timeouts, and four pathological-Markdown performance assertions. Two between-test errors are separately counted: KB74 fixture page.goto timeout and KB66 clean-child rejection. Child diagnostics repeated inside parent errors are not counted as additional tests. Their underlying causes have not been established. No source, tests, deadlines, configs, guards or baselines were changed to alter these outcomes.
+
+All 17 Playwright failures are named below, including calendar, sign-out, task views and route wiring. Auth/account-dependent cases skipped under the existing local configuration; no live/preview URL or account storage was supplied. Slow shell monitoring did not restart or replace either original command.
+
+After Playwright ended, its owned groups had no live members and port 3000 was free. Only the exact ignored, realpath-matched, nonsymlink apps/web/.next/dev cache was removed with guarded Bun rmSync recursive true / force false to recover build space. [Cache receipt](at29-mandatory-dev-cache-cleanup.json). [Post-test process snapshot](at29-mandatory-post-test-processes.json), [final process snapshot](at29-mandatory-final-processes.json). Raw outputs and failure summaries remain losslessly archived with original SHA256 values in [the map](at29-output-sha256.json). No additional source correction or failed-command rerun was made.
+
+<details>
+<summary>All 34 full-test failure names and final aggregate</summary>
+
+```text
+34 tests failed:
+(fail) KB-74 real shell drawer focus > desktop static rail stays accessible without modal trapping [60001.60ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > StrictMode reopen still focuses the drawer after dismissal [60001.39ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > Hebrew RTL drawer opens on the leading edge and restores focus [60001.31ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > gallery language and theme controls update the real shell [60001.29ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > mounted shell and gallery fit both languages, themes and widths [60096.74ms]
+  ^ this test timed out after 60000ms.
+(fail) KB-74 real shell drawer focus > reduced motion uses the existing near-zero CSS policy [60036.07ms]
+  ^ this test timed out after 60000ms.
+(fail) (unnamed) [60003.85ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) (unnamed) [600631.77ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) load-more view names the currently visible count and preserves LTR numerals [240000.99ms]
+  ^ this test timed out after 240000ms.
+(fail) end view describes the current snapshot rather than all history [398.36ms]
+(fail) Hebrew count and end message keep numbers isolated [23.07ms]
+(fail) Hebrew load-more control remains a real button [1.40ms]
+(fail) gallery statically mounts the actual activity heading and feed views [1.25ms]
+(fail) mounted caller and exact query contract remain wired [0.22ms]
+(fail) English and machine-drafted Hebrew keys have parity [0.64ms]
+(fail) no entries retain the mounted empty view and no paging control [0.38ms]
+(fail) exactly 20 items show a current-snapshot end without a button [0.06ms]
+(fail) 21 items focus the new row after final-button removal [0.09ms]
+(fail) 30 exactly completes in one chunk and keeps the new row in view [0.39ms]
+(fail) 31 items require two chunks and focus rows 21 then 31 [0.31ms]
+(fail) focus moved elsewhere during a load remains there [0.09ms]
+(fail) Hebrew direction, time and counts remain readable [0.05ms]
+(fail) StrictMode announces each loaded count once and transfers focus once [1.02ms]
+(fail) reactive insertion alone does not steal focus and next chunk uses its stable boundary [0.68ms]
+(fail) pending load keeps its older boundary when the anchor disappears beside a new top row [0.54ms]
+(fail) gallery controls and retry callback remain operable [0.30ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [0.24ms]
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [8986.71ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [11470.24ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > duplicate identities compare large and deep malformed fields structurally [11783.44ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > fencesInItems [3074.20ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [4461.71ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [4599.96ms]
+(fail) pathological bodies stay linear > definitionStarts [3699.89ms]
+
+ 3467 pass
+ 3 todo
+ 34 fail
+ 2 errors
+ 81521 expect() calls
+Ran 3504 tests across 212 files. [2291.58s]
+error: script "test" exited with code 1
+```
+
+</details>
+
+<details>
+<summary>All 17 Playwright failure names and final aggregate</summary>
+
+```text
+  17 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  89 skipped
+  11 passed (14.1m)
+```
+
+</details>
+
+Full-test last 20 lines ([lossless original](at29-mandatory-test.tail.txt.raw.gz)):
+
+```text
+(fail) gallery controls and retry callback remain operable [0.30ms]
+(fail) mounted production view and gallery fit phone and desktop in both languages and themes [0.24ms]
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "😀" [8986.71ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > UTF-8 cap exact/over including isolated surrogates "\ud800" [11470.24ms]
+  ^ this test timed out after 5000ms.
+(fail) history normalization (synthetic fixtures only) > duplicate identities compare large and deep malformed fields structurally [11783.44ms]
+  ^ this test timed out after 5000ms.
+(fail) pathological bodies stay linear > fencesInItems [3074.20ms]
+(fail) pathological bodies stay linear > commentsOpenOnEveryLine [4461.71ms]
+(fail) pathological bodies stay linear > closingTagsOpenOnEveryLine [4599.96ms]
+(fail) pathological bodies stay linear > definitionStarts [3699.89ms]
+
+ 3467 pass
+ 3 todo
+ 34 fail
+ 2 errors
+ 81521 expect() calls
+Ran 3504 tests across 212 files. [2291.58s]
+error: script "test" exited with code 1
+```
+
+Playwright last 20 lines ([lossless original](at29-mandatory-e2e.tail.txt.raw.gz)):
+
+```text
+  17 failed
+    [chromium] › tests/e2e/calendar-views.spec.ts:7:5 › event created in Day view appears in Week and Month views for that date
+    [chromium] › tests/e2e/screens/sign-out.spec.ts:13:7 › sign out › sign-out button is visible ───
+    [chromium] › tests/e2e/task-views-core.spec.ts:14:7 › core task views › today, inbox, project, priority, and energy views share one persisted task record
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:20:7 › habits, brain dump and search wiring › /brain-dump mounts BrainDumpScreen
+    [chromium] › tests/e2e/wiring/habits-braindump-search.spec.ts:26:7 › habits, brain dump and search wiring › /search mounts SearchScreen
+    [chromium] › tests/e2e/wiring/plan.spec.ts:9:7 › plan wiring › /plan shows the day timeline and not the scaffold placeholder
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/profile mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /settings/preferences mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /notifications mounts its component
+    [chromium] › tests/e2e/wiring/settings-account.spec.ts:16:9 › settings + account wiring › /billing mounts its component
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:7:7 › settings nags + memory wiring › /settings/nags renders the nags screen and nav links exist
+    [chromium] › tests/e2e/wiring/settings-nags-memory.spec.ts:15:7 › settings nags + memory wiring › /settings/memory renders the memory screen
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/builder?from=<id> mounts its component
+    [chromium] › tests/e2e/wiring/templates-onboarding.spec.ts:26:9 › templates and onboarding wiring › /templates/run/[id] mounts its component
+    [chromium] › tests/e2e/wiring/today.spec.ts:10:7 › today wiring › /today mounts habit check-in and day plan markers
+  89 skipped
+  11 passed (14.1m)
+```
 
 ## Historical candidate 1–3 results
 
@@ -205,6 +360,6 @@ No product check was weakened. Browser cleanup closed owned pages, browser and s
 
 - Exact cause of the preview red three-error badge.
 - Authenticated persistence, deployed preview behavior and real-device screen-reader behavior.
-- Current mandatory repository gates, remote CI and CodeRabbit on AT-29 remain pending. Historical candidate 3 local commands failed/incompleted on the KB66 wrapper stall and three Playwright timeouts; their underlying causes remain unverified. The earlier hosted candidate 3 global test job was red on KB67's hook timeout.
+- Current full-test / Playwright failures remain blocking, and their underlying causes remain unverified. Current complete remote CI and actual CodeRabbit disposition are unverified. Historical candidate 3 local commands failed/incompleted on the KB66 wrapper stall and three Playwright timeouts; the earlier hosted candidate 3 global test job was red on KB67's hook timeout.
 - Existing wiki-link creation and broader unmount recovery remain outside this ticket. Cleanup changed only as necessary to prevent the introduced write-order/lost-draft regressions. No sidebar/codec, checkbox, route, backend, model, schema or environment change.
 - Older overlapping #1053/#1081 and held migration drafts #795/#805 were left untouched and need later reconciliation. KA #1101 expressly excludes NotesScreen. Protected #1193/#1198 and held #1110/#1112/#1129 were untouched.

@@ -1,0 +1,2 @@
+    PID    PPID    PGID     SID STAT                  STARTED COMMAND
+ 267988     503  267988  267988 Ss   Thu Oct 22 07:08:59 2026 bash
