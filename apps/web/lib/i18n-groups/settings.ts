@@ -331,11 +331,11 @@ export const en = {
   // Plan and billing (billing.html)
   "set.billing.title": "Plan and billing",
   "set.billing.sub": "Every price, in full, all the time. No surprises.",
-  "set.billing.offline": "You can read the prices. Changing your plan needs a connection.",
+  "set.billing.offline": "Prices are available offline. Checkout is not open yet.",
   "set.billing.current": "Current plan", // new: region name
   "set.billing.earlyTitle": "You were approved early, so you have Max.",
   "set.billing.earlyBody":
-    "Everyone approved during early access gets the top tier included. You don't need to choose anything below. The prices are here so you always know them.",
+    "Approved beta testers and existing testers have Max free. No plan purchase is needed.",
   "set.billing.planTitle": "Your plan is {tier}.", // new
   "set.billing.noneTitle": "You don't have a plan right now.", // new
   "set.billing.pricesBody": "The prices are here so you always know them.",
@@ -344,12 +344,13 @@ export const en = {
   "set.billing.month": "Monthly",
   "set.billing.year": "Yearly, two months free",
   "set.billing.trial": "Trial",
-  "set.billing.trialDesc": "Try everything in Basic first.",
+  "set.billing.trialDesc": "A trial for your chosen plan.",
+  "set.billing.planTrial": "Starts with a {amount} trial {period}.",
   "set.billing.per3w": "for 3 weeks",
   "set.billing.fBasicAll": "Everything in Basic",
-  "set.billing.fTrialThen": "Then Basic at $10 a month, only if you choose it", // adjusted: no automatic conversion exists
+  "set.billing.fTrialThen": "Continue with your chosen plan only after confirmation", // adjusted: no automatic conversion exists
   "set.billing.fTrialNote": "Nothing turns into a payment on its own", // adjusted: no reminder or conversion workflow exists
-  "set.billing.trialCta": "For new accounts only.",
+  "set.billing.trialCta": "Checkout is not open yet.",
   "set.billing.basic": "Basic",
   "set.billing.basicDesc": "Pages, plans and the coach in writing.",
   "set.billing.perMonth": "a month",
@@ -365,15 +366,15 @@ export const en = {
   "set.billing.maxDesc": "The most time to talk.",
   "set.billing.yours": "Your plan",
   "set.billing.maxCta": "Included with your early access.",
-  "set.billing.chooseLater": "Choosing a plan opens after early access.", // new: no checkout yet
+  "set.billing.chooseLater": "Checkout is not open yet. Nothing is charged here.", // new: no checkout yet
   "set.billing.bcTitle": "Before any charge",
-  "set.billing.bcDesc": "Nothing is charged during early access, and no trial turns into a payment. When paid plans start, the plan is to remind you before any charge:", // adjusted: no reminder workflow exists yet
+  "set.billing.bcDesc": "Checkout is not open. Nothing is charged here. Before paid plans launch, reminders are planned:", // adjusted: no reminder workflow exists yet
   "set.billing.bc3d": "days before",
   "set.billing.bc1d": "day before",
   "set.billing.bc1h": "hour before",
   "set.billing.bcWhere": "By email and here in Tempo. These reminders aren't built yet. To cancel, write to the founder from this page; there's no cancel button yet.", // adjusted: no reminder or cancel backend
   "set.billing.payLabel": "How you pay",
-  "set.billing.payHelp": "Payments go through Polar, a payment service. Tempo never sees your card number.",
+  "set.billing.payHelp": "Checkout is not open. Payment details are not collected here.",
   "set.billing.qLabel": "A question about money?",
   "set.billing.qHelp": "Ask Amit directly. A person reads every message.",
   "set.billing.qBtn": "Ask the founder",
@@ -758,11 +759,11 @@ export const he: Record<keyof typeof en, string> = {
 
   "set.billing.title": "מסלול ותשלום",
   "set.billing.sub": "כל מחיר, במלואו, כל הזמן. בלי הפתעות.",
-  "set.billing.offline": "אפשר לקרוא את המחירים. כדי לשנות מסלול צריך חיבור.",
+  "set.billing.offline": "אפשר לראות מחירים גם ללא חיבור. התשלום עדיין לא זמין.",
   "set.billing.current": "המסלול הנוכחי",
   "set.billing.earlyTitle": "אושרת מוקדם, אז יש לך Max.",
   "set.billing.earlyBody":
-    "כל מי שאושרה בתקופת הגישה המוקדמת מקבלת את המסלול הגבוה ביותר. אין צורך לבחור כלום כאן למטה. המחירים מופיעים כדי שתמיד תדעי אותם.",
+    "בודקי בטא שאושרו והבודקים הקיימים מקבלים Max בחינם. אין צורך ברכישת מסלול.",
   "set.billing.planTitle": "המסלול שלך הוא {tier}.",
   "set.billing.noneTitle": "אין לך מסלול כרגע.",
   "set.billing.pricesBody": "המחירים מופיעים כאן כדי שתמיד תדעי אותם.",
@@ -771,12 +772,13 @@ export const he: Record<keyof typeof en, string> = {
   "set.billing.month": "חודשי",
   "set.billing.year": "שנתי, חודשיים במתנה",
   "set.billing.trial": "ניסיון",
-  "set.billing.trialDesc": "לנסות קודם את כל מה שיש ב־Basic.",
+  "set.billing.trialDesc": "ניסיון במסלול שבוחרים.",
+  "set.billing.planTrial": "מתחילים בניסיון של {amount} {period}.",
   "set.billing.per3w": "ל־3 שבועות",
   "set.billing.fBasicAll": "כל מה שיש ב־Basic",
-  "set.billing.fTrialThen": "אחר כך Basic ב־10$ לחודש, רק אם תבחרי בו",
+  "set.billing.fTrialThen": "ממשיכים במסלול שנבחר רק אחרי אישור",
   "set.billing.fTrialNote": "שום דבר לא הופך לתשלום מעצמו",
-  "set.billing.trialCta": "לחשבונות חדשים בלבד.",
+  "set.billing.trialCta": "התשלום עדיין לא זמין.",
   "set.billing.basic": "Basic",
   "set.billing.basicDesc": "דפים, תוכניות והמאמן בכתב.",
   "set.billing.perMonth": "לחודש",
@@ -792,15 +794,15 @@ export const he: Record<keyof typeof en, string> = {
   "set.billing.maxDesc": "הכי הרבה זמן לדבר.",
   "set.billing.yours": "המסלול שלך",
   "set.billing.maxCta": "כלול בגישה המוקדמת שלך.",
-  "set.billing.chooseLater": "בחירת מסלול תיפתח אחרי הגישה המוקדמת.",
+  "set.billing.chooseLater": "התשלום עדיין לא זמין. לא נגבה כאן תשלום.",
   "set.billing.bcTitle": "לפני כל חיוב",
-  "set.billing.bcDesc": "במהלך הגישה המוקדמת לא מחויב כלום, ואף ניסיון לא הופך לתשלום. כשמסלולים בתשלום יתחילו, התוכנית היא להזכיר לך לפני כל חיוב:",
+  "set.billing.bcDesc": "התשלום עדיין לא זמין ולא נגבה כאן תשלום. לפני השקת המסלולים בתשלום מתוכננות תזכורות:",
   "set.billing.bc3d": "ימים לפני",
   "set.billing.bc1d": "יום לפני",
   "set.billing.bc1h": "שעה לפני",
   "set.billing.bcWhere": "במייל וכאן ב־Tempo. התזכורות האלה עוד לא נבנו. כדי לבטל, אפשר לכתוב למייסד מהדף הזה; עוד אין כפתור ביטול.",
   "set.billing.payLabel": "איך משלמים",
-  "set.billing.payHelp": "התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך.",
+  "set.billing.payHelp": "התשלום עדיין לא זמין. לא נאספים כאן פרטי תשלום.",
   "set.billing.qLabel": "שאלה על כסף?",
   "set.billing.qHelp": "אפשר לשאול את עמית ישירות. אדם קורא כל הודעה.",
   "set.billing.qBtn": "לשאול את המייסד",

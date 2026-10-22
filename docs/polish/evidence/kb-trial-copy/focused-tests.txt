@@ -1,0 +1,10 @@
+WALK — Local isolated scratch test output, 22 October 2026
+Command: /workspace/work/kb/bin/bun test ./apps/web/components/billing-plan/BillingPlan.test.tsx
+Bun 1.3.9 (cf6cdbbb)
+
+7 pass
+0 fail
+87 expect() calls
+Ran 7 tests across 1 file. [1263.00ms]
+
+Original 2 tests retained; 5 new tests. SSR markup evidence only. No browser geometry, hosted CI or CodeRabbit clearance is claimed.
