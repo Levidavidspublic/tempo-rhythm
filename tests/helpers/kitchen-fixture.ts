@@ -11,18 +11,19 @@ if ctypes.CDLL(None, use_errno=True).prctl(36, 1, 0, 0, 0) != 0:
     raise OSError(ctypes.get_errno(), "PR_SET_CHILD_SUBREAPER")
 grace = float(sys.argv[1]) / 1000
 token = sys.argv[2]
-child = subprocess.Popen(sys.argv[3:])
 main_status = None
 stopping = None
 
 def children(pid):
-    result = []
-    for name in os.listdir("/proc"):
-        if not name.isdigit(): continue
+    # Follow only this process's owned child links. A full /proc scan for each
+    # descendant can spend the whole cleanup allowance on unrelated processes.
+    result = set()
+    try: tasks = os.listdir(f"/proc/{pid}/task")
+    except (FileNotFoundError, ProcessLookupError): return []
+    for task in tasks:
         try:
-            with open(f"/proc/{name}/stat") as f: stat = f.read()
-            fields = stat[stat.rfind(")") + 2:].split()
-            if int(fields[1]) == pid: result.append(int(name))
+            with open(f"/proc/{pid}/task/{task}/children") as f:
+                result.update(int(value) for value in f.read().split())
         except (FileNotFoundError, ProcessLookupError): pass
     return result
 
@@ -42,6 +43,10 @@ def cancel(signum, frame):
 signal.signal(signal.SIGALRM, lambda signum, frame: terminate_tree(os.getpid(), signal.SIGKILL))
 signal.signal(signal.SIGTERM, cancel)
 signal.signal(signal.SIGINT, cancel)
+child = subprocess.Popen(sys.argv[3:])
+# A cancellation may arrive while Popen is establishing the child. Apply it to
+# the newly owned process too, without restarting the existing cleanup timer.
+if stopping: cancel(signal.SIGTERM, None)
 while True:
     try:
         pid, status = os.waitpid(-1, 0)
@@ -84,10 +89,12 @@ export type FixtureOptions = {
   onOutput?: (stream: "stdout" | "stderr", chunk: string) => void;
 };
 
+/** Stream an execution milestone without waiting for buffered child completion. */
 export function fixturePhase(name: string): void {
   process.stderr.write(`[kitchen-fixture] ${name}\n`);
 }
 
+/** Bound one operation while leaving its caller responsible for resource cancellation. */
 function bounded<T>(operation: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
   return Promise.race([
@@ -112,20 +119,28 @@ export async function cleanupFixture(
 /** Install in the child after allocating resources; the same cleanup owns normal and cancelled exit. */
 export function fixtureCleanup(resources: Record<string, () => unknown>, timeoutMs: number): () => Promise<void> {
   let pending: Promise<void> | undefined;
+  let interruptedSignal: "SIGINT" | "SIGTERM" | undefined;
   const cleanup = () => pending ??= cleanupFixture(resources, timeoutMs).finally(() => {
-    process.off("SIGTERM", onSignal);
-    process.off("SIGINT", onSignal);
+    process.off("SIGTERM", onTerminate);
+    process.off("SIGINT", onInterrupt);
   });
-  const onSignal = () => {
+  const onSignal = (signal: "SIGINT" | "SIGTERM") => {
+    if (interruptedSignal) return;
+    interruptedSignal = signal;
     process.exitCode = 1;
-    void cleanup().catch((error) => { console.error(error); });
+    void cleanup().catch((error) => { console.error(error); }).finally(() => {
+      if (process.listenerCount(signal) === 0) process.kill(process.pid, signal);
+    });
   };
-  process.on("SIGTERM", onSignal);
-  process.on("SIGINT", onSignal);
+  const onInterrupt = () => onSignal("SIGINT");
+  const onTerminate = () => onSignal("SIGTERM");
+  process.on("SIGTERM", onTerminate);
+  process.on("SIGINT", onInterrupt);
   return cleanup;
 }
 
 type ProcessIdentity = { pid: number; start: string };
+/** Read identity and ownership before recovering a direct Linux child's OS wait status. */
 function linuxIdentity(pid: number): (ProcessIdentity & { state: string; parent: number }) | null {
   try {
     const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
@@ -136,6 +151,7 @@ function linuxIdentity(pid: number): (ProcessIdentity & { state: string; parent:
     throw error;
   }
 }
+/** Capture Linux start time so cleanup never mistakes a reused PID for an owned child. */
 async function identity(pid: number): Promise<ProcessIdentity | null> {
   try {
     const stat = await readFile(`/proc/${pid}/stat`, "utf8");
@@ -145,6 +161,7 @@ async function identity(pid: number): Promise<ProcessIdentity | null> {
     throw error;
   }
 }
+/** Enumerate tracked Linux descendants before cancellation; other platforms use the process group. */
 async function descendants(pid: number): Promise<ProcessIdentity[]> {
   if (process.platform !== "linux") return [];
   let children: string;
@@ -161,6 +178,7 @@ async function descendants(pid: number): Promise<ProcessIdentity[]> {
   }
   return result;
 }
+/** Signal an explicitly owned process or group, rejecting the caller's implicit PID-zero group. */
 function signalProcess(pid: number, signal: NodeJS.Signals): void {
   if (!Number.isInteger(pid) || pid === 0) throw new Error("Refusing to signal an unowned process group");
   try { process.kill(pid, signal); }
@@ -360,6 +378,7 @@ export async function runIsolatedFixture(options: FixtureOptions): Promise<Fixtu
   return result;
 }
 
+/** Reject nonzero exits, incomplete evidence, cancellation and every retained cleanup failure. */
 export function requireFixtureSuccess(result: FixtureRun): void {
   if (result.code !== 0 || result.signal || result.timedOut || result.cancelled || result.outputTruncated || result.cleanupErrors.length) {
     throw new AggregateError(result.cleanupErrors,

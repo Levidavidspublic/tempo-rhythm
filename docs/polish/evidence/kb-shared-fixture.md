@@ -1,12 +1,12 @@
 # Shared Kitchen fixture harness
 
-PR open — the shared harness has 18 passing focused cases; worker adoption and hosted verification are still required. No existing fixture, case, assertion, timeout or deadline changes in this ticket.
+WALK — BLOCKED. The single additional AT-21 candidate authorized on 22 October fails focused validation: 16 pass / 4 fail / 1 error. Its ownership-list optimization is a failed hypothesis and introduces cleanup regressions; it must not merge. The earlier 18/0 result belongs to `2d99c84`, not this candidate. Every original named case, assertion, timeout and deadline remains.
 
-Date: 2026-10-21. Role: WORKHORSE. Ticket: TEMPO-KB-HARNESS, #1202. Tracking: planning PR #1140.
+Date: 2026-10-22. Role: WORKHORSE. Ticket: TEMPO-KB-HARNESS, #1202. Tracking: planning PR #1140. Earlier receipts below remain attributed to 21 October.
 
 The shared runner uses a fresh OS process, streams both output channels immediately and retains at most 1 MiB per channel. Truncated output cannot pass the exit gate. Printed success and EOF never replace the actual fixture exit. Linux uses Python 3 and PR_SET_CHILD_SUBREAPER to adopt, terminate and reap browser descendants, including separate process groups and children retaining output pipes. Python 3 is present in this sandbox and Ubuntu hosted runners; a missing runtime fails the fixture rather than silently reducing cleanup. The supervisor emits the fixture's token-bound OS exit separately from its own exit; both are checked.
 
-Controlled tests established a sandbox detail: `/proc/PID/task/PID/children` returned an empty list while a live descendant's stat and process table named that parent. The supervisor therefore enumerates `/proc` stat parent IDs. It signals only its own descendant tree. Cleanup starts every named release independently and preserves all failures. Child handlers allow server/browser cleanup before supervisor escalation. Cancellation or timeout always fails the run.
+Controlled tests established a sandbox detail: `/proc/PID/task/PID/children` returned an empty list while a live descendant's stat and process table named that parent. The original supervisor therefore enumerated `/proc` stat parent IDs. The 22 October correction below instead checks every thread's child list, not only the process leader's list. It signals only its own descendant tree. Cleanup starts every named release independently and preserves all failures. Child handlers allow server/browser cleanup before supervisor escalation. Cancellation or timeout always fails the run.
 
 `isolatedBrowserBuild` constructs the resolver in a fresh Bun process. React resolves from the web workspace; scheduler resolves from the actual importing package, because Bun's isolated dependency layout does not expose scheduler at the web root. Fixture-specific exact aliases and defines are serializable. No code/plugin closure or module mock is shared with the parent. Hosted EISDIR reproduction remains UNKNOWN until the existing KB fixtures adopt this helper and run CI. Nested runners ignore other invocation tokens while checking exactly one own-token receipt; a nested failure still fails its outer fixture.
 
@@ -124,3 +124,58 @@ The added fault proof creates a real direct child through POSIX spawn inside a f
 The supervisor receipt now begins with a newline so a fixture's unfinished stderr line cannot swallow it. A separate controlled case preserves such stderr and accepts exactly one authoritative receipt. Parent SIGINT/SIGTERM is recorded and re-raised after cleanup if no remaining listener owns that signal; a controlled case proves both default termination and survival when another listener explicitly owns it. The transition helper computes its remaining budget after the Playwright import. Earlier 13-case receipts are labeled as historical rather than final.
 
 Hosted checks on this correction remain required. The earlier 14/1 mock-binding scaffolding failure, local incomplete full run, and earlier missing-browser E2E receipt remain in the ledger above. The later KB-05 consumer run with helper `4d30965` passed all 15 shared cases and all 13 consumer cases locally, and its runtime-repaired E2E passed 28 tests with 89 expected skips; that is separate consumer evidence, not a replacement for the shared PR's current-head CI.
+
+## Lane 1 continuation: portable evidence and child termination
+
+The 21 October continuation keeps the shared fix first. This is one cohesive correction after reviewed candidates `511065b`, `4d30965` and `2d99c84`; it does not reset their earlier failures or authorize unlimited retries.
+
+The child cleanup handler now retains the first SIGINT or SIGTERM, finishes every registered cleanup, removes its own handlers, and re-raises the original signal when no other listener owns it. A rejected cleanup remains printed before signal termination. The earlier real-server cleanup case explicitly installs a caller-owned code-1 termination listener, retaining its original exit-code and resource assertions; new controlled cases separately require default SIGINT/SIGTERM after both successful and rejected cleanup.
+
+All 18 original named cases remain, with their deadlines unchanged; two additional cases exercise native fallback and child termination. Linux retains its real POSIX-spawn/waitpid proof and original receipt assertions. On other platforms, the same named case proves that drained output without an exit notification fails within the original bound, instead of loading Linux libc or skipping the case. The native fallback also runs in a fresh child with a process-local platform override on Linux. Unfinished stderr is checked against the applicable native exit or supervisor receipt; nested exits retain their success/failure assertions. Native-platform execution remains UNKNOWN until run on that platform; the override is branch coverage, not a macOS or Windows certification.
+
+Initial continuation check: **17 pass / 3 fail**, 70 assertions, 25.87 seconds, exit 1. This run started while the new worktree's physical dependency copy was incomplete. The isolated React browser build could not resolve `react-dom/client` or `react/jsx-dev-runtime`; the final browser-signal case reached its unchanged 10-second deadline. The unchanged 150 ms cancellation case also failed: the supervisor exited with SIGKILL without a child receipt, so the fixture signal remained unknown rather than being fabricated. The specific child phase is UNKNOWN. All new native-fallback and child-signal assertions passed. This failed receipt is retained; no timeout, assertion or test is weakened to replace it.
+
+## Authorized continuation — 22 October 2026
+
+WALK — Amit explicitly approved AT-21: one additional scoped correction, including the preserved portability and process-signal work. This is that single additional candidate; all previous failures remain above. No existing test name, assertion, timeout or cleanup deadline was removed or relaxed.
+
+The Linux supervisor previously scanned every `/proc` process for each descendant during cancellation. The current workspace contains more than 1,700 unrelated zombie processes, making that traversal compete with the unchanged 300 ms cleanup allowance. The correction follows only each owned process's `/proc/<pid>/task/*/children` links, including children created by any thread and descendants adopted by the subreaper. Only disappeared processes are ignored; other enumeration errors still fail. Signal handlers are installed before child creation, and a cancellation received during creation is applied again to the new child without restarting its cleanup timer. OS exit receipts, reaping, owned-process checks and forced termination remain required.
+
+This attempted to remove an unbounded traversal cost, but focused validation disproved its safety in this environment: all-thread child listings still fail to provide the required cleanup behavior. The earlier main-thread-list failure was already recorded; broadening it to all tasks did not resolve that limitation. The failed optimization is frozen for review, not accepted or retried. The historical failure is not retroactively relabeled an environment-only failure. The earlier preserved patch's 17/3 receipt remains distinct from this authorized candidate.
+
+Current candidate results (Bun 1.3.9):
+
+| Command | Result |
+| --- | --- |
+| `bun install --frozen-lockfile` | PASS, exit 0, 313.75s; checked 1,033 installs across 1,079 packages, no changes. |
+| `bun test tests/unit/kitchen-fixture.test.ts` | FAIL, exit 1; 16 pass / 4 fail / 1 error, 66 assertions, 28.35s. No rerun. |
+| Remaining AGENTS mandatory checks | Pending the lead's shared validation slot; no passing result inferred. |
+
+Four failures: streamed-output cancellation supplied no fixture exit; the existing 150 ms / 300 ms cancellation expected SIGKILL but received null; server/subprocess cancellation expected code 1 but received null; detached-descendant cleanup hit its unchanged 5,000 ms test deadline. An output-close rejection (`fixture output close exceeded 1000ms`) was unhandled after that timeout. The new native-fallback and child-signal cases pass; the fresh browser build and committed focus/transition cases also pass. These passes do not erase failed resource cleanup.
+
+The failed detached-descendant case left its explicitly reported controlled subprocess alive. After the suite exited, the worker matched its exact controlled command and stable `/proc` start identity, terminated only that owned PID with SIGKILL, and confirmed no live owned process remained. Port 3000 was free. A PID-1-adopted zombie remains outside the worker's reaping authority. Raw local output is retained under `/workspace/work/overnight/harness-oct22/`; synthetic per-run receipt identifiers are redacted in public excerpts.
+
+Focused failure output, final 20 lines (synthetic receipt identifier redacted):
+
+```text
+[kitchen-fixture] EOF OS pid=264082 stat=264082 (python3) Z 263823 264082 264082 0 -1 4227340 2658 4856 0 0 15 7 23 19 20 0 1 0 7839247 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+[kitchen-fixture] start pid=264093
+[kitchen-fixture] build start
+[kitchen-fixture] build complete outputs=1
+
+KITCHEN_CHILD_EXIT={"token": "<redacted synthetic receipt identifier>", "code": 0}
+[kitchen-fixture] supervisor reaped all descendants
+[kitchen-fixture] stderr EOF pid=264093 exit-observed=false
+[kitchen-fixture] waitpid reaped owned supervisor pid=264093 status=0
+[kitchen-fixture] exit pid=264093 code=0 signal=none
+[kitchen-fixture] stdout EOF pid=264093 exit-observed=true
+[kitchen-fixture] EOF OS pid=264093 stat=264093 (python3) Z 263823 264093 264093 0 -1 4227340 2685 8283 0 3 9 8 28 21 20 0 1 0 7839314 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 0 1 0 0 17 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 wchan=0
+(pass) shared kitchen fixture lifecycle > fresh browser builds resolve React scheduler from its actual importing package [668.52ms]
+(pass) shared kitchen fixture lifecycle > committed focus and settled transition use browser signals [7401.64ms]
+
+ 16 pass
+ 4 fail
+ 1 error
+ 66 expect() calls
+Ran 20 tests across 1 file. [28.35s]
+```

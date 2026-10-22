@@ -8,8 +8,31 @@ import { isolatedBrowserBuild, waitForCommittedFocus, waitForSettledTransition }
 
 const root = join(import.meta.dir, "../..");
 const helper = join(root, "tests/helpers/kitchen-fixture.ts");
+/** Run every controlled fault in its own process so module mocks cannot leak to the suite. */
 const run = (source: string, extra: Partial<Parameters<typeof runIsolatedFixture>[0]> = {}) =>
   runIsolatedFixture({ command: [process.execPath, "-e", source], cwd: root, timeoutMs: 5_000, cleanupMs: 1_000, ...extra });
+
+/** Non-Linux runtimes have no waitpid recovery: absent OS notifications must fail closed. */
+const nativeMissingExitProof = `
+  import { mock } from "bun:test";
+  import { spawn as realSpawn } from "node:child_process";
+  const nativeSpawn = realSpawn;
+  mock.module("node:child_process", () => ({ spawn(...args) {
+    const child = nativeSpawn(...args);
+    const once = child.once.bind(child);
+    child.once = (name, listener) => name === "exit" ? child : once(name, listener);
+    return child;
+  } }));
+  const { runIsolatedFixture, requireFixtureSuccess } = await import(${JSON.stringify(helper)});
+  const result = await runIsolatedFixture({command:[process.execPath,"-e","process.stdout.write('stdout drained'); process.stderr.write('tail without newline'); process.exitCode=23"],cwd:${JSON.stringify(root)},timeoutMs:1000,cleanupMs:500});
+  if (!result.out.includes("stdout drained") || !result.err.includes("tail without newline")) throw Error("Output evidence was lost");
+  if (result.code !== null || !result.timedOut || result.cleanupErrors.length === 0) throw Error("Missing exit notification was accepted");
+  let rejected = false; try { requireFixtureSuccess(result); } catch { rejected = true; }
+  if (!rejected) throw Error("Unknown exit was accepted");
+  let alive = true; try { process.kill(result.pid,0); } catch { alive = false; }
+  if (alive) throw Error("Native child was not reaped");
+  console.log("missing native exit fails after both streams drain");
+`;
 
 describe.serial("shared kitchen fixture lifecycle", () => {
   test("OS failure wins over printed successful assertions", async () => {
@@ -86,6 +109,8 @@ describe.serial("shared kitchen fixture lifecycle", () => {
       import { fixtureCleanup } from ${JSON.stringify(helper)};
       const subprocess = Bun.spawn([process.execPath, "-e", "setInterval(() => {}, 1000)"], { stdout: "ignore", stderr: "ignore" });
       const server = Bun.serve({hostname:"127.0.0.1",port:0,fetch:()=>new Response("ready")});
+      // This caller deliberately owns code-1 termination; the default signal path is proved separately.
+      process.on("SIGTERM", () => { process.exitCode = 1; });
       fixtureCleanup({ server:()=>server.stop(true), browser:async()=>{subprocess.kill();await subprocess.exited;} }, 500);
       console.log("READY=" + JSON.stringify({address:server.url.href,pid:subprocess.pid}));
     `;
@@ -110,7 +135,7 @@ describe.serial("shared kitchen fixture lifecycle", () => {
   test("normal fixture exit reaps detached descendants that hold output pipes open", async () => {
     const result = await run(`
       import { spawn } from "node:child_process";
-      const descendant = spawn(process.execPath, ["-e", "process.on('SIGTERM',()=>{}); setInterval(()=>{},1000)"], { detached:true, stdio:"inherit" });
+      const descendant = spawn(process.execPath, ["-e", "process.on('SIGTERM',()=>{}); setInterval(()=>{},1000)"], { detached:process.platform === "linux", stdio:"inherit" });
       descendant.unref();
       console.log("DESCENDANT=" + descendant.pid);
     `);
@@ -118,7 +143,8 @@ describe.serial("shared kitchen fixture lifecycle", () => {
     const pid = Number(result.out.match(/DESCENDANT=(\d+)/)?.[1]);
     expect(pid).toBeGreaterThan(0);
     expect(() => process.kill(pid, 0)).toThrow();
-    expect(result.err).toContain("supervisor reaped all descendants");
+    if (process.platform === "linux") expect(result.err).toContain("supervisor reaped all descendants");
+    else expect(result.code).toBe(0);
   });
 
   test("a missing committed signal consumes the same bounded transition deadline", async () => {
@@ -139,7 +165,8 @@ describe.serial("shared kitchen fixture lifecycle", () => {
         expect(() => requireFixtureSuccess(result)).toThrow();
       }
       expect(result.cleanupErrors).toEqual([]);
-      expect(result.err.match(/KITCHEN_CHILD_EXIT=/g)?.length).toBe(2);
+      if (process.platform === "linux") expect(result.err.match(/KITCHEN_CHILD_EXIT=/g)?.length).toBe(2);
+      else expect(result.supervisorCode).toBeUndefined();
     }
   });
 
@@ -166,7 +193,7 @@ describe.serial("shared kitchen fixture lifecycle", () => {
   test("spawn failure reports the error without signaling PID zero or the caller group", async () => {
     const result = await run(`
       import { runIsolatedFixture, requireFixtureSuccess } from ${JSON.stringify(helper)};
-      const missing = await runIsolatedFixture({command:[process.execPath,"-e","process.exit(0)"],cwd:${JSON.stringify(root)},env:{PATH:"/missing-kitchen-fixture-bin"},timeoutMs:1000,cleanupMs:500});
+      const missing = await runIsolatedFixture({command:["/missing-kitchen-fixture-bin/bun"],cwd:${JSON.stringify(root)},env:{PATH:"/missing-kitchen-fixture-bin"},timeoutMs:1000,cleanupMs:500});
       if (missing.pid !== 0 || missing.cleanupErrors.length === 0) throw Error("Expected missing executable evidence");
       let rejected = false;
       try { requireFixtureSuccess(missing); } catch { rejected = true; }
@@ -178,6 +205,13 @@ describe.serial("shared kitchen fixture lifecycle", () => {
   });
 
   test("owned OS wait status recovers a missing runtime exit event after both pipes drain", async () => {
+    if (process.platform !== "linux") {
+      const result = await run(nativeMissingExitProof);
+      requireFixtureSuccess(result);
+      expect(result.out).toContain("missing native exit fails after both streams drain");
+      expect(result.err).not.toContain("waitpid reaped owned supervisor");
+      return;
+    }
     const result = await run(`
       import { mock } from "bun:test";
       import { dlopen, ptr } from "bun:ffi";
@@ -236,7 +270,50 @@ describe.serial("shared kitchen fixture lifecycle", () => {
   test("stderr without a final newline cannot hide the authoritative receipt", async () => {
     const result = await run('process.stderr.write("no trailing newline")');
     requireFixtureSuccess(result);
-    expect(result.err).toContain("no trailing newline\nKITCHEN_CHILD_EXIT=");
+    if (process.platform === "linux") expect(result.err).toContain("no trailing newline\nKITCHEN_CHILD_EXIT=");
+    else {
+      expect(result.err).toBe("no trailing newline");
+      expect(result.code).toBe(0);
+      expect(result.supervisorCode).toBeUndefined();
+    }
+  });
+
+  test("native fallback does not accept drained output without an exit notification", async () => {
+    const result = await run(`
+      // Exercise the native POSIX path on Linux too, inside this isolated child only.
+      if (process.platform === "linux") Object.defineProperty(process,"platform",{value:"darwin"});
+      ${nativeMissingExitProof}
+    `);
+    requireFixtureSuccess(result);
+    expect(result.out).toContain("missing native exit fails after both streams drain");
+  });
+
+  test("child cleanup preserves the original termination signal after success or failure", async () => {
+    for (const signal of ["SIGINT", "SIGTERM"] as const) {
+      for (const failCleanup of [false, true]) {
+        let signalled = false;
+        const result = await run(`
+          import { fixtureCleanup } from ${JSON.stringify(helper)};
+          const keepAlive = setInterval(()=>{},1000);
+          fixtureCleanup({resource:async()=>{
+            await Promise.resolve();
+            clearInterval(keepAlive);
+            console.log("CHILD_CLEANED");
+            ${failCleanup ? 'throw Error("controlled cleanup rejection");' : ""}
+          }},500);
+          console.log("SIGNAL_CHILD=" + process.pid);
+        `, { onOutput(_stream, chunk) {
+          const match = chunk.match(/SIGNAL_CHILD=(\d+)/);
+          if (match && !signalled) { signalled = true; process.kill(Number(match[1]), signal); }
+        } });
+        expect(signalled).toBe(true);
+        expect(result.out).toContain("CHILD_CLEANED");
+        expect(result.signal).toBe(signal);
+        expect(result.code).toBeNull();
+        expect(result.cleanupErrors).toEqual([]);
+        if (failCleanup) expect(result.err).toContain("controlled cleanup rejection");
+      }
+    }
   });
 
   test("parent termination is restored after owned cleanup unless another listener owns it", async () => {
