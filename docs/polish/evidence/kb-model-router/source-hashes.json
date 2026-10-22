@@ -1,14 +1,14 @@
 {
   "base": "7d1a0f6957852fe9f6d60849e3df9bc7505e90ac",
-  "candidate": 2,
+  "candidate": 3,
   "files": [
     {
       "path": "convex/lib/ai_router.ts",
-      "sha256": "a31148fb7e6aa143d564b92ed63cfd5961e5447416ef802e698028b227ddb374"
+      "sha256": "ac439eb9a71eea8c0a5dcf4c5dc0c2eb9ae3f0b8f414fa063eebb0f496718e99"
     },
     {
       "path": "convex/lib/ai_errors.ts",
-      "sha256": "003568955f95bef7af972c34c8ca7ecc0826ac312c010a41fbcc7aad3f64f322"
+      "sha256": "3ce546c60e77eb5564a61fd90af3c858ee113391dc1af7b3ccf445abd3222ee0"
     },
     {
       "path": "convex/lib/ai_router.test.ts",
