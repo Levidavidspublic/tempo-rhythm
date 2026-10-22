@@ -1,5 +1,17 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Validation queue, 2026-10-22 10:59 UTC
+
+No new merge; counts remain Lane 1: 6 closed / 56 open issues and 11 merged / 26 open PRs; Lane 2: 0 closed / 28 open issues and 0 merged / 27 open PRs. NEEDS-AMIT has 16 current actions.
+
+- #1300 at 761eb917597ef408d7e306d5a613eaef4a0327d8 now has actual completed CodeRabbit coverage with no actionable comments. Install, lint and typecheck pass; the original full suite remains running, including 20 new and 66 unchanged lifecycle cases passing. Hosted Test remains pending. Remaining local stages will run once, without source edits or deadline changes.
+- Read-only eligibility audit corrected an overly broad blocked classification: #1210 hero at 6a9f539316d85249e88fad7bbbfad7f6e2055271, #1256 voice research at 45e55f7dbbc993bf2d3e60fafa0eda5e9cf5df07 and #1277 Executor at 13752d9679098b42dd1f554cf6c27f386d2c51fd have no unmerged implementation dependency and still need their first complete mandatory validation on current source. Queue them in that order after #1300, using an existing worktree and one browser-heavy run at a time.
+- Their hosted Test checks remain pending. #1256 has current actual CodeRabbit clearance; #1210 coverage is older and #1277 is draft-skipped. None is merge-eligible yet. No further source repair is authorized by this validation queue.
+- Current-head final results will be reported in the PR body and issue, explicitly superseding the evidence README's initial UNKNOWN snapshot; no evidence-only commit is needed solely to duplicate those results. Failed receipts remain preserved.
+- Four worktrees remain; protected #1193/#1198, production, deployment and environment values are unchanged.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Current checkpoint, 22 October 2026, 10:43 UTC
 
 No new merge; integration remains7d1a0f6. Lane1: **6closed/56open issues;11merged/26open PRs**. Lane2: **0closed/28open issues;0merged/27open PRs**. **16 current owner actions**, in the order in NEEDS-AMIT.
