@@ -1,0 +1,3 @@
+PASS: entire schema differs from pinned integration only by two optional numeric users fields; every existing field, table and index unchanged.
+PASS: restore helper byte-for-byte unchanged; all code before and after the live-user patch unchanged.
+PASS: existing lifecycle test byte-for-byte equals pinned integration and is excluded from publication.

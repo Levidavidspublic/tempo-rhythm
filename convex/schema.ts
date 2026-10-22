@@ -36,6 +36,8 @@ export default defineSchema({
     ),
     isGodTier: v.optional(v.boolean()),
     betaApprovedAt: v.optional(v.number()),
+    billingDeletionEpoch: v.optional(v.number()),
+    billingDeletedAt: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
