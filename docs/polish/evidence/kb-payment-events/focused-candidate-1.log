@@ -1,0 +1,68 @@
+bun test v1.3.9 (cf6cdbbb)
+
+convex/lib/revenuecat_events.test.ts:
+(pass) mapRevenueCatEventToUserType > maps purchase lifecycle events to paid [0.37ms]
+(pass) mapRevenueCatEventToUserType > maps churn events to free [0.19ms]
+(pass) mapRevenueCatEventToUserType > defaults unknown or missing events to free [0.14ms]
+(pass) parseRevenueCatEvent > normalizes INITIAL_PURCHASE with exact server-owned fields [3.09ms]
+(pass) parseRevenueCatEvent > normalizes RENEWAL with exact server-owned fields [0.21ms]
+(pass) parseRevenueCatEvent > normalizes PRODUCT_CHANGE with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes UNCANCELLATION with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes CANCELLATION with exact server-owned fields
+(pass) parseRevenueCatEvent > normalizes EXPIRATION with exact server-owned fields
+(pass) parseRevenueCatEvent > rejects non-object envelopes and missing or non-object event fields [0.31ms]
+(pass) parseRevenueCatEvent > requires bounded nonempty string IDs without padding or control characters [41.18ms]
+(pass) parseRevenueCatEvent > accepts 256-character IDs without changing identity [0.22ms]
+(pass) parseRevenueCatEvent > requires finite nonnegative safe integral millisecond timestamps [0.48ms]
+(pass) parseRevenueCatEvent > accepts zero and safe integer timestamp boundaries without converting seconds [0.24ms]
+(pass) parseRevenueCatEvent > rejects aliases, transfers and unknown kinds without inventing a downgrade [0.27ms]
+(pass) parseRevenueCatEvent > shipping catalog is frozen, empty, and rejects otherwise valid events [0.23ms]
+(pass) parseRevenueCatEvent > rejects unknown products and inherited catalog entries [8.62ms]
+(pass) parseRevenueCatEvent > uses each fictional server mapping rather than claimed tier or entitlements [0.69ms]
+(pass) parseRevenueCatEvent > product changes retain the current product and never grant a deferred product [0.49ms]
+(pass) parseRevenueCatEvent > cancellation preserves expiry and does not infer access revocation [0.07ms]
+(pass) parseRevenueCatEvent > ignores additive provider fields without copying raw payloads [0.24ms]
+(pass) parseRevenueCatEvent > parser rejections cannot reach the legacy updater with test-only ingress bypass [1791.84ms]
+259 |       ...(scenario.configuredSecret === undefined ? {} : { REVENUECAT_WEBHOOK_SECRET: scenario.configuredSecret }),
+260 |       ...(scenario.clientEnable ? { REVENUECAT_PROCESSING_ENABLED: "true", PAYMENT_SYSTEM_ENABLED: "true" } : {}),
+261 |     },
+262 |     timeout: 10_000,
+263 |   });
+264 |   expect(child.exitCode).toBe(0);
+                               ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: null
+
+      at runWebhook (/workspace/work/overnight/payment-events-oct22/convex/lib/revenuecat_events.test.ts:264:26)
+      at <anonymous> (/workspace/work/overnight/payment-events-oct22/convex/lib/revenuecat_events.test.ts:283:24)
+(fail) payment webhook stays off > missing or empty configuration keeps the existing 503 response [16805.95ms]
+(pass) payment webhook stays off > missing or wrong authorization keeps the existing 401 response [2406.75ms]
+(pass) payment webhook stays off > authenticated processing-off requests explicitly return disabled [3840.53ms]
+(pass) payment webhook stays off > disabled malformed and throwing request bodies are never read [571.31ms]
+(pass) payment webhook stays off > client query, body, headers and environment flags cannot enable processing [1039.06ms]
+259 |       ...(scenario.configuredSecret === undefined ? {} : { REVENUECAT_WEBHOOK_SECRET: scenario.configuredSecret }),
+260 |       ...(scenario.clientEnable ? { REVENUECAT_PROCESSING_ENABLED: "true", PAYMENT_SYSTEM_ENABLED: "true" } : {}),
+261 |     },
+262 |     timeout: 10_000,
+263 |   });
+264 |   expect(child.exitCode).toBe(0);
+                               ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: null
+
+      at runWebhook (/workspace/work/overnight/payment-events-oct22/convex/lib/revenuecat_events.test.ts:264:26)
+      at <anonymous> (/workspace/work/overnight/payment-events-oct22/convex/lib/revenuecat_events.test.ts:330:22)
+(fail) payment webhook stays off > the actual registered action stays off without writes, provider calls or payload logs [11996.98ms]
+
+2 tests failed:
+(fail) payment webhook stays off > missing or empty configuration keeps the existing 503 response [16805.95ms]
+(fail) payment webhook stays off > the actual registered action stays off without writes, provider calls or payload logs [11996.98ms]
+
+ 26 pass
+ 2 fail
+ 216 expect() calls
+Ran 28 tests across 1 file. [39.64s]

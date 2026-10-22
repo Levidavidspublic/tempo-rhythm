@@ -2,6 +2,8 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import {
   mapRevenueCatEventToUserType,
+  parseRevenueCatEvent,
+  REVENUECAT_PRODUCT_CATALOG,
   REVENUECAT_PROCESSING_ENABLED,
   revenueCatIngressDecision,
 } from "./lib/revenuecat_events";
@@ -42,39 +44,43 @@ export const revenueCatWebhook = httpAction(async (ctx, request) => {
     });
   }
 
-  let body: Record<string, unknown>;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
     return new Response("Invalid JSON body", { status: 400 });
   }
 
-  const event = body.event as Record<string, unknown> | undefined;
-  if (!event) {
-    return new Response("Missing event field", { status: 400 });
+  const parsed = parseRevenueCatEvent(body, REVENUECAT_PRODUCT_CATALOG);
+  if (!parsed.ok) {
+    return new Response(JSON.stringify({ received: false, reason: parsed.reason }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  const eventType = event.type as string | undefined;
-  const appUserId = event.app_user_id as string | undefined;
-
-  // Determine new user tier from entitlements
-  // RevenueCat sends entitlement identifiers in the event
-  const activeEntitlements = (event.entitlement_ids as string[] | undefined) ?? [];
-
+  const eventType = {
+    purchase: "INITIAL_PURCHASE",
+    renewal: "RENEWAL",
+    "product-change": "PRODUCT_CHANGE",
+    uncancellation: "UNCANCELLATION",
+    cancellation: "CANCELLATION",
+    expiration: "EXPIRATION",
+  }[parsed.event.kind];
+  // Legacy application remains unreachable with the gate off and catalog empty.
+  // Canonical identity, expiry, cancellation and replay handling still need review.
   const userType = mapRevenueCatEventToUserType(eventType);
 
-  if (appUserId) {
-    try {
-      await ctx.runMutation(internal.users.updateSubscriptionStatus, {
-        userId: appUserId,
-        userType,
-        activeEntitlements,
-        revenueCatEvent: eventType ?? "UNKNOWN",
-      });
-    } catch (err) {
-      console.error("[RevenueCat Webhook] Failed to update user:", err);
-      // Return 200 so RevenueCat doesn't retry on our internal errors
-    }
+  try {
+    await ctx.runMutation(internal.users.updateSubscriptionStatus, {
+      userId: parsed.event.appUserId,
+      userType,
+      activeEntitlements: [],
+      revenueCatEvent: eventType,
+    });
+  } catch {
+    console.error("[RevenueCat Webhook] Account update unavailable");
+    // Return 200 so RevenueCat doesn't retry on our internal errors
   }
 
   return new Response(JSON.stringify({ received: true, eventType }), {
