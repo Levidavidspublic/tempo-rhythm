@@ -1,0 +1,2 @@
+$ bun scripts/check-notices.ts
+check:notices OK — every runtime dependency has a notices entry (66 documented).

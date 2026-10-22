@@ -1,0 +1,106 @@
+$ turbo run build
+• turbo 2.9.6
+
+   • Packages in scope: @tempo/config, @tempo/types, @tempo/ui, @tempo/utils, tempo-rhythm-mobile, tempo-rhythm-web
+   • Running build in 6 packages
+   • Remote caching disabled, using shared worktree cache
+
+tempo-rhythm-web:build: cache miss, executing 3a95d0bc9234e99d
+tempo-rhythm-web:build: $ next build --turbopack
+tempo-rhythm-web:build: ▲ Next.js 16.2.4 (Turbopack)
+tempo-rhythm-web:build:
+tempo-rhythm-web:build:   Creating an optimized production build ...
+tempo-rhythm-web:build: ✓ Compiled successfully in 84s
+tempo-rhythm-web:build:   Running TypeScript ...
+tempo-rhythm-web:build:   Finished TypeScript in 99s ...
+tempo-rhythm-web:build:   Collecting page data using 4 workers ...
+tempo-rhythm-web:build:   Generating static pages using 4 workers (0/62) ...
+tempo-rhythm-web:build:   Generating static pages using 4 workers (15/62)
+tempo-rhythm-web:build:   Generating static pages using 4 workers (30/62)
+tempo-rhythm-web:build:   Generating static pages using 4 workers (46/62)
+tempo-rhythm-web:build: ✓ Generating static pages using 4 workers (62/62) in 2.6s
+tempo-rhythm-web:build:   Finalizing page optimization ...
+tempo-rhythm-web:build:
+tempo-rhythm-web:build: Route (app)
+tempo-rhythm-web:build: ┌ ƒ /
+tempo-rhythm-web:build: ├ ƒ /_not-found
+tempo-rhythm-web:build: ├ ƒ /about
+tempo-rhythm-web:build: ├ ƒ /activity
+tempo-rhythm-web:build: ├ ƒ /admin/approvals
+tempo-rhythm-web:build: ├ ƒ /api/health
+tempo-rhythm-web:build: ├ ƒ /api/mcp
+tempo-rhythm-web:build: ├ ƒ /ask-founder
+tempo-rhythm-web:build: ├ ƒ /billing
+tempo-rhythm-web:build: ├ ƒ /billing/trial-end
+tempo-rhythm-web:build: ├ ƒ /brain-dump
+tempo-rhythm-web:build: ├ ƒ /calendar
+tempo-rhythm-web:build: ├ ƒ /changelog
+tempo-rhythm-web:build: ├ ƒ /checkout
+tempo-rhythm-web:build: ├ ƒ /coach
+tempo-rhythm-web:build: ├ ƒ /command
+tempo-rhythm-web:build: ├ ƒ /contact
+tempo-rhythm-web:build: ├ ƒ /daily-note
+tempo-rhythm-web:build: ├ ƒ /dashboard
+tempo-rhythm-web:build: ├ ƒ /empty-states
+tempo-rhythm-web:build: ├ ƒ /goals
+tempo-rhythm-web:build: ├ ƒ /goals/[id]
+tempo-rhythm-web:build: ├ ƒ /goals/progress
+tempo-rhythm-web:build: ├ ƒ /habits
+tempo-rhythm-web:build: ├ ƒ /habits/[id]
+tempo-rhythm-web:build: ├ ƒ /history
+tempo-rhythm-web:build: ├ ƒ /insights
+tempo-rhythm-web:build: ├ ƒ /journal
+tempo-rhythm-web:build: ├ ƒ /modules
+tempo-rhythm-web:build: ├ ƒ /modules/preview/[draftId]
+tempo-rhythm-web:build: ├ ƒ /notes
+tempo-rhythm-web:build: ├ ƒ /notes/[id]
+tempo-rhythm-web:build: ├ ƒ /notifications
+tempo-rhythm-web:build: ├ ƒ /onboarding
+tempo-rhythm-web:build: ├ ƒ /p/[pageId]
+tempo-rhythm-web:build: ├ ƒ /page1
+tempo-rhythm-web:build: ├ ƒ /page2
+tempo-rhythm-web:build: ├ ƒ /page3
+tempo-rhythm-web:build: ├ ƒ /plan
+tempo-rhythm-web:build: ├ ƒ /privacy
+tempo-rhythm-web:build: ├ ƒ /projects
+tempo-rhythm-web:build: ├ ƒ /projects/[id]
+tempo-rhythm-web:build: ├ ƒ /projects/[id]/kanban
+tempo-rhythm-web:build: ├ ƒ /routines
+tempo-rhythm-web:build: ├ ƒ /routines/[id]
+tempo-rhythm-web:build: ├ ƒ /search
+tempo-rhythm-web:build: ├ ƒ /settings
+tempo-rhythm-web:build: ├ ƒ /settings/integrations
+tempo-rhythm-web:build: ├ ƒ /settings/memory
+tempo-rhythm-web:build: ├ ƒ /settings/memory/import
+tempo-rhythm-web:build: ├ ƒ /settings/nags
+tempo-rhythm-web:build: ├ ƒ /settings/passkeys
+tempo-rhythm-web:build: ├ ƒ /settings/preferences
+tempo-rhythm-web:build: ├ ƒ /settings/privacy
+tempo-rhythm-web:build: ├ ƒ /settings/profile
+tempo-rhythm-web:build: ├ ƒ /sign-in
+tempo-rhythm-web:build: ├ ƒ /sign-up
+tempo-rhythm-web:build: ├ ƒ /success
+tempo-rhythm-web:build: ├ ƒ /tasks
+tempo-rhythm-web:build: ├ ƒ /tasks/checklists
+tempo-rhythm-web:build: ├ ƒ /tasks/energy
+tempo-rhythm-web:build: ├ ƒ /tasks/priority
+tempo-rhythm-web:build: ├ ƒ /templates
+tempo-rhythm-web:build: ├ ƒ /templates/builder
+tempo-rhythm-web:build: ├ ƒ /templates/editor/[id]
+tempo-rhythm-web:build: ├ ƒ /templates/run/[id]
+tempo-rhythm-web:build: ├ ƒ /templates/sketch
+tempo-rhythm-web:build: ├ ƒ /terms
+tempo-rhythm-web:build: ├ ƒ /today
+tempo-rhythm-web:build: ├ ƒ /tracking
+tempo-rhythm-web:build: ├ ƒ /week
+tempo-rhythm-web:build: └ ƒ /week/[week]
+tempo-rhythm-web:build:
+tempo-rhythm-web:build:
+tempo-rhythm-web:build: ƒ Proxy (Middleware)
+tempo-rhythm-web:build:
+tempo-rhythm-web:build: ƒ  (Dynamic)  server-rendered on demand
+tempo-rhythm-web:build:
+
+ Tasks:    1 successful, 1 total
+Cached:    0 cached, 1 total
+  Time:    3m16.794s

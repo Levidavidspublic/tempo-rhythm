@@ -1,0 +1,20 @@
+(pass) json-render 0.21.0 behaviour that makes validateBlockSpec necessary > it does reject an element type outside the catalog [0.66ms]
+(pass) module boundary > imports only the pinned json-render entry points, the shared codec, zod and the catalog [0.66ms]
+(pass) module boundary > does not load React, a renderer, state adapters, storage or the network [0.46ms]
+
+3 tests todo:
+(todo) Agent component under Bun: unresolved coverage > scheduler-driven deletion (deleteAllForThreadIdAsync) under Bun fake timers
+(todo) Agent component under Bun: unresolved coverage > streaming deltas, abort and timeout cleanup (streams.*)
+(todo) Agent component under Bun: unresolved coverage > vector and text search over saved messages
+
+
+2 tests failed:
+(fail) one h1 per page (en) > /plan names itself once, visually hidden [108.90ms]
+(fail) one h1 per page (he) > /plan names itself once, visually hidden [12.31ms]
+
+ 3492 pass
+ 3 todo
+ 2 fail
+ 81527 expect() calls
+Ran 3497 tests across 212 files. [1140.28s]
+error: script "test" exited with code 1

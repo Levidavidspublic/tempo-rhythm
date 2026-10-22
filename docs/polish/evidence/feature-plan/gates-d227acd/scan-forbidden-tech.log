@@ -1,0 +1,2 @@
+$ bun scripts/scan-forbidden-tech.ts
+scan:forbidden-tech OK — no forbidden dependencies or imports found.

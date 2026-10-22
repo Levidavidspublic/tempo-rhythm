@@ -1,0 +1,198 @@
+$ turbo run lint
+• turbo 2.9.6
+
+   • Packages in scope: @tempo/config, @tempo/types, @tempo/ui, @tempo/utils, tempo-rhythm-mobile, tempo-rhythm-web
+   • Running lint in 6 packages
+   • Remote caching disabled, using shared worktree cache
+
+@tempo/types:lint: cache hit, replaying logs 6f069e4050d2348a
+@tempo/types:lint: $ biome lint .
+@tempo/types:lint: Checked 4 files in 73ms. No fixes applied.
+@tempo/utils:lint: cache hit, replaying logs 7bb9c6ffbbcaf7f7
+@tempo/utils:lint: $ biome lint .
+@tempo/utils:lint: Checked 14 files in 211ms. No fixes applied.
+@tempo/ui:lint: cache hit, replaying logs ffdb10772d91476a
+@tempo/ui:lint: $ biome lint .
+@tempo/ui:lint: src/icons/index.tsx:480:1 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@tempo/ui:lint:
+@tempo/ui:lint:   ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+@tempo/ui:lint:
+@tempo/ui:lint:     478 │  * (e.g. sidebar nav config by `icon: string`).
+@tempo/ui:lint:     479 │  */
+@tempo/ui:lint:   > 480 │ // biome-ignore lint/suspicious/noExplicitAny: Icon component type is heterogeneous.
+@tempo/ui:lint:         │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+@tempo/ui:lint:     481 │ export const TempoIcon: Record<string, (p: IconProps) => any> = {
+@tempo/ui:lint:     482 │   Home,
+@tempo/ui:lint:
+@tempo/ui:lint:
+@tempo/ui:lint: Checked 26 files in 105ms. No fixes applied.
+@tempo/ui:lint: Found 1 warning.
+tempo-rhythm-mobile:lint: cache hit, replaying logs 325057d9b4f24289
+tempo-rhythm-web:lint: cache hit, replaying logs e331c081f23e570e
+tempo-rhythm-mobile:lint: $ biome lint .
+tempo-rhythm-mobile:lint: Checked 88 files in 865ms. No fixes applied.
+tempo-rhythm-web:lint: $ biome lint .
+tempo-rhythm-web:lint: app/tempo.css:79:26 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     77 │ svg.tp-icon--sm { width: 16px; height: 16px; }
+tempo-rhythm-web:lint:     78 │ [dir="rtl"] .tp-icon--flip { transform: scaleX(-1); }
+tempo-rhythm-web:lint:   > 79 │ [hidden] { display: none !important; }
+tempo-rhythm-web:lint:        │                          ^^^^^^^^^^
+tempo-rhythm-web:lint:     80 │
+tempo-rhythm-web:lint:     81 │ .tp-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     79 │ [hidden]·{·display:·none·!important;·}
+tempo-rhythm-web:lint:        │                         -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: app/tempo.css:481:55 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     480 │ @media (prefers-reduced-motion: reduce) {
+tempo-rhythm-web:lint:   > 481 │   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+tempo-rhythm-web:lint:         │                                                       ^^^^^^^^^^
+tempo-rhythm-web:lint:     482 │   .tp-caret { animation: none; }
+tempo-rhythm-web:lint:     483 │ }
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     481 │ ··*,·*::before,·*::after·{·animation-duration:·0.01ms·!important;·animation-iteration-count:·1·!important;·transition-duration:·0.01ms·!important;·scroll-behavior:·auto·!important;·}
+tempo-rhythm-web:lint:         │                                                      -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: app/tempo.css:481:96 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     480 │ @media (prefers-reduced-motion: reduce) {
+tempo-rhythm-web:lint:   > 481 │   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+tempo-rhythm-web:lint:         │                                                                                                ^^^^^^^^^^
+tempo-rhythm-web:lint:     482 │   .tp-caret { animation: none; }
+tempo-rhythm-web:lint:     483 │ }
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     481 │ ··*,·*::before,·*::after·{·animation-duration:·0.01ms·!important;·animation-iteration-count:·1·!important;·transition-duration:·0.01ms·!important;·scroll-behavior:·auto·!important;·}
+tempo-rhythm-web:lint:         │                                                                                               -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: app/tempo.css:481:136 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     480 │ @media (prefers-reduced-motion: reduce) {
+tempo-rhythm-web:lint:   > 481 │   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+tempo-rhythm-web:lint:         │                                                                                                                                        ^^^^^^^^^^
+tempo-rhythm-web:lint:     482 │   .tp-caret { animation: none; }
+tempo-rhythm-web:lint:     483 │ }
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     481 │ ··*,·*::before,·*::after·{·animation-duration:·0.01ms·!important;·animation-iteration-count:·1·!important;·transition-duration:·0.01ms·!important;·scroll-behavior:·auto·!important;·}
+tempo-rhythm-web:lint:         │                                                                                                                                       -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: app/tempo.css:481:170 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     480 │ @media (prefers-reduced-motion: reduce) {
+tempo-rhythm-web:lint:   > 481 │   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+tempo-rhythm-web:lint:         │                                                                                                                                                                          ^^^^^^^^^^
+tempo-rhythm-web:lint:     482 │   .tp-caret { animation: none; }
+tempo-rhythm-web:lint:     483 │ }
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     481 │ ··*,·*::before,·*::after·{·animation-duration:·0.01ms·!important;·animation-iteration-count:·1·!important;·transition-duration:·0.01ms·!important;·scroll-behavior:·auto·!important;·}
+tempo-rhythm-web:lint:         │                                                                                                                                                                         -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: app/tempo.css:572:73 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     570 │ html[data-state="loading"] [data-state-hide],
+tempo-rhythm-web:lint:     571 │ html[data-state="error"]   [data-state-hide],
+tempo-rhythm-web:lint:   > 572 │ html[data-state="offline"] [data-state-hide~="offline"] { display: none !important; }
+tempo-rhythm-web:lint:         │                                                                         ^^^^^^^^^^
+tempo-rhythm-web:lint:     573 │
+tempo-rhythm-web:lint:     574 │ /* ---------- Shared small utilities (Stage 2) --------------------- */
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     572 │ html[data-state="offline"]·[data-state-hide~="offline"]·{·display:·none·!important;·}
+tempo-rhythm-web:lint:         │                                                                        -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: app/tempo.css:730:32 lint/complexity/noImportantStyles  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Avoid the use of the !important style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     728 │    Keep the element in the DOM (for the converter) with aria-hidden="true"; it is never drawn
+tempo-rhythm-web:lint:     729 │    and never read by screen readers. Visible meta lives in Stage 1 .tp-page-meta. */
+tempo-rhythm-web:lint:   > 730 │ .tp-block-meta { display: none !important; }
+tempo-rhythm-web:lint:         │                                ^^^^^^^^^^
+tempo-rhythm-web:lint:     731 │
+tempo-rhythm-web:lint:     732 │ /* @component BrokenBlock | class .tp-block-broken | data-component="BrokenBlock" | shadcn: alert | props: { blockId, canUndo: boolean } — quiet card, never shows JSON or error codes */
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i This style reverses the cascade logic, and precedence is reversed. This could lead to having styles with higher specificity being overridden by styles with lower specificity.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: Remove the style.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     730 │ .tp-block-meta·{·display:·none·!important;·}
+tempo-rhythm-web:lint:         │                               -----------
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: components/tempo/TempoShell.tsx:49:9 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! This variable router is unused.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     47 │   const coachSheet = useMaxWidth(1279);
+tempo-rhythm-web:lint:     48 │   const pathname = usePathname();
+tempo-rhythm-web:lint:   > 49 │   const router = useRouter();
+tempo-rhythm-web:lint:        │         ^^^^^^
+tempo-rhythm-web:lint:     50 │   const { lang, t } = useLocale();
+tempo-rhythm-web:lint:     51 │   // A new device (nothing saved) shows every signed-in screen in the account's language.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unused variables are often the result of an incomplete refactoring, typos, or other sources of bugs.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Unsafe fix: If this is intentional, prepend router with an underscore.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:      47  47 │     const coachSheet = useMaxWidth(1279);
+tempo-rhythm-web:lint:      48  48 │     const pathname = usePathname();
+tempo-rhythm-web:lint:      49     │ - ··const·router·=·useRouter();
+tempo-rhythm-web:lint:          49 │ + ··const·_router·=·useRouter();
+tempo-rhythm-web:lint:      50  50 │     const { lang, t } = useLocale();
+tempo-rhythm-web:lint:      51  51 │     // A new device (nothing saved) shows every signed-in screen in the account's language.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: lib/editor/today-live-preview.test.ts:111:89 lint/suspicious/noTemplateCurlyInString ━━━━━━━━━━━━━━━
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   ! Unexpected template string placeholder.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:     110 │   test("/week opens its page at /notes/[id]", () => {
+tempo-rhythm-web:lint:   > 111 │     expect(source("components/today/WeekOpener.tsx")).toContain("router.replace(`/notes/${state.noteId}`)");
+tempo-rhythm-web:lint:         │                                                                                         ^^^^^^^^^^^^^^^
+tempo-rhythm-web:lint:     112 │   });
+tempo-rhythm-web:lint:     113 │
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:   i Turn the string into a template string.
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint:
+tempo-rhythm-web:lint: Checked 480 files in 4s. No fixes applied.
+tempo-rhythm-web:lint: Found 9 warnings.
+
+ Tasks:    5 successful, 5 total
+Cached:    5 cached, 5 total
+  Time:    311ms >>> FULL TURBO

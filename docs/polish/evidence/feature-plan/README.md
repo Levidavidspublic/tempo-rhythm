@@ -20,7 +20,7 @@ The focused suite also covers half-open local date ranges/DST, same-ID task/even
 - Focused run 2: 12 passed, one failed. The new midnight test allowed its clock to advance during page loading; it now pauses before navigation. The product had correctly advanced to the next day. Assertions and time limits were retained.
 - `bun test tests/unit/tempo-plan-views.test.tsx` (third focused run): pass, exit 0; 13 child tests, zero failures, 185 assertions; the outer isolation test also passed (one test). Elapsed 102.31 seconds including optional baseline and after captures. See `focused-3.log` for the authoritative output. The first two failure logs are retained as `focused-1.log` and `focused-2.log`.
 - `git diff --check`: pass.
-- UNKNOWN: final-head mandatory full tests, scans/notices, local route Playwright and build. The lead serializes these across worktrees and records their actual results; fixture success does not substitute for them.
+- Final-source mandatory gates are now recorded in [gates-d227acd/SUMMARY.md](gates-d227acd/SUMMARY.md): tests3492/2/3todo, four scans pass, local Playwright19/9/89skip, build passes. All authoritative exits/logs/failure tails are retained; source and tests remain frozen.
 - UNKNOWN: deployed preview behavior, current-head CI, guards and CodeRabbit review until independently verified by the lead. This ticket performs no deployment.
 
 ## Reproduction
@@ -34,3 +34,7 @@ Without that optional evidence directory, the exact same assertions run without 
 ## Reconciliation
 
 KA-09 (#1102) and the older study work (#1081) may later overlap CalendarViews/PlanScreen. Their branches were not changed. Their eventual reconciliation must retain controlled/embedded defaults, the unified agenda, Today rollover and all existing time-block behavior. Protected #1193 and #1198 were not touched. No schema, route entry, environment, dependency, global CSS or i18n file changed; every product string and token already existed.
+
+## Final-source disposition
+
+Source `d227acd` is rebased onto integration `7d1a0f6` with the implementation patch unchanged; the original fixture comparison base above remains `39b564e`. Final-head frozen install, lint and typecheck passed. Full tests fail the known English/Hebrew h1 class contract (AT27); local E2E has nine failures. Status remains stuck after three source/test candidates. No fourth repair, unchanged failing retry, test/config weakening or deployment was attempted. See the linked gate summary for exact commands, counts and limitations.

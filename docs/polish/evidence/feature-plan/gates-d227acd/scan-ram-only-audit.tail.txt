@@ -1,0 +1,2 @@
+$ bun scripts/scan-ram-only-audit.ts
+scan:ram-only-audit OK — hard deletes dropped to 6 (baseline 10). Lower scripts/scan-baselines.json to lock in the improvement.
