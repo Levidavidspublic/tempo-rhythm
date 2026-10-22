@@ -17,6 +17,8 @@ WALK — These answers supersede the corresponding pending decisions below. The 
 - New authorized kitchen-kb tickets: researched Hebrew crisis phrases; Deepgram Voice Agent voice-to-voice with GLM brain (key already in Convex; no value access); and a no-spend comparison of Deepgram, Inworld, ElevenLabs and open-weight voice options in docs/research/voice.md.
 - Preserve both lanes, maximum four parallel worktrees, one draft PR per ticket, disjoint writers, green CI plus addressed CodeRabbit and all guards before integration merge. No production, protected-PR edits, secrets or spending beyond the stated authorizations.
 
+WALK — Planning #1140 repair accounting, 2026-10-22: initial submission plus two distinct CodeRabbit contract corrections (5893a02/current-history 3c53bcb, then ae1b4b0) consumed the ordinary three candidates. The standing authorization for one additional scoped pass per exhausted KB draft is applied now to the nine current documentation findings. That planning exception is consumed by this correction; reporting-only updates and duplicate history copies were not counted as new repair rounds. No new owner question is introduced, and future distinct corrections beyond this pass require separate authority.
+
 ## AT — Remaining owner actions, 22 October 2026
 
 The approvals above are applied. This is the current list; the old numbered ledger below is historical.

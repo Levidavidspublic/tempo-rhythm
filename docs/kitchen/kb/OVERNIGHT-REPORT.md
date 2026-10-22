@@ -1,5 +1,55 @@
 # Overnight report — 21–22 October 2026
 
+## WALK — Two-lane validation checkpoint, 2026-10-22 14:02 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 30 open issues; 0 merged / 29 open PRs**. Total: **92 issues, 66 PRs**; **16 remaining owner actions**. Integration remains 7d1a0f6. Counts include historical work and do not mean these features are complete on preview.
+
+| Lane / work | Current evidence | Merge gate |
+| --- | --- | --- |
+| 1 — shared harness #1203 | Approved extra candidate be1fec2 is pushed; 16 focused passes, 4 failures, 1 error. | Frozen at authorized retry boundary; no weaker checks or further source repair. |
+| 1 — planning #1140 | Current 68fd5b2 has green hosted CI/guards and actual CodeRabbit review. Nine verified specification findings are corrected by this scoped documentation pass, including repeated consumer contracts; current checks and actual review must run again. | Current corrected-head hosted checks and actual review pending. |
+| 2 — parser #1301 / PR #1302 | Candidate2 6c7519b is pushed. Current hosted CI and actual CodeRabbit review are clear. Candidate1 full local tests failed 3489/10/3 todo/1 error, exact E2E 11 pass/17 fail/89 skip; its build and four scans passed. | Candidate2 local focused and mandatory checks are still UNKNOWN. Earlier failures remain evidence. |
+| 2 — Habit/Goal #1303 / draft #1304 | Final candidate3 8ce1a0c is pushed to draft #1304: native status output and isolated bounded fixture compilation. Prior eea93b9 hosted lint/test failures are retained; types, build, E2E and scans had passed. | Current-head gates, 22 intended new cases and before/after evidence remain unverified; all three candidates are consumed. This is not a built-in seeded gallery or real-preview proof. |
+| 2 — voice research #1251 / #1256 | Frozen 45e55f7: local install, lint and typecheck pass. Original full suite continues after KB61's 481221.99ms setup timeout. | Full aggregate, scans, exact E2E and build pending; hosted Test remains pending at latest read. No rerun or failure erasure. |
+| 2 — Executor #1265 / #1277 | Frozen 13752d9: 15 earlier mounted DOM cases pass; real-page browser fixture prepared. Hosted Test cancelled after approximately six hours; aggregate CI failed. | Full local sequence and prepared browser fixture unrun; actual CodeRabbit review outstanding. No real OAuth or external-tool call. |
+| 2 — hero #1206 / #1210 | Own 8 E2E cases pass. Full suite incomplete with exit143 after an unbounded fixture wait; exact E2E 28 pass/8 fail/89 skip; scans pass and build is a cached pass. | Incomplete and failing broader validation retained; no preview-completion claim. |
+
+**Done:** dated approvals applied; architecture drafts #1262/#1282/#1269 prepared with schema decisions; clean KB67 replacement #1254 pushed and old #1197 preserved; approved Plan/hero/page-save corrections pushed. New parser and template candidates are reviewable. **Needs Amit:** the existing16 ordered actions in NEEDS-AMIT.md; no renewed approval request for an already authorized step. **UNKNOWN:** remaining current-head checks, actual preview/provider/device behavior, exact preview error-badge cause, and overall feature readiness.
+
+All31 original KB tickets without implementation PRs retain explicit unmet WHEN dependencies, as detailed below. No150-components or complete-polish claim. Four worktrees, disjoint writers, one local heavy check at a time. Protected #1193/#1198 remain untouched. No default-branch direct push, production merge, manual deployment, environment change or paid provider call.
+
+### WALK — Coverage of the requested feature set
+
+This source/ownership audit distinguishes existing behavior, prepared changes and remaining gaps; it does not establish real preview readiness.
+
+| User request | Existing ownership and implementation evidence | Remaining limit |
+| --- | --- | --- |
+| History and selectable coaching intensity | Integration has chat history and mounted CoachControls in /coach, with coach.setDial validating integers 0–10. Expanded Library is KB01 #1212/PR1262 and KB14 onward. | Expanded Library WHEN chains await merged dependencies; preview verification unknown. |
+| Use web / think hard / cancel; settings-selected GLM modes | Router #1255/1260; research lifecycle #1257/1264; composer #1258/1279; smoke #1286/1288. Source and focused tests exist. | Router findings, composer mounted failures, parent/merge gates. Actual model settings/account capability unknown. |
+| Search service within authorized cap | Gateway #1259/1267, optional setting #1270/1271, search contract KB16 #1213/1282. | Gateway frozen fixture-scan finding, deployment/upstream/financial cap not configured or verified. |
+| Voice-to-voice with Deepgram | #1253/1291, canonical bridge #1278/1289, OFF declaration #1287/1290. Transport26 pure passes; bridge152 focused passes. | Transport zero mounted assertions/17 fixture TS errors; bridge synthetic-fixture scan failure; provider callback/audio conformance unknown. Remains OFF. |
+| Hebrew crisis list and voice comparison | #1252/1261 guarded matcher; #1251/1256 research. | Clinical review before Hebrew live path; primary wording provenance gaps preserved. Research validation active; one local setup timeout observed. Pronunciation is not a native-quality gate. |
+| Structured answers as live UI | Integration renders stored proposal OpenUI and decision json-render. KA #1128 owns shared block renderer. | General answers still text; #1128 waits for #1081 and #1101. No matching named Open WebUI skill verified. |
+| Checkbox typing | #1205/1209 real editor correction,8 own browser cases pass. | Mandatory broader checks fail; unmerged. |
+| Preview red error badge / page save | #1249/1250 implements draft/error/retry recovery;32 focused cases pass. | Exact three-error preview badge cause unknown; broad checks fail. No claim all preview errors fixed. |
+| Every page type editable/tested | Existing PageEditorView and slash insertion; #1250 tests plain/daily/weekly/project/template fixtures. | This is not every-page E2E. Existing persisted-note E2E requires authenticated storage state; local route marker tests only prove mounting. |
+| User-added sidebar/sections | Existing headings/slash blocks; KA #1101 owns richer insertion UI. | Persisted sidebar/container representation absent; codec/editor/renderer contract required with #1081/#1101/#1128. No ready independent implementation claimed. |
+| Chat with current page | PageEditorView registers noteId with CoachPage; current coach flush/context path exists; research/voice preserve it. | Mocked/current-source proof does not prove live preview; voice still blocked. |
+| Multiple files/links/notes as grounded sources | KA #1123 notebook backend, #1124 mounted notebook screen, #1131 source finding. | Explicit #1081/KA20 memory hold/KA24 dependencies. Not built by this lane. |
+| Goals and get-to-know-me onboarding | Existing goals and onboarding; #1293/1296 adds optional real goal,14 own cases pass. | Mandatory tests/E2E fail; viewport evidence/review incomplete. |
+| Daily/weekly/project/meeting/habit/goal templates | Existing template catalog has first four, plus builder/personal gallery. Issue #1303 / draft #1304 uses the current create contract. | Habit/goal built-ins absent. Draft #1304 adds editable personal-template starts only; direct built-in gallery follows KA11/KA02 ownership. |
+| Kanban + day/week/month tasks/events | #1207/1211 real mounted board and dated task/event views;13 focused and10 heading cases pass. | Scan/history finding and mandatory gates; no preview completion claim. |
+| Resend-only sign-in, no automatic new Max | Existing auth/UI paths plus #1263/1268 account policy, #1272/1283 request UI. | Coordinated rollout with beta backend; request UI fixture failures. No actual email sent. |
+| Approved beta and existing testers get Max free | #1266/1273 owner request/admin grant; #1275/1284 admin queue. Existing grants preserved by1268. | Schema/parent/merge gates and queue broader failure. No automatic mount-time beta request. |
+| Tiered pricing; all plans start with $1 trial, no free plan | #1208/1220 pricing; #1281/1285 trial copy. | Focused copy proof exists; inherited scope/schema and current checks block merge. Checkout remains OFF. |
+| Paid users admitted immediately; payment wiring OFF | #1246/1248 server OFF guard; #1292/1295 event parser; #1297/1298 snapshot; #1299/1300 deletion fence; #1294 subscription application contract hold. | Immediate paid admission not complete. Snapshot endpoint finding, ordering/independent-beta/recovery contracts and IDs remain. No live charges. |
+| Marketing/hero motion | #1206/1210 real hero,8 own cases pass; pricing copy above. | Full suite incomplete and global E2E fails. Reduced-motion own proof does not establish deployment. |
+| Executor connector hub | #1265/1277 mounted settings/server flag integration;15 DOM cases pass. Real-page fixture prepared. | First local full/browser validation queued; hosted Test cancelled without a complete result; actual connection/setup unknown. No external connector invocation. |
+| Component polish / all components ready | Original KB implementations and31 unstarted explicit WHEN-blocked component tickets remain. | No150-components or complete-polish claim. Existing inventory/queue is planning coverage, not shipped work. |
+
+
+Earlier checkpoints below are historical.
+
 ## WALK — Current validation and dependency audit, 2026-10-22 12:58 UTC
 
 No new merge. Fresh GitHub census confirms Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues, 65 PRs; NEEDS-AMIT retains 16 ordered actions. Integration remains 7d1a0f6.

@@ -1,5 +1,25 @@
 # KB finish status
 
+## WALK — Two-lane validation checkpoint, 2026-10-22 14:02 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 30 open issues; 0 merged / 29 open PRs**. Total: **92 issues, 66 PRs**; **16 remaining owner actions**. Integration remains 7d1a0f6. Counts include historical work and do not mean these features are complete on preview.
+
+| Lane / work | Current evidence | Merge gate |
+| --- | --- | --- |
+| 1 — shared harness #1203 | Approved extra candidate be1fec2 is pushed; 16 focused passes, 4 failures, 1 error. | Frozen at authorized retry boundary; no weaker checks or further source repair. |
+| 1 — planning #1140 | Current 68fd5b2 has green hosted CI/guards and actual CodeRabbit review. Nine verified specification findings are corrected by this scoped documentation pass, including repeated consumer contracts; current checks and actual review must run again. | Current corrected-head hosted checks and actual review pending. |
+| 2 — parser #1301 / PR #1302 | Candidate2 6c7519b is pushed. Current hosted CI and actual CodeRabbit review are clear. Candidate1 full local tests failed 3489/10/3 todo/1 error, exact E2E 11 pass/17 fail/89 skip; its build and four scans passed. | Candidate2 local focused and mandatory checks are still UNKNOWN. Earlier failures remain evidence. |
+| 2 — Habit/Goal #1303 / draft #1304 | Final candidate3 8ce1a0c is pushed to draft #1304: native status output and isolated bounded fixture compilation. Prior eea93b9 hosted lint/test failures are retained; types, build, E2E and scans had passed. | Current-head gates, 22 intended new cases and before/after evidence remain unverified; all three candidates are consumed. This is not a built-in seeded gallery or real-preview proof. |
+| 2 — voice research #1251 / #1256 | Frozen 45e55f7: local install, lint and typecheck pass. Original full suite continues after KB61's 481221.99ms setup timeout. | Full aggregate, scans, exact E2E and build pending; hosted Test remains pending at latest read. No rerun or failure erasure. |
+| 2 — Executor #1265 / #1277 | Frozen 13752d9: 15 earlier mounted DOM cases pass; real-page browser fixture prepared. Hosted Test cancelled after approximately six hours; aggregate CI failed. | Full local sequence and prepared browser fixture unrun; actual CodeRabbit review outstanding. No real OAuth or external-tool call. |
+| 2 — hero #1206 / #1210 | Own 8 E2E cases pass. Full suite incomplete with exit143 after an unbounded fixture wait; exact E2E 28 pass/8 fail/89 skip; scans pass and build is a cached pass. | Incomplete and failing broader validation retained; no preview-completion claim. |
+
+**Done:** dated approvals applied; architecture drafts #1262/#1282/#1269 prepared with schema decisions; clean KB67 replacement #1254 pushed and old #1197 preserved; approved Plan/hero/page-save corrections pushed. New parser and template candidates are reviewable. **Needs Amit:** the existing16 ordered actions in NEEDS-AMIT.md; no renewed approval request for an already authorized step. **UNKNOWN:** remaining current-head checks, actual preview/provider/device behavior, exact preview error-badge cause, and overall feature readiness.
+
+All31 original KB tickets without implementation PRs retain explicit unmet WHEN dependencies, as detailed below. No150-components or complete-polish claim. Four worktrees, disjoint writers, one local heavy check at a time. Protected #1193/#1198 remain untouched. No default-branch direct push, production merge, manual deployment, environment change or paid provider call.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Current validation and dependency audit, 2026-10-22 12:58 UTC
 
 No new merge. Fresh GitHub census confirms Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 29 open issues; 0 merged / 28 open PRs**. Total: 91 issues, 65 PRs; NEEDS-AMIT retains 16 ordered actions. Integration remains 7d1a0f6.
