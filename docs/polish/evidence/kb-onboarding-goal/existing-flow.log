@@ -1,0 +1,19 @@
+bun test v1.3.9 (cf6cdbbb)
+
+apps/web/components/onboarding/OnboardingFlow.test.tsx:
+(pass) OnboardingFlow > opens on step 1 of 5 with language and reading font, then the name step [94.90ms]
+(pass) OnboardingFlow > language and reading font drive the shell's own switches [60.30ms]
+(pass) OnboardingFlow > prefills the name from the profile [55.39ms]
+(pass) OnboardingFlow > does not prefill the placeholder "there" [16.68ms]
+(pass) OnboardingFlow > Start using Tempo saves the trimmed name, a changed dial and the brain dump, then routes to /today [108.00ms]
+(pass) OnboardingFlow > an unchanged dial and an empty brain dump save nothing on the way [99.73ms]
+(pass) OnboardingFlow > going back and changing the brain dump updates the same page [246.16ms]
+(pass) OnboardingFlow > name-step Skip finishes without a name [107.93ms]
+(pass) OnboardingFlow > redirects an already-onboarded user to /today [9.75ms]
+(pass) OnboardingFlow > shows an inline error and stays when saving a step fails [79.69ms]
+(pass) OnboardingFlow > shows the save error when finishing fails [253.44ms]
+
+ 11 pass
+ 0 fail
+ 35 expect() calls
+Ran 11 tests across 1 file. [2.18s]

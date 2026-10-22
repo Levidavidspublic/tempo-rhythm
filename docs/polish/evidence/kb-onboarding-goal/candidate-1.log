@@ -1,0 +1,14 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/tempo-onboarding-goal.test.tsx:
+
+# Unhandled error between tests
+-------------------------------
+error: Cannot find module 'react/jsx-dev-runtime' from '/workspace/tempo-rhythm/tests/unit/tempo-onboarding-goal.test.tsx'
+-------------------------------
+
+
+ 0 pass
+ 1 fail
+ 1 error
+Ran 1 test across 1 file. [959.00ms]

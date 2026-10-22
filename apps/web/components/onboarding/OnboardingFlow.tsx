@@ -22,6 +22,7 @@ import {
   prefillName,
 } from "@/lib/settings/onboarding";
 import { NameStep } from "./NameStep";
+import { OnboardingGoal, type OnboardingGoalDraft, type OnboardingGoalStatus } from "./OnboardingGoal";
 import "@/app/v3/kb-44.css";
 
 function Card({ children }: { children: ReactNode }) {
@@ -68,6 +69,8 @@ export function OnboardingFlow() {
   const createNote = useMutation(api.notes.create);
   const updateNote = useMutation(api.notes.update);
   const updatePreferences = useMutation(api.preferences.update);
+  const createGoal = useMutation(api.goals.create);
+  const updateGoal = useMutation(api.goals.update);
   const [step, setStep] = useState<OnboardingStep>(1);
   const [resumed, setResumed] = useState(false);
   const [typed, setTyped] = useState<string | null>(null);
@@ -76,6 +79,10 @@ export function OnboardingFlow() {
   const [savedDial, setSavedDial] = useState<number | null>(null);
   const [dump, setDump] = useState("");
   const [dumpPage, setDumpPage] = useState<{ id: Id<"notes">; text: string } | null>(null);
+  const [goalDraft, setGoalDraft] = useState<OnboardingGoalDraft>({ title: "", description: "" });
+  const [savedGoal, setSavedGoal] = useState<(OnboardingGoalDraft & { id: Id<"goals"> }) | null>(null);
+  const [goalStatus, setGoalStatus] = useState<OnboardingGoalStatus>("idle");
+  const goalRequest = useRef<{ identity: symbol; submitted: OnboardingGoalDraft } | null>(null);
   // The brain-dump page's create, once started. Offline it stays queued, and a second pass
   // through step 4 must update that page, never create another (Codex P2 on #929).
   const dumpCreate = useRef<{ text: string; id: Promise<Id<"notes">> } | null>(null);
@@ -119,8 +126,30 @@ export function OnboardingFlow() {
   }
 
   const name = typed ?? prefillName(profile.greetingName);
+  const goalUnchanged = savedGoal?.title === goalDraft.title.trim() && savedGoal?.description === goalDraft.description.trim();
   const storedDial = savedDial ?? clampDial(coach?.dial);
   const dial = dialDraft ?? storedDial;
+
+  /** Only the goal button submits; step navigation never retries or creates a goal. */
+  const saveGoal = async () => {
+    if (goalRequest.current || pending || goalUnchanged || !goalDraft.title.trim()) return;
+    const submitted = { title: goalDraft.title.trim(), description: goalDraft.description.trim() };
+    const request = { identity: Symbol("onboarding-goal"), submitted };
+    goalRequest.current = request;
+    setGoalStatus("saving");
+    try {
+      const id = savedGoal
+        ? await updateGoal({ goalId: savedGoal.id, ...submitted })
+        : await createGoal({ title: submitted.title, ...(submitted.description ? { description: submitted.description } : {}) });
+      if (goalRequest.current !== request) return;
+      setSavedGoal({ id, ...submitted });
+      setGoalStatus("saved");
+    } catch {
+      if (goalRequest.current === request) setGoalStatus("error");
+    } finally {
+      if (goalRequest.current === request) goalRequest.current = null;
+    }
+  };
 
   const go = (next: number) => {
     moved.current = true;
@@ -386,6 +415,10 @@ export function OnboardingFlow() {
                 {t("set.onb.dumpHelp")}
               </p>
             </div>
+            <OnboardingGoal lang={lang} draft={goalDraft} status={goalStatus} hasSavedGoal={savedGoal !== null}
+              unchanged={goalUnchanged} disabled={pending}
+              onChange={(draft) => { setGoalDraft(draft); setGoalStatus("idle"); }}
+              onSave={() => void saveGoal()} />
           </section>
         ) : null}
 

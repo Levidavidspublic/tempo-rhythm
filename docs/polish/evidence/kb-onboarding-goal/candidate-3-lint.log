@@ -1,0 +1,82 @@
+/workspace/tempo-rhythm/tests/unit/tempo-onboarding-goal.test.tsx:319:20 lint/correctness/noUndeclaredVariables ━━━━━━━━━━
+
+  × The Bun variable is undeclared.
+  
+    317 │ // files that run later can still import every export, and put them back after this file.
+    318 │ const webDir = new URL("../../apps/web/", import.meta.url).pathname;
+  > 319 │ const linkModule = Bun.resolveSync("next/link", webDir);
+        │                    ^^^
+    320 │ const navigationModule = Bun.resolveSync("next/navigation", webDir);
+    321 │ const convexModule = Bun.resolveSync("convex/react", webDir);
+  
+  i By default, Biome recognizes browser and Node.js globals.
+    You can ignore more globals using the javascript.globals configuration.
+  
+
+/workspace/tempo-rhythm/tests/unit/tempo-onboarding-goal.test.tsx:320:26 lint/correctness/noUndeclaredVariables ━━━━━━━━━━
+
+  × The Bun variable is undeclared.
+  
+    318 │ const webDir = new URL("../../apps/web/", import.meta.url).pathname;
+    319 │ const linkModule = Bun.resolveSync("next/link", webDir);
+  > 320 │ const navigationModule = Bun.resolveSync("next/navigation", webDir);
+        │                          ^^^
+    321 │ const convexModule = Bun.resolveSync("convex/react", webDir);
+    322 │ const localeModule = Bun.resolveSync("@/components/providers/LocaleProvider", webDir);
+  
+  i By default, Biome recognizes browser and Node.js globals.
+    You can ignore more globals using the javascript.globals configuration.
+  
+
+/workspace/tempo-rhythm/tests/unit/tempo-onboarding-goal.test.tsx:321:22 lint/correctness/noUndeclaredVariables ━━━━━━━━━━
+
+  × The Bun variable is undeclared.
+  
+    319 │ const linkModule = Bun.resolveSync("next/link", webDir);
+    320 │ const navigationModule = Bun.resolveSync("next/navigation", webDir);
+  > 321 │ const convexModule = Bun.resolveSync("convex/react", webDir);
+        │                      ^^^
+    322 │ const localeModule = Bun.resolveSync("@/components/providers/LocaleProvider", webDir);
+    323 │ const themeModule = Bun.resolveSync("@/components/providers/ThemeProvider", webDir);
+  
+  i By default, Biome recognizes browser and Node.js globals.
+    You can ignore more globals using the javascript.globals configuration.
+  
+
+/workspace/tempo-rhythm/tests/unit/tempo-onboarding-goal.test.tsx:322:22 lint/correctness/noUndeclaredVariables ━━━━━━━━━━
+
+  × The Bun variable is undeclared.
+  
+    320 │ const navigationModule = Bun.resolveSync("next/navigation", webDir);
+    321 │ const convexModule = Bun.resolveSync("convex/react", webDir);
+  > 322 │ const localeModule = Bun.resolveSync("@/components/providers/LocaleProvider", webDir);
+        │                      ^^^
+    323 │ const themeModule = Bun.resolveSync("@/components/providers/ThemeProvider", webDir);
+    324 │ const realModules: Record<string, Record<string, unknown>> = {};
+  
+  i By default, Biome recognizes browser and Node.js globals.
+    You can ignore more globals using the javascript.globals configuration.
+  
+
+/workspace/tempo-rhythm/tests/unit/tempo-onboarding-goal.test.tsx:323:21 lint/correctness/noUndeclaredVariables ━━━━━━━━━━
+
+  × The Bun variable is undeclared.
+  
+    321 │ const convexModule = Bun.resolveSync("convex/react", webDir);
+    322 │ const localeModule = Bun.resolveSync("@/components/providers/LocaleProvider", webDir);
+  > 323 │ const themeModule = Bun.resolveSync("@/components/providers/ThemeProvider", webDir);
+        │                     ^^^
+    324 │ const realModules: Record<string, Record<string, unknown>> = {};
+    325 │ for (const path of [linkModule, navigationModule, convexModule, localeModule, themeModule]) realModules[path] = { ...(await import(path)) };
+  
+  i By default, Biome recognizes browser and Node.js globals.
+    You can ignore more globals using the javascript.globals configuration.
+  
+
+Checked 4 files in 190ms. No fixes applied.
+Found 5 errors.
+lint ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
