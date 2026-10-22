@@ -1,5 +1,22 @@
 # KB finish status
 
+## WALK — Current checkpoint, 22 October 2026, 10:23 UTC
+
+No new merge; integration remains 7d1a0f6. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 28 open issues; 0 merged / 27 open PRs**. **16 current owner actions** in NEEDS-AMIT; older ledger entries are historical.
+
+- **Lane 1 merged:** none in this continuation. **Open/blocked:** shared #1203's authorized extra pass failed and remains frozen. #1280's mandatory full tests/E2E failed despite all69 own cases passing; later evidence-only wording fixes3b3bb90 address CodeRabbit's cleanup-language comments without changing tests. Current reviews/guards remain required.
+- **Lane 2 merged:** none. **New open draft #1300 → #1299**, head285e32c, preserves two optional users deletion markers across restoration.16new and66unchanged lifecycle cases pass; scopedlint passes. Candidate2 corrects only a new-test type annotation; actualbackend types and full gates pending. Exact schema delta and lifecycle/rollback limits recorded in DECISIONS. No payment recovery/activation.
+- **Open draft #1298 → #1297**, head5b25277:29mocked tests pass, narrow types pass, helper unmounted. Independent review found exact customer IDs dot/dot-dot normalize away from the fixed resource. Three source candidates are consumed; AT16 records one scoped reject-before-fetch correction request. No provider call or cross-origin/authority bypass was established.
+- **Open #1295 → #1292**, head8bf87c2: candidate2 changes two own-key calls for ES2021 compatibility and one new test-table type annotation. Narrow strict types now pass;18pure cases pass. Earlier28/0 actualcheckout result belongs to candidate1 and remains labelled as such. Parent#1248, broader gates and actual review block merge; processing stays OFF.
+- **Open #1296 → #1293**, frozen1522103: required install/lint/typecheck/four scans pass. Full original run completed normally: **3481pass /11fail /3todo /2errors**, own14/0, no rerun or termination. Exact E2E is active with failures observed; build follows. Frozen source unchanged.
+- **Validation diagnosis:** KB74's existing60s matrix timeout precedes a closed-browser cascade; source equals integration. KB64 in this run passed the earlier failure cluster but later hit an existing30s gallery timeout and two closure failures. KB59's child exited0, then the parent hook reached its existing600s bound before continuing. These observations do not establish a common cause or a fix. A concurrent6.66s minimal type diagnostic for1299 is disclosed; causation of later5s failures is unproven.
+- **Contract hold #1294:** replaced the unsafe event-only design with proposed complete-snapshot ordering, independent-beta evidence and deletion-fence requirements. No proposed subscription schema has been implemented. Equal-time later beta decisions, historic restoration/recovery and read-time/AI/voice expiry remain explicit engineering/activation gaps.
+- **Other gaps:** habit/goal templates depend on open KA#1095/#1104; page-sidebar representation needs a codec/render/editor contract. Notebook/source/shared-renderer dependencies remain open. No feature-parity or full-page-coverage claim.
+- **Done:** two new payment/lifecycle draft PRs published, parser compatibility pushed, schema/issue evidence and census updated. **Needs Amit:** the16 ordered current actions, including the new frozen-helper finding; no approval was requested again. **UNKNOWN:** preview/live behavior, unresolved timing/closure causes, unrun full checks, provider settings and pending actual reviews.
+- Exactly four worktrees. Protected#1193/#1198 unchanged; no production push, deployment, secrets, live-account data or provider spending.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Current checkpoint, 22 October 2026, 10:02 UTC
 
 No new merge; integration remains 7d1a0f6. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 27 open issues; 0 merged / 26 open PRs**. **15 current owner actions** in NEEDS-AMIT; historical entries are not additional questions.
