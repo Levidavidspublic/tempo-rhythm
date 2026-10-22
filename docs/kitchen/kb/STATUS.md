@@ -1,5 +1,19 @@
 # KB finish status
 
+## WALK — Completed validation and remaining queue, 2026-10-22 11:31 UTC
+
+No new merge. Lane 1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane 2: **0 closed / 28 open issues; 0 merged / 27 open PRs**. **16 current owner actions** remain ordered in NEEDS-AMIT. All 59 written queue entries have matching GitHub issues; no written ticket is missing from the issue register.
+
+- **Lane 1 open/blocked:** shared #1203 remains frozen after its authorized additional repair failed; architecture labels, KA dependencies and retained local failures still gate its descendants. No change to protected #1193/#1198.
+- **Lane 2 #1300 / issue #1299:** completed every mandatory local stage once on unchanged head761eb917597ef408d7e306d5a613eaef4a0327d8. Install/lint/typecheck/four scans pass; build passes from cache (986ms). Full tests: **3484 pass / 4 fail / 3 todo / 1 error**,81607assertions,3491tests/212files,1665.38s. The20new fence cases and66unchanged lifecycle cases pass. Exact local Playwright: **15 pass / 13 fail / 89 skip**,117cases,10.6min. These failures block merge despite actual current CodeRabbit coverage with no actionable comments. Hosted Test remains pending.
+- Current results and sanitized failure tails are published in #1300 and issue1299 comment6339643257, superseding the evidence README's initial UNKNOWN snapshot. No reporting-only commit changed the tested/reviewed head.57raw receipts are preserved losslessly outsidecheckout;30Playwright artifacts are archived with per-file/archive hashes. Owned browser/server processes were gone and port3000free before reuse. Only guarded ignored .next/dev was removed for the build disk guard.
+- **Failure diagnosis:** KB74's60s matrix timeout and following reduced-motion failure remain. KB59's child exited0 but its parent waited until the existing600s hook timeout, then the original runner advanced itself. The exact unresolved output/exit promise is UNKNOWN; childexit0 does not prove its caught assertions passed. KB59's historical feature-repair allowance does not automatically restrict a distinct future harness-adoption scope; shared-harness-first ordering still applies. No extra owner question was inferred solely from the closed feature ticket.
+- The fourth full-suite failure is the existing page-summary parser3s performance assertion, distinct from the fixture waits. One separately labelled, isolated diagnostic is scheduled with the original assertion/deadline unchanged, before hero validation. It cannot replace the required full-run failure or establish an environmental cause by itself.
+- **Next validation:** hero #1210 at6a9f539, then voice research #1256 at45e55f7, then Executor #1277 at13752d9. All include currentintegration7d1a0f6; all have no unmerged implementation dependency. Each still needs its first complete mandatory local sequence on current source. The Executor read-only contract review found no introduced authorization/flag/status issue; actual current CodeRabbit and browser evidence remain separate gates.
+- **Done:** required fence validation/reporting, artifacts preserved, queue-to-issue reconciliation, bounded failure diagnosis. **Needs Amit:** the existing16ordered actions; prior approvals remain applied. **UNKNOWN:** remaining validation/CI/reviews, precise fixture/performance causes, real preview/device/provider behavior. Exactly4worktrees; no production/default direct push, manual deploy, real account/provider call or environment-value access.
+
+Earlier checkpoints below are historical.
+
 ## WALK — Validation queue, 2026-10-22 10:59 UTC
 
 No new merge; counts remain Lane 1: 6 closed / 56 open issues and 11 merged / 26 open PRs; Lane 2: 0 closed / 28 open issues and 0 merged / 27 open PRs. NEEDS-AMIT has 16 current actions.
