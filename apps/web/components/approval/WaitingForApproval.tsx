@@ -3,7 +3,7 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon, TpIconSprite } from "@/components/tempo/TpIcon";
 import { Button } from "@/components/ui/button";
@@ -53,16 +53,17 @@ export function WaitingForApproval({ email, revoked }: { email: string; revoked:
           <p className="text-sm text-muted-foreground">{t("approval.paused")}</p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">{t("approval.waitingLede")}</p>
+            <p className="text-sm text-muted-foreground">{t("betaAuth.waitingHelp")}</p>
+            <BetaRequest key={email} />
             <div className="space-y-2 text-start">
               <h2 className="text-sm font-semibold">{t("approval.nextTitle")}</h2>
               <ol className="list-decimal space-y-1 ps-5 text-sm text-muted-foreground">
-                <li>{t("approval.next1")}</li>
+                <li>{t("betaAuth.next")}</li>
                 <li>{t("approval.next2")}</li>
                 <li>{t("approval.next3")}</li>
               </ol>
             </div>
-            <WaitingName email={email} />
+            <WaitingName key={email} email={email} />
           </>
         )}
         <p className="text-xs text-muted-foreground">
@@ -71,11 +72,56 @@ export function WaitingForApproval({ email, revoked }: { email: string; revoked:
             {email}
           </span>
         </p>
-        <Button type="button" variant="outline" onClick={onSignOut} disabled={signingOut}>
+        <Button type="button" variant="outline" onClick={onSignOut} disabled={signingOut} style={{ minBlockSize: "var(--tp-touch)" }}>
           {signingOut ? t("approval.signingOut") : t("approval.signOut")}
         </Button>
       </section>
     </main>
+  );
+}
+
+/** Never submits on mount. The live approval gate alone decides whether the app opens. */
+function BetaRequest() {
+  const { t } = useLocale();
+  const profile = useQuery(api.users.getProfile, {});
+  const request = useMutation(api.approval.requestBetaAccess);
+  const [state, setState] = useState<"idle" | "sending" | "requested" | "approved" | "unavailable" | "error">("idle");
+  const generation = useRef(0);
+  const busy = useRef(false);
+  useEffect(() => () => { generation.current += 1; }, []);
+  const approved = profile?.approvalStatus === "approved" &&
+    (profile?.betaApprovedAt !== undefined || profile?.betaAccess === "tester" || profile?.betaAccess === "founder");
+  const queued = profile?.betaRequestedAt !== undefined || state === "requested";
+  const unavailable = profile?.approvalStatus === "revoked" || profile?.deletedAt !== undefined || profile?.isActive === false || state === "unavailable";
+
+  async function submit() {
+    if (busy.current || queued || approved || unavailable) return;
+    busy.current = true;
+    const mine = ++generation.current;
+    setState("sending");
+    try {
+      const result = await request({});
+      if (mine === generation.current) setState(result.status);
+    } catch {
+      if (mine === generation.current) setState("error");
+    } finally {
+      if (mine === generation.current) busy.current = false;
+    }
+  }
+
+  return (
+    <div className="tp-field text-start" data-testid="beta-request">
+      <p className="tp-help">{t("betaAuth.maxHelp")}</p>
+      {unavailable ? <p role="status">{t("betaAuth.unavailable")}</p> :
+        approved || state === "approved" ? <p role="status">{t("betaAuth.approved")}</p> :
+        queued ? <p role="status">{t("betaAuth.queued")}</p> : (
+          <button type="button" className="tp-btn tp-btn--primary tp-btn--block" disabled={state === "sending"}
+            onClick={() => void submit()} style={{ minBlockSize: "var(--tp-touch)" }}>
+            {t(state === "sending" ? "betaAuth.requesting" : "betaAuth.request")}
+          </button>
+        )}
+      {state === "error" && !queued && !approved && !unavailable ? <p className="tp-error-text" role="alert">{t("betaAuth.requestError")}</p> : null}
+    </div>
   );
 }
 
@@ -148,6 +194,7 @@ function WaitingName({ email }: { email: string }) {
           autoComplete="given-name"
           dir="auto"
           value={value}
+          style={{ minBlockSize: "var(--tp-touch)" }}
           aria-invalid={problem ? true : undefined}
           aria-describedby={describedBy}
           onChange={(event) => {
@@ -156,7 +203,7 @@ function WaitingName({ email }: { email: string }) {
             if (state !== "saving") setState("idle");
           }}
         />
-        <button type="submit" className="tp-btn tp-btn--secondary" aria-disabled={saving ? true : undefined}>
+        <button type="submit" className="tp-btn tp-btn--secondary" aria-disabled={saving ? true : undefined} style={{ minBlockSize: "var(--tp-touch)" }}>
           {saving ? t("approval.nameSaving") : t("approval.nameSave")}
         </button>
       </div>
