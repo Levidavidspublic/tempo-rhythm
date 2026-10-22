@@ -12,6 +12,21 @@ export class AiAuthError extends AiError {
   }
 }
 
+/** Configuration failures retain existing callers' friendly auth/configuration handling. */
+export class AiConfigurationError extends AiAuthError {
+  constructor(message: string) {
+    super(message);
+    this.name = "AiConfigurationError";
+  }
+}
+
+export class AiCancelledError extends AiError {
+  constructor(message: string) {
+    super(message);
+    this.name = "AiCancelledError";
+  }
+}
+
 export class AiRateLimitedError extends AiError {
   retryAfterMs?: number;
   constructor(message: string, retryAfterMs?: number) {
