@@ -1,6 +1,6 @@
 # Page action recovery — #1249
 
-WALK — BLOCKED for completion/merge: actual browser diagnostics reproduce a pre-existing A→B→A dirty-field race that this change does not fix. Candidate 3 addresses the two introduced ordering findings. All 30 feature cases pass locally and in the earlier hosted test job. Frozen install, lint, typecheck, four scans/notices and the placeholder-Convex build pass. The local full test is FAIL/incomplete (exit 143 after an actual unchanged KB66 wrapper timeout and a verified stalled parent); local repository Playwright fails with 25 pass, 89 skip and 3 fail. The earlier hosted global test also failed on an unchanged KB67 hook timeout. Source/tests are frozen after three candidates; complete remote CI/CodeRabbit clearance remains unverified. This is not a production or preview completion claim.
+WALK — AT-29 correction locally tested in the focused fixture; completion/merge remains blocked pending current mandatory gates, remote CI and CodeRabbit. Amit authorized one additional scoped candidate on 2026-10-22. Both new deferred title/body A→B→A regressions fail on candidate 3 with premature Saved, then all 32 focused cases pass after revision-owned dirty clearing (the original 30 are unchanged). Previous candidate 3 failures below are historical and do not substitute for checks on AT-29. No production or preview completion claim.
 
 Captured 2026-10-21 UTC; remaining local gates completed 2026-10-22 UTC with Bun 1.3.9. Base: `7d1a0f6957852fe9f6d60849e3df9bc7505e90ac`. Original NotesScreen blob: `b9435f54157cc49a746aa07944f6fe615bf96708` (unchanged between the saved original base and this base). Candidate 1 tested NotesScreen blob: `ae6cab36d00cbae11109f6440e3229d952a8e258`. Candidate 1 test blob: `743d928492dc2140acda5720402f5a63a4e4d4a6`. Source, test and evidence are committed together; no provider, account or deployed environment was called.
 
@@ -10,11 +10,15 @@ The fixture mounts the actual NotePage, PageEditorView, CodeMirror editor and Co
 
 1. Candidate 1, commit `a458b04`: baseline 3/3 and current 19/19 passed. Independent review then found a queued outgoing draft could be dropped when navigation invalidated its UI owner after the debounce cleared. The original screenshots and logs remain in that commit.
 2. Candidate 2, inspected before browser execution: an immutable outgoing snapshot repaired that loss, but review found a second ordering gap. Reopening the same note created a new queue owner, so an older outgoing write could run after a newer reopened draft and overwrite it.
-3. Candidate 3: a private per-note promise queue registers immutable snapshots immediately across remounts; owner and queue cleanup compare request identity. UI/ref settlement remains ownership-fenced. Pending-debounce cleanup uses the same writer, and clean reopened coach/delete paths wait for outgoing writes. The independent reviewer found both prior defects resolved and no further blocking introduced defect. Thirty feature cases preserve the original nineteen and add navigation/unmount, rejected predecessors, same-note A→B→C→D ordering, distinct-note independence, and clean coach/delete waits. No fourth repair candidate is authorized; source and the committed test remain frozen after candidate 3.
+3. Candidate 3: a private per-note promise queue registers immutable snapshots immediately across remounts; owner and queue cleanup compare request identity. UI/ref settlement remains ownership-fenced. Pending-debounce cleanup uses the same writer, and clean reopened coach/delete paths wait for outgoing writes. The independent reviewer found both prior defects resolved and no further blocking introduced defect. Thirty feature cases preserve the original nineteen and add navigation/unmount, rejected predecessors, same-note A→B→C→D ordering, distinct-note independence, and clean coach/delete waits. Source and tests were frozen after candidate 3 until Amit approved AT-29 on 2026-10-22; that approval permits one additional scoped correction, recorded below.
 
-Current source blob: `fef2920792d718dd07c8855556450014b31413af`. Current test blob: `46617ece5085285b2a49910400dae1c9d9d4dff8`. The scratch static log filenames initially said candidate2; this ledger uses the corrected conservative candidate3 count.
+Candidate 3 source blob: `fef2920792d718dd07c8855556450014b31413af`. Candidate 3 test blob: `46617ece5085285b2a49910400dae1c9d9d4dff8`. The scratch static log filenames initially said candidate2; this ledger uses the corrected conservative candidate3 count.
 
-## Pre-existing A→B→A limit — reproduced on both sources
+4. Owner-approved AT-29, 2026-10-22: one additional scoped correction adds per-field edit revisions to the existing note owner and immutable save snapshots. A successful request clears a dirty field only when that field's revision and value still match. This preserves dirty-field isolation when only the other field changes. Two deferred title/body regressions were observed failing before the source edit, then all 32 focused cases passed. No further correction candidate is authorized by this approval.
+
+AT-29 source blob: `b9eb921f5f019689f530f2ac8e8ed4cb5420157f`. AT-29 test blob: `d4d8baad7ed35c2b05a4c38c96b973dcb98b7567`. Lock blob remains `aaa67ac9516b6a324de35af1771b3d1524713d19`.
+
+## Historical A→B→A limit — original and candidate 3
 
 Source comparison and the actual scratch browser comparison on 2026-10-21 found the following edge in both the saved original and candidate 3:
 
@@ -24,11 +28,29 @@ Source comparison and the actual scratch browser comparison on 2026-10-21 found 
 4. Resolve the first A save. Both implementations clear the title dirty flag solely because the current value equals the old snapshot, without checking its edit revision.
 5. The final debounce can see no dirty patch and submit no final A. The outstanding B write can leave B stored while the last typed value was A; a Saved indicator or reactive adoption can then conceal the missed edit.
 
-This is a pre-existing value-equality clearing defect, not a newly introduced queue defect. It still limits the ticket's stated newer-draft guarantee. No source/test repair was made after this finding and no fourth candidate is authorized. The minimum proposed correction would require the successful snapshot's edit revision to still be current before clearing dirty fields or showing Saved, with an A→B→A regression; this is a proposal only.
+This is a pre-existing value-equality clearing defect, not a newly introduced queue defect. It limited the ticket's stated newer-draft guarantee before AT-29. No source/test repair was made at that stage. The proposed revision-owned correction and regressions were subsequently authorized and are now recorded in the AT-29 section below.
 
-Both scratch runs reproduced the defect: final typed title A, submitted writes `[A, B]`, persisted title B. The original run took 28.78 s and candidate 3 took 13.56 s. Each exited 0 because its assertion deliberately verifies the observed defect; these are negative diagnostics, not correctness/acceptance passes. The scratch-only diagnostic uses the same actual editor fixture, preserves all thirty committed cases and does not replace an acceptance check. No screenshot was overwritten during this comparison. Both owned browser/server instances closed and their temporary fixture directories were removed. Candidate 3's thirty feature cases passed both in the earlier hosted CI job and in the local full test on 2026-10-22; no standalone focused run was repeated. The local full test failed/incompletely terminated after the unrelated KB66 wrapper stall, and local Playwright has three failures. Keep the draft blocked for merge until the unresolved limitation and remaining gates are addressed through the authorized workflow.
+Both scratch runs reproduced the defect: final typed title A, submitted writes `[A, B]`, persisted title B. The original run took 28.78 s and candidate 3 took 13.56 s. Each exited 0 because its assertion deliberately verifies the observed defect; these are negative diagnostics, not correctness/acceptance passes. The scratch-only diagnostic uses the same actual editor fixture, preserves all thirty committed cases and does not replace an acceptance check. No screenshot was overwritten during this comparison. Both owned browser/server instances closed and their temporary fixture directories were removed. Candidate 3's thirty feature cases passed both in the earlier hosted CI job and in the local full test on 2026-10-22; no standalone focused run was repeated. The local full test failed/incompletely terminated after the unrelated KB66 wrapper stall, and local Playwright has three failures. That candidate 3 draft remained blocked. AT-29 below records the subsequently authorized correction; current mandatory gates and review clearance remain required.
 
-## Results
+## AT-29 approved correction — 2026-10-22
+
+The title and body each retain their own last edit revision on the existing mounted note owner. A save snapshot captures both field revisions with its immutable values. A successful response may clear a field's dirty flag only if that field has not been edited since the snapshot and its value still matches. A→B→A therefore keeps the final A dirty even though it equals the first submitted A. An edit to the other field does not keep an otherwise successfully saved field dirty. The 500 ms debounce, per-note queue, mutation arguments and all previous ownership guards remain unchanged.
+
+The new tests use the actual mounted editor and deferred mutations. Each submits A, queues B, types A while its final debounce is pending, then resolves the first A. It must show no Saved state. After B settles the third immutable A request must exist, stored B must not replace the visible A, and Saved appears only after the third A persists. Both fields assert exact [A, B, A] mutation arguments. The 30 existing cases and every existing deadline are unchanged; this is one approved source correction.
+
+| Command | AT-29 result |
+| --- | --- |
+| Bun version | 1.3.9. |
+| `bun test tests/unit/tempo-page-error-recovery.test.tsx --test-name-pattern 'deferred (title|body) A to B to A'` before source edit | Expected RED, exit 1; 0 pass, 2 fail, 30 filtered out, 4 expectations, 21.25 s. Both failures are the expected premature Saved count 1 versus 0. This diagnostic filter does not replace the full focused run. [Log](at29-red.log), [receipt](at29-red.json), [lossless output](at29-red.log.raw.gz). |
+| `bun test tests/unit/tempo-page-error-recovery.test.tsx` after correction | Exit 0; 32 pass, 0 fail, 130 expectations, 136.95 s. The original 30 remain passing. [Log](at29-focused.log), [receipt](at29-focused.json), [lossless output](at29-focused.log.raw.gz). |
+| Scoped Biome lint on source and test, from apps/web | Exit 0; two files checked, no fixes. [Log](at29-scoped-lint.log). |
+| `git diff --check` | Exit 0 on this scoped correction and evidence. |
+| Mandatory install, repository lint/typecheck/full tests, four scans/notices, repository Playwright and placeholder build on AT-29 | UNKNOWN: pending serialized heavy-slot grant. Historical candidate 3 receipts below do not validate this changed source/test. |
+| Current remote CI and CodeRabbit | UNKNOWN: pending checks/review on the new commit. |
+
+Readable AT-29 logs normalize only output whitespace; byte-exact originals are retained losslessly with [SHA256 mapping](at29-output-sha256.json). The focused run's afterAll completed without cleanup error. At 06:56:28 UTC, no live root/fixture processes or temporary page fixture directories remained; the browser slot was released. [Cleanup receipt](at29-focused-cleanup.json). No live/preview URL, real account, provider or environment was used.
+
+## Historical candidate 1–3 results
 
 | Command | Result |
 | --- | --- |
@@ -146,6 +168,21 @@ The full local test captured these eight images from frozen candidate 3 after su
 | 1280 / HE / light | [Candidate 3](candidate-3-after-1280-he-light.png) |
 | 1280 / HE / dark | [Candidate 3](candidate-3-after-1280-he-dark.png) |
 
+## AT-29 focused screenshots
+
+The 32-case AT-29 focused run captured the actual editor recovery matrix below. Candidate 1 and candidate 3 images remain preserved under their own filenames. Fictional fixture boundaries do not prove authenticated persistence.
+
+| Width / language / theme | AT-29 after |
+| --- | --- |
+| 390 / EN / light | [AT-29](at29-after-390-en-light.png) |
+| 390 / EN / dark | [AT-29](at29-after-390-en-dark.png) |
+| 390 / HE / light | [AT-29](at29-after-390-he-light.png) |
+| 390 / HE / dark | [AT-29](at29-after-390-he-dark.png) |
+| 1280 / EN / light | [AT-29](at29-after-1280-en-light.png) |
+| 1280 / EN / dark | [AT-29](at29-after-1280-en-dark.png) |
+| 1280 / HE / light | [AT-29](at29-after-1280-he-light.png) |
+| 1280 / HE / dark | [AT-29](at29-after-1280-he-dark.png) |
+
 ## Preserved diagnostic failures
 
 Initial scoped type diagnostic (full output in [scoped-types-initial.log](scoped-types-initial.log)):
@@ -168,6 +205,6 @@ No product check was weakened. Browser cleanup closed owned pages, browser and s
 
 - Exact cause of the preview red three-error badge.
 - Authenticated persistence, deployed preview behavior and real-device screen-reader behavior.
-- Current remote CI and CodeRabbit disposition. Local commands are recorded above: the full test is failed/incomplete on the KB66 wrapper stall and local Playwright has three timeout failures. Their underlying causes remain unverified. The earlier hosted global test job is red on KB67's hook timeout.
+- Current mandatory repository gates, remote CI and CodeRabbit on AT-29 remain pending. Historical candidate 3 local commands failed/incompleted on the KB66 wrapper stall and three Playwright timeouts; their underlying causes remain unverified. The earlier hosted candidate 3 global test job was red on KB67's hook timeout.
 - Existing wiki-link creation and broader unmount recovery remain outside this ticket. Cleanup changed only as necessary to prevent the introduced write-order/lost-draft regressions. No sidebar/codec, checkbox, route, backend, model, schema or environment change.
 - Older overlapping #1053/#1081 and held migration drafts #795/#805 were left untouched and need later reconciliation. KA #1101 expressly excludes NotesScreen. Protected #1193/#1198 and held #1110/#1112/#1129 were untouched.

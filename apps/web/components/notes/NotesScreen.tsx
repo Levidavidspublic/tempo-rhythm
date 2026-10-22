@@ -291,6 +291,8 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     noteId: string;
     alive: boolean;
     revision: number;
+    titleRevision: number;
+    bodyRevision: number;
     save: Promise<void> | null;
     saveRevision: number;
     savedRevision: number;
@@ -306,7 +308,7 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
   // A completion belongs to this mounted note, not merely to a matching note id.
   // Layout cleanup also fences settlements during removal and StrictMode replay.
   useLayoutEffect(() => {
-    const owner: Owner = { noteId, alive: true, revision: 0, save: null, saveRevision: 0, savedRevision: -1, pin: false, deleting: false, deleteIntent: 0 };
+    const owner: Owner = { noteId, alive: true, revision: 0, titleRevision: 0, bodyRevision: 0, save: null, saveRevision: 0, savedRevision: -1, pin: false, deleting: false, deleteIntent: 0 };
     ownerRef.current = owner;
     setErrors({ save: false, pin: false, delete: false });
     setBusy({ save: false, pin: false, delete: false });
@@ -365,10 +367,12 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     savedTitle: titleRef.current,
     savedBody: bodyRef.current,
     revision: owner.revision,
+    titleRevision: owner.titleRevision,
+    bodyRevision: owner.bodyRevision,
     patch: notePatch(edits.current, titleRef.current, bodyRef.current),
   });
   const saveNow = async (owner: Owner, snapshot = saveSnapshot(owner)) => {
-    const { savedTitle, savedBody, revision, patch } = snapshot;
+    const { savedTitle, savedBody, revision, titleRevision, bodyRevision, patch } = snapshot;
     // Joining this revision propagates its rejection without silently retrying it.
     if (owner.save && revision <= owner.saveRevision) return owner.save;
     if (revision <= owner.savedRevision || (patch.title === undefined && patch.body === undefined)) {
@@ -386,8 +390,9 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
         await updateNote({ noteId: owner.noteId as Id<"notes">, ...patch });
         owner.savedRevision = revision;
         if (!owns(owner)) return;
-        if (patch.title !== undefined && titleRef.current === savedTitle) edits.current.title = false;
-        if (patch.body !== undefined && bodyRef.current === savedBody) edits.current.body = false;
+        // Equal text can be a newer A→B→A edit; only its own revision may clear dirty state.
+        if (patch.title !== undefined && owner.titleRevision === titleRevision && titleRef.current === savedTitle) edits.current.title = false;
+        if (patch.body !== undefined && owner.bodyRevision === bodyRevision && bodyRef.current === savedBody) edits.current.body = false;
         if (!edits.current.title && !edits.current.body) {
           setSaveState("saved");
           markError(owner, "save", false);
@@ -484,7 +489,11 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     setTitle(value);
     titleRef.current = value;
     edits.current.title = true;
-    if (ownerRef.current) ownerRef.current.revision += 1;
+    const owner = ownerRef.current;
+    if (owner) {
+      owner.revision += 1;
+      owner.titleRevision = owner.revision;
+    }
     scheduleSave();
   };
 
@@ -492,7 +501,11 @@ export function NotePage({ noteId, backHref, lead, canDelete }: NotePageProps) {
     setBody(value);
     bodyRef.current = value;
     edits.current.body = true;
-    if (ownerRef.current) ownerRef.current.revision += 1;
+    const owner = ownerRef.current;
+    if (owner) {
+      owner.revision += 1;
+      owner.bodyRevision = owner.revision;
+    }
     scheduleSave();
   };
 

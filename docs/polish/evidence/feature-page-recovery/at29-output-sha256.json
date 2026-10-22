@@ -1,0 +1,23 @@
+[
+  {
+    "file": "at29-red.log",
+    "originalSha256": "37499515d1e12c89cce824cf1a3bd59a79b03fb036cff13baa10de5b2998a3e6",
+    "rawGzip": "at29-red.log.raw.gz",
+    "originalBytes": 3698,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-focused.log",
+    "originalSha256": "0bd2eca003261c07818f217e16fd9bf75e1e1624116f8a253fc806b2643b6d5d",
+    "rawGzip": "at29-focused.log.raw.gz",
+    "originalBytes": 3699,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  },
+  {
+    "file": "at29-scoped-lint.log",
+    "originalSha256": "e3e5042445aefece166a2dbe0e75481879c8a4cba07b237191c1d3970ea066e8",
+    "rawGzip": "at29-scoped-lint.log.raw.gz",
+    "originalBytes": 44,
+    "normalization": "CRLF/CR to LF, trailing spaces/tabs removed, terminal blank lines reduced to one final newline"
+  }
+]

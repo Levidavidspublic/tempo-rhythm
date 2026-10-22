@@ -204,6 +204,45 @@ describe.serial("page action recovery", () => {
       await browserExpect(p.locator('[data-state="saved"]')).toBeVisible();
       expect(await p.evaluate(() => window.pageRecovery.notes.a.body)).toBe("Second draft.");
     }, 30_000);
+    for (const field of ["title", "body"] as const) {
+      test(`deferred ${field} A to B to A keeps the final edit dirty until its own save`, async () => {
+        const p = await open();
+        await p.clock.install();
+        await mode(p, "update", "defer");
+        const first = "First draft A.";
+        const middle = "Middle draft B.";
+        const change = async (value: string) => {
+          if (field === "title") await p.getByRole("textbox", { name: "Note title" }).fill(value);
+          else await edit(p, value);
+        };
+        const current = () => field === "title"
+          ? p.getByRole("textbox", { name: "Note title" }).inputValue()
+          : p.evaluate(() => window.pageRecovery.body());
+        await change(first); await p.clock.runFor(500); await calls(p, "update", 1);
+        await change(middle); await p.clock.runFor(500); await calls(p, "update", 1);
+        // Leave the final A inside its debounce when the first A settles.
+        await change(first);
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await calls(p, "update", 2);
+        expect(await current()).toBe(first);
+        await browserExpect(p.locator('[data-state="saved"]')).toHaveCount(0);
+        await p.clock.runFor(500); await calls(p, "update", 2);
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await calls(p, "update", 3);
+        expect(await p.evaluate((field) => window.pageRecovery.notes.a[field], field)).toBe(middle);
+        expect(await current()).toBe(first);
+        await browserExpect(p.locator('[data-state="saved"]')).toHaveCount(0);
+        expect(await p.evaluate(() => window.pageRecovery.calls.map((call) => call.args))).toEqual([
+          { noteId: "a", [field]: first },
+          { noteId: "a", [field]: middle },
+          { noteId: "a", [field]: first },
+        ]);
+        await p.evaluate(() => window.pageRecovery.settle("update", true));
+        await browserExpect.poll(() => p.evaluate((field) => window.pageRecovery.notes.a[field], field)).toBe(first);
+        await browserExpect(p.locator('[data-state="saved"]')).toBeVisible();
+        await p.clock.runFor(500); await calls(p, "update", 3);
+      }, 30_000);
+    }
     test("old-note failure cannot alter another note's current state", async () => {
       const p = await open();
       await mode(p, "update", "defer");
