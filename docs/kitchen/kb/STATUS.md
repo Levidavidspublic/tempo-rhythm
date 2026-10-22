@@ -1,5 +1,25 @@
 # KB finish status
 
+## WALK — Current checkpoint, 22 October 2026, 09:38 UTC
+
+No new merge; integration remains7d1a0f6. Lane1: **6 closed / 56 open issues; 11 merged / 26 open PRs**. Lane2: **0 closed / 27 open issues; 0 merged / 25 open PRs**. **15 current owner actions** in NEEDS-AMIT; historical items do not add to that count.
+
+- **Lane1 shared/KB:** #1280 evidence-only362f917 publishes the completed c8cd3e8 mandatory run: install/lint/typecheck/scans/build pass; full3484pass/12fail/3todo, own69pass; exactE2E23pass/5fail/89skip. No merge while those failures remain. KB64's nine closed-browser errors follow18passing cases with no preceding assertion timeout; cause UNKNOWN, no OOM evidence. Shared #1203 remains frozen after the authorized extra pass failed. Architecture labels/dependencies still gate #1262/#1282/#1269.
+- **Lane2 new drafts:** #1295 payment parser (issue1292) now has actual-checkout28pass/0fail/253assertions; all9old+19new cases unchanged, evidence pusheddf11c1d. Earlier scratch two child timeouts remain recorded, cause UNKNOWN. Payment processing false/catalog empty. #1296 optional real onboarding goal (issue1293) pushed1522103: new14DOM + existing25cases pass; standalone root-test Biome reports5Bun-global errors; actual mandatory checkout sequence is now running, required-lint result not inferred from that advisory command.
+- **Payment correctness:** issue1294 is held before implementation. Event-only admission cannot safely cover refunds/overlapping entitlements. New issue1297 prepares a bounded authoritative snapshot parser/reader with no handler/schema/account mutation or live customer request. Checkout remains OFF; IDs remain Amit's later setup.
+- **Other feature gates:** live transport #1291 remains frozen on mounted setup/type failures; bridge #1289 has synthetic-fixture scan failures; composer #1279 and beta request #1283 have final mounted failures. Queue #1284 and pricing #1285 have inherited schema/scope blockers (queue also has a KB67 timeout). Plan #1211's current scan flags synthetic receipt hashes; remediation requires another attempt exception. No guard waiver.
+- **Actual review:** #1210/#1211/#1277/#1284/#1285 current CodeRabbit statuses are draft-skipped, not clearance. Voice research #1256 has actual clearance at45e55f7, but its hosted Test remains in progress (started08:40UTC); no merge while pending.
+- Four worktrees: onboarding goal, payment parser, completed schema compatibility and frozen Plan. No fifth checkout; heavy/browser validation is serialized. Source-only helpers prepare in scratch.
+
+### Done
+Approvals applied; scoped repairs, new implementations, passing focused evidence, failed receipts, drafts and source-backed gap analysis pushed. Both lanes remain unfinished. Production, protected PRs and environment values unchanged; no paid provider/customer call or deployment.
+
+### Needs Amit (AT, in order)
+Architecture labels; harness retry; model settings; search setup/cap; payment IDs; Hebrew clinical grounding; Executor setup; before-production native/device read; gateway fixture remediation; router repair; composer fixture repair; bridge fixture remediation; voice transport fixture/type repair; Plan evidence/history remediation; beta request fixture repair. Exact actions/questions are in NEEDS-AMIT.md.
+
+### UNKNOWN
+Final onboarding mandatory results; pending current reviews/CI; browser closure cause; actual preview and real-device behavior; authoritative provider reconciliation ordering/identity; model account capability, service cost enforcement and live voice conformance.
+
 ## WALK — Current checkpoint, 22 October 2026, 09:05 UTC
 
 No new merge. Lane 1 issues **6 closed / 56 open**, PRs **11 merged / 26 open**. Lane 2 issues **0 closed / 23 open**, PRs **0 merged / 23 open**. NEEDS-AMIT has **13 current actions**; historical entries are superseded, not additional questions.
