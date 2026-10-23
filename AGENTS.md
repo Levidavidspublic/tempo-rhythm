@@ -131,3 +131,33 @@ For any agent a person runs by hand, such as Freebuff or OpenCode. The router se
 7. **Stay in scope:** only touch the ticket's SCOPE folders. **No Convex edits** (`convex/`, schema, functions, env, deployments) unless the issue is a **Ticket 0** (label `convex-arch`).
 8. **When you're stuck:** comment on the issue with what you tried, then stop. Don't guess at scope.
 9. **Never pay-per-use:** Freebuff on its free tier only; OpenCode on its free models or the Go plan only (Zen bills per request, so don't use it without Amit's OK). No metered API keys. Never print secrets.
+
+## Specs (required before any build)
+
+Full method: **include.md** (repo root). Read it before you write a spec or build from one.
+
+The short rules:
+
+1. **No guessing.** Missing fact → write `UNKNOWN — <what is missing>` and ask. Never invent.
+2. **One unit = one run.** Software: one feature, about 3 files + 1 test. Video: one shot, 2–8 s. Writing: one scene.
+3. **Use the unit template** (include.md, section 4) for every spec. No free-form specs.
+4. **Pass/fail acceptance checks only.** No judgement words like "clean", "smooth", "nice".
+5. **Name real sources** for every unit: Mobbin screen, screenshot path, reference frame, bible entry.
+6. **Behaviour, not framework.** Specs must survive a rewrite to another framework or database.
+7. **Two passes.** Pass 1 clunky (works), pass 2 polished (matches the references exactly). Never in the same run.
+8. **Clean room.** Describe behaviour from public screens. Never copy code, assets, logos, brand names, music or text.
+9. **Newest wins.** Update in place; old line goes under "Supersedes" with its date.
+10. **No secrets in specs.** Name the variable and where it lives, never the value.
+
+## Before you build from a spec
+
+- [ ] The spec has every template field filled or marked UNKNOWN.
+- [ ] Its sources open.
+- [ ] Its acceptance checks are runnable.
+- [ ] You know which pass (1 or 2) this run is.
+
+If any box can't be ticked, stop and comment on the ticket instead of building.
+
+## When behaviour changes
+
+Change the spec in the same pull request as the code, so they never drift apart.
