@@ -4,6 +4,7 @@
 > **Built from:** `04-PRD-TEMPO-FLOW.md` (16 Sep), `01-PRD-PATCH.md` (20 Sep, with the 30 Sep decision update), and Amit's interview of 5 Oct 2026. Where they disagree, this file wins.
 > Items in the April master document that none of these carry forward count as superseded.
 > **Precedence:** HARD_RULES > ticket > PRD > chat prompt.
+> **Amendment (8 Oct 2026):** see §13. It records the owner's clarified daily-life-support direction and a bounded weekend target, and it marks which earlier statements it supersedes. Everything else in this file is unchanged history.
 > **Tags:** every feature carries one horizon: **[NW]** next week · **[MVP]** · **[END]** end product. `[EXTRAPOLATED]` = filled in by Claude, for Amit to confirm. `UNKNOWN` = not verifiable from the sources or official docs.
 
 ## 0. Verdict
@@ -57,6 +58,8 @@ It writes notes, adds tasks to Today, and builds new templates and modules, the 
 9. **Manual check:** one live voice round trip in English and one in Hebrew, each including one interruption and one action ("add X to today").
 
 **Not next week:** the native app, billing, nags, the study track and connectors.
+
+> *8 Oct: the weekend target in §13.2 is a narrower, dated slice. It does not replace this exit check.*
 
 ### 3.2 MVP [MVP] — the minimum real product [EXTRAPOLATED boundary]
 
@@ -147,7 +150,7 @@ The full model is in §5.
 | F-50 | One memory adapter on Convex (remember, recall, context, forget, export) over the existing `memories` table. No outside memory engine. Recall searches by meaning and by keyword, and the coach can also search the user's past chats (Convex Agent component, hybrid search across threads). | NW (recall used by the coach) | 20 Sep ruling; Amit 5 Oct; Convex Agent docs |
 | F-51 | **Memory import:** upload or paste your ChatGPT or Claude memory. Tempo shows each item to keep, edit or drop, and saves the kept items. | NW | Amit 5 Oct |
 | F-52 | See and forget memories; export all memories as markdown. | MVP | 04f spec; patch 7 |
-| F-53 | Import of ChatGPT, Claude or Markdown content (not just memory). | END | 16 Sep SHOULD |
+| F-53 | Import of ChatGPT, Claude or Markdown content (not just memory). *(8 Oct: reviewed-import rules in §13.3, R-03.)* | END | 16 Sep SHOULD |
 | F-54 | **Life graph:** people, projects, goals, places and habits, linked. Links the user wrote (`[[links]]`, blocks) are kept apart from links the AI guessed, which are marked as guesses. Search by meaning + keyword + links + time. This is a Graphify / Understand Anything-style graph, but for life projects instead of code, built on Convex. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
 | F-55 | **Reflect:** a scheduled pass turns many memories into observations ("gym slips after late nights"), the way Hindsight's reflect step does. Observations are shown to the user and can be deleted. | MVP [EXTRAPOLATED horizon] | Amit 5 Oct |
 
@@ -186,7 +189,7 @@ The full model is in §5.
 | ID | Feature | Horizon | Source |
 |---|---|---|---|
 | F-100 | Connectors through Executor (executor.sh) behind an adapter: reads plus light writes, heavy writes hard-refused, every external write confirmed. A commitment verified from real data. | END (Gen 1) | patch 6 |
-| F-101 | MCP server + CLI + REST. | END (Gen 1) | 16 Sep §4 |
+| F-101 | MCP server + CLI + REST. *(8 Oct: an inbound Tempo MCP already exists in the repo; its extension with shared memory is §13.3, R-08.)* | END (Gen 1) | 16 Sep §4 |
 | F-102 | Key vault: BYOK with any OpenAI-compatible key plus local endpoints, encrypted per user. | END (Gen 1) | 16 Sep §4 |
 | F-103 | Bring-your-own ChatGPT subscription sign-in, only in the shape that passes the first-party test. Terms of service: UNKNOWN. | END | 3 Oct |
 
@@ -266,6 +269,8 @@ Tempo does the same for a daily planner, with one deliberate difference: **data 
 
 **Gate:** DeepInfra requires a written Service Order before any paid tier (16 Sep §7). Dev and beta are fine.
 
+> *8 Oct: for sensitive personal data, a model service is not accepted just because it is configured here. See §13.3, R-09 and gate G-1.*
+
 ## 8. Billing and distribution
 
 Tiers, prices and unit economics are as in `04-PRD-TEMPO-FLOW.md` §8 (16 Sep), unchanged: every tier passes the 30% floor; the $1 trial is knowingly priced as acquisition spend.
@@ -316,6 +321,64 @@ Channels: web PWA first (MVP), then APK + TestFlight (Gen 1), then the stores (V
 - DeepInfra embeddings catalogue; Graphify, Understand Anything and Hindsight READMEs (read 5 Oct)
 - Deepgram changelog, models-and-languages page and token-auth guide; NVIDIA Nemotron Voicechat model card; DeepInfra DeepSeek V4.1 Flash and Chatterbox pages (read 5 Oct)
 - Amit's interview, 5 Oct 2026
+- Owner request for the 8 Oct amendment (§13); generic requirements only, no private material
+
+## 13. Amendment — 8 October 2026
+
+> **Dated:** 8 Oct 2026. **Owner request:** Amit Levin. **Status:** product requirements and targets only. The new requirements here are proposed targets, not built features; the only exception is a capability this section explicitly identifies as already existing (for example the inbound Tempo planner MCP in R-08 and F-101). The proposed shared-memory extension of that MCP is not built. Nothing here says a feature is fully ready, newly verified, compliant or clinically effective. Earlier sections stay as written; the pointers added above mark the only statements this amendment touches.
+> **Status words:** **Target** = intended, not delivered. **Future** = real requirement, no date. **Verified** = proven by a recorded check; this amendment marks nothing Verified. **UNKNOWN** = not established.
+> **Privacy of this file:** generic product requirements only. No personal medical reports, family stories, research membership, book text or identifiable private third parties belong here.
+
+### 13.1 Direction
+
+Tempo Flow focuses on daily-life support for people with ADHD, autism and dyslexia. The tone is warm, accepting and capability-oriented. It promotes independence and human relationships and does not replace them. This narrows the emphasis of §1 and §2; "a coach, not a therapist" still holds. Other adaptations are **Future** forks, outside this focus. The current LICENSE is Business Source License 1.1; an open-source or fork-sharing licence is a future choice that is still undecided. This amendment changes no LICENSE and gives no legal guarantee about what others may do with the code. A permissioned book may inform source-grounded coaching only after the text is received and permission is confirmed. No teachings are invented before then.
+
+### 13.2 Weekend target (9–11 Oct), separate from long-term scope
+
+These are dated targets. They are not delivered work and not a promise that all of them finish.
+
+| Date | Target |
+|---|---|
+| 9 Oct | Critique of the actual screens. The critique report is maintained separately. This PRD creates no screenshots and makes no claim about the UI. |
+| 10 Oct | Preview target. |
+| 11 Oct | Demonstration. |
+
+**Weekend acceptance, in priority order.** Each item is a **Target** and counts only when a recorded check passes.
+
+1. Signed-in planning and Today as Markdown.
+2. Persistent task add and tick.
+3. A real coach reply from the runtime model, not a canned one (§3.1 item 3).
+4. An explicit, confirmed coach action with Undo (F-22, F-131).
+5. Source-attributed, reviewed memory import (F-51, R-03).
+6. A narrow voice or focus demonstration, **only if genuinely verified.** Real audio needs a tested browser and source, with English and Hebrew evidence. Unsupported capture is stated openly, and the item is dropped from the demonstration.
+
+**Not weekend promises:** connectors, inbox breadth, scheduled sync, meeting capture, book-based adaptations, and every §13.3 item not listed above.
+
+### 13.3 Requirements (long-term unless §13.2 says otherwise)
+
+| ID | Requirement | Status |
+|---|---|---|
+| R-01 | **Pages and templates.** Pages are Markdown-first. The AI can create editable templates from a description, habits or an optional sketch. Celebrations are optional and customizable, with reduced-motion and quiet alternatives. | Future (extends F-02, F-23, F-40) |
+| R-02 | **One set of records.** Day, week, month, goals, habit-streak and to-do views read and write the same records. No duplicated state between views. | Future (extends F-07, F-10) |
+| R-03 | **Personal memory.** Built-in, tagged, searchable memory on Convex spanning plans, journals and conversations. Importing a ChatGPT or Claude export keeps provenance, shows candidates for review, saves only on explicit confirmation, deduplicates, and allows editing and deletion. Deleted items are excluded from retrieval. Retrieval is bounded: no "infinite memory", and no synchronization with private accounts Tempo cannot legitimately reach. | Reviewed import: weekend Target (F-51). Rest: Future (extends F-50–F-52) |
+| R-04 | **Second-brain inbox.** Save links, articles, PDFs, and YouTube or Instagram references. Ingestion, transcripts, timestamped notes and Q&A happen only where the content and a supported means of access are available. Web first; mobile share later. | Future |
+| R-05 | **Class and meeting capture.** The user explicitly starts and stops it. Notes and Q&A are grounded in the captured source, and action items are proposed for the user to accept. Raw audio is transient at first. An optional accessibility-evaluation upload may inform instruction or coaching preferences that the user reviews. No diagnosis and no claim of clinical effectiveness. | Future |
+| R-06 | **Integrations and money.** Slack, Gmail, Outlook and WhatsApp need supported APIs, explicitly selected access and secure setup. Receipt and bill capture and gentle, user-controlled budget check-ins are in scope. Tempo executes no financial actions. | Future (relates to F-100) |
+| R-07 | **Onboarding sync.** Onboarding may offer a daily, weekly or monthly sync, only for supported sources the user selects and Tempo can legitimately access. | Future |
+| R-08 | **Inbound MCP.** Extend the existing inbound Tempo MCP with bounded shared-memory read and write next to the planner tools, with scopes, confirmation for writes and tenant isolation. No outbound Basic Memory dependency. Tempo does not pretend to have live access to a user's private ChatGPT or Claude memory. | Future (extends F-101) |
+| R-09 | **Model services for sensitive data.** The default service must be verified as EU-hosted and not training on user data. The current DeepInfra setup (§7) is **not** asserted to meet this because it exists. A user may choose their own API or subscription provider, which needs supported authentication, a privacy disclosure and consent. Fail closed: sensitive data goes to no service until its provider, region and no-training eligibility are verified in writing, and there is no silent fallback across a privacy boundary. DeepInfra's standard no-training and no-content-retention statements ([data privacy](https://docs.deepinfra.com/account/data-privacy)) do not establish EU residency; its [privacy policy](https://deepinfra.com/privacy) and [terms](https://deepinfra.com/terms) permit US processing or relocation absent an agreement. Self-hostable, MIT-licensed Chatterbox weights do not make DeepInfra-hosted inference EU-resident. Deepgram EU and no-training handling needs the EU endpoint ([regional endpoints](https://developers.deepgram.com/reference/regional-endpoints)) and a documented model-improvement opt-out on every request ([your data](https://developers.deepgram.com/trust-security/your-data)). Deepgram is proprietary; whether the owner's open-weight requirement covers speech-to-text is an unresolved decision. Until a sensitive-data route qualifies, tests use synthetic data only. No provider implementation or certification is claimed. This amendment authorizes no purchase, hosting or grant. No provider guarantees are invented; Gemini is not described as open-weight. | Gate G-1; no compliance claim |
+
+### 13.4 Unresolved gates and decisions
+
+- **G-1. Provider privacy verification.** Check EU hosting and no-training terms in writing for each model service before any sensitive data is sent to it. A gate, not an implementation claim. Status: **UNKNOWN**.
+- **G-2. Voice evidence.** Tested browser and capture source, plus English and Hebrew results. Status: **UNKNOWN**.
+- **G-3. Integration access.** For each of Slack, Gmail, Outlook and WhatsApp: a supported API, an access route and secret setup. Status: **UNKNOWN**.
+- **G-4. Inbox source access.** Which links, PDFs, transcripts and social references Tempo may lawfully and technically read. Status: **UNKNOWN**.
+- **G-5. Shared-modification licence.** The repository's current LICENSE is Business Source License 1.1. The open-source or fork-sharing licence Tempo wants is a future choice that is still undecided. This PRD changes no LICENSE and gives no legal guarantee about what others may do with the code.
+- **G-6. Book adaptation.** Depends on receipt of the book and on permission. Not started.
+- **G-7. Retention.** How long raw audio and imported source text are kept, and the exact deletion and retrieval-exclusion behaviour. Status: **UNKNOWN** beyond the rules above.
+- **G-8. Optional Sign in with ChatGPT (subscription login).** Unresolved. The official documentation covers open-source and local-app use and directs paid or remotely hosted apps to an interest route. Open-source status alone does not make this hosted Tempo app eligible. The preview gives no access to private ChatGPT conversations or account memory, and offers no audio or video input or transcription API. Not a promised weekend feature. No OAuth setup, legal acceptance, entitlement assertion or service call is made. Sources: https://developers.openai.com/siwc/token-sharing-open-source and https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations . Status: **UNKNOWN**.
+- **Verification status:** this amendment verifies nothing. No item in §13 is Verified.
 
 
 ---
