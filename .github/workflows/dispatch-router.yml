@@ -270,7 +270,7 @@ jobs:
           /usr/local/bin/tempo-safe-git status >/dev/null
       - name: Run Claude Code on the ticket
         id: claude_code
-        uses: anthropics/claude-code-action@97c53473391bff1901034d4b454b5bac7ab7a029 # v1
+        uses: anthropics/claude-code-action@ed670b4cf9de2a5a570d130d2f6197b9e543cd64 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # No track_progress: on issue events it forces tag mode, whose built-in prompt only
