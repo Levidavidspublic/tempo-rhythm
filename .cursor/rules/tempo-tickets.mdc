@@ -64,3 +64,5 @@ If the ticket is the last `-x` sibling in a cluster, flip the parent macro row i
 - Mixing two tickets in one branch — open a second PR instead.
 - Editing the ticket file in the `tempo-rhythm` working tree without `cd`-ing into `docs/brain/`.
 - Skipping `Done checklist` and shipping the PR anyway.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

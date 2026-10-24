@@ -93,3 +93,5 @@ alwaysApply: true
 
 ### Template C (אחרי Plan):
 "אישרתי את התוכנית. בצע שלב [N]."
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

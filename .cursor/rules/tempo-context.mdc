@@ -24,3 +24,5 @@ alwaysApply: true
   - Long-running compute → `zo` (fallback: `cursor-cloud-2`)
   - Physical / identity / payment → `human-amit` only
 - **If rules conflict:** `docs/HARD_RULES.md` wins over PRDs, tickets, and chat.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

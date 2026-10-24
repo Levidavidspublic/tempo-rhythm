@@ -62,3 +62,5 @@ Large changes belong in a PR. One logical change per PR when possible. Agents ne
 - Mark `done` with red CI.
 - Mark `done` with an unmerged PR (use `in-review` instead).
 - Edit `docs/brain/` from the parent tree.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

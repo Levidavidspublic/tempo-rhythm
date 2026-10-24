@@ -50,3 +50,5 @@ Use one of:
 - `twin`, `pokee`, `zo`, and `human-amit` tasks are off-limits to code agents.
 - Never ask a human to do work labeled for a code agent.
 - Never have a code agent click a web dashboard — that is Twin's job.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

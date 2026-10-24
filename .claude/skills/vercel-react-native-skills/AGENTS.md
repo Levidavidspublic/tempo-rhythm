@@ -2895,3 +2895,5 @@ native app.
 6. [https://legendapp.com/open-source/legend-list](https://legendapp.com/open-source/legend-list)
 7. [https://github.com/nandorojo/galeria](https://github.com/nandorojo/galeria)
 8. [https://zeego.dev](https://zeego.dev)
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.

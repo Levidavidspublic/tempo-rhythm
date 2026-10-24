@@ -81,3 +81,5 @@ Assume the session may crash and resume. On resume:
 - `git status` each worktree to see what's staged.
 - Read the ticket file's frontmatter to see where you left off.
 - Do NOT regenerate work already committed.
+
+Global rules: C:\Users\User\agent-system\SYSTEMS.md (v1). This project's rules win inside this project.
