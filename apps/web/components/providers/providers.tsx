@@ -5,15 +5,15 @@ import { ConvexReactClient, useConvexAuth } from "convex/react";
 import type React from "react";
 import { useClearTabStateOnSignOut } from "@/lib/tab-state";
 
-// אתחול לקוח Convex עם כתובת השרת
+// Initialize the Convex client with the server URL
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 interface ProvidersProps {
   children: React.ReactNode;
 }
 
-// רכיב ספקים (Providers) העוטף את האפליקציה
-// מספק את הקונטקסט של Convex Auth לכל הרכיבים בתוך האפליקציה
+// Providers component that wraps the application
+// Provides the Convex Auth context to every component in the application
 export function Providers({ children }: ProvidersProps) {
   return (
     <ConvexAuthNextjsProvider client={convex}>
