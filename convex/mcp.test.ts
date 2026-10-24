@@ -330,4 +330,59 @@ describe("mcp tools", () => {
 			}),
 		).rejects.toThrow("Unknown timezone");
 	});
+
+	test("today_plan_set writes and patches one plan", async () => {
+		const ctx = ctxFor(A);
+		const task = await run(mcpTools.runWriteTool, ctx, {
+			userId: A,
+			name: "task_create",
+			args: { title: "top task" },
+		});
+		const first = await run(mcpTools.runWriteTool, ctx, {
+			userId: A,
+			name: "today_plan_set",
+			args: {
+				date: "2026-10-06",
+				timezone: "Asia/Jerusalem",
+				intention: " Ship calmly ",
+				topTaskIds: [task.task.id],
+				energy: "high",
+			},
+		});
+		expect(first.plan).toEqual({
+			status: "draft",
+			intention: "Ship calmly",
+			energy: "high",
+			reflection: null,
+		});
+
+		await run(mcpTools.runWriteTool, ctx, {
+			userId: A,
+			name: "today_plan_set",
+			args: { date: "2026-10-06", intention: "Patched" },
+		});
+		const plans = await ctx.db.query("dayPlans").collect();
+		expect(plans).toHaveLength(1);
+		expect(plans[0]).toMatchObject({
+			intention: "Patched",
+			energy: "high",
+			topTaskIds: [task.task.id],
+		});
+	});
+
+	test("today_plan_set refuses a foreign top task", async () => {
+		const ctx = ctxFor(A, [B]);
+		const foreign = await run(mcpTools.runWriteTool, ctx, {
+			userId: B,
+			name: "task_create",
+			args: { title: "private" },
+		});
+		await expect(
+			run(mcpTools.runWriteTool, ctx, {
+				userId: A,
+				name: "today_plan_set",
+				args: { date: "2026-10-06", topTaskIds: [foreign.task.id] },
+			}),
+		).rejects.toThrow("Task not found");
+	});
 });
