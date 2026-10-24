@@ -26,7 +26,7 @@ The button above still works exactly as before.
 
 Good to know:
 - `go` releases the commit named in the comment. If integration moves, wait for the new comment, then comment `go` again.
-- If Vercel did not build the latest commit (no app change, for example only docs or workflows), preview acceptance can't run, so `go` is refused. Use the button: it tests the integration preview in that case.
+- If Vercel did not build the latest commit (no app change, for example only docs or workflows), preview keeps serving the last app build, which has the same app code. Preview acceptance tests that build, after checking that it is an earlier integration commit and that none of the app paths differ.
 - Each check sends one coach message on preview (a little provider credit).
 - One-time setup: the `FACTORY_BATCH_TOKEN` token also needs **Actions: Read and write**. It starts the release and the preview acceptance as you.
 

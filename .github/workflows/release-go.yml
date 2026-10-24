@@ -45,7 +45,17 @@ permissions:
 
 concurrency:
   # Candidate runs: the newest wins. Comment runs: one group per comment, never cancelled (the go job has its own lock).
-  group: ${{ github.event_name == 'issue_comment' && format('release-go-comment-{0}', github.event.comment.id) || 'release-go-candidate' }}
+  # Only a run that will really check a candidate (the same trigger test as prep's `if`, minus the pause check) joins
+  # release-go-candidate. Every integration push fires this workflow twice (Security, factory-release-pr); a trigger
+  # that will skip gets its own group, so it can't cancel the real candidate run (it did on fed48cbb, 19 Oct).
+  group: >-
+    ${{ github.event_name == 'issue_comment' && format('release-go-comment-{0}', github.event.comment.id) ||
+        ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/integration') ||
+         (github.event_name == 'workflow_run' &&
+          github.event.workflow_run.head_repository.full_name == github.repository &&
+          ((github.event.workflow_run.name == 'Security' && github.event.workflow_run.event == 'push') ||
+           (github.event.workflow_run.name == 'factory-release-pr' && github.event.workflow_run.conclusion == 'success'))))
+        && 'release-go-candidate' || format('release-go-noop-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
 
 env:
@@ -146,12 +156,9 @@ jobs:
           PREVIEW_ENVIRONMENT: ${{ vars.FACTORY_PREVIEW_ENVIRONMENT }}
           PREVIEW_STATUS_CONTEXT: ${{ vars.FACTORY_PREVIEW_STATUS_CONTEXT }}
         run: node scripts/factory/wait-preview.mjs
-      - name: Vercel did not build this commit
-        if: steps.preview.outputs.skipped == 'true'
-        run: |
-          # preview-acceptance refuses unless preview serves this exact commit, so it can't run here.
-          echo "::error::Vercel skipped the preview build for ${GITHUB_SHA::7} (no app change), so preview acceptance can't run on it. Use the one-click Release to production button, or check again after the next app change."
-          exit 1
+      # Vercel skipped this SHA (no app change): preview still serves the last app build, whose app code is the same.
+      # preview-acceptance accepts that build after checking the app paths are identical (its wait step), so it runs
+      # here too. Same rule as release.yml's gate, which tests the integration alias in that case.
       - name: Run preview-acceptance on this SHA (dispatched as Division6066) and wait
         id: accept
         env:

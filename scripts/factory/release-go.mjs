@@ -58,7 +58,7 @@ export function checkResults(results) {
 export function renderCandidate({ sha, run, runUrl, state, checks = {}, previewUrl = "", vercelSkipped = false, acceptanceUrl = "", convexChanged, masterSha }) {
   const show = (k) => (state === "pending" ? "running" : checks[k] === "pass" ? "pass" : "**FAIL**");
   const preview = previewUrl ? previewUrl
-    : vercelSkipped ? `Vercel did not build this commit (no app change), so ${PREVIEW_ALIAS} still serves the last app build. Preview acceptance can't run on it.`
+    : vercelSkipped ? `Vercel did not rebuild this commit (no app change), so ${PREVIEW_ALIAS} serves the last app build, which has the same app code. Preview acceptance tests that build.`
     : state === "pending" ? "waiting for the Vercel build" : `UNKNOWN (see the run). Integration alias: ${PREVIEW_ALIAS}`;
   const convex = convexChanged === true || convexChanged === "true"
     ? "**yes**: `convex/` differs from master, so the release deploys Convex prod (precious-wildcat-890) before the web."

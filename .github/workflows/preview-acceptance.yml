@@ -128,6 +128,8 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
+          # History, so the wait step can compare the deployed commit's app code with this one.
+          fetch-depth: 0
       - name: Validate the spec paths (fail closed, env only)
         id: specs
         env:
@@ -182,8 +184,19 @@ jobs:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           set -euo pipefail
-          # Acceptance evidence must come from the build of this commit (Codex P2 on #897).
+          # Acceptance evidence must come from the build of this commit (Codex P2 on #897), or of an earlier
+          # integration commit with the same app code: Vercel skips builds that change none of apps/web, convex,
+          # packages, package.json or bun.lock (apps/web/vercel.json ignoreCommand), so preview keeps serving the
+          # last app build. That build counts only if it is an ancestor of this commit and none of those paths
+          # differ between the two.
           head_sha="$(git rev-parse --short=7 HEAD)"
+          same_app() {
+            local full
+            [[ "$1" =~ ^[0-9a-f]{7,40}$ ]] || return 1
+            full="$(git rev-parse --verify --quiet "$1^{commit}")" || return 1
+            git merge-base --is-ancestor "$full" HEAD || return 1
+            git diff --quiet "$full" HEAD -- apps/web convex packages package.json bun.lock
+          }
           header=()
           if [ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]; then
             header=(-H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET")
@@ -195,6 +208,10 @@ jobs:
             deployed="$(curl -fsS --max-time 15 "${header[@]}" "$PREVIEW_URL/api/health" | jq -r '.commit // empty' 2>/dev/null || true)"
             if [ "$deployed" = "$head_sha" ]; then
               echo "Preview serves $head_sha."
+              exit 0
+            fi
+            if [ -n "$deployed" ] && same_app "$deployed"; then
+              echo "Preview serves $deployed, an earlier integration commit with the same app code as $head_sha (Vercel skipped the rebuild)."
               exit 0
             fi
             if [ $((deadline - SECONDS)) -gt 15 ]; then sleep 15; else break; fi
