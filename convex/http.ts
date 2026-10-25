@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 import { executorCallback } from "./connectionsHttp";
 import { mcpNotAllowed, mcpOptions, mcpPost } from "./mcpHttp";
+import { paddleWebhook } from "./paddleHttp";
 import { revenueCatWebhook } from "./revenuecat";
 
 const http = httpRouter();
@@ -19,6 +20,9 @@ http.route({
 });
 
 // MCP server (Streamable HTTP, stateless). Auth: personal token, see convex/mcp.ts.
+// Paddle Billing webhook (sandbox only). Needs PADDLE_WEBHOOK_SECRET + PADDLE_ENVIRONMENT=sandbox.
+http.route({ path: "/api/paddle-webhook", method: "POST", handler: paddleWebhook });
+
 http.route({ path: "/mcp", method: "POST", handler: mcpPost });
 http.route({ path: "/mcp", method: "GET", handler: mcpNotAllowed });
 http.route({ path: "/mcp", method: "DELETE", handler: mcpNotAllowed });

@@ -474,6 +474,16 @@ const OWNED_FIXTURES: { [T in OwnedTableName]: OwnedFixture<T> } = {
     createdAt: 1,
     updatedAt: 1,
   })),
+  paymentEvents: fixture("owned-table-soft-delete", (userId) => ({
+    userId,
+    provider: "paddle",
+    eventId: "evt_fixture",
+    eventType: "subscription.created",
+    testMode: true,
+    applied: false,
+    receivedAt: 1,
+    updatedAt: 1,
+  })),
 };
 
 /** Tables with no `userId` that are not part of the auth library, and why that is fine. */
@@ -482,6 +492,7 @@ const NON_USER_ID_TABLES = {
   messages: "parent-owned through conversationId; soft-deleted with its conversation",
   oauthClients:
     "one OAuth client per issuer and redirect URI, shared by the deployment (#989); holds no person's data",
+  billingPlans: "the shared plan catalog (names, prices, caps); holds no person's data",
 } as const;
 
 type TableDefinitionShape = {
@@ -698,7 +709,8 @@ describe("account lifecycle coverage is derived from the schema", () => {
         !(name in NON_USER_ID_TABLES),
     );
     expect(unclassified).toEqual([]);
-    expect(Object.keys(NON_USER_ID_TABLES).sort()).toEqual(["messages", "oauthClients", "users"]);
+    expect(Object.keys(NON_USER_ID_TABLES).sort()).toEqual(["billingPlans", "messages", "oauthClients", "users"]);
+    expect(declaredFieldNames("billingPlans").has("userId")).toBe(false);
     expect(declaredFieldNames("oauthClients").has("userId")).toBe(false);
     expect(declaredFieldNames("messages").has("conversationId")).toBe(true);
     expect(declaredFieldNames("messages").has("userId")).toBe(false);

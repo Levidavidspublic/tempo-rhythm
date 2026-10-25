@@ -85,7 +85,55 @@ export default defineSchema({
     source: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_userId", ["userId"]),
+    /** Billing tier key from billingPlans ("free" | "tier_20" | "tier_50"). Optional: older rows have none. */
+    tierKey: v.optional(v.string()),
+    /** Payment provider that owns this subscription, e.g. "paddle". */
+    provider: v.optional(v.string()),
+    providerSubscriptionId: v.optional(v.string()),
+    providerCustomerId: v.optional(v.string()),
+    currentPeriodEnd: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_provider_subscription", ["provider", "providerSubscriptionId"]),
+
+  /** Plan catalog (seeded from convex/lib/billingPlans.ts). Names/caps are placeholders until Amit sets them. */
+  billingPlans: defineTable({
+    key: v.string(),
+    name: v.string(),
+    priceCentsMonthly: v.number(),
+    currency: v.string(),
+    caps: v.object({
+      coachMessagesPerDay: v.number(),
+      brainDumpsPerDay: v.number(),
+      connections: v.number(),
+      memories: v.number(),
+    }),
+    capsPlaceholder: v.boolean(),
+    sortOrder: v.number(),
+    /** Provider price ids per environment, e.g. { paddleSandbox: "pri_..." }. */
+    providerPriceIds: v.optional(v.record(v.string(), v.string())),
+    updatedAt: v.number(),
+  }).index("by_key", ["key"]),
+
+  /** Every verified payment webhook, stored once per provider event id (idempotent). */
+  paymentEvents: defineTable({
+    provider: v.string(),
+    eventId: v.string(),
+    eventType: v.string(),
+    /** true = sandbox/test event. */
+    testMode: v.boolean(),
+    userId: v.optional(v.id("users")),
+    tierKey: v.optional(v.string()),
+    applied: v.boolean(),
+    note: v.optional(v.string()),
+    receivedAt: v.number(),
+    updatedAt: v.number(),
+    /** Tombstone from account deletion (convex/lib/accountDeletion.ts). */
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_provider_eventId", ["provider", "eventId"])
+    .index("by_receivedAt", ["receivedAt"])
+    .index("by_userId", ["userId"]),
 
   conversations: defineTable({
     userId: v.id("users"),
