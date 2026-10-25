@@ -11,6 +11,7 @@
 import type * as activity from "../activity.js";
 import type * as ai_smoke from "../ai_smoke.js";
 import type * as analytics from "../analytics.js";
+import type * as billing from "../billing.js";
 import type * as approval from "../approval.js";
 import type * as auth from "../auth.js";
 import type * as brain_dump from "../brain_dump.js";
@@ -32,6 +33,9 @@ import type * as lib_aiGate from "../lib/aiGate.js";
 import type * as lib_ai_errors from "../lib/ai_errors.js";
 import type * as lib_ai_router from "../lib/ai_router.js";
 import type * as lib_approval from "../lib/approval.js";
+import type * as lib_billingPlans from "../lib/billingPlans.js";
+import type * as lib_paddleSignature from "../lib/paddleSignature.js";
+import type * as paddleHttp from "../paddleHttp.js";
 import type * as lib_blocks from "../lib/blocks.js";
 import type * as lib_brainDumpInput from "../lib/brainDumpInput.js";
 import type * as lib_brainDumpParse from "../lib/brainDumpParse.js";
@@ -99,6 +103,7 @@ declare const fullApi: ApiFromModules<{
   activity: typeof activity;
   ai_smoke: typeof ai_smoke;
   analytics: typeof analytics;
+  billing: typeof billing;
   approval: typeof approval;
   auth: typeof auth;
   brain_dump: typeof brain_dump;
@@ -120,6 +125,9 @@ declare const fullApi: ApiFromModules<{
   "lib/ai_errors": typeof lib_ai_errors;
   "lib/ai_router": typeof lib_ai_router;
   "lib/approval": typeof lib_approval;
+  "lib/billingPlans": typeof lib_billingPlans;
+  "lib/paddleSignature": typeof lib_paddleSignature;
+  paddleHttp: typeof paddleHttp;
   "lib/blocks": typeof lib_blocks;
   "lib/brainDumpInput": typeof lib_brainDumpInput;
   "lib/brainDumpParse": typeof lib_brainDumpParse;

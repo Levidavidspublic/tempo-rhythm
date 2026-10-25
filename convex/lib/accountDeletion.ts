@@ -51,6 +51,7 @@ export const USER_OWNED_TABLES = [
   "connectionSecrets",
   "connectionCalls",
   "connectionLimits",
+  "paymentEvents",
 ] as const;
 
 type UserOwnedTable = (typeof USER_OWNED_TABLES)[number];
