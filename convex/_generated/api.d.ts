@@ -24,6 +24,7 @@ import type * as crons from "../crons.js";
 import type * as dayPlans from "../dayPlans.js";
 import type * as focusBlocks from "../focusBlocks.js";
 import type * as goals from "../goals.js";
+import type * as feedback from "../feedback.js";
 import type * as habitCheckIns from "../habitCheckIns.js";
 import type * as habits from "../habits.js";
 import type * as http from "../http.js";
@@ -112,6 +113,7 @@ declare const fullApi: ApiFromModules<{
   dayPlans: typeof dayPlans;
   focusBlocks: typeof focusBlocks;
   goals: typeof goals;
+  feedback: typeof feedback;
   habitCheckIns: typeof habitCheckIns;
   habits: typeof habits;
   http: typeof http;

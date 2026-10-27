@@ -8,6 +8,7 @@
  * @auth: required
  */
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { AskFounderForm } from "@/components/ask-founder/AskFounderForm";
 import { TpIcon } from "@/components/tempo/TpIcon";
 
 /** The founder's address, the same one the landing page footer shows. */
@@ -38,6 +39,8 @@ export default function Page() {
           </a>
         </div>
       </section>
+
+      <AskFounderForm />
     </div>
   );
 }

@@ -921,6 +921,14 @@ export default defineSchema({
     .index("by_userId_createdAt", ["userId", "createdAt"])
     .index("by_userId_deletedAt", ["userId", "deletedAt"]),
 
+  /** T-SCR-25 (#475): messages people send to the founder from /ask-founder. */
+  feedback: defineTable({
+    userId: v.id("users"),
+    message: v.string(),
+    createdAt: v.number(),
+    page: v.string(),
+  }).index("by_user", ["userId", "createdAt"]),
+
   /**
    * TEMPO-MCP-01 — personal MCP tokens. Only the SHA-256 hex of the token is stored.
    * Revoked tokens stay as rows (`revokedAt`); they are never hard-deleted by the app.
