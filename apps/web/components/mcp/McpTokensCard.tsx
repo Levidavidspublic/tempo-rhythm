@@ -240,9 +240,9 @@ export function McpTokensCard() {
                 </button>
               </div>
               {manualField === field ? (
-                <p className="tp-help" role="status">
+                <output className="tp-help">
                   Copy didn&apos;t work. Select the text above and copy it by hand.
-                </p>
+                </output>
               ) : null}
             </div>
           ))}
