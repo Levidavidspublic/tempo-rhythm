@@ -330,4 +330,45 @@ describe("mcp tools", () => {
 			}),
 		).rejects.toThrow("Unknown timezone");
 	});
+
+	test("today_plan_set writes and patches the plan, refuses foreign tasks", async () => {
+		const ctx = ctxFor(A, [B]);
+		const mine = await ctx.db.insert("tasks", {
+			userId: A,
+			title: "mine",
+			status: "todo",
+			priority: "medium",
+			createdAt: 1,
+			updatedAt: 1,
+		});
+		const theirs = await ctx.db.insert("tasks", {
+			userId: B,
+			title: "theirs",
+			status: "todo",
+			priority: "medium",
+			createdAt: 1,
+			updatedAt: 1,
+		});
+		const set = (args: Record<string, unknown>) =>
+			run(mcpTools.runWriteTool, ctx, { userId: A, name: "today_plan_set", args });
+		const res = await set({
+			date: "2026-10-06",
+			intention: "Ship it",
+			energy: "low",
+			topTaskIds: [mine],
+		});
+		expect(res.plan).toMatchObject({ intention: "Ship it", energy: "low", status: "draft" });
+		expect(res.topTasks.map((t: { id: string }) => t.id)).toEqual([mine]);
+
+		const again = await set({ date: "2026-10-06", energy: "high" });
+		expect(again.plan).toMatchObject({ intention: "Ship it", energy: "high" });
+		expect(await ctx.db.query("dayPlans").collect()).toHaveLength(1);
+
+		await expect(set({ date: "2026-10-06", topTaskIds: [theirs] })).rejects.toThrow(
+			"Task not found",
+		);
+		await expect(set({ date: "2026-10-06", intention: "x".repeat(281) })).rejects.toThrow(
+			"280",
+		);
+	});
 });

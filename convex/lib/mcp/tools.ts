@@ -1,7 +1,7 @@
 import type { JsonSchema } from "./schema";
 
 /**
- * Tempo MCP tool registry (TEMPO-MCP-01). 11 tools, no delete tools in v1 (PRD F-100:
+ * Tempo MCP tool registry (TEMPO-MCP-01). 12 tools, no delete tools in v1 (PRD F-100:
  * heavy writes are refused). `kind` says which Convex function type runs the tool.
  */
 export type McpToolKind = "query" | "mutation" | "action";
@@ -188,6 +188,32 @@ export const MCP_TOOLS: readonly McpTool[] = [
 					type: "string",
 					description: "IANA name, e.g. Asia/Jerusalem",
 				},
+			},
+		},
+	},
+	{
+		name: "today_plan_set",
+		description:
+			"Write the day plan (intention, up to 3 top tasks, energy). Only the fields you send change. Defaults to today in the given timezone (UTC if none). Returns the plan like today_plan_get.",
+		kind: "mutation",
+		inputSchema: {
+			type: "object",
+			additionalProperties: false,
+			properties: {
+				date: { type: "string", description: "YYYY-MM-DD" },
+				timezone: {
+					type: "string",
+					description: "IANA name, e.g. Asia/Jerusalem",
+				},
+				intention: { type: "string", maxLength: 280 },
+				// The tiny validator in ./schema.ts has no array support (out of this ticket's scope),
+				// so the array shape is advertised without `type` and enforced in runWriteTool.
+				topTaskIds: {
+					description: "Up to 3 task ids from tasks_list, as an array of strings.",
+					maxItems: 3,
+					items: { type: "string", minLength: 1 },
+				} as JsonSchema,
+				energy: { type: "string", enum: ["low", "medium", "high"] },
 			},
 		},
 	},
