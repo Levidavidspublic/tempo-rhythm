@@ -2,6 +2,7 @@
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
+import { EXECUTOR_GUIDE_URL, buildExecutorSetup } from "./executorSetup";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
 import { api } from "@/convex/_generated/api";
@@ -25,8 +26,11 @@ export function McpTokensCard() {
   const [pending, setPending] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<"url" | "header" | null>(null);
+  const [manualField, setManualField] = useState<"url" | "header" | null>(null);
 
   const endpoint = typeof window === "undefined" ? "/api/mcp" : `${window.location.origin}/api/mcp`;
+  const setup = buildExecutorSetup(endpoint);
   const active = (tokens ?? []).filter((token) => token.revokedAt === undefined);
   const formatDate = (ms: number | undefined) =>
     ms === undefined ? t("set.mcp.never") : new Date(ms).toLocaleString(lang === "he" ? "he-IL" : "en-US");
@@ -63,6 +67,17 @@ export function McpTokensCard() {
       setCopied(true);
     } catch {
       setMessage("set.mcp.errCopy");
+    }
+  };
+
+  const handleCopyField = async (field: "url" | "header") => {
+    try {
+      await navigator.clipboard.writeText(setup[field]);
+      setCopiedField(field);
+      setManualField(null);
+    } catch {
+      setCopiedField(null);
+      setManualField(field);
     }
   };
 
@@ -202,7 +217,38 @@ export function McpTokensCard() {
           <span className="tp-help">{t("set.mcp.connectHelp")}</span>
         </div>
         <div className="tp-setting-row__control">
-          <pre className="tp-mono ig-grow ig-pre" dir="ltr">{`URL: ${endpoint}\nHeader: Authorization: Bearer <your token>`}</pre>
+          {(
+            [
+              ["url", "Endpoint URL"],
+              ["header", "Authorization header"],
+            ] as const
+          ).map(([field, label]) => (
+            <div key={field} className="ig-grow">
+              <span className="tp-help">{label}</span>
+              <div>
+                <input
+                  readOnly
+                  className="tp-input tp-mono ig-grow"
+                  dir="ltr"
+                  aria-label={label}
+                  data-testid={`mcp-setup-${field}`}
+                  value={setup[field]}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <button className="tp-btn tp-btn--secondary" type="button" onClick={() => void handleCopyField(field)}>
+                  <span>{copiedField === field ? t("set.mcp.copied") : `${t("set.mcp.copy")} ${label}`}</span>
+                </button>
+              </div>
+              {manualField === field ? (
+                <p className="tp-help" role="status">
+                  Copy didn&apos;t work. Select the text above and copy it by hand.
+                </p>
+              ) : null}
+            </div>
+          ))}
+          <a className="tp-btn tp-btn--ghost" href={EXECUTOR_GUIDE_URL} target="_blank" rel="noreferrer">
+            <span>Full guide</span>
+          </a>
         </div>
       </div>
     </section>
