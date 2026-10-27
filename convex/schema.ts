@@ -926,8 +926,10 @@ export default defineSchema({
     userId: v.id("users"),
     message: v.string(),
     createdAt: v.number(),
+    updatedAt: v.number(),
     page: v.string(),
-  }).index("by_user", ["userId", "createdAt"]),
+    deletedAt: v.optional(v.number()),
+  }).index("by_userId", ["userId", "createdAt"]),
 
   /**
    * TEMPO-MCP-01 — personal MCP tokens. Only the SHA-256 hex of the token is stored.

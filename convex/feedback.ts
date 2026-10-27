@@ -19,7 +19,7 @@ export const send = mutation({
     const now = Date.now();
     const rows = await ctx.db
       .query("feedback")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
     if (rows.filter((r) => r.createdAt > now - DAY_MS).length >= FEEDBACK_DAILY_LIMIT) {
       throw new Error("You have sent the most messages allowed today. Try again tomorrow.");
@@ -28,6 +28,7 @@ export const send = mutation({
       userId: user._id,
       message,
       createdAt: now,
+      updatedAt: now,
       page: args.page?.slice(0, 200) || "/ask-founder",
     });
   },
@@ -39,10 +40,10 @@ export const listMine = query({
     const user = await requireUser(ctx);
     const rows = await ctx.db
       .query("feedback")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .collect();
     return rows
-      .filter((r) => r.userId === user._id)
+      .filter((r) => r.userId === user._id && r.deletedAt === undefined)
       .sort((a, b) => b.createdAt - a.createdAt)
       .map((r) => ({ _id: r._id, message: r.message, createdAt: r.createdAt }));
   },

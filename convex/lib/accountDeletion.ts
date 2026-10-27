@@ -41,6 +41,7 @@ export const USER_OWNED_TABLES = [
   "templates",
   "userPreferences",
   "notifications",
+  "feedback",
   "noteBlocks",
   "chatRequests",
   "pageOperations",
