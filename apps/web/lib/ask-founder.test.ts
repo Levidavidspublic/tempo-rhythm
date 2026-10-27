@@ -21,10 +21,15 @@ let lang: Lang = "en";
 // bun's mock.module is process-global and other test files mock LocaleProvider too. Keep what is
 // registered when these tests start, swap in ours, and put the earlier one back afterwards.
 const LOCALE = "@/components/providers/LocaleProvider";
+const FORM = "@/components/ask-founder/AskFounderForm";
 let previous: Record<string, unknown> = {};
+let previousForm: Record<string, unknown> = {};
 
 beforeAll(async () => {
   previous = { ...(await import(LOCALE)) };
+  previousForm = { ...(await import(FORM)) };
+  // The form needs a Convex provider; its own behaviour is covered elsewhere.
+  mock.module(FORM, () => ({ ...previousForm, AskFounderForm: () => null }));
   mock.module(LOCALE, () => ({
     ...previous,
     useLocale: () => ({ lang, dir: dirFor(lang), setLang() {}, t: (key: MessageKey) => translate(lang, key) }),
@@ -33,6 +38,7 @@ beforeAll(async () => {
 
 afterAll(() => {
   mock.module(LOCALE, () => previous);
+  mock.module(FORM, () => previousForm);
 });
 
 function renderAskFounder(next: Lang): string {
@@ -79,7 +85,7 @@ describe("/ask-founder", () => {
     const address = /href="mailto:([^"]+)"/.exec(links[0] ?? "")?.[1];
     expect(address).toBe("amit@tempoflow.app");
     expect(html).toContain(`<span dir="ltr">${address}</span>`);
-    // No form and no buttons that do nothing.
+    // The message form (AskFounderForm) is stubbed out here, so the page shell has no controls.
     expect(html).not.toMatch(/<(form|button|input|textarea)\b/);
   });
 
