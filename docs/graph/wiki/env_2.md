@@ -1,0 +1,34 @@
+# env
+
+> God node · 113 connections · `.github/workflows/factory-refresh.lock.yml`
+
+**Community:** [Community 9](Community_9.md)
+
+## Connections by Relation
+
+### contains
+- steps `EXTRACTED`
+- steps `EXTRACTED`
+- GH_AW_MAX_DAILY_AI_CREDITS `EXTRACTED`
+- AWF_REFLECT_ENABLED `EXTRACTED`
+- BEFORE `EXTRACTED`
+- COPILOT_AGENT_RUNNER_TYPE `EXTRACTED`
+- COPILOT_DUMMY_BYOK `EXTRACTED`
+- COPILOT_GITHUB_TOKEN `EXTRACTED`
+- COPILOT_MODEL `EXTRACTED`
+- EVENT `EXTRACTED`
+- GH_AW_ACTIONS_DIR `EXTRACTED`
+- GH_AW_AGENT_FILES `EXTRACTED`
+- GH_AW_AGENT_FOLDERS `EXTRACTED`
+- GH_AW_AGENTIC_EXECUTION_OUTCOME `EXTRACTED`
+- GH_AW_ALLOWED_DOMAINS `EXTRACTED`
+- GH_AW_BLOCKED_VERSION_REPORT_AS_ISSUE `EXTRACTED`
+- GH_AW_COMPILED_STRICT `EXTRACTED`
+- GH_AW_COMPILED_VERSION `EXTRACTED`
+- GH_AW_CONTEXT_WORKFLOW_REF `EXTRACTED`
+- GH_AW_CURRENT_WORKFLOW_REF `EXTRACTED`
+- *…and 93 more `contains` connection(s) not listed (lowest-degree first to go)*
+
+---
+
+*Part of the graphify knowledge wiki. See [index](index.md) to navigate.*

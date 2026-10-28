@@ -1,0 +1,34 @@
+# env
+
+> God node · 119 connections · `.github/workflows/factory-dispatch.lock.yml`
+
+**Community:** [Community 8](Community_8.md)
+
+## Connections by Relation
+
+### contains
+- steps `EXTRACTED`
+- steps `EXTRACTED`
+- GH_AW_MAX_DAILY_AI_CREDITS `EXTRACTED`
+- AWF_REFLECT_ENABLED `EXTRACTED`
+- COPILOT_AGENT_RUNNER_TYPE `EXTRACTED`
+- COPILOT_DUMMY_BYOK `EXTRACTED`
+- COPILOT_GITHUB_TOKEN `EXTRACTED`
+- COPILOT_MODEL `EXTRACTED`
+- FACTORY_ACTIVE_BATCHES `EXTRACTED`
+- FACTORY_AGENT_PREFERENCE `EXTRACTED`
+- FACTORY_CLAUDE_AT_LIMIT `EXTRACTED`
+- FACTORY_CODEX_AT_LIMIT `EXTRACTED`
+- FACTORY_CODEX_MODE `EXTRACTED`
+- FACTORY_CURSOR_AT_LIMIT `EXTRACTED`
+- FACTORY_MAX_IN_FLIGHT `EXTRACTED`
+- FACTORY_PAUSED `EXTRACTED`
+- FACTORY_PAUSED_ALL `EXTRACTED`
+- FACTORY_QUIET_END `EXTRACTED`
+- FACTORY_QUIET_HOURS `EXTRACTED`
+- FACTORY_QUIET_START `EXTRACTED`
+- *…and 99 more `contains` connection(s) not listed (lowest-degree first to go)*
+
+---
+
+*Part of the graphify knowledge wiki. See [index](index.md) to navigate.*
