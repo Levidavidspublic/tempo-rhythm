@@ -30,10 +30,20 @@ jobs:
         run: |
           mapfile -t f < <(grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' /tmp/changed.txt || true)
           [ ${#f[@]} -eq 0 ] && { echo "no TS/JS files"; exit 0; }
-          mkdir -p /tmp/gts && cd /tmp/gts && bun init -y >/dev/null && bun add gts@6 >/dev/null
+          # gts 6.0.2 + TS 5.6 (gts's typescript-eslint breaks on TS 7). Prettier runs on its own; inside eslint
+          # the prettier rule is off (double run). Parser/node version raised to the repo's Node 22 so modern
+          # syntax is not flagged as a style violation.
+          mkdir -p /tmp/gts && cd /tmp/gts && echo '{"name":"gts-runner","private":true}' > package.json
+          bun add gts@6.0.2 typescript@5.6.3 >/dev/null
           cd "$GITHUB_WORKSPACE"
           bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.json --check "${f[@]/#/$GITHUB_WORKSPACE/}"
-          ESLINT_USE_FLAT_CONFIG=true bunx --cwd /tmp/gts eslint --no-config-lookup -c /tmp/gts/node_modules/gts/eslint.config.js "${f[@]/#/$GITHUB_WORKSPACE/}"
+          ESLINT_USE_FLAT_CONFIG=false bunx --cwd /tmp/gts eslint --no-eslintrc \
+            -c /tmp/gts/node_modules/gts/.eslintrc.json --resolve-plugins-relative-to /tmp/gts/node_modules/gts \
+            --parser-options ecmaVersion:latest --parser-options sourceType:module --global fetch:readonly \
+            --rule 'prettier/prettier: off' \
+            --rule 'n/no-unsupported-features/es-syntax: [error, {version: ">=22"}]' \
+            --rule 'n/no-unsupported-features/node-builtins: [error, {version: ">=22"}]' \
+            "${f[@]/#/$GITHUB_WORKSPACE/}"
       - name: Python (pyink + Google pylintrc)
         run: |
           mapfile -t f < <(grep -E '\.py$' /tmp/changed.txt || true)
