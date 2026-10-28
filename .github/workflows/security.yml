@@ -83,11 +83,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Full history: the merge_group range below needs base_sha (the target branch tip)
+          # in the clone, and fetch-depth: 0 fetches every branch, so it is present.
           fetch-depth: 0
+      # Belt and braces for merge_group: if the checkout is ever made shallower, fetch the queue
+      # base branch by ref so base_sha still resolves. No-op with fetch-depth: 0.
+      - name: Ensure the merge-group base commit is present
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          BASE_REF: ${{ github.event.merge_group.base_ref }}
+        run: |
+          set -euo pipefail
+          if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "Merge-group base ${BASE_SHA} is already in the clone"
+          else
+            git fetch --no-tags origin "+${BASE_REF}:refs/remotes/origin/merge-group-base"
+            git cat-file -e "${BASE_SHA}^{commit}"
+            echo "Fetched merge-group base ${BASE_SHA}"
+          fi
       - name: Run trufflehog (verified + unknown results only)
         uses: trufflesecurity/trufflehog@4dd8831c5f12599465d4d45c3c447b4018a34c85 # v3.97.9
         with:
           path: ./
+          # The action only knows the push/pull_request/workflow_dispatch/schedule shapes, so on
+          # merge_group it falls through with BASE/HEAD empty and scans everything. Hand it the
+          # queue range instead. Every other event passes empty base/head, which is the action's
+          # own default, so its per-event behaviour (including the workflow_call caller) is
+          # unchanged.
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || '' }}
+          head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || '' }}
           extra_args: --results=verified,unknown
 
   secret-scan-self-test:
