@@ -1,4 +1,5 @@
 @AGENTS.md
+@include.md
 
 ## Claude-only
 - To plan a new product, change scope, edit the six docs or update tickets, use the `software-factory` skill. Closing a build ticket doesn't need it: AGENTS.md is enough.
