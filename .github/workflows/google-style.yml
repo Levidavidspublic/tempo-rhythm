@@ -1,0 +1,52 @@
+name: google-style
+
+# Gate 3 of merge-gate: Google style guides (https://github.com/google/styleguide), CHANGED FILES ONLY
+# so older code doesn't fail every PR. Runs on pull_request (no secrets) because it lints PR files.
+#   TS/JS: gts (Google's official TypeScript style: eslint + prettier config), via bunx.
+#   Python: pyink (Google's black fork, 2-space) + pylint with Google's pylintrc.
+#   Shell: shellcheck + shfmt -i 2 -ci (Google Shell Style Guide has no official tool).
+#   Other languages: no official Google tool here (UNKNOWN), not checked.
+on:
+  pull_request:
+    branches: [integration]
+
+permissions:
+  contents: read
+
+jobs:
+  google-style:
+    name: google-style
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
+      - name: Changed files
+        run: |
+          git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" > /tmp/changed.txt
+          cat /tmp/changed.txt
+      - name: TS/JS (gts)
+        run: |
+          mapfile -t f < <(grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' /tmp/changed.txt || true)
+          [ ${#f[@]} -eq 0 ] && { echo "no TS/JS files"; exit 0; }
+          mkdir -p /tmp/gts && cd /tmp/gts && bun init -y >/dev/null && bun add gts@6 >/dev/null
+          cd "$GITHUB_WORKSPACE"
+          bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.json --check "${f[@]/#/$GITHUB_WORKSPACE/}"
+          ESLINT_USE_FLAT_CONFIG=true bunx --cwd /tmp/gts eslint --no-config-lookup -c /tmp/gts/node_modules/gts/eslint.config.js "${f[@]/#/$GITHUB_WORKSPACE/}"
+      - name: Python (pyink + Google pylintrc)
+        run: |
+          mapfile -t f < <(grep -E '\.py$' /tmp/changed.txt || true)
+          [ ${#f[@]} -eq 0 ] && { echo "no Python files"; exit 0; }
+          pip install -q pyink pylint
+          curl -fsSL https://raw.githubusercontent.com/google/styleguide/gh-pages/pylintrc -o /tmp/pylintrc
+          pyink --pyink-indentation 2 --line-length 80 --check "${f[@]}"
+          pylint --rcfile /tmp/pylintrc "${f[@]}"
+      - name: Shell (shellcheck + shfmt)
+        run: |
+          mapfile -t f < <(grep -E '\.(sh|bash)$' /tmp/changed.txt || true)
+          [ ${#f[@]} -eq 0 ] && { echo "no shell files"; exit 0; }
+          sudo apt-get install -y -qq shellcheck >/dev/null
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest && export PATH="$PATH:$(go env GOPATH)/bin"
+          shellcheck "${f[@]}"
+          shfmt -i 2 -ci -d "${f[@]}"
