@@ -39,7 +39,7 @@ jobs:
           bunx --cwd /tmp/gts prettier --config /tmp/gts/node_modules/gts/.prettierrc.json --check "${f[@]/#/$GITHUB_WORKSPACE/}"
           ESLINT_USE_FLAT_CONFIG=false bunx --cwd /tmp/gts eslint --no-eslintrc \
             -c /tmp/gts/node_modules/gts/.eslintrc.json --resolve-plugins-relative-to /tmp/gts/node_modules/gts \
-            --parser-options ecmaVersion:latest --parser-options sourceType:module --global fetch:readonly \
+            --parser-options ecmaVersion:latest --parser-options sourceType:module --global fetch \
             --rule 'prettier/prettier: off' \
             --rule 'n/no-unsupported-features/es-syntax: [error, {version: ">=22"}]' \
             --rule 'n/no-unsupported-features/node-builtins: [error, {version: ">=22"}]' \
