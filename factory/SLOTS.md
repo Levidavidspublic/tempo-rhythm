@@ -58,7 +58,7 @@ UNKNOWN. `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`, `FACTORY_MODEL_CURSOR_P
 |---|---|
 | install | `bun install` |
 | dev | `bun run dev` |
-| test | `bun test convex apps/web/lib apps/web/components tests/unit packages` (= `bun run test`) |
+| test | `bun run test` (= `scripts/test-suites.ts`: the ten `tests/unit/kb-*.test.tsx` browser suites one at a time, then `bun test convex apps/web/lib apps/web/components <rest of tests/unit> packages`) |
 | lint | `bun run lint` |
 | typecheck | `bun run typecheck` |
 | build | `bun run build` |
@@ -66,7 +66,7 @@ UNKNOWN. `FACTORY_MODEL_CLAUDE`, `FACTORY_MODEL_CURSOR`, `FACTORY_MODEL_CURSOR_P
 
 `e2e` is not a `package.json` script. Confirmed in `.github/workflows/ci.yml` (job `E2E (Playwright)`): `bunx playwright test`. `playwright.config.ts` sets `testDir` to `tests/e2e`. When a preview URL exists, `.github/workflows/e2e-preview.yml` runs `bunx playwright test tests/e2e/preview-smoke.spec.ts --reporter=list,html`.
 
-Root scripts that exist and are not in the table: `bun run dev` is `turbo run dev`. Also present: `dev:web`, `dev:mobile`, `check`, `check:notices`, `scan:forbidden-tech`, `scan:ram-only-audit`, `scan:design-tokens`, `convex:dev`, `convex:codegen`. `convex:deploy` exists as a script. Do not use it against the live deployment.
+Root scripts that exist and are not in the table: `bun run dev` is `turbo run dev`. Also present: `dev:web`, `dev:mobile`, `test:unit` (everything except the browser suites), `test:browser` (the browser suites, serially), `check`, `check:notices`, `scan:forbidden-tech`, `scan:ram-only-audit`, `scan:design-tokens`, `convex:dev`, `convex:codegen`. `convex:deploy` exists as a script. Do not use it against the live deployment.
 
 ## This repo's merge queue
 Public repo. Auto-merge slot = GitHub merge queue on `integration`.
