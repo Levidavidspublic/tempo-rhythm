@@ -1,0 +1,62 @@
+name: review-sweep
+# Overnight brief 2026-10-29 STEP 3. OFF by default: runs only when repo var SWEEP_ENABLED == 'true'.
+# Daily (06:00 UTC): light CodeRabbit review on open PRs into integration + browser app check.
+# Weekly (Sun 03:00 UTC): deep CodeRabbit full review.
+# CodeRabbit docs cover PR commands (@coderabbitai review / full review) only.
+# A scheduled whole-repo sweep is not documented (UNKNOWN), so this comments on open PRs.
+# Undo/stop: set SWEEP_ENABLED=false, or disable this workflow.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [light, deep]
+        default: light
+permissions:
+  contents: read
+  pull-requests: write
+env:
+  SKIP_PRS: "1276"            # never touch these PRs
+  SKIP_BRANCHES: "reason-test/capability"
+jobs:
+  coderabbit:
+    if: vars.SWEEP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask CodeRabbit to review open PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: ${{ inputs.mode || (github.event.schedule == '0 3 * * 0' && 'deep' || 'light') }}
+        run: |
+          cmd="@coderabbitai review"
+          [ "$MODE" = deep ] && cmd="@coderabbitai full review"
+          gh pr list -R "$GITHUB_REPOSITORY" -B integration --state open --limit 20 \
+            --json number,headRefName --jq '.[]|"\(.number) \(.headRefName)"' |
+          while read -r n head; do
+            case ",$SKIP_PRS," in *",$n,"*) continue;; esac
+            case ",$SKIP_BRANCHES," in *",$head,"*) continue;; esac
+            gh pr comment "$n" -R "$GITHUB_REPOSITORY" --body "$cmd"
+          done
+  app-check:
+    if: vars.SWEEP_ENABLED == 'true' && vars.APP_URL != '' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 * * *')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: oven-sh/setup-bun@v2
+      - name: Browser check of the app (headless Chromium)
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          bunx playwright@1 install --with-deps chromium
+          cat > check.mjs <<'JS'
+          import { chromium } from "playwright";
+          const b = await chromium.launch(); const p = await b.newPage();
+          const errors = []; p.on("pageerror", e => errors.push(String(e)));
+          const r = await p.goto(process.env.APP_URL, { waitUntil: "networkidle" });
+          console.log("status", r?.status(), "title", await p.title());
+          await b.close();
+          if (!r || r.status() >= 400 || errors.length) { console.error(errors); process.exit(1); }
+          JS
+          bun add playwright@1 >/dev/null && bun check.mjs
