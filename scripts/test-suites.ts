@@ -15,9 +15,9 @@
 
 const root = `${import.meta.dir}/..`;
 // Every suffix and extension bun test discovers: .test/.spec/_test/_spec with js/jsx/ts/tsx/mjs/cjs/mts/cts.
-const TEST_FILE = /(?:\.test|\.spec|_test|_spec)\.(?:[mc]?[jt]s|[jt]sx)$/;
+const TEST_FILE = /(?:\.test|\.spec|_test|_spec)\.(?:[mc]?[jt]s|[jt]sx)$/i;
 // Anything that looks like a test file; used to fail loudly if TEST_FILE ever misses one.
-const TEST_LIKE = /(?:\.test|\.spec|_test|_spec)\.[^/.]+$/;
+const TEST_LIKE = /(?:\.test|\.spec|_test|_spec)\.[^/.]+$/i;
 const BROWSER_SUITE = /^tests\/unit\/kb-[^/]*\.test\.tsx$/;
 
 const mode = process.argv[2] ?? "all";
