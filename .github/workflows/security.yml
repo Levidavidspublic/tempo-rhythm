@@ -88,6 +88,10 @@ jobs:
         uses: trufflesecurity/trufflehog@4dd8831c5f12599465d4d45c3c447b4018a34c85 # v3.97.9
         with:
           path: ./
+          # merge_group: scan only the queued range. Empty base/head on other
+          # events keeps the action's default pull_request/push behavior.
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || '' }}
+          head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || '' }}
           extra_args: --results=verified,unknown
 
   secret-scan-self-test:

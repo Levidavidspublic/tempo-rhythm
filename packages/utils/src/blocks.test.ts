@@ -1,5 +1,5 @@
-import { build } from "bun";
 import { describe, expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as convexCompat from "../../../convex/lib/blocks";
@@ -252,6 +252,59 @@ describe("shared codec public surface", () => {
 // Browser safety: no Convex, Node, React or platform imports in the shared codec
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * `bun test` gives every file a thread of one shared process, and ten suites in tests/unit bundle,
+ * serve and drive a Chromium in it. This file is the only one that needs the bundler to finish on
+ * that shared process state, and it is the only test that has timed out: the build itself is ~30ms,
+ * while every larger fixture build next to it passed in the same CI run. So the bundle is built in
+ * a process of its own — the isolation tests/unit/kb-*.test.tsx already use for their fixtures — and
+ * nothing another suite does in this process can hold it.
+ */
+const BUILD_PROBE = `
+const result = await Bun.build({ entrypoints: [process.env.TEMPO_BUNDLE_ENTRY], target: "browser", metafile: true });
+const metafile = result.metafile;
+const text = result.success && metafile ? await result.outputs[0].text() : "";
+console.log(JSON.stringify({
+  success: result.success && Boolean(metafile),
+  inputs: metafile ? Object.keys(metafile.inputs) : [],
+  outputImports: metafile ? Object.values(metafile.outputs).map((output) => output.imports) : [],
+  text,
+}));
+`;
+
+const PROBE_TIMEOUT_MS = 20_000;
+
+interface BundleProbe {
+  success: boolean;
+  inputs: string[];
+  outputImports: unknown[][];
+  text: string;
+}
+
+/** Run the real browser-target build in its own Bun process and hand back its metafile facts. */
+function bundleInOwnProcess(entry: string): BundleProbe {
+  const child = spawnSync(process.execPath, ["--eval", BUILD_PROBE], {
+    env: { ...process.env, TEMPO_BUNDLE_ENTRY: entry },
+    encoding: "utf8",
+    // `spawnSync` blocks the test thread, so the test's own timeout can never interrupt a wedged child:
+    // bound it just under that timeout and report the kill instead of hanging the whole run.
+    timeout: PROBE_TIMEOUT_MS,
+  });
+  const stdout = child.stdout ?? "";
+  const stderr = child.stderr ?? "";
+  if (child.signal)
+    throw new Error(
+      `bun build probe killed by ${child.signal} after ${PROBE_TIMEOUT_MS}ms:\n${stderr}`
+    );
+  if (child.error) throw new Error(`bun build probe could not run: ${child.error.message}`);
+  if (child.status !== 0) throw new Error(`bun build probe exited ${child.status}:\n${stderr}`);
+  try {
+    return JSON.parse(stdout.trim().split("\n").at(-1) ?? "") as BundleProbe;
+  } catch {
+    throw new Error(`bun build probe printed no JSON:\n${stdout}\n${stderr}`);
+  }
+}
+
 describe("shared codec is browser-safe", () => {
   const sourceDir = import.meta.dir;
   const read = (path: string) => readFileSync(path, "utf8");
@@ -286,26 +339,19 @@ describe("shared codec is browser-safe", () => {
     }
   });
 
-  test("a browser-target bundle of the public entry reaches no Convex, Node or external module", async () => {
-    const result = await build({
-      entrypoints: [join(sourceDir, "index.ts")],
-      target: "browser",
-      metafile: true,
-    });
+  test("a browser-target bundle of the public entry reaches no Convex, Node or external module", () => {
+    const result = bundleInOwnProcess(join(sourceDir, "index.ts"));
     expect(result.success).toBe(true);
-    const metafile = result.metafile;
-    if (!metafile) throw new Error("Bun.build did not return a metafile");
-    const inputs = Object.keys(metafile.inputs).map((path) => path.replaceAll("\\", "/"));
+    const inputs = result.inputs.map((path) => path.replaceAll("\\", "/"));
     expect(inputs.some((path) => path.endsWith("packages/utils/src/blocks.ts"))).toBe(true);
     for (const path of inputs) {
       expect(path, path).not.toMatch(/(^|\/)convex(\/|$)|@convex-dev|convex-helpers|\.env/);
       expect(path, path).not.toMatch(/^node:|(^|\/)node:/);
     }
-    for (const output of Object.values(metafile.outputs)) {
-      expect(output.imports).toEqual([]);
+    for (const outputImports of result.outputImports) {
+      expect(outputImports).toEqual([]);
     }
-    const text = await result.outputs[0]?.text();
-    expect(text).not.toMatch(/node:|convex\/server|process\.env/);
+    expect(result.text).not.toMatch(/node:|convex\/server|process\.env/);
   }, 30_000);
 });
 
