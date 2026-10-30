@@ -82,8 +82,17 @@ jobs:
           bun-version: ${{ env.BUN_VERSION }}
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Run browser suites one at a time (each boots a Chromium)
+        # tests/unit/kb-*.test.tsx each start a browser and a fixture server. Serially, in one
+        # process per suite, they cannot starve each other on a 4-core runner (see
+        # scripts/test-suites.ts). This used to share a single `bun run test` invocation with the
+        # rest of the suite, and a starved KB-64 took the whole merge-queue run down.
+        timeout-minutes: 30
+        run: bun run test:browser
+
       - name: Run tests (enforcing — failures block the PR)
-        run: bun run test
+        timeout-minutes: 20
+        run: bun run test:unit
 
   scan:
     name: Scans (forbidden-tech, ram-only-audit, design-tokens)

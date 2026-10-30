@@ -22,7 +22,7 @@ These jobs **must pass** on every PR. None carry `continue-on-error`.
 |---|---|---|
 | **Typecheck** | `bun run typecheck` | Turborepo across `apps/*` and `packages/*` |
 | **Lint** | `bun run lint` | Biome via Turborepo |
-| **Test** | `bun run test` | `bun test convex apps/web/lib tests/unit` |
+| **Test** | `bun run test:browser` then `bun run test:unit` | `scripts/test-suites.ts`: the ten browser suites (`tests/unit/kb-*.test.tsx`) one at a time in their own process, then `bun test` over the rest |
 | **Scans** | `scan:forbidden-tech`, `scan:ram-only-audit`, `scan:design-tokens` | HARD_RULES §2 / §5 / §7 ratchets |
 | **Third-party notices** | `bun run check:notices` | TF-OSS-00 — every runtime dep in `THIRD-PARTY-NOTICES.md` |
 | **E2E** | `bunx playwright test` | Playwright Chromium |
