@@ -284,7 +284,11 @@ function bundleInOwnProcess(entry: string): BundleProbe {
   const child = spawnSync(process.execPath, ["--eval", BUILD_PROBE], {
     env: { ...process.env, TEMPO_BUNDLE_ENTRY: entry },
     encoding: "utf8",
+    // Below the 30s test budget, so a hung build fails with its own message, not a test timeout.
+    timeout: 20_000,
+    killSignal: "SIGKILL",
   });
+  if (child.error) throw new Error(`bun build probe did not finish within 20s: ${child.error.message}`);
   const stdout = child.stdout ?? "";
   const stderr = child.stderr ?? "";
   if (child.status !== 0) throw new Error(`bun build probe exited ${child.status}:\n${stderr}`);
