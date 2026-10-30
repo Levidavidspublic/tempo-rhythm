@@ -31,7 +31,6 @@
   convex/coach_chat.test.ts → packages/utils/src/blocks.ts
 - `tick()` --indirect_call--> `el()`  [INFERRED]
   docs/design/v3/tempo.js → apps/web/components/editor/live-preview.ts
-  docs/design/v3/tempo.js → apps/web/components/editor/live-preview.ts
 - `@biomejs/biome@2.3.8` --declares--> `@biomejs/biome`  [EXTRACTED]
   apps/mobile/package.json → package.json
 - `react-dom@19.2.3` --declares--> `react-dom`  [EXTRACTED]
