@@ -11,7 +11,7 @@
 ## Graph Freshness
 - Built from commit: `7d1a0f69`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
+- Run `graphify update . --no-cluster` after code changes (no API cost).
 
 
 ## God Nodes (most connected - your core abstractions)
@@ -31,7 +31,6 @@
   convex/coach_chat.test.ts → packages/utils/src/blocks.ts
 - `tick()` --indirect_call--> `el()`  [INFERRED]
   docs/design/v3/tempo.js → apps/web/components/editor/live-preview.ts
-- `tick()` --indirect_call--> `el()`  [INFERRED]
   docs/design/v3/tempo.js → apps/web/components/editor/live-preview.ts
 - `@biomejs/biome@2.3.8` --declares--> `@biomejs/biome`  [EXTRACTED]
   apps/mobile/package.json → package.json
@@ -42,4 +41,4 @@
 - None detected.
 
 
-_Slim summary of the 2026-10-27 Graphify report (PR #1310). Full report, wiki pages and graph.json are not committed: get them from the `graphify-graph` Actions artifact or rebuild locally (see README.md)._
+_Slim summary of the 2026-10-27 Graphify report (PR #1310). Nothing else is committed: `graph.json` comes from the `graphify-graph` Actions artifact; the full report and wiki pages come from a local rebuild (see README.md)._
