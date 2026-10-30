@@ -223,6 +223,22 @@ t("scope-guard i: batch PR = union of ticket scopes; convex/ and hot files fail"
   assert.ok(judgeBatch({ pr: prOf("batch/f3-1"), labels: [], tickets: [{ number: 3, fm: null }], files: [], commitFiles: [], config: SG_CFG }).problems[0].includes("front-matter"));
   assert.deepEqual(judgeBatch({ pr: prOf("batch/f3-1"), labels: ["convex-arch"], archApproved: true, tickets, files: [{ filename: "convex/x.ts" }], commitFiles: [], config: SG_CFG }).problems, []);
 });
+t("scope-guard: no ticket passes only for docs/graph + include.md sync files", () => {
+  const base = { pr: prOf("graphify/report-2026-10-30"), ticket: null, fm: null, labels: [], commitFiles: [], config: SG_CFG };
+  // docs/graph-only and include.md-sync-only pass without a ticket
+  assert.deepEqual(scopeJudge({ ...base, files: [{ filename: "docs/graph/GRAPH_REPORT.md" }] }).problems, []);
+  assert.deepEqual(scopeJudge({ ...base, files: [{ filename: "include.md" }, { filename: "CLAUDE.md" }, { filename: "docs/factory/MERGE_GATE.md" }] }).problems, []);
+  // mixed docs/graph + src, or a src change alone, still fails as before
+  assert.ok(scopeJudge({ ...base, files: [{ filename: "docs/graph/GRAPH_REPORT.md" }, { filename: "apps/web/components/x/A.tsx" }] }).problems.some((p) => p.includes("No ticket")));
+  assert.ok(scopeJudge({ ...base, files: [{ filename: "apps/web/components/x/A.tsx" }] }).problems.some((p) => p.includes("No ticket")));
+  // renamed-from paths count: moving a src file to include.md is not a docs-only PR
+  assert.ok(scopeJudge({ ...base, files: [{ filename: "include.md", previous_filename: "apps/web/lib/x.ts", status: "renamed" }] }).problems.some((p) => p.includes("No ticket")));
+  // AGENTS.md stays off the list; a ticket-less PR with no files still fails closed
+  assert.ok(scopeJudge({ ...base, files: [{ filename: "AGENTS.md" }] }).problems.some((p) => p.includes("No ticket")));
+  assert.ok(scopeJudge({ ...base, files: [] }).problems.some((p) => p.includes("No ticket")));
+  // a `config` PR without a ticket still passes on the config path
+  assert.deepEqual(scopeJudge({ ...base, labels: ["config"], files: [{ filename: "AGENTS.md" }] }).problems, []);
+});
 t("review gate: CodeRabbit completed / skipped / findings / blocked", () => {
   assert.deepEqual(CODERABBIT_LOGINS, ["coderabbitai[bot]", "coderabbitai"]);
   const sha = "abc1234abc1234abc1234abc1234abc1234abc12";
