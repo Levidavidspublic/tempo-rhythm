@@ -11,7 +11,8 @@
 ## Graph Freshness
 - Built from commit: `7d1a0f69`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update . --no-cluster` after code changes (no API cost).
+- Run `graphify update . --no-cluster` after code changes to refresh `graph.json` only (fast, no API cost).
+- Run `graphify update .` (clustered) to rebuild the full report, communities and wiki pages locally.
 
 
 ## God Nodes (most connected - your core abstractions)
