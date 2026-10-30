@@ -2,6 +2,8 @@
 // reads the API only (never runs PR code).
 // a. Find the ticket from "Closes #N" in the PR body. None and not a `config` PR -> fail.
 //    A `config` PR without a ticket passes here (config-guard judges it).
+//    A ticket-less PR also passes when EVERY changed path (renamed-from included) is on the
+//    NO_TICKET_OK list: docs/graph/** and the include.md sync files. AGENTS.md is not on that list.
 // b. Read the ticket's front-matter: `scope:` (folders) and `type:` (data | component).
 // c. Every changed file must be inside `scope:`.
 // d. component tickets: no file in the data folders and no shared hot file
@@ -37,6 +39,14 @@ export const HOT = [
   /(^|\/)routes?\.(t|j|mj)sx?$/,
 ];
 export const MERGE_FIX = /^Factory-Merge-Fix:\s*true\s*$/im;
+// Ticket-less PRs that change no product code: the Graphify report snapshots and the files the
+// include.md sync PR touches (its source PR also edits AGENTS.md, which stays out on purpose).
+export const NO_TICKET_OK = [
+  /^docs\/graph\//,
+  /^include\.md$/,
+  /^CLAUDE\.md$/,
+  /^docs\/factory\/MERGE_GATE\.md$/,
+];
 
 // Minimal front-matter reader: `key: value` and `key:` + `  - item` lists. Enough for the ticket schema.
 export function frontMatter(body) {
@@ -113,6 +123,9 @@ export function judge({ pr, labels, ticket, fm, files, commitFiles, config, arch
   const isConfig = labels.includes("config");
   if (!ticket) {
     if (isConfig) return { problems, notes: ['No ticket linked and the PR is labelled "config": scope-guard passes (config-guard judges config PRs).'] };
+    const allPaths = [...new Set(files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)))];
+    if (allPaths.length && allPaths.every((p) => NO_TICKET_OK.some((r) => r.test(p))))
+      return { problems, notes: ["No ticket: only docs/graph/** or include.md sync files (include.md, CLAUDE.md, docs/factory/MERGE_GATE.md) changed: passes."] };
     return { problems: ['No ticket found ("Closes #N" in the PR body) and the PR is not a "config" PR.'], notes };
   }
   if (!fm) return { problems: [`Ticket #${ticket} has no front-matter (--- block with scope: and type:).`], notes };
