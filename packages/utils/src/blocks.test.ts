@@ -306,7 +306,9 @@ describe("shared codec is browser-safe", () => {
     }
     const text = await result.outputs[0]?.text();
     expect(text).not.toMatch(/node:|convex\/server|process\.env/);
-  }, 30_000);
+    // Bun.build shares the runner with the browser suites, so the 30s budget timed out in the
+    // 2026-10-28 merge-queue Test job. The bundle itself is a few seconds; 120s is headroom only.
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------------------------------
