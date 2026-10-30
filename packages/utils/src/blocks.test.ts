@@ -272,6 +272,8 @@ console.log(JSON.stringify({
 }));
 `;
 
+const PROBE_TIMEOUT_MS = 20_000;
+
 interface BundleProbe {
   success: boolean;
   inputs: string[];
@@ -284,9 +286,17 @@ function bundleInOwnProcess(entry: string): BundleProbe {
   const child = spawnSync(process.execPath, ["--eval", BUILD_PROBE], {
     env: { ...process.env, TEMPO_BUNDLE_ENTRY: entry },
     encoding: "utf8",
+    // `spawnSync` blocks the test thread, so the test's own timeout can never interrupt a wedged child:
+    // bound it just under that timeout and report the kill instead of hanging the whole run.
+    timeout: PROBE_TIMEOUT_MS,
   });
   const stdout = child.stdout ?? "";
   const stderr = child.stderr ?? "";
+  if (child.signal)
+    throw new Error(
+      `bun build probe killed by ${child.signal} after ${PROBE_TIMEOUT_MS}ms:\n${stderr}`
+    );
+  if (child.error) throw new Error(`bun build probe could not run: ${child.error.message}`);
   if (child.status !== 0) throw new Error(`bun build probe exited ${child.status}:\n${stderr}`);
   try {
     return JSON.parse(stdout.trim().split("\n").at(-1) ?? "") as BundleProbe;
