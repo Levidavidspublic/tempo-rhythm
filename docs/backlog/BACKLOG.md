@@ -7,8 +7,8 @@ Every 5 loops the remaining tickets are re-checked against the code before the n
 ## Rules for every ticket here
 - Runtime is bun 1.3.9; the unit runner is `bun test` (root `test` script).
 - No ticket here touches a protected path (`convex/schema.ts`, `convex/auth*`, `.github/**`, `.env`).
-- No config work (Tempo config work is paused). Archive, never delete.
-- Every ticket names SCOPE, MUTATES, DONE, EVIDENCE (at least one test) and its numbers with a source.
+- No config work while Amit's config pause stands (set 1 Nov; lifted only by Amit). Archive, never delete.
+- Every ticket is filed with all 11 fields from `AGENTS.md` (FOR, WHEN, WHY, GOAL, SCOPE, MUTATES, STEPS, DONE, EVIDENCE, DO NOT, REPORT), at least one test in EVIDENCE, and its numbers with a source. The summaries below carry the core fields; the issue adds the rest.
 
 ## Staleness finding (1 Nov code check)
 The generated backlog was written from the docs, not the code. Much of it is already built on `integration`:
@@ -35,11 +35,12 @@ Protected tickets (TM-0005, TM-0006, TM-0009–TM-0015) are held for Amit.
 - MUTATES: `convex/lib/bounded.ts`, `convex/lib/bounded.test.ts`. No call sites changed in this ticket.
 - Steps:
   1. Export `clampPageSize(n, {min:1, max:100, default:25})`.
-  2. Export `byteCap(text, maxBytes)` that truncates on a UTF-8 code-point boundary (never splits a Hebrew or emoji character) and reports `truncated: boolean`.
-  3. Tests: clamp below/above/NaN; byteCap on ASCII, Hebrew, emoji, exact-boundary.
+  2. Export `readBudget({maxBytes})` that callers feed each document's approximate size (`JSON.stringify` length) as they iterate, stopping before the running total passes `maxBytes` (default 4 MiB) and returning a continuation cursor.
+  3. Export `byteCap(text, maxBytes)` that truncates on a UTF-8 code-point boundary (never splits a Hebrew or emoji character) and reports `truncated: boolean`.
+  4. Tests: clamp below/above/NaN; readBudget stops at the budget with 1 MiB fixtures; byteCap on ASCII, Hebrew, emoji, exact-boundary.
 - DONE: `bun test convex/lib/bounded.test.ts` exits 0 with ≥8 cases.
 - EVIDENCE: `bounded.ts`, `bounded.test.ts`, one TRD §7.6 reference in the PR body.
-- Numbers: Convex transaction limits — 16 MiB data read / 32,000 documents scanned; document size 1 MiB (docs.convex.dev/production/state/limits); page max 100 keeps far below both.
+- Numbers: Convex transaction limits — 16 MiB data read / 32,000 documents scanned; document size 1 MiB (docs.convex.dev/production/state/limits); page max 100 bounds the scan count; the 4 MiB `readBudget` bounds bytes read, since 100 docs × 1 MiB could exceed 16 MiB.
 - Size: ~1.5 h
 
 ### TM-0050 — Mock language model for deterministic coach tests
@@ -75,8 +76,8 @@ Protected tickets (TM-0005, TM-0006, TM-0009–TM-0015) are held for Amit.
 - Why: PRD proposal rules; no `confidence` field or helper exists in `convex/` or `apps/web`.
 - SCOPE: `convex/lib/`
 - MUTATES: `convex/lib/confidence.ts`, `convex/lib/confidence.test.ts` (pure scoring; storing it would need `convex/schema.ts` and is held for Amit).
-- Steps: `scoreProposal({fieldsFilled, fieldsRequired, ambiguousDates})` → 0–1; band `low < 0.6 ≤ medium < 0.85 ≤ high`.
-- DONE: `bun test convex/lib/confidence.test.ts` exits 0 with band-edge cases (0.59, 0.6, 0.849, 0.85).
+- Steps: `scoreProposal({fieldsFilled, fieldsRequired, ambiguousDates})` = `clamp01(min(fieldsFilled, fieldsRequired) / fieldsRequired − 0.2 × ambiguousDates)`; `fieldsRequired == 0` → 1; negative inputs throw. Band `low < 0.6 ≤ medium < 0.85 ≤ high`. Examples: (5,5,0)=1.0 high; (4,5,0)=0.8 medium; (5,5,1)=0.8 medium; (3,5,0)=0.6 medium; (2,5,0)=0.4 low; (6,5,0)=1.0.
+- DONE: `bun test convex/lib/confidence.test.ts` exits 0 with band-edge cases (0.59, 0.6, 0.849, 0.85), every example above, and the zero/negative/over-full rules.
 - EVIDENCE: `confidence.ts`, `confidence.test.ts`, `proposalView.test.ts` still green.
 - Numbers: band edges 0.6 / 0.85 are product choices from PRD proposal rules — mark for Amit to confirm.
 - Size: ~1.5 h
