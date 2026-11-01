@@ -23,9 +23,48 @@ const BROWSER_SUITE = /^tests\/unit\/kb-[^/]*\.test\.tsx$/;
 // `bun run test --timeout=120000` forwards the option to this script. Those are bun-test flags,
 // not suite names, so they are split out here and passed on to every `bun test` subprocess
 // instead of being consumed as a group selector.
+// Bun takes a flag's value from the next token too (`--timeout 120000`), so a value-taking flag
+// keeps the token after it; otherwise the value would be read as a browser-suite name and `all`
+// would exit 2 without running a test.
+const VALUE_FLAGS = new Set([
+  "-t",
+  "--test-name-pattern",
+  "--timeout",
+  "--rerun-each",
+  "--retry",
+  "--seed",
+  "--bail",
+  "--reporter",
+  "--reporter-outfile",
+  "--max-concurrency",
+  "--path-ignore-patterns",
+  "--changed",
+  "--parallel",
+  "--parallel-delay",
+  "--shard",
+  "--timings",
+  "--coverage-reporter",
+  "--coverage-dir",
+]);
+
 const argv = process.argv.slice(2);
-const runnerFlags = argv.filter((arg) => arg.startsWith("-"));
-const positional = argv.filter((arg) => !arg.startsWith("-"));
+const runnerFlags: string[] = [];
+const positional: string[] = [];
+let i = 0;
+while (i < argv.length) {
+  const arg = argv[i] ?? "";
+  i += 1;
+  if (!arg.startsWith("-")) {
+    positional.push(arg);
+    continue;
+  }
+  runnerFlags.push(arg);
+  const value = VALUE_FLAGS.has(arg) ? argv[i] : undefined;
+  if (value !== undefined) {
+    runnerFlags.push(value);
+    i += 1;
+  }
+}
 
 const mode = positional[0] ?? "all";
 // Optional: name browser suites to run (debugging one suite serially).
@@ -56,6 +95,36 @@ if (browserSuites.length === 0) {
   process.exit(2);
 }
 
+// Split runs start several bun processes, which changes what two kinds of flag mean. Both are
+// rejected instead of misbehaving silently; both are fine in `unit` mode, which is one process.
+const watched = runnerFlags.includes("--watch") || runnerFlags.includes("-w");
+// bun writes report files at the end of each run, so a forwarded output path would be rewritten by
+// every group and keep only the last group's results.
+const fileOutputFlag = runnerFlags.find(
+  (arg) =>
+    /^--reporter-outfile(?:=|$)/.test(arg) ||
+    /^--coverage-dir(?:=|$)/.test(arg) ||
+    /^--coverage-reporter=.*lcov/.test(arg)
+);
+
+function rejectFlagsThatNeedOneProcess(runs: number): void {
+  if (runs < 2) return;
+  if (watched) {
+    console.error(
+      `--watch would open a watcher on the first of ${runs} bun processes, so the rest would never start.\n` +
+        `Run the file you are editing directly instead: bun test <path> --watch`
+    );
+    process.exit(2);
+  }
+  if (fileOutputFlag !== undefined) {
+    console.error(
+      `${fileOutputFlag} would be written by each of ${runs} bun processes, keeping only the last group's results.\n` +
+        `Run the group you need directly instead, or drop the flag.`
+    );
+    process.exit(2);
+  }
+}
+
 async function run(args: string[], label: string): Promise<void> {
   console.log(`\n=== ${label}\n$ bun ${args.join(" ")}`);
   const proc = Bun.spawn({
@@ -83,6 +152,7 @@ if (mode === "all" || mode === "browser") {
     process.exit(2);
   }
   // --max-concurrency=1 last, so a forwarded --max-concurrency cannot re-parallelise the group.
+  rejectFlagsThatNeedOneProcess(mode === "all" ? selected.length + 1 : selected.length);
   for (const suite of selected) await run(["test", suite, ...runnerFlags, "--max-concurrency=1"], suite);
 }
 
