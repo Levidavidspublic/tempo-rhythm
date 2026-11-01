@@ -6,7 +6,7 @@ This document defines the four-mode environment model for Tempo Flow. Every agen
 
 - **Preview pairing:** https://preview.tempoflow.dev (branch integration) → ceaseless-dog-617
 - `SITE_URL` on `ceaseless-dog-617` = https://preview.tempoflow.dev.
-- Vercel Preview `NEXT_PUBLIC_CONVEX_URL` = `ceaseless-dog-617` (eu-west-1).
+- Vercel Preview `NEXT_PUBLIC_CONVEX_URL` = `https://ceaseless-dog-617.eu-west-1.convex.cloud` (test deployment `ceaseless-dog-617`).
 - Only `preview.tempoflow.dev` is excepted from Vercel protection. Other preview URLs still ask for the Vercel login.
 
 Never point preview at prod `precious-wildcat-890`. Only Amit deploys to live.
