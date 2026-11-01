@@ -14,6 +14,10 @@ on:
   push:
     branches: [master, integration]
   workflow_dispatch:
+  # Weekly full-history scan (Sun 03:17 UTC). The merge-queue run scans only the queued commits,
+  # so this keeps whole-history coverage. Old findings show up here, not in the queue.
+  schedule:
+    - cron: "17 3 * * 0"
   # release.yml (Phase H) re-runs the scans on the exact integration SHA; base_sha = master tip (scan range).
   workflow_call:
     inputs:
@@ -88,6 +92,11 @@ jobs:
         uses: trufflesecurity/trufflehog@4dd8831c5f12599465d4d45c3c447b4018a34c85 # v3.97.9
         with:
           path: ./
+          # merge_group: scan only the queued commits (base..head). Without these the action gets
+          # empty BASE/HEAD on merge_group runs and scans the whole history. Other events keep their
+          # current behaviour; the weekly schedule run does the full-history scan.
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || '' }}
+          head: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || '' }}
           extra_args: --results=verified,unknown
 
   secret-scan-self-test:
