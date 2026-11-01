@@ -72,8 +72,9 @@ Protected tickets (TM-0005, TM-0006, TM-0009–TM-0015) are held for Amit.
 
 ## Loop 2 (opens after Loop 1 merges; only 1 verified so far)
 
-### TM-0075 — Coach confidence score on every proposal
-- Why: PRD proposal rules; no `confidence` field or helper exists in `convex/` or `apps/web`.
+### TM-0075 — Proposal confidence scoring helper (pure, no wiring)
+- Why: first step toward a confidence on every proposal (PRD proposal rules). This ticket adds only the scoring helper; carrying it on `CoachProposal` / `readProposal` is a later ticket.
+- Context: PRD proposal rules; no `confidence` field or helper exists in `convex/` or `apps/web`.
 - SCOPE: `convex/lib/`
 - MUTATES: `convex/lib/confidence.ts`, `convex/lib/confidence.test.ts` (pure scoring; storing it would need `convex/schema.ts` and is held for Amit).
 - Steps: `scoreProposal({fieldsFilled, fieldsRequired, ambiguousDates})` = `clamp01(min(fieldsFilled, fieldsRequired) / fieldsRequired − 0.2 × ambiguousDates)`; `fieldsRequired == 0` → 1; negative inputs throw. Band `low < 0.6 ≤ medium < 0.85 ≤ high`. Examples: (5,5,0)=1.0 high; (4,5,0)=0.8 medium; (5,5,1)=0.8 medium; (3,5,0)=0.6 medium; (2,5,0)=0.4 low; (6,5,0)=1.0.
