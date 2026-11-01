@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TpIcon } from "@/components/tempo/TpIcon";
@@ -22,6 +23,12 @@ import {
 } from "./shared";
 
 const WHY_SAVE_DELAY_MS = 800;
+/** A milestone moves progress by a quarter; stored on the goal itself (no new table). */
+const MILESTONE_STEP = 25;
+
+function dateInputValue(ms: number | undefined): string {
+  return ms === undefined ? "" : new Date(ms).toISOString().slice(0, 10);
+}
 
 /**
  * Goal detail (docs/design/v3/screens/web/goal-detail.html): the goal in the person's words,
@@ -101,6 +108,10 @@ function GoalDetailContent({ goalId }: { goalId: string }) {
 function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
   const { t } = useLocale();
   const update = useMutation(api.goals.update);
+  const removeGoal = useMutation(api.goals.remove);
+  const router = useRouter();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const progress = goal.progressPercent ?? 0;
   const status = goalStatus(goal.status);
   const [title, setTitle] = useState(goal.title);
   const [why, setWhy] = useState(goal.description ?? "");
@@ -169,6 +180,26 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
 
   const setStatus = (next: GoalStatus) => {
     if (next !== status) void run({ goalId: goal._id, status: storedGoalStatus(next) });
+  };
+
+  const setTargetDate = (value: string) => {
+    void run({ goalId: goal._id, targetDate: value ? Date.parse(`${value}T00:00:00Z`) : null });
+  };
+
+  const markMilestone = () => {
+    const next = Math.min(100, progress + MILESTONE_STEP);
+    void run({
+      goalId: goal._id,
+      progressPercent: next,
+      ...(next >= 100 ? { status: "completed" as const } : {}),
+    });
+  };
+
+  const deleteGoal = () => {
+    removeGoal({ goalId: goal._id }).then(
+      () => router.push("/goals"),
+      () => setSaveError(true),
+    );
   };
 
   return (
@@ -256,6 +287,62 @@ function GoalPage({ goal, online }: { goal: Doc<"goals">; online: boolean }) {
             />
           </div>
         </section>
+
+        <section className="tp-section" data-component="Section" aria-labelledby="gd-progress-h">
+          <div className="tp-section__head">
+            <h2 className="tp-section__title" id="gd-progress-h">
+              Progress
+            </h2>
+          </div>
+          <div className="tp-surface" data-component="Surface">
+            <label className="tp-field" htmlFor="gd-target">
+              <span className="tp-label">Target date</span>
+              <input
+                id="gd-target"
+                type="date"
+                className="tp-input"
+                value={dateInputValue(goal.targetDate)}
+                onChange={(event) => setTargetDate(event.target.value)}
+              />
+            </label>
+            <p>
+              <progress max={100} value={progress} aria-label="Progress" /> {progress}%
+            </p>
+            <button
+              type="button"
+              className="tp-btn tp-btn--secondary"
+              disabled={progress >= 100}
+              onClick={markMilestone}
+            >
+              Mark milestone
+            </button>
+          </div>
+        </section>
+
+        <div>
+          {confirmDelete ? (
+            <>
+              <button type="button" className="tp-btn tp-btn--secondary" onClick={deleteGoal}>
+                Confirm delete
+              </button>{" "}
+              <button
+                type="button"
+                className="tp-btn tp-btn--ghost"
+                onClick={() => setConfirmDelete(false)}
+              >
+                {t("gx.cancel")}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="tp-btn tp-btn--ghost"
+              onClick={() => setConfirmDelete(true)}
+            >
+              Delete goal
+            </button>
+          )}
+        </div>
 
         <StateEmpty icon="flag" title={t("gd.empty.title")} body={t("gd.empty.body")} />
       </div>
