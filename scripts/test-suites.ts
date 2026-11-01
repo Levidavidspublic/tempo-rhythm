@@ -47,6 +47,13 @@ const VALUE_FLAGS = new Set([
   "--coverage-dir",
 ]);
 
+// A name filter applies inside every subprocess, and bun exits 1 when one process contains no
+// matching test, which would otherwise stop the run at the first suite that has none. That exit is
+// recognised from bun's own "matched 0 tests" report and the run continues; the filter is judged
+// once for the whole run at the end, so an empty match still fails.
+const NAME_FILTER = /^(?:-t|--test-name-pattern)(?:=|$)/;
+const MATCHED_NOTHING = /error: regex "[^"]*" matched 0 tests\./;
+
 const argv = process.argv.slice(2);
 const runnerFlags: string[] = [];
 const positional: string[] = [];
@@ -95,6 +102,10 @@ if (browserSuites.length === 0) {
   process.exit(2);
 }
 
+const nameFiltered = runnerFlags.some((arg) => NAME_FILTER.test(arg));
+// Groups whose subprocess exited 0, so some test matched the filter there.
+let matchedGroups = 0;
+
 // Split runs start several bun processes, which changes what two kinds of flag mean. Both are
 // rejected instead of misbehaving silently; both are fine in `unit` mode, which is one process.
 const watched = runnerFlags.includes("--watch") || runnerFlags.includes("-w");
@@ -127,17 +138,34 @@ function rejectFlagsThatNeedOneProcess(runs: number): void {
 
 async function run(args: string[], label: string): Promise<void> {
   console.log(`\n=== ${label}\n$ bun ${args.join(" ")}`);
+  // A filtered run reads its own output, to tell "this group matched nothing" from a real failure;
+  // an unfiltered run streams straight through.
   const proc = Bun.spawn({
     cmd: [process.execPath, ...args],
     cwd: root,
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: nameFiltered ? "pipe" : "inherit",
+    stderr: nameFiltered ? "pipe" : "inherit",
   });
-  const code = await proc.exited;
-  if (code !== 0) {
-    console.error(`\n${label} failed (exit ${code})`);
-    process.exit(1);
+  let output = "";
+  if (nameFiltered && proc.stdout && proc.stderr) {
+    const [out, err] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    process.stdout.write(out);
+    process.stderr.write(err);
+    output = `${out}${err}`;
   }
+  const code = await proc.exited;
+  if (code === 0) {
+    matchedGroups += 1;
+    return;
+  }
+  // A suite that found no test for the filter is not a failure of the run; the whole-run check
+  // below still fails when no suite matched one.
+  if (nameFiltered && MATCHED_NOTHING.test(output)) return;
+  console.error(`\n${label} failed (exit ${code})`);
+  process.exit(1);
 }
 
 if (mode === "all" || mode === "browser") {
@@ -169,4 +197,12 @@ if (mode === "all" || mode === "unit") {
     ],
     `unit tests (${unitFiles.length} files in tests/unit, browser suites excluded)`
   );
+}
+
+if (nameFiltered && matchedGroups === 0) {
+  console.error(
+    `no test matched the name filter in any suite (${runnerFlags.join(" ")}).\n` +
+      `Every selected suite filtered its tests out, so nothing ran.`
+  );
+  process.exit(1);
 }
