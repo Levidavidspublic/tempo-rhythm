@@ -1,3 +1,5 @@
+> Superseded by BACKLOG-v2.md (ticket standard v2, 1 Nov 2026)
+
 # Tempo Flow — Backlog rewrite plan
 
 Updated 1 Nov 2026 · Branch `docs/source-2026-11-01`. This file plans the full rewrite of the

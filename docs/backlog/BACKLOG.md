@@ -1,3 +1,5 @@
+> Superseded by BACKLOG-v2.md (ticket standard v2, 1 Nov 2026)
+
 # Tempo Flow — Loop Backlog (next batches only)
 
 Updated 1 Nov 2026. This file holds only the next loop batches (file 12 §2.5 ladder: 3 → 5 → 15 → 10).
