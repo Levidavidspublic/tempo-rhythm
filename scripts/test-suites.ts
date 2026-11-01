@@ -14,7 +14,10 @@
 // No test is skipped or moved: every file bun discovers under tests/unit still runs exactly once.
 
 const root = `${import.meta.dir}/..`;
-const TEST_FILE = /(?:\.test|\.spec|_test|_spec)\.(?:ts|tsx|js|jsx)$/;
+// Every suffix and extension bun test discovers: .test/.spec/_test/_spec with js/jsx/ts/tsx/mjs/cjs/mts/cts.
+const TEST_FILE = /(?:\.test|\.spec|_test|_spec)\.(?:[mc]?[jt]s|[jt]sx)$/i;
+// Anything that looks like a test file; used to fail loudly if TEST_FILE ever misses one.
+const TEST_LIKE = /(?:\.test|\.spec|_test|_spec)\.[^/.]+$/i;
 const BROWSER_SUITE = /^tests\/unit\/kb-[^/]*\.test\.tsx$/;
 
 // `bun run test --timeout=120000` forwards the option to this script. Those are bun-test flags,
@@ -38,6 +41,13 @@ if (!["all", "unit", "browser"].includes(mode)) {
 const unitTestFiles = [...new Bun.Glob("tests/unit/**/*").scanSync({ cwd: root, onlyFiles: true })]
   .filter((path) => TEST_FILE.test(path))
   .sort();
+const missed = [...new Bun.Glob("tests/unit/**/*").scanSync({ cwd: root, onlyFiles: true })].filter(
+  (path) => TEST_LIKE.test(path) && !TEST_FILE.test(path)
+);
+if (missed.length > 0) {
+  console.error(`test-like files TEST_FILE does not match, so they would not run:\n${missed.join("\n")}`);
+  process.exit(2);
+}
 const browserSuites = unitTestFiles.filter((path) => BROWSER_SUITE.test(path));
 const unitFiles = unitTestFiles.filter((path) => !BROWSER_SUITE.test(path));
 
@@ -78,7 +88,15 @@ if (mode === "all" || mode === "browser") {
 
 if (mode === "all" || mode === "unit") {
   await run(
-    ["test", "convex", "apps/web/lib", "apps/web/components", "packages", ...unitFiles, ...runnerFlags],
+    [
+      "test",
+      "convex",
+      "apps/web/lib",
+      "apps/web/components",
+      "packages",
+      ...unitFiles,
+      ...runnerFlags,
+    ],
     `unit tests (${unitFiles.length} files in tests/unit, browser suites excluded)`
   );
 }
