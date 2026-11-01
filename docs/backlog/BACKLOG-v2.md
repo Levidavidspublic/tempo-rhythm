@@ -57,7 +57,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a negative `maxBytes` / Then a `ConvexError` is thrown.
   - Given 5 rows all under budget / Then `rows.length===5` and `truncated===false`.
 - **NUMBERS:** `maxRows` and `maxBytes` are caller-set (UNKNOWN defaults until a caller fixes them — Amit). No industry number applies; correctness is byte-count exactness (deterministic, no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** default budgets for the coach-tool calls (UNKNOWN — Amit).
 
 ### TFV2-0002 — Mock language model `convex/lib/mockModel.ts`
@@ -81,7 +81,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given `messages` missing `content` / Then a `ConvexError` is thrown.
   - Given 3 queued replies and 4 calls / Then the 4th returns `"Done."`.
 - **NUMBERS:** reply determinism is exact (no range); no latency or score target applies (UNKNOWN — none needed; Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0003 — Anti-shaming copy check `convex/lib/shameWords.ts`
@@ -107,7 +107,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a word containing a term as a substring of a benign word (e.g. "mustard") / Then `found===false` for `"must"` (whole-word boundary).
   - Given `matches` dedupe / When the same term appears twice / Then it appears once in `matches`.
 - **NUMBERS:** recall on the canonical shame list = 100% (must never under-flag); precision may be lower (over-flagging allowed). Source: product copy rule (PRD §13), no external standard — UNKNOWN numeric precision target (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0004 — Entitlements `convex/lib/entitlements.ts`
@@ -131,7 +131,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given an unknown tier string / Then the input is rejected (throw or `false`, matching current behaviour — assert the actual, documented behaviour).
   - Given a revoked/absent user snapshot / Then `shouldGrantSubscription` returns the expected (assert current behaviour and add a test if untested).
 - **NUMBERS:** no industry number; correctness is the premium-for-all invariant (PRD F-01a). Pass range: invariant holds on 100% of test cases (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0005 — Lighthouse budget in CI
@@ -150,7 +150,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Budgets (all fail-fast, no ranges that hide regressions): performance ≥ 90, accessibility ≥ 90, best-practices ≥ 90, SEO ≥ 90, LCP ≤ 2500 ms, CLS ≤ 0.1, TBT ≤ 200 ms. The script prints one line per metric with `PASS`/`FAIL` and the measured value; on `FAIL` it exits 1. On a network-blocked font fetch it prints `UNKNOWN: lighthouse (<reason>)` and exits 0 (per AGENTS.md sandbox rule), never a silent pass.
 - **TESTS:** (config ticket — the check is the test) Given a preview server up / When the script runs / Then it prints all seven metrics; Given a metric below budget / Then exit code is 1; Given fonts blocked / Then it prints `UNKNOWN: lighthouse (Google Fonts blocked)` and exits 0.
 - **NUMBERS:** performance ≥ 90, accessibility ≥ 90, best-practices ≥ 90, SEO ≥ 90 (https://developer.chrome.com/docs/lighthouse/overview); LCP ≤ 2.5 s, CLS ≤ 0.1 (https://web.dev/articles/vitals); TBT ≤ 200 ms (https://web.dev/articles/lighthouse-total-blocking-time).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether Lighthouse runs per-PR or once per loop (UNKNOWN — Amit; the plan says the preview builds from the loop PR).
 
 ### TFV2-0006 — Block codec + Zod schemas `packages/utils/src/blocks.ts`
@@ -177,7 +177,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a `page-meta` block with a bad `date` / Then Zod rejects (broken), asserting `isoDate` refinement.
   - Given plain markdown with no block fences / Then all segments are `markdown`.
 - **NUMBERS:** limits are `BLOCK_CODEC_LIMITS` (repo code truth): `maxBodyChars 1_048_576`, `maxBlockChars 65_536`, `maxBlocks 256`, `maxJsonDepth 16`, `maxShortStringChars 200`, `maxTextChars 500`, `maxArrayItems 100`. Round-trip fidelity = byte-exact for valid segments (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority — `notes.body` as the single page-content authority with typed tables migrating into blocks and retiring (REWRITE-PLAN-v2 §4 conflict 7; UNKNOWN — Amit). The 12 Oct contracts are the newest and lean toward `notes.body`.
 
 ### TFV2-0007 — `notes.save` / `notes.patchBlock` (notes.body authority)
@@ -203,7 +203,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given `patchBlock` on a missing `blockId` / Then `NOT_FOUND` and no write.
   - Given two sequential `save` calls / Then `revision` is 1 then 2.
 - **NUMBERS:** `notes.body` budget = `BLOCK_CODEC_LIMITS.maxBodyChars` = 1,048,576 chars (repo code). Save round-trip of untouched blocks = byte-exact (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority (same as TFV2-0006; UNKNOWN — Amit). `expectedRevision` opt-in vs mandatory (UNKNOWN — Amit).
 
 ### TFV2-0008 — `noteBlocks` derived index
@@ -227,7 +227,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a save with zero blocks / Then zero rows.
   - Given index rebuild from the same body / Then the rows are identical (idempotent).
 - **NUMBERS:** row count bound = `BLOCK_CODEC_LIMITS.maxBlocks` = 256 per page (repo code). Index/body consistency = exact on every save (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority (same as TFV2-0006; UNKNOWN — Amit).
 
 ### TFV2-0009 — `noteLinks` / backlinks derived index
@@ -252,7 +252,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a non-owner calls `backlinks` for another user's page / Then it returns only the caller's own links (isolation).
   - Given a `[[Target]]` where no page exists / Then the index records the raw text target without a resolved id (unresolved), and the query tolerates it.
 - **NUMBERS:** link scan bound = `LINK_SCAN_LIMIT` (500) and `LINK_SCAN_BYTES` (12 KiB) already in `convex/notes.ts` (repo code). Index correctness = exact after every save (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority affects what "a link" is stored as (UNKNOWN — Amit).
 
 ### TFV2-0010 — Operation ledger + 5-min Undo `convex/lib/pageLedger.ts`
@@ -279,7 +279,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given an invalid sha256 hex / Then `isValidSha256Hex` rejects it.
   - Given `digestBody` on the same body twice / Then equal digests (determinism).
 - **NUMBERS:** Undo window = 5 minutes (`PAGE_LEDGER_TIMING`, repo code + PRD F-131). Digest determinism = exact (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** accept-reject vs auto-apply (REWRITE-PLAN-v2 §4 conflict 6): whether every AI mutation goes through `proposals.ts` confirm/edit/reject or `confidence ≥ 0.8` auto-applies with this 5-min Undo (UNKNOWN — Amit). The ledger supports both; the caller policy is not decided here.
 
 ### TFV2-0011 — `pagePrivacy` + resource quotas (4 MiB/file · 50 MiB · 100 files)
@@ -305,7 +305,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a user under all quotas / Then success.
   - Given a soft-deleted page / Then `requireLivePage` denies it (30-day grace honoured).
 - **NUMBERS:** 4 MiB per file, 50 MiB total, 100 files (product decision in REWRITE-PLAN-v2 §6 chunk 1; not an industry standard — UNKNOWN source beyond the plan; Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether the 50 MiB / 100 files quotas are per-user storage on Convex or a provider-side cap (UNKNOWN — Amit).
 
 ### TFV2-0012 — Approval-gated sign-up (`convex/auth.ts` + `convex/lib/approval.ts`)
@@ -330,7 +330,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given an admin email / Then `isAdminUser` is true.
   - Given `approvalStatusOf` with a normalized email (case, whitespace) / Then it matches the stored form.
 - **NUMBERS:** no industry number; correctness is the F-01a invariant (unapproved can never sign in). Pass: invariant on 100% of cases (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** sign-up policy (REWRITE-PLAN-v2 §4 conflict 4): the cap (PRD says 30) vs "unlimited, each approved by Amit", and the approval order, and where Amit approves (admin screen vs Convex dashboard vs email link) are all UNKNOWN — Amit.
 
 ### TFV2-0013 — Magic-link sign-in / sign-out parity (remove passkeys)
@@ -354,7 +354,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a repo grep for `passkey|webauthn|WebAuthn` / Then zero matches (assert in test or as EVIDENCE).
   - Given the email HTML / Then it escapes user-controlled characters (no injection).
 - **NUMBERS:** magic-link lifetime = 30 minutes (PRD F-01 + sign-in screen copy). No industry number; link lifetime is a product decision.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0014 — Chat backend: real AI replies via the seam `convex/lib/ai_router.ts`
@@ -379,7 +379,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given a provider failure (mocked) / Then a typed error result with no key in the message.
   - Given the same input twice / Then deterministic with the mock (assert replay).
 - **NUMBERS:** no latency/success-rate target is verifiable offline (UNKNOWN — Amit). Model string is a product decision (see OPEN).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** interim text model (REWRITE-PLAN-v2 §4 conflict 3): repo `DEFAULT_AI_MODEL` is `deepseek-ai/DeepSeek-V4.1-Flash` on DeepInfra; a later note says `GLM 5.3 Flash on DeepInfra` (that string appears nowhere in the repo). UNKNOWN — Amit; `ai_router.ts` is the source of truth until settled.
 
 ### TFV2-0015 — `/coach` chat uses `chat.send` + Thinking + Retry
@@ -403,7 +403,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given an unapproved user / Then the send is refused at the AI gate.
   - Given the Thinking state / Then it is announced (`role=status` equivalent) before the reply.
 - **NUMBERS:** retry count = exactly 1 (product rule; PRD/TRD). No latency target offline (UNKNOWN — Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** interim text model (same as TFV2-0014; UNKNOWN — Amit).
 
 ### TFV2-0016 — Coach Agent foundation `convex/lib/agentComponent.ts`
@@ -426,7 +426,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given the wrapper import / Then no `import.meta.glob` is executed (assert the module loads under Bun).
   - Given a second instantiation / Then it returns an equivalent handle (no duplicate registration).
 - **NUMBERS:** pinned `@convex-dev/agent` version = 0.3.2 (repo `package.json`). No industry number.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether the wrapper is required or `coach.ts` may keep importing the component directly (UNKNOWN — Amit); interim text model (UNKNOWN — Amit).
 
 ### TFV2-0017 — Crisis card `convex/crisis.ts` + `convex/lib/crisisWords.ts`
@@ -451,7 +451,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given the card / Then it contains a real helpline (phone link) and no model-generated sentence.
   - Given the card in HE / Then it renders RTL and the numbers stay LTR (`.tp-num`).
 - **NUMBERS:** no industry number; correctness is F-24 (coaching stops on crisis = 100% of matched cases, no range). Crisis-word recall = 100% on the committed list.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** per-country resource list completeness (PRD F-24: per-country data is MVP; UNKNOWN — Amit).
 
 ### TFV2-0018 — auth → entitlement → quota ordering `convex/lib/aiGate.ts`
@@ -475,7 +475,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given authenticated, approved, quota exhausted / Then `QUOTA_EXCEEDED`.
   - Given authenticated, approved, under quota / Then no model/network call is made.
 - **NUMBERS:** no industry number; ordering invariant = exact (auth → entitlement → quota).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** quota value/source for the AI gate (voice-minute cap vs model-call cap) is UNKNOWN — Amit (chunk E).
 
 ### TFV2-0019 — Memory adapter foundation `convex/memory.ts`
@@ -500,7 +500,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given `exportAll` / Then output is Markdown containing every item.
   - Given `restore` after `forget` (if soft path exists) / Then the item returns.
 - **NUMBERS:** no industry number; correctness is owner isolation (100% of reads/writes scoped). Recall-by-meaning arrives in chunk C (UNKNOWN numeric benchmark — Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** `forget` semantics (REWRITE-PLAN-v2 §4 conflict 8): PRD "soft delete everywhere, 30-day grace" vs memory spec "forget must be complete" (`deleteMemory` hard-deletes today). UNKNOWN — Amit.
 
 ### TFV2-0020 — EN/HE message baseline + RTL (`apps/web/lib/i18n.ts` + `apps/web/lib/i18n-groups/`)
@@ -525,7 +525,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
   - Given the EN and HE dictionaries / Then every EN key exists in HE (no missing key).
   - Given a mixed-direction paragraph / Then `dir="auto"` is applied (component-level assert).
 - **NUMBERS:** no industry number; completeness = every EN key has a HE value (100%).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the task-specified location `apps/web/messages/en.json`/`he.json` differs from the repo reality `apps/web/lib/i18n.ts` (GitHub is truth; UNKNOWN whether to migrate to JSON — Amit).
 
 ### TFV2-0021 — TempoShell
@@ -544,7 +544,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Grid `rail` (264px, `--tp-rail-w`), `top` (56px, `--tp-topbar-h`), `main` (centred paper, max 760px `--tp-paper-max`), `coach` (400px, `--tp-coach-w`, docked ≥1280). Under 768: full-bleed paper, bottom tab bar, coach as bottom sheet. Scrim `--tp-scrim`. Glass only on floating chrome. One primary action per screen. Motion ≤250ms (`--tp-dur-slow` 240ms, `--tp-ease-out`).
 - **TESTS:** Given viewport 1280 / When shell renders / Then rail, topbar, main are visible and coach is dockable. Given 390 / Then rail is hidden behind a menu and main is full-bleed. Given `lang=he` / Then `dir=rtl` and rail moves to the right (logical properties). Given `toggle-rail` / Then the drawer opens and focus moves in; Esc closes.
 - **NUMBERS:** rail 264px, coach 400px, topbar 56px (tokens, repo). WCAG 2.2 AA text 4.5:1 (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum); target ≥24×24px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum); motion ≤250ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0022 — Sidebar / PageTree
@@ -563,7 +563,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-rail` width 264px; groups `Today / Inbox / Coach`, then `Library`, then `Pages` with nested folders. `aria-current="page"` on the active row. Rows use `--tp-hover` on hover/focus; active text `--tp-ink`, muted `--tp-ink-muted`. Copy (EN/HE): `EN: "Pages" / HE: "דפים"`; `EN: "Library" / HE: "ספרייה"`; `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`; `EN: "Reading font" / HE: "גופן קריאה"`; `EN: "Settings" / HE: "הגדרות"`. RTL: rail on the right; chevrons flip.
 - **TESTS:** Given 1280 / Then the rail shows all groups and the current page has `aria-current`. Given a folder with children / Then tapping toggles collapse. Given 390 / Then the rail is a drawer opened from the topbar. Given `lang=he` / Then labels are Hebrew and the rail is on the right.
 - **NUMBERS:** rail 264px (token). WCAG contrast 4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0023 — Topbar
@@ -582,7 +582,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Height 56px (`--tp-topbar-h`), glass recipe from DESIGN.md §5. Breadcrumbs with a chevron that flips in RTL (`tp-icon--flip`). Copy (EN/HE): `EN: "Saved" / HE: "נשמר"`; `EN: "Open pages" / HE: "פתיחת הדפים"`; `EN: "Dark theme" / HE: "ערכת צבעים כהה"`. Offline: "Saved" is hidden and the offline banner takes its meaning.
 - **TESTS:** Given 1280 / Then breadcrumbs, Saved, theme toggle, avatar are visible. Given 390 / Then crumbs collapse (hide `--hide-sm`). Given offline / Then "Saved" is hidden. Given `lang=he` / Then crumbs are RTL and the chevron flips. Given theme toggle / Then `aria-pressed` flips and `data-theme` changes.
 - **NUMBERS:** height 56px (token). WCAG contrast 4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0024 — Avatar
@@ -601,7 +601,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** 32px circle, `--tp-paper` ground with `--tp-ink` initials, `--tp-line-strong` hairline. `initials` derived when omitted. `EN/HE` — no visible text; `aria-label` is the person's name in both scripts (name is user data, not translated). Keyboard: not focusable (decorative); `role="img"` exposes the name to screen readers.
 - **TESTS:** Given `name="Maya Ronen"` / Then initials are `"MR"` and `aria-label="Maya Ronen"`. Given `name="Yoni"` / Then initials `"Y"`. Given `initials="D"` / Then it overrides derivation. Given a screen reader / Then it announces the name, never "User".
 - **NUMBERS:** size 32px; contrast ≥4.5:1 (initials `--tp-ink` on `--tp-paper` = 16.67:1 light). WCAG 2.2 AA.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0025 — TabBar
@@ -620,7 +620,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Height 64px (`--tp-tabbar-h`), glass, icons + labels. Copy (EN/HE): `EN: "Today" / HE: "היום"`; `EN: "Tasks" / HE: "משימות"`; `EN: "Pages" / HE: "דפים"`; `EN: "Calendar" / HE: "לוח שנה"`; `EN: "More" / HE: "עוד"`. Under 768 only; content reserves `padding-bottom` = tab bar + 64. RTL mirrors and chevrons flip.
 - **TESTS:** Given 390 / Then the tab bar shows five tabs with the active tab `aria-current`. Given 1280 / Then the tab bar is hidden. Given `lang=he` / Then labels are Hebrew and order mirrors. Given "More" / Then the rail opens.
 - **NUMBERS:** height 64px (token); target ≥24px; contrast ≥4.5:1; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0026 — CommandTrigger
@@ -639,7 +639,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-rail__search` button (secondary), search icon, label `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`, trailing `Kbd` `Ctrl K` (renders `⌘ K` on macOS). Keyboard: Enter/Space opens, Esc closes and returns focus. RTL mirrors the trailing kbd to the start.
 - **TESTS:** Given a click / Then the palette opens and focus is inside. Given Ctrl+K / Then it opens. Given Esc / Then it closes and focus returns to the trigger. Given 390 vs 1280 / Then the trigger renders in the rail/drawer in both. Given `lang=he` / Then label is Hebrew.
 - **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms (dialog 180ms).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0027 — Page / PageEditor (CodeMirror live preview + remark-gfm)
@@ -658,7 +658,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-paper` centred, max 760px. CodeMirror edits + live preview via `remark-gfm`. `- [ ]` renders as a TaskBlock/TaskRow (tick → `tasks.complete`), `[[page]]` as Wikilink. Save is optimistic with the topbar "Saved" state and 5-min Undo. Empty state `EN: "This page is empty." / HE: "הדף הזה ריק."`; `EN: "Just start writing. Type / on a new line for tasks, time blocks and more." / HE: "פשוט להתחיל לכתוב. הקלדת / בשורה חדשה מוסיפה משימות, בלוקי זמן ועוד."`. Offline keeps editing; error shows `EN: "Couldn't open this page. Your data is safe." / HE: "לא הצלחנו לפתוח את הדף הזה. המידע שלך שמור."` + Retry.
 - **TESTS:** Given a page / When a task block is ticked / Then optimistic check and Undo toast. Given a typed `[[Other page]]` / Then a Wikilink renders. Given `/` on an empty line / Then the SlashMenu opens (TFV2-0036). Given `lang=he` / Then the editor is RTL and `dir="auto"` per paragraph. Given 390 and 1280 / Then editing works at both. Assert no `{`-led JSON string is visible anywhere.
 - **NUMBERS:** paper max 760px; text min 13px; contrast ≥4.5:1; motion ≤250ms; save autosave (no loss on refresh).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority (UNKNOWN — Amit).
 
 ### TFV2-0028 — PageTitle / Headings
@@ -677,7 +677,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Title: `--tp-font-serif`, `--tp-text-3xl` (42px), weight 560, tracking −0.02em (0 for Hebrew). h2 `--tp-text-xl` 26px, h3 `--tp-text-lg` 20px, `--tp-leading-heading` 1.18. Editable title focus ring `--tp-accent` 2px. No visible copy beyond the title text itself.
 - **TESTS:** Given a title / Then it renders in the serif face at 42px (assert class/token). Given an editable title / Then typing updates it and `dir="auto"` is set. Given `lang=he` / Then the serif face is Frank Ruhl Libre and tracking is 0.
 - **NUMBERS:** title 42px, h2 26px, h3 20px (tokens). Contrast ≥4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0029 — Tag
@@ -696,7 +696,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Pill radius `--tp-radius-pill`, text `--tp-text-xs` (13px min), `#` prefix inline. Default `--tp-ink-muted` text on `--tp-paper` with `--tp-line` hairline; selected `--tp-accent` text on `--tp-accent-wash`. Linkable (`href`) with hover lift. The tag text is user data (untranslated), shown `dir="auto"`.
 - **TESTS:** Given `name="home"` / Then it renders `#home`. Given selected / Then accent wash + accent text. Given `href` / Then it is a link. Given 390 vs 1280 / Then the pill wraps in both.
 - **NUMBERS:** text ≥13px; contrast ≥4.5:1 (accent on wash; default muted on paper).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0030 — Wikilink
@@ -715,7 +715,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Inline link `--tp-accent` text with a subtle underline; `dir="auto"` for the page name. Resolved → navigate; unresolved → `EN: "Create '…'" / HE: "ליצור '…'"` affordance. Popover picker (command) lists matching pages on typing; arrows/Enter/Esc. Backlinks section header `EN: "Linked here" / HE: "מקושר לכאן"`.
 - **TESTS:** Given `[[Moving checklist]]` / Then it renders as a link. Given a resolved page / Then clicking navigates and the target's backlinks list it. Given an unresolved page / Then a create affordance shows. Given `lang=he` / Then `dir="auto"` per name.
 - **NUMBERS:** contrast ≥4.5:1 (accent on paper 5.78:1 light); target ≥24px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0031 — Chip
@@ -734,7 +734,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Small badge with `--tp-text-xs` label, radius `--tp-radius-sm`, tone wash + tone text. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Fixed" / HE: "קבוע"`; `EN: "Flexible" / HE: "גמיש"`. Icon always accompanies the word.
 - **TESTS:** Given `tone="done"` / Then it renders icon + "Done" in `--tp-done`. Given `tone="caution"` / Then icon + "Flexible". Given `lang=he` / Then Hebrew word + icon. Given forced-colours mode / Then the word remains (no colour-only signal).
 - **NUMBERS:** text ≥13px; contrast ≥4.5:1 (done 5.22:1, info 5.13:1, caution 5.05:1, danger 5.26:1 light).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0032 — Button
@@ -753,7 +753,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** primary `--tp-accent`/`--tp-on-accent` (6.08:1 light); secondary `--tp-line-control` outline; ghost transparent; danger-ghost `--tp-danger`. Radius `--tp-radius-md` (10px). Height ≥44px (`--tp-touch`). Press = 1px down 98% scale 120ms; hover fade 120ms. Disabled: reduced opacity + `aria-disabled` + no action. Copy is per-screen (no fixed label).
 - **TESTS:** Given `variant=primary` / Then accent background and white label. Given keyboard Tab / Then a 2px accent focus ring shows. Given disabled / Then no click handler fires. Given 390 / Then target ≥44px (tap). Given `lang=he` / Then label direction is correct.
 - **NUMBERS:** min height 44px; contrast ≥4.5:1 (primary 6.08:1); target ≥24px (≥44px preferred); motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0033 — Kbd
@@ -772,7 +772,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `--tp-font-mono` (`IBM Plex Mono`), `--tp-text-xs`, radius `--tp-radius-sm`, subtle sunken ground `--tp-sunken`. Always LTR (`direction:ltr; unicode-bidi:isolate`) even in Hebrew. Examples: `Ctrl K`, `⌘ K`, `[]`, `#`, `-`, `[[`.
 - **TESTS:** Given `keys=["Ctrl","K"]` / Then it renders `Ctrl K` in mono, LTR. Given `lang=he` / Then the kbd stays LTR. Given macOS / Then it renders `⌘ K`. Given `keys=["#"]` / Then `#`.
 - **NUMBERS:** text ≥13px; no contrast requirement below 3:1 for decorative hint (but label text beside it must clear 4.5:1).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0034 — Card
@@ -791,7 +791,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Solid `--tp-paper`, `--tp-radius-lg`, `--tp-shadow-card`, head/title using `--tp-ink` and `--tp-ink-muted`. Cards on paper use the `raise` shadow. Interactive cards lift 1px at 180ms and show a focus ring.
 - **TESTS:** Given a Card / Then paper surface + card shadow. Given interactive / Then hover lifts and it is keyboard-focusable. Given a block card / Then it is solid, never glass.
 - **NUMBERS:** radius 14px (token); contrast ≥4.5:1; motion ≤250ms (180ms lift).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0035 — BlockHandle
@@ -810,7 +810,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Two ghost buttons (`.tp-block__handle`): add (`aria-label` `EN: "Add a block below" / HE: "הוספת בלוק מתחת"`) and options (`EN: "Block options: move, copy, delete" / HE: "אפשרויות בלוק: הזזה, העתקה, מחיקה"`). Hidden under 768 (long-press later). Options open a dropdown-menu with Move up / Move down / Duplicate / Delete (Delete uses `--tp-danger` + confirmation + Undo).
 - **TESTS:** Given a block / When hovering/focusing / Then both buttons appear and are keyboard-focusable. Given "Add" / Then a new empty block inserts below and Undo shows. Given "Delete" / Then a confirm appears, then the block removes with Undo. Given 390 / Then the handle is hidden (menu via long-press later).
 - **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0036 — SlashMenu
@@ -829,7 +829,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Glass popover (`.tp-slash-menu.tp-glass`), grouped items. Copy (EN/HE): group `EN: "Tempo blocks" / HE: "בלוקים של Tempo"`, `EN: "Text" / HE: "טקסט"`; items `Task/משימה`, `Time block/בלוק זמן`, `Habit/הרגל`, `Energy check-in/בדיקת אנרגיה`, `Nag/תזכורת`, `Heading/כותרת`, `Bullet list/רשימת נקודות`, `Link to a page/קישור לדף`; hint `EN: "Type to filter · ↑ ↓ to move · Enter to add" / HE: "הקלידו לסינון · ↑ ↓ למעבר · Enter להוספה"`. Arrow direction flips in RTL.
 - **TESTS:** Given `/` / Then the menu opens focused. Given typing "ta" / Then only matching items remain. Given ↓ then Enter / Then the highlighted block inserts and the menu closes. Given Esc / Then it closes with focus returned. Given `lang=he` / Then arrows are mirrored.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms (popover 180ms).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0037 — Composer
@@ -848,7 +848,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Textarea `dir="auto"`, `rows=2`, grow with content; send button `--tp-btn--icon` with ink colour (not accent). Placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`; send `aria-label` `EN: "Send" / HE: "שליחה"`. Hint `EN: "Enter to send · Shift+Enter for a new line" / HE: "Enter לשליחה · Shift+Enter לשורה חדשה"`. Disabled while Thinking.
 - **TESTS:** Given Enter / Then it sends and clears. Given Shift+Enter / Then a newline, no send. Given disabled (Thinking) / Then send is blocked. Given empty / Then send does nothing. Given `lang=he` / Then placeholder is Hebrew and `dir="auto"`.
 - **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0038 — UndoToast
@@ -867,7 +867,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Glass toast (`.tp-toast.tp-glass`), title + optional sub + Undo button + dismiss. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Undo" / HE: "ביטול"`; `EN: "Dismiss" / HE: "סגירה"`; countdown `EN: "You can undo for 5:00" / HE: "אפשר לבטל למשך 5:00"`. Rises 240ms (`--tp-dur-slow`), exits 160ms. Live region `aria-live=polite`.
 - **TESTS:** Given an action / Then a toast with Undo shows and the 5:00 countdown starts. Given Undo / Then `onUndo` fires and the change reverts. Given dismiss / Then it closes. Given reduced motion / Then no countdown animation. Given `lang=he` / Then Hebrew copy, numbers LTR.
 - **NUMBERS:** window = 5 minutes (PRD F-131); motion ≤250ms; contrast ≥4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0039 — Skeleton
@@ -886,7 +886,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `--tp-sunken` fill on `--tp-paper`, radius `--tp-radius-sm`; shimmer opacity pulse, static under reduced motion. Widths map to the `--w40/w60/w80/w100` classes; a `block` variant is full-width card-shaped. Used only for content that takes >100ms.
 - **TESTS:** Given `width="w80"` / Then it renders at 80% width. Given reduced motion / Then no shimmer animation. Given `width="block"` / Then a card-shaped block. Given a list / Then `tp-skel-list` rows render.
 - **NUMBERS:** motion ≤250ms (and none under reduced motion); no contrast target (decorative).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0040 — Empty
@@ -905,7 +905,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-state.tp-state--empty` with `__icon`, `__title`, `__body`, `__actions`. Copy example (EN/HE): `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + a next-step button. Icon on `--tp-sunken` disc with hairline ring and soft halo.
 - **TESTS:** Given an empty list / Then the kind title, body and one next-step action render. Given no `action` / Then no dangling button. Given `lang=he` / Then Hebrew copy. Given a screen reader / Then title is announced.
 - **NUMBERS:** contrast ≥4.5:1; text ≥13px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0041 — Glass + Helpers
@@ -924,7 +924,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Glass: `background var(--tp-glass)` (82% light / 86% dark), `backdrop-filter: blur(18px) saturate(150%)`, 1px `--tp-glass-line` border, inset top highlight + `--tp-shadow-float`. Fallback switches to `--tp-glass-solid`. Helpers: `tp-num` = `direction:ltr; unicode-bidi:isolate` + tabular; `tp-mono` = `--tp-font-mono`; `tp-muted`/`tp-small`/`tp-eyebrow` map type tokens; `tp-sr-only` visually hidden; `tp-skip` the skip link; `tp-icon--flip` mirrors chevrons in RTL.
 - **TESTS:** Given glass / Then it uses `--tp-glass` and blur. Given `prefers-reduced-transparency` / Then it uses `--tp-glass-solid`. Given `data-glass=off` / Then solid. Given `tp-num` around `"12:30"` in HE / Then it stays LTR. Given `tp-icon--flip` in RTL / Then the icon mirrors.
 - **NUMBERS:** blur 18px, saturate 150% (tokens); worst-case glass text contrast ≥4.5:1 (DESIGN.md §6: muted-on-glass 5.13:1 light).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0042 — TaskBlock / TaskRow
@@ -943,7 +943,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Row shows title (`dir="auto"`), duration `EN: "min" / HE: "דק׳"` with `.tp-num`, optional day. Tick button is `role=checkbox aria-checked`, check pops 180ms; done row uses `--tp-done` + word `EN: "Done" / HE: "בוצע"` (never colour-only). Announce new state via the live region.
 - **TESTS:** Given a task / When ticked / Then `aria-checked=true` immediately and `tasks.complete` is called with Undo shown. Given `lang=he` / Then duration `דק׳` and RTL. Given a done task / Then struck-through style + "Done". Given 390 and 1280 / Then rows render in both.
 - **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms (check 180ms).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0043 — EnergyBlock / Dial
@@ -962,7 +962,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Three `tp-seg__opt` segments, one selected. Copy (EN/HE): `EN: "Quiet" / HE: "שקט"`; `EN: "Steady" / HE: "יציב"`; `EN: "Push" / HE: "דחיפה"`. `role=radio` group, `aria-checked` on the selected, arrows move selection (LTR ↔ RTL). The word always carries meaning.
 - **TESTS:** Given value `steady` / Then "Steady" is selected and `aria-checked=true`. Given ← / Then selection moves left (right in RTL). Given `lang=he` / Then words are Hebrew and arrows swapped. Given 390 and 1280 / Then the toggle fits both.
 - **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0044 — Backlinks
@@ -981,7 +981,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-backlinks` section with eyebrow header + count; rows `tp-backlink` with `__page` and `__ctx`. Snippet clamps to 2 lines. Count uses `.tp-num`.
 - **TESTS:** Given 3 links / Then 3 rows render with page + snippet. Given 0 links / Then the empty copy shows. Given `lang=he` / Then header Hebrew and snippets `dir="auto"`. Given a row click / Then it navigates to that page.
 - **NUMBERS:** contrast ≥4.5:1; text ≥13px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0045 — PageMetaBlock
@@ -1000,7 +1000,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-block-meta` with `display:none !important` and `aria-hidden="true"`. Holds `{ pageType, date?, tags[] }` in memory for the page head, but paints nothing and announces nothing.
 - **TESTS:** Given a page-meta block / Then the DOM node is hidden and `aria-hidden`. Given a screen reader / Then nothing is announced. Given the page head / Then it reads `pageType` from this block (not from the DOM).
 - **NUMBERS:** none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0046 — BrokenBlock
@@ -1019,7 +1019,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Quiet `alert`-tone card, icon + word (never colour-only). Action `broken-undo` replaces the card with `EN: "Restored…" / HE: "שוחזר…"`.
 - **TESTS:** Given a broken block / Then the kind message renders, no JSON/block id visible. Given Restore / Then `pages.revertBlock` fires with Undo. Given `lang=he` / Then Hebrew message. Given no undo available / Then the action is hidden.
 - **NUMBERS:** contrast ≥4.5:1; text ≥13px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0047 — TemplateBlock
@@ -1038,7 +1038,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Card with icon, title `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"`, reason, and a bulleted `adds[]` (e.g. Intention / Energy check-in / Top three tasks / End of day → `כוונה / בדיקת אנרגיה / שלוש משימות עיקריות / סוף היום`). Use = one primary; Not now = ghost `EN: "Not now" / HE: "לא עכשיו"`. Dismissed state persists.
 - **TESTS:** Given an offer / When Use is tapped / Then `templates.apply` fires and an Undo toast shows. Given Not now / Then the offer dismisses and the page stays. Given `lang=he` / Then Hebrew copy. Given 390 and 1280 / Then the offer card renders in both.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0048 — EventBlock
@@ -1057,7 +1057,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-block-event` card. Time `EN: "08:00"` in `.tp-mono` `.tp-num` (LTR). Kind copy `EN: "Fixed" / HE: "קבוע"` (solid edge, `--tp-info`) and `EN: "Flexible" / HE: "גמיש"` (dashed edge, `--tp-caution`). Word + shape, never shape alone.
 - **TESTS:** Given a fixed event / Then solid edge + "Fixed". Given a flexible event / Then dashed edge + "Flexible". Given `lang=he` / Then time stays LTR and kind is Hebrew. Given 390 and 1280 / Then the card renders in both.
 - **NUMBERS:** contrast ≥4.5:1 (info 5.13:1, caution 5.05:1); text ≥13px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0049 — HabitBlock
@@ -1076,7 +1076,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-block-habit` card with `__log` toggle (Log today / Logged today). Missed day = empty ring (no "broken streak"). Per-day dot carries sr text. Copy `EN: "Log today" / HE: "לרשום להיום"`; `EN: "Logged today" / HE: "נרשם היום"`.
 - **TESTS:** Given a habit / Then 7 day-dots render with sr text each. Given Log today / Then `habits.log` fires and today's dot fills with "Logged today". Given `lang=he` / Then Hebrew. Given a missed day / Then an empty ring, no counter or shame word.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0050 — NagBlock
@@ -1095,7 +1095,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-block-nag` card, `__label` + `__phrase` (the user's own words, `dir="auto"`), `__meta` (about/at), `__actions` Now / Snooze / Not today (`nag` + `data-choice` → `nags.respond`). Copy (EN/HE): `EN: "Now" / HE: "עכשיו"`; `EN: "Snooze" / HE: "נדנוד"`; `EN: "Not today" / HE: "לא היום"`.
 - **TESTS:** Given a nag / Then the user's phrase renders verbatim, no emoji. Given Now / Then `nags.respond` fires. Given Not today / Then status updates without shame. Given `lang=he` / Then choices Hebrew, phrase `dir="auto"`.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** nag delivery channel beyond in-app (REWRITE-PLAN-v2 §4 conflict 11; UNKNOWN — Amit; chunk B).
 
 ### TFV2-0051 — NextUpCard
@@ -1114,7 +1114,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-nextup` card with task title (`dir="auto"`), `why` line, and actions Start (primary) / Not now (ghost) / Make it smaller (ghost). Copy (EN/HE): `EN: "Next up" / HE: "הבא בתור"`; `EN: "Start" / HE: "להתחיל"`; `EN: "Not now" / HE: "לא עכשיו"`; `EN: "Make it smaller" / HE: "לחלק לקטן"`.
 - **TESTS:** Given a task / Then title + why render. Given Start / Then the one primary action fires. Given Not now / Then it dismisses without shame. Given 390 and 1280 / Then the card renders in both. Given `lang=he` / Then Hebrew.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0052 — AuthCard
@@ -1133,7 +1133,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-auth` wrapper centred on `--tp-ground`; `tp-auth-card` is `--tp-paper` with `--tp-radius-xl` (20px) and `--tp-shadow-card`. Brand `Tempo`, title `--tp-text-2xl`, lede `--tp-ink-muted`. Foot holds the language switch.
 - **TESTS:** Given title/lede / Then both render in the card. Given no shell / Then no rail/topbar renders. Given 390 and 1280 / Then the card centres in both. Given `lang=he` / Then title/lede Hebrew, RTL.
 - **NUMBERS:** contrast ≥4.5:1; radius 20px (token); motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0053 — EmailField
@@ -1152,7 +1152,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-field` + `tp-input[type=email][autocomplete=email][inputmode=email][dir=ltr][spellcheck=false]`. Label `EN: "Email" / HE: "מייל"`; help `EN: "Use the email you asked to join with." / HE: "המייל שאיתו ביקשת להצטרף."`; error `EN: "Enter your email, like name@example.com" / HE: "כתבו את המייל שלכם, למשל name@example.com"`; placeholder `name@example.com`. Invalid → `aria-invalid="true"` + visible error.
 - **TESTS:** Given empty submit / Then error shows and `aria-invalid`. Given `"maya@"` / Then error. Given valid email / Then no error. Given `lang=he` / Then the input stays `dir="ltr"` while the label is Hebrew.
 - **NUMBERS:** contrast ≥4.5:1; input outline ≥3:1 (`--tp-line-control` 3.89:1 light); target ≥24px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0054 — GuestButton
@@ -1171,7 +1171,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Secondary (never accent), full-width block. Preview-only: gated by a `NEXT_PUBLIC_` preview flag (name only, no value here).
 - **TESTS:** Given preview / Then the button renders. Given live / Then it does not render. Given click / Then `auth.continueAsGuest` is called. Given `lang=he` / Then Hebrew label.
 - **NUMBERS:** target ≥24px; contrast ≥4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0055 — DividerText
@@ -1190,7 +1190,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-divider-text` with `--tp-line` hairlines and a `--tp-muted` `--tp-xs` label; decorative lines `aria-hidden`. The word carries the meaning.
 - **TESTS:** Given default / Then "or" renders between two hairlines. Given `lang=he` / Then "או". Given a screen reader / Then the label is announced once.
 - **NUMBERS:** contrast ≥4.5:1 for the label.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0056 — StatusPanel
@@ -1209,7 +1209,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tp-status-panel[data-tone]` with `__icon`, `__title`, `__body`, `__meta`, `__actions`. Tones: info (link sent), done/caution (pending). Icon + word always. Title `--tp-text-xl`, body `--tp-ink-muted`.
 - **TESTS:** Given tone=info + title/body / Then icon + title + body render, no illustration. Given actions / Then Resend/Back render. Given `lang=he` / Then Hebrew + RTL. Given 390 and 1280 / Then it centres in both.
 - **NUMBERS:** contrast ≥4.5:1; text ≥13px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0057 — Sign-in screen
@@ -1228,7 +1228,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Auth layout (no shell). One `EmailField`; primary `EN: "Send magic link" / HE: "שליחת קישור כניסה"`; note `EN: "The link works for 30 minutes." / HE: "הקישור עובד במשך 30 דקות."`. States: default, loading (`EN: "Sending…" / HE: "שולחים…"`, button disabled + `aria-busy`), empty (error summary), error (`EN: "Couldn't send the link. Nothing was lost." / HE: "לא הצלחנו לשלוח את הקישור. שום דבר לא אבד."`), offline (banner + disabled button with reason), invalid (inline email error), plus preview-only DividerText + GuestButton. On success → `/link-sent?email=&next=`.
 - **TESTS:** Given 390 / When empty submit / Then the error summary focuses and shows the email error. Given valid email / When submit / Then "Sending…" then navigation to `/link-sent`. Given `?state=error` / Then the error alert shows and the email stays in the field. Given offline / Then the banner shows and the button is disabled. Given `lang=he` / Then all copy Hebrew, `dir=rtl`, input `dir=ltr`. Repeat at 1280. Assert no passkey/password field.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** route group `(auth)/sign-in` vs existing `/sign-in` (UNKNOWN — Amit).
 
 ### TFV2-0058 — Sign-up screen
@@ -1247,7 +1247,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Auth layout. EmailField (help `EN: "We only use it to let you in. No newsletters." / HE: "נשתמש בו רק כדי להכניס אותך. בלי ניוזלטרים."`); human check label `EN: "Quick check that you're a person" / HE: "בדיקה קצרה שאת/ה אדם"`; primary `EN: "Ask to join" / HE: "בקשה להצטרף"`; note `EN: "You'll get one email when you're in." / HE: "תקבלו מייל אחד כשתיכנסו."`. States: default, sending, invalid (email + check errors), error (`EN: "Couldn't send your request. Nothing was lost." / HE: "לא הצלחנו לשלוח את הבקשה. שום דבר לא אבד."`), offline. Success → `/approval-pending?email=`.
 - **TESTS:** Given 390 / When submit without the check / Then the check error shows in the summary. Given valid email + check / When submit / Then "Sending…" then `/approval-pending`. Given `lang=he` / Then Hebrew + RTL. Given error / Then the typed email is kept. Repeat at 1280.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** sign-up policy (cap vs unlimited, approval order/location — UNKNOWN, Amit; REWRITE-PLAN-v2 §4 conflict 4).
 
 ### TFV2-0059 — Link-sent screen
@@ -1266,7 +1266,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Auth layout + StatusPanel (tone info). Copy (EN/HE): title `EN: "Check your email" / HE: "בדקו את המייל"`; body `EN: "We sent a sign-in link to {email}. It works for 30 minutes." / HE: "שלחנו קישור כניסה אל {email}. הוא עובד 30 דקות."`; meta `EN: "Didn't get it? Check spam, or resend." / HE: "לא קיבלתם? בדקו ספאם, או שלחו שוב."`; actions Resend `EN: "Resend link" / HE: "שליחה חוזרת"` and Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`. Email shown LTR (`tp-num`).
 - **TESTS:** Given `?email=` / Then the email shows and the 30-minute note. Given Resend / Then `auth.sendMagicLink` fires. Given Back / Then it returns to `/sign-in`. Given `lang=he` / Then Hebrew + RTL, email LTR. At 390 and 1280.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0060 — Approval-pending screen
@@ -1285,7 +1285,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Auth layout + StatusPanel (tone done). Copy (EN/HE): title `EN: "You're on the list" / HE: "אתה ברשימה"`; body `EN: "We let people in a few at a time. We'll email {email} when you're in." / HE: "אנחנו מכניסים אנשים בהדרגה. נשלח מייל אל {email} כשתיכנס."`; meta `EN: "No email has been sent yet." / HE: "עדיין לא נשלח מייל."`; action Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`.
 - **TESTS:** Given `?email=` / Then the email and note render. Given Back / Then `/sign-in`. Given `lang=he` / Then Hebrew + RTL. At 390 and 1280. Assert no sign-in link is sent (the screen only displays).
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** where Amit approves (admin screen vs Convex dashboard vs email link) — UNKNOWN, Amit (PRD F-01a).
 
 ### TFV2-0061 — Onboarding screen
@@ -1304,7 +1304,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Auth layout; progress `EN: "Step {n} of 5" / HE: "שלב {n} מתוך 5"`. Step 1 language/font, Step 2 name (optional), Step 3 dial 0–10 (quiet/steady/push, starts 4), Step 4 brain dump (optional), Step 5 privacy + analytics (default Off). Primary `EN: "Continue" / HE: "המשך"`; final `EN: "Start using Tempo" / HE: "להתחיל להשתמש ב-Tempo"`. Saving `EN: "Saving…" / HE: "שומרים…"`; error `EN: "Couldn't save this step. What you entered is still here." / HE: "לא הצלחנו לשמור את השלב הזה. מה שכתבת עדיין כאן."`; offline keeps choices.
 - **TESTS:** Given step 1 / When Hebrew chosen / Then `dir=rtl` at once and copy flips. Given step 3 / Then the dial shows a number and word. Given Finish / Then it navigates to `/today`. Given refresh mid-flow / Then it resumes on the saved step. Given error / Then the entered text stays. At 390 and 1280, EN and HE.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms; dial words: quiet 0–3, steady 4–7, push 8–10.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0062 — Page-editor screen (`notes/[id]`)
@@ -1323,7 +1323,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `@route apps/web/app/(tempo)/notes/[id]/page.tsx`, `@layout TempoShell`. Data: `page = notes.get({ id })`, `backlinks = notes.backlinks({ pageId })`. States: default (editor + blocks), empty (`EN: "This page is empty. Just start writing…"` + template CTA), loading (skeleton rows), error (`EN: "Couldn't open this page. Your data is safe."` + Retry), offline (banner + keep editing). Backlinks "Linked here". Coach button bottom-right (Ctrl J).
 - **TESTS:** Given a page / When a block is edited / Then "Saved" shows and `notes.save` is called. Given `/` / Then the slash menu opens. Given `[[page]]` / Then a Wikilink renders and backlinks update. Given `?state=error` / Then the error state with Retry. Given `?state=empty` / Then the empty state. Given offline / Then the banner and editing still works. At 390 and 1280, EN and HE. Assert no JSON visible.
 - **NUMBERS:** contrast ≥4.5:1; paper max 760px; text min 13px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** block-model authority (UNKNOWN — Amit).
 
 ### TFV2-0063 — Notes list screen
@@ -1342,7 +1342,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `@route apps/web/app/(tempo)/notes/page.tsx`, `@layout TempoShell`. Header title `EN: "Notes" / HE: "פתקים"` + New page primary. Folder tree (`All pages`, folders), list rows (icon, title `dir="auto"`, edited time, folder, tags), pinned first. Status `EN: "Showing {n} pages" / HE: "מוצגים {n} דפים"`. Empty `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + template CTA. Error `EN: "Couldn't load your pages." / HE: "לא הצלחנו לטעון את הדפים."` + Retry.
 - **TESTS:** Given a folder pick / Then the list narrows and the count updates. Given search / Then rows filter. Given sort=title / Then A–Z (Hebrew too). Given no pages / Then the empty state. Given `?state=error` / Then error + Retry. At 390 and 1280, EN and HE.
 - **NUMBERS:** row min height 56px; contrast ≥4.5:1; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0064 — New-page screen + States (empty/loading/error/offline/switch)
@@ -1361,7 +1361,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `@route apps/web/app/(tempo)/notes/new/page.tsx`, `@layout TempoShell`. Offer `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"` + adds + Use (primary) / Not now. Picker `EN: "Or pick another" / HE: "או לבחור תבנית אחרת"` (Daily/Weekly/Project/own/Plain note). Buttons `EN: "Use this one" / HE: "להשתמש בזו"`, `EN: "Start a plain note" / HE: "להתחיל פתק פשוט"`, `EN: "Make this page a template" / HE: "להפוך את הדף הזה לתבנית"`. States via `?state=`: empty (no own templates — built-ins + hint), loading (skeleton), error (`EN: "Couldn't load templates. Your data is safe." / HE: "לא הצלחנו לטעון את התבניות. המידע שלך שמור."` + Retry), offline (write works, templates load later).
 - **TESTS:** Given `?state=empty` / Then built-ins show plus the kind hint. Given Use / Then `templates.apply` + Undo toast. Given Not now / Then the offer dismisses, picker stays. Given plain note / Then `pages.create({ templateId:null })` then `/notes/[id]`. Given `?state=error` / Then error + Retry. Given `?state=loading` / Then skeletons. Given `lang=he` / Then RTL. At 390 and 1280.
 - **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 2 — MVP · Planning surface
@@ -1382,7 +1382,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Mutations on `convex/tasks.ts`, owner-scoped (`requireUser`): `softDelete({taskId})`, `carryOver({taskId, date})`, `moveToToday({taskId, date})`. All return `{ taskId, undone: boolean }`. Auth: only the row's `userId`; reject missing/foreign/deleted task with typed `ConvexError("task_not_found")`. Errors (tested): missing args → `invalid_args`; task owned by another user → `forbidden`; already `deletedAt` → `already_deleted`; `date` not a valid `YYYY-MM-DD` → `invalid_date`. Limits: `date` parsed strictly (`YYYY-MM-DD`), carry-over date within ±1 year of today. No UI strings in this ticket (errors surface as codes; the screen renders copy).
 - **TESTS:** Given an open task owned by U / When `softDelete` / Then `deletedAt` set and list excludes it. Given a deleted task / When `carryOver` / Then `already_deleted`. Given `date:"2026-13-40"` / When any mutation / Then `invalid_date`. Given task owned by V / When U calls / Then `forbidden`. Given `moveToToday` / When success / Then activity row exists and `undo` restores the prior status/date.
 - **NUMBERS:** mutation round-trip p95 latency — UNKNOWN (Amit answers) · no N+1 on the happy path (code review) · every error path returns a typed error, never throws raw (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0066 — Calendar events: `endsAtMs` + edit + soft delete (`convex/calendar_events.ts`)
@@ -1401,7 +1401,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped mutations: `update({eventId, title?, startAtMs?, endsAtMs?})`, `delete({eventId})`; queries already list by month/day. Returns `{ eventId }`. Auth: `requireUser`, row owner only. Errors: `event_not_found`, `forbidden`, `end_before_start` (when `endsAtMs <= startAtMs`), `invalid_time` (non-integer ms). Limits: duration ≥ 5 min and ≤ 24 h; a future event's `endsAtMs` may be cleared (`null`) to restore an all-day event. The `endsAtMs` column is additive; if the schema validator must change, that change rides on the chunk-1 architecture ticket — do not touch `convex/schema.ts` here (see OPEN).
 - **TESTS:** Given an event / When `update({title})` / Then only title changes. Given `endsAtMs <= startAtMs` / When `update` / Then `end_before_start`. Given missing id / When any / Then `event_not_found`. Given other user's event / When call / Then `forbidden`. Given `delete` / When list / Then event absent but row keeps `deletedAt`.
 - **NUMBERS:** p95 mutation latency — UNKNOWN (Amit answers) · duration bounds 5 min–24 h enforced in the validator (code review) · no N+1 on month/day list (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** `endsAtMs` schema-column ownership (this ticket vs the chunk-1 architecture ticket) — UNKNOWN, Amit answers.
 
 ### TFV2-0067 — Habit check-ins by local day + Undo (`convex/habitCheckIns.ts`)
@@ -1420,7 +1420,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `habits.log({ habitId, localDate })` and `habits.undo({ habitId, localDate })`, owner-scoped. Returns `{ habitId, localDate, checked }`. Auth: habit owner only. Errors: `habit_not_found`, `forbidden`, `future_date`, `out_of_range` (outside ±7-day window). Limits: `localDate` is `YYYY-MM-DD`, computed in the browser (server has no user time zone — conflict #13); uniqueness enforced inside the mutation. Never surface a streak number (F-10).
 - **TESTS:** Given no row / When `log` / Then one row with `source`. Given an existing check-in / When `log` again / Then idempotent (still one row). Given `localDate` tomorrow / When `log` / Then `future_date`. Given `undo` / When `log` list / Then row soft-deleted and habit cache recomputed. Given other user's habit / When call / Then `forbidden`.
 - **NUMBERS:** p95 mutation latency — UNKNOWN (Amit answers) · one upsert, one cache recompute, no fan-out (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** time-zone source — UNKNOWN, Amit answers (conflict #13).
 
 ### TFV2-0068 — Habits: 6-week detail grid + summary + cache recompute (`convex/habits.ts`)
@@ -1439,7 +1439,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Queries (read-only): `listDays({habitId, localDate}) -> { days: {localDate, checked}[] }`, `summary({habitId}) -> { totalLogged, daysThisWeek, lastLoggedAt }`. Auth: owner only. Errors: `habit_not_found`, `forbidden`. Limits: grid is exactly 42 days; `localDate` defaults to today in the caller's zone. The streak libs (`lib/habitStreak.ts`, `lib/habitCheckInStreak.ts`) may already compute totals — reuse them, never expose the streak to the UI.
 - **TESTS:** Given 3 check-ins in the last 6 weeks / When `listDays` / Then 42 days, 3 `checked`. Given none / When `summary` / Then `{0,0,null}` and no streak field. Given a check-in today / When `summary` / Then `daysThisWeek` increments and `lastLoggedAt` = today. Given other user / When any / Then `forbidden`.
 - **NUMBERS:** query has no N+1 and returns ≤42 rows (code review) · p95 latency — UNKNOWN (Amit answers).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start (Sunday/Monday) — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0069 — Goals backend (`convex/goals.ts`)
@@ -1458,7 +1458,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped: `create({title})`, `update({goalId, title?})`, `list()`, `get({goalId})`, `progressByGoal()`, `stepsByWeek({goalId})`, `nextStep({goalId})`. Titles are user text (`dir="auto"` at render). Errors: `goal_not_found`, `forbidden`, `empty_title`. Limits: title 1–200 chars; `nextStep` returns the earliest open task linked to the goal, else `null` (no model call).
 - **TESTS:** Given none / When `list` / Then `[]`. Given empty title / When `create` / Then `empty_title`. Given a goal with 2 linked tasks / When `progressByGoal` / Then counts reflect open vs done. Given no open tasks / When `nextStep` / Then `null`. Given other user / When `get` / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `progressByGoal` (code review) · title 1–200 chars (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0070 — Day plans (`convex/dayPlans.ts`)
@@ -1477,7 +1477,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped: `getByDate({localDate})`, `upsert({localDate, intention?, topTaskIds?, energy?, status?})`, `commit({localDate})`, `setEnergy({localDate, energy})`, `setIntention({localDate, intention})`. `energy` ∈ `"quiet"|"steady"|"push"`; `status` ∈ `"draft"|"committed"`; `topTaskIds` length ≤ 3. Errors: `invalid_energy`, `too_many_top_tasks`, `invalid_date`. Uniqueness (one row per `localDate`) enforced inside the mutation.
 - **TESTS:** Given none / When `getByDate` / Then `null`. Given `upsert` twice same day / Then one row updated, not two. Given `energy:"turbo"` / When `upsert` / Then `invalid_energy`. Given 4 top tasks / When `upsert` / Then `too_many_top_tasks`. Given `commit` / When `getByDate` / Then `status="committed"` and `committedAt` set.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `topTaskIds` ≤ 3 enforced (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0071 — Time blocks (`convex/timeBlocks.ts`)
@@ -1496,7 +1496,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `create` returns `{ timeBlockId }`; `kind` ∈ `focus|task|habit|break|other`; `status` ∈ `planned|done|skipped`. Errors: `invalid_minute`, `invalid_duration`, `time_block_not_found`, `forbidden`. Limits: `startMinute` 0–1439 (half-hour slots), `durationMinutes` 5–720; `skipped` is neutral (never failure copy).
 - **TESTS:** Given create at 08:00 for 25 min / When `listForDay` / Then ordered first. Given `startMinute:1500` / When create / Then `invalid_minute`. Given `durationMinutes:1` / When create / Then `invalid_duration`. Given `setDone("skipped")` / When list / Then status `skipped` and no failure wording. Given other user / When any / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · list sorted by `startMinute` (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** timeline start (06:00 vs wake time) — UNKNOWN, Amit answers.
 
 ### TFV2-0072 — Focus blocks (`convex/focusBlocks.ts`)
@@ -1515,7 +1515,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped: `start({taskId, minutes}) -> {sessionId}`, `complete({sessionId, minutes}) -> {sessionId}`, `listForDay({localDate})`. `minutes` ∈ 1–180. Errors: `session_not_found`, `forbidden`, `invalid_minutes`. Pause/resume is browser-local; only `complete` persists.
 - **TESTS:** Given start 25 min / When complete / Then row with `durationMinutes:25` and `completedAt`. Given unknown session / When complete / Then `session_not_found`. Given `minutes:0` / When start / Then `invalid_minutes`. Given list after reload / When `listForDay` / Then the completed session is present (persisted). Given other user / When any / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `minutes` 1–180 (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0073 — Brain-dump inbox (`convex/brain_dump.ts`)
@@ -1534,7 +1534,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped: `saveDraft({rawText})`, `getDraft()`, `clearDraft()`. Raw text is user text. Errors: `too_long` (over 20,000 chars). Limits: 0–20,000 chars; one draft per user; the draft is never auto-sorted. Copy surfaced by the screen, not here.
 - **TESTS:** Given save "a;b;c" / When `getDraft` / Then returns it. Given save twice / When `getDraft` / Then only the latest (single draft). Given 30,000 chars / When save / Then `too_long`. Given clear / When getDraft / Then `null`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 20,000-char cap (code review) · input sanitised before persist (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0074 — Brain-dump prioritize → proposal (`convex/lib/brainDumpParse.ts`)
@@ -1553,7 +1553,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped: `prioritize({draftId}) -> {rows[]}`, `apply({draftId, acceptedRowIds}) -> {createdTaskIds, createdEventIds}`. Each row carries `sourceLine` (user's own words), `reason` (short, specific). Errors: `draft_not_found`, `empty_draft`, `no_rows_accepted`. Limits: ≤ 20 rows per proposal; `durationMin` default 15. Nothing is written until `apply`; `apply` is undoable for 5 minutes via `activity`.
 - **TESTS:** Given "call bank; slides; email Dana" / When `prioritize` / Then ≤3 rows, each with a reason. Given empty draft / When prioritize / Then `empty_draft`. Given accept 2 rows / When `apply` / Then exactly 2 tasks created, others untouched. Given apply with no accepted rows / Then `no_rows_accepted`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤20 proposal rows (code review) · `apply` idempotent per row (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** model-written vs rule-based proposal, and auto-apply threshold — UNKNOWN, Amit answers (conflict #6).
 
 ### TFV2-0075 — Journal + daily note backend (`convex/journal.ts`)
@@ -1572,7 +1572,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `journal.list() -> {date, body, updatedAt}[]`; `saveEntry({date, body})`; `promptForToday({date}) -> string` returns fixed copy (EN: "One line about today, or answer the question." / HE: "שורה אחת על היום, או תשובה לשאלה."). Errors: `invalid_date`, `entry_too_long` (>20,000 chars). Storage: `notes` rows with `pageType:"journal"` (12 Oct contracts are the newest authority — conflict #7).
 - **TESTS:** Given no entry today / When `get` / Then `null`. Given save / When list / Then one entry. Given 30,000 chars / When save / Then `entry_too_long`. Given soft delete / When list / Then absent but row keeps `deletedAt`. Given other user / When get / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 20,000-char cap (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** journal storage authority (notes vs a journalEntries table) — UNKNOWN, Amit answers (conflict #7).
 
 ### TFV2-0076 — Routines backend (`convex/routines.ts`)
@@ -1591,7 +1591,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `steps` is `string[]` (user text, `dir="auto"`), ≤ 20 steps, each ≤ 200 chars. Errors: `routine_not_found`, `forbidden`, `too_many_steps`, `step_out_of_range`. `suggestNow` returns the routine whose window matches the local hour, else `null`. Runs keep a cursor; completing a step advances it.
 - **TESTS:** Given create with 3 steps / When list / Then one routine. Given 21 steps / When create / Then `too_many_steps`. Given startRun / When completeStep(0) / Then cursor advanced. Given completeStep(99) / When call / Then `step_out_of_range`. Given other user / When get / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤20 steps, ≤200 chars each (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** routine storage authority — UNKNOWN, Amit answers (conflict #7).
 
 ### TFV2-0077 — Nags + nag phrase (`convex/nags.ts`, `convex/lib/nagPhrase.ts`)
@@ -1610,7 +1610,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `phrase.origin ∈ "user"|"derived"`; a `derived` phrase requires `sourceRef`. `answer ∈ "now"|"snooze"|"notToday"`. Errors: `nag_not_found`, `forbidden`, `enable_without_phrase`, `emoji_rejected`, `empty_phrase`. Copy: answers are logged as dosing data; "Not today" is never failure (partial credit). EN: now "Do it now" / HE: "לעשות עכשיו"; EN: snooze "Snooze" / HE: "לדחות"; EN: not today "Not today" / HE: "לא היום".
 - **TESTS:** Given enable with no phrase / When `setEnabled(true)` / Then `enable_without_phrase`. Given phrase "do it 👊" / When addPhrase / Then `emoji_rejected`. Given `respond("notToday")` / When log / Then answer stored with no failure/streak wording. Given derived phrase without sourceRef / When addPhrase / Then `missing_source`. Given other user / When any / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · phrase ≤ 200 chars (code review) · emoji/stock copy rejected by `nagPhrase` (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** delivery channel beyond in-app — UNKNOWN, Amit answers (conflict #11).
 
 ### TFV2-0078 — Notifications (`convex/notifications.ts`)
@@ -1629,7 +1629,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `list() -> {id, kind, title, body, createdAt, readAt}[]`, `markRead`, `markAllRead`. Errors: `notification_not_found`, `forbidden`. Limits: return the latest 100.
 - **TESTS:** Given 3 notifications / When list / Then newest-first. Given markRead / When list / Then `readAt` set. Given markAllRead / When list / Then all read. Given other user / When markRead / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤100 rows returned (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (in-app only).
 
 ### TFV2-0079 — Analytics (`convex/analytics.ts`)
@@ -1648,7 +1648,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped read queries. `tasksByWeekday` returns `{weekday, doneCount}[]` (Mon–Sun per conflict #10); `focusMinutesByWeek` returns `{week, minutes}[]` for the trailing 12 weeks. Errors: `invalid_date`. Empty input returns empty arrays, never synthesized values.
 - **TESTS:** Given 2 done tasks Monday, 1 Tuesday / When `tasksByWeekday` / Then correct counts. Given a soft-deleted task / When aggregate / Then excluded. Given no data / When both / Then empty arrays. Given other user / When query / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · soft-delete-aware aggregation (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0080 — Insights (`convex/insights.ts`, `convex/lib/insights_summary.ts`)
@@ -1667,7 +1667,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `getPatterns -> {id, text, createdAt}[]`; `dismiss({insightId})`. Patterns are descriptive ("gym slips after late nights"), never prescriptive or shaming. Errors: `insight_not_found`, `forbidden`. Empty data → empty list, with the empty-state copy rendered by the screen.
 - **TESTS:** Given 2 observations / When getPatterns / Then 2 sentences. Given dismiss / When getPatterns / Then absent. Given other user / When dismiss / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · one sentence per pattern (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0081 — Activity (`convex/activity.ts`)
@@ -1686,7 +1686,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped. `listRecent({limit=50}) -> {id, actor:"you"|"coach", text, createdAt, undone}[]`; `undo({activityId})`. Errors: `activity_not_found`, `forbidden`, `undo_window_expired`, `not_undoable`. Limits: window = 5 minutes from `createdAt`; coach-origin only.
 - **TESTS:** Given a coach change 1 min old / When undo / Then restored. Given a coach change 6 min old / When undo / Then `undo_window_expired`. Given a user change / When undo / Then `not_undoable`. Given other user / When list / Then `forbidden`.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 5-minute window enforced server-side (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0082 — Streaks (`convex/streaks.ts`)
@@ -1705,7 +1705,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Owner-scoped internal read: `getForHabit({habitId}) -> number`. Missed day = broken streak (no ring). Errors: `habit_not_found`, `forbidden`. The number feeds `analytics` only; the UI never receives it.
 - **TESTS:** Given check-ins 3 consecutive days / When getForHabit / Then 3. Given a missed day / When getForHabit / Then reset to current run length. Given other user / When call / Then `forbidden`. Given the habit screens' queries / When inspect return shapes / Then no `streak` field present.
 - **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no `streak` key in any UI-facing query (code review).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0083 — Component: EventBlock
@@ -1724,7 +1724,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-block-event` / `.tp-event[data-kind]`; `data-component="EventBlock"`; shadcn `card`. Props `{ event: {id, title, start, end, place?, kind:"fixed"|"flex"} }`. Layout: `__time` (`--tp-mono`, `.tp-num`), `__title`, `__meta`, `__place`. `kind="fixed"` → solid `--tp-accent` left edge + label "Fixed"; `kind="flex"` → dashed edge + "Flexible". States: default, `[data-kind]`. Copy: EN Fixed/Flexible "Fixed"·"Flexible" / HE "קבוע"·"גמיש". RTL: time stays `.tp-num`/`.tp-mono` (isolated), edge flips to the inline-start. Keyboard/SR: the block is a `<article>`; time is a visible label. Breakpoints: full width under 390, inline card at 1280. Motion: none (no animation).
 - **TESTS:** Given fixed event / When render / Then solid edge + "Fixed" and time in mono. Given flex / When render / Then dashed edge + "Flexible". Playwright: at 390 and 1280, assert the two `[data-kind]` states and EN/HE labels via `?lang=`.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms transform/opacity only (components.md) · body text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0084 — Component: HabitBlock
@@ -1743,7 +1743,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-block-habit` / `.tp-habit[data-logged]` / `.tp-habit-days` / `.tp-habit-day[data-done][data-today]`; `data-component="HabitBlock"`; shadcn `card + toggle`. Props `{ habit: {id, name, when, last7:boolean[], loggedToday} }`. Events: `habit-log` → `habits.log({habitId, localDate})`. States: default, `data-logged` (today), each day `data-done`/`data-today`. Each day has sr text EN "logged"/"not logged" / HE "תועד"/"לא תועד". Copy: EN "Log today" / HE "לתעד היום"; EN "Logged today" / HE "תועד היום". RTL: dots flow inline-start. Keyboard: toggle is a `<button role="switch" aria-checked>`. Breakpoints: full width 390, card 1280. Motion: dot fill ≤250 ms opacity.
 - **TESTS:** Given last7 with today logged / When render / Then today dot `data-done data-today` and 7 dots, no number. Given click toggle / When `habits.log` / Then `data-logged` toggles optimistically. Playwright asserts dot states + no streak number at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0085 — Component: NagBlock
@@ -1762,7 +1762,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-block-nag` / `.tp-nag[data-status]`; `data-component="NagBlock"`; shadcn `card (+ alert-dialog)`. Props `{ nag: {id, phrase, about, at} }`. Events: `data-choice="now|snooze|nottoday"` → `nags.respond`. States: default, `data-status` after answer. Copy (user's own words only) plus answers: EN "Do it now"/"Snooze"/"Not today" / HE "לעשות עכשיו"/"לדחות"/"לא היום". Phrase uses `dir="auto"`. RTL: actions mirror. Keyboard: three `<button>`s. Breakpoints: 390/1280. Motion: status change ≤250 ms.
 - **TESTS:** Given a nag with a phrase / When render / Then phrase shown verbatim and no icon/emoji. Given click "now" / When `nags.respond` / Then `data-status` set. Playwright: three answers, phrase text, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** delivery channel — UNKNOWN, Amit answers (conflict #11).
 
 ### TFV2-0086 — Component: PageLayout
@@ -1781,7 +1781,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-page` (`--wide`, `--narrow`); `data-component="PageLayout"`; props `{ width:"wide"|"narrow", children }`. Layout: max-width via `--tp-*` spacing, centered, gap `--tp-space-6`. States: none. No visible copy. Breakpoints: narrow ~68ch, wide fills `--tp-app__main`. Motion: none.
 - **TESTS:** Given width narrow / When render / Then max-width 68ch. Given wide / When render / Then fills main. (No Playwright needed — layout primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0087 — Component: Surface
@@ -1800,7 +1800,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-surface`; `data-component="Surface"`; shadcn `card`; props `{ children }`. Uses `--tp-surface`, `--tp-border`, `--tp-radius-*`. States: none. Motion: none.
 - **TESTS:** Given children / When render / Then background `--tp-surface` and border. (Layout primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0088 — Component: PageHeader
@@ -1819,7 +1819,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-pagehead`, `__text`, `__title`, `__sub`, `__actions`; `data-component="PageHeader"`; props `{ title, subtitle?, actions? }`. `__title` is the sole `<h1>`. States: none. RTL: title/user text `dir="auto"`. Breakpoints: actions wrap under the title at 390, inline-end at 1280. Motion: none.
 - **TESTS:** Given title+subtitle / When render / Then one `<h1>` + subtitle. Given actions / When render / Then present. (No Playwright — primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · body text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0089 — Component: Toolbar
@@ -1838,7 +1838,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-toolbar`, `__grow`, `__end`; `data-component="Toolbar"`; props `{ children }`. `__grow` expands the search input; `__end` holds sort/filter. Breakpoints: wraps to two rows at 390, one row at 1280. Motion: none.
 - **TESTS:** Given children / When render / Then `__grow` and `__end` regions present. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0090 — Component: Section
@@ -1857,7 +1857,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-section`, `__head`, `__title`, `__count`; `data-component="Section"`; props `{ title, count?, children, as? }`. `__count` uses `.tp-num`. States: none. Motion: none.
 - **TESTS:** Given title + count 3 / When render / Then title + "3" in `.tp-num`. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · count isolated via `.tp-num` (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0091 — Component: CardGrid
@@ -1876,7 +1876,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-cards` (`--sm`); `data-component="CardGrid"`; props `{ size?, children }`. CSS `grid-template-columns: repeat(auto-fill, minmax(…, 1fr))`. States: none. Motion: none.
 - **TESTS:** Given 4 cards / When render at 390 vs 1280 / Then 1 column vs multiple. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0092 — Component: Notice
@@ -1895,7 +1895,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-notice[data-tone]`, `__icon`, `__text`, `__title`, `__action`; `data-component="Notice"`; shadcn `alert`; props `{ tone:"info"|"caution"|"success"|"error", title?, body?, action? }`. Each tone pairs an icon with a word (never colour only). States: per `data-tone`. Copy is supplied by the screen. Motion: none.
 - **TESTS:** Given tone error / When render / Then icon + word present, not colour alone. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · icon ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0093 — Component: Badge
@@ -1914,7 +1914,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-badge[data-tone]`; `data-component="Badge"`; shadcn `badge`; props `{ label, icon?, tone? }`. Word always present. RTL: label `dir="auto"`. Motion: none.
 - **TESTS:** Given label "Built-in" / When render / Then label present. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0094 — Component: PageHead
@@ -1933,7 +1933,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-page-head[data-variant]`; `data-component="PageHead"`; props `{ variant:"daily"|"weekly"|"project"|"note", title, meta? }`. Wraps `.tp-page-title` + `.tp-page-meta`. States: per variant. Motion: none.
 - **TESTS:** Given variant daily / When render / Then `data-variant="daily"` + one title. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0095 — Component: WeekStrip
@@ -1952,7 +1952,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-week-strip`, `__day[aria-pressed][aria-current="date"]`, `__dow`, `__n`, `__count`; `data-component="WeekStrip"`; shadcn `toggle-group`; props `{ days: {localDate, dow, n, count}[] }`. Event: `select-day` → `pages.getDaily({date})`. Day names EN Mon–Sun / HE שני–ראשון. RTL: days flow right-to-left. Keyboard: radiogroup arrows (Stage 1 `segKeys`). Breakpoints: scrolls inside itself on phone, static at 1280. Motion: none.
 - **TESTS:** Given 7 days / When render / Then 7 `__day` with counts in `.tp-num`. Given select Tuesday / When click / Then `aria-pressed` + `aria-current="date"`. Playwright: selection + count at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start (Sunday/Monday) — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0096 — Component: ProjectStatus
@@ -1971,7 +1971,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-status[data-status]`; `data-component="ProjectStatus"`; shadcn `badge`; props `{ status:"idea"|"active"|"paused"|"done", label }`. Icon + word. Copy: EN idea/active/paused/done "Idea"·"Active"·"Paused"·"Done" / HE "רעיון"·"פעיל"·"מושהה"·"הושלם". RTL: label `dir="auto"`. Motion: none.
 - **TESTS:** Given status active / When render / Then icon + "Active". (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0097 — Component: ListRow
@@ -1990,7 +1990,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-list`, `.tp-list-row`, `__icon`, `__body`, `__title`, `__meta`, `__end`; `data-component="ListRow"`; props `{ icon, title, meta?, href?, onClick? }`. Height ≥56px. RTL: icon inline-start, end slot inline-end. Keyboard: focusable (`<a>`/`<button>`), visible focus ring. Breakpoints: same at 390/1280. Motion: none.
 - **TESTS:** Given a row / When render / Then height ≥56px and title present. Given href / When render / Then `<a>` with aria-label if icon-only. Playwright: focus ring + height at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · row ≥56px (components.md) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0098 — Component: Segmented / Filter
@@ -2009,7 +2009,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-segmented` (`--block`), `.tp-seg__opt[role=radio]`; `data-component="Segmented"`; shadcn `toggle-group`; props `{ options:{label,value}[], value, onChange }`. Dot + word mark the choice. Keyboard: radiogroup arrows, swapped in RTL (`segKeys`). Breakpoints: full width (`--block`) at 390, inline at 1280. Motion: none.
 - **TESTS:** Given options / When render / Then radiogroup with `aria-checked` on value. Given ArrowRight in RTL / When keypress / Then moves opposite visually. Playwright: arrow selection LTR + RTL at 390/1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0099 — Component: SearchInput
@@ -2028,7 +2028,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-search`, `__box`, `__icon`, `.tp-label`, `.tp-input`; `data-component="SearchInput"`; shadcn `input`; props `{ label, placeholder, value, onChange }`. Label always present (visible or `.tp-sr-only`). Placeholder EN "Search…" / HE "חיפוש…" (caller may override). RTL: input `dir="auto"`, icon flips. Keyboard: standard input + Escape clears. Breakpoints: 390/1280. Motion: none.
 - **TESTS:** Given a query / When render / Then label present and input bound. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0100 — Component: SortMenu
@@ -2047,7 +2047,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-menu`, `__list.tp-glass[role=menu]`, `__label`, `__item[role=menuitemradio]`, `__check`, `[data-menu-value]`; `data-component="SortMenu"`; shadcn `dropdown-menu (radio)`; props `{ options, value, onChange }`. Event: `menu` toggles; choose → `TP.onSort(value)`. Keyboard: arrows, Enter, Esc, focus returns to trigger. Copy: EN "Sort" / HE "מיון" (label). RTL: menu mirrors. Breakpoints: 390/1280. Motion: open/close ≤250 ms opacity.
 - **TESTS:** Given options / When open / Then `role=menu` + `aria-expanded`. Given choose / When Enter / Then value label updates + focus returns. Playwright: full cycle at 390/1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0101 — Component: LoadMore
@@ -2066,7 +2066,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-load-more`, `__status`; rows `[data-row]`, hidden `[data-more][hidden]`; `data-component="LoadMore"`; shadcn `button`; props `{ shown, total, onLoadMore }`. Status copy: EN "Showing 20 of 48" / HE "מוצגות 20 מתוך 48". Counts in `.tp-num`. States: default, `__status` updates. Motion: none.
 - **TESTS:** Given shown 20 total 48 / When render / Then status "Showing 20 of 48" and button when `shown < total`. Given shown = total / When render / Then no button. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0102 — Component: MonthGrid
@@ -2085,7 +2085,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-month`, `__head`, `__title`, `__grid`, `__dow`, `__day[data-outside][aria-current][aria-pressed]`, `__n`, `__dots`, `__count`; `data-component="MonthGrid"`; shadcn `calendar`; props `{ days, monthTitle, onSelectDay }`. `__count` is "N items" EN "N items" / HE "N פריטים" (sr-only under 768). Day dots via Dot. Keyboard: arrow grid, Home/End. Breakpoints: count text sr-only at 390, visible at 1280. Motion: none.
 - **TESTS:** Given a day with 3 items / When render / Then 3 dots + count. Given select / When click / Then `aria-pressed` + `onSelectDay`. Playwright: select + count at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0103 — Component: Dot
@@ -2104,7 +2104,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-dot` (`--fixed`, `--flex`, `--done`, `--habit`); `data-component="Dot"`; props `{ kind }`. Decorative (`aria-hidden`). Motion: none.
 - **TESTS:** Given each kind / When render / Then correct modifier and shape. (Primitive.)
 - **NUMBERS:** none beyond token usage (decorative, not interactive).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0104 — Component: WeekColumns
@@ -2123,7 +2123,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-week`, `__col[aria-current]`, `__head`, `__item[data-kind]`, `__time`, `__title`, `__kind`; `data-component="WeekColumns"`; props `{ days }`. `__item[data-kind]` solid fixed / dashed flex. Time `.tp-week__time` is `.tp-mono`/`.tp-num`. Breakpoints: internal horizontal scroll at 390; static fit at 1280. Motion: none.
 - **TESTS:** Given 7 days / When render / Then 7 columns. Given overflow at 390 / When render / Then `overflow-x` on the week container only. Playwright: scroll container at 390 vs 1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0105 — Component: DayTimeline
@@ -2142,7 +2142,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-timeline`, `__hours`, `__hour`, `__items` (`--cols`), `__item[data-kind]` (`--row`, `--span`, `--col`), `__time`, `__title`, `__now`; `data-component="DayTimeline"`; props `{ items, now }`. Rows are half-hour slots; fixed = solid + "Fixed", flex = dashed + "Flexible". Time `.tp-mono`/`.tp-num`. Breakpoints: 390/1280. Motion: none.
 - **TESTS:** Given an item 08:00–08:30 / When render / Then `--span` correct. Given now / When render / Then `__now` positioned. Playwright: slot span + now at 390/1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** timeline start (06:00 vs wake time) — UNKNOWN, Amit answers.
 
 ### TFV2-0106 — Component: Kanban
@@ -2161,7 +2161,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-kanban`, `__col`, `__head`, `__name`, `__count`, `__list`, `__empty`; `data-component="Kanban"`; shadcn `card`; props `{ columns: {id,name,count,cards[]}[] }`. Column names EN "To do"·"Doing"·"Done" / HE "לעשות"·"בעבודה"·"הושלם" (caller may override). `__empty` per column. Breakpoints: snap-scroll horizontally at 390; static grid at 1280. Motion: none.
 - **TESTS:** Given 3 columns / When render / Then 3 `__col` with name + count. Given empty column / When render / Then `__empty` shows. Playwright: snap-scroll at 390, grid at 1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0107 — Component: KanbanCard
@@ -2180,7 +2180,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-kanban-card`, `__title`, `__meta`, `__move`; `data-component="KanbanCard"`; shadcn `card + button`; props `{ card, canPrev, canNext, onMove }`. Event `kanban-move` + `data-dir="prev|next"` → `tasks.moveColumn`. Move buttons on every card; edge buttons disabled; icons `.tp-icon--flip`/`.tp-icon--back`. Copy (aria): EN "Move left"/"Move right" / HE "הזזה שמאלה"/"הזזה ימינה". Breakpoints: 390/1280. Motion: none.
 - **TESTS:** Given a middle card / When render / Then both move buttons enabled. Given first column / When render / Then prev disabled. Given move / When click next / Then `onMove("next")`. Playwright: disabled edges + move at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0108 — Component: BarChart
@@ -2199,7 +2199,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-chart` (figure), `__title`, `__bars`, `__bar[data-highlight]` (`--pct`), `__value`, `__track`, `__fill`, `__label`; `data-component="BarChart"`; shadcn `chart`; props `{ title, bars:{label,value,pct}[] }`. Every bar has a number and a label. Requires a ChartSummary sibling (figcaption). RTL: labels flip, values stay `.tp-num`. Breakpoints: 390/1280. Motion: none.
 - **TESTS:** Given bars / When render / Then each has `--pct`, value and label. Given highlight / When render / Then `data-highlight`. Playwright: bars + labels at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · values isolated via `.tp-num` (components.md) · INP ≤200 ms (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0109 — Component: LineChart
@@ -2218,7 +2218,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `svg.tp-chart__svg` with `__axis`, `__grid`, `__line`, `__point`, `<text>`; `data-component="LineChart"`; shadcn `chart`; props `{ points:{label,value}[], summaryId }`. Points labelled in the SVG; svg has `role="img"` + `aria-labelledby` the summary. Breakpoints: 390/1280 (viewBox scales). Motion: none.
 - **TESTS:** Given points / When render / Then each point has a `<text>` label and `aria-labelledby`. Playwright: points at 390/1280.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0110 — Component: ChartSummary
@@ -2237,7 +2237,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-chart__summary`; `data-component="ChartSummary"`; shadcn `figcaption`; props `{ text }`. The chart in one sentence. Copy supplied by the screen. Motion: none.
 - **TESTS:** Given text / When render / Then `<figcaption>` with text. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0111 — Component: Form
@@ -2256,7 +2256,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-form`, `__actions`; `data-component="Form"`; shadcn `form`; props `{ onSubmit, children }`. Width up to 68ch. Motion: none.
 - **TESTS:** Given children / When render / Then `<form>` with max-width 68ch. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · form width ≤68ch (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0112 — Component: Field
@@ -2275,7 +2275,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-field`, `.tp-label`, `.tp-label__opt`, `.tp-help`, `.tp-error-text`; `data-component="Field"`; shadcn `form item`; props `{ id, label, help?, error?, children }`. `aria-describedby="x-help x-error"`, `aria-invalid="true"` on error. Copy: label + help supplied by caller. Motion: none.
 - **TESTS:** Given error / When render / Then `aria-invalid` + error text linked. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0113 — Component: TextInput
@@ -2294,7 +2294,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-input`; `data-component="TextInput"`; shadcn `input`; props `{ type?, value, onChange, id, aria-* }`. `type="email"` forces `dir="ltr"`. Motion: none.
 - **TESTS:** Given type email / When render / Then `dir="ltr"` and `autocomplete=email`. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0114 — Component: Textarea
@@ -2313,7 +2313,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-textarea`; `data-component="Textarea"`; shadcn `textarea`; props `{ rows?, value, onChange }`. `dir="auto"`. Motion: none.
 - **TESTS:** Given rows 4 / When render / Then `dir="auto"` + rows=4. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0115 — Component: Select
@@ -2332,7 +2332,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-select` > `select.tp-select__input` + `.tp-select__icon`; `data-component="Select"`; shadcn `select`; props `{ options:{label,value}[], value, onChange, id }`. Motion: none.
 - **TESTS:** Given options / When render / Then native `<select>` with options. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0116 — Component: Switch
@@ -2351,7 +2351,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `button.tp-switch[role=switch][aria-checked]`, `__track`, `__thumb`, `__state`; `data-component="Switch"`; shadcn `switch`; props `{ checked, onChange }`. Visible word: EN On/Off "On"·"Off" / HE "פועל"·"כבוי". RTL: thumb origin flips (`[dir="rtl"]` rule). Breakpoints: 390/1280. Motion: thumb ≤250 ms transform.
 - **TESTS:** Given checked / When render / Then `aria-checked=true` + "On". Given click / When toggle / Then `onChange(false)` + "Off". Playwright: toggle + word at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0117 — Component: Checkbox
@@ -2370,7 +2370,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `input.tp-checkbox` inside `label.tp-choice` (`__text`, `__hint`); `data-component="Checkbox"`; shadcn `checkbox`; props `{ checked, label, hint?, onChange }`. Motion: none.
 - **TESTS:** Given label + hint / When render / Then checkbox inside `<label>` with text + hint. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0118 — Component: Radio
@@ -2389,7 +2389,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `input.tp-radio` inside `label.tp-choice`; `data-component="Radio"`; shadcn `radio-group`; props `{ name, value, label, checked, onChange }`. Motion: none.
 - **TESTS:** Given name "energy" / When render / Then radio with matching `name`. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0119 — Component: Dial 0–10
@@ -2408,7 +2408,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-dial`, `__head`, `__value`, `__num [data-dial-num]`, `__of`, `__word [data-dial-word]`, `__scale` + `input.tp-slider`; `data-component="Dial"`; shadcn `slider`; props `{ value, label, onChange }`. Words: 0–3 EN "Quiet" / HE "שקט"; 4–7 EN "Steady" / HE "יציב"; 8–10 EN "Push" / HE "דחיפה". `aria-valuetext` = "N of 10, word". RTL: slider direction flips. Breakpoints: 390/1280. Motion: thumb ≤250 ms.
 - **TESTS:** Given value 2 / When render / Then number 2 + word "Quiet" + `aria-valuetext`. Given value 9 / When render / Then "Push". Playwright: drag to change + word updates at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0120 — Component: StateEmpty
@@ -2427,7 +2427,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-state.tp-state--empty`, `__icon`, `__title`, `__body`, `__actions`; `data-component="StateEmpty"`; props `{ title, body, action? }`. Copy supplied by the screen (kind + next step). Motion: none.
 - **TESTS:** Given title/body/action / When render / Then all present. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0121 — Component: StateLoading
@@ -2446,7 +2446,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-state--loading[role=status]`, `.tp-skel-list`, `.tp-skel-row`, `__box`, `__lines`, `.tp-skeleton--w40/w60/w80/w100/sm/block`; `data-component="StateLoading"`; props `{ rows, label }`. `.tp-sr-only` label e.g. EN "Loading your tasks" / HE "טוען את המשימות שלך" (caller supplies). Shimmer stops with reduced motion. Motion: shimmer only, ≤250 ms opacity loop or off.
 - **TESTS:** Given rows 4 / When render / Then 4 skeleton rows + sr-only label + `role="status"`. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · reduced-motion respected (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0122 — Component: StateError
@@ -2465,7 +2465,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-state.tp-state--error`; `data-component="StateError"`; shadcn `alert`; props `{ what, onRetry }`. Copy supplied by screen: EN "Couldn't load your … Your data is safe." + "Retry" / HE "לא הצלחנו לטעון… המידע שלך שמור." + "לנסות שוב". Motion: none.
 - **TESTS:** Given what "tasks" / When render / Then title + body + Retry button, no JSON. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0123 — Component: StateOffline
@@ -2484,7 +2484,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Class `.tp-notice[data-tone=caution].tp-offline[role=status]`; `data-component="StateOffline"`; shadcn `alert`; props `{ text }`. Copy: EN "You're offline. Changes save when you're back." / HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת." Content stays. Motion: none.
 - **TESTS:** Given offline / When render / Then banner `role=status` + text, and page content still rendered. (Primitive.)
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0124 — Screen: Today
@@ -2503,7 +2503,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/today`, layout TempoShell. Data: `dailyPage = pages.getDaily({date})`, `nextUp = tasks.nextUp({date})`, `backlinks = pages.backlinks({pageId})`. Actions: tick → `tasks.complete` (optimistic, 5-min Undo); Start → `focus.start({taskId, minutes:25})`; Not now → `tasks.skipNextUp`; Make it smaller → open CoachPanel with task attached (proposal-only); set energy → `energy.log({date, value})`; add task → `tasks.create`. States: default, empty, loading, error, offline. One primary: Next up "Start 25 minutes". Key copy EN/HE — EN "Next up"/HE "הבא בתור"; EN "How is your energy right now?"/HE "איך האנרגיה שלך עכשיו?"; energy EN Quiet·Steady·Push /HE שקט·יציב·דחיפה; empty EN "Nothing on Today yet."/HE "עוד אין כלום בהיום."; error EN "Couldn't load your day."/HE "לא הצלחנו לטעון את היום שלך."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת."; done EN "That's the list. Rest counts."/HE "זו הרשימה. גם מנוחה נחשבת." RTL: full mirror, times `.tp-num`/`.tp-mono`, energy radio arrows swap. Breakpoints 390/768/1024/1280 (rail collapses under 768). Motion: tick strike ≤250 ms; toast ≤250 ms. Full string table = `web/today.html`.
 - **TESTS:** Given a day with 3 tasks / When open / Then intention, energy, tasks, Next up show. Given empty / When open / Then empty copy + "Open brain dump". Given error / When query fails / Then safe copy + Retry. Given offline / When open / Then banner + content stays. Given tick a task / When click / Then struck + Undo toast for 5 min. Playwright: click through default/empty/error/offline and tick→undo at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md) · one `.tp-btn--primary` (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0125 — Screen: Daily note
@@ -2522,7 +2522,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(bare)/daily-note`, layout Bare. Data: `pages.getDaily({date})`, `pages.backlinks({pageId})`. Actions: accept template → apply Daily template (fresh block ids); save sections. States: default, empty (template offer), loading, error, offline. One primary: "Use template". Key copy: EN "Use the Daily template?"/HE "להשתמש בתבנית היום?"; EN "Use template"/HE "להשתמש בתבנית"; EN "Not now"/HE "לא עכשיו"; EN "One thing that went okay today:"/HE "דבר אחד שהלך בסדר היום:"; EN "Couldn't load today's page."/HE "לא הצלחנו לטעון את הדף של היום."; EN "Saved"/HE "נשמר". RTL full mirror. Breakpoints 390/768/1024/1280. Motion: template insert ≤250 ms. Full strings = `web/daily-note.html`.
 - **TESTS:** Given first open / When load / Then template offer shows. Given accept / When click / Then sections appear + no second offer. Given empty / When dismiss / Then blank editor. Given error / When fail / Then safe copy + Retry. Playwright: offer→accept→sections→save at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0126 — Screen: Brain dump (with proposal)
@@ -2541,7 +2541,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/brain-dump`, layout TempoShell. Data: `brainDumps.getDraft()`. Actions: `saveDraft({rawText})` on input; "Turn this into a plan" → `prioritize`; accept/edit/reject per row; "Add to Today" → `apply` (Undo 5 min). States: default, `?view=review` (proposal), empty, loading, error, offline. One primary: "Turn this into a plan". Key copy: EN "What's on your mind?"/HE "מה יש לך בראש?"; EN "Everything. Any order. Fragments are fine."/HE "הכול. בכל סדר. גם חצאי משפטים זה בסדר."; EN "Turn this into a plan"/HE "להפוך את זה לתוכנית"; EN "Here's a plan"/HE "הנה תוכנית"; EN "Accept, edit or reject each line. Nothing is added until you tap Add."/HE "לאשר, לערוך או לדחות כל שורה. שום דבר לא נוסף עד שתלחצי על הוספה."; EN "Add to Today"/HE "להוסיף להיום"; EN "Nothing goes onto your lists until you choose."/HE "שום דבר לא נכנס לרשימות שלך עד שתבחרי."; EN "Added to Today. You can undo for 5 minutes."/HE "נוסף להיום. אפשר לבטל במשך 5 דקות."; error EN "Couldn't make a plan just now."/HE "לא הצלחנו ליצור תוכנית כרגע." RTL full mirror; rows `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: proposal rows enter ≤250 ms. Full strings = `web/brain-dump.html`.
 - **TESTS:** Given raw text / When type / Then draft saved. Given submit / When click / Then `?view=review` rows appear. Given reject all / When click / Then Add disabled. Given accept 2 + Add / When click / Then toast + 2 tasks on Today (Undo). Given empty / When load / Then "Start with whatever is loudest." Playwright: type→plan→accept→add→undo, and empty/error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** model-written vs rule-based proposal, auto-apply threshold — UNKNOWN, Amit answers (conflict #6).
 
 ### TFV2-0127 — Screen: Plan (day / week / month)
@@ -2560,7 +2560,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/plan`, layout TempoShell. Data: `plan.getDay` / `getWeek` / `getMonth`. Views via Segmented (Day/Week/Month) + `?view=`. Components: MonthGrid (month), WeekColumns (week), DayTimeline (day). States: default, empty, loading, error, offline. One primary: none (read + add). Key copy: EN "Plan"/HE "תכנון"; empty EN "No plans for this day yet."/HE "עדיין אין תוכניות ליום הזה."; empty body EN "Fixed events will show here, and flexible things will settle around them."/HE "אירועים קבועים יופיעו כאן, ודברים גמישים יסתדרו סביבם."; error EN "Couldn't load the plan."/HE "לא הצלחנו לטעון את התוכנית."; month title EN "October 2026"/HE "אוקטובר 2026"; prev/next EN "Previous month"/"Next month" /HE "החודש הקודם"/"החודש הבא". RTL: calendar mirrors, weeks run right-to-left per conflict #10. Breakpoints 390/768/1024/1280. Motion: view switch ≤250 ms opacity. Full strings = `web/plan.html`.
 - **TESTS:** Given day view / When load / Then DayTimeline. Given week / When switch / Then WeekColumns. Given month / When switch / Then MonthGrid. Given empty / When load / Then empty copy. Given error / When fail / Then safe copy + Retry. Playwright: switch all three views + empty/error at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0128 — Screen: Tasks list
@@ -2579,7 +2579,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/tasks`, layout TempoShell. Data: `tasks.list`, `tasks.listChecklists`. Actions: tick → `tasks.complete` (optimistic, Undo). Components: Toolbar (SearchInput, Segmented, SortMenu), ListRow, LoadMore. States: default, empty, filtered-to-nothing, loading, error, offline. One primary: none (list). Key copy: EN "Tasks"/HE "משימות"; empty EN "No tasks yet. An empty list is a good place to start."/HE "עוד אין משימות. רשימה ריקה היא מקום טוב להתחיל בו."; empty body EN "Add one from quick add, or dump everything in a brain dump and pick from there."/HE "אפשר להוסיף אחת בהוספה המהירה, או לפרוק הכול בפריקת מחשבות ולבחור משם."; error EN "Couldn't load tasks."/HE "לא הצלחנו לטעון את המשימות."; filtered-none EN "Nothing here for this filter."/HE "אין כאן כלום עם הסינון הזה."; sort EN "Sort"/HE "מיון". RTL full mirror. Breakpoints 390/768/1024/1280. Motion: tick strike ≤250 ms. Full strings = `web/tasks.html`.
 - **TESTS:** Given 3 tasks / When load / Then 3 ListRows. Given search "bank" / When type / Then filtered. Given sort / When choose / Then reordered. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: search→filter→sort→tick, plus empty/error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · row ≥56px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0129 — Screen: Task sheet
@@ -2598,7 +2598,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Component `components/tasks/TaskSheet` (`?task=<id>`), sheet (bottom under 900px) / dialog. Data: `tasks.get({id})`, `nags.getForTarget({taskId})`. Actions: edit fields, Save; "Nag me about this" → nag. States: default, empty (new task), loading, error, offline. One primary: "Save". Key copy: EN "Edit task"/HE "עריכת משימה"; EN "Couldn't load the task."/HE "לא הצלחנו לטעון את המשימה."; EN "Nag me about this"/HE "לנדנד לי על זה"; EN "Today"/HE "היום" (background group). RTL full mirror; title `dir="auto"`. Breakpoints 390/768/1024/1280 (sheet vs dialog). Motion: sheet slide ≤250 ms. Full strings = `web/task-sheet.html`.
 - **TESTS:** Given an existing task / When open / Then fields prefilled. Given new task / When open empty / Then blank form. Given invalid (empty title) / When Save / Then field error + `aria-invalid`. Given Save valid / When click / Then toast. Given "Nag me" / When click / Then nag form. Playwright: open→edit→save, empty→new, error state, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0130 — Screen: Journal
@@ -2617,7 +2617,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/journal`, layout TempoShell. Data: `journal.list()`, `journal.promptForToday({date})`. Actions: `saveEntry({date, body})`. States: default, empty, loading, error, offline. One primary: "Write a line" (or Save). Key copy: EN "Journal"/HE "יומן"; empty EN "The journal is here when you want it."/HE "היומן מחכה לך כשתרצי."; empty body EN "Write one line about today, or answer the question. There is no right length."/HE "אפשר לכתוב שורה אחת על היום, או לענות על השאלה. אין אורך נכון."; error EN "Couldn't load the journal."/HE "לא הצלחנו לטעון את היומן." RTL full mirror; entry `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: save ≤250 ms. Full strings = `web/journal.html`.
 - **TESTS:** Given no entry / When load / Then prompt + empty copy. Given type + Save / When submit / Then saved toast. Given error / When fail / Then safe copy + Retry. Playwright: prompt→write→save, empty/error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · form width ≤68ch (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** journal storage authority — UNKNOWN, Amit answers (conflict #7).
 
 ### TFV2-0131 — Screen: Calendar
@@ -2636,7 +2636,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/calendar`, layout TempoShell. Data: `events.listMonth`, `events.listDay`. Actions: add event, edit, delete (soft). Components: MonthGrid, DayTimeline, WeekColumns, Dot, legend. States: default, empty day, form error (end before start), loading, error, offline. One primary: "Add event". Key copy: EN "Calendar"/HE "לוח שנה"; EN "Add event"/HE "הוספת אירוע"; legend EN "What the dots mean"/HE "מה הנקודות אומרות"; EN Fixed "Fixed"/HE "קבוע"; EN Flexible "Flexible"/HE "גמיש"; empty day EN "Nothing on this day. A free day is allowed."/HE "אין כלום ביום הזה. מותר שיהיה יום פנוי."; error EN "Couldn't load the calendar."/HE "לא הצלחנו לטעון את לוח השנה."; form error EN "End can't be before start."/HE "הסיום לא יכול להיות לפני ההתחלה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: event add ≤250 ms. Full strings = `web/calendar.html`.
 - **TESTS:** Given events / When load / Then grid with dots + day list. Given empty day / When select / Then empty-day copy. Given add with end before start / When Save / Then form error. Given edit / When change title / Then saved. Given delete / When confirm / Then event gone (soft). Playwright: add→edit→delete, empty-day, form-error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0132 — Screen: Habits
@@ -2655,7 +2655,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/habits`, layout TempoShell. Data: `habits.list`. Actions: `habits.log({habitId, localDate})` toggle; add habit. States: default, welcome back (untouched 7+ days), empty, loading, error, offline. One primary: "Add habit". Key copy: EN "Habits"/HE "הרגלים"; empty EN "No habits yet. You don't need one for a good day."/HE "עוד אין הרגלים. לא צריך אף אחד כדי שיהיה יום טוב."; welcome back EN "Welcome back"/HE "ברוך שובך" (kind, no pressure); EN "Log today"/HE "לתעד היום"; error EN "Couldn't load habits."/HE "לא הצלחנו לטעון את ההרגלים." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: toggle dot ≤250 ms. Full strings = `web/habits.html`.
 - **TESTS:** Given 2 habits / When load / Then 2 HabitBlocks. Given toggle / When click / Then logged today + Undo. Given none / When load / Then empty copy. Given untouched 7+ days / When load / Then welcome-back state. Playwright: toggle→undo, empty, welcome-back, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · row ≥56px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0133 — Screen: Habit detail
@@ -2674,7 +2674,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/habits/[id]`, layout TempoShell. Data: `habits.get`, `habits.listDays` (42 days), `habits.summary`, `nags.getForHabit`. Actions: log/undo by day; edit; nag. States: default, paused, empty (no check-ins yet), loading, error, offline. One primary: none (log). Key copy: EN "No check-ins yet. Every habit starts this way."/HE "עוד לא נרשם כלום. ככה כל הרגל מתחיל."; EN "logged"/"not logged" sr /HE "תועד"/"לא תועד"; nag title EN "Your reminder"/HE "התזכורת שלך"; error EN "Couldn't load the habit."/HE "לא הצלחנו לטעון את ההרגל." RTL full mirror; day grid flows RTL. Breakpoints 390/768/1024/1280. Motion: dot fill ≤250 ms. Full strings = `web/habit-detail.html`.
 - **TESTS:** Given a habit / When load / Then name + 42-day grid. Given check-in / When log today / Then today's ring fills. Given none / When load / Then empty copy, no streak number. Given paused / When load / Then paused state. Playwright: log→undo, empty, paused, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · 42-day grid (BACKEND-SCHEMA §3).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
 ### TFV2-0134 — Screen: Routines
@@ -2693,7 +2693,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/routines`, layout TempoShell. Data: `routines.list`, `routines.suggestNow`. Actions: start a run. States: default, paused run, empty, loading, error, offline. One primary: "Start". Key copy: EN "Routines"/HE "שגרות"; empty EN "No routines yet. Your days count without them too."/HE "עוד אין שגרות. הימים שלך נחשבים גם בלי."; empty body EN "If mornings or evenings feel like many small decisions, write the steps once and let Tempo walk you through."/HE "אם הבקרים או הערבים מרגישים כמו הרבה החלטות קטנות, אפשר לכתוב את הצעדים פעם אחת ולתת ל־Tempo ללוות אותך."; error EN "Couldn't load routines."/HE "לא הצלחנו לטעון את השגרות." RTL full mirror; step text `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: run start ≤250 ms. Full strings = `web/routines.html`.
 - **TESTS:** Given 2 routines / When load / Then 2 rows. Given suggestNow / When matches / Then one routine suggested. Given start / When click / Then run opens. Given empty / When load / Then empty copy. Playwright: list→suggest→start, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0135 — Screen: Routine detail
@@ -2712,7 +2712,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/routines/[id]`, layout TempoShell. Data: `routines.get`, `routines.getRun`. Actions: `completeStep({runId, stepIndex})`; edit steps. States: default, paused, finished, empty (no steps), loading, error, offline. One primary: "Next step". Key copy: EN "This routine has no steps yet."/HE "לשגרה הזאת עוד אין צעדים."; EN "Add two or three small steps. You can change them anytime."/HE "אפשר להוסיף שניים או שלושה צעדים קטנים. אפשר לשנות אותם בכל זמן."; EN "Paused"/HE "מושהה"; EN "Finished"/HE "הסתיים"; error EN "Couldn't load the routine."/HE "לא הצלחנו לטעון את השגרה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: step advance ≤250 ms. Full strings = `web/routine-detail.html`.
 - **TESTS:** Given a routine with 3 steps / When load / Then 3 steps, cursor at 0. Given Next / When click / Then cursor advances. Given last step / When click / Then finished state. Given no steps / When load / Then empty copy. Playwright: advance→finish, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0136 — Screen: Goals
@@ -2731,7 +2731,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/goals`, layout TempoShell. Data: `goals.list`, `projects.listByGoals`. Actions: `goals.create({title})`; filter. States: default, filtered-to-nothing, empty, loading, error, offline. One primary: "Write a goal". Key copy: EN "Goals"/HE "מטרות"; empty EN "No goals yet. That's fine."/HE "עדיין אין מטרות. זה בסדר."; empty body EN "A goal is just something you'd like to be true. Write one in your own words, and link a project later."/HE "מטרה היא פשוט משהו שהיית רוצה שיתקיים. כתבי אחת במילים שלך, ואפשר לקשר פרויקט אחר כך."; filtered-none EN "Nothing here for this filter."/HE "אין כאן כלום עם הסינון הזה."; error EN "Couldn't load your goals."/HE "לא הצלחנו לטעון את המטרות שלך." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goals.html`.
 - **TESTS:** Given 2 goals / When load / Then 2 rows. Given create / When submit / Then new goal appears. Given filter / When choose / Then filtered. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0137 — Screen: Goal detail
@@ -2750,7 +2750,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/goals/[id]`, layout TempoShell. Data: `goals.get`, `projects.listByGoal`, `tasks.listByGoal`, `goals.nextStep`. Actions: link project, add task. States: default, empty (no steps yet), loading, error, offline. One primary: "Add a step". Key copy: EN "This goal has no steps yet."/HE "למטרה הזו עדיין אין צעדים."; EN "You can link a project that already exists, or add one small task that points here."/HE "אפשר לקשר פרויקט שכבר קיים, או להוסיף משימה קטנה אחת שמכוונת לשם."; EN "Next step"/HE "הצעד הבא"; error EN "Couldn't open this goal."/HE "לא הצלחנו לפתוח את המטרה הזו." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goal-detail.html`.
 - **TESTS:** Given a goal with 2 projects / When load / Then both listed. Given next step / When load / Then suggested step. Given no steps / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: open→next step, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0138 — Screen: Goals progress
@@ -2769,7 +2769,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/goals/progress`, layout TempoShell. Data: `goals.progressByGoal`, `goals.stepsByWeek`. Components: BarChart, LineChart, ChartSummary (required figcaption). States: default, empty, loading, error, offline. One primary: none. Key copy: EN "How your goals are going"/HE "איך המטרות שלך מתקדמות"; empty EN "Nothing to show yet."/HE "עדיין אין מה להציג."; empty body EN "Once a goal has a task or two linked, a quiet picture appears here."/HE "ברגע שלמטרה יהיו משימה או שתיים מקושרות, תופיע כאן תמונה שקטה שלה."; offline EN "You're offline. These charts are from your last visit."/HE "אין חיבור כרגע. הגרפים האלה מהביקור הקודם שלך."; error EN "Couldn't load your progress."/HE "לא הצלחנו לטעון את ההתקדמות שלך." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goals-progress.html`.
 - **TESTS:** Given goals with tasks / When load / Then BarChart + LineChart each with a ChartSummary. Given empty / When load / Then empty copy, no charts. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0139 — Screen: Projects
@@ -2788,7 +2788,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/projects`, layout TempoShell. Data: `projects.list`, `goals.listNames`. Actions: create project; filter by status. States: default, filtered-to-nothing, empty, loading, error, offline. One primary: "Start a project". Key copy: EN "Projects"/HE "פרויקטים"; empty EN "No projects yet."/HE "עדיין אין פרויקטים."; empty body EN "A project is just a name and a few tasks. Start with one thing on your mind."/HE "פרויקט הוא רק שם וכמה משימות. אפשר להתחיל מדבר אחד שמעסיק אותך."; statuses EN Idea·Active·Paused·Done /HE רעיון·פעיל·מושהה·הושלם; error EN "Couldn't load your projects."/HE "לא הצלחנו לטעון את הפרויקטים שלך." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/projects.html`.
 - **TESTS:** Given 3 projects / When load / Then 3 rows with status badges. Given filter Active / When choose / Then filtered. Given create / When submit / Then new project. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0140 — Screen: Project detail
@@ -2807,7 +2807,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/projects/[id]`, layout TempoShell. Data: `projects.get`, `pages.listByProject`, `tasks.listByProject`, `pages.backlinks`. Actions: add task. States: default, empty (name only), loading, error, offline. One primary: "Add task". Key copy: EN "Pages in this project"/HE "דפים בפרויקט הזה"; EN "Tasks"/HE "משימות"; EN "Goals"/HE "מטרות"; empty EN "This project is just a name for now."/HE "הפרויקט הזה הוא בינתיים רק שם."; EN "Add a first task"/HE "הוספת משימה ראשונה"; error EN "Couldn't open this project."/HE "לא הצלחנו לפתוח את הפרויקט הזה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/project-detail.html`.
 - **TESTS:** Given a project / When load / Then title + pages + tasks + goals. Given empty / When load / Then empty copy + Add first task. Given error / When fail / Then Retry. Playwright: open, empty, error, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0141 — Screen: Project kanban
@@ -2826,7 +2826,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/projects/[id]/kanban`, layout TempoShell. Data: `projects.get`, `tasks.listByProjectColumns`. Actions: `tasks.moveColumn` via `kanban-move` `data-dir`. States: default, empty board, empty column, loading, error, offline. One primary: "Add card". Key copy: column names EN "To do"·"Doing"·"Done" /HE "לעשות"·"בעבודה"·"הושלם"; empty board EN "This board is empty for now."/HE "הלוח הזה ריק בינתיים."; empty column EN "Nothing waiting here."/HE "שום דבר לא מחכה כאן."; error EN "Couldn't load this board."/HE "לא הצלחנו לטעון את הלוח הזה." RTL: move buttons `.tp-icon--flip`/`.tp-icon--back`; columns flow RTL. Breakpoints 390/768/1024/1280 (snap-scroll at 390). Motion: card move ≤250 ms. Full strings = `web/project-kanban.html`.
 - **TESTS:** Given 3 columns / When load / Then 3 columns with counts. Given move next / When click / Then card moves + counts update, edge disabled. Given empty column / When render / Then column empty copy. Given error / When fail / Then Retry. Playwright: move card between columns, disabled edges, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0142 — Screen: Insights
@@ -2845,7 +2845,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/insights`, layout TempoShell. Data: `insights.getPatterns`, `insights.tasksByWeekday`, `insights.focusMinutesByWeek`. Components: BarChart, LineChart, ChartSummary. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Insights"/HE "תובנות"; empty EN "Patterns need about a week."/HE "לדפוסים צריך בערך שבוע."; empty body EN "Use Tempo however works for you. Gentle patterns appear here on their own. There is nothing to do."/HE "השתמשי ב־Tempo איך שנוח לך. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות."; error EN "Couldn't load insights."/HE "לא הצלחנו לטעון את התובנות." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/insights.html`.
 - **TESTS:** Given patterns + data / When load / Then sentences + two charts each with summary. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0143 — Screen: Activity
@@ -2864,7 +2864,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/activity`, layout TempoShell. Data: `activity.listRecent`. Actions: `activity.undo({activityId})` (coach-origin, ≤5 min). Components: ListRow, Segmented filter. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Recent activity"/HE "פעילות אחרונה"; EN "Everything that changed in the last seven days, by you or the coach."/HE "כל מה שהשתנה בשבעת הימים האחרונים, על ידייך או על ידי המאמן."; empty EN "Nothing changed this week."/HE "שום דבר לא השתנה השבוע."; filter EN "By you"/"By the coach"/HE "על ידייך"/"על ידי המאמן"; EN "Undo"/HE "ביטול"; undo toast EN "The change was undone."/HE "השינוי בוטל. שום דבר אחר לא זז."; error EN "Couldn't load recent activity."/HE "לא הצלחנו לטעון את הפעילות האחרונה." RTL full mirror; timestamps `.tp-num`. Breakpoints 390/768/1024/1280. Motion: row removal ≤250 ms. Full strings = `web/activity.html`.
 - **TESTS:** Given feed / When load / Then rows by you + coach. Given a coach change <5 min / When load / Then Undo shown. Given >5 min / When load / Then no Undo. Given Undo / When click / Then row removed + toast. Playwright: filter→undo, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0144 — Screen: Search
@@ -2883,7 +2883,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/search`, layout TempoShell. Data: `search.query`, `search.recentQueries`. Actions: type → query. States: default, no results (`?results=none`), empty (no query), loading, error, offline. One primary: none. Key copy: EN "What are you looking for?"/HE "מה את מחפשת?"; empty body EN "Type a word or idea you roughly remember. Tempo searches pages, tasks and coach chats."/HE "הקלידי מילה או רעיון שאת זוכרת בערך. Tempo יחפש בדפים, במשימות ובשיחות עם המאמן."; no-results EN "Nothing found for"/HE "לא נמצא כלום עבור"; loading EN "Searching"/HE "מחפש"; error EN "Couldn't search right now."/HE "לא הצלחנו לחפש כרגע."; offline EN "You're offline. Searching pages and tasks on this device; chats return when connected."/HE "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר. השיחות יחזרו כשתהיי מחוברת." RTL full mirror; query `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: results ≤250 ms. Full strings = `web/search.html`.
 - **TESTS:** Given query "bank" / When type / Then results grouped. Given no match / When search / Then no-results copy. Given empty / When load / Then prompt. Given error / When fail / Then Retry. Playwright: search→results, no-results, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0145 — Screen: Command palette
@@ -2902,7 +2902,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/command` (dialog over the last page); also the Ctrl K trigger on every TempoShell screen. Data: `pages.listRecent`, static jump targets, `search.quick`. Keyboard: arrows, Enter, Esc; focus returns on close. States: default, empty (no recent pages), loading, error, offline. Key copy: EN "Search or jump to"/HE "חיפוש או מעבר אל"; EN "Type a page, place or action"/HE "הקלידי דף, מקום או פעולה"; EN "Results"/HE "תוצאות"; empty EN "Pages you open will show here."/HE "דפים שתפתחי יופיעו כאן."; error EN "Couldn't load recent pages. Your data is safe; everything below still works."/HE "לא הצלחנו לטעון את הדפים האחרונים. המידע שלך שמור, וכל מה שלמטה עדיין עובד." RTL full mirror. Breakpoints 390/768/1024/1280 (centred dialog ≥768). Motion: open ≤250 ms opacity. Full strings = `web/command.html`.
 - **TESTS:** Given recent pages / When open Ctrl K / Then list. Given no recent / When open / Then empty copy. Given type / When keys / Then filtered + arrow + Enter navigates. Given Esc / When press / Then closes + focus returns. Playwright: open→type→navigate, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0146 — Screen: Notifications
@@ -2921,7 +2921,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/notifications`, layout TempoShell. Data: `notifications.list`. Actions: `markRead`, `markAllRead`. States: default, empty, loading, error, offline. One primary: "Mark all read". Key copy: EN "Notifications"/HE "התראות"; empty EN "Nothing new. Quiet is good."/HE "אין שום דבר חדש. שקט זה טוב."; empty body EN "When Amit replies, when your week is ready, or when the coach saves something, it shows here."/HE "כשעמית עונה, כשהשבוע שלך מוכן, או כשהמאמן שומר משהו, זה יופיע כאן."; error EN "Couldn't load notifications."/HE "לא הצלחנו לטעון את ההתראות."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: read-state ≤250 ms. Full strings = `web/notifications.html`.
 - **TESTS:** Given 3 notifications / When load / Then 3 rows. Given markRead / When click / Then read. Given markAllRead / When click / Then all read. Given empty / When load / Then empty copy. Playwright: markRead→markAllRead, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (in-app only).
 
 ### TFV2-0147 — Screen: Nags
@@ -2940,7 +2940,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/nags`, layout TempoShell. Data: `nags.list`. Actions: `nags.addPhrase`, `nags.setEnabled` (blocked until ≥1 phrase). Components: Form, Field, Textarea, Switch. States: default, empty, loading, error, offline. One primary: "Add phrase". Key copy: EN "Nags"/HE "נדנודים"; EN "Your nags"/HE "הנדנודים שלך"; empty EN "No nags yet."/HE "עוד אין נדנודים."; empty body EN "On any task or habit, choose 'Nag me about this', then write what you'd like to hear. Tempo uses only your words."/HE "בכל משימה או הרגל, בחרי ״לנדנד לי על זה״, ואז כתבי מה היית רוצה לשמוע. Tempo משתמש רק במילים שלך."; EN "Your words"/HE "המילים שלך"; EN "Add phrase"/HE "הוספת משפט"; error EN "Couldn't load nags."/HE "לא הצלחנו לטעון את הנדנודים." RTL full mirror; phrases `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: phrase add ≤250 ms. Full strings = `web/nags.html`.
 - **TESTS:** Given a nag with 1 phrase / When load / Then phrase shown. Given enable with no phrase / When try / Then switch disabled. Given add phrase / When submit / Then phrase added + switch enabled. Given empty / When load / Then empty copy. Playwright: add phrase→enable, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** delivery channel beyond in-app — UNKNOWN, Amit answers (conflict #11).
 
 ### TFV2-0148 — Screen: Weekly page (with WeekStrip)
@@ -2959,7 +2959,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Route `(tempo)/week/[week]` (entry `/week/[isoWeek]`), layout TempoShell. Data: `pages.getWeekly`, `tasks.listForWeek`, `pages.backlinks`. Components: WeekStrip, Section, ListRow. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Week"/HE "שבוע"; EN "Intentions for this week"/HE "כוונות לשבוע הזה"; EN "Tasks by day"/HE "משימות לפי יום"; empty EN "This week is still open."/HE "השבוע הזה עוד פתוח."; empty body EN "Write one intention, or give one day one small task."/HE "אפשר לכתוב כוונה אחת, או לתת ליום אחד משימה קטנה אחת."; error EN "Couldn't load your week."/HE "לא הצלחנו לטעון את השבוע שלך." RTL: days run RTL per conflict #10; counts `.tp-num`. Breakpoints 390/768/1024/1280. Motion: day select ≤250 ms. Full strings = `web/weekly-page.html`.
 - **TESTS:** Given a week / When load / Then WeekStrip + intentions + tasks-by-day. Given select Tuesday / When click / Then that day's tasks highlight. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: select day, empty, at 390/1280, EN/HE.
 - **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
 
 ## Chunk 3 — MVP · Coach & memory
@@ -2980,7 +2980,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `memories` (convex/schema.ts) gains `embedding: v.optional(v.array(v.float64()))` (exactly 1,024 floats when present; empty array rejected at insert time by the index) and `.vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })`. No other table changes. Error case: a vector of wrong length must be rejected by Convex at insert. Limit: Convex vector search is action-only and returns at most 256 results (callers enforce the cap; this ticket only declares the index).
 - **TESTS:** Given `memories` has no `embedding` column / When the schema file is compiled with the new field + index / Then it registers with dimensions 1024 and filter `userId`. Given a memory insert with `embedding` of 1,024 floats / When validated / Then it passes. Given an insert with a 1,023-float vector / When validated / Then Convex rejects it.
 - **NUMBERS:** vector dimensions 1024 → pass (Convex 2–2,048 dims, source https://docs.convex.dev/search/vector-search) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0150 — Schema: `entities` table (life graph)
@@ -2999,7 +2999,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** New table `entities` (fields above). `kind` is one of `person|project|goal|place|habit`. `aliases` are alternative names used for matching (no uniqueness constraint). `embedding` mirrors `memories.embedding` (1,024 floats, optional). Soft delete via `deletedAt`. No extraction logic here.
 - **TESTS:** Given a valid `entities` row / When inserted / Then it validates. Given `kind:"person"` vs an out-of-union `kind` / Then the latter is rejected. Given a row with `deletedAt` set / When queried by a live-entities index / Then soft-deleted rows are excluded.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0151 — Schema: `edges` table (life graph)
@@ -3018,7 +3018,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** New table `edges`. `from`/`to` are entity names (string keys, not ids, per TRD §5c mirroring Graphify's tags). `origin` is `extracted` (from `[[links]]`/blocks, no model) or `inferred` (model-guessed). `confidence` 0..1. `sourceRef` points at the note/chat that produced it. Soft delete via `deletedAt`.
 - **TESTS:** Given a valid `edges` row / When inserted / Then validates. Given `origin:"inferred"` vs `origin:"extracted"` / Then both validate; an out-of-union origin is rejected. Given `confidence:1.4` / When validated / Then accepted by Convex (clamping is a caller concern; document it) — assert the validator accepts a number in 0..1.
 - **NUMBERS:** `confidence` range 0..1 → pass (caller clamp; no numeric source needed) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0152 — Schema: `observations` table (reflect)
@@ -3037,7 +3037,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** New table `observations`. `text` is a human-readable observation. `memoryIds` are the memories that support it. Soft delete via `deletedAt`.
 - **TESTS:** Given a valid `observations` row / When inserted / Then validates. Given a row with `memoryIds` referencing `memories` ids / Then validates. Given a row with non-id strings in `memoryIds` / Then Convex rejects.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0153 — Coach Agent: `Agent` definition, languageModel, streaming (folds-in #743)
@@ -3056,7 +3056,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `coachAgent` is an `Agent` whose `languageModel` resolves through the one model seam (names only; the exact runtime model id is OPEN §4.3, source of truth `convex/lib/ai_router.ts` until Amit settles it). `embeddingModel` is the embedding seam (OPEN §4.3/TRD §5 — the pick is Qwen3-Embedding-8B by default, UNKNOWN until the Hebrew eval in TFV2-0185 lands). Replies stream via `saveStreamDeltas`. Auth rule: approved-for-AI accounts only (`requireApprovedForAi` runs first). Error cases: missing provider key → the Agent's stream resolves to `unavailable` (no key text ever surfaced).
 - **TESTS:** Given `coachAgent` is instantiated under `convex-test` / When the component's schema loads / Then no import-time error. Given a signed-out or unapproved identity / When a model call is attempted / Then it is rejected before any provider request. Given `saveStreamDeltas` is set / When a reply is produced / Then deltas are observable.
 - **NUMBERS:** streaming first-token budget — ack < 0.2 s, response ~1 s (16 Sep latency budget, PRD §4.3) → pass range ≤ 1.2 s | UNKNOWN (measured later; Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 interim text model id and §4.12 AI SDK vs HARD_RULES §2 — the model id and the SDK choice are UNKNOWN; answerer: Amit.
 
 ### TFV2-0154 — Coach chat: send + Thinking + Retry (folds-in #744)
@@ -3075,7 +3075,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `send({ conversationId, content })` returns `{ success, crisis? }`. Empty message → `EN: "Message is empty." / HE: "ההודעה ריקה."`. Too long → `EN: "That message is too long. Try a shorter one." / HE: "ההודעה ארוכה מדי. נסו קצרה יותר."`. Crisis text stores the fixed card (no model). Thinking state copy `EN: "Thinking…" / HE: "חושב…"`. Retry re-runs the last user turn once; a second concurrent Retry returns "busy" and waits for the in-flight answer. Auth: approved user owning the conversation.
 - **TESTS:** Given an empty message / When `send` runs / Then "Message is empty." / "ההודעה ריקה." is thrown. Given a >4000-char message / When `send` runs / Then the too-long message is thrown. Given crisis words / When `send` runs / Then the fixed card is stored and no model is called. Given two overlapping Retries / When both run / Then one claims the turn and the other resolves "busy".
 - **NUMBERS:** `MAX_MESSAGE_CHARS` 4000 → pass (already the product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0155 — Coach context: page + memory injection (F-21)
@@ -3094,7 +3094,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `buildCoachMessages(args)` gains `memory?: readonly string[]`; each item is a single-line `- <content>` under a `<memory>` system block, truncated to `COACH_LIMITS.memoryChars` (new constant, 2000). Order of system blocks: role → today's date → `<page>` → `<memory>` → `<tasks>` → web-search line → thread. Page cap stays `COACH_LIMITS.pageChars` (6000). No cross-user data.
 - **TESTS:** Given an owned page + 3 memories / When `buildCoachMessages` runs / Then the system block contains `<memory>` with the three `- ` lines and no other user's text. Given memories exceeding the cap / When built / Then they are truncated with a visible `…` (never a split surrogate pair). Given no memories / Then no `<memory>` block is emitted.
 - **NUMBERS:** memory context cap 2000 chars → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0156 — Coach Agent tool: `createNote`
@@ -3113,7 +3113,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tool `createNote({ title, body })` → proposal `{ kind:"note", title, body }`. Auth: approved-for-AI. Error cases: missing title → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; body containing Tempo JSON blocks is stripped to plain Markdown (`plainMarkdown`); body > 20,000 chars truncated. Limits: title 200, body 20,000.
 - **TESTS:** Given `createNote` with a title and body / When run / Then a `note` proposal returns and nothing is in `notes`. Given an empty title / When run / Then the "name and words" error is thrown. Given a body with a `json tempo` fence / When parsed / Then the fence is dropped (plain Markdown only). Given Accept then Undo within 5 min / Then the note is soft-deleted; after 5 min Undo throws.
 - **NUMBERS:** title 200 / body 20,000 chars → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0157 — Coach Agent tool: `addTaskToToday`
@@ -3132,7 +3132,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tool `addTaskToToday({ title, minutes?, when })` → `{ kind:"task", title, minutes, when }`. Auth: approved-for-AI. Error cases: empty title → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; `when` not `today`/`later` → coerce to `later` (the model is separately told not to propose other days). Limits: title 200, minutes 1..480.
 - **TESTS:** Given a valid task / When run / Then a `task` proposal returns. Given minutes 1000 / When clamped / Then it is 480. Given "today" and a valid `dueTodayAt` / When Accept runs / Then the task is created due that day. Given Undo within 5 min / Then the task soft-deletes.
 - **NUMBERS:** minutes 1..480 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0158 — Coach Agent tool: `fillTemplate`
@@ -3151,7 +3151,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tool `fillTemplate({ name, body, period })` → `{ kind:"template", name, body, period }`. Auth: approved-for-AI. Error cases: empty name → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; `period` not daily/weekly → `none`; body with Tempo JSON stripped to Markdown; body > 20,000 truncated.
 - **TESTS:** Given a template proposal / When run / Then it returns and nothing is in `templates`. Given empty name / Then error. Given `period:"daily"` / Then Accept inserts a `daily` template. Given Undo within 5 min / Then soft-delete.
 - **NUMBERS:** name 200 / body 20,000 chars → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0159 — Coach Agent tool: `draftModule`
@@ -3170,7 +3170,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tool `draftModule({ spec })` → `{ status:"draft", spec }`; a valid spec uses only catalog component names and catalog action names (Zod-validated). Error cases: unknown component → rejected, stays `draft`; unknown action → rejected; any URL or script → rejected. Auth: approved-for-AI. Approval: the Agent's tool-approval state carries the Approve/Discard step.
 - **TESTS:** Given a valid catalog-only spec / When `draftModule` runs / Then it returns `draft` and awaits approval. Given a spec with an unknown component / Then it is rejected and stays `draft`. Given a spec with a URL or script / Then it is rejected. Given approval / Then only the approving mutation can flip it to `live`.
 - **NUMBERS:** module never `live` without approval → pass (boolean gate) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (AI SDK vs HARD_RULES §2) — whether the Agent tool-approval path is permitted as written is UNKNOWN; answerer: Amit.
 
 ### TFV2-0160 — Coach Agent tool: `searchMemory`
@@ -3189,7 +3189,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tool `searchMemory({ query })` → `{ notes[], tasks[], habits[], goals[], memories[] }`, each capped at 8 (the existing `GROUP_LIMIT`). Empty query → empty groups. Auth: approved-for-AI + owner filter on every index. Meaning search runs only in an action (Convex vector search is action-only).
 - **TESTS:** Given a query with hits in notes and memories / When `searchMemory` runs / Then both groups return, capped at 8, owner-filtered. Given an empty query / Then all groups are empty. Given a second user's memory matching the query / Then it never appears.
 - **NUMBERS:** 8 results per group → pass (existing `GROUP_LIMIT`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (RAG/vector search permitted vs HARD_RULES §2) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0161 — Coach Agent tool: `scheduleJob`
@@ -3208,7 +3208,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tool `scheduleJob({ cron, task, targetPageType })` → a `job` proposal (kind `job`). Auth: approved-for-AI. Error cases: invalid cron → `EN: "That schedule doesn't parse. Try something like 'every weekday at 8'." / HE: "הלוח הזה לא נקרא. נסו משהו כמו 'כל יום חול ב־8'."`; no approval → nothing registered. Times UTC internally, displayed in the user's time zone. Limits: one job per approval; Undo removes within 5 min.
 - **TESTS:** Given a valid cron + task / When `scheduleJob` runs / Then a `job` proposal returns and nothing is registered. Given an invalid cron / Then the parse error is thrown. Given approval / Then the job registers; Undo within 5 min removes it. Given no approval / Then no job row exists.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0162 — Coach tool approval: draftModule Approve/Discard gate
@@ -3227,7 +3227,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Approval states: `approval-requested` (pending) → Approve (`live`) / Discard (dropped). Auth: the approving caller must be the conversation owner. Error cases: approving an invalid draft → rejected; approving twice → `EN: "This draft was already decided." / HE: "הטיוטה הזו כבר הוכרעה."`.
 - **TESTS:** Given a pending valid draft / When approved / Then it flips to `live`. Given a pending invalid draft / When approved / Then rejected. Given Discard / Then nothing live is persisted. Given a second approve / Then "already decided" error.
 - **NUMBERS:** one decision per draft → pass (boolean gate) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 — UNKNOWN; answerer: Amit.
 
 ### TFV2-0163 — Coach history: `listThreads` (paginated, grouped)
@@ -3246,7 +3246,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `listThreads({ paginationOpts })` → `{ page }` of `{ id, title, lastLine, updatedAt }`. Auth: `requireUser`. Error cases: none beyond owner filter (empty page is valid). Limits: default page size 20, `lastLine` 160 chars.
 - **TESTS:** Given two conversations / When `listThreads` runs / Then newest-first order. Given another user's conversations / Then none appear. Given none / Then empty page. Given a long last line / Then clamped to 160 chars with `…`.
 - **NUMBERS:** page size 20 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0164 — Coach history: `searchThreads` (meaning + keyword)
@@ -3265,7 +3265,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `searchThreads({ query, mode })` → array of `{ id, title, lastLine, updatedAt }` (≤ 20). `mode` ∈ `meaning|words`. Auth: `requireUser`. Error cases: empty query → newest list. Limits: 20 results, vector dims 1024 (from TFV2-0149).
 - **TESTS:** Given `mode:"words"` and a literal term / When run / Then literal matches only. Given `mode:"meaning"` and a paraphrase / Then vector matches surface. Given another user's thread / Then never returned.
 - **NUMBERS:** 20 results max → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 — vector search across threads permitted vs HARD_RULES §2 is UNKNOWN; answerer: Amit.
 
 ### TFV2-0165 — Coach history: `getThread` + `createThread`
@@ -3284,7 +3284,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `getThread({ threadId })` → thread with messages in ascending order; each assistant message carries `proposal` (kind/status/`preview`) when present and a `streaming` flag. `createThread({})` → `v.id("conversations")`. Auth: `requireUser`; owner check on every read. Error cases: wrong owner / missing thread → `EN: "Conversation not found." / HE: "השיחה לא נמצאה."`.
 - **TESTS:** Given an owned thread with a proposal message / When `getThread` runs / Then messages + proposal status return. Given another user's threadId / Then "Conversation not found." is thrown. Given `createThread` / Then a new owned conversation returns its id.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 ### TFV2-0166 — Adaptive coach: dial backend (`getSettings` + `setDial`)
 - **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
@@ -3302,7 +3302,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `setDial({ dial })` → `{ success:true }`; `getSettings({})` → `{ dial, taskLoad, panicUntil, acceptedStreak }`. Default dial 5. Error case (non-integer or <0 or >10): `EN: "The dial is a whole number from 0 to 10." / HE: "החוגה היא מספר שלם מ־0 עד 10."`. Auth: `requireUser`.
 - **TESTS:** Given `setDial(4)` / When run / Then `getSettings().dial === 4`. Given `setDial(11)` / Then the range error. Given `setDial(3.5)` / Then the whole-number error. Given no `coachSettings` row / Then `getSettings().dial === 5`.
 - **NUMBERS:** dial integer 0..10 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0167 — Adaptive coach: panic backend (`pressPanic` + `clearPanic` + 10-second action)
@@ -3321,7 +3321,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `pressPanic({})` → `{ panicUntil, action:{ text } }`; `clearPanic({})` → `{ success:true }`. `PANIC_MS = 30 min`. The action is `TEN_SECOND_ACTIONS` picked by seed. EN/HE (five actions): 1 `EN: "Take one slow breath, then put your hand on the first thing you need." / HE: "קחי נשימה איטית אחת, ואז הניחי את היד על הדבר הראשון שאת צריכה."` · 2 `EN: "Stand up and drink a sip of water." / HE: "קומי ושתי לגימה של מים."` · 3 `EN: "Open the first task and read just its title." / HE: "פתחי את המשימה הראשונה וקראי רק את הכותרת שלה."` · 4 `EN: "Unclench your jaw and drop your shoulders once." / HE: "שחררי את הלסת והורידי את הכתפיים פעם אחת."` · 5 `EN: "Put one thing you do not need away from your desk." / HE: "הרחיקי דבר אחד שאת לא צריכה מהשולחן."`. Auth: `requireUser`. No model call.
 - **TESTS:** Given `pressPanic` / When run / Then `panicUntil > now` by 30 min and `action.text` is one of the five. Given the same seed / Then the same action returns (deterministic). Given `clearPanic` / Then `panicUntil` is cleared.
 - **NUMBERS:** panic window 30 min → pass (product constant `PANIC_MS`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0168 — Adaptive coach: bad-day detection
@@ -3340,7 +3340,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `badDay({})` → `{ isBadDay, reason: "panic"|"low_activity"|null, suggestedLoad }`. `LOW_ACTIVITY_DAYS = 3`. A panic window (panicUntil > now) → `{ isBadDay:true, reason:"panic", suggestedLoad:2 }`; else no completed live task in the last 3 days → `{ isBadDay:true, reason:"low_activity", suggestedLoad:2 }`; else `{ isBadDay:false, reason:null, suggestedLoad: effectiveLoad(taskLoad,false) }`. Auth: `requireUser`.
 - **TESTS:** Given an active panic window / Then `reason:"panic"`. Given no done task in 3 days / Then `reason:"low_activity"`. Given a done task within 3 days / Then `isBadDay:false`. Given a bad day / Then `suggestedLoad === 2`.
 - **NUMBERS:** 3-day quiet window → pass (product constant `LOW_ACTIVITY_DAYS`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0169 — Adaptive coach: realism checker
@@ -3359,7 +3359,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `checkRealism(tasks, availableMinutes)` → `{ ok, totalMinutes, availableMinutes, note }`. `taskMinutes` = rounded estimate/60,000 or `DEFAULT_TASK_MINUTES` (25). `ok = totalMinutes <= availableMinutes`. Notes: fits → `EN: "This fits the time you have. Pick it up when you are ready." / HE: "זה מתאים לזמן שיש לך. קחי את זה כשאת מוכנה."`; over → `EN: "This is more than the time you have today. Do what you can; the rest can wait, and that is fine." / HE: "זה יותר מהזמן שיש לך היום. עשי מה שאפשר; השאר יכול לחכות, וזה בסדר."`. Pure (no ctx).
 - **TESTS:** Given tasks summing 50 min vs 120 available / Then `ok:true` and the fits note. Given 200 min vs 60 available / Then `ok:false` and the over note. Given a task with no estimate / Then it counts as 25 min. Given `availableMinutes: 60` on a bad day (60-min budget) / Then the over note never shames.
 - **NUMBERS:** default task 25 min → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0170 — Adaptive coach: proposal lifecycle (create / current / decide)
@@ -3378,7 +3378,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `createProposal({})` → `v.id("coachProposals")` (idempotent — returns the existing pending id); `currentProposal({})` → proposal or null; `decideProposal({ proposalId, decision })` → `{ status, taskLoad }`. `afterAccept`: streak ≥ `STREAK_FOR_RAISE` (3) → `min(MAX_LOAD, taskLoad+1)`, streak 0; else streak+1. `afterReject` → `{ taskLoad: MIN_LOAD(2), acceptedStreak:0 }`. Error cases: no open tasks → `EN: "No open tasks to plan yet. Add one and come back." / HE: "אין עדיין משימות פתוחות לתכנון. הוסיפי אחת וחזרי."`; already decided → `EN: "This proposal was already decided." / HE: "ההצעה הזו כבר הוכרעה."`; not found → `EN: "Proposal not found." / HE: "ההצעה לא נמצאה."`. Auth: `requireUser`.
 - **TESTS:** Given a pending proposal / When `createProposal` runs again / Then the same id returns. Given 2 tasks / When `createProposal` runs on load 2 / Then the proposal holds ≤ 2 tasks. Given Accept / Then the tasks get `dueAt: now`. Given 3 accepts in a row / Then `taskLoad` rises by 1 (≤ 4). Given Reject / Then `taskLoad` resets to 2 and no task changes.
 - **NUMBERS:** load 2..4, raise at streak 3 → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0171 — Memory: `remember`
@@ -3397,7 +3397,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `remember({ content, sector? })` → `v.id("memories")`. Trims; empty → `EN: "Write something to remember first." / HE: "קודם כתבי משהו לזכור."`; > 2000 → `EN: "Keep a memory to 2000 characters or fewer." / HE: "שמרי זיכרון עד 2000 תווים או פחות."`. Sector ∈ `semantic|episodic|procedural|emotional|general`, default `general`. Auth: `requireUser`.
 - **TESTS:** Given valid content / When `remember` runs / Then a live memory row returns. Given empty / Then the empty error. Given 2001 chars / Then the length error.
 - **NUMBERS:** content ≤ 2000 chars → pass (product constant `CONTENT_MAX`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0172 — Memory: `list`
@@ -3416,7 +3416,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `list({ sector?, limit? })` → `memoryValidator[]` (`{ _id, content, sector, salience, createdAt, updatedAt, lastAccessed, importedFrom? }`). Live rows only, owner-filtered. Sort salience desc → updatedAt desc. Limit clamp `clampLimit` (1..200, default 50).
 - **TESTS:** Given memories in two sectors / When `list({ sector })` / Then only that sector returns. Given limit 5 / Then ≤ 5 rows. Given a soft-deleted row / Then excluded. Given another user's row / Then excluded.
 - **NUMBERS:** limit 1..200, default 50 → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0173 — Memory: `recall` — keyword (search index)
@@ -3435,7 +3435,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `recall({ query, limit? })` → `memoryValidator[]`. Normalizes the query to lower-case, substring match on `content`. Empty query → `[]`. Sort salience desc. Limit clamp (default 50). Auth: `requireUser`.
 - **TESTS:** Given a memory "Phone calls before noon" / When `recall({ query:"phone" })` / Then it returns. Given `query:"PHONE"` / Then still returns (case-insensitive). Given empty query / Then `[]`. Given another user's match / Then excluded.
 - **NUMBERS:** limit clamp default 50 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0174 — Memory: `recall` — vector (meaning)
@@ -3454,7 +3454,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `recallMeaning({ query, limit? })` (action) → `memoryValidator[]`. Embeds the query (1,024 dims), vector-search over `by_userId_embedding` with filter `userId`, returns ≤ min(256, limit) (default 10). Empty query → `[]`. Auth: `requireApprovedForAi` (embedding is a provider call).
 - **TESTS:** Given a query and a fake embedding seam / When `recallMeaning` runs / Then owner-filtered results return. Given empty query / Then `[]`. Given limit 5 / Then ≤ 5.
 - **NUMBERS:** ≤ 256 results (Convex cap) → pass (https://docs.convex.dev/search/vector-search) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (vector search permitted) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0175 — Memory: `recall` — links (edges)
@@ -3473,7 +3473,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `recallLinks({ query, limit? })` → `{ entities[], memories[] }`. Matches `edges.from`/`edges.to` against the query and entity `aliases`; returns the matched entities and the memories referenced. Guessed (`inferred`) links carry `origin` so the UI can mark them. Empty query → empty. Auth: `requireUser`.
 - **TESTS:** Given an edge "Dana → Thursday talk" with alias "manager" / When `recallLinks({ query:"Dana" })` / Then the edge's memories return. Given query "manager" / Then the alias still matches. Given another user's edge / Then excluded.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0176 — Memory: `recall` — time
@@ -3492,7 +3492,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `recallByTime({ fromMs, toMs, limit? })` → `memoryValidator[]` newest-first, live only. `toMs > fromMs`. Limit clamp default 50. Auth: `requireUser`.
 - **TESTS:** Given memories at t1 < t2 / When `recallByTime({ fromMs:t1, toMs:t2 })` / Then both return newest-first. Given `toMs <= fromMs` / Then `[]`. Given another user's row in range / Then excluded.
 - **NUMBERS:** limit default 50 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0177 — Memory: `recall` — merged router (meaning + keyword + links + time)
@@ -3511,7 +3511,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `recall({ query, limit?, modes? })` (action) → `memoryValidator[]`. `modes` ∈ subset of `keyword|meaning|links|time` (default `keyword|meaning`). Merge by `_id` union, dedupe, cap `limit` (default 10). If meaning fails (no key/provider), return keyword-only (never empty on provider error). Auth: `requireApprovedForAi`.
 - **TESTS:** Given a query matching both keyword and meaning / When `recall` runs / Then one row per memory (deduped). Given meaning fails / Then keyword results still return. Given `modes:["keyword"]` / Then only keyword runs. Given limit 3 / Then ≤ 3.
 - **NUMBERS:** default limit 10 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (meaning mode) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0178 — Memory: `context` (token cap)
@@ -3530,7 +3530,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `context({ limit? })` → `{ text, count }`. Live memories sorted by salience desc, slice ≤ limit (default 10), joined `- <content>\n`. Cap the joined text at 4000 chars (truncate with `…`, never split a surrogate pair). Auth: `requireUser`.
 - **TESTS:** Given 3 memories / When `context({ limit:2 })` / Then `count:2` and text has 2 lines. Given a huge memory set / Then text ≤ 4000 chars. Given another user's row / Then excluded.
 - **NUMBERS:** text cap 4000 chars → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0179 — Memory: `forget` (soft delete — OPEN §4.8)
@@ -3549,7 +3549,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `forget({ memoryId })` → `{ success:true }`. Soft delete (`deletedAt = now`). Error cases: missing/foreign/already-deleted → `EN: "Memory not found." / HE: "הזיכרון לא נמצא."`. Auth: `requireUser`.
 - **TESTS:** Given an owned memory / When `forget` runs / Then `deletedAt` is set (not hard-deleted). Given a foreign memoryId / Then "Memory not found." Given an already-deleted id / Then "Memory not found."
 - **NUMBERS:** 30-day grace (HARD_RULES §9 soft delete) → pass | **UNKNOWN** — whether `forget` must be *complete* (hard) per the memory spec is OPEN §4.8; answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.8 — hard vs soft `forget` semantics: UNKNOWN; answerer: Amit.
 
 ### TFV2-0180 — Memory: `restore`
@@ -3568,7 +3568,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `restore({ memoryId })` → `{ success:boolean }`. Clears `deletedAt` only while `isRestorable(deletedAt, now)`. Error: missing/foreign → `EN: "Memory not found." / HE: "הזיכרון לא נמצא."`. Auth: `requireUser`.
 - **TESTS:** Given a memory forgotten 1 min ago / When `restore` runs / Then `success:true`, `deletedAt` cleared. Given forgotten 31 days ago / Then `success:false`. Given a foreign id / Then "Memory not found."
 - **NUMBERS:** 5-minute Undo + 30-day grace → pass (product constants) | **UNKNOWN** — grace length if `forget` becomes hard-delete (OPEN §4.8); answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.8 — UNKNOWN; answerer: Amit.
 
 ### TFV2-0181 — Memory: `forgetAll` + `restoreAll` (batch)
@@ -3587,7 +3587,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `forgetAll({ memoryIds? })` → `{ count, forgottenAt }`; without `memoryIds` forgets all live memories. > 300 ids → `EN: "Forget up to 300 memories at a time." / HE: "אפשר לשכוח עד 300 זיכרונות בבת אחת."`. `restoreAll({ forgottenAt })` → `{ restored }` (0 if out of window). Auth: `requireUser`.
 - **TESTS:** Given 3 memories / When `forgetAll` runs / Then all get the same `deletedAt`. Given 301 ids / Then the 300 error. Given `restoreAll({ forgottenAt })` in-window / Then the batch restores. Given out-of-window / Then `restored:0`.
 - **NUMBERS:** batch ≤ 300 → pass (product constant `BATCH_MAX`) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.8 (if `forget` becomes hard, batch restore semantics change) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0182 — Memory: `export` (Markdown)
@@ -3606,7 +3606,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `exportAll({})` → `{ filename, exportedAt, count, markdown }`. `filename` `tempo-memories-<YYYY-MM-DD>.md`. Markdown: `# Tempo memories`, one `## <Sector>` per non-empty sector, bullets `- <content>`; imported rows append `(imported from ChatGPT|Claude|Grok)` or `(imported)`. Empty → a line `EN: "No memories saved yet." / HE: "עוד אין זיכרונות שמורים."`. Auth: `requireUser`.
 - **TESTS:** Given memories in 2 sectors / When `exportAll` runs / Then two `##` sections appear. Given an imported row / Then its bullet ends with `(imported from ChatGPT)`. Given none / Then the empty line and `count:0`.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0183 — Memory: embedding generation action
@@ -3625,7 +3625,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `embedMemory({ memoryId })` (action) → `{ success:true }`. Embedding model id resolved through the seam (names only; default `Qwen/Qwen3-Embedding-8B`, OPEN §4.3). Native 4,096 → keep first 1,024, re-normalise to unit length. Patch `memories.embedding`. Error: missing key → throw internal (never surface key text). Auth: `requireApprovedForAi`.
 - **TESTS:** Given a fake seam returning 4,096 floats / When `embedMemory` runs / Then the stored vector has exactly 1,024 floats and unit norm. Given a missing key seam / Then it throws without surfacing key text. Given a foreign memoryId / Then "Memory not found."
 - **NUMBERS:** 1,024 dims → pass (Convex 2–2,048 dims, https://docs.convex.dev/search/vector-search) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 embedding model id (default Qwen3-Embedding-8B, EXTRAPOLATED) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0184 — Memory: re-embed backfill action
@@ -3644,7 +3644,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `reembedAll({})` (action) → `{ embedded }`. Processes live memories with no `embedding` (or a stale model tag) up to 50 per run. Auth: internal/system only.
 - **TESTS:** Given 3 un-embedded memories / When `reembedAll` runs / Then all 3 get embeddings (≤ 50). Given an already-embedded row / Then it is skipped. Given > 50 un-embedded / Then only 50 are done per run.
 - **NUMBERS:** 50 per run → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 (model change re-embed) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0185 — Memory: Hebrew embedding eval
@@ -3663,7 +3663,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Scoring = fraction of 40 questions whose correct note is in the top-3 by cosine similarity. Model ids are names only. The real network run is `UNKNOWN` in a sandbox without keys/network.
 - **TESTS:** Given a fixed embedding matrix and expected hits / When the scorer runs / Then the top-3 hit rate matches a hand-computed value. Given 0 questions / Then the scorer returns 0 (not NaN).
 - **NUMBERS:** top-3 hit rate (higher is better) → pass range ≥ 0.7 (internal bar) | **UNKNOWN** — no public Hebrew-specific benchmark exists (TRD §5); answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 (which embedding model locks in) — UNKNOWN; answerer: Amit.
 ### TFV2-0186 — Life graph: `entities` CRUD
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
@@ -3681,7 +3681,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `upsertEntity({ kind, name, aliases })` → `v.id("entities")` (dedupe by lower-case name within the owner); `listEntities({ kind? })` → `{ _id, kind, name, aliases }[]`; `forgetEntity({ id })` → `{ success:true }`. Error: name empty → `EN: "Give it a name." / HE: "תני לו שם."`. Auth: `requireUser`.
 - **TESTS:** Given two upserts of the same name / Then one row. Given `kind:"person"` / Then `listEntities({ kind:"person" })` returns only people. Given `forgetEntity` / Then soft-deleted and excluded. Given another user's entity / Then never returned.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0187 — Life graph: `edges` extraction (extracted vs inferred)
@@ -3700,7 +3700,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `extractEdges({ noteId })` → `{ created }` (links the user wrote, `origin:"extracted"`, `confidence:1`); `inferEdges({ noteId })` (action) → `{ created }` (`origin:"inferred"`, `confidence` 0..1, model-guessed, approved-for-AI). Both owner-filtered. `sourceRef` = the note id.
 - **TESTS:** Given a page with `[[Dana]]` / When `extractEdges` runs / Then an `extracted` edge appears (no model called). Given `inferEdges` / Then `inferred` edges carry `confidence` and origin. Given another user's note / Then rejected.
 - **NUMBERS:** `confidence` 0..1 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.6/§4.9 (whether inferred edges may be auto-applied vs confirm-first) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0188 — Life graph: `edges` confirm + query
@@ -3719,7 +3719,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `confirmEdge({ id })` → `{ success:true }` (sets a `confirmed` flag while keeping `origin:"inferred"` for provenance); `listEdges({ from?, to? })` → edges array with `origin`, `confidence`, `confirmed`. Auth: `requireUser`.
 - **TESTS:** Given an inferred edge / When `confirmEdge` runs / Then it is confirmed. Given a foreign edge / Then rejected. Given `listEdges({ from })` / Then only that side returns, owner-filtered.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0189 — Life graph: graph neighbors query
@@ -3738,7 +3738,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `graphNeighbors({ entityName })` → `{ entity?, neighbors[] }`. Neighbors = entities sharing an edge with the name/alias (one hop). Owner-filtered. Auth: `requireUser`.
 - **TESTS:** Given "Dana" ↔ "Thursday talk" ↔ "Slides" / When `graphNeighbors({ entityName:"Thursday talk" })` / Then both neighbors return (one hop, no further). Given a foreign entity / Then empty.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0190 — Reflect: consolidation cron → `observations`
@@ -3757,7 +3757,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `reflect({})` (action) → `{ created }`. Consolidates the owner's memories into observation text via the model (approved-for-AI), each row carrying `memoryIds`. Cron: nightly in `crons.ts`. Auth: system/internal.
 - **TESTS:** Given 5 related memories / When `reflect` runs / Then an observation is written with all 5 ids. Given 1 memory / Then no observation (needs a minimum of 3). Given another user's memories / Then never consolidated into this user's observations.
 - **NUMBERS:** minimum 3 memories per observation → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (model-written observation text vs HARD_RULES §2) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0191 — Reflect: `observations` list + delete
@@ -3776,7 +3776,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `listObservations({})` → `{ _id, text, memoryIds, createdAt }[]` newest-first; `forgetObservation({ id })` → `{ success:true }` (soft delete). Auth: `requireUser`.
 - **TESTS:** Given two observations / When listed / Then newest-first. Given `forgetObservation` / Then soft-deleted and excluded. Given a foreign id / Then rejected.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0192 — Memory import: `importPreview` (parse, save nothing)
@@ -3795,7 +3795,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `importPreview({ source, text })` → `{ items: string[] }`. `source` ∈ `chatgpt|claude|grok|other`. > 1 MB → `EN: "That memory import is too large. Keep it under 1 MB." / HE: "הייבוא הזה גדול מדי. עד 1 MB."`. Parses JSON or lines via `parseMemoryExport`; ≤ 300 items, each ≤ 1000 chars, deduped case-insensitively. Saves nothing. Auth: `requireUser`.
 - **TESTS:** Given pasted ChatGPT JSON / When `importPreview` runs / Then cleaned items return and nothing is in `memories`. Given 3 duplicate lines / Then deduped. Given > 1 MB / Then the size error. Given > 300 candidates / Then ≤ 300.
 - **NUMBERS:** ≤ 300 items, ≤ 1000 chars each, ≤ 1 MB input → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0193 — Memory import: `importCommit` (save kept items)
@@ -3814,7 +3814,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `importCommit({ source, items })` → `{ added, skipped, memoryIds }`. Items cleaned via `cleanImportItem`; duplicates (lower-case) skipped; each saved with `metadata.source` and `metadata.importedAt`. ≤ 300 items; > 300 → `EN: "Save up to 300 items at a time." / HE: "אפשר לשמור עד 300 פריטים בבת אחת."`. Auth: `requireUser`.
 - **TESTS:** Given 3 kept items / When `importCommit` runs / Then 3 memories with source metadata and 3 ids. Given one duplicate of an existing memory / Then `skipped:1`. Given 301 items / Then the 300 error.
 - **NUMBERS:** ≤ 300 items → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0194 — Memory import: `undoImport` (5-minute)
@@ -3833,7 +3833,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `undoImport({ memoryIds })` → `{ count, forgottenAt }`. Delegates to `memory.forgetAll({ memoryIds })`. Only the caller's own ids. Auth: `requireUser`.
 - **TESTS:** Given 3 just-imported ids / When `undoImport` runs / Then all 3 soft-delete. Given a foreign id in the list / Then it is skipped. Given out-of-window restore attempt / Then restore fails.
 - **NUMBERS:** 5-minute Undo → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.8 (if `forget` becomes hard-delete) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0195 — Memory: salience decay cron
@@ -3852,7 +3852,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `decay({})` → `{ updated }`. For each live memory with `now - lastAccessed > 1 day`, `salience = max(0.1, salience * (1 - decayRate * daysSince))`. Daily cron. Auth: system.
 - **TESTS:** Given a memory 10 days un-accessed with decayRate 0.01 / Then salience drops toward 0.1 (never below). Given accessed today / Then unchanged. Given already at 0.1 / Then unchanged.
 - **NUMBERS:** salience floor 0.1 → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0196 — Anti-shaming wiring (shame-word guard)
@@ -3871,7 +3871,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `SHAME_PHRASES` fixed in code; `isShaming(text)` normalises (lower-case, apostrophes, single spaces) and substring-matches. Neutral replacement: `EN: "I would not put it that way. Let me try again more gently." / HE: "לא הייתי מנסחת את זה ככה. אנסה שוב בעדינות."`. Auth: the guard runs inside the coach reply path (already approved-for-AI). No model call.
 - **TESTS:** Given "Why didn't you do this yet?" / When `isShaming` runs / Then true. Given a neutral reply / Then false. Given a shaming model reply / When the guard runs / Then it is replaced by the neutral line. Given empty text / Then false.
 - **NUMBERS:** none → n/a | **UNKNOWN** — whether a shaming reply is auto-filtered vs surfaced for edit (OPEN §4.6 accept-reject vs auto-apply) and the confidence threshold for any auto-behaviour (OPEN §4.9); answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.6, §4.9 — UNKNOWN; answerer: Amit.
 
 ### TFV2-0197 — Mock model wiring (`lib/mockModel.ts`)
@@ -3890,7 +3890,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `mockLanguageModel` returns a fixed `{ content }` for any input (deterministic); `mockEmbeddingModel` returns a fixed 1,024-float unit vector. Both typed to the AI SDK model interface so the Agent accepts them. No key read, no network.
 - **TESTS:** Given the same input / When `mockLanguageModel` runs twice / Then identical content. Given `mockEmbeddingModel` / Then a 1,024-float vector. Given no key in env / Then the mock still works.
 - **NUMBERS:** mock embedding 1,024 dims → pass (product constant) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 (the real model the mock mirrors) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0198 — Entitlement gate: approved + premium tier before AI
@@ -3909,7 +3909,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `requireApprovedForAi(ctx)` runs `approval.assertApprovedForAi` then an entitlement check (every approved user gets the premium tier per F-01a). Order is asserted by test: no provider call may precede the gate. Auth: actions pass identity to `ctx.runQuery`.
 - **TESTS:** Given a signed-out identity / When a model action runs / Then rejected before provider. Given a revoked account / Then rejected. Given an approved+entitled account / Then the gate passes.
 - **NUMBERS:** gate strictly before provider → pass (boolean ordering) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0199 — Quota gate: daily coach-turn limit before AI
@@ -3928,7 +3928,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `assertWithinQuota({ used, limit })` throws over-limit; counter counts coach turns per UTC day (like `WEB_SEARCH_DAILY_LIMIT`). Over-limit user line: `EN: "You've reached today's coach limit. It resets at midnight." / HE: "הגעת למגבלת המאמן היומית. היא מתאפסת בחצות."`. Order: auth → entitlement → quota → provider. Auth: `requireApprovedForAi`.
 - **TESTS:** Given used == limit / When a turn starts / Then the over-limit line returns and no model call. Given used < limit / Then it proceeds. Given a fresh UTC day / Then the counter resets.
 - **NUMBERS:** daily coach-turn limit → pass | **UNKNOWN** — the exact per-day turn cap is not in the docs; answerer: Amit.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** daily turn cap — UNKNOWN; answerer: Amit.
 
 ### TFV2-0200 — UI: `CoachPanel`
@@ -3947,7 +3947,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Classes: `.tp-coach-panel.tp-glass`, `__head`, `__title`, plus the head actions. Copy EN/HE: `coach.name` `EN: "Coach" / HE: "מאמן"`; `coach.sub` `EN: "Reads Today and your pages. Asks before changing anything." / HE: "קורא את היום ואת הדפים שלך. שואל לפני כל שינוי."`; close aria `EN: "Close coach" / HE: "סגירת המאמן"`; voice aria `EN: "Talk with voice" / HE: "לדבר בקול"`. States: default (thread + composer), empty, loading, error, offline all render inside the panel; the page behind stays. Breakpoints: docked right of Today at 1280 and up (`.tp-coach-panel` fixed width 360), a bottom sheet below 1280. Motion ≤ 250 ms ease-out on open/close; Esc closes; focus returns to the opener. RTL: `dir="rtl"`, logical `start/end` spacing, chevron icons mirrored.
 - **TESTS:** Given a closed panel / When `Ctrl J` or the CoachButton opens it / Then it docks (1280) or sheets (390), focus lands on the thread. Given offline state / Then "The coach is offline. Your list still works." shows. Given empty / Then the opener shows. Playwright asserts each state at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) · target size 24×24 px (WCAG 2.5.8, https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0201 — UI: `CoachMessage`
@@ -3966,7 +3966,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-msg` (no `--user`), `__who` `EN: "Coach" / HE: "מאמן"`, `__text` `dir="auto"`, `__actions` with `ReadAloudButton`. Streaming adds `aria-busy="true"` and a `TypingIndicator` under the text. RTL: `dir="auto"` per paragraph; the who-label sits at the logical start.
 - **TESTS:** Given a message / When rendered / Then the who-label and text show. Given `streaming` / Then `aria-busy` and the indicator show. Given HE locale / Then `dir="rtl"` and Hebrew who-label. Playwright asserts each at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0202 — UI: `UserMessage`
@@ -3985,7 +3985,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-msg.tp-msg--user`, `__who` `EN: "You" / HE: "את"`, `__text` `dir="auto"`. No read-aloud on user messages.
 - **TESTS:** Given a message / When rendered / Then "You"/"את" and the text show with `dir="auto"`.
 - **NUMBERS:** contrast 4.5:1 · target 24×24.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0203 — UI: `CoachButton`
@@ -4004,7 +4004,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-coach-fab.tp-glass`, icon `#i-coach`, label `EN: "Coach" / HE: "מאמן"`, aria `EN: "Open coach (Ctrl J)" / HE: "פתיחת המאמן (Ctrl J)"`. Bottom-right at 1280+, above the tabbar on mobile. Motion ≤ 250 ms.
 - **TESTS:** Given a closed panel / When the button or Ctrl J is pressed / Then the panel opens and `aria-expanded` flips. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** target 24×24 · contrast 4.5:1 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0204 — UI: `Composer` (coach wiring)
@@ -4023,7 +4023,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-composer`, `__box`, textarea `dir="auto"` placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`, label `EN: "Message the coach" / HE: "הודעה למאמן"`, attach aria `EN: "Attach a page" / HE: "צירוף דף"`, send aria `EN: "Send" / HE: "שליחה"`, hint `EN: "The coach can be wrong. Every change waits for your yes." / HE: "המאמן יכול לטעות. כל שינוי מחכה לאישור שלך."`. Offline hides the form (`data-state-hide="offline"`). Empty textarea → send disabled.
 - **TESTS:** Given text / When send / Then `coach.send` is called and the box clears. Given empty / Then send is disabled. Given offline / Then the form is hidden. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0205 — UI: `TypingIndicator`
@@ -4042,7 +4042,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `.tp-typing[role=status]`, `__dots` (three spans, aria-hidden), label default `EN: "Opening your conversation" / HE: "פותח את השיחה שלך"` and streaming `EN: "Coach is writing" / HE: "המאמן כותב"`. Reduced motion → dots static.
 - **TESTS:** Given the indicator / When rendered / Then role=status and the label show. Given reduced motion / Then no pulse animation. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · motion ≤ 250 ms (or none under reduced motion).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 ### TFV2-0206 — UI: `ReadAloudButton`
 - **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0201 · **Folds-in:** none
@@ -4060,7 +4060,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** classes above; labels `EN: "Read aloud" / HE: "הקראה"` ↔ `EN: "Stop reading" / HE: "עצירת ההקראה"`; icon swaps `#i-volume` ↔ `#i-pause`. `aria-pressed` reflects state. Motion ≤ 250 ms.
 - **TESTS:** Given a message / When the button is pressed / Then label/icon swap and `aria-pressed` flips; pressing again stops. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0207 — UI: `ChatHistoryList`
@@ -4079,7 +4079,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** group headers `EN: "Today"/"Last week"/"Earlier" / HE: "היום"/"בשבוע שעבר"/"מוקדם יותר"`. Row: title `dir="auto"`, time `.tp-num.tp-mono`, last line clamped to 2 lines. Row opens the conversation. `aria-current` on the open one.
 - **TESTS:** Given 3 groups / When rendered / Then each header shows and rows are newest-first within groups. Given a long last line / Then it clamps to 2 lines. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** last line 2 lines max → pass (product constant) · contrast 4.5:1 · target 24×24.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0208 — UI: `ChatSearch`
@@ -4098,7 +4098,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** label `EN: "Search conversations" / HE: "חיפוש בשיחות"`, placeholder `EN: "Try “tired” or “lease”" / HE: "נסי ״עייפה״ או ״חוזה״"`, modes `EN: "By meaning"/"Exact words" / HE: "לפי משמעות"/"מילים מדויקות"`, mode group aria `EN: "Search by" / HE: "חיפוש לפי"`. Debounce 250 ms. `role="search"`.
 - **TESTS:** Given typing / When 250 ms passes / Then one `searchThreads` call. Given mode switch to "Exact words" / Then `mode:"words"`. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** debounce 250 ms → pass (product constant) · contrast 4.5:1 · target 24×24.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (meaning mode) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0209 — UI: `CrisisCard`
@@ -4117,7 +4117,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE (Israel, from coach-thread.html): `cr.title` `EN: "You don't have to carry this alone." / HE: "את לא צריכה לשאת את זה לבד."`; `cr.body` `EN: "What you're feeling matters. The people below are trained to help, any hour, and talking to them is free." / HE: "מה שאת מרגישה חשוב. האנשים כאן למטה הוכשרו לעזור, בכל שעה, והשיחה איתם בחינם."`; resources ERAN `1201`, SAHAR `sahar.org.il`, MDA `101` (each with `tel:` / link). Note `cr.note` `EN: "This card was written by people, not by the coach. The coach has paused. Resources shown for Israel; you can change the country in Settings." / HE: "את הכרטיס הזה כתבו אנשים, לא המאמן. המאמן עצר. המידע מוצג לישראל; אפשר לשנות מדינה בהגדרות."`. Coaching paused notice `EN: "Coaching is paused." / HE: "האימון מושהה."` + `EN: "Your list and pages still work. You can come back to the coach whenever you want." / HE: "הרשימה והדפים שלך ממשיכים לעבוד. אפשר לחזור למאמן מתי שתרצי."`. No animation; fixed focus on the card.
 - **TESTS:** Given crisis view / When rendered / Then the fixed card, `tel:` links, and paused notice show; the composer hides. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · no animation.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** per-country resources (PRD F-24 "per-country data MVP") — UNKNOWN beyond Israel; answerer: Amit.
 
 ### TFV2-0210 — UI: `GroundingCard`
@@ -4136,7 +4136,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: `gr.title` `EN: "Let's slow down for a moment." / HE: "בואי נאט רגע."`; `gr.body` `EN: "Nothing needs deciding right now. Your list will wait. Follow the line with your breath." / HE: "שום דבר לא צריך החלטה עכשיו. הרשימה תחכה. עקבי אחרי הקו עם הנשימה."`; phases `breath.in/out` `EN: "Breathe in"/"Breathe out" / HE: "שאיפה"/"נשיפה"` and hold `EN: "Hold" / HE: "החזקה"`; action lead `EN: "One thing," / HE: "דבר אחד,"`; `gr.done` `EN: "Done" / HE: "סיימתי"`; after `gr.after` `EN: "That counts. Stay here as long as you like, or carry on when you're ready." / HE: "זה נחשב. אפשר להישאר כאן כמה שתרצי, או להמשיך כשתהיי מוכנה."`. `aria-live` on the phase label; reduced motion → static line.
 - **TESTS:** Given the card / When open / Then the word cycle runs every 4 s with each transition ≤ 240 ms. Given "Done" / Then the after-line reveals. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** phase 4 s, transition ≤ 240 ms → pass (product constants) · contrast 4.5:1 · target 24×24.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0211 — UI: `CoachDial` (component)
@@ -4155,7 +4155,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: `dial.label` `EN: "How much should the coach push?" / HE: "כמה המאמן ידחוף?"`; `dial.of` `EN: "of 10" / HE: "מתוך 10"`; words `EN: "Quiet"/"Steady"/"Push" / HE: "שקט"/"יציב"/"דוחף"`; help `EN: "Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans. You can change this any time." / HE: "שקט: המאמן מחכה שתשאלי. יציב: בדיקות עדינות. דוחף: יותר תזכורות ותוכניות נחרצות יותר. אפשר לשנות בכל רגע."`. Debounce 400 ms. `aria-valuetext` carries number + word.
 - **TESTS:** Given value 4 / Then "4 of 10" and "Steady" show. Given value 9 / Then "Push". Given a change / Then one `setDial` after 400 ms. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** dial 0–10, debounce 400 ms → pass (product constants) · contrast 4.5:1 · target 24×24.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0212 — UI: `PanicButton` (component)
@@ -4174,7 +4174,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** label `EN: "I'm overwhelmed" / HE: "יותר מדי לי עכשיו"`. On press: `pressPanic` then show GroundingCard (`aria-controls`). No model call.
 - **TESTS:** Given press / When the button is clicked / Then the grounding card opens, `aria-expanded` flips, and `pressPanic` ran. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · no model call.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0213 — UI: `ProposalCard` base + task variant
@@ -4193,7 +4193,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE (task): kind `EN: "Task" / HE: "משימה"`; head `EN: "1 change to Today" / HE: "שינוי אחד בהיום"`; target `EN: "Mon 12 Oct" / HE: "יום ב׳ 12.10"`; op `EN: "Add" / HE: "הוספה"`; detail `EN: "Task · 10 min · before 12:00" / HE: "משימה · 10 דק׳ · עד 12:00"`; buttons `EN: "Accept"/"Edit"/"Reject" / HE: "אישור"/"עריכה"/"דחייה"`; note `EN: "Done. “Call the bank” is on Today, before 12:00." / HE: "בוצע. ״להתקשר לבנק״ בהיום, עד 12:00."`. Accept applies the exact preview; Edit edits titles in place; Reject changes nothing; Undo 5 min.
 - **TESTS:** Given a pending task proposal / When Accept / Then the change applies and Undo shows. Given Edit / Then the title becomes editable in place. Given Reject / Then nothing changes and the card says so. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · Undo 5 min.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0214 — UI: `ProposalCard` template variant
@@ -4212,7 +4212,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: kind `EN: "Template" / HE: "תבנית"`; rows `EN: "Name"/"Adds"/"Changes" / HE: "שם"/"מוסיפה"/"משנה"`; example `EN: "Start Mondays from a gentler template" / HE: "להתחיל את ימי שני מתבנית רכה יותר"` with `name` "Gentle Monday"/"יום שני רך", `adds` "At most 3 tasks, a 10-minute walk, and one quiet hour"/"לכל היותר 3 משימות, הליכה של 10 דקות, ושעה שקטה אחת", `changes` "New Monday pages from 19 Oct…"/"דפי יום שני חדשים החל מ־19.10…". Accept applies the template; Undo 5 min.
 - **TESTS:** Given a template proposal / When rendered / Then the three `what` rows show. Given Accept / Then it applies and Undo shows. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0215 — UI: `ProposalCard` module variant
@@ -4231,7 +4231,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: kind `EN: "Module" / HE: "מודול"`; example `EN: "Turn on a water tracker" / HE: "להפעיל מעקב מים"`, `name` "Water"/"מים", `adds` "A tracker on Today, goal 6 glasses"/"מעקב בהיום, יעד של 6 כוסות", `changes` "Nothing else. No reminders unless you ask."/"שום דבר אחר. בלי תזכורות אלא אם תבקשי.". Accept approves → live; Undo uninstalls within 5 min.
 - **TESTS:** Given a module proposal / When rendered / Then the rows show. Given Accept / Then it goes live and Undo shows. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (module approval path) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0216 — UI: `ProposalCard` job variant
@@ -4250,7 +4250,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: kind `EN: "Scheduled job" / HE: "משימה מתוזמנת"`; rows `EN: "Name"/"When"/"Does"/"Stop it" / HE: "שם"/"מתי"/"מה עושה"/"להפסיק"`; example `EN: "Write my plan into Today" / HE: "לכתוב את התוכנית שלי בהיום"`, when `Mon–Fri 08:00` (LTR mono), does "Reads your tasks and calendar, then writes a short plan at the top of Today."/"קורא את המשימות ואת היומן שלך, ואז כותב תוכנית קצרה בראש דף היום.", stop "Switch it off in Modules, any time."/"לכבות במודולים, בכל רגע.". Accept registers; Undo removes within 5 min.
 - **TESTS:** Given a job proposal / When rendered / Then the four rows show (When in LTR mono). Given Accept / Then it registers and Undo shows. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0217 — UI: `ProposalCard` decision variant
@@ -4269,7 +4269,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** kind `EN: "Plan" / HE: "תוכנית"`; head e.g. `EN: "An order for this afternoon" / HE: "סדר לאחר הצהריים"`; steps are `1. <title> · N min · <reason?>`; buttons `EN: "Accept"/"Edit"/"Reject" / HE: "אישור"/"עריכה"/"דחייה"`. Accept appends the steps as task blocks to Today's page; Undo removes them within 5 min.
 - **TESTS:** Given a decision with 3 steps / When rendered / Then 3 ordered steps with minutes show. Given Accept / Then the steps land on Today and Undo shows. Given Reject / Then nothing changes. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** steps 2..7 (COACH_LIMITS.minSteps/maxSteps) → pass (product constant) · contrast 4.5:1 · target 24×24.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0218 — UI: `MemoryItem`
@@ -4288,7 +4288,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** fact `dir="auto"`; source labels `EN: "You said it to the coach"/"From your page …"/"You said it in a voice call"/"Imported from ChatGPT"/"Imported from Claude" / HE: "אמרת את זה למאמן"/"מהדף שלך …"/"אמרת את זה בשיחה קולית"/"יובא מ־ChatGPT"/"יובא מ־Claude"`; Forget `EN: "Forget" / HE: "לשכוח"`; guess badge `EN: "Guess" / HE: "ניחוש"`; confirm `EN: "That's right" / HE: "נכון"` → badge `EN: "You confirmed this" / HE: "את אישרת את זה"`. Forget hides the row + Undo toast; focus moves to the next row.
 - **TESTS:** Given a memory row / When Forget / Then it hides and Undo shows. Given a guess row / When confirm / Then the badge flips to confirmed. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.8 (forget semantics) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0219 — UI: `ImportReview`
@@ -4307,7 +4307,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** choices `EN: "Keep"/"Edit"/"Drop" / HE: "לשמור"/"לערוך"/"לוותר"`; note `EN: "Will be saved" / HE: "יישמר"`, edit `EN: "Editing: type your change" / HE: "עריכה: הקלידי את השינוי"`, drop `EN: "Will be left out" / HE: "לא יישמר"`; save `EN: "Save N items" / HE: "לשמור N פריטים"`; duplicate note `EN: "Tempo already remembers something close to this. Keeping it won't make a second copy." / HE: "Tempo כבר זוכר משהו קרוב לזה. שמירה לא תיצור עותק שני."`. role=radio per choice.
 - **TESTS:** Given 7 items / When Drop is chosen on one / Then it strikes through and count → 6. Given Edit / Then text is editable in place. Given Save / Then `importCommit` is called with only kept+edited items. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0220 — UI: `ExportArea`
@@ -4326,7 +4326,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: `ex.title` `EN: "Export as Markdown" / HE: "ייצוא כ־Markdown"`; `ex.note` `EN: "One file with every memory and where it came from. Nothing is removed." / HE: "קובץ אחד עם כל זיכרון ומאיפה הוא הגיע. שום דבר לא נמחק."`; `ex.btn` `EN: "Export" / HE: "ייצוא"`; status `EN: "Making your file…"/"Your file is ready. It downloaded as memories.md." / HE: "מכין את הקובץ שלך…"/"הקובץ מוכן. הוא ירד בשם memories.md."`.
 - **TESTS:** Given the card / When Export is pressed / Then the status note updates and `memories.md` downloads. Playwright at 390/1280, EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0221 — Screen: coach panel (over Today)
@@ -4345,7 +4345,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The Today page renders as coach.html: TaskBlock with 3 tasks, open count, and the panel. States: default, empty (opener `EN: "Hi Maya. I can see Today. Ask me to plan, shrink or sort anything. Nothing changes until you say yes." / HE: "היי מאיה. אני רואה את היום. אפשר לבקש ממני לתכנן, להקטין או לסדר כל דבר. שום דבר לא משתנה עד שתאשרי."`), loading (`EN: "Opening your conversation" / HE: "פותח את השיחה שלך"`), error (`EN: "Couldn't reach the coach." / HE: "לא הצלחנו להגיע למאמן."` + body), offline (`EN: "The coach is offline. Your list still works." / HE: "המאמן לא זמין כרגע. הרשימה שלך ממשיכה לעבוד."`). Accept shows toast `EN: "2 changes made to Today" / HE: "בוצעו 2 שינויים בהיום"` + Undo. Moved note `EN: "Moved to tomorrow: Draft 3 slides for Thursday." / HE: "עבר למחר: לנסח 3 שקפים ליום חמישי."`. No JSON visible.
 - **TESTS:** Playwright: open panel, send, accept proposal → Undo toast; edit title; reject → unchanged; empty/loading/error/offline states. Each at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0222 — Screen: coach thread
@@ -4364,7 +4364,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Renders coach-thread.html faithfully: header (`EN: "A lighter Monday" / HE: "יום שני קליל יותר"`, `EN: "Started today at 08:58 · Reads Today and your pages. Asks before changing anything." / HE: "התחילה היום ב־08:58 · קורא את היום ואת הדפים שלך. שואל לפני כל שינוי."`); PanicButton; "Coach style" sheet; "Talk with voice" link. Proposals: task/template/module/job/decision (per TFV2-0213…0217). Streaming turn with `EN: "Coach is writing" / HE: "המאמן כותב"`. Crisis view hides the composer and shows CrisisCard + paused notice. States default/empty/loading/error/offline + crisis + undo.
 - **TESTS:** Playwright clicks through: accept each proposal kind → Undo; open dial sheet and set value; press panic → grounding; `?view=crisis` → CrisisCard + paused; empty/loading/error/offline. Each at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** per-country crisis resources — UNKNOWN; answerer: Amit.
 
 ### TFV2-0223 — Screen: coach history
@@ -4383,7 +4383,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: `hist.title` `EN: "Chat history" / HE: "היסטוריית שיחות"`; `hist.sub` `EN: "Every conversation with your coach. Search by what it was about, or by the exact words." / HE: "כל השיחות שלך עם המאמן. אפשר לחפש לפי מה שדיברתן עליו, או לפי המילים המדויקות."`; `hist.new` `EN: "New conversation" / HE: "שיחה חדשה"`; no-results `EN: "Nothing matches that yet." / HE: "עוד אין התאמה."` + `EN: "Clear search" / HE: "ניקוי החיפוש"`; empty `EN: "No conversations yet." / HE: "עוד אין שיחות."` + `EN: "Talk to the coach" / HE: "לדבר עם המאמן"`; loading `EN: "Loading your conversations" / HE: "טוען את השיחות שלך"`; error `EN: "Couldn't load your conversations." / HE: "לא הצלחנו לטעון את השיחות."`; offline `EN: "You're offline. Your conversations are still here. Search uses exact words until you're back." / HE: "אין חיבור לרשת. השיחות שלך עדיין כאן. החיפוש עובד לפי מילים מדויקות עד שהחיבור יחזור."`. Count `EN: "conversations"/"conversation" / HE: "שיחות"/"שיחה"`.
 - **TESTS:** Playwright: list groups render; type a query → results filter; switch mode; no-results → clear; empty state; loading; error; offline. Each at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.12 (meaning search) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0224 — Screen: memory
@@ -4402,7 +4402,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: `mm.title` `EN: "What Tempo remembers" / HE: "מה Tempo זוכר"`; `mm.sub` `EN: "Small things Tempo keeps so the coach doesn't make you repeat yourself. Forget anything, any time. Only you can see this." / HE: "דברים קטנים ש־Tempo שומר כדי שהמאמן לא יבקש ממך לחזור על עצמך. אפשר לשכוח כל דבר, בכל רגע. רק את רואה את זה."`; `mm.import` `EN: "Import from ChatGPT or Claude" / HE: "ייבוא מ־ChatGPT או מ־Claude"`; filter `EN: "All"/"From you"/"Imported" / HE: "הכול"/"ממך"/"מיובאים"`; `mem.title` `EN: "Things Tempo remembers" / HE: "דברים ש־Tempo זוכר"`; `g.title` `EN: "Links Tempo guessed" / HE: "קשרים ש־Tempo ניחש"`; export + `fa.label` `EN: "Forget everything" / HE: "לשכוח הכול"` with confirm sheet `fs.title` `EN: "Forget everything Tempo remembers?" / HE: "לשכוח את כל מה ש־Tempo זוכר?"` + `fs.confirm` `EN: "Forget everything" / HE: "לשכוח הכול"`; empty `EN: "Tempo doesn't remember anything yet." / HE: "Tempo עוד לא זוכר כלום."`; error `EN: "Couldn't load your memories." / HE: "לא הצלחנו לטעון את הזיכרונות."`; offline `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור כרגע. השינויים יישמרו כשתחזרי."`.
 - **TESTS:** Playwright: filter All/From you/Imported; forget one → Undo; confirm a guess; export; forget-all confirm sheet → empty + Undo; empty/loading/error/offline. Each at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.8 (forget semantics) — UNKNOWN; answerer: Amit.
 
 ### TFV2-0225 — Screen: memory import
@@ -4421,7 +4421,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: `mi.title` `EN: "Bring your memory from ChatGPT or Claude" / HE: "להביא את הזיכרון שלך מ־ChatGPT או מ־Claude"`; `mi.sub` `EN: "So you don't have to explain yourself twice. You'll see every item first and choose what to keep. Nothing is saved until you press Save." / HE: "כדי שלא תצטרכי להסביר את עצמך פעמיים. תראי כל פריט קודם ותבחרי מה לשמור. שום דבר לא נשמר עד שתלחצי על שמירה."`; `s1.title` `EN: "Add the memory text" / HE: "להוסיף את טקסט הזיכרון"`; `s1.from` `EN: "Where is it from?" / HE: "מאיפה זה?"` (ChatGPT/Claude); `s1.paste`/`s1.upload` `EN: "Paste text"/"Upload a file" / HE: "הדבקת טקסט"/"העלאת קובץ"`; tip `EN: "Tip: ask ChatGPT or Claude \"List everything you remember about me\", then copy the whole answer." / HE: "טיפ: בקשי מ־ChatGPT או מ־Claude ״תכתוב את כל מה שאתה זוכר עליי״, ואז העתיקי את כל התשובה."`; `s1.find` `EN: "Find the items" / HE: "למצוא את הפריטים"`; `s2.title` `EN: "Choose what Tempo keeps" / HE: "לבחור מה Tempo ישמור"`; saved `EN: "memories saved." / HE: "זיכרונות נשמרו."`; empty `EN: "Tempo didn't find anything to remember in that text." / HE: "Tempo לא מצא בטקסט הזה משהו לזכור."`; error `EN: "Couldn't read that." / HE: "לא הצלחנו לקרוא את זה."`; offline `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור כרגע. השינויים יישמרו כשתחזרי."`.
 - **TESTS:** Playwright: empty paste → inline error; paste text → Find → review; keep/edit/drop → count; Save → saved panel + Undo toast; undo → back to review; empty/loading/error/offline. Each at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0226 — Coach prompt build + dial tone (verify + full test)
@@ -4440,7 +4440,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `systemPrompt(dial)` includes "Current accountability dial: N / 10" and the never-shame line. `buildCoachMessages` emits role → today → page → memory → tasks → web → thread. Coverage: every `COACH_LIMITS` truncation, JSON parse, `withoutAcceptPromise`.
 - **TESTS:** Given dial 0 and 10 / Then each injects its number and the tone line. Given a page + memory + tasks / Then blocks appear in the documented order. Given a reply promising a card with no proposal / Then `withoutAcceptPromise` strips it.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0227 — Coach load rules (verify + full test)
@@ -4459,7 +4459,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `MIN_LOAD=2`, `MAX_LOAD=4`, `STREAK_FOR_RAISE=3`, `DEFAULT_TASK_MINUTES=25`, `PANIC_MS=30 min`. Tests cover every branch.
 - **TESTS:** Given streak 3 / Then load rises ≤ 4 and streak resets. Given reject / Then load 2, streak 0. Given bad day / Then effective load 2. Given a task with no estimate / Then 25 min.
 - **NUMBERS:** load 2..4 → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0228 — Coach proposal guard (verify + full test)
@@ -4478,7 +4478,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `duplicateOfOpenTask(proposal, openToday)` returns the matching open task title or null; `cardTitle` normalises title for comparison. Note EN/HE kept as-is.
 - **TESTS:** Given a proposal for an already-open task / Then it is dropped and the note appended. Given a genuinely new task / Then the card stays.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0229 — Memory: salience/access bump on recall
@@ -4497,7 +4497,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `touchMemories({ memoryIds })` → `{ touched }` (internal). Sets `lastAccessed`, increments `accessCount`, `salience = min(1.0, salience + 0.02)`.
 - **TESTS:** Given a recall / Then the recalled rows get a bump. Given salience already 1.0 / Then unchanged. Given a foreign id / Then skipped.
 - **NUMBERS:** salience cap 1.0, bump +0.02 → pass (product constants) | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0230 — Crisis fixed card + Hebrew crisis phrases (verify + test)
@@ -4516,7 +4516,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `isCrisisText(text)` normalises and substring-matches the EN `CRISIS_PHRASES` plus the new HE `CRISIS_PHRASES_HE`. The card stays fixed. Per-country resources: UNKNOWN (PRD F-24 "per-country data MVP").
 - **TESTS:** Given "I want to die" / Then crisis true. Given "אני רוצה למות" / Then crisis true. Given a non-crisis message / Then false. Given crisis / Then `resourcesCard` returns the fixed text and no model call.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** per-country crisis resources — UNKNOWN; answerer: Amit.
 
 ### TFV2-0231 — Memory import source handling (verify + test)
@@ -4535,7 +4535,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `importSourceOf(metadata)` reads `metadata.source` ∈ `chatgpt|claude|grok|other`; `SOURCE_NAME` maps to `ChatGPT|Claude|Grok`; `exportLine` appends `(imported from X)` or `(imported)`.
 - **TESTS:** Given `metadata:{ source:"chatgpt" }` / Then `importSourceOf` → `chatgpt` and export appends `(imported from ChatGPT)`. Given `other` / Then `(imported)`. Given no source / Then no mark.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0232 — Chunk 3 integration E2E: coach tool → accept → memory recall
@@ -4554,7 +4554,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Uses the mock model seam; asserts: (1) user message stored; (2) a `task` proposal returned; (3) Accept creates the task; (4) `recall` finds a memory; (5) `context`/coach messages include it. No network, no key.
 - **TESTS:** Given the scenario / When each step runs in order / Then all five assertions hold.
 - **NUMBERS:** none → n/a | UNKNOWN none.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** §4.3 (mock mirrors which real model) — UNKNOWN; answerer: Amit.
 
 ## Chunk 4 — MVP · Modules, jobs, billing, language, polish
@@ -4575,7 +4575,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `templateValidator` gains four optional fields. `origin` is `builtin` only for `starter:*` ids and is never writable by the client; `status` moves `draft → live` only via the approve mutation (TFV2-0246); `enabled` defaults true; `summary` is the plain-language "what this module does" text generated by code from validated content, never by the model (TRD §4a). Auth: `requireUser`; owner-only for `user` docs. Error cases: missing user → unauthenticated; a `starter:*` id carrying `origin:"user"` → rejected.
 - **TESTS:** Given a user template · When `create` is called · Then the doc has `origin:"user"`, `status:"live"`, `enabled:true`, `summary:""`. Given a starter id · When read through `get` · Then `origin:"builtin"` and `status:"live"`. Given a client that passes `origin:"builtin"` on `create` · Then it is ignored/overridden to `"user"`.
 - **NUMBERS:** none applicable · `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0234 — Templates list / get return module fields
@@ -4594,7 +4594,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `list(scope: "all"|"starter"|"mine")` → `TemplateView[]`; `get(templateId: string)` → `TemplateView|null`. Auth: `requireUser`; owner-only. Error cases: unauthenticated → error; foreign/soft-deleted doc → `null`; unknown starter id → `null`. Limits: starters are static (9 entries); user rows paginated by the existing `by_userId` index.
 - **TESTS:** Given a user with 2 live and 1 soft-deleted template · When `list({scope:"mine"})` · Then only the 2 live return. Given a `starter:daily-page` id · When `get` · Then `builtIn:true` and `origin:"builtin"`. Given another user's template id · When `get` by this user · Then `null`. Given no auth · When `list` · Then unauthenticated error.
 - **NUMBERS:** none applicable · `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0235 — Templates create / update for user modules
@@ -4613,7 +4613,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `create({name: string, description?: string, periodType, body: string})` → `Id<"templates">`; `update({templateId: Id<"templates">, name?, description?, periodType?, body?})` → `Id<"templates">`. Auth: `requireUser` + `ownedTemplate` owner check. Error cases: empty name → `"Name is required"`; starter id → `"Starter templates cannot be changed"`; missing/foreign/soft-deleted doc → `"Template not found"`/`"Access denied"`. `status` is never set by `create`/`update` (only the approval flow in TFV2-0246).
 - **TESTS:** Given valid input · When `create` · Then doc has `origin:"user"`, `enabled:true`. Given empty name · When `create`/`update` · Then `"Name is required"`. Given a `starter:*` id · When `update` · Then `"Starter templates cannot be changed"`. Given another user's id · When `update` · Then `"Access denied"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0236 — Templates remove (soft delete) + restore
@@ -4632,7 +4632,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `remove({templateId: Id<"templates">})` → `null`; `restore({templateId: Id<"templates">})` → `null`. Auth: `requireUser` + owner. Error cases: starter id → `"Starter templates cannot be removed"`; foreign/soft-deleted/missing → `"Template not found"`/`"Access denied"`; no auth → unauthenticated. Undo window is 5 minutes at the UI layer; the 30-day grace is `deletedAt`.
 - **TESTS:** Given a user template · When `remove` · Then `deletedAt` set and `list` omits it. Given `restore` on the same id · Then `deletedAt` cleared and `list` includes it. Given a starter id · When `remove`/`restore` · Then error. Given another user's id · Then `"Access denied"`.
 - **NUMBERS:** soft-delete grace 30 days (repo convention; PRD F-131) · `UNKNOWN` (exact sweep job is chunk A).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0237 — Templates duplicate
@@ -4651,7 +4651,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `duplicate({templateId: string})` → `Id<"templates">`. Auth: `requireUser`. Error cases: no auth → unauthenticated; unknown/soft-deleted id → `"Template not found"`; foreign id → `"Access denied"`. Starter ids may be duplicated (copy becomes `origin:"user"`).
 - **TESTS:** Given a starter id · When `duplicate` · Then a new user template with the same `body` and name suffix ` (2)` exists. Given an owned template · When `duplicate` · Then `origin:"user"` and independent id. Given unknown id · Then `"Template not found"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0238 — Templates applyToNote / proposeForPage (verify existing)
@@ -4670,7 +4670,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `proposeForPage({periodType, title?})` → `{templateId,name,reason}|null`; `applyToNote({templateId, title?})` → `Id<"notes">`. Auth: `requireUser`. Error cases: `none` period → `null` proposal; unknown template id → `"Template not found"`; no auth → unauthenticated.
 - **TESTS:** Given `periodType:"daily"` · When `proposeForPage` · Then `starter:daily-page` returned with a reason. Given `periodType:"none"` · Then `null`. Given a valid template id · When `applyToNote` · Then a `notes` row with that `body` and `periodType`. Given an unknown id · Then `"Template not found"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0239 — Template run draft (saveRunDraft / getRunDraft / apply)
@@ -4689,7 +4689,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `getRunDraft({templateId: string})`, `saveRunDraft({templateId: string, step: string, answer: string})`, `apply({templateId: string, answers: Record<string,string>})` → `Id<"notes">`. Auth: `requireUser`, owner. Error cases: no auth → unauthenticated; unknown template → `"Template not found"`; foreign → `"Access denied"`. Blank answers are allowed (leave the heading empty).
 - **TESTS:** Given a template with 2 question blocks · When `saveRunDraft` twice then `getRunDraft` · Then both answers persist. Given `apply` with answers · Then a page whose body contains the substituted answers. Given an unknown template · Then `"Template not found"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** where run drafts are stored (a dedicated `templateRunDrafts` table vs a field on `templates`) — Amit. This ticket may need `convex/schema.ts`; if so, stop and report `blocked: scope overflow`.
 
 ### TFV2-0240 — Template builder blocks (insert/move/duplicate/remove/publish)
@@ -4708,7 +4708,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. All five mutations auth via `requireUser` + owner. Block list edits must keep valid `json tempo` fences; an invalid edit is rejected. Error cases: no auth → unauthenticated; unknown id → `"Template not found"`; foreign → `"Access denied"`; `blockId` not found → `"Block not found"`; starter id → `"Starter templates cannot be changed"`.
 - **TESTS:** Given a template body with 2 blocks · When `insertBlock` after block 1 · Then 3 blocks. When `removeBlock` block 2 · Then 2 blocks. When `moveBlock` block 2 to index 0 · Then order swaps. Given a bad `blockId` · Then `"Block not found"`. Given a starter id · Then `"Starter templates cannot be changed"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0241 — Template sketch (saveSketch / getSketch / proposeTemplate / createFromProposal)
@@ -4727,7 +4727,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; empty outline → `"Outline is required"`; invalid proposal → `"Proposal is invalid"` (stays a draft); missing proposal id → `"Proposal not found"`. `proposeTemplate` runs in an action and returns a JSON-render-spec proposal, validated before return.
 - **TESTS:** Given text · When `saveSketch` then `getSketch` · Then text round-trips. Given an empty outline · When `proposeTemplate` · Then `"Outline is required"`. Given a valid proposal · When `createFromProposal` · Then a `live` template exists. Given an invalid proposal · Then `"Proposal is invalid"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0242 — View module: `view` block schema + Zod validation
@@ -4746,7 +4746,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend library. `validateViewSpec(spec: unknown): { ok: boolean; problems: string[] }`. The allowed `type` set and `action` set come from the catalog (components.md §2). Error cases: unknown component → problem listing the name; unknown action → problem; any `url`, `http`, `script`, `eval` string → problem; non-object → problem. A spec with any problem is invalid and its module stays `draft`.
 - **TESTS:** Given a spec with a catalog component · When validated · Then `ok:true`. Given a spec with an unknown component · Then `ok:false` + problem names it. Given a spec with a `script` string · Then `ok:false`. Given a spec with a URL field · Then `ok:false`. Given a non-object · Then `ok:false`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the exact catalog component/action name list as exported constants — Amit (syncs with chunk A's catalog).
 
 ### TFV2-0243 — View module: layout resolution + fallback
@@ -4765,7 +4765,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend library. Input: page type + list of enabled user modules. Output: a resolvable spec or `null` (built-in). Error case: any module that throws or fails validation during resolution is skipped (never breaks the page).
 - **TESTS:** Given one enabled `view` for `daily` · When resolved for `daily` · Then that spec. When resolved for `weekly` · Then `null`. Given a module that fails validation · Then resolution returns the next module or `null` (built-in), never throws.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** priority/ordering of multiple view modules per type — Amit.
 
 ### TFV2-0244 — Code module: sandboxed iframe widget (postMessage)
@@ -4784,7 +4784,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. `CodeWidget({spec, onAction})`. Sandbox flags: `sandbox="allow-scripts"` only. `postMessage` protocol `{type:"tempo-action", action, payload}`; unknown actions ignored. States: default (widget drawn), error (frame refuses → quiet `BrokenBlock` copy), offline (widget unavailable). Copy EN/HE: `EN:"This part has a problem." / HE:"יש בעיה בחלק הזה."`
 - **TESTS:** Given a spec · When rendered · Then an iframe with `sandbox="allow-scripts"` and no `allow-same-origin`. Given a foreign message · Then `onAction` is not called. Given an unknown action · Then ignored.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0245 — Code module: Vercel Sandbox script micro-VM
@@ -4803,7 +4803,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `runInSandbox({code: string, timeoutMs: number}): Promise<{stdout:string; stderr:string; timedOut:boolean}>`. Auth: caller must be an approved code-module run (server-side gate). Error cases: timeout → `timedOut:true`; sandbox unavailable → `UNKNOWN` (report, do not fake). Limits: fresh micro-VM per run.
 - **TESTS:** Given a script printing to stdout · When run · Then stdout captured. Given a script exceeding timeout · Then `timedOut:true`. Given unavailable sandbox in CI · Then the test asserts the `UNKNOWN` branch (mocked) rather than failing.
 - **NUMBERS:** timeout value · `UNKNOWN` (Amit — Vercel Sandbox limits/pricing are UNKNOWN, TRD §1).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Vercel Sandbox pricing/limits + timeout — Amit.
 
 ### TFV2-0246 — Module validation + approve / discard draft
@@ -4822,7 +4822,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser` + owner. Error cases: no auth → unauthenticated; unknown draft → `"Draft not found"`; validation failed → `"Validation failed"` (approve refuses); foreign → `"Access denied"`. `summary` is generated by code from the validated content, never by the model.
 - **TESTS:** Given a valid draft · When `approve` · Then `status:"live"`. Given an invalid draft · When `approve` · Then `"Validation failed"` and status stays `draft`. Given `discard` · Then draft gone and no page changed. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether `getDraft` lives in `modules.ts` vs `templates.ts` (module registry split) — Amit.
 
 ### TFV2-0247 — Plain mode flag + setPlainMode
@@ -4841,7 +4841,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated. `setPlainMode({on: boolean})` → `null`. Plain mode affects only `origin:"user"` modules.
 - **TESTS:** Given plain mode off · When `list` · Then user modules present. Given `setPlainMode({on:true})` · When `list` · Then user modules omitted, built-ins present. Given `setPlainMode({on:false})` · Then user modules return. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** where `plainMode` is stored (`users` vs `preferences`) — Amit (see REWRITE-PLAN §4 conflict 13).
 
 ### TFV2-0248 — Modules list + setEnabled + built-in catalog
@@ -4860,7 +4860,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; unknown module id → `"Module not found"`; foreign → `"Access denied"`. Built-ins map from `STARTER_TEMPLATES` (`Daily page`, `Weekly page`, `Project page`, `Habits on Today`).
 - **TESTS:** Given 2 built-ins + 1 user module · When `list` · Then built-ins have `builtIn:true`, user has `madeByCoach`/`madeByYou`. When `setEnabled({on:false})` on a built-in · Then it is off but still listed. Given an unknown id · Then `"Module not found"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0249 — Scheduled jobs: @convex-dev/crons component install + config
@@ -4879,7 +4879,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend config. The component enables `registerCron` at runtime. Names only, never keys.
 - **TESTS:** none beyond typecheck (component install). Given the component · When `typecheck` · Then it resolves.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether `convex/convex.config.ts` edit is allowed by scope-guard for a non-`convex-arch` ticket — Amit (if refused, report `blocked: config guard`).
 
 ### TFV2-0250 — Scheduled jobs: scheduleJob mutation + approval
@@ -4898,7 +4898,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; invalid cron → `"Invalid schedule"`; empty task → `"Task is required"`; invalid target page type → `"Invalid target page type"`.
 - **TESTS:** Given a valid cron/task · When `scheduleJob` · Then a job doc with `enabled:true`. Given invalid cron · Then `"Invalid schedule"`. Given empty task · Then `"Task is required"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0251 — Scheduled jobs: run action writes into a page
@@ -4917,7 +4917,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: internal (scheduled). Error cases: unknown job → `"Job not found"`; disabled job → skipped; model failure → record `lastRun.result:"didn't finish"` and change nothing. Output is appended to the target page as markdown, never as raw JSON.
 - **TESTS:** Given an enabled job · When `runJob` (mocked agent) · Then output appears in the target page and `lastRun.result` is set. Given a disabled job · Then skipped. Given an agent failure · Then `lastRun.result:"didn't finish"` and the page unchanged.
 - **NUMBERS:** agent step cap 20 (AI SDK 6 default; TRD §1) · `UNKNOWN` (product confirm).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 ### TFV2-0252 — Scheduled jobs: jobs.list + setEnabled
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0250 · **Folds-in:** none
@@ -4935,7 +4935,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. `scheduleText` is rendered in the user's time zone but stored in UTC (TRD §5d). Error cases: no auth → unauthenticated; unknown job → `"Job not found"`; foreign → `"Access denied"`.
 - **TESTS:** Given 2 jobs · When `list` · Then both return with `scheduleText` and `lastRun`. When `setEnabled({on:false})` · Then `on:false`. Given unknown job · Then `"Job not found"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0253 — Coach artifacts: makeArtifact tool + catalog validation
@@ -4954,7 +4954,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend library. `makeArtifact(spec: unknown): {ok:boolean; kind?; artifact?; problems:string[]}`. Kind ∈ `flashcard|quiz|checklist|tracker`. Error cases: unknown kind → problem; unknown component/action → problem; any URL/script → problem. The system prompt for this tool comes from `catalog.prompt()` with Tempo `customRules`.
 - **TESTS:** Given a valid flashcard spec · Then `ok:true`, `kind:"flashcard"`. Given a valid quiz spec · Then `ok:true`. Given an unknown kind · Then `ok:false` + problem. Given a spec with a script · Then `ok:false`. Given a non-object · Then `ok:false`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether json-render "inline mode" works with Convex Agent delta streaming (TRD §4b) — Amit.
 
 ### TFV2-0254 — Coach artifacts: Flashcard schema + review
@@ -4973,7 +4973,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `FlashcardSchema` requires non-empty `cards` with string `front`/`back`. `review` steps with wrap-around disabled at the ends. Error cases: empty cards → invalid; missing `front`/`back` → invalid.
 - **TESTS:** Given 3 cards · When `review` at index 1 dir=next · Then index 2. At index 2 dir=next · Then stays 2 (clamped). At index 0 dir=prev · Then stays 0. Given empty cards · Then invalid.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0255 — Coach artifacts: Quiz schema + answer
@@ -4992,7 +4992,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Error cases: zero or multiple `correct` → invalid; `chosenId` not in options → `"Option not found"`; empty question → invalid.
 - **TESTS:** Given a correct choice · When `answer` · Then `result:"right"`. Given a wrong choice · Then `result:"wrong"` + `correctId`. Given multiple correct flags · Then invalid. Given an unknown `chosenId` · Then `"Option not found"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0256 — Coach artifacts: Checklist schema + updateBlock
@@ -5011,7 +5011,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Error cases: empty items → invalid; non-string `text` → invalid.
 - **TESTS:** Given 5 items with 2 done · When `progress` · Then `{done:2,total:5}`. Given empty items · Then invalid. Given 0 done · Then `{done:0}`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0257 — Coach artifacts: Tracker schema + log
@@ -5030,7 +5030,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Error cases: non-numeric value/goal → invalid; missing unit → invalid. `dir:"dec"` clamps at 0.
 - **TESTS:** Given value 4 goal 6 dir inc · Then 5. Given dir dec at 0 · Then 0 (clamped). Given non-numeric goal · Then invalid.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0258 — Billing backend: revenuecat.ts webhook (verify)
@@ -5049,7 +5049,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend httpAction. `POST /api/revenuecat-webhook`. Error cases: missing secret → 503 `"Webhook not configured"`; bad header → 401; invalid JSON → 400; missing `event` → 400. Internal update errors still return 200 (so RevenueCat does not retry our internal errors).
 - **TESTS:** Given a bad auth header · When posted · Then 401. Given no secret configured · Then 503. Given invalid JSON · Then 400. Given a paid event type · Then user set paid. Given an unknown event type · Then free.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0259 — Billing backend: entitlements.ts (verify)
@@ -5068,7 +5068,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend library. `GRANTED_ENTITLEMENT_TIER:"max"`, `GRANTED_USER_TYPE:"paid"`, `GRANTED_BETA_ACCESS:"tester"`. Pure (no ctx/db). The invariant: `buildReturningUserPatch` must never include a key whose value is `undefined`.
 - **TESTS:** Given a new profile · When `newUserFields` · Then `approvalStatus:"pending"` and `entitlementTier:"max"`. Given an existing user missing `entitlementTier` · When `buildReturningUserPatch` · Then it heals to `"max"`. Given an explicit `"free"` userType · Then it is left alone. Given no subscription row · When `shouldGrantSubscription` · Then true.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0260 — Billing backend: subscriptionGuards.ts (verify)
@@ -5087,7 +5087,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `assertClientMaySetUserType(userType)` throws `"Paid upgrades must go through RevenueCat checkout."` when `userType:"paid"` and mock payments off.
 - **TESTS:** Given mock off · When `assertClientMaySetUserType("paid")` · Then throws. Given `"free"` · Then no throw. Given mock on · When `"paid"` · Then no throw.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0261 — Billing backend: billing.listTiers + getMine
@@ -5106,7 +5106,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `listTiers` returns Trial/Basic/Pro/Max with interval prices and live-voice minutes (Pro 90, Max 180/day — repo PRD F-35). Auth: `requireUser`. Error cases: no auth → unauthenticated.
 - **TESTS:** Given a user on Max early access · When `getMine` · Then `tier:"max"`, `source:"earlyAccess"`. Given `listTiers` · Then four tiers in order with `liveVoiceMinutesPerDay` 90 for Pro and 180 for Max. Given no auth · Then unauthenticated.
 - **NUMBERS:** price values ($1/3w, $10, $20, $40, annual = 10× monthly) · `UNKNOWN` (Amit — REWRITE-PLAN §4 conflict 2: a later note says "$20 and $50").
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** final prices/billing tiers — Amit.
 
 ### TFV2-0262 — Billing backend: billing.checkout (Polar)
@@ -5125,7 +5125,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend action. Auth: `requireUser` + `assertClientMaySetUserType` (mock gated). Error cases: unknown tier → `"Unknown tier"`; unknown interval → `"Unknown interval"`; no auth → unauthenticated; Polar unavailable → `UNKNOWN` (report, do not fake a URL).
 - **TESTS:** Given a valid tier+interval · When `checkout` (mocked Polar) · Then a URL is returned. Given unknown tier · Then `"Unknown tier"`. Given unknown interval · Then `"Unknown interval"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Polar env var names — Amit (names only in this ticket).
 
 ### TFV2-0263 — Billing backend: billing.cancel + acknowledgeConversion
@@ -5144,7 +5144,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; no active trial/plan → `"No active plan"`. Cancel is idempotent.
 - **TESTS:** Given an active trial · When `cancel` · Then cancelled with `trialEndsAt` retained. When `cancel` again · Then no error (idempotent). Given `acknowledgeConversion` · Then consent recorded, no charge. Given no active plan · Then `"No active plan"`.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0264 — Billing backend: trial conversion notices (F-110)
@@ -5163,7 +5163,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Pure helper `noticesDue({now, trialEndsAt, sent})` → `[] | ["3d"] | ["3d","1d"] | ["3d","1d","1h"]`. Auth: internal.
 - **TESTS:** Given trial ends in 72h and none sent · Then `["3d"]`. Given 24h left and 3d sent · Then `["1d"]`. Given 1h left and 3d+1d sent · Then `["1h"]`. Given 1h left and all sent · Then `[]`.
 - **NUMBERS:** notice thresholds 3 days / 1 day / 1 hour (PRD F-110) · pass = exact.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0265 — Preferences backend: preferences.ts get/update (verify + analyticsOptIn)
@@ -5182,7 +5182,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. `get({})` → `Preferences`; `update({...optional})` → `null` (upserts, clears `deletedAt`). Error cases: no auth → unauthenticated; empty timeZone → `"Time zone is required"`.
 - **TESTS:** Given no row · When `get` · Then defaults incl. `analyticsOptIn:false`. Given `update({analyticsOptIn:true})` · Then persisted. Given `update({timeZone:""})` · Then `"Time zone is required"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** where the user's IANA time zone is stored (`users` vs `preferences`) — Amit (REWRITE-PLAN §4 conflict 13).
 
 ### TFV2-0266 — Profiles backend: profiles.getMine + update
@@ -5201,7 +5201,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; blank fullName → `"Name is required"`; blank callMe → `"Name is required"`; invalid address → `"Invalid address"`. `lang` accepts `en|he`.
 - **TESTS:** Given a user · When `getMine` · Then returns email and profile. When `update({fullName:"Maya"})` · Then persisted. Given blank fullName · Then `"Name is required"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0267 — Profiles backend: profiles.setCoachDial
@@ -5220,7 +5220,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; value < 0 or > 10 → `"Dial must be 0 to 10"`; non-integer → `"Dial must be a whole number"`.
 - **TESTS:** Given value 7 · When `setCoachDial` · Then persisted. Given value 11 · Then `"Dial must be 0 to 10"`. Given -1 · Then error. Given no auth · Then unauthenticated.
 - **NUMBERS:** dial range 0–10 (PRD F-25; quiet 0–3, steady 4–7, push 8–10) · pass = exact.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0268 — Ask founder backend: askFounder.submit + queue
@@ -5239,7 +5239,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; blank subject → `"Subject is required"`; blank body → `"Message is required"`; invalid priority → `"Invalid priority"`. `subject` max 120 chars.
 - **TESTS:** Given valid fields · When `submit` · Then a queue row with subject/body/priority/email. Given blank subject · Then `"Subject is required"`. Given blank body · Then `"Message is required"`. Given invalid priority · Then `"Invalid priority"`. Given no auth · Then unauthenticated.
 - **NUMBERS:** subject max length 120 chars (ask-founder screen `maxlength="120"`) · pass = exact.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0269 — Ask founder backend: notify Amit (http action webhook)
@@ -5258,7 +5258,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend internal action. Error cases: notify failure → retry queue (idempotent), never drop the message. Delivery is fire-and-forget after the queue insert.
 - **TESTS:** Given a queued message · When processed (mocked notifier) · Then notifier called once with subject+email, never body. Given a notifier failure · Then row stays queued for retry. Given duplicate processing · Then notifier called once.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the founder notification channel (email vs Slack vs other) — Amit.
 
 ### TFV2-0270 — Built-in module catalog (starter templates → built-in modules)
@@ -5277,7 +5277,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Backend library. `builtInModules()` returns Daily page, Weekly page, Project page, Habits on Today. Each has a `does` string and `builtIn:true`. Copy EN/HE: `EN:"Daily page" / HE:"דף יומי"`; `EN:"Built-in" / HE:"מובנה"`.
 - **TESTS:** Given the catalog · When `builtInModules` · Then four entries, all `builtIn:true`, Habits off by default. Given a starter id · When mapped · Then no `delete` flag present.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether "Habits on Today" is its own built-in module or a page-type flag — Amit.
 ### TFV2-0271 — ModuleCard
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0248 · **Folds-in:** none
@@ -5295,7 +5295,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Layout: `.tp-card` grid, icon `.tp-icon` at start, name as `<h3>` link to module-preview, `.tp-module-card__does` one line, badges row, `.tp-module-card__switch` with a `Switch`. Tokens: `--tp-space-3` gaps, `--tp-text-sm` meta. States: default (on/off), built-in (lock + `Built-in`), disabled-while-plain (switch `aria-disabled`). Copy EN/HE: `EN:"Built-in" / HE:"מובנה"`; `EN:"Made with the coach" / HE:"נוצר עם המאמן"`; `EN:"Made by you" / HE:"נוצר על ידך"`; `EN:"On" / HE:"פועל"`; `EN:"Off" / HE:"כבוי"`. RTL: logical properties; switch thumb flips via `[dir="rtl"]`. Screen reader: switch `aria-labelledby` the name, `aria-describedby` the "does". Breakpoints: card stacks full-width at 390, sits in auto-fill grid ≥768. Motion: switch 120 ms.
 - **TESTS:** Playwright: at 390 and 1280, EN and HE — given a user module, assert name/does/badges render; toggle the switch, assert `data-on` and the word flips On↔Off; given a built-in, assert the lock badge and that no delete control exists.
 - **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 2.5.8, https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) · text ≥ 13 px (DESIGN.md §3) · motion ≤ 250 ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0272 — ModuleSummary
@@ -5314,7 +5314,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{shapes, adds, changes, runs, checkOk}`. Layout: `.tp-module-what__title` + `<dl>`. Copy EN/HE: `EN:"What this module does" / HE:"מה המודול הזה עושה"`; `EN:"Page types" / HE:"סוגי דפים"`; `EN:"Adds" / HE:"מוסיף"`; `EN:"Changes" / HE:"משנה"`; `EN:"Runs" / HE:"מריץ"`; `EN:"Check" / HE:"בדיקה"`; `EN:"Passed. It only uses things Tempo can draw." / HE:"עבר. הוא משתמש רק במה ש־Tempo יודע לצייר."`; `EN:"Didn't pass. See the note above." / HE:"לא עבר. ראי את ההערה למעלה."`; `EN:"Stop it" / HE:"להפסיק"`. RTL: `dl` logical. States: default, check-failed.
 - **TESTS:** Given shapes/adds/changes/runs · When rendered · Then each `.tp-what-row` shows a label and value. Given `checkOk:false` · Then the failed row with alert icon. Playwright asserts both EN and HE at 390 and 1280.
 - **NUMBERS:** text ≥ 13 px · contrast 4.5:1 (WCAG 2.2 AA, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0273 — PlainModeBanner
@@ -5333,7 +5333,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Copy EN/HE: `EN:"Plain mode is on." / HE:"מצב פשוט פועל."`; `EN:"Your own modules are paused, so Tempo looks the way it did on day one. Built-in pages and scheduled jobs work as usual. Turn it off to bring everything back as it was." / HE:"המודולים שלך מושהים, ו־Tempo נראה כמו ביום הראשון. הדפים המובנים והמשימות המתוזמנות עובדים כרגיל. כבי אותו כדי להחזיר הכול כמו שהיה."` States: hidden (off), shown (on). `role="status"` live region.
 - **TESTS:** Given on=true · Then banner shown and `html[data-plain]` set. Given on=false · Then hidden and attribute cleared. Playwright EN/HE at 390/1280.
 - **NUMBERS:** text ≥ 13 px · contrast 4.5:1 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0274 — ScheduledJobRow
@@ -5352,7 +5352,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{job:{id,name,scheduleText,lastRun{at,result,pageTitle},on}}`. Copy EN/HE: `EN:"Last ran today at" / HE:"רצה לאחרונה היום ב־"`; `EN:"didn't finish. Nothing was changed." / HE:"לא הסתיימה. שום דבר לא השתנה."`; `EN:"On" / HE:"פועل"`; `EN:"Off" / HE:"כבוי"`. Schedule uses `.tp-num`/`.tp-mono` (LTR isolate). States: default, on, off, failed-last-run.
 - **TESTS:** Playwright: assert name/schedule/last-run render in EN and HE at 390/1280; toggle switch → `data-on` flips; given a failed last run → the plain "didn't finish" copy, not JSON.
 - **NUMBERS:** target ≥ 24×24 px · schedule text LTR isolate · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0275 — Modules screen
@@ -5371,7 +5371,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout` + `PageHeader`; `--tp-space-10` section gap. States: default (plain switch + 3 sections), empty (no user modules/jobs; built-ins stay; kind copy + "Talk to the coach"), loading (5 skeleton rows), error ("Couldn't load your modules."), offline (banner, switches apply on reconnect), plain (`?plain=on`: banner + user switches disabled). Copy EN/HE (from modules.html): `EN:"Modules" / HE:"מודולים"`; `EN:"Your modules" / HE:"המודולים שלך"`; `EN:"Scheduled jobs" / HE:"משימות מתוזמנות"`; `EN:"Built in" / HE:"מובנים"`; `EN:"Plain mode" / HE:"מצב פשוט"`; `EN:"You haven't made a module yet." / HE:"עוד לא יצרת מודול."`; `EN:"Couldn't load your modules. Your pages are safe." / HE:"לא הצלחנו לטעון את המודולים."`; `EN:"You're offline. Changes save when you're back." / HE:"אין חיבור כרגע. השינויים יישמרו כשתחזרי."`. RTL: `dir` from locale; schedule `.tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Playwright EN and HE at 390 and 1280: default → assert three sections and plain switch; toggle a module switch → word flips and toast "turned on/off" with Undo; `?plain=on` → banner + user switches `aria-disabled`; `?state=empty` → kind empty state, built-ins visible; `?state=loading` → skeletons; `?state=error` → error copy + Retry; `?state=offline` → offline banner.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 (Core Web Vitals, https://web.dev/articles/vitals) · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0276 — Module preview screen
@@ -5390,7 +5390,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `Split` (preview left, summary/decision right). States: default (read-only preview + summary + Approve/Discard), invalid (`?view=invalid`: notice + Approve disabled with reason + "Ask the coach to fix it"), approved (done notice + Undo 5 min), discarded (notice), empty ("There's nothing to preview here."), loading, error ("Couldn't load this preview. Nothing has changed."), offline (preview readable, Approve waits). Copy EN/HE (from module-preview.html): `EN:"New module · waiting for your approval" / HE:"מודול חדש · מחכה לאישור שלך"`; `EN:"Approve" / HE:"אישור"`; `EN:"Discard" / HE:"לוותר"`; `EN:"Discard this module?" / HE:"לוותר על המודול הזה?"`; `EN:"This module has a problem, so it can't go live." / HE:"יש במודול הזה בעיה, ולכן הוא לא יכול לעלות."`; `EN:"Read only" / HE:"לקריאה בלבד"`. Approve is the one primary. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: default → preview + summary render, Approve present; click Approve → live notice + Undo toast; open Discard sheet → cancel and confirm paths; `?view=invalid` → Approve `aria-disabled` + fix link; `?state=empty|loading|error|offline` each asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo window 5:00 · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0277 — CoachArtifact (wrapper)
@@ -5409,7 +5409,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{kind, title, by, data}`. `kind` ∈ `flashcard|quiz|checklist|tracker`. Copy EN/HE: `EN:"Added by this module" / HE:"נוסף על ידי המודול"`. RTL logical; title `dir="auto"`. States: default; unknown kind → quiet fallback.
 - **TESTS:** Given kind=checklist · Then Checklist rendered. Given kind=flashcard · Then Flashcard. Given an unknown kind · Then fallback (no crash, no JSON).
 - **NUMBERS:** text ≥ 13 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0278 — Flashcard component
@@ -5428,7 +5428,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{cards:[{front,back}], index}`. Copy EN/HE: `EN:"Card {n} of {total}" / HE:"כרטיס {n} מתוך {total}"`; `EN:"Flip" / HE:"הפוך"`. Faces are buttons; `aria-pressed` reflects side. States: front, back. RTL logical; counter `.tp-num`. Motion 180 ms flip (transform only).
 - **TESTS:** Given 3 cards · When rendered · Then card 1 front shown. Click flip → back shown and announced. Click next → card 2, counter updated; at end, next disabled.
 - **NUMBERS:** target ≥ 24×24 px · motion ≤ 250 ms (180 ms flip, transform/opacity only).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0279 — Quiz component
@@ -5447,7 +5447,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{question, options:[{id,text,correct}]}`. Copy EN/HE: `EN:"Right." / HE:"נכון."`; `EN:"Not quite. The answer is: {text}" / HE:"לא מדויק. התשובה היא: {text}"`; `EN:"Check" / HE:"בדיקה"`. `fieldset` + radio-group semantics. States: unanswered, checked-right, checked-wrong. RTL logical.
 - **TESTS:** Given a question · When a wrong option checked · Then "Not quite." + correct answer shown. When correct checked · Then "Right.". Check button disabled after answer.
 - **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0280 — Checklist component
@@ -5466,7 +5466,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{items:[{text,done}]}`. Copy EN/HE: `EN:"{done} of {total} done" / HE:"{done} מתוך {total} בוצעו"`. Checkboxes announce "done/not done". RTL logical; count `.tp-num`.
 - **TESTS:** Given 5 items, 2 done · Then count reads "2 of 5 done". Toggle item 3 → count "3 of 5 done". Toggle off → decrements.
 - **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0281 — Tracker component
@@ -5485,7 +5485,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{label, value, goal, unit}`. Copy EN/HE: `EN:"{value} {unit} of {goal}" / HE:"{value} {unit} מתוך {goal}"`; inc/dec buttons with `aria-label`. States: default, at-goal, at-zero (dec disabled). `.tp-num` for the value.
 - **TESTS:** Given value 4 goal 6 · When inc · Then 5. At 0 · Then dec disabled. At goal · Then inc disabled.
 - **NUMBERS:** target ≥ 24×24 px · value announced via live region.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0282 — TierCard
@@ -5504,7 +5504,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{tier:{name,price,per,desc,features[],current?}}`. Copy EN/HE: `EN:"Your plan" / HE:"המסלול שלך"`; `EN:"a month" / HE:"לחודש"`; `EN:"a year, two months free" / HE:"לשנה, חודשיים במתנה"`. Price uses `.tp-tier__amount.tp-num` (LTR). States: default, current (badge + no choose), disabled (early-access). Stacks on phone. RTL logical.
 - **TESTS:** Given a tier with current · Then "Your plan" badge, no choose button. Given a non-current tier · Then choose button present. Playwright EN/HE at 390/1280: all four tiers visible, never collapsed.
 - **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px · price values `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** price values — Amit (REWRITE-PLAN §4 conflict 2).
 
 ### TFV2-0283 — BillingNotice
@@ -5523,7 +5523,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{tone, text}`. Copy EN/HE: `EN:"You were approved early, so you have Max." / HE:"אושרת מוקדם, אז יש לך Max."`. Tones: done/info/caution. `role="status"`.
 - **TESTS:** Given tone done · Then `.tp-notice[data-tone=done]` with icon + text. Playwright EN/HE.
 - **NUMBERS:** contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0284 — Billing screen
@@ -5542,7 +5542,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout` + `PageHeader`; `--tp-space-8` gaps. States: default (4 tiers always visible + cycle switch + "Before any charge"), loading, error ("Couldn't load your plan."), offline (prices readable, change needs connection). Copy EN/HE (from billing.html): `EN:"Plan and billing" / HE:"מסלול ותשלום"`; `EN:"Every price, in full, all the time. No surprises." / HE:"כל מחיר, במלואו, כל הזמן. בלי הפתעות."`; `EN:"Plans" / HE:"מסלולים"`; `EN:"Monthly" / HE:"חודשי"`; `EN:"Yearly, two months free" / HE:"שנתי, חודשיים במתנה"`; `EN:"Before any charge" / HE:"לפני כל חיוב"`; `EN:"Payments go through Polar, a payment service. Tempo never sees your card number." / HE:"התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך."`. Monthly/yearly switch reveals yearly price + "two months free". RTL logical; prices `.tp-num`. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: assert 4 tier cards visible (never collapsed); switch to yearly → yearly prices + "two months free" appear; assert "Before any charge" lists 3 days/1 day/1 hour; `?state=loading|error|offline` each asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · price values `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** price values — Amit.
 
 ### TFV2-0285 — Trial end screen
@@ -5561,7 +5561,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `Bare` + `AuthCard`. States: default (choose), continued (StatusPanel "You're all set"), cancelled ("Your trial is cancelled"), loading, error ("Couldn't load your trial details."), offline (choice sent when back). Copy EN/HE (from trial-end.html): `EN:"Your trial ends tomorrow" / HE:"הניסיון שלך מסתיים מחר"`; `EN:"Continue with Basic" / HE:"להמשיך עם Basic"`; `EN:"See every plan" / HE:"לראות את כל המסלולים"`; `EN:"Cancel before I'm charged" / HE:"לבטל לפני שיש חיוב"`; `EN:"Cancel your trial?" / HE:"לבטל את הניסיון?"`; `EN:"Yes, cancel my trial" / HE:"כן, לבטל את הניסיון"`. "Continue with Basic" is the one primary. RTL logical; price `.tp-num`.
 - **TESTS:** Playwright EN/HE at 390/1280: default → facts render; click Continue → done panel; click Cancel → inline confirm, then confirm → cancelled panel; `?state=loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · price after trial `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** price after trial — Amit.
 
 ### TFV2-0286 — Templates screen
@@ -5580,7 +5580,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `PageHeader` (two actions: "New template", "Ask the coach for a template" — one primary). States: default, empty (built-ins stay + "You haven't made a template yet."), loading (4 skeleton cards), error ("Couldn't load your templates."), offline. Copy EN/HE (from templates.html): `EN:"Templates" / HE:"תבניות"`; `EN:"Built-in" / HE:"מובנית"`; `EN:"Yours" / HE:"שלך"`; `EN:"Use" / HE:"שימוש"`; `EN:"Edit" / HE:"עריכה"`; `EN:"Duplicate" / HE:"שכפול"`; `EN:"Delete" / HE:"מחיקה"`; `EN:"Made with the coach" / HE:"נוצרה עם המאמן"`; `EN:"Made by you" / HE:"נוצרה על ידייך"`. Delete → soft delete + Undo 5 min. Search filters by name; segmented filter all/built-in/yours. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: default → built-ins + yours; search "moving" → only matching card; filter "Yours" → built-in section hidden; delete a card → hidden + Undo toast, Undo restores; `?state=empty|loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0287 — Template builder screen
@@ -5599,7 +5599,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `Bare` + `MobileTopBar` ("Saved" + "Save template"). `Split --even`: builder left, live preview right (below on phones). States: default, empty (brand-new, hint to name + type "/"), loading, error ("Couldn't open this template."), offline (keep editing). Copy EN/HE (from template-builder.html): `EN:"Template builder" / HE:"בניית תבנית"`; `EN:"Template name" / HE:"שם התבנית"`; `EN:"What it is for" / HE:"למה היא נועדה"`; `EN:"Save template" / HE:"שמירת התבנית"`; `EN:"Preview of the page it makes" / HE:"תצוגה מקדימה של הדף שייווצר"`; slash menu items (`EN:"Question" / HE:"שאלה"`, `EN:"Task" / HE:"משימה"`, `EN:"Time block" / HE:"בלוק זמן"`, `EN:"Energy check-in" / HE:"בדיקת אנרגיה"`, `EN:"Heading" / HE:"כותרת"`, `EN:"Bullet list" / HE:"רשימת נקודות"`). Slash menu: type "/", arrows, Enter, Esc. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: type "/" → slash menu; Enter adds a block and preview updates; rename updates preview title; "Save template" → toast; `?state=empty|loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0288 — Template run screen
@@ -5618,7 +5618,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `Bare` + `MobileTopBar`; `Split` (step left, progress/gets right). States: default ("Step 2 of 4"), done (StatusPanel "Your Week 42 page is ready."), empty (no questions → "Make the page" at once), loading, error, offline (answers stay on device). Copy EN/HE (from template-run.html): `EN:"Step {n} of {total}" / HE:"שלב {n} מתוך {total}"`; `EN:"Next" / HE:"הבא"`; `EN:"Back" / HE:"חזרה"`; `EN:"Skip this one" / HE:"לדלג על זה"`; `EN:"Make the page" / HE:"ליצור את הדף"`; `EN:"Done" / HE:"בוצע"`; `EN:"Now" / HE:"עכשיו"`; `EN:"The page will get" / HE:"מה ייכנס לדף"`. "Make the page" is the one primary (last step). RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: step 1→Next→step 2 with progress chips Done/Now/Next; Skip leaves blank; last step "Make the page" → done panel + Undo; `?state=empty|loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo 5:00.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0289 — Template editor screen
@@ -5637,7 +5637,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow` + `PageHeader` (action "Open in the builder"). States: default, invalid (missing name → summary + field error), empty (no sections → "Add a section"), loading, error, offline. Copy EN/HE (from template-editor.html): `EN:"Edit template" / HE:"עריכת תבנית"`; `EN:"Name" / HE:"שם"`; `EN:"Page type" / HE:"סוג דף"`; `EN:"Tags" / HE:"תגיות"`; `EN:"Sections, in order" / HE:"קטעים, לפי הסדר"`; `EN:"Add a section" / HE:"הוספת קטע"`; `EN:"Save changes" / HE:"שמירת השינויים"`; `EN:"One thing to fix before saving" / HE:"דבר אחד לתקן לפני השמירה"`; `EN:"Offer on new empty pages" / HE:"להציע בדפים ריקים חדשים"`. "Save changes" is the one primary. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: save with empty name → summary focused + field error; add/remove/move sections; "Open in the builder" link; `?state=empty|loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0290 — Template sketch screen
@@ -5656,7 +5656,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `Split --even` (outline left, coach answer right). States: default, thinking ("Coach is writing" typing indicator), stale (outline changed → "Out of date"), empty ("Nothing sketched yet."), loading, error ("The coach couldn't answer just now."), offline. Copy EN/HE (from template-sketch.html): `EN:"Sketch a template" / HE:"שרטוט תבנית"`; `EN:"Your outline" / HE:"המתווה שלך"`; `EN:"Turn into a template" / HE:"להפוך לתבנית"`; `EN:"Accept" / HE:"לאשר"`; `EN:"Edit in the builder" / HE:"לערוך בבנייה"`; `EN:"Reject" / HE:"לדחות"`; `EN:"Out of date" / HE:"לא מעודכן"`; `EN:"Coach is writing" / HE:"המאמן כותב"`. "Turn into a template" is the one primary. Accept → Undo 5 min. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: type outline → autosave ("Saved"); submit → proposal card; Accept → saved + Undo; change outline → "Out of date"; `?state=empty|loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo 5:00.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0291 — Ask founder screen
@@ -5675,7 +5675,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. States: default, field-errors (summary + under-field error), sent (StatusPanel), loading, error ("Couldn't send your message."), offline (form stays, send waits). Copy EN/HE (from ask-founder.html): `EN:"Ask the founder" / HE:"לשאול את המייסד"`; `EN:"Amit builds Tempo and reads every message himself." / HE:"עמית בונה את Tempo וקורא כל הודעה בעצמו."`; `EN:"Subject" / HE:"נושא"`; `EN:"Message" / HE:"הודעה"`; `EN:"How soon does this matter?" / HE:"כמה מהר זה חשוב?"`; `EN:"Low" / HE:"נמוך"`; `EN:"Medium" / HE:"בינוני"`; `EN:"High" / HE:"גבוה"`; `EN:"What gets sent" / HE:"מה נשלח"`; `EN:"Send to Amit" / HE:"לשלוח לעמית"`; `EN:"Sent. Thank you, Maya." / HE:"נשלח. תודה, מאיה."`. "Send to Amit" is the one primary. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: empty submit → summary focused + 2 field errors; fill + send → sent panel with subject; offline → toast "will send when you're back"; `?state=loading|error` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · subject ≤ 120 chars.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0292 — Container (marketing)
@@ -5694,7 +5694,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{children}`. Max-width 1120 px, `margin-inline:auto`, `padding-inline: var(--tp-space-4)`.
 - **TESTS:** Given content · Then it renders within `.tp-container` (max-width 1120).
 - **NUMBERS:** max-width 1120 px (components.md §2.16).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** body typeface value (Source Sans 3 vs Inter) — Amit (REWRITE-PLAN §4 conflict 5); use `--tp-*` tokens, not a named font.
 
 ### TFV2-0293 — SiteHeader (marketing)
@@ -5713,7 +5713,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{links, current, lang}`. Copy EN/HE: `EN:"What it is" / HE:"מה זה"`; `EN:"Pricing" / HE:"מחירים"`; `EN:"About" / HE:"אודות"`; `EN:"Sign in" / HE:"כניסה"`. Solid surface. RTL logical (nav order mirrors). `.tp-site-link--wide` hidden under 768.
 - **TESTS:** Given links · Then rendered with `aria-current` on active. Playwright EN/HE at 390/1280: brand + links + language switch visible; RTL flips order.
 - **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** body typeface — Amit (conflict 5).
 ### TFV2-0294 — Hero (marketing)
 - **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293 · **Folds-in:** #751
@@ -5731,7 +5731,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{eyebrow, title, lede, primary, note}`. Copy EN/HE: `EN:"A starter for your brain" / HE:"סטרטר למוח שלך"`; `EN:"Tempo Flow — your brain's operating system" / HE:"Tempo Flow — מערכת ההפעלה של המוח שלך"`; `EN:"Ask to join" / HE:"בקשה להצטרף"`. `--tp-text-4xl` title. RTL logical.
 - **TESTS:** Given props · Then rendered; exactly one `.tp-btn--primary`. Playwright EN/HE at 390/1280.
 - **NUMBERS:** text ≥ 13 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** body/display typeface — Amit (conflict 5).
 
 ### TFV2-0295 — FeatureRow (marketing)
@@ -5750,7 +5750,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{title, body, figure, flip?}`. Copy EN/HE (from landing.html): `EN:"Pages in plain Markdown" / HE:"דפים ב-Markdown פשוט"`; `EN:"Templates that do the setup for you" / HE:"תבניות שעושות את ההכנה בשבילך"`; `EN:"A coach with memory that can change the app" / HE:"מאמן עם זיכרון שיכול לשנות את האפליקציה"`. RTL flips order.
 - **TESTS:** Given flip · Then text and figure order reversed. Playwright EN/HE at 390/1280 (figure stacks above text under 768).
 - **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0296 — HowItWorks (marketing)
@@ -5769,7 +5769,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{steps:[{title, body}]}`. Copy EN/HE: `EN:"Write" / HE:"כותבים"`; `EN:"Talk" / HE:"מדברים"`; `EN:"Accept, with Undo" / HE:"מאשרים, עם ביטול"`. Numbers `.tp-num`.
 - **TESTS:** Given 3 steps · Then ordered list renders 1/2/3. Playwright EN/HE at 390/1280.
 - **NUMBERS:** contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0297 — Quote (marketing)
@@ -5788,7 +5788,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{text, by}`. Fictional people only (e.g. "Maya Ronen"). RTL logical; text `dir="auto"`.
 - **TESTS:** Given text/by · Then `blockquote` + `figcaption` render.
 - **NUMBERS:** contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0298 — Pricing (marketing)
@@ -5807,7 +5807,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Copy EN/HE: `EN:"Clear prices. Always visible." / HE:"מחירים ברורים. תמיד גלויים."`; `EN:"Pay yearly and get two months free." / HE:"בתשלום שנתי מקבלים חודשיים חינם."`. RTL logical; prices `.tp-num`.
 - **TESTS:** Given the 4-tier config · Then 4 tier cards rendered. Playwright EN/HE at 390/1280.
 - **NUMBERS:** contrast 4.5:1 · price values `UNKNOWN` (Amit — conflict 2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** price values — Amit.
 
 ### TFV2-0299 — FAQ (marketing)
@@ -5826,7 +5826,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{items:[{q,a}]}`. Copy EN/HE (from landing.html): `EN:"Why do I have to ask to join?" / HE:"למה צריך לבקש להצטרף?"`; `EN:"Is there a password?" / HE:"יש סיסמה?"`; `EN:"Does it work in Hebrew?" / HE:"זה עובד בעברית?"`; `EN:"Can the coach change things without asking?" / HE:"המאמן יכול לשנות דברים בלי לשאול?"`; `EN:"What does Tempo remember about me?" / HE:"מה Tempo זוכר עליי?"`; `EN:"Is Tempo therapy?" / HE:"Tempo זה טיפול?"`. Native disclosure, icon `.tp-faq__icon`.
 - **TESTS:** Given 6 items · Then 6 `details` render. Playwright EN/HE: toggle a `details` open/closed natively.
 - **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0300 — SiteFooter (marketing)
@@ -5845,7 +5845,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Copy EN/HE: `EN:"Terms" / HE:"תנאים"`; `EN:"Privacy" / HE:"פרטיות"`; `EN:"Contact" / HE:"יצירת קשר"`; `EN:"What's new" / HE:"מה חדש"`; `EN:"Tempo Flow. A coach, not a therapist." / HE:"Tempo Flow. מאמן, לא מטפל."`. RTL logical.
 - **TESTS:** Given links · Then rendered with language switch. Playwright EN/HE.
 - **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0301 — LanguageSwitch
@@ -5864,7 +5864,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{current}`. Links: `<a hreflang="en" lang="en">EN</a>` / `<a hreflang="he" lang="he">עב</a>` (full names "English"/"עברית" in the footer variant). `aria-current` on current. Hebrew name wrapped `<span lang="he">`. RTL: the switch itself stays logical.
 - **TESTS:** Given current=en · Then EN link `aria-current`. Given current=he · Then `<html lang="he" dir="rtl">`. Playwright EN/HE at 390/1280.
 - **NUMBERS:** target ≥ 24×24 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0302 — Landing EN/HE copy dictionaries (#751)
@@ -5883,7 +5883,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Data ticket. Keys match the screens' `data-i18n` keys. A missing Hebrew key falls back to English (TRD §5b). Numbers/dates use `.tp-num` at render, not in the string.
 - **TESTS:** Given `t("hero.title","he")` · Then the Hebrew value. Given a key missing in `he` · Then English fallback. Given `t(...,"en")` · Then English.
 - **NUMBERS:** none applicable · `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0303 — Landing screen
@@ -5902,7 +5902,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `Marketing` (no shell). Sections in order: hero, "What it is" (3 FeatureRows), "How it works" (3 steps), live voice FeatureRow, "Who it's for" (2 cards), pricing teaser (4 tiers), FAQ, footer. States: default; empty/loading/error show the default page (nothing fetched); offline adds a banner. Copy EN/HE (from landing.html dictionaries). `?lang=he` → `dir="rtl"` and Hebrew copy. One primary "Ask to join". RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN and HE at 390 and 1280: assert hero title, "Ask to join", 4 tier cards, 6 FAQ items render; switch to Hebrew → `dir="rtl"` + Hebrew hero; offline banner shows; no fetch occurs.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · body typeface `UNKNOWN` (Amit — conflict 5).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** body typeface — Amit (conflict 5).
 
 ### TFV2-0304 — About screen
@@ -5921,7 +5921,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout `Marketing`. Promise cards copy EN/HE: `EN:"Calm by default" / HE:"רגוע כברירת מחדל"`; `EN:"You decide" / HE:"אתה מחליט"`; `EN:"Everything can be undone" / HE:"הכול אפשר לבטל"`; `EN:"Prices you can always see" / HE:"מחירים שתמיד גלויים"`; `EN:"Your words stay yours" / HE:"המילים שלך נשארות שלך"`. States: default + offline banner.
 - **TESTS:** Playwright EN/HE at 390/1280: 5 promise cards + "Ask to join" render; Hebrew flips RTL.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** body typeface — Amit (conflict 5).
 
 ### TFV2-0305 — Changelog screen
@@ -5940,7 +5940,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout `Marketing`. Copy EN/HE: `EN:"Version" / HE:"גרסה"`; `EN:"New" / HE:"חדש"`; `EN:"Better" / HE:"טוב יותר"`; `EN:"Fixed" / HE:"תוקן"`. Plain language only. States: default (built at deploy, so empty/loading/error show default) + offline banner.
 - **TESTS:** Playwright EN/HE at 390/1280: newest entry first, each change carries a word+icon.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0306 — SettingsSection
@@ -5959,7 +5959,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{title, description?, children}`. `--tp-space-5` padding.
 - **TESTS:** Given title+rows · Then title and rows render. Playwright EN/HE.
 - **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0307 — SettingRow
@@ -5978,7 +5978,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{label, help?, control, stack?, tone?}`. RTL logical (label start, control end).
 - **TESTS:** Given label+switch · Then label at start, switch at end. Given `tone=danger` · Then danger styling. Playwright EN/HE.
 - **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0308 — Settings profile screen
@@ -5997,7 +5997,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. States: default, field-errors (summary + under-field), loading, error ("Couldn't load your profile."), offline. Copy EN/HE (from settings-profile.html): `EN:"Profile" / HE:"פרופיל"`; `EN:"Full name" / HE:"שם מלא"`; `EN:"What should Tempo call you?" / HE:"איך ש־Tempo יקרא לך?"`; `EN:"How should Tempo speak to you in Hebrew?" / HE:"איך ש־Tempo ידבר אלייך בעברית?"`; `EN:"Feminine" / HE:"בלשון נקבה"`; `EN:"Masculine" / HE:"בלשון זכר"`; `EN:"Email" / HE:"אימייל"`; `EN:"Language" / HE:"שפה"`; `EN:"Save changes" / HE:"שמירת השינויים"`; `EN:"Sign out" / HE:"יציאה"`. "Save changes" is the one primary. RTL logical; email `dir="ltr"`. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: save with blank name → summary + field error; email change → "We sent a link…"; sign out → toast; `?state=loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · email regex `name@example.com`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0309 — Settings preferences screen
@@ -6016,7 +6016,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. Copy EN/HE (from settings-prefs.html): `EN:"Preferences" / HE:"העדפות"`; `EN:"How Tempo looks" / HE:"איך Tempo נראה"`; `EN:"Theme" / HE:"ערכת צבעים"`; `EN:"Light" / HE:"בהירה"`; `EN:"Dark" / HE:"כהה"`; `EN:"Match this device" / HE:"כמו במכשיר"`; `EN:"Language" / HE:"שפה"`; `EN:"Text size" / HE:"גודל טקסט"`; `EN:"Reading font" / HE:"גופן קריאה"`; `EN:"Less motion" / HE:"פחות תנועה"`; `EN:"How the coach works" / HE:"איך המאמן עובד"`; `EN:"Week starts on" / HE:"השבוע מתחיל ביום"`; `EN:"Billing notices" / HE:"הודעות על תשלום"` (locked, always on). Coach dial 0–10 shows number + word (Quiet/Steady/Push). Reduced motion: "Follows device" badge, not a switch. RTL logical; billing notices switch `aria-disabled`. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: change theme → "Saved" + theme applied; language → layout flips RTL; dial slider → number+word update (debounced); billing switch is disabled; `?state=loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · dial 0–10 · debounce 400 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start default (Sunday vs Monday) — Amit (REWRITE-PLAN §4 conflict 10).
 
 ### TFV2-0310 — Settings privacy screen
@@ -6035,7 +6035,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. Copy EN/HE (from settings-privacy.html): `EN:"Privacy" / HE:"פרטיות"`; `EN:"Help improve Tempo" / HE:"לעזור לשפר את Tempo"`; `EN:"Download a copy of everything" / HE:"להוריד עותק של הכול"`; `EN:"Request my copy" / HE:"לבקש עותק"`; `EN:"Leave Tempo" / HE:"לעזוב את Tempo"`; `EN:"Delete my account" / HE:"למחוק את החשבון שלי"`; `EN:"Delete your account?" / HE:"למחוק את החשבון שלך?"`; `EN:"Tick this to turn on the delete button." / HE:"סמני כאן כדי להפעיל את כפתור המחיקה."`; `EN:"Restore my account" / HE:"לשחזר את החשבון"`. Delete requires a tick before the button enables (ConfirmDialog). Usage data off by default. RTL logical. Motion ≤250 ms.
 - **TESTS:** Playwright EN/HE at 390/1280: usage-data switch off by default → on → toast; export → status line; delete → sheet requires tick → confirm → pending notice + Restore; restore → welcome back; `?state=loading|error|offline` asserted.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · deletion grace 30 days.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0311 — ConfirmDialog
@@ -6054,7 +6054,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{open, title, body, confirmLabel, cancelLabel, onConfirm, onCancel, tone}`. `role="alertdialog" aria-modal`. Destructive button is `.tp-btn--danger` (not primary). States: open, closed. RTL logical; focus returns to opener. Motion 240 ms.
 - **TESTS:** Given open · Then dialog shown with title/body/2 buttons, focus trapped. Esc closes. Given tone=danger · Then confirm is `.tp-btn--danger`, cancel `.tp-btn--secondary`. Playwright EN/HE at 390/1280.
 - **NUMBERS:** target ≥ 24×24 px · motion ≤ 250 ms (240 ms).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0312 — PWA manifest + icons
@@ -6073,7 +6073,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Data/asset ticket. Manifest fields only (no keys).
 - **TESTS:** none beyond typecheck (static manifest).
 - **NUMBERS:** icon sizes 192/512 px (PWA install criteria) · pass = exact.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0313 — PWA service worker + offline page
@@ -6092,7 +6092,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** PWA. Precaches static shell only (never Convex data or user content). Offline copy EN/HE: `EN:"You're offline. Changes save when you're back." / HE:"אין חיבור כרגע. השינויים יישמרו כשתחזרי."`
 - **TESTS:** Playwright: go offline → shell still loads with the offline banner; online → banner clears.
 - **NUMBERS:** shell precache size budget · `UNKNOWN` (Amit — no budget set).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** shell cache size budget — Amit.
 
 ### TFV2-0314 — PWA install prompt + meta
@@ -6111,7 +6111,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** PWA/meta. Install prompt copy EN/HE: `EN:"Install Tempo" / HE:"התקנת Tempo"`. Never auto-prompts repeatedly.
 - **TESTS:** Playwright: `beforeinstallprompt` fires → button appears → click shows native prompt (mocked).
 - **NUMBERS:** theme-colour from `--tp-ground` · contrast n/a (chrome).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0315 — Empty states gallery
@@ -6130,7 +6130,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI screen. Layout `TempoShell` + `PageLayout --wide`. Copy EN/HE: `EN:"Empty, loading, error and offline" / HE:"ריק, טוען, שגיאה וללא חיבור"`. Copy rules: kind and plain, never shaming, always a next step, "Your data is safe." on every error. States: default + offline only (gallery is static).
 - **TESTS:** Playwright EN/HE at 390/1280: every state pattern renders with a screen-name badge and link.
 - **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0316 — ChangelogEntry (marketing)
@@ -6149,7 +6149,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** UI component. Props `{version, date, changes:[{kind:"new"|"better"|"fixed", text}]}`. Copy EN/HE: `EN:"New" / HE:"חדש"`; `EN:"Better" / HE:"טוב יותר"`; `EN:"Fixed" / HE:"תוקן"`. Date `.tp-num`. RTL logical.
 - **TESTS:** Given 3 changes of each kind · Then each row shows its word + icon. Playwright EN/HE at 390/1280.
 - **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ## Chunk 5 — Gen 1
@@ -6170,7 +6170,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The layout renders an empty `(tempo)` stack inside `SafeAreaProvider`. Tokens used: `--tp-ground`, `--tp-paper`, `--tp-tabbar-h` (reserved padding). States: default (blank paper), loading (a `StateLoading` skeleton for the first provider hydration), offline (`StateOffline` banner `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`). Breakpoints 390/768/1024/1280 (no sideways scroll at 390 per DESIGN.md §8). Motion none. The newest-stable SDK exact major is a build decision: `UNKNOWN` — answerer Amit (verify against the Expo release calendar at ticket time).
 - **TESTS:** Given the root layout mounts / When the render tree is committed / Then `SafeAreaProvider`, the theme provider and the i18n provider are present exactly once, and no provider is nested inside another provider of the same kind. Given RTL locale `he` / When the provider hydrates / Then `I18nManager.isRTL` is true.
 - **NUMBERS:** no sideways scroll at 390 px (DESIGN.md §8) · Expo SDK major → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** newest stable Expo SDK major — Amit.
 
 ### TFV2-0318 — TempoShell (MobileTopBar + screen frame + floating capture button)
@@ -6189,7 +6189,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Top bar is a solid glass surface (`--tp-glass-solid` fallback) at height `--tp-topbar-h`; title uses `--tp-text-lg` `--tp-font-serif`, `--tp-ink`. Back chevron `.tp-icon--flip` mirrors in RTL and is ≥ `--tp-touch` (24×24 CSS px min, WCAG 2.5.8; 44×44 native target). Floating capture button sits above the tab bar, accent `--tp-accent` with label `--tp-on-accent`. Copy: `EN: Back / HE: חזרה`. States: default, with-back, offline (banner). Keyboard: back is focusable, `Enter`/`Space` activates. Screen-reader: back labelled, top bar `role="banner"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms (panel slide `--tp-ease-out`).
 - **TESTS:** Given `title="Today"` / When the shell renders / Then the top bar shows `Today`, and no `Back` is present. Given `back` / When pressed / Then the router pops or replaces to `/coach`. Given `dir=rtl` / When the shell renders / Then the back chevron flips (`.tp-icon--flip`).
 - **NUMBERS:** target ≥24×24 CSS px / 44×44 native px (WCAG 2.2 2.5.8; Apple HIG) · motion ≤250 ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0319 — MobileTabBar + TouchRow + `(tabs)` route layout
@@ -6208,7 +6208,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tab bar is glass `--tp-glass-solid` at height `--tp-tabbar-h`, fixed at the bottom. Four tabs with icon + label; the active tab uses `--tp-accent` for icon and `--tp-ink` label, inactive `--tp-ink-muted`; `aria-current` on the active tab. Copy `EN / HE`: Today `היום`, Coach `מאמן`, Tasks `משימות`, Notes `הערות`. `TouchRow`: icon `__icon`, label `__label`, value `__value`, chevron `__chev`, min height 56 px. States: default, active, offline. Breakpoints: under 768 fixed tab bar; ≥768 it is not rendered (web/desktop shell). Motion ≤250 ms. RTL: tab order flows inline-start→inline-end; chevrons flip.
 - **TESTS:** Given the tabs layout / When rendered / Then exactly four tabs appear in order Today, Coach, Tasks, Notes. Given the Today route is active / When rendered / Then the Today tab carries `aria-current`. Given `dir=rtl` / When rendered / Then the tab order mirrors and the TouchRow chevron flips.
 - **NUMBERS:** tab/TouchRow target ≥56 px (Apple HIG 44×44, min) · motion ≤250 ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0320 — MobileSheet (bottom sheet / drawer, focus trap + scroll lock)
@@ -6227,7 +6227,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Sheet slides from the bottom at <768 (`--tp-radius-xl` top corners, `--tp-shadow-modal`); ≥768 it centres with `--tp-radius-lg`. Scrim `--tp-scrim`. Grabber is a decorative `--tp-line` handle. States: open, closed, offline. Copy is caller-supplied (title prop), so no fixed copy. Keyboard: `Esc` and Android back close; Tab cycles within the sheet. Screen-reader: `role="dialog"`, `aria-labelledby` points at `__title`. Motion: open 240 ms `--tp-ease-out`, close 160 ms `--tp-ease-in`; `prefers-reduced-motion` → instant.
 - **TESTS:** Given the sheet is opened / When `open-sheet` fires / Then the scrim shows, `hidden` is removed, body scroll is locked, and focus moves into the sheet. Given Tab / When pressed past the last focusable / Then focus wraps to the first. Given `Esc` / When pressed / Then the sheet closes and focus returns to the opener.
 - **NUMBERS:** motion ≤250 ms (DESIGN.md §7) · focus trap wraps within 1 Tab cycle (WCAG 2.4.3 focus order).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0321 — Mobile i18n EN/HE strings + RTL (I18nManager) baseline
@@ -6246,7 +6246,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Locale `en`/`he` (any code accepted, default from device). RTL list `he`/`ar`/`fa`/`ur` → `I18nManager.forceRTL(true)`. Numbers/dates stay LTR via `tp-num` (`direction:ltr; unicode-bidi:isolate`). Copy pairs: `EN / HE` — Today `היום`; Coach `מאמן`; Tasks `משימות`; Notes `הערות`; Journal `יומן`; Habits `הרגלים`; Calendar `לוח שנה`; Routines `שגרות`; Templates `תבניות`; Settings `הגדרות`; Onboarding `תחילת השימוש`; Back `חזרה`; Retry `נסה שוב`; Loading… `טוען…`.
 - **TESTS:** Given locale `he` / When a label is resolved / Then the Hebrew value returns. Given a key missing from `he` / When resolved / Then the English value returns. Given locale `he` / When the app mounts / Then `I18nManager.isRTL` is true.
 - **NUMBERS:** 100% of shared labels present in both dictionaries (internal completeness, no external standard).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0322 — Mobile screen: Today
@@ -6265,7 +6265,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Layout: top bar `Today`, greeting serif `--tp-text-2xl`, task list rows (TaskRow), floating capture `+`. Tokens: `--tp-ground`, `--tp-paper`, `--tp-ink`, `--tp-ink-muted`, `--tp-accent`, `--tp-space-*`, `--tp-radius-*`. States: default (list), loading (skeleton `StateLoading`), empty (`EN: Nothing planned for today. / HE: לא תוכנן כלום להיום.` with a next step), error (`StateError` `EN: Couldn't load your tasks. Your data is safe. / HE: לא הצלחנו לטעון את המשימות שלך. הנתונים שלך בטוחים.` + Retry), offline (banner `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`), success. RTL: list flows inline-start; digits LTR via `tp-num`. Breakpoints 390/768/1024/1280 (no sideways scroll at 390). Motion ≤250 ms row drop-in.
 - **TESTS:** Given a fresh account / When Today loads / Then the empty state copy shows. Given tasks exist / When the list renders / Then each task title shows and the capture button is reachable. Given offline / When rendered / Then the offline banner shows and content stays. Run at 390 and 1280, in EN and HE, asserting each state.
 - **NUMBERS:** no sideways scroll at 390 px (DESIGN.md §8) · text contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px / 44×44 native (WCAG 2.5.8 / Apple HIG) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0323 — Mobile screen: Capture
@@ -6284,7 +6284,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Text input `--tp-field`/`--tp-input`, save button `--tp-btn` accent. Copy: `EN: Capture / HE: לכידה`; `EN: What's on your mind? / HE: מה על דעתך?`; save `EN: Save / HE: שמור`. States: default, loading (button spinner), empty (disabled save until non-empty), error, offline, success (toast `EN: Saved. / HE: נשמר.` + 5-min Undo). RTL: input `dir="auto"` per paragraph. Breakpoints 390/768/1024/1280. Motion ≤250 ms toast.
 - **TESTS:** Given empty input / When rendered / Then Save is disabled. Given text / When Save is tapped / Then the success toast and Undo appear. Given offline / When Save is tapped / Then the offline banner shows and input is retained. Run at 390 and 1280, EN and HE, asserting each state.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0324 — Mobile screen: Coach
@@ -6303,7 +6303,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Thread list rows, composer `--tp-field`, mic entry (MicToggle accent). Copy: `EN: Coach / HE: מאמן`; `EN: Say hello, or tell the coach what's on your mind. / HE: אמור שלום, או ספר למאמן מה על דעתך.`; mic-unavailable reasons reuse the voice calm copy (`EN: Voice isn't switched on yet. Typing works as always. / HE: הקול עדיין לא מופעל. ההקלדה עובדת כרגיל.`). States: default, loading, empty (no threads), error, offline, mic-disabled. RTL: composer `dir="auto"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no threads / When Coach loads / Then the empty state shows. Given threads / When rendered / Then each thread title shows. Given voice unavailable / When rendered / Then the mic button is disabled with the calm reason. Run at 390 and 1280, EN and HE, asserting each state.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0325 — Mobile screen: Voice call (layout + honest not-connected state)
@@ -6322,7 +6322,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Call with your coach / HE: שיחה עם המאמן שלך`; `EN: Not connected / HE: לא מחובר`; `EN: Live calls aren't ready yet. / HE: שיחות קול עוד לא מוכנות.`; `EN: Hold to talk / HE: החזק כדי לדבר`; `EN: Interrupt / HE: קטע`; `EN: End call / HE: סיים שיחה`; `EN: Back to chat / HE: חזרה לצ'אט`; `EN: English / HE: אנגלית`. States: default (not-connected), offline (banner `EN: You're offline. / HE: אין חיבור.`). Mic (`--tp-accent`), end-call (`--tp-danger`), interrupt secondary. RTL: language chip keeps each language name in its own `lang`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given the screen / When rendered / Then "Not connected" shows and Mic/Hold-to-talk/Interrupt are disabled. Given End call / When tapped / Then it returns to Coach. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
 
 ### TFV2-0326 — Mobile screen: Tasks
@@ -6341,7 +6341,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Tasks / HE: משימות`; `EN: No tasks yet. / HE: אין משימות עדיין.`; `EN: Couldn't load your tasks. Your data is safe. / HE: לא הצלחנו לטעון את המשימות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`. States: default, loading, empty, error, offline, success (checkmark pops 180 ms). RTL rows inline-start; due times LTR `tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no tasks / When loaded / Then empty state shows. Given tasks / When one is toggled / Then it completes and the checkmark pops. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0327 — Mobile screen: Notes
@@ -6360,7 +6360,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Notes / HE: הערות`; `EN: No notes yet. / HE: אין הערות עדיין.`; error `EN: Couldn't load your notes. Your data is safe. / HE: לא הצלחנו לטעון את ההערות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. RTL tree inline-start; note titles `dir="auto"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no notes / When loaded / Then empty state shows. Given notes / When rendered / Then each title shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0328 — Mobile screen: Journal
@@ -6379,7 +6379,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Journal / HE: יומן`; `EN: No entries yet. / HE: אין רשומות עדיין.`; error `EN: Couldn't load your journal. Your data is safe. / HE: לא הצלחנו לטעון את היומן שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. Entry body `dir="auto"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no entries / When loaded / Then empty state shows. Given entries / When rendered / Then each entry's first line shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0329 — Mobile screen: Habits
@@ -6398,7 +6398,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Habits / HE: הרגלים`; `EN: No habits yet. / HE: אין הרגלים עדיין.`; error `EN: Couldn't load your habits. Your data is safe. / HE: לא הצלחנו לטעון את ההרגלים שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline, success (today's dot `data-logged`). Streak counts LTR `tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no habits / When loaded / Then empty state shows. Given a habit / When logged for today / Then today's dot fills. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0330 — Mobile screen: Calendar
@@ -6417,7 +6417,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Calendar / HE: לוח שנה`; `EN: No events. / HE: אין אירועים.`; error `EN: Couldn't load your calendar. Your data is safe. / HE: לא הצלחנו לטעון את לוח השנה שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. Dates/times LTR `tp-num` (mono). RTL: weekday header flows inline-start, week starts Monday (`UNKNOWN` week start — see OPEN). Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no events / When loaded / Then empty state shows. Given events / When a day is selected / Then its events show. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** week start Sunday vs Monday — Amit (REWRITE-PLAN-v2 §4.10); code currently uses Monday.
 
 ### TFV2-0331 — Mobile screen: Routines
@@ -6436,7 +6436,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Routines / HE: שגרות`; `EN: No routines yet. / HE: אין שגרות עדיין.`; error `EN: Couldn't load your routines. Your data is safe. / HE: לא הצלחנו לטעון את השגרות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline, running (progress). Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no routines / When loaded / Then empty state shows. Given routines / When rendered / Then each routine name shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0332 — Mobile screen: Templates
@@ -6455,7 +6455,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Templates / HE: תבניות`; `EN: No templates yet. / HE: אין תבניות עדיין.`; error `EN: Couldn't load your templates. Your data is safe. / HE: לא הצלחנו לטעון את התבניות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no templates / When loaded / Then empty state shows. Given templates / When rendered / Then each template name shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0333 — Mobile screen: Settings
@@ -6474,7 +6474,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Settings / HE: הגדרות`; `EN: Profile / HE: פרופיל`; `EN: Preferences / HE: העדפות`; `EN: Accessibility / HE: נגישות`; `EN: Language / HE: שפה`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, error, offline. Switch rows use On/Off words. RTL: chevrons flip. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given the screen / When rendered / Then Profile, Preferences, Accessibility, Language rows show. Given a switch / When toggled / Then `aria-checked` updates and On/Off word shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0334 — Mobile screen: Onboarding
@@ -6493,7 +6493,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Onboarding / HE: תחילת השימוש`; `EN: Welcome to Tempo / HE: ברוכים הבאים ל-Tempo`; `EN: Get started / HE: להתחלה`; `EN: Skip / HE: דלג`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, error, offline. Breakpoints 390/768/1024/1280. Motion ≤250 ms step transition.
 - **TESTS:** Given the flow / When "Get started" is tapped / Then the first preferences step shows. Given "Skip" / When tapped / Then the flow completes to Today. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0335 — Study track: SM-2 algorithm (`convex/lib/sm2.ts`)
@@ -6512,7 +6512,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Signature: `scheduleSm2(prev: { repetitions: number; easeFactor: number; intervalDays: number }, quality: 0|1|2|3|4|5): { repetitions: number; easeFactor: number; intervalDays: number }`. Rules: quality < 3 resets repetitions to 0 and returns intervalDays 1 (relearn). Otherwise: repetitions n+1; interval = n===1 ? 1 : n===2 ? 6 : round(prev.intervalDays * prev.easeFactor); EF' = prev.easeFactor + (0.1 − (5−q)·(0.08 + (5−q)·0.02)), clamped to ≥1.3. Error cases: quality out of 0–5 → throw `RangeError`; non-finite easeFactor/interval → throw `RangeError`. Limits: EF ≥1.3 always; intervalDays integer ≥1.
 - **TESTS:** Given quality 5, repetitions 0, EF 2.5 / When scheduled / Then repetitions 1, intervalDays 1. Given quality 5, repetitions 2, EF 2.5, interval 6 / When scheduled / Then intervalDays 15. Given quality 0 / When scheduled / Then repetitions 0, intervalDays 1. Given EF 1.3 and quality 0 / When scheduled / Then EF stays ≥1.3. Given quality 6 / When scheduled / Then throws RangeError.
 - **NUMBERS:** SM-2 EF floor 1.3, I(1)=1 day, I(2)=6 days (https://super-memory.com/english/ol/sm2.htm).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0336 — Study track: `studyCards` table (schema + indexes)
@@ -6531,7 +6531,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `studyCards: defineTable({ userId: v.id("users"), front: v.string(), back: v.string(), sourceNoteId: v.optional(v.id("notes")), repetitions: v.number(), easeFactor: v.number(), intervalDays: v.number(), dueAtMs: v.number(), status: v.union(v.literal("new"), v.literal("learning"), v.literal("reviewing")), createdAt, updatedAt, deletedAt: v.optional(v.number()) })` with the three indexes. Every row is scoped by `userId` (TRD §7 rule 4); soft delete via `deletedAt`.
 - **TESTS:** Given a card / When inserted / Then all fields round-trip and `dueAtMs` is a finite number. Given the `by_userId_dueAtMs` index / When queried / Then cards sort by due time for that user only.
 - **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0337 — Study track: `convex/study.ts` (deck + review + schedule)
@@ -6550,7 +6550,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `createCard({ front, back, sourceNoteId? }) → id` (requireUser; front/back non-empty ≤2000 chars each; insert status "new", repetitions 0, EF 2.5, intervalDays 0, dueAtMs now). `listDue({ limit? }) → cards[]` (query; default limit 50, max 100; returns cards with dueAtMs ≤ now). `reviewCard({ cardId, quality }) → next` (requireUser; owner check; quality 0–5 else error; applies `scheduleSm2`; sets status "learning" if repetitions 0–1 else "reviewing", dueAtMs = now + intervalDays·86_400_000). Error cases: not owner → `ConvexError` "Card not found"; bad quality → `RangeError`; missing front/back → `ConvexError`.
 - **TESTS:** Given user A's card / When B reviews it / Then error, nothing changes. Given quality 5 on a new card / When reviewed / Then repetitions 1 and dueAtMs advances. Given quality < 3 / When reviewed / Then repetitions reset to 0. Given empty front / When createCard / Then error. Given limit 500 / When listDue / Then clamped to 100.
 - **NUMBERS:** SM-2 intervals (https://super-memory.com/english/ol/sm2.htm); list limit default 50 / max 100 (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0338 — Study track: flashcards from a note (note → cards)
@@ -6569,7 +6569,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `cardsFromNote({ noteId }) → { cards: { front, back }[], proposalId }`. Deterministic split: for each `## heading` followed by a paragraph → front = heading, back = paragraph (≤500 chars); for each `- Q: … / - A: …` pair → front/back. Limits: at most 100 cards per call. Errors: note not owner → `ConvexError`; empty note → empty proposal. Accept path calls `createCard` per card (each still an individual proposal with Undo).
 - **TESTS:** Given a note with `## X` + paragraph / When cardsFromNote / Then one card front X, back paragraph. Given a note with `- Q:`/`- A:` pairs / When cardsFromNote / Then paired cards. Given another user's note / When cardsFromNote / Then error. Given an empty note / When cardsFromNote / Then empty proposal.
 - **NUMBERS:** max 100 cards per call (internal guard).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0339 — Study track: scoped RAG (study context retrieval)
@@ -6588,7 +6588,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `retrieveContext({ deckNoteIds, query, limit? }) → { passage, noteId, score }[]`. Embed `query` (same seam as `search.ts`), filter candidate passages to `note.userId === caller` AND `note._id ∈ deckNoteIds`, return top-k by cosine similarity, k default 5 max 20. Errors: query empty → `ConvexError`; deckNoteIds empty → empty array; caller not owner of any → empty array. RAM-only: no new persisted copies.
 - **TESTS:** Given a query and a deck with one matching note / When retrieveContext / Then that note's passage ranks first. Given a note outside the deck / When retrieveContext / Then it is never returned. Given another user's note id / When retrieveContext / Then it is excluded. Given limit 50 / When retrieveContext / Then clamped to 20.
 - **NUMBERS:** top-k default 5 / max 20 (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0340 — Study track: Anki export
@@ -6607,7 +6607,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `exportAnki({ deckNoteIds? }) → { text, count }`. Each card becomes one line `front\tback` (escape tab/newline inside fields as spaces); cards filtered to caller's own and, when `deckNoteIds` given, to those source notes. Limits: max 10,000 cards; over → `ConvexError`. Errors: no cards → `{ text: "", count: 0 }`.
 - **TESTS:** Given 3 cards / When exportAnki / Then text has 3 lines with tab separators. Given a card whose fields contain a newline / When exported / Then the newline is replaced by a space. Given deckNoteIds excludes one card / When exported / Then that card is omitted. Given another user's card id / When exported / Then it is never included.
 - **NUMBERS:** Anki plain-text import format (https://docs.ankiweb.net/importing/text-files.html) · max 10,000 cards per export (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0341 — Study track: Flashcard component (card-flip)
@@ -6626,7 +6626,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Card surface `--tp-paper`, radius `--tp-radius-lg`, shadow `--tp-shadow-card`. Front/back toggle via flip (only `transform`+`opacity`, ≤250 ms `--tp-ease-out`). Copy (caller-supplied, no fixed copy) + counter `EN: n of m / HE: n מתוך m` (digits `tp-num`). States: front, back, disabled, reduced-motion (no flip). Screen-reader: `aria-pressed` on flip, counter `aria-live=polite`. RTL: counter order mirrors.
 - **TESTS:** Given a card / When rendered / Then front shows and `aria-pressed` is false. Given a tap / When flip fires / Then back shows and `aria-pressed` true. Given reduced motion / When rendered / Then no transform animation runs. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** motion ≤250 ms (DESIGN.md §7) · target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0342 — Study track: Quiz component (quiz-check)
@@ -6645,7 +6645,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Question `--tp-ink` `--tp-text-lg`; choices as radios (role=radio, `aria-checked`); after answer, correct choice gets `data-result=correct` (`--tp-done`), wrong `data-result=wrong` (`--tp-danger`). Copy: `EN: Question n of m / HE: שאלה n מתוך m`; `EN: Check / HE: בדוק`; `EN: Correct / HE: נכון`; `EN: Not quite / HE: לא בדיוק`. States: unanswered, answered-correct, answered-wrong, disabled. RTL: choice order inline-start. Motion ≤250 ms feedback.
 - **TESTS:** Given a question / When rendered / Then no choice is checked. Given a choice / When checked and Check tapped / Then `data-result` shows on the chosen and correct rows. Given answered / When re-checked / Then input is disabled. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** motion ≤250 ms (DESIGN.md §7) · target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0343 — Study track: deck list screen (mobile)
@@ -6664,7 +6664,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Study / HE: לימוד`; `EN: No decks yet. / HE: אין ערכות עדיין.`; `EN: n due today / HE: n מתוכננים להיום` (digits `tp-num`); `EN: Start review / HE: להתחלת חזרה`; error `EN: Couldn't load your study. Your data is safe. / HE: לא הצלחנו לטעון את הלימוד שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no decks / When loaded / Then empty state shows. Given decks / When rendered / Then each deck name and due count show. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0344 — Study track: review screen (mobile)
@@ -6683,7 +6683,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Review / HE: חזרה`; `EN: Again / HE: שוב`; `EN: Hard / HE: קשה`; `EN: Good / HE: טוב`; `EN: Easy / HE: קל`; `EN: Session complete / HE: החזרה הסתיימה`. States: loading, active (card), answered (feedback), complete, error, offline. Quality maps: Again→0, Hard→3, Good→4, Easy→5. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given a due card / When loaded / Then the front shows. Given a quality button / When tapped / Then `reviewCard` advances to the next card. Given the last card / When answered / Then "Session complete" shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0345 — Study track: test screen (recall quiz) (mobile)
@@ -6702,7 +6702,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Test / HE: מבחן`; `EN: You scored n of m / HE: קיבלת n מתוך m`; `EN: Try again / HE: נסה שוב`. States: loading, active, answered, complete (score), error, offline. RTL inline-start; digits `tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given a deck / When Test loads / Then question 1 shows. Given answers / When all answered / Then the score shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0346 — Study track: stats/progress screen (mobile)
@@ -6721,7 +6721,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Progress / HE: התקדמות`; `EN: New / HE: חדש`; `EN: Learning / HE: בלמידה`; `EN: Reviewing / HE: בחזרה`; empty `EN: No study activity yet. / HE: אין פעילות לימוד עדיין.`; offline `EN: You're offline. / HE: אין חיבור.`. Counts are real (digits `tp-num`); no invented percentages. States: default, loading, empty, error, offline. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no cards / When loaded / Then empty state shows. Given cards across statuses / When rendered / Then the three counts match the data. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0347 — Connectors: Executor connect/setup verify (fold-in #748)
@@ -6740,7 +6740,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Verified invariants: only one `connected`/`needs_reauth`/`unavailable` row per person+provider; `pending_confirm` rows are unusable until the nonce (SHA-256 stored, alive ≤ `CONFIRM_TTL_MS`) confirms; confirming retires the previous row; connect attempts capped at `CONNECT_ATTEMPTS_PER_HOUR` via `connectionLimits`. Executor's call shape/env names remain `UNKNOWN` (TRD §6). Error cases: expired nonce → error; double-confirm → same answer; revoked token → `needs_reauth`.
 - **TESTS:** Given a connect attempt / When the OAuth callback returns a code / Then a `pending_confirm` row with a nonce hash is staged and no token is usable. Given the owner confirms / When `confirmExecutorConnect` runs / Then the row becomes `connected` and the prior row retires. Given an expired nonce / When confirmed / Then it errors and nothing changes. Given a connect attempt over the hourly cap / When started / Then it is refused.
 - **NUMBERS:** `CONFIRM_TTL_MS` 10 min, `CONNECT_ATTEMPTS_PER_HOUR` 5, `CALLS_PER_HOUR` 30 (repo constants, `convex/connections.ts`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Executor call shape + env var names — Amit (TRD §6).
 
 ### TFV2-0348 — Connectors: Executor reads adapter (list/search)
@@ -6759,7 +6759,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `listExecutorFor(ctx, userId, { kind: "tasks"|"notes", limit? }) → items[]` and `searchExecutorFor` normalize Executor results to `{ id, title, … }`. Auth: caller's own connection only; `requireApprovedUser`. Limits: `CALLS_PER_HOUR` 30; read results ≤ `DEFAULT_LIMIT` 50. Errors: no connected row → `ConvexError`; provider rate-limit → `rate_limited`; timeout → `timeout`; each recorded in `connectionCalls` (`outcome`).
 - **TESTS:** Given a connected row / When `listExecutorFor` runs / Then normalized items return and a `tool_call` audit row is written. Given no connection / When called / Then error, nothing audited as `ok`. Given over the hourly cap / When called / Then `rate_limited`. Given a provider timeout / When called / Then `timeout` outcome is recorded.
 - **NUMBERS:** 30 calls/hour, 50 default read limit (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Executor MCP tool names beyond `search` — Amit (TRD §6).
 
 ### TFV2-0349 — Connectors: Executor light writes (hard-refuse heavy writes)
@@ -6778,7 +6778,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `executorWrite(ctx, userId, { tool, args }) → { id }`. Permit list: `task_create`, `task_update`, `calendar_create`, `calendar_update` (light). Refuse list: any delete, bulk, move, account, or unknown tool → `ConvexError` `blocked` BEFORE the external call, recorded with `decision: "blocked"`. Every permitted write records `decision: "approved"`/`"auto"` and `outcome`. Errors: no connection, rate-limit, timeout, unauthorized — mirror TFV2-0348.
 - **TESTS:** Given `task_create` / When `executorWrite` runs / Then it succeeds and audits `ok`. Given a delete tool / When `executorWrite` runs / Then it is hard-refused with `blocked` and NO external call. Given an unknown tool / When called / Then `blocked`. Given no connection / When called / Then error.
 - **NUMBERS:** 30 calls/hour cap (repo constant) · light-write permit list = 4 tools (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Executor write-tool names — Amit (TRD §6).
 
 ### TFV2-0350 — Connectors: external write confirmation (every write confirmed)
@@ -6797,7 +6797,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `executorWrite(ctx, userId, { tool, args, proposalId })`. A `proposalId` whose proposal is not the caller's, or not confirmed, → `ConvexError` and NO external call. Confirmed → perform the light write, then surface an Undo (undo reissues a compensating light write where one exists, else a notice). Errors: missing proposalId → `ConvexError`.
 - **TESTS:** Given no proposalId / When `executorWrite` runs / Then it is refused and no external call happens. Given an unconfirmed proposal / When called / Then refused. Given a confirmed proposal / When called / Then the write runs and an Undo is returned.
 - **NUMBERS:** Undo window 5 minutes (HARD_RULES §6.2 / PRD F-131).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0351 — Connectors: connectionCalls audit + rate limits verify
@@ -6816,7 +6816,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Audit row fields: `kind`, `tool`/`path`, `decision`, `outcome`, `inputDigest` (SHA-256), `resultBytes`, `durationMs`, `messageId?`, timestamps; soft-deleted with the account. Limits: `CALLS_PER_HOUR` 30, `HOUR_MS` 60 min, `SWEEP_BATCH` 50.
 - **TESTS:** Given a call / When audited / Then a row exists with a digest, no raw input, and `outcome` set. Given a call over the cap / When attempted / Then `rate_limited` and no external call. Given a disconnect / When recorded / Then a `disconnect` audit row exists.
 - **NUMBERS:** 30 calls/hour, sweep batch 50 (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0352 — Connectors: Executor disconnect/revoke + sweep verify
@@ -6835,7 +6835,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `disconnect` → `revokeConnection` (provider revoke, `revokedAtProvider`), row → `disconnected`/`revoking` tombstoned, `disconnectGeneration`++ so in-flight connects never confirm. `sweep` batches `SWEEP_BATCH` stale rows. Errors: provider unreachable → `unavailable`/`needs_reauth`, not silent success.
 - **TESTS:** Given a connected row / When disconnected / Then the row tombstones, secrets scrub to `undefined`, and a disconnect audit row is written. Given an in-flight connect / When a newer disconnect runs / Then the old connect cannot confirm. Given stale rows / When sweep runs / Then only the batch is scrubbed.
 - **NUMBERS:** `SWEEP_BATCH` 50, `REVOKE_GRACE_MS` 1 hour (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0353 — MCP: tool catalog + input schemas verify (`lib/mcp/tools.ts`)
@@ -6854,7 +6854,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Catalog shape `McpTool { name, kind: "query"|"mutation"|"action", description, inputSchema }`. `findTool(name)` returns the tool or `undefined`. Errors: unknown tool → caller-side `Unknown tool: <name>`.
 - **TESTS:** Given `findTool("tasks_list")` / When resolved / Then kind query and a valid schema return. Given `findTool("nope")` / When resolved / Then undefined. Given each catalog tool / When its schema validates a minimal valid input / Then it passes; and an input missing a required field fails.
 - **NUMBERS:** catalog completeness = 11 tools (internal, must equal the implemented set).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0354 — MCP: `today_plan_set` write tool (fold-in #747)
@@ -6873,7 +6873,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `today_plan_set({ date?, timezone?, intention?, energy?, reflection?, topTaskIds? }) → { plan }`. Auth: token-owner `userId` (internal, via `authorizeCall`). Validation: timezone `isValidTimeZone` (default UTC); date `YYYY-MM-DD` (default today in that zone); intention/reflection ≤ 2000 chars; energy ∈ `low|medium|high`|undefined; `topTaskIds` ≤ 10 and all owned. Errors: unknown timezone → `ConvexError`; too many topTaskIds → `ConvexError`; a foreign taskId → `ConvexError`; invalid date → `ConvexError`.
 - **TESTS:** Given valid args / When `today_plan_set` runs / Then the plan is saved and returned. Given a bad timezone / When called / Then error. Given 11 topTaskIds / When called / Then error. Given a foreign taskId / When called / Then error and nothing saved.
 - **NUMBERS:** topTaskIds ≤ 10, intention/reflection ≤ 2000 chars (internal guards).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0355 — MCP: read tools verify (`tasks_list`, `notes_list`, `calendar_list`, `today_plan_get`)
@@ -6892,7 +6892,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `tasks_list({status, dueFrom, dueTo})`, `notes_list({pinnedOnly})`, `calendar_list({fromMs, toMs})` (range ≤ `maxCalendarRangeMs`), `today_plan_get({timezone, date})`. All read through `list*ForUser` scoped to `userId`. Errors: calendar `toMs ≤ fromMs` → `ConvexError`; range too large → `ConvexError`; bad timezone → `ConvexError`.
 - **TESTS:** Given user A's tasks / When B calls `tasks_list` / Then only B's tasks return. Given `toMs ≤ fromMs` / When `calendar_list` / Then error. Given a range over `maxCalendarRangeMs` / When `calendar_list` / Then error. Given a bad timezone / When `today_plan_get` / Then error.
 - **NUMBERS:** `DEFAULT_LIMIT` 50 (repo constant) · calendar range ≤ `maxCalendarRangeMs` (repo constant).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0356 — MCP: write tools verify (`task_create/update`, `note_create/update`, `calendar_create/update`)
@@ -6911,7 +6911,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `task_create({title, notes?, dueAtMs?, priority?, energy?})`, `task_update({taskId, title?, notes?, dueAtMs?, completed?})`, `note_create({title, body?})`, `note_update({noteId, title?, body?, pinned?})`, `calendar_create({title, startsAtMs})`, `calendar_update({eventId, title?, startsAtMs?})`. Ids are normalized; foreign/unknown ids → `ConvexError` "not found".
 - **TESTS:** Given a foreign taskId / When `task_update` runs / Then error and the foreign row is unchanged. Given a title-only create / When run / Then a row is created for the caller. Given a malformed id / When any update runs / Then error. Given `calendar_create` with missing title / When run / Then error.
 - **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0357 — MCP: `brain_dump` action verify (crisis guard)
@@ -6930,7 +6930,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `runBrainDump({userId, text, accept?})`. If `isCrisisText(text)` → return `{ crisis: true, accepted: false, created: 0, resources: crisisCardText(CRISIS_CARD) }` with NO model call. Else plan via `planBrainDump`; `accept:false` returns the plan; `accept:true` with items saves tasks via `acceptBrainDump`.
 - **TESTS:** Given crisis text / When `runBrainDump` runs / Then `crisis` true and no tasks created. Given normal text with `accept:false` / When run / Then a plan returns and nothing is saved. Given normal text with `accept:true` / When run / Then tasks are created. Given empty priorities / When accepted / Then `created: 0`.
 - **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0358 — MCP: Streamable HTTP endpoint verify (`mcpHttp.ts`)
@@ -6949,7 +6949,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `POST` with `Authorization: Bearer tmcp_…` and allowed `Origin`; JSON-RPC 2.0. Guards: bad origin → 403; missing/malformed token → 401 + `WWW-Authenticate`; unsupported `MCP-Protocol-Version` → 400; pending account → 403; rate-limited → 429 + `Retry-After: 60`; body > `MAX_BODY_BYTES` → 413; parse error → 400; batches → 400 (unsupported); notification → 202. `GET`/`DELETE` → 405; `OPTIONS` → 204 with CORS for allowed origins.
 - **TESTS:** Given a bad origin / When POST / Then 403. Given a missing token / When POST / Then 401. Given rate-limit exceeded / When POST / Then 429. Given a notification / When POST / Then 202. Given GET / When called / Then 405. Given an oversized body / When POST / Then 413.
 - **NUMBERS:** `MAX_BODY_BYTES` 256 KB, rate 120/min (repo constants) · HTTP status codes per JSON-RPC 2.0 spec (https://www.jsonrpc.org/specification).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0359 — MCP: CLI client (Streamable HTTP)
@@ -6968,7 +6968,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** CLI commands: `tempo-mcp tools` (list), `tempo-mcp call <name> [json]`, `tempo-mcp init <url>`. Sends `Authorization: Bearer $TEMPO_MCP_TOKEN`, header `MCP-Protocol-Version`. Errors: missing token → exit 1 with `EN: Missing TEMPO_MCP_TOKEN / HE: חסר TEMPO_MCP_TOKEN`; non-2xx → exit 1 with the JSON-RPC error message. No secrets logged.
 - **TESTS:** Given a stubbed JSON-RPC server / When `tools` runs / Then the tool list prints. Given a missing token / When run / Then exit 1 with the missing-token message. Given a server 401 / When `call` runs / Then exit 1 and the error prints. Given `call tasks_list` / When run / Then the JSON-RPC body carries the method/params.
 - **NUMBERS:** JSON-RPC 2.0 (https://www.jsonrpc.org/specification).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0360 — MCP: token lifecycle + rate limit verify (`mcp.ts`)
@@ -6987,7 +6987,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `createToken({name}) → { tokenId, token, prefix }` (plaintext once; only `tokenHash` + `prefix` stored); `listTokens()` returns `prefix` only; `revokeToken` sets `revokedAt`; `authorizeCall` resolves hash → ok/pending/rate_limited/unauthorized. Errors: empty name → `ConvexError`; > max active → `ConvexError`.
 - **TESTS:** Given a create / When stored / Then the stored row has no plaintext. Given a list / When run / Then no `tokenHash`/plaintext appears. Given a revoked token / When authorized / Then `unauthorized`. Given 121 calls in a minute / When the 121st runs / Then `rate_limited`.
 - **NUMBERS:** rate 120/min, `MAX_ACTIVE_TOKENS_PER_USER` (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0361 — BYOK key vault: `byokKeys` table + per-user crypto
@@ -7006,7 +7006,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `byokKeys: defineTable({ userId, provider: v.literal("openai_compatible"), label, keyCipher, endpointUrl, keyVersion, lastCheckedAt?, lastCheckOk?, createdAt, updatedAt, deletedAt })` indexed `by_userId`. `byokCrypto.encrypt(plaintext) → { cipher, keyVersion }`, `decrypt(cipher, keyVersion) → plaintext`; GCM nonce unique per encryption. Errors: missing key env → throw (fail closed); bad cipher → throw.
 - **TESTS:** Given a plaintext / When encrypted then decrypted / Then it round-trips. Given two encryptions of the same text / When compared / Then nonces differ (ciphertexts differ). Given tampered ciphertext / When decrypted / Then throws. Given a stored row / When listed / Then no `keyCipher` is returned by the public path.
 - **NUMBERS:** AES-256-GCM (NIST SP 800-38D) · nonce ≥ 96 bits unique per message.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0362 — BYOK: set/list-masked/delete + endpoint health-check
@@ -7025,7 +7025,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `setKey({ label, key, endpointUrl? }) → { id }` (requireApprovedUser; encrypt; one active key per user or allow many — allow many, ≤ 10; endpoint must be `https://`). `listKeys() → { id, label, masked, endpointUrl, lastCheckedAt?, lastCheckOk? }[]` (masked = first 3 + `…` + last 4). `deleteKey({ id })` soft-deletes. `checkKey({ id })` action: a minimal `GET /models` probe (or `POST /chat/completions` with 1 token) → set `lastCheckedAt`/`lastCheckOk`. Errors: > 10 keys → `ConvexError`; non-https endpoint → `ConvexError`; foreign id → `ConvexError`.
 - **TESTS:** Given a setKey / When listed / Then only the masked form appears. Given a setKey / When checkKey probes a stub / Then `lastCheckOk` reflects it. Given 11 keys / When setKey / Then error. Given a foreign id / When deleteKey / Then error and nothing changes.
 - **NUMBERS:** ≤ 10 keys per user (internal) · endpoint must be HTTPS (TRD §7 rule 6 / security).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0363 — BYOK: runtime model routing via `ai_router` seam
@@ -7044,7 +7044,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `resolveRuntimeRoute(userId): Promise<Route>` where `Route = { kind: "default" } | { kind: "byok"; endpoint: string }`. The key is decrypted and used only inside the `fetch`; the caller never sees it. Errors: BYOK endpoint unhealthy (`lastCheckOk === false`) → fall back to default (or throw with a clear error if `strict` is set); no active key → default.
 - **TESTS:** Given a user with a healthy BYOK key / When a call routes / Then it hits the BYOK endpoint. Given no BYOK key / When a call routes / Then it uses the default. Given an unhealthy BYOK key / When routed / Then it falls back to default. Given any route / When serialized / Then no key material appears in logs/returns.
 - **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0364 — BYOK: key vault screen (settings)
@@ -7063,7 +7063,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy: `EN: Bring your own key / HE: הבא מפתח משלך`; `EN: Add key / HE: הוסף מפתח`; `EN: Label / HE: תווית`; `EN: Endpoint / HE: נקודת קצה`; `EN: API key / HE: מפתח API`; `EN: Test connection / HE: בדיקת חיבור`; `EN: Connected / HE: מחובר`; `EN: Couldn't reach that endpoint / HE: לא הצלחנו להגיע לנקודת הקצה`; `EN: Delete / HE: מחק`. States: default, loading, empty (no keys), error, offline, testing, tested-ok, tested-fail. Key input `type=password autocomplete=off dir=ltr`, never pre-filled. RTL: labels inline-start; endpoint/key LTR. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given no keys / When loaded / Then empty state shows. Given a masked key / When listed / Then only the masked form shows. Given an invalid endpoint / When Test connection runs / Then the fail copy shows. Given Delete / When confirmed / Then the key leaves the list. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0365 — Voice: `voicePolicy` minutes cap + tier limits verify
@@ -7082,7 +7082,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `TIER_LIVE_MINUTES = { none:0, basic:30, pro:90, max:180, god:180 }`; `VOICE_LIMITS.dailyMinutesPerUser = 15` preview cap that only lowers a tier; `dailyMinutesFor(tier)` = min(tier, 15), unknown tier → 0 (fail closed). `leaseMs`/`leaseExpired` count a stale lease only to last renewal + `renewEveryMs`, never past `maxSessionMs`. `localDateKey`/`utcDateKey` partition per-user vs global.
 - **TESTS:** Given tier `pro` / When `dailyMinutesFor` / Then 15 (min of 90 and the 15 preview cap). Given tier `max` / When called / Then 15. Given an unknown tier / When called / Then 0. Given a lease past `maxSessionMs` / When `leaseMs` / Then it counts to `startedAt + maxSessionMs`. Given a stale lease / When `leaseExpired` / Then true.
 - **NUMBERS:** 30/90/180 min per tier, 15 min preview cap, 20,000 TTS chars/day, 120 global min/day (HARD_RULES §9 + `voicePolicy.ts`).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
 
 ### TFV2-0366 — Voice: `availability` + admission order verify
@@ -7101,7 +7101,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Returns `{ available: boolean, reason: null|"off"|"language"|"budget"|"resting"|"pending", minutesLeft }`. `off` = a provider key missing; `language` = no lane for locale (Hebrew off until a Hebrew crisis list is approved); `budget` = own minutes/sessions spent; `resting` = global ceiling spent; `pending` = account not approved.
 - **TESTS:** Given keys missing / When `availability` / Then reason `off`. Given Hebrew locale / When called / Then reason `language`. Given paid user with minutes left / When called / Then `available` true. Given unapproved user / When called / Then reason `pending`. Given global ceiling spent / When called / Then reason `resting`.
 - **NUMBERS:** `minStartMs` 60,000 ms gate; `sessionsPerUserPerDay` 40 (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Hebrew crisis phrase list approval — Amit (voicePolicy `laneFor`); voice stage — Amit (REWRITE-PLAN-v2 §4.1).
 
 ### TFV2-0367 — Voice: lease lifecycle start/renew/stop verify
@@ -7120,7 +7120,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `start({conversationId, clientKey})` ends an existing active lease (reason `replaced`) and returns `{sessionId, language, renewEveryMs, minutesLeft}`; same `clientKey` + live conversation + unexpired → same lease idempotently. `renew` returns `ok|revoked|exhausted|expired` and ends the lease accordingly. `stop` is idempotent. Errors: voice off, language, daily limit, global rest → calm `ConvexError` codes.
 - **TESTS:** Given an active lease / When `start` with a new clientKey / Then the old lease ends `replaced` and a new one starts. Given the same clientKey / When `start` again / Then the same lease id returns. Given an expired lease / When `renew` / Then `expired` and the lease ends. Given `stop` twice / When run / Then idempotent (second no-op).
 - **NUMBERS:** `renewEveryMs` 15,000; `leaseExpiresAfterMs` 45,000; `maxSessionMs` 15 min (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0368 — Voice: Deepgram STT token grant verify
@@ -7139,7 +7139,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `grant({sessionId}) → { token, url }` (action; `requireApprovedForAi`; uses `DEEPGRAM_API_KEY`). `admitGrant` increments `grants` (cap `grantsPerLease` 3); `releaseGrant` decrements on a failed mint so failures don't consume the lease. Provider errors surface as `voice_connect` (nothing about the body).
 - **TESTS:** Given a live lease / When `grant` runs against a stubbed Deepgram / Then a token + the server-chosen `url` return and `grants` increments. Given a stub that fails / When `grant` runs / Then `releaseGrant` runs and `grants` does not grow. Given 3 grants used / When a 4th is admitted / Then `voice_session_ended`. Given a stub returning an unusable token / When `grant` runs / Then `voice_connect`.
 - **NUMBERS:** token TTL 30 s (`tokenTtlSeconds`), `grantsPerLease` 3 (repo constants / TRD §5a).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0369 — Voice: Chatterbox TTS `speak` + sentence admit/release verify
@@ -7158,7 +7158,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `speak({sessionId, messageId, index}) → {status:"audio", audio, mime, count} | {status:"done"} | {status:"exhausted"}`. `admitSentence` resolves sentence `index` server-side from the assistant message (never client text), refuses the crisis card (`modelUsed === "crisis-card"`), enforces `dailyTtsCharsPerUser`, and counts before synthesis. `releaseSentence` gives back the chars on failure.
 - **TESTS:** Given a coach reply / When `speak` index 0 against a stubbed TTS / Then audio returns and `ttsChars` increments. Given the crisis card / When `speak` runs / Then status `done` and no audio. Given char cap exceeded / When `admitSentence` / Then `exhausted`. Given a stub failure / When `speak` runs / Then `releaseSentence` restores the count.
 - **NUMBERS:** `dailyTtsCharsPerUser` 20,000; `maxAudioBytes` 4 MB; `maxSentenceChars` 300 (repo constants).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0370 — Voice: `speechSentences` split + `ttsLanguage` verify
@@ -7177,7 +7177,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Split after `. ! ? … 。 ！ ？` and line breaks; strip code fences, inline code, images, links, heading/list marks; a sentence > `maxSentenceChars` (300) is cut at a comma/space. `ttsLanguage("en")→"en"`, `ttsLanguage("he")→"he"`.
 - **TESTS:** Given `"Hi **there**.\nHow are you?"` / When `speechSentences` / Then two sentences, bold stripped. Given a 500-char sentence / When split / Then no piece exceeds 300 and no words are lost. Given the same input twice / When split / Then identical output. Given `ttsLanguage("he")` / When called / Then `"he"`.
 - **NUMBERS:** `maxSentenceChars` 300 (repo constant).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0371 — Voice: Deepgram STT WebSocket client (browser)
@@ -7196,7 +7196,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `openSttSocket({ url, token, onInterim, onFinal, onUtteranceEnd, onError })` returns a handle with `close()`. Audio is WebM/Opus (`MediaRecorder`); the socket sends binary frames. Interim transcripts feed `onInterim` (live transcript); final feed `onFinal`; `vad_events`/`utterance_end` drive `onUtteranceEnd` (end-of-turn and barge-in signal). Errors surface as `voice_connect` copy.
 - **TESTS:** Given a fake WebSocket / When opened / Then the subprotocol carries the token and the URL is unchanged. Given a final transcript event / When received / Then `onFinal` fires with the text. Given an utterance-end event / When received / Then `onUtteranceEnd` fires. Given a socket error / When fired / Then `onError` fires.
 - **NUMBERS:** token TTL 30 s (opens once, valid at connect) (TRD §5a).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0372 — Voice: Deepgram STT WebSocket client (native/Expo)
@@ -7215,7 +7215,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Same contract as TFV2-0371 (`openSttSocket({url, token, onInterim, onFinal, onUtteranceEnd, onError})`), RN-native: `WebSocket` from `react-native`, mic via `expo-av` (or the platform mic API), binary frames. Mic permission denied → `onError` with calm copy.
 - **TESTS:** Given a fake RN socket / When opened / Then the subprotocol carries the token. Given mic permission denied / When opened / Then `onError` fires with the permission copy. Given a final event / When received / Then `onFinal` fires.
 - **NUMBERS:** token TTL 30 s (TRD §5a).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0373 — Voice: TTS playback sentence queue
@@ -7234,7 +7234,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `TtsQueue({ speak })` with `enqueue(messageId, count)`, `play()`, `stop()`. Prefetch the next 2 sentences while the current plays; `stop()` cancels the current audio and the pending fetches. Emits `onDone` when `count` sentences have played or `done` is returned.
 - **TESTS:** Given a reply of 3 sentences / When played / Then sentences play in index order with no duplicates. Given `stop()` / When called mid-playback / Then the current audio stops and no further sentence plays. Given `done` returned / When the queue drains / Then `onDone` fires.
 - **NUMBERS:** `sentencesAhead` 2 (repo constant).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0374 — Voice: barge-in (interrupt playback on speech)
@@ -7253,7 +7253,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** On `speechDetected` while `playing`: stop audio immediately (≤ 250 ms), clear the transcript's live state, and start the user's turn. Interrupt button fires the same handler. Playback never resumes for the interrupted sentence.
 - **TESTS:** Given playing audio / When speech is detected / Then `stop()` is called and the turn flips to user. Given an Interrupt press / When fired / Then the same stop+turn happens. Given no speech / When the reply ends / Then playback completes normally.
 - **NUMBERS:** interrupt latency ≤ 250 ms (DESIGN.md §7 / TRD §5a ack < 0.2 s).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0375 — Voice: call client state machine + heartbeat renew
@@ -7272,7 +7272,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** States `idle | connecting | live | ending | error`. Transitions: mic press → `connecting`; `voice.start` ok → `live` + schedule `renew` every `renewEveryMs`; `renew` `ok` → keep `minutesLeft`; `revoked|exhausted|expired` → teardown to `ending` then `idle` with the calm reason; `stop` → `ending` → `idle`. Any `voice_*` error → `error` state with the copy.
 - **TESTS:** Given `start` ok / When run / Then state `live` and a renew timer is scheduled. Given `renew` returns `exhausted` / When it fires / Then teardown to `idle`. Given `start` returns `voice_off` / When run / Then state `error` with the off copy. Given `stop` / When called / Then state `idle` and the timer clears.
 - **NUMBERS:** `renewEveryMs` 15,000 (repo constant).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0376 — Voice: `VoiceCall` component (full-screen dialog)
@@ -7291,7 +7291,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Layout: `__top` (title), `__title` (`EN: Call with your coach / HE: שיחה עם המאמן שלך`), `__stage` (transcript/AudioLevel), `__state` (`aria-live`: `EN: Speaking / HE: מדבר`; `EN: Not connected / HE: לא מחובר`), `__hint` (`EN: Talk any time. You can cut in while the coach speaks. / HE: דבר בכל עת. אפשר לקטוע את המאמן בזמן שהוא מדבר.`), `__dock` (MicToggle, Interrupt, PushToTalk, EndCall). States: idle, connecting, live, ending, error, offline. `role="dialog" aria-modal="true"`; Esc pauses. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given state `live` / When rendered / Then `data-state="live"` and the live hint shows. Given `connecting` / When rendered / Then the state word shows connecting. Given Esc / When pressed / Then the call pauses (mic off). Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0377 — Voice: `AudioLevel` component
@@ -7310,7 +7310,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `AudioLevel({ levels: number[] })`. Bars use `--tp-accent`; the active bar height reflects `--level` (0…1). `aria-hidden="true"`. Reduced motion → static max bars, no pulse. RTL: bars flow inline-start.
 - **TESTS:** Given levels `[0.2,0.8]` / When rendered / Then the highest bar carries the larger level. Given reduced motion / When rendered / Then no animation class is applied. Given any render / When inspected / Then the element is `aria-hidden`.
 - **NUMBERS:** motion ≤250 ms; static under reduced motion (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0378 — Voice: `LiveTranscript` component
@@ -7329,7 +7329,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `LiveTranscript({ lines: { who:"user"|"coach", text, live? }[] })`. Rows `data-who`; `data-live` only on the streaming coach line. `ol` is `aria-live=polite`. Copy `EN: You / HE: אתה` and `EN: Coach / HE: מאמן`. RTL: text `dir="auto"` per line; who label inline-start. ReadAloud button per coach line (TFV2-0387).
 - **TESTS:** Given two lines / When rendered / Then each shows with the right `data-who`. Given a live coach line / When rendered / Then only that line has `data-live`. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0379 — Voice: `MicToggle` component
@@ -7348,7 +7348,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `MicToggle({ pressed, onToggle })`. Accent `--tp-accent` when off (inviting), `--tp-danger` muted state. Copy: `EN: Mic on / HE: מיקרופון פועל` / `EN: Mic off / HE: מיקרופון כבוי`. `aria-pressed` reflects state; `call-mic` event. Target ≥ 24×24 CSS px. RTL: label inline-start.
 - **TESTS:** Given `pressed=false` / When rendered / Then `aria-pressed=false` and the accent style applies. Given `pressed=true` / When rendered / Then the muted style and `Mic off` label show. Given a tap / When fired / Then `onToggle` runs.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0380 — Voice: `Interrupt` component
@@ -7367,7 +7367,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `Interrupt({ enabled, onInterrupt })`. Copy: `EN: Interrupt / HE: קטע`. Secondary style (`--tp-btn--secondary`), hand icon. Disabled state greyed. `data-action=call-interrupt` → `session.interrupt()`.
 - **TESTS:** Given the coach speaking / When rendered / Then enabled. Given the user speaking / When rendered / Then disabled. Given a press / When fired / Then `onInterrupt` runs.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0381 — Voice: `EndCall` component
@@ -7386,7 +7386,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `EndCall({ onEnd })`. Copy: `EN: End call / HE: סיים שיחה`. Danger style `--tp-danger`. `data-action=call-end` → `voice.endSession`; then `call-close`.
 - **TESTS:** Given a live call / When End call is pressed / Then `onEnd` fires once. Given `onEnd` / When pressed twice fast / Then it fires once (no double end). Run at 390 and 1280, EN and HE.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0382 — Voice: `PushToTalk` component
@@ -7405,7 +7405,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `PushToTalk({ onPressStart, onPressEnd })`. Copy: `EN: Hold to talk / HE: החזק כדי לדבר`. Pointer down/Space/Enter keydown → `data-pressed` + `onPressStart`; up → `onPressEnd`. `aria-pressed`. RTL label inline-start.
 - **TESTS:** Given a pointer hold / When held / Then `onPressStart` fires and `data-pressed` is set. Given release / When fired / Then `onPressEnd` fires. Given Space held / When keydown / Then `onPressStart` fires.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0383 — Voice: `CallMinutes` component
@@ -7424,7 +7424,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `CallMinutes({ minutesLeft })`. Copy: `EN: n minutes left today / HE: נותרו n דקות היום` (n LTR `tp-num`); low state `EN: running low / HE: אוזל` with `data-low` at ≤ 5 min. Clock icon.
 - **TESTS:** Given `minutesLeft=12` / When rendered / Then "12 minutes left today" shows. Given `minutesLeft=3` / When rendered / Then `data-low` and "running low" show. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** low threshold ≤ 5 min (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0384 — Voice: `CallActionConfirm` component
@@ -7443,7 +7443,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `CallActionConfirm({ text, onUndo })`. Copy: `EN: Added "<text>" to Today / HE: הוספתי את "<text>" להיום`; `EN: Undo / HE: בטל`. `data-undone` after Undo. Countdown 5:00.
 - **TESTS:** Given a confirm / When rendered / Then the added copy and Undo show. Given Undo / When pressed / Then `onUndo` fires and `data-undone` is set. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** Undo window 5 min (PRD F-131).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0385 — Voice: `LanguageChip` component
@@ -7462,7 +7462,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `LanguageChip({ lang, onSet })`. Options `English` (`lang="en"`) / `עברית` (`lang="he"`), each name in its own `lang`. `data-lang-current` on the active. `call-lang` → `voice.setLanguage`.
 - **TESTS:** Given `lang="en"` / When rendered / Then "English" shows with `data-lang-current`. Given `lang="he"` / When rendered / Then "עברית" shows. Given a tap / When fired / Then `onSet` runs. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Hebrew lane gated on a Hebrew crisis list — Amit (voicePolicy `laneFor`).
 
 ### TFV2-0386 — Voice: calm error copy EN/HE + offline state
@@ -7481,7 +7481,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Pairs `EN / HE`: voice_off `Voice isn't switched on yet. Typing works as always. / הקול עדיין לא מופעל. ההקלדה עובדת כרגיל.`; voice_language `Voice in this language isn't ready yet. Typing works as always. / הקול בשפה הזו עדיין לא מוכן. ההקלדה עובדת כרגיל.`; voice_daily_limit `That's today's voice time. Typing works as always. / נגמר זמן הקול להיום. ההקלדה עובדת כרגיל.`; voice_resting `Voice is resting for today. Typing works as always. / הקול נח היום. ההקלדה עובדת כרגיל.`; voice_session_ended `This voice session has ended. Start it again when you like. / השיחה הקולית הסתיימה. אפשר להתחיל שוב מתי שתרצה.`; voice_connect `Voice couldn't connect just now. Try again in a moment. / לא הצלחנו להתחבר עכשיו. נסה שוב עוד רגע.`. Offline: `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`
 - **TESTS:** Given code `voice_off` / When resolved in `he` / Then the Hebrew copy returns. Given a missing key / When resolved / Then English returns. Given every `VOICE_ERRORS` key / When resolved / Then a non-empty EN and HE string exists.
 - **NUMBERS:** 100% of `VOICE_ERRORS` codes covered in both languages (internal).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0387 — Voice: `ReadAloudButton` component
@@ -7500,7 +7500,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `ReadAloudButton({ messageId, lang })`. Copy: `EN: Read aloud / HE: הקרא בקול`; active `EN: Stop / HE: עצור`. `aria-pressed` reflects. Calls the TTS queue, never reads the crisis card.
 - **TESTS:** Given an idle button / When rendered / Then "Read aloud" shows. Given a press / When fired / Then `aria-pressed` true and "Stop" shows. Given the crisis card id / When rendered / Then the button is hidden/disabled.
 - **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0388 — Voice: web `/coach` voice in/out integration (fold-in #746)
@@ -7519,7 +7519,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Mic entry (MicToggle) in the coach composer; disabled with the `availability` reason when not available; on start mounts the full-screen `VoiceCall`. Text replies get a `ReadAloudButton`. Copy reuses TFV2-0386. States: default, voice-off, voice-language, voice-budget, live.
 - **TESTS:** Given availability `off` / When rendered / Then the mic is disabled with the off copy. Given available / When the mic is pressed / Then `VoiceCall` mounts. Given a text reply / When rendered / Then a ReadAloud button is present. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
 
 ### TFV2-0389 — Voice: mobile voice-call live wiring
@@ -7538,7 +7538,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy reuses TFV2-0325 + TFV2-0386. States: not-connected (unavailable), connecting, live (AudioLevel + LiveTranscript), ending, error, offline. Mic accent `--tp-accent`; end-call `--tp-danger`. RTL inline-start; digits LTR. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
 - **TESTS:** Given availability off / When rendered / Then "Not connected" and disabled controls. Given available + a mocked socket / When mic pressed / Then the live state (AudioLevel + transcript) shows. Given End call / When pressed / Then returns to Coach. Run at 390 and 1280, EN and HE.
 - **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
 
 ### TFV2-0390 — Voice: call preferences (language + push-to-talk default)
@@ -7557,7 +7557,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `setVoicePrefs({ voicePushToTalk?: boolean, voiceLanguage?: "en"|"he" })` and `getVoicePrefs()`. Push-to-talk default false (live conversation) or true (walkie-talkie) — persisted. Errors: none beyond requireUser.
 - **TESTS:** Given a set / When `getVoicePrefs` / Then the saved values return. Given `voicePushToTalk:true` / When a session starts / Then the client starts in push-to-talk mode. Given an unknown field / When set / Then it is ignored.
 - **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether the prefs columns already exist in `userPreferences` — verify; if not, Amit (schema change).
 
 ### TFV2-0391 — Voice: minutes usage + reset-at-midnight verify
@@ -7576,7 +7576,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `localDateKey(now, timeZone)` returns `YYYY-MM-DD` in the user's zone (UTC fallback on unknown). Minutes sum per `dateKey`, so a new local day resets the personal cap; the global ceiling stays on `utcDateKey`.
 - **TESTS:** Given `now` just before local midnight in `Asia/Jerusalem` / When `localDateKey` / Then one date; given just after / Then the next date. Given an unknown zone / When `localDateKey` / Then UTC date. Given two leases across midnight / When summed / Then they fall in different date keys.
 - **NUMBERS:** daily reset at local midnight (`.cursorrules` / HARD_RULES §9).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0392 — Voice: crisis-safety integration (transcript → fixed card)
@@ -7595,7 +7595,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The final transcript goes through the ordinary coach send (same as typed text), so `isCrisisText` short-circuits to `crisisCardText(CRISIS_CARD)` with no model call. `admitSentence` already returns `done` for `modelUsed === "crisis-card"`, so no TTS. Hebrew crisis phrases remain gated (English list only) → UNKNOWN/Amit.
 - **TESTS:** Given a crisis transcript / When the turn runs / Then the fixed card returns and no model call is made. Given a crisis reply / When TTS is requested / Then `done`, no audio. Given a normal transcript / When run / Then the normal coach path runs.
 - **NUMBERS:** crisis card is fixed content, never model-written (TRD §7 rule 7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Hebrew crisis phrase list — Amit (REWRITE-PLAN-v2 §4.1 / voicePolicy).
 
 ### TFV2-0393 — Voice: proposal/Undo path for spoken actions
@@ -7614,7 +7614,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Voice has no action path of its own (L-16); the final transcript goes through the normal coach send, so every change is still a proposal. Each accepted proposal shows `CallActionConfirm` with the Undo toast (5:00).
 - **TESTS:** Given a spoken "add a task" / When the coach proposes / Then a CallActionConfirm shows, not an auto-apply. Given Undo / When pressed / Then the restore runs and `data-undone` is set. Given a rejected proposal / When surfaced / Then no confirm shows.
 - **NUMBERS:** Undo window 5 min (PRD F-131).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0394 — Voice: end-to-end smoke (Playwright, mocked providers)
@@ -7633,7 +7633,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Covers the states from TFV2-0375/0388: idle → connecting → live (AudioLevel + LiveTranscript) → end → idle; and the unavailable path (mic disabled with reason). EN and HE, 390 and 1280.
 - **TESTS:** Given mocked providers / When the mic is pressed / Then the call reaches `live` with a transcript line. Given End call / When pressed / Then back to `idle` with the mic available again. Given availability off / When rendered / Then the mic is disabled with the reason.
 - **NUMBERS:** smoke asserts every state (internal completeness); no latency number without measurement → `UNKNOWN`.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0395 — Voice: Hebrew lane (Nova-3) + RTL verification
@@ -7652,7 +7652,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `LANES.he = { language:"he", url:"wss://api.deepgram.com/v1/listen?model=nova-3&language=he&interim_results=true&smart_format=true&endpointing=500&utterance_end_ms=1500&vad_events=true" }`. `laneFor("he")` returns `null` until the Hebrew crisis phrase list is approved (today's list is English-only). RTL: transcript lines `dir="auto"`, controls inline-start.
 - **TESTS:** Given locale `he` and no approved Hebrew crisis list / When `laneFor` / Then null (voice off for Hebrew). Given `en` / When `laneFor` / Then the Flux en lane. Given an approved Hebrew list (flag) / When `laneFor("he")` / Then the Nova-3 he lane.
 - **NUMBERS:** Deepgram Nova-3 `he` model (PRD F-33, known fact) · Hebrew crisis list approval → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** Hebrew crisis phrase list approval — Amit (REWRITE-PLAN-v2 §4.1); voice stage — Amit.
 
 ### TFV2-0396 — Voice: latency + performance budget
@@ -7671,7 +7671,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `recordLatency(kind, ms)` for `ack`, `first_text`, `first_audio`; a `summary()` returning the last values or null. No threshold is asserted until measured; the TRD budget (ack < 0.2 s, response ≈ 1 s) is the target to check against.
 - **TESTS:** Given a recorded `ack` of 150 ms / When summarized / Then it reports 150. Given no measurement / When summarized / Then null (never a fabricated number). Given a recorded `first_audio` / When summarized / Then the value is a finite ms.
 - **NUMBERS:** ack < 0.2 s, response ≈ 1 s (TRD §5a step 6, target) · first-audio latency `UNKNOWN` until measured (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** first-audio latency — Amit (TRD §5a: "first-audio latency is UNKNOWN until measured"); voice stage — Amit (REWRITE-PLAN-v2 §4.1).
 
 
@@ -7693,7 +7693,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `pluginManifestSchema` fields: `id` (`^[a-z0-9][a-z0-9-]*$`, max 64), `name` (1–60 chars), `version` (semver string), `summary` (1–200 chars), `description?` (markdown string, max 8,000 chars), `author { name, email? }`, `permissions` (array of `pluginPermissionSchema` literals, e.g. `"read_pages"`, `"write_today"`, `"schedule_job"`, `"web_request"`), `components` (array of catalog `data-component` names, max 24), `actions` (array of catalog action names, max 24), `minTempoVersion` (semver). Unknown keys are stripped. Any unknown `components`/`actions`/`permissions` name is an error (the catalog is the only authority, mirroring TRD §4a validation). The `permissions` enum is deliberately conservative and OPEN below.
 - **TESTS:** Given a valid manifest / When parsed / Then it round-trips and no error. Given a missing `name` / Then a Zod issue names `name`. Given a `components` entry not in the allowed catalog / Then a Zod issue is raised. Given an `id` with uppercase or spaces / Then invalid. Given an unknown top-level key / Then it is stripped, not failed. Given `minTempoVersion` non-semver / Then invalid.
 - **NUMBERS:** manifest size cap 8 KiB and description cap 8,000 chars (repo convention; deterministic, no external range) · permission list content → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the exact permission enum and the `components`/`actions` catalog allowlist (which catalog names a plugin may extend) — Amit.
 
 ### TFV2-0398 — Plugin manifest validator `packages/utils/src/plugin-validate.ts`
@@ -7712,7 +7712,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Signature: `validatePluginManifest(raw: unknown, catalog: { components: string[]; actions: string[] }): { ok: true; manifest: PluginManifest } | { ok: false; issues: { path: string; message: string }[] }`. An issue message is one short sentence, never the offending value in full, and never JSON. Errors are collected (all issues, not first-only). An empty `components` and empty `actions` both is allowed (a plugin may be metadata-only), but a plugin with any `web_request` permission must also declare at least one action.
 - **TESTS:** Given a valid manifest and a catalog containing its names / When validated / Then `ok: true`. Given an unknown component name / Then `ok: false` with an issue at `components`. Given a `web_request` permission with no actions / Then `ok: false`. Given malformed JSON / Then `ok: false` with a single parse issue and no throw. Given three invalid fields / Then three issues are returned (all collected).
 - **NUMBERS:** issue list cap 50 (deterministic bound) · catalog-name source of truth → `UNKNOWN` (Amit: the json-render catalog export name).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** catalog-name source (the exact export that lists valid `data-component`/action names) — Amit.
 
 ### TFV2-0399 — Plugin pack/parse `.tempo-plugin.md` format `packages/utils/src/plugin-pack.ts`
@@ -7731,7 +7731,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `packPlugin` emits the `plugin-meta` block as the first `json tempo` fence, then the body verbatim. `parsePlugin` reads only the first fence as `plugin-meta`; a file whose first fence is not `plugin-meta` fails with `not_a_plugin`. The manifest block's `data` is the raw manifest object. `parsePlugin` returns `{ manifest, body }` and does not validate beyond parse (validation is TFV2-0398's job). Maximum file size is enforced by the caller's byte budget.
 - **TESTS:** Given a manifest and body / When packed then parsed / Then `body` and `manifest` round-trip exactly. Given a file whose first fence is `task` / When parsed / Then `not_a_plugin`. Given a file with no fence / Then `not_a_plugin`. Given `packPlugin` output / When re-packed from the parsed parts / Then byte-identical to the first pack.
 - **NUMBERS:** pack/unpack byte-exactness = exact (no range) · `.tempo-plugin.md` extension is a proposal → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the distribution file extension/name — Amit.
 
 ### TFV2-0400 — `plugins` table (installed plugins) in `convex/schema.ts`
@@ -7750,7 +7750,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `plugins` table: `userId: v.id("users")`, `pluginId` (the manifest `id` string), `manifest` (object: the validated manifest, stored whole), `version` (semver string), `source` (`"marketplace"` / `"file"`), `listingId?` (`v.id("marketplaceListings")`, optional until TFV2-0406 exists), `enabled: v.boolean()` (default true), `createdAt`, `updatedAt`, `deletedAt?`. Indexes: `by_userId`, `by_userId_pluginId` (unique per user per plugin), `by_userId_deletedAt`. One install per `pluginId` per user (re-install is an update, not a second row).
 - **TESTS:** Given a valid row / When the validator runs / Then it accepts. Given `enabled: "yes"` / Then rejected. Given a second row for the same `userId`+`pluginId` / Then the unique index forbids it.
 - **NUMBERS:** manifest object size cap 8 KiB (repo convention) · unique install per user/plugin = exact invariant (no range).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether installed plugins mirror modules (stored as `notes` rows with `pageType: "plugin"`) instead of a dedicated table — Amit (leaning dedicated table; §4 conflict 7 block-model authority is the same question).
 
 ### TFV2-0401 — `convex/plugins.ts` install + resolve catalog extensions
@@ -7769,7 +7769,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `install({ manifestText }) => { pluginId }`; auth `requireUser`, owner only. Re-install of an existing `pluginId` updates `manifest` and `version`, keeps `enabled`. `list() => Plugin[]` returns only the caller's non-deleted rows, `enabled` first. `get({ pluginId }) => Plugin | null`. Errors: `not_a_plugin`, `invalid_manifest` (with issues), `unknown_component`, `unknown_action`, `plugin_too_large`. Limits: manifest ≤ 8 KiB; ≤ 24 components and ≤ 24 actions. No model call, no network.
 - **TESTS:** Given a valid manifest / When installed / Then a row exists and `list()` returns it. Given an unknown component name / Then `unknown_component` and no row. Given a re-install with a newer version / Then the same row updates `version` (no duplicate). Given a second user / When they `list()` / Then they see only their own rows. Given a non-owner `get` for another user's row / Then `null` (isolation). Given an oversized manifest / Then `plugin_too_large`.
 - **NUMBERS:** manifest ≤ 8 KiB, ≤ 24 components, ≤ 24 actions (repo convention) · install latency budget p95 ≤ 500 ms (web.dev; no external range applies to a pure DB mutation).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** catalog allowlist source (same as TFV2-0398) — Amit.
 
 ### TFV2-0402 — `convex/plugins.ts` enable/disable/uninstall lifecycle
@@ -7788,7 +7788,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `setEnabled({ pluginId, enabled })` owner-scoped; errors `plugin_not_found`, `forbidden`. `uninstall({ pluginId })` sets `deletedAt` (soft), returns `{ pluginId }`; a second uninstall is a no-op. The render fallback: when a plugin is `enabled: false`, `deletedAt` set, or `plainMode` on, the page renders the built-in layout (the resolver returns an empty extension set) — never a broken page. No model call, no network.
 - **TESTS:** Given an installed plugin / When `setEnabled(false)` / Then `list()` shows it disabled and the resolver returns no extensions. Given `uninstall` / Then the row has `deletedAt` and `list()` omits it. Given `plainMode` on / Then `list()` still lists the row but the resolver treats it as disabled. Given uninstall twice / Then idempotent (no error). Given a non-owner / Then `forbidden`.
 - **NUMBERS:** off/on and uninstall are O(1) row updates (deterministic) · plain-mode semantics mirror TRD §4a (exact).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (plain-mode semantics are fixed by TRD §4a).
 
 ### TFV2-0403 — Plugin catalog extension → module renderer registry (web)
@@ -7807,7 +7807,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The registry exports `getComponent(name)` and `getAction(name)` that consult built-ins first, then the plugin overlay. A plugin's `components` may only re-skin or add block renderers that already exist in the catalog; it may not introduce a new primitive. Unknown names are ignored (never rendered). Copy (EN/HE) for the fallback banner when a plugin fails to render: `EN: "This plugin couldn't load, so we're showing the standard view." / HE: "התוסף לא נטען, אז אנחנו מציגים את התצוגה הרגילה."` with an Undo-free dismiss.
 - **TESTS:** Given a plugin declaring component `X` known to the catalog / When registered / Then `getComponent("X")` returns the plugin renderer. Given an unknown component `Y` / Then it is ignored and `getComponent("Y")` returns the built-in or null. Given a plugin disabled / Then the overlay is empty and the built-in renders. Given the built-in map / Then it is never mutated by a plugin.
 - **NUMBERS:** render must not exceed 250 ms per block pass and 60 fps scrolling (DESIGN.md §7) · overlay lookup O(1) (deterministic).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether a plugin may introduce a genuinely new block component or only re-skin existing ones — Amit.
 
 ### TFV2-0404 — Plugin sandbox enforcement (code modules run only in an isolated frame)
@@ -7826,7 +7826,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The frame gets only `allow-scripts`; it is sandboxed with an origin-null context and a restrictive CSP meta (`default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'`). The message protocol is `{ kind: "action", action, payload, requestId }` → parent replies `{ kind: "action-result", requestId, ok, result }`. Any action outside the manifest's `actions` list is answered `{ ok: false, error: "denied" }`. A code module that never received approval renders the fallback card instead of the frame. Visible copy EN/HE: `EN: "This plugin runs in an isolated box. It can't see your other data." / HE: "התוסף הזה רץ בארגז חול מבודד. הוא לא יכול לראות את שאר הנתונים שלך."`
 - **TESTS:** Given an approved code module / When rendered / Then an iframe with `sandbox` containing `allow-scripts` and NOT `allow-same-origin` is present. Given an action outside the allowlist / When the frame posts it / Then the parent replies `denied`. Given an unapproved module / Then no iframe is mounted (fallback card). Given a disallowed `fetch` inside the frame / Then the CSP blocks it (asserted via the CSP meta string).
 - **NUMBERS:** no same-origin / no key access = absolute invariant (TRD §7 rule 8) · message round-trip ≤ 50 ms (target; deterministic within a page).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether server-side scripts use Vercel Sandbox for plugins too (PRD F-46 mentions it for page code) — Amit.
 
 ### TFV2-0405 — Plugin permissions model + user grant `convex/lib/plugin-permissions.ts`
@@ -7845,7 +7845,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `grantPermissions({ pluginId, grants: PluginPermission[] })` upserts the granted set (subset of the manifest's declared permissions only). `assertPermission({ pluginId, permission })` throws `permission_denied` if the permission is not in the granted set, `plugin_not_found` if no row. External-write permissions (`write_today`, `schedule_job`, `web_request`) always re-ask at use time (confirmation before any external write, PRD F-131), never silently granted. No permission grants access to another user's data or to any secret.
 - **TESTS:** Given a plugin declaring `read_pages` / When granted `read_pages` / Then `assertPermission` passes. Given a plugin granted nothing / When an action asserts `write_today` / Then `permission_denied`. Given a grant outside the declared set / Then rejected. Given a non-owner / When granting / Then `forbidden`. Given `web_request` / Then use-time confirmation is still required even when granted.
 - **NUMBERS:** grant set is a subset of the manifest (exact invariant) · permission enum content → `UNKNOWN` (Amit, same as TFV2-0397).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the permission enum and whether external-write re-ask is per-action or per-session — Amit.
 
 ### TFV2-0406 — `marketplaceListings` table in `convex/schema.ts`
@@ -7864,7 +7864,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `marketplaceListings` table: `slug` (unique, `^[a-z0-9][a-z0-9-]*$`), `authorId: v.id("users")`, `manifest` (object), `currentVersion` (semver), `status` (`"draft"` / `"published"` / `"under_review"` / `"rejected"`), `category` (`v.union(v.literal("planning","coach","learning","habits","wellbeing","other"))`), `installCount` (number, default 0), `createdAt`, `updatedAt`, `deletedAt?`. Indexes: `by_slug` (unique), `by_authorId`, `by_category`, `by_status`. The listing is public data (no `userId` owner column beyond `authorId`), but only the author and admins may mutate it.
 - **TESTS:** Given a valid listing / When the validator runs / Then it accepts. Given a duplicate `slug` / Then the unique index forbids it. Given a bad `status` value / Then rejected.
 - **NUMBERS:** install count is monotonic and increment-only (exact) · category list → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the category taxonomy and the moderation workflow (who reviews, what gates) — Amit.
 
 ### TFV2-0407 — `convex/marketplace.ts` publish + validate listing
@@ -7883,7 +7883,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `publish({ manifestText, category, slug? }) => { slug }`; auth `requireUser`. Errors: `invalid_manifest`, `slug_taken` (unless it is the author's own listing), `invalid_category`, `not_a_plugin`. A re-publish updates `manifest`/`currentVersion` and resets `status` to `under_review`. `unpublish` soft-deletes and returns `{ slug }`. Only the author may mutate their own listing (and admins — the admin path is OPEN below). No model call, no network.
 - **TESTS:** Given a valid manifest / When published / Then a listing exists with `status: "under_review"`. Given an invalid manifest / Then `invalid_manifest` and no row. Given a duplicate slug by another author / Then `slug_taken`. Given a re-publish by the same author / Then the row updates and returns to `under_review`. Given a non-author `unpublish` / Then `forbidden`. Given an unknown category / Then `invalid_category`.
 - **NUMBERS:** listing count per author cap 100 (deterministic bound) · moderation workflow → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** who moderates a listing and what moves `under_review` → `published` (Amit); the admin mutation surface.
 
 ### TFV2-0408 — `convex/marketplace.ts` search/list/categories
@@ -7902,7 +7902,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `list({ query?, category?, sort?, cursor?, limit? }) => { items: ListingSummary[]; hasMore: boolean; nextCursor: string | null }`. `ListingSummary` = `{ slug, name, summary, authorName, category, currentVersion, installCount, updatedAt }` (no raw manifest). `limit` defaults 24, max 100. Search is exact substring, never model-ranked. Sort `"popular"` (installCount desc) or `"recent"` (updatedAt desc), default popular. Non-`published` rows are excluded. Anyone (even signed-out) may read published listings.
 - **TESTS:** Given three published and one `under_review` listing / When `list()` / Then only the three published return. Given `query: "focus"` / Then only listings whose name or summary contain "focus" return. Given `category: "learning"` / Then only learning listings. Given `limit: 2` / Then 2 items and `hasMore` true, and the next cursor continues without repeats. Given `sort: "recent"` / Then newest `updatedAt` first.
 - **NUMBERS:** page size 24 default / 100 max (repo convention) · search latency p95 ≤ 200 ms (web.dev; substring over an indexed column).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether signed-out users may browse the marketplace (leaning yes) — Amit.
 
 ### TFV2-0409 — Marketplace screen (web) `(tempo)/marketplace`
@@ -7921,7 +7921,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Layout at 1280: rail + centred paper (max `--tp-measure`), `PageHeader` title. Under 768: full-bleed paper, sticky `TabBar`. Tokens: paper `--tp-paper`, ink `--tp-ink`, muted `--tp-ink-muted`, rows `--tp-hover`, badges `--tp-accent-wash`. States: default (list), loading (`StateLoading` skeleton rows, sr text `EN: "Loading plugins" / HE: "טוען תוספים"`), empty (no published plugins — `StateEmpty` `EN: "No plugins yet." / HE: "עדיין אין תוספים."` with a next step), error (`StateError` `EN: "Couldn't load plugins. Your data is safe." / HE: "לא הצלחנו לטעון תוספים. הנתונים שלך בטוחים."` + Retry), offline (`StateOffline` `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור. השינויים נשמרים כשתחזור."`). Copy EN/HE for every visible string: search label `EN: "Search plugins" / HE: "חיפוש תוספים"`, categories `EN: All / Planning / Coach / Learning / Habits / Wellbeing / Other / HE: הכול / תכנון / מאמן / לימוד / הרגלים / רווחה / אחר`, sort `EN: Popular / Recent / HE: פופולרי / עדכני`, install count `EN: "{n} installs" / HE: "{n} התקנות"`. RTL: filter segmented swaps arrow keys, `SortMenu` chevron flips `.tp-icon--flip`, counts `.tp-num`. Keyboard: every row is a link reachable by Tab with a visible focus ring; search input labelled. Screen-reader: list is a navigation list, each row announces name + install count. Breakpoints 390/768/1024/1280. Motion ≤ 250 ms (rows drop in 240 ms `--tp-ease-out`).
 - **TESTS:** Given published listings / When the screen mounts / Then each row shows name, summary, category badge and install count. Given `?state=loading` / Then only skeletons render. Given `?state=empty` / Then the empty copy shows. Given `?state=error` / Then the error copy and Retry show. Given `?state=offline` / Then the offline banner shows over content. Playwright: at 390 and 1280, EN and HE, assert the list, the empty state and the error state.
 - **NUMBERS:** text contrast 4.5:1 and touch target ≥ 24×24 CSS px (WCAG 2.2 AA, 2.5.8) · rows drop in ≤ 250 ms (DESIGN.md §7) · no sideways scroll at 390 (DESIGN.md §8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether the marketplace is also reachable signed-out — Amit (same as TFV2-0408).
 
 ### TFV2-0410 — Marketplace plugin detail screen (web) `(tempo)/marketplace/[slug]`
@@ -7940,7 +7940,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title = plugin `name`; author `EN: "by {name}" / HE: "מאת {name}"`; version `EN: "Version {v}" / HE: "גרסה {v}"`; what-it-does header `EN: "What this plugin does" / HE: "מה התוסף הזה עושה"`; permissions header `EN: "Permissions" / HE: "הרשאות"`; Install `EN: "Install" / HE: "התקן"`; Installed `EN: "Installed" / HE: "מותקן"`; Update `EN: "Update to {v}" / HE: "עדכן ל-{v}"`; not-found `EN: "This plugin isn't available." / HE: "התוסף הזה לא זמין."`; error `EN: "Couldn't load this plugin." / HE: "לא הצלחנו לטעון את התוסף הזה."` + Retry; offline banner as TFV2-0409. Each permission renders a plain-language line (e.g. `read_pages` → `EN: "Read your pages" / HE: "לקרוא את הדפים שלך"`; `write_today` → `EN: "Add to your Today" / HE: "להוסיף להיום שלך"`; `schedule_job` → `EN: "Schedule a repeating job" / HE: "לתזמן משימה חוזרת"`; `web_request` → `EN: "Make a network request" / HE: "לבצע בקשת רשת"`). The Install button is the one `.tp-btn--primary`. States per `?state=` + `not-found`. RTL: permission list inline-start, version `.tp-num`. Keyboard: Install focusable, Enter/Space activates; not-found/error have focus management. Screen-reader: permissions announced as a list. Motion ≤ 250 ms.
 - **TESTS:** Given a published listing / When opened / Then name, author, version, what-it-does and permissions render. Given already installed / Then the button reads `Installed` and is disabled. Given `?state=loading` / Then skeleton. Given a missing slug / Then not-found copy. Given `?state=error` / Then error + Retry. Playwright: 390/1280 EN+HE, assert detail fields and the not-found state.
 - **NUMBERS:** contrast 4.5:1, target ≥ 24×24 CSS px (WCAG 2.2 AA) · motion ≤ 250 ms (DESIGN.md §7) · permission plain-language mapping = exact 1:1 (deterministic).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the permission plain-language copy list (which permissions exist and their EN/HE wording) — Amit (inherits TFV2-0397).
 
 ### TFV2-0411 — Plugin install flow (confirm + sandbox/permission notice) (web)
@@ -7959,7 +7959,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title `EN: "Install this plugin?" / HE: "להתקין את התוסף הזה?"`; body sandbox notice `EN: "Code plugins run in an isolated box and can't see your other data." / HE: "תוספי קוד רצים בארגז חול מבודד ולא יכולים לראות את שאר הנתונים שלך."`; Approve `EN: "Approve and install" / HE: "אשר והתקן"`; Discard `EN: "Cancel" / HE: "ביטול"`; toast `EN: "Plugin installed" / HE: "התוסף הותקן"` + `EN: "Undo" / HE: "בטל"`. `web_request` and `schedule_job` permissions are unchecked by default (re-ask at use time per TFV2-0405). Approve is the one accent action. States: default (list), confirm (sheet open), installing (button disabled + spinner), error (install failed inline), offline. Keyboard: sheet opens with focus on Discard, Esc closes, Tab trapped. Screen-reader: `role="dialog" aria-modal="true" aria-labelledby`. Motion ≤ 250 ms sheet rise.
 - **TESTS:** Given Install tapped / Then the confirm sheet shows permissions and the sandbox notice, with `web_request` unchecked. Given Approve / Then `plugins.install` and `grantPermissions` are called and the Undo toast shows. Given Discard / Then no install call. Given install fails / Then an inline error shows and the button re-enables. Playwright: 390 (bottom sheet) and 1280 (dialog), EN and HE, assert the consent gate.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 2.5.8) · sheet motion ≤ 250 ms (DESIGN.md §7) · external-write permissions unchecked by default = exact invariant (TRD §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (consent flow is fixed by PRD §5 / TRD §4a).
 
 ### TFV2-0412 — Marketplace reviews: `marketplaceReviews` table + rating mutation
@@ -7978,7 +7978,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `marketplaceReviews`: `listingId: v.id("marketplaceListings")`, `userId: v.id("users")`, `stars` (1–5), `text?` (≤ 1,000 chars), `createdAt`, `updatedAt`, `deletedAt?`. Unique `by_listing_user`. `rate` errors: `listing_not_found`, `invalid_stars`, `text_too_long`. `listReviews` returns `{ items: { stars, text?, authorName, createdAt }[], hasMore, nextCursor }`, newest first, limit 50 max. Reviews are soft-deletable by their author.
 - **TESTS:** Given a rate of 4 / When saved / Then the listing's `ratingCount` is 1 and `ratingAverage` is 4. Given a second rate of 2 by the same user / Then the row is updated (not appended) and the average reflects 2. Given stars 6 / Then `invalid_stars`. Given text 1,100 chars / Then `text_too_long`. Given a non-owner list / Then only names, never emails.
 - **NUMBERS:** stars 1–5, text ≤ 1,000 chars, page ≤ 50 (deterministic) · review spam controls (rate limiting) → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether reviews require the reviewer to have installed the plugin, and moderation of review text — Amit.
 
 ### TFV2-0413 — Author profile + 100% revenue-split metadata (`convex/marketplace.ts`)
@@ -7997,7 +7997,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `getAuthorProfile({ userId }) => { displayName: string | null; listingCount: number }` (name falls back to null, never "User"). `revenueSplit` is a constant `{ author: 100, tempo: 0 }` stored on the listing at publish (PRD F-45). Visible split copy EN/HE: `EN: "The author keeps 100%." / HE: "היוצרים מקבלים 100%."`. No payment account, tax or payout schedule is stored or wired.
 - **TESTS:** Given a published listing / Then its `revenueSplit` equals `{ author: 100, tempo: 0 }`. Given `getAuthorProfile` / Then it returns only the display name and listing count, never an email. Given a user with no name / Then `displayName` is null.
 - **NUMBERS:** split is a constant (exact) · payout rail / schedule / tax handling → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the payout rail (how authors actually receive their 100%) and whether it is Polar/RevenueCat or manual — Amit (PRD §4.4 F-45 names no rail; §4.2 prices are also open).
 
 ### TFV2-0414 — Plugin update/version check + apply (`convex/plugins.ts`)
@@ -8016,7 +8016,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `checkUpdates()` uses semver comparison on the listing's `currentVersion`. `update({ pluginId })` errors: `plugin_not_found`, `no_update`, `permission_change` (when the new permission set is not a subset of granted), `invalid_manifest`. On success it updates `version`/`manifest` and keeps `enabled`. A downgrade is not offered. No model call, no network beyond the listing read.
 - **TESTS:** Given installed v1.0 and listing v1.1 / When `checkUpdates` / Then the pair returns. Given installed v1.1 / Then empty. Given an update that adds `write_today` not yet granted / Then `permission_change`. Given an update with unchanged permissions / Then applied. Given no listing / Then omitted from `checkUpdates`. Given a non-owner / Then `forbidden`.
 - **NUMBERS:** version compare = semver exact · update is one row write (deterministic) · auto-update policy → `UNKNOWN` (Amit, leaning user-initiated only).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** auto-update vs manual update, and the re-grant UX for permission changes — Amit.
 
 ### TFV2-0415 — Tauri 2 desktop shell scaffold `apps/desktop`
@@ -8035,7 +8035,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Tauri 2 (`tauri = "2"`), window config: `title "Tempo Flow"`, `width 1200`, `height 800`, `minWidth 800`, `minHeight 600`, `resizable true`. The window shows a placeholder paper surface (`--tp-paper`) with the wordmark and one sentence. No network calls, no sign-in. Dark/light follows the system preference. Copy EN/HE: `EN: "Tempo Flow desktop" / HE: "טמפו פלו למחשב"` and `EN: "Coming soon" / HE: "בקרוב"`. The desktop bundle target (macOS `.dmg`, Windows `.msi`, Linux `.AppImage`) is OPEN below.
 - **TESTS:** Given the window config / When parsed / Then title, size and min size match the spec. Given the placeholder view / Then the wordmark and one sentence render.
 - **NUMBERS:** window min 800×600 (Tauri default convention) · bundle targets and code-signing → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** desktop bundle targets (macOS/Windows/Linux) and code-signing identity — Amit.
 
 ### TFV2-0416 — Desktop window, tray + native menu (`apps/desktop`)
@@ -8054,7 +8054,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Menu items carry native accelerators (`CmdOrCtrl+Q` quit, `CmdOrCtrl+W` close, standard edit shortcuts). The tray icon uses the repo mark asset path if present, else a monochrome letter glyph. Copy EN/HE (menu labels follow the OS locale; the app does not translate native menus itself — the OS does): About `EN: "About Tempo Flow" / HE: "אודות טמפו פלו"`. Close-to-tray is the default; Quit exits fully.
 - **TESTS:** Given the menu definition / Then File, Edit, View, Window and Help exist with the expected accelerators. Given a close event / Then the window hides and the tray remains (unless Quit). Given the tray menu / Then Open and Quit are present.
 - **NUMBERS:** native accelerator standards follow platform HIG (Apple HIG / Windows) · close-to-tray behaviour → `UNKNOWN` (Amit: hide vs quit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** close-to-tray default (hide vs quit) — Amit.
 
 ### TFV2-0417 — Desktop sign-in (magic link deep-link + session) (`apps/desktop`)
@@ -8073,7 +8073,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Sign-in reuses the web magic-link semantics (30-minute link, 30-day session). The desktop shows the same copy as the web sign-in screen: email label `EN: "Email" / HE: "אימייל"`, submit `EN: "Send magic link" / HE: "שלח קישור כניסה"`, sent state `EN: "Check your email." / HE: "בדקו את האימייל."`. The deep-link scheme is `tempo-desktop://`. Session tokens live in the OS credential store. Sign-out clears it.
 - **TESTS:** Given an email entered / When submitted / Then `signInEmail` is called and the sent state shows. Given a deep link with a valid token / When handled / Then the session persists in the secure store. Given sign-out / Then the store is cleared.
 - **NUMBERS:** magic-link TTL 30 min, session 30 days (PRD/TRD, fixed) · deep-link scheme → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** deep-link scheme name — Amit.
 
 ### TFV2-0418 — Desktop webview loads the web UI (Tauri webview + CSP)
@@ -8092,7 +8092,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The webview loads the web app over HTTPS. CSP: `default-src 'self' https://*.tempoflow.dev; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:`. Navigation is restricted to the configured web origin; any other `navigate` is rejected. No remote debugging is enabled in a production build.
 - **TESTS:** Given the config / Then the remote URL and CSP are present and the CSP `connect-src` includes the Convex websocket origin. Given an off-origin navigation request / Then it is rejected. Given a debug build flag / Then remote devtools are off in release.
 - **NUMBERS:** CSP is an allowlist of two origin families (deterministic) · the exact preview vs live URL routing → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** which origin the desktop loads (preview vs live) and how the user switches — Amit.
 
 ### TFV2-0419 — VPS `claude` spawner backend `convex/lib/claude-spawn.ts`
@@ -8111,7 +8111,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `spawnClaude({ prompt, opts: { maxBytes, timeoutMs } }, runner)` returns `{ output: string; truncated: boolean; exitCode: number }`. The runner interface is `{ run(args: string[]): Promise<{ stdout: string; exitCode: number }> }`. Budgets: `maxBytes` default 32 KiB, `timeoutMs` default 60_000. Errors: `spawn_timeout`, `spawn_failed`, `output_too_large`. The prompt is trimmed to a token cap. No key value is ever returned or logged. The VPS host and the real `claude` OAuth source are OPEN below.
 - **TESTS:** Given a runner that returns under budget / Then `output` matches and `truncated` false. Given a runner exceeding `maxBytes` / Then `truncated` true and `output` is cut. Given a runner exceeding `timeoutMs` / Then `spawn_timeout`. Given a non-zero exit / Then `spawn_failed` with `exitCode`. Given an empty prompt / Then rejected before any spawn.
 - **NUMBERS:** output ≤ 32 KiB, timeout ≤ 60 s (deterministic defaults) · VPS host, image and the `claude` OAuth grant → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** VPS provider, the `claude` binary version, and how the user's own OAuth is stored/refreshed — Amit.
 
 ### TFV2-0420 — `claude` binary bridge (OAuth + session + command allowlist) `convex/lib/claude-bridge.ts`
@@ -8130,7 +8130,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `runClaudeForUser({ userId, prompt }) => { text }`. Order: `requireUser` → entitlement (`max`/`god` only, or the tier Amit rules) → quota (per-user daily spawn cap) → spawn with the allowlist. The allowlist is the same catalog-action names the coach tools use (createNote, addTaskToToday, fillTemplate, scheduleJob), plus read-only page/memory reads. Errors: `entitlement_denied`, `quota_exceeded`, `spawn_failed`, `spawn_timeout`, `output_too_large`. The output is appended to the coach thread, never shown raw.
 - **TESTS:** Given a `max`-tier user under quota / When run / Then the spawner is called with the allowlist and the text returns. Given a `basic`-tier user / Then `entitlement_denied` (unless Amit rules otherwise — mark in OPEN). Given over quota / Then `quota_exceeded` and no spawn. Given a failed spawn / Then `spawn_failed`. Given a non-owner / Then `forbidden`.
 - **NUMBERS:** daily spawn cap → `UNKNOWN` (Amit) · output ≤ 32 KiB / timeout ≤ 60 s (from TFV2-0419).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** which tier gets `claude`-on-VPS and the daily spawn cap — Amit.
 
 ### TFV2-0421 — Desktop local cache + offline pages (`apps/desktop`)
@@ -8149,7 +8149,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Cache keys are `pageId`, values `{ body, updatedAt }`, capped at the 200 most-recent pages (LRU). Offline serves the cached page read-only with `StateOffline` `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור. השינויים נשמרים כשתחזור."`. No offline writes. Cache is cleared on sign-out.
 - **TESTS:** Given a cached page / When the network fails / Then the cached body renders and the offline banner shows. Given a page not cached / When offline / Then the error state shows (no stale data invented). Given cache over 200 pages / Then the oldest is evicted. Given sign-out / Then the cache is cleared.
 - **NUMBERS:** LRU cap 200 pages (deterministic) · offline-write semantics → `UNKNOWN` (Amit, defers to TFV2-0449 local-first sync).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** offline-edit behaviour (read-only here vs full local-first in TFV2-0449) — Amit.
 
 ### TFV2-0422 — Desktop auto-update (Tauri updater) (`apps/desktop`)
@@ -8168,7 +8168,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The updater uses Tauri's built-in updater with a signature key. Updates are downloaded over HTTPS only, verified against the public key, and applied on restart. Copy EN/HE: `EN: "Update ready. It will install next time you restart." / HE: "עדכון מוכן. הוא יותקן בפעם הבאה שתפעילו מחדש."`. The update endpoint/static host is OPEN below.
 - **TESTS:** Given a signed update manifest / Then the updater reports a newer version. Given a tampered package / Then verification fails and nothing installs. Given no update / Then no notice.
 - **NUMBERS:** HTTPS-only download (exact) · update feed host → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** update feed host and signing key custody — Amit.
 
 ### TFV2-0423 — Desktop settings screen (`apps/desktop`)
@@ -8187,7 +8187,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title `EN: "Desktop settings" / HE: "הגדרות מחשב"`; launch-at-login `EN: "Start at login" / HE: "הפעל בכניסה"`; auto-update `EN: "Update automatically" / HE: "עדכן אוטומטית"`; theme `EN: "Theme" / HE: "ערכת נושא"` with `EN: Light / Dark / System / HE: בהיר / כהה / מערכת`; On/Off `EN: On/Off / HE: פועל/כבוי`. States: default, loading (prefs read), error (prefs failed to load + Retry). RTL: rows inline-start, switches logical. Keyboard: switches toggle with Space; segmented with arrows. Screen-reader: switch announces On/Off. Motion ≤ 250 ms.
 - **TESTS:** Given prefs / When loaded / Then the three rows reflect them. Given theme toggled / Then it applies and persists. Given launch-at-login toggled / Then the OS registration updates. Given `?state=error` / Then error + Retry. Given `dir=rtl` / Then rows flip inline-start.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 2.5.8) · motion ≤ 250 ms (DESIGN.md §7) · launch-at-login OS API per platform (HIG).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
 
 ### TFV2-0424 — Desktop first-run onboarding (`apps/desktop`)
@@ -8206,7 +8206,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Steps: Welcome `EN: "Welcome to Tempo Flow" / HE: "ברוכים הבאים לטמפו פלו"` + `EN: "Your brain's operating system." / HE: "מערכת ההפעלה של המוח שלך."`; Language `EN: "Choose your language" / HE: "בחרו שפה"` (English / עברית); Theme (as TFV2-0423). Buttons: Next `EN: "Next" / HE: "הבא"`, Skip `EN: "Skip" / HE: "דלג"`, Done `EN: "Start" / HE: "התחל"`. States: default, loading (saving), error (save failed + Retry). RTL flips on language pick immediately. Motion ≤ 250 ms between steps.
 - **TESTS:** Given a first launch / When onboarding shows / Then the three steps render in order. Given Hebrew chosen / Then `dir=rtl` applies and copy is Hebrew. Given Skip / Then the app opens without saving. Given Done / Then prefs persist and the app opens.
 - **NUMBERS:** motion ≤ 250 ms (DESIGN.md §7) · onboarding steps = 3 (deterministic) · exact step count/content → `UNKNOWN` (Amit, may mirror the web onboarding).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** onboarding steps/copy parity with the web onboarding — Amit.
 
 ### TFV2-0425 — Expo push foundation (`expo-notifications` + native config)
@@ -8225,7 +8225,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** One default notification channel `"default"` (importance default, no sound on the first install is config). `requestPermission()` returns the OS grant result; `registerForPush()` asks for the Expo push token and returns `string | null`. No token is persisted client-side (the backend stores it — TFV2-0426). Permission copy is shown by the app (see TFV2-0428). No FCM/APNs keys are added (names only; set by the configurator).
 - **TESTS:** Given the app.json / Then the `expo-notifications` plugin and a `default` channel are present. Given a mocked notification module / When `registerForPush` / Then it returns the token or null (never throws). Given a denied permission / Then `requestPermission` reflects denied and `registerForPush` returns null.
 - **NUMBERS:** token is an opaque string (no range) · Expo push service (Expo documentation) · Android channel / iOS `.p8` key provisioning → `UNKNOWN` (Amit: the APNs auth key name and Firebase-free FCM setup).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the APNs authentication-key approach (Expo push token vs native APNs) and the iOS/Android key custody — Amit.
 
 ### TFV2-0426 — `deviceTokens` table + register mutation `convex/push.ts`
@@ -8244,7 +8244,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `deviceTokens`: `userId: v.id("users")`, `token` (string, unique), `platform` (`"ios"` / `"android"`), `createdAt`, `updatedAt`, `deletedAt?`. Indexes: `by_userId`, `by_userId_deletedAt`, unique `by_token`. `register({ token, platform })` upserts; errors `invalid_token` (empty/oversized > 512 chars), `invalid_platform`. `unregister` soft-deletes. `listMine()` returns only the caller's live tokens. No token is ever returned across users.
 - **TESTS:** Given a valid register / Then a row exists and `listMine` returns it. Given a duplicate token for the same user / Then upsert (no second row). Given a second user / Then they cannot see the first user's token. Given an empty token / Then `invalid_token`. Given a bad platform / Then `invalid_platform`. Given unregister / Then soft-deleted and omitted from `listMine`.
 - **NUMBERS:** token ≤ 512 chars (deterministic) · token encryption at rest → `UNKNOWN` (Amit: whether to encrypt tokens or treat as opaque).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** token encryption at rest — Amit.
 
 ### TFV2-0427 — Push delivery: reminders + nag push (`convex/push.ts` send + cron)
@@ -8263,7 +8263,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `sendToUser({ userId, title, body, data? })` resolves live tokens and POSTs to the Expo push endpoint per token (mockable `pushTransport`). Errors: `no_tokens`, `push_transport_failed`, `quota_exceeded` (per-user daily push cap). The cron sweep reads due nags (from chunk B's `nags`) and sends the user's accepted phrase; a nag with no accepted phrase is never sent (PRD F-60). Delivery failures per token are recorded and stale tokens are soft-deleted on a permanent-reject response.
 - **TESTS:** Given a due nag with an accepted phrase / When the sweep runs / Then `sendToUser` posts that phrase to each live token. Given a nag with no accepted phrase / Then no send. Given a transport failure / Then `push_transport_failed` and no crash. Given a permanent-reject token / Then the token is soft-deleted. Given over quota / Then `quota_exceeded` and no send.
 - **NUMBERS:** daily push cap → `UNKNOWN` (Amit) · push latency p95 ≤ 5 s (Expo push convention; delivery is async) · the nag channel assumption (push) carries §4 conflict 11 → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** nag delivery channel is push (assumed) — Amit (REWRITE-PLAN-v2 §4.11); daily push cap — Amit.
 
 ### TFV2-0428 — Push permission request UI + copy (mobile)
@@ -8282,7 +8282,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title `EN: "Turn on reminders" / HE: "הפעל תזכורות"`; body `EN: "Tempo can remind you in your own words, when it matters." / HE: "טמפו יכול להזכיר לך במילים שלך, כשזה חשוב."`; Allow `EN: "Allow reminders" / HE: "אפשר תזכורות"`; Not now `EN: "Not now" / HE: "לא עכשיו"`; settings link `EN: "Turn on later in Settings" / HE: "הפעל מאוחר יותר בהגדרות"`. States: default, requesting (button spinner), granted (confirmation), denied (settings link). Keyboard: Allow/Not now focusable. Screen-reader: button labels announced. RTL: text inline-start. Motion ≤ 250 ms.
 - **TESTS:** Given first run / When shown / Then the explainer + Allow/Not now render. Given Allow / Then `requestPermission` then `registerForPush` are called. Given a denial / Then the settings-link state shows and no re-prompt. Given `dir=rtl` / Then copy flips inline-start.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 2.5.8) · one prompt only (deterministic) · motion ≤ 250 ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** when the prompt appears (first sign-in vs first nag) — Amit.
 
 ### TFV2-0429 — Notification preferences screen (mobile)
@@ -8301,7 +8301,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title `EN: "Notifications" / HE: "התראות"`; nags `EN: "Reminders" / HE: "תזכורות"`; calendar `EN: "Calendar reminders" / HE: "תזכורות יומן"`; coach `EN: "Coach messages" / HE: "הודעות המאמן"`; push status `EN: "Push notifications" / HE: "התראות דחיפה"` with `EN: On/Off / HE: פועל/כבוי`. States: default, loading, error (+ Retry), offline banner. RTL logical switches. Screen-reader announces On/Off.
 - **TESTS:** Given prefs / When loaded / Then the three toggles reflect them. Given a toggle changed / Then `updatePrefs` is called. Given push denied / Then the status shows denied + a Settings link. Given `?state=error` / Then error + Retry.
 - **NUMBERS:** target ≥ 24×24 CSS px (WCAG 2.2 2.5.8) · motion ≤ 250 ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether notification prefs are a loose object or typed columns in `preferences` — Amit (ties to §4.13 time-zone storage too).
 
 ### TFV2-0430 — Camera capture (`expo-camera`) `apps/mobile/components/camera`
@@ -8320,7 +8320,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: permission `EN: "Tempo needs the camera to scan a note." / HE: "טמפו צריך את המצלמה כדי לסרוק פתק."`; grant `EN: "Allow camera" / HE: "אפשר מצלמה"`; shutter aria-label `EN: "Take photo" / HE: "צלם תמונה"`; cancel `EN: "Cancel" / HE: "ביטול"`. States: requesting, denied (settings link), ready (live preview), captured (review with Retake/Use). Shutter target ≥ 44×44 native px. Motion ≤ 250 ms. No photo leaves the device in this ticket.
 - **TESTS:** Given no permission / When shown / Then the permission state renders. Given ready / Then the shutter renders. Given shutter tap / Then `{ uri, width, height }` is returned. Given denied / Then the settings-link state shows.
 - **NUMBERS:** shutter target ≥ 44×44 native px (Apple HIG / Android 48dp) · motion ≤ 250 ms (DESIGN.md §7) · camera permission copy is fixed.
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether capture also offers video/QR later — Amit (out of scope here).
 
 ### TFV2-0431 — Photo attach to a note (upload + image block)
@@ -8339,7 +8339,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `notes.attachImage({ noteId, alt, imageId })` (the upload happens first via a signed URL, then this mutation inserts the markdown). Errors: `note_not_found`, `forbidden`, `image_too_large` (> 8 MiB), `invalid_alt` (empty). Alt text is required for accessibility; the inserted markdown is `![alt](url)`. Image size cap 8 MiB, dimension cap 4096 px longest side (resized client-side).
 - **TESTS:** Given a valid upload / When attached / Then `notes.body` contains the image markdown with the alt. Given an owner mismatch / Then `forbidden`. Given an image > 8 MiB / Then `image_too_large`. Given empty alt / Then `invalid_alt`. Given a missing note / Then `note_not_found`.
 - **NUMBERS:** image ≤ 8 MiB, longest side ≤ 4096 px (repo convention) · alt text required (WCAG 1.1.1) · upload latency p95 → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** image retention/billing (file-storage quota per tier) — Amit.
 
 ### TFV2-0432 — Camera scan → brain dump / task (OCR)
@@ -8358,7 +8358,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `ocr({ imageId }) => { text }`. Errors: `image_not_found`, `entitlement_denied`, `ocr_failed`, `text_too_large` (> 8,000 chars trimmed). The recognized text is inserted into the brain-dump draft verbatim; the coach may later propose a plan. No OCR output is persisted anywhere else. The OCR provider and model are OPEN below.
 - **TESTS:** Given a mocked OCR returning text / Then `text` returns and a brain-dump draft receives it. Given a failed OCR / Then `ocr_failed`. Given a non-owner / Then `forbidden`. Given over quota / Then `entitlement_denied`/`quota_exceeded`. Given text > 8,000 chars / Then trimmed.
 - **NUMBERS:** OCR text cap 8,000 chars (deterministic) · OCR provider/model/cost → `UNKNOWN` (Amit — costs money, so it stays off until Amit approves).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** OCR provider/model and its cost — Amit (PRD rule: ask Amit before anything that costs money).
 
 ### TFV2-0433 — Deep linking (universal / app links) `apps/mobile`
@@ -8377,7 +8377,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Scheme `tempo-rhythm://` and `https://` for the configured domain. Route map: `/today`, `/note/[id]`, `/coach`. An unauthenticated deep link routes through sign-in first, then resumes the target. A push tap opens the `data` route if present, else Today.
 - **TESTS:** Given a `tempo-rhythm://today` link / When handled / Then the Today route resolves. Given `…/note/abc` / Then the note route with id `abc`. Given an unauthenticated link / Then sign-in is required first. Given a push `data` route / Then it opens that route.
 - **NUMBERS:** one scheme + one domain (deterministic) · the production domain for app links → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the production domain and whether push taps deep-link to a note or just Today — Amit.
 
 ### TFV2-0434 — App Store submission assets + privacy labels (iOS)
@@ -8396,7 +8396,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Privacy nutrition labels reflect reality: data collected = email (account), usage (crash/analytics if PostHog is on — verify), and no health data. Age rating and content advisory are set conservatively. Icon/splash sizes per Apple's current requirements. The exact privacy answers and age rating are OPEN below (Amit must confirm against actual data collection).
 - **TESTS:** Given the app.json / Then the iOS block has `privacy` and `ageRating` present. Given assets / Then icon and splash files exist at the required sizes. Given a missing privacy field / Then the test fails.
 - **NUMBERS:** icon/splash sizes per Apple HIG (exact matrix) · age rating and privacy-label answers → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** age rating, content advisory and the exact privacy-label answers — Amit.
 
 ### TFV2-0435 — Google Play submission assets + data safety (Android)
@@ -8415,7 +8415,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Data-safety form lists collected data (email, usage) and states whether it is shared/encrypted — answers OPEN below. Adaptive icon: foreground + background layers per Play's current requirements. Content rating set conservatively (Everyone/PEGI 3 unless Amit rules otherwise).
 - **TESTS:** Given the app.json / Then the android block has data-safety and rating fields. Given assets / Then icon and adaptive-icon layers exist. Given a missing adaptive layer / Then the test fails.
 - **NUMBERS:** icon sizes per Android/Play spec (exact matrix) · data-safety + content-rating answers → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** data-safety answers and content rating — Amit.
 
 ### TFV2-0436 — Store entitlement: RevenueCat product → tier (`convex/lib/entitlements.ts`)
@@ -8434,7 +8434,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `entitlementFromRevenueCat({ productId, entitlementId })` returns an `EntitlementTier` (basic/pro/max) or `none`. Unknown product ids return `none` (fail closed). The mapping table is data, not code, so product ids can be added without redeploying logic. Store prices and exact product ids are OPEN below (PRD §4.2 conflict).
 - **TESTS:** Given a `pro` entitlement id / Then the tier is `pro`. Given a `max` id / Then `max`. Given an unknown id / Then `none` (fail closed). Given a `basic` id / Then `basic`. Given no entitlement / Then `none`.
 - **NUMBERS:** fail-closed on unknown ids (exact) · product ids and prices → `UNKNOWN` (Amit, PRD §4.2: $1 trial / Basic $10 / Pro $20 / Max $40 are the repo's open numbers).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** exact RevenueCat product/entitlement ids and store prices — Amit (PRD §4.2).
 
 ### TFV2-0437 — Two-way calendar sync: Google Calendar connection (read + light write)
@@ -8453,7 +8453,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `import({ connectionId, since })` reads events via the Executor adapter and upserts into `calendarEvents` with `source: "google"` and an `externalId` field (additive on the row, do NOT touch `convex/schema.ts` unless the field is absent — then report `blocked: missing calendarEvents.externalId`). `export({ eventId, connectionId })` pushes exactly one event after the caller passes a `confirmed` flag. Errors: `connection_not_found`, `sync_failed`, `write_not_confirmed`, `too_many_writes`. Bulk cap: 100 events per import, 1 event per export call. Times convert using the user's stored IANA time zone (OPEN below).
 - **TESTS:** Given a mocked Executor returning events / When imported / Then `calendarEvents` rows with `source: "google"` appear. Given an export without `confirmed` / Then `write_not_confirmed`. Given a confirmed export / Then exactly one event is written. Given > 100 events / Then truncated to 100 (or `too_many`). Given a non-owner / Then `forbidden`.
 - **NUMBERS:** import cap 100 events, export 1 event/call (deterministic) · sync interval and the user's time-zone field → `UNKNOWN` (Amit, §4.13).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the user's IANA time-zone storage (`users` vs `preferences`) — Amit (§4.13); sync interval and conflict policy (defer to TFV2-0439).
 
 ### TFV2-0438 — iCal (`.ics`) import/export `convex/lib/ics.ts`
@@ -8472,7 +8472,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `parseIcs` returns events `{ uid, title, startAt, endAt?, description? }` with ISO 8601 datetimes; a malformed `DTSTART` yields `error` on that event, not a throw. `serializeIcs` emits a valid `VCALENDAR` with `VEVENT` blocks. Limits: 5,000 events per file, 64 KiB total.
 - **TESTS:** Given a valid single-event `.ics` / Then one event parses with the right title/start/end. Given an all-day event / Then `endAt` is null. Given a malformed date / Then that event carries an `error`. Given events / When serialized / Then re-parsing returns the same set. Given > 5,000 events / Then truncated.
 - **NUMBERS:** 5,000 events / 64 KiB per file (deterministic) · recurrence expansion → `UNKNOWN` (Amit: out of scope here).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether recurrence (`RRULE`) needs a full expansion engine later — Amit.
 
 ### TFV2-0439 — Calendar sync merge/conflict resolver `convex/lib/calendar-merge.ts`
@@ -8491,7 +8491,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `mergeEvents(existing, incoming)` is deterministic and side-effect-free. Deletions are represented as incoming events with a `deleted: true` flag (from the source's tombstone), never as silent absence. Output ordering is stable. Conflicts carry `{ existing, incoming, reason }`.
 - **TESTS:** Given a matching `externalId` / Then it maps to `toUpsert` (update). Given an incoming event with no existing match / Then `toUpsert` (insert). Given an incoming `deleted` tombstone / Then the existing is in `toDelete`. Given an incoming event matching a Tempo-created event by time but no `externalId` / Then it is a `conflict`, not an overwrite. Given identical inputs / Then empty result (idempotent).
 - **NUMBERS:** merge is deterministic and idempotent (exact) · conflict auto-resolution policy → `UNKNOWN` (Amit: always manual).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** conflict-resolution UI and the "winner" default — Amit (defer to TFV2-0440).
 
 ### TFV2-0440 — External-write confirmation UI (calendar sync)
@@ -8510,7 +8510,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title `EN: "Write to your calendar?" / HE: "לכתוב ליומן שלך?"`; body `EN: "Tempo will {action} \"{title}\" in {calendar}." / HE: "טמפו י{action} את \"{title}\" ב-{calendar}."`; Approve `EN: "Write" / HE: "כתוב"`; Cancel `EN: "Cancel" / HE: "ביטול"`. The Approve is not the accent when the action is destructive. States: default (dialog closed), open, confirming (spinner), error (write failed). Keyboard: Esc closes, Tab trapped, focus returns. Screen-reader `role="dialog" aria-modal`. Motion ≤ 250 ms.
 - **TESTS:** Given an export request / When shown / Then the action, title and target render. Given Approve / Then `calendarSync.export` is called with `confirmed: true`. Given Cancel / Then no call. Given write fails / Then error shows. Playwright: 390 (sheet) + 1280 (dialog), EN and HE.
 - **NUMBERS:** every external write confirmed individually (exact invariant) · motion ≤ 250 ms (DESIGN.md §7) · target ≥ 24×24 CSS px (WCAG 2.2 2.5.8).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (confirmation-before-external-write is fixed by PRD F-131).
 
 ### TFV2-0441 — WhatsApp bridge (RAM-only scan + reply) `convex/lib/whatsapp-bridge.ts`
@@ -8529,7 +8529,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `parseWhatsAppExport(text)` returns `{ items: { timestamp, sender, candidate: string }[] }` (candidate = a short extracted commitment, not the raw message). The full raw text is dropped after parsing. No table, no file, no embedding. Errors: `empty_export`, `parse_failed`. Limit: 5,000 messages per export.
 - **TESTS:** Given an export with "I'll call the bank tomorrow" / Then a candidate item names that commitment without the raw text. Given a non-commitment message / Then no candidate. Given an empty export / Then `empty_export`. Given parsing succeeds / Then no table write occurs (assert via the injected DB double). Given > 5,000 messages / Then truncated.
 - **NUMBERS:** 5,000 messages per export (deterministic) · RAM-only = zero persistence of raw text (exact invariant, `.cursorrules`) · candidate extractor model → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the candidate-extractor model and whether a live WhatsApp bot (not just export) is in scope — Amit.
 
 ### TFV2-0442 — Telegram bridge (bot) `convex/lib/telegram-bridge.ts`
@@ -8548,7 +8548,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `handleTelegramMessage` returns `{ reply }` where `reply` is a confirm line (e.g. `EN: "Add \"{candidate}\" to Today? /yes" / HE: "להוסיף את \"{candidate}\" להיום? /כן"`). On `/yes` it calls the add-to-today mutation and replies `EN: "Added." / HE: "נוסף."`. Bot token is read by name only. Limit 500 messages/min per user. No raw message is stored or logged.
 - **TESTS:** Given a message with a candidate / Then the reply offers the confirm and no raw text persists. Given `/yes` / Then the add-to-today path is called. Given a non-candidate message / Then a neutral reply. Given a mocked transport failure / Then `bridge_failed`. Given > 500/min / Then rate-limited.
 - **NUMBERS:** 500 messages/min rate limit (deterministic) · RAM-only zero persistence (exact) · bot token name → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the Telegram bot token name and whether the bot is first-party or user-supplied — Amit.
 
 ### TFV2-0443 — Message bridge import review (shared RAM-only scanner) `convex/messageImport.ts`
@@ -8567,7 +8567,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `commitImport({ items: { candidate, source }[] })` creates a `task` (or note) per kept item and returns `{ created: number }`. Nothing is saved until Save. The commit stores only the candidate sentence + `source` (`whatsapp`/`telegram`), never the raw chat. Errors: `empty_items`, `too_many_items` (> 200).
 - **TESTS:** Given kept items / When committed / Then tasks/notes are created with the candidate text only. Given no Save / Then nothing is written. Given an item whose candidate equals the raw message (a message that is all commitment) / Then still only the candidate is stored. Given > 200 items / Then `too_many_items`. Given a non-owner / Then `forbidden`.
 - **NUMBERS:** 200 items per commit (deterministic) · RAM-only zero raw persistence (exact invariant).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none (RAM-only rule is fixed by `.cursorrules`).
 
 ### TFV2-0444 — Course platforms connector (LMS read) `convex/lib/course-connector.ts`
@@ -8586,7 +8586,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `importCourses({ connectionId })` reads courses + deadlines via Executor and upserts due tasks/events with `source: "course"`. Errors: `connection_not_found`, `import_failed`, `too_many` (> 500 items). No export/mutation to the platform exists. The concrete LMS (Canvas/Moodle/Coursera) and Executor's tool names are OPEN below.
 - **TESTS:** Given a mocked Executor returning 2 courses + 3 deadlines / Then 3 due tasks/events are created with `source: "course"`. Given an import failure / Then `import_failed`. Given > 500 items / Then `too_many`. Given a non-owner / Then `forbidden`.
 - **NUMBERS:** 500 items per import (deterministic) · LMS list and Executor tool names → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** which LMS platforms and the Executor tool surface — Amit.
 
 ### TFV2-0445 — Dispatch B (Agentwright) adapter `convex/lib/dispatch-b.ts`
@@ -8605,7 +8605,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `dispatchB({ payload })` returns `{ result }` via the injected adapter. The adapter interface is `{ run(payload: string): Promise<{ result: string }> }`. The stub returns `{ result: "" }` for an empty payload and echoes otherwise. Errors: `dispatch_failed`, `empty_payload`. The real Agentwright endpoint/auth are OPEN below.
 - **TESTS:** Given an empty payload / Then `empty_payload`. Given a payload / Then the stub echoes. Given an adapter that rejects / Then `dispatch_failed`. Given a successful run / Then `{ result }` returns.
 - **NUMBERS:** deterministic stub (no external range) · Agentwright endpoint/API/auth → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the Agentwright endpoint, API shape and auth — Amit.
 
 ### TFV2-0446 — Offline inference: local runtime foundation `packages/utils/src/local-model.ts`
@@ -8624,7 +8624,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `infer(prompt, { maxTokens, timeoutMs })` returns `{ text: string; truncated: boolean }`. `StubRunner.infer` echoes a bounded echo and always terminates within budget. Errors: `model_not_loaded`, `infer_timeout`, `prompt_too_large` (> 4,096 tokens). The engine choice, model file and quantization are OPEN below.
 - **TESTS:** Given no load / When `infer` / Then `model_not_loaded`. Given a stub / When `infer` / Then bounded text returns. Given an oversized prompt / Then `prompt_too_large`. Given a timeout / Then `infer_timeout`.
 - **NUMBERS:** prompt ≤ 4,096 tokens, timeout deterministic (repo convention) · engine/model/quantization → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the on-device runtime engine, model file and quantization — Amit.
 
 ### TFV2-0447 — Offline inference: model download + cache `convex/lib/local-model-store.ts`
@@ -8643,7 +8643,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `setLocalModelState` stores `{ modelId, version, status: "none" | "downloading" | "ready" | "failed" }`. Only model ids in the approved registry (a small allowlist) are accepted; others error `unknown_model`. `getLocalModelState` returns the stored state or `{ status: "none" }`.
 - **TESTS:** Given an approved model id / When set to `ready` / Then state returns `ready`. Given an unapproved id / Then `unknown_model`. Given no state / Then `{ status: "none" }`. Given a failed download / Then status `failed`.
 - **NUMBERS:** approved model registry size → `UNKNOWN` (Amit) · model id allowlist = exact match (deterministic).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the approved local-model registry and where the binaries are hosted — Amit.
 
 ### TFV2-0448 — Offline inference: coach fallback to local model `convex/lib/ai_router.ts`
@@ -8662,7 +8662,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** The fallback fires only on a remote-call failure, and only when the user's local model state is `ready`. The reply carries `offline: true`, surfaced as copy `EN: "Offline answer (on your device)." / HE: "תשובה לא מקוונת (במכשיר שלך)."`. Crisis words always return the fixed card and never touch any model.
 - **TESTS:** Given a remote failure and a ready local model / Then the local runner is used and the reply is tagged offline. Given no ready local model / Then the existing error path (no fallback). Given crisis words / Then the fixed card returns and no model (remote or local) is called. Given a remote success / Then the remote path is used.
 - **NUMBERS:** fallback is an either/or (deterministic) · offline reply latency → `UNKNOWN` (Amit: depends on the device).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** offline answer quality bar and whether offline coaching is read-only — Amit.
 
 ### TFV2-0449 — Local-first sync (offline queue + reconciliation) `packages/utils/src/sync-queue.ts`
@@ -8681,7 +8681,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `SyncQueue` ops are `{ id, kind, payload }` with monotonically increasing ids. `replay(apply)` applies each op in order and only removes it after `apply` succeeds; a failed `apply` leaves the op in the queue. Replaying an already-applied op id is a no-op (idempotence). Cap 5,000 queued ops.
 - **TESTS:** Given three enqueued ops / When replayed / Then they apply in order. Given an `apply` that throws on op 2 / Then ops 1 is removed, op 2 and 3 remain. Given a replay of an already-applied id / Then no double-apply. Given > 5,000 ops / Then the oldest is evicted with a `truncated` flag.
 - **NUMBERS:** queue cap 5,000 ops (deterministic) · conflict policy for concurrent edits → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the conflict policy for concurrent offline/online edits — Amit.
 
 ### TFV2-0450 — Inkling distillation (small model) `convex/lib/distill.ts`
@@ -8700,7 +8700,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `distill({ dataset, opts: { maxPairs, maxBytes } })` returns `{ jobId }`; `getDistillStatus` returns `queued`/`running`/`done`/`failed`. Dataset caps: 10,000 pairs, 32 MiB. The stub never performs real training. Errors: `dataset_too_large`, `empty_dataset`.
 - **TESTS:** Given a dataset / When distilled / Then a `jobId` returns and status progresses `queued` → `done`. Given an empty dataset / Then `empty_dataset`. Given > 10,000 pairs / Then `dataset_too_large`. Given a failed stub / Then `failed`.
 - **NUMBERS:** 10,000 pairs / 32 MiB (deterministic) · engine, base model and where checkpoints live → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** distillation engine, base model and checkpoint hosting — Amit (and spend approval per PRD).
 
 ### TFV2-0451 — Regional inference routing `convex/lib/ai_router.ts`
@@ -8719,7 +8719,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `regionEndpointFor(region)` returns a string endpoint or `null`. The region map is data (an approved allowlist). Unknown regions → `null` → default endpoint. Regions are coarse (`eu`, `us`, `il`). The user's region is derived from a stored hint (OPEN below), never from a guess.
 - **TESTS:** Given a region in the map / Then its endpoint returns. Given an unknown region / Then `null`. Given a `null` region / Then the default endpoint is used. Given a region change / Then the model name is unchanged.
 - **NUMBERS:** region map is an allowlist (deterministic) · the regional endpoint list and how the region is known → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the regional endpoint list and where the user's region is stored — Amit (ties to §4.13).
 
 ### TFV2-0452 — Family plans: tables + entitlements `convex/familyPlans.ts`
@@ -8738,7 +8738,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `memberLimit` default 5 (OPEN). `invite({ email })` creates a pending membership (reuse the sign-up approval pattern if present). Errors: `family_not_found`, `member_limit_reached`, `already_member`, `forbidden`, `invite_exists`. Entitlement: members inherit the family owner's tier for quota only, never for data scope.
 - **TESTS:** Given an owner / When `createFamily` / Then a group exists. Given an invite + accept / Then the member joins. Given the limit reached / Then `member_limit_reached`. Given a duplicate invite / Then `already_member`/`invite_exists`. Given a member query / Then only their own rows return (no cross-member data). Given a non-owner `removeMember` / Then `forbidden`.
 - **NUMBERS:** member limit → `UNKNOWN` (Amit, default 5) · data isolation = absolute (exact invariant) · family price → `UNKNOWN` (Amit, PRD §4.2).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** member limit, family price and whether children get full or limited features — Amit.
 
 ### TFV2-0453 — Family plan management screen (web)
@@ -8757,7 +8757,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Copy EN/HE: title `EN: "Family" / HE: "משפחה"`; empty `EN: "No members yet. Invite someone." / HE: "עדיין אין חברים. הזמינו מישהו."`; invite label `EN: "Invite by email" / HE: "הזמינו לפי אימייל"`; invite button `EN: "Invite" / HE: "הזמנה"`; remove `EN: "Remove" / HE: "הסר"`; leave `EN: "Leave family" / HE: "עזוב משפחה"`; error `EN: "Couldn't load your family." / HE: "לא הצלחנו לטעון את המשפחה."` + Retry. States per `?state=` + empty. RTL logical. Keyboard: invite input labelled, remove/leave reachable. Screen-reader announces member roles. Motion ≤ 250 ms.
 - **TESTS:** Given a family with members / When shown / Then the member list renders (names only). Given an invite email / When submitted / Then `invite` is called. Given Remove / Then `removeMember` is called. Given Leave / Then `leaveFamily` is called. Given `?state=empty` / Then the empty copy. Playwright: 390/1280 EN+HE.
 - **NUMBERS:** contrast 4.5:1, target ≥ 24×24 CSS px (WCAG 2.2 AA) · motion ≤ 250 ms (DESIGN.md §7).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** whether the screen lives under settings/family or billing — Amit.
 
 ### TFV2-0454 — SOC 2: audit event log `convex/audit.ts` + `auditEvents` table
@@ -8776,7 +8776,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `auditEvents`: `userId`, `event` (`v.union(v.literal("sign_in","export","delete_account","permission_change","connection_connect","data_export" ...))`), `target?`, `metadata` (object, no secret values), `createdAt`. `record` is internal-only. `listMine({ cursor?, limit? })` returns only the caller's events, newest first. Append-only: no `update`/`delete` exported.
 - **TESTS:** Given a recorded sign-in / Then the event is present and append-only. Given `listMine` / Then only the caller's events return. Given a second user / Then they cannot see the first's events. Given an event with a secret value / Then it is rejected (redact rule).
 - **NUMBERS:** page ≤ 100 (deterministic) · retention window → `UNKNOWN` (Amit: SOC 2 typically 1 year).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** the exact event enum and retention window — Amit (SOC 2 scope is a compliance decision).
 
 ### TFV2-0455 — SOC 2: retention + export + deletion compliance `convex/lib/compliance.ts`
@@ -8795,7 +8795,7 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** `exportAll({ userId })` returns one markdown document per category (pages, tasks, events, habits, memories) with no JSON blocks surfaced. `requestDeletion({ userId })` requires an explicit `confirm: true` and returns a scheduled deletion id. Export/deletion are audited (TFV2-0454). Retention: soft-delete 30-day grace is preserved; hard-delete-on-request is complete (ties to §4.8 — mark OPEN).
 - **TESTS:** Given a user with data / When exported / Then all categories return and no other user's data appears. Given `requestDeletion` without confirm / Then refused. Given with confirm / Then a deletion id returns. Given a non-owner / Then `forbidden`.
 - **NUMBERS:** export categories = 5 (deterministic) · hard vs soft forget → `UNKNOWN` (Amit, §4.8) · SOC 2 retention schedule → `UNKNOWN` (Amit).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** `forget` hard vs soft semantics (§4.8) and the SOC 2 retention schedule — Amit.
 
 ### TFV2-0456 — Gen 2 cross-feature RTL + a11y + perf hardening pass
@@ -8814,5 +8814,5 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 - **SPEC:** Apply DESIGN.md §8/§10 and components.md §2.1–§2.18 rules to the four named surfaces only: logical properties everywhere, `.tp-num` on counts/versions, `.tp-icon--flip` on forward chevrons, `dir="auto"` on any user text, one `.tp-btn--primary` per screen, motion ≤ 250 ms. Copy is unchanged from each ticket's SPEC (this ticket fixes layout/a11y, not copy).
 - **TESTS:** Given `lang=he` / Then marketplace, detail, install-confirm and family screens lay out RTL with no sideways scroll at 390. Given a keyboard / Then every control is reachable and has a visible focus ring. Given a screen-reader / Then landmark and label structure is intact. Given reduced motion / Then animations collapse to instant.
 - **NUMBERS:** text contrast 4.5:1 and target ≥ 24×24 CSS px (WCAG 2.2 AA, 2.5.8) · motion ≤ 250 ms (DESIGN.md §7) · no sideways scroll at 390 (DESIGN.md §8) · scrolling 60 fps (web.dev).
-- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check · 9 Jev judge (typesafe/jev-1.13): instruction-following, formatting, naming, clean code each >= 0.85; a massive violation fails · 10 Process check: REPORT lists every STEP and DONE item with evidence; a missing item fails.
 - **OPEN:** none.
