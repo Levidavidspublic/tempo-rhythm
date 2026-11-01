@@ -737,3 +737,861 @@ verify and add the missing test, don't rebuild). Folds in open factory issues #1
 - Pass: 1 · Depends: TRW-1052 · Size: ~1.5 h
 
 ---
+
+## Rewrite — Chunk 2 (MVP · Planning surface), tickets TRW-1065 … TRW-1148
+
+Added 1 Nov 2026 per `docs/backlog/REWRITE-PLAN.md`. All 84 tickets, in dependency order.
+Format per ticket: WHY / SCOPE / MUTATES / STEPS / DONE / EVIDENCE / Numbers / Pass + Depends + Size.
+STEPS step 1 is always the Graphify code-map check (the unit may already exist on `integration` — then
+verify and add the missing test, don't rebuild).
+
+Chunk 2 model (reconciles conflict #7): `notes.body` stays the content authority from chunk 1; the
+planning surface reads and writes `task` / `event` / `habit` / `nag` blocks. The typed tables are
+**disposable derived indexes with stable IDs** (21 Oct "Stable task indexes and lifecycle"; 12 Oct
+contracts lean to `notes.body`): a `task` block links to a stable-ID `tasks` row; `calendarEvents`
+gains `endsAtMs` (additive); `dayPlans`, `timeBlocks`, `habitCheckIns` and `focusBlocks` are per-day
+derived index tables (B01–B02 contracts). "Ordinary unlinked tasks" (quick-add on `/tasks`) stay
+typed-only. Folds open factory issues #446 (Journal), #447 (Routines), #457 (Goals), #537 (Today
+plan + energy), #1341 (calendar `endsAtMs`). Open conflicts that touch chunk 2 and must NOT be
+guessed: week start Sunday/Monday (TRW-1148), nag delivery channel beyond in-app (TRW-1128), where
+the user's IANA time zone is stored (TRW-1065).
+
+### TRW-1065 — `dayPlans` derived table + getForDate/upsert/commit (backend)
+- WHY: BACKEND-SCHEMA §3 (proposed planner tables); contracts/B01.md; PRD F-05 "Today is today's daily page"; folds #537's plan-panel backend intent.
+- SCOPE: `convex/schema.ts` (additive `dayPlans` table), `convex/dayPlans.ts` (new), `convex/dayPlans.test.ts` (new).
+- MUTATES: new `dayPlans` table (userId, localDate "YYYY-MM-DD", timezone?, intention?, topTaskIds? max 3, energy? low|medium|high, status draft|committed, committedAt?, reflection?); no existing table field changed.
+- STEPS: 1) code-map `convex/schema.ts` and any `convex/dayPlans.ts`; 2) add the table with indexes `by_userId`, `by_userId_deletedAt`, `by_userId_deletedAt_localDate`; 3) `getForDate({localDate})` → `DayPlan|null`; 4) `upsert({localDate, timezone?, intention?, topTaskIds?, energy?})` creates a `draft` or patches an existing plan (never un-commits); 5) `commit({localDate})` idempotent, sets `committedAt`; 6) test create/patch/commit/idempotence and that `topTaskIds` > 3 is rejected.
+- DONE: `bun test convex/dayPlans.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: top-3 cap (product rule, BACKEND-SCHEMA §3); `localDate` = ISO 8601 `YYYY-MM-DD` (https://www.iso.org/iso-8601-date-and-time-format.html). Time zone storage (`users` vs `preferences`): UNKNOWN — Amit to answer.
+- Pass: 1 · Depends: TRW-1025 · Size: ~2.5 h
+
+### TRW-1066 — DayPlanPanel (intention + energy pick + top-3 + commit) on Today
+- WHY: APP-FLOW §5 "Plan for today" panel; PRD F-05/F-07; folds #537.
+- SCOPE: `apps/web/components/today/DayPlanPanel.tsx`, `apps/web/components/today/` , `apps/web/components/today/day-plan-panel.test.tsx`.
+- MUTATES: none (calls `api.dayPlans.*`).
+- STEPS: 1) code-map `apps/web/app/(tempo)/today/page.tsx`; 2) render intention input, energy pick (low/medium/high), top-3 list, and the "This is my day" commit button; 3) wire reads to `getForDate` and writes to `upsert`/`commit`; 4) test empty state ("Plan for today") and the three controls render EN/HE.
+- DONE: `bun test apps/web/components/today/day-plan-panel.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 3 controls (intention/energy/top-3) from APP-FLOW §5 (product rule); 44×44 px targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 1 · Depends: TRW-1065 · Size: ~2 h
+
+### TRW-1067 — Today aggregates all tasks due today (block + linked rows)
+- WHY: APP-FLOW §5 step 5 "every task due today"; PRD F-05; folds factory issue #537 (T-PLAN-07).
+- SCOPE: `convex/notes.ts` (Today read path), `convex/tasks.ts`, `convex/notes_period.test.ts`.
+- MUTATES: none; a Today query merges due-today `task` blocks (via `noteBlocks`) with unlinked typed tasks (via `tasks.listDueInRange`).
+- STEPS: 1) code-map `convex/tasks.ts` `listDueInRange` and the `noteBlocks` lift; 2) return a merged, deduped list of tasks due on the local day (block tasks + unlinked typed tasks) ordered by `order`/energy; 3) test dedupe (a task block already linked to a typed row appears once).
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 duplicate tasks shown (product rule); Convex read bound 32,000 docs (https://docs.convex.dev/production/state/limits).
+- Pass: 1 · Depends: TRW-1065, TRW-1079 · Size: ~2 h
+
+### TRW-1068 — Energy pick ordering (low/medium/high on Today)
+- WHY: APP-FLOW §5 "energy pick"; PRD F-07; folds #537.
+- SCOPE: `apps/web/components/today/`, `apps/web/components/today/energy-order.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the Today task list; 2) sort/filter Today's tasks by `energy` (low/medium/high) with a one-tap toggle; 3) test the three orderings.
+- DONE: `bun test apps/web/components/today/energy-order.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 3 energy buckets (product rule). No industry number — UNKNOWN beyond the rule.
+- Pass: 1 · Depends: TRW-1067 · Size: ~1.5 h
+
+### TRW-1069 — Top-3 selection (choose ≤3 task ids)
+- WHY: BACKEND-SCHEMA §3 `topTaskIds` (max 3); APP-FLOW §5 "top 3 tasks".
+- SCOPE: `apps/web/components/today/DayPlanPanel.tsx`, `convex/dayPlans.ts`, `apps/web/components/today/top3.test.tsx`.
+- MUTATES: `dayPlans.topTaskIds` (validated ≤3, owned by caller).
+- STEPS: 1) code-map; 2) let the user pick up to 3 due-today tasks as "top"; 3) write the ids via `upsert`; 4) test selecting a 4th is refused and the ids persist.
+- DONE: `bun test apps/web/components/today/top3.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: max 3 top tasks (BACKEND-SCHEMA §3; product rule).
+- Pass: 1 · Depends: TRW-1066 · Size: ~1.5 h
+
+### TRW-1070 — Commit day plan ("This is my day") + reflection
+- WHY: APP-FLOW §5 step 1 "This is my day commits the day plan".
+- SCOPE: `convex/dayPlans.ts`, `apps/web/components/today/DayPlanPanel.tsx`, `convex/dayPlans.test.ts`.
+- MUTATES: `dayPlans.status` draft→committed and `committedAt`; a later edit keeps it committed.
+- STEPS: 1) code-map; 2) wire the commit button to `commit({localDate})`; 3) after commit, the plan panel shows the committed summary (intention + top-3) instead of the editor; 4) test commit is idempotent and later `upsert` never un-commits.
+- DONE: `bun test convex/dayPlans.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1 committed plan per user per local day (product rule).
+- Pass: 1 · Depends: TRW-1065, TRW-1066 · Size: ~1.5 h
+
+### TRW-1071 — Brain-dump capture (inbox rows, raw lines)
+- WHY: PRD F-09 "Brain dump → ordered plan → add to Today"; BACKEND-SCHEMA §3 `inboxItems`; APP-FLOW §7 brain-dump empty state.
+- SCOPE: `convex/schema.ts` (additive `inboxItems`), `convex/inbox.ts` (new), `convex/inbox.test.ts` (new).
+- MUTATES: new `inboxItems` table (userId, rawText, source, status unsorted|sorted|dismissed, urgency?, sortedInto?); captures raw lines, nothing else.
+- STEPS: 1) code-map; 2) add the table + `capture({rawText})` splitting on newlines into rows; 3) test split and that nothing else is written.
+- DONE: `bun test convex/inbox.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: capture is line-based (product rule); no industry number — UNKNOWN beyond the rule.
+- Pass: 1 · Depends: TRW-1065 · Size: ~2 h
+
+### TRW-1072 — Brain-dump prioritize (rule-based fallback + runtime model path)
+- WHY: PRD F-09; APP-FLOW §7 proposal row "turns lines into tasks with duration and reason"; B03 brain dump.
+- SCOPE: `convex/brain_dump.ts` (exists), `convex/lib/mockModel.ts`, `convex/brain_dump.test.ts` (exists — extend).
+- MUTATES: none (preview only — returns proposal rows, writes nothing).
+- STEPS: 1) code-map `convex/brain_dump.ts` `prioritize`; 2) keep the runtime-model path (returns `{summary, priorities[]}` with title/reason/urgency); 3) add a deterministic rule-based fallback (splits by line, urgency now/soon/later) used when the model is unavailable or in tests; 4) test both paths return the same shape and neither writes.
+- DONE: `bun test convex/brain_dump.test.ts` exits 0.
+- EVIDENCE: test output; no model call in the fallback path.
+- Numbers: urgency ∈ {now, soon, later} (B03 contract); runtime model is DeepSeek V4.1 Flash (https://deepinfra.com/deepseek-ai/DeepSeek-V4.1-Flash) — runtime model, never a code model.
+- Pass: 1 · Depends: TRW-1071, TRW-1055 · Size: ~2.5 h
+
+### TRW-1073 — Proposal card UI (accept/edit/reject rows)
+- WHY: PRD F-09 + "accept / edit / reject"; APP-FLOW §7 proposal screen; 21 Oct "Capture and plan".
+- SCOPE: `apps/web/components/brain-dump/`, `apps/web/components/brain-dump/proposal.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map `/brain-dump` route; 2) render proposal rows (title, duration, reason) each with Accept/Edit/Reject; 3) nothing is written until the tap; 4) test accept/edit/reject controls render.
+- DONE: `bun test apps/web/components/brain-dump/proposal.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: reject changes nothing (21 Oct acceptance boundary; product rule).
+- Pass: 1 · Depends: TRW-1072 · Size: ~2 h
+
+### TRW-1074 — acceptPlan: accepted rows → task blocks on Today (5-min undo)
+- WHY: PRD F-09 "add to Today"; B03 `acceptPlan`; APP-FLOW §4 "Add N to Today".
+- SCOPE: `convex/brain_dump.ts`, `convex/notes.ts`, `convex/brain_dump.test.ts`.
+- MUTATES: writes accepted rows as `task` blocks appended to today's daily page and upserts their linked `tasks` rows; carries a 5-minute undo.
+- STEPS: 1) code-map; 2) `acceptPlan({items[]})` (1–6 items) writes each as a task block (fresh ULID) into today's `notes.body` via `notes.save` and upserts a linked `tasks` row; 3) each write records undo; 4) test: accepted rows survive reload, rejected rows are never written.
+- DONE: `bun test convex/brain_dump.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1–6 accepted items (B03 contract); every write carries a 5-minute Undo (PRD F-22; product rule).
+- Pass: 1 · Depends: TRW-1072, TRW-1079 · Size: ~2.5 h
+
+### TRW-1075 — Edit a proposal row (duration/reason) before accept
+- WHY: PRD F-09 + "edit" step; APP-FLOW §7 "edit, reject rows".
+- SCOPE: `apps/web/components/brain-dump/`, `apps/web/components/brain-dump/proposal.test.tsx`.
+- MUTATES: none (edits the in-memory row only; writes happen on accept).
+- STEPS: 1) code-map; 2) allow editing a row's duration and reason inline before accept; 3) test the edited values flow into `acceptPlan`.
+- DONE: `bun test apps/web/components/brain-dump/proposal.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: `durationMin` default 15 (BACKEND-SCHEMA §4.4; product rule).
+- Pass: 1 · Depends: TRW-1073 · Size: ~1.5 h
+
+### TRW-1076 — Reject / all-rejected leaves nothing written; Add button disabled
+- WHY: 21 Oct "Reject changes nothing"; APP-FLOW §7 "All rejected: button off".
+- SCOPE: `apps/web/components/brain-dump/`, `apps/web/components/brain-dump/proposal.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) disable "Add to Today" when no row is accepted; 3) reject writes nothing; 4) test all-rejected → button disabled, nothing persisted.
+- DONE: `bun test apps/web/components/brain-dump/proposal.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 writes on a full reject (21 Oct; product rule).
+- Pass: 1 · Depends: TRW-1073 · Size: ~1 h
+
+### TRW-1077 — Sort a dump item into a task, a note, or let go
+- WHY: APP-FLOW §5 step 6 "capture, sort into a task or note, or let go"; PRD F-09.
+- SCOPE: `apps/web/components/brain-dump/`, `convex/inbox.ts`, `apps/web/components/brain-dump/sort.test.tsx`.
+- MUTATES: `inboxItems.status` → sorted (into task/note) or dismissed; may create a task block or a note.
+- STEPS: 1) code-map; 2) per item offer: make a task, save as a note, or dismiss ("let go"); 3) dismissed is neutral, never "failed"; 4) test each outcome.
+- DONE: `bun test apps/web/components/brain-dump/sort.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 3 outcomes (task/note/let-go) from APP-FLOW §5 (product rule).
+- Pass: 1 · Depends: TRW-1071, TRW-1079 · Size: ~2 h
+
+### TRW-1078 — Brain dump is not kept as a page (Q6); no persistent dump page
+- WHY: APP-FLOW §9 open question "whether a brain dump is kept as a page"; B03 "the dump is NOT kept as a page (Q6 stays UNKNOWN)".
+- SCOPE: `convex/brain_dump.ts`, `convex/inbox.ts`, `convex/brain_dump.test.ts`.
+- MUTATES: none; verifies the dump leaves no `notes` row with `pageType: "dump"`.
+- STEPS: 1) code-map; 2) assert the capture/prioritize/accept path never creates a persistent dump page; 3) keep `inboxItems` transient (status dismissed after sort); 4) test no dump page is created and note the OPEN Q6 in REPORT.
+- DONE: `bun test convex/brain_dump.test.ts` exits 0.
+- EVIDENCE: test output; Q6 UNKNOWN noted.
+- Numbers: 0 dump pages persisted (B03; product rule). Whether a dump should ever be kept: UNKNOWN — Amit to answer.
+- Pass: 1 · Depends: TRW-1074, TRW-1077 · Size: ~1 h
+
+### TRW-1079 — Task block quick-add to Today (block + linked task row)
+- WHY: PRD F-05 "its tasks are task blocks"; APP-FLOW §3 "Quick-add a task for today"; 21 Oct "Task blocks are authoritative".
+- SCOPE: `convex/notes.ts`, `convex/tasks.ts`, `convex/notes_period.test.ts`.
+- MUTATES: appends a `task` block to today's daily page `notes.body` (via `notes.save`) and upserts a linked `tasks` row with a stable id; no schema change.
+- STEPS: 1) code-map `notes.save` and `tasks.create`; 2) `addTaskToToday({title, durationMin?, energy?, dueAt})` writes the task block and a linked typed row, keeping `block.taskId` = the typed row id; 3) test both the block and the linked row exist and carry the same title.
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: stable id preserved across removal/return (21 Oct; product rule); ULID ids (https://github.com/ulid/spec).
+- Pass: 1 · Depends: TRW-1020, TRW-1026 · Size: ~2.5 h
+
+### TRW-1080 — Tick/untick a task block (status now/later/done + linked row sync)
+- WHY: APP-FLOW §4 "tap task → tick"; BACKEND-SCHEMA §4.4 task block `status`.
+- SCOPE: `convex/notes.ts`, `convex/tasks.ts`, `convex/notes_period.test.ts`.
+- MUTATES: `task` block `status` (now/later/done) via `patchBlock`; syncs the linked `tasks` row's `status`.
+- STEPS: 1) code-map `notes.patchBlock` and `tasks.toggleCompletion`; 2) implement tick/untick that patches the block and the linked row in one transaction; 3) test done→todo→done and that an unlinked typed task still ticks via the existing function.
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: status ∈ {now, later, done} (BACKEND-SCHEMA §4.4; product rule).
+- Pass: 1 · Depends: TRW-1079 · Size: ~2 h
+
+### TRW-1081 — Task edit sheet (title, durationMin, energy, reason)
+- WHY: APP-FLOW §4 "Task sheet: edit, delete with undo"; BACKEND-SCHEMA §4.4.
+- SCOPE: `apps/web/components/today/`, `convex/notes.ts`, `apps/web/components/today/task-sheet.test.tsx`.
+- MUTATES: `task` block `data` via `patchBlock` and the linked `tasks` row fields.
+- STEPS: 1) code-map; 2) render a task sheet for title/durationMin/energy/reason; 3) save patches the block and the linked row; 4) test edit persists and reload shows it.
+- DONE: `bun test apps/web/components/today/task-sheet.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: `durationMin` default 15, no manual time entry demanded (BACKEND-SCHEMA §4.4; product rule).
+- Pass: 1 · Depends: TRW-1079, TRW-1080 · Size: ~2 h
+
+### TRW-1082 — Task soft-delete + 5-min Undo (block + linked row, stable id kept)
+- WHY: BACKEND-SCHEMA §2 hard-delete defect `tasks.remove`; PRD F-131 soft delete + undo; folds #530's intent.
+- SCOPE: `convex/tasks.ts`, `convex/notes.ts`, `convex/tasks.test.ts` (exists — extend).
+- MUTATES: `tasks.remove` becomes soft delete (sets `deletedAt`); removing a task block also soft-deletes its linked row; `restore` clears `deletedAt` within 30 days.
+- STEPS: 1) code-map `convex/tasks.ts` `remove` and `convex/lib/softDelete.ts`; 2) `remove` → soft delete returning `{success, undoUntilMs}`; 3) add `restore`; 4) test undo within 5 min restores, restore after 30 days is refused, and the block's linked id survives removal/return.
+- DONE: `bun test convex/tasks.test.ts` exits 0.
+- EVIDENCE: test output; the remaining `ctx.db.delete` list in REPORT.
+- Numbers: 5-min undo, 30-day grace (PRD F-131; product rule).
+- Pass: 1 · Depends: TRW-1079 · Size: ~2 h
+
+### TRW-1083 — Unlinked quick-add tasks stay typed (no block)
+- WHY: 21 Oct "Ordinary unlinked tasks remain separate"; BACKEND-SCHEMA §2 `tasks` table.
+- SCOPE: `convex/tasks.ts`, `apps/web/app/(tempo)/tasks/`, `convex/tasks.test.ts`.
+- MUTATES: none; verifies the `/tasks` quick-add path keeps working on the typed table without requiring a block.
+- STEPS: 1) code-map `tasks.create`/`listToday`; 2) confirm a quick-add task has no `blockId`/page link and appears on `/tasks`; 3) test create/list/toggle without any `notes` row.
+- DONE: `bun test convex/tasks.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: unlinked tasks are first-class (21 Oct; product rule).
+- Pass: 1 · Depends: TRW-1082 · Size: ~1.5 h
+
+### TRW-1084 — Carry-over query + strip (open tasks due before today)
+- WHY: APP-FLOW §5 step 3 "Still open from earlier days"; B01 `listCarryOver`; folds #530's intent.
+- SCOPE: `convex/dayPlans.ts` (or `convex/tasks.ts`), `apps/web/components/today/CarryOverStrip.tsx`, `convex/tasks.test.ts`.
+- MUTATES: none; a query returns non-deleted tasks with `status` todo/in_progress and `dueAt <` start of today (max 50, sorted by `dueAt`).
+- STEPS: 1) code-map `tasks.listDueInRange`; 2) add `listCarryOver({beforeMs})`; 3) render a "Still open from earlier days" strip with one-tap "move to today"; 4) test the query and the strip.
+- DONE: `bun test convex/tasks.test.ts` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: max 50 returned (B01 contract; product rule). No shame copy ("overdue" never shown) — PRD tone rule.
+- Pass: 1 · Depends: TRW-1082 · Size: ~2 h
+
+### TRW-1085 — moveTaskToDay (patch dueAt + ensure block on target day)
+- WHY: APP-FLOW §5 step 3 "move tasks to today with one tap"; B01 `moveTaskToDay`.
+- SCOPE: `convex/dayPlans.ts`, `convex/notes.ts`, `convex/dayPlans.test.ts`.
+- MUTATES: patches the task's `dueAt` (and `updatedAt`) and ensures a task block on the target day's page.
+- STEPS: 1) code-map; 2) `moveTaskToDay({taskId, dueAt})` patches `dueAt` only and (re)creates the block on the target day; 3) test the move and that the source day no longer shows it as carry-over.
+- DONE: `bun test convex/dayPlans.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: patches `dueAt` + `updatedAt` only (B01; product rule).
+- Pass: 1 · Depends: TRW-1084 · Size: ~2 h
+
+### TRW-1086 — Task flexibility (fixed vs elastic) on blocks + linked rows
+- WHY: PRD F-07 "elastic vs inelastic events"; B02 `tasks.flexibility`.
+- SCOPE: `convex/schema.ts` (additive `tasks.flexibility`), `packages/utils/src/blocks.ts`, `convex/tasks.test.ts`.
+- MUTATES: adds `flexibility?: "fixed"|"elastic"` (absent = elastic) to the task block schema and the `tasks` row; no existing field changed.
+- STEPS: 1) code-map the task block schema (TRW-1017) and `convex/tasks.ts`; 2) add the optional field to both; 3) list returns include it; 4) test round-trip and default (absent = elastic).
+- DONE: `bun test convex/tasks.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: default elastic (B02; product rule).
+- Pass: 1 · Depends: TRW-1079 · Size: ~1.5 h
+
+### TRW-1087 — Task block ↔ linked task row sync invariant (audit + test)
+- WHY: 21 Oct "Canonical body writer re-derives indexes atomically"; keep the block and the typed row from drifting.
+- SCOPE: `convex/notes.ts`, `convex/tasks.ts`, `convex/notes_period.test.ts`.
+- MUTATES: none; a shared write helper keeps a block and its linked row in one transaction; an audit test asserts they agree.
+- STEPS: 1) code-map; 2) extract one `syncTaskBlockAndRow` helper used by quick-add/tick/edit/move; 3) add a test that, after each op, the block `status`/`title` equals the linked row's; 4) test a torn write is rejected (transaction).
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1 transaction per sync (Convex mutations are atomic; https://docs.convex.dev/database/introduction).
+- Pass: 1 · Depends: TRW-1080 · Size: ~2 h
+
+### TRW-1088 — Late tasks slide to "Later" without comment (no-shame pacing)
+- WHY: APP-FLOW §7 Today screen "late tasks slide to Later without comment"; PRD tone rule "never shame".
+- SCOPE: `apps/web/components/today/`, `apps/web/components/today/pacing.test.tsx`.
+- MUTATES: none (display only).
+- STEPS: 1) code-map the Today list; 2) tasks past their time move to the "Later" section with no "overdue"/"failed" label; 3) test a late task renders in "Later" with neutral copy.
+- DONE: `bun test apps/web/components/today/pacing.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 0 shaming strings ("overdue", "failed", "streak lost") — PRD tone rule.
+- Pass: 1 · Depends: TRW-1067 · Size: ~1.5 h
+
+### TRW-1089 — `calendarEvents.endsAtMs` additive + event block `endAt` (folds #1341)
+- WHY: BACKEND-SCHEMA §3 "calendarEvents.endsAtMs? optional end time"; folds factory issue #1341 (TEMPO-BL-0003).
+- SCOPE: `convex/schema.ts` (additive), `convex/calendar_events.ts`, `convex/calendar_events.test.ts`.
+- MUTATES: adds optional `endsAtMs` to `calendarEvents` (additive); the strict return validator must change in the same PR; event blocks already carry `endAt` (TRW-1017).
+- STEPS: 1) code-map `convex/calendar_events.ts`; 2) add `endsAtMs?: v.number()` and update the return validator; 3) keep `startsAtMs` required; 4) test create with/without `endsAtMs` round-trips.
+- DONE: `bun test convex/calendar_events.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: ms timestamps (BACKEND-SCHEMA §4.2); end ≥ start enforced (product rule). No industry number — UNKNOWN beyond the rule.
+- Pass: 1 · Depends: TRW-1025 · Size: ~2 h
+
+### TRW-1090 — `calendar_events.update` (title/start/end) + event block sync
+- WHY: B02 contract; BACKEND-SCHEMA §2 "no edit or delete functions"; folds #533's intent.
+- SCOPE: `convex/calendar_events.ts`, `convex/notes.ts`, `convex/calendar_events.test.ts`.
+- MUTATES: adds `update({eventId, title?, startsAtMs?, endsAtMs?})`; syncs a linked event block's `startAt`/`endAt`.
+- STEPS: 1) code-map; 2) implement `update`; 3) sync the event block via `patchBlock`; 4) test edit persists and range queries reflect it.
+- DONE: `bun test convex/calendar_events.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: `endsAtMs ≥ startsAtMs` (product rule).
+- Pass: 1 · Depends: TRW-1089 · Size: ~2 h
+
+### TRW-1091 — `calendar_events.remove` soft-delete + `restore`
+- WHY: B02 contract; BACKEND-SCHEMA §2 "no edit or delete"; PRD F-131 soft delete.
+- SCOPE: `convex/calendar_events.ts`, `convex/lib/softDelete.ts`, `convex/calendar_events.test.ts`.
+- MUTATES: `remove` soft-deletes (sets `deletedAt`) returning `{success, undoUntilMs}`; `restore` clears `deletedAt` (refused after 30 days).
+- STEPS: 1) code-map; 2) `remove` → soft delete; 3) `restore` within 30 days; 4) test undo and expiry.
+- DONE: `bun test convex/calendar_events.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-min undo, 30-day grace (PRD F-131).
+- Pass: 1 · Depends: TRW-1089 · Size: ~1.5 h
+
+### TRW-1092 — Calendar "add event never appears" fix + time display (folds #527 intent)
+- WHY: APP-FLOW §3 "add event never appears (live)"; folds #527's intent.
+- SCOPE: `apps/web/app/(tempo)/calendar/`, `convex/calendar_events.ts`, `apps/web/app/(tempo)/calendar/render.test.tsx`.
+- MUTATES: none; fixes the list-in-range read so a just-created event appears, and renders start (and end when present) times.
+- STEPS: 1) code-map the calendar route and `listInRange`; 2) find why a new event is missing (query window / cache) and fix it; 3) show the time, not date-only; 4) test a created event appears in range.
+- DONE: `bun test apps/web/app/(tempo)/calendar/render.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: event shown with its local time (product rule); time range ≤ 32 days (B02 contract).
+- Pass: 1 · Depends: TRW-1089 · Size: ~2 h
+
+### TRW-1093 — Event edit dialog (start + end time entry)
+- WHY: APP-FLOW §5 step 7 "events get a start and end time, edit"; B02 contract.
+- SCOPE: `apps/web/components/calendar/`, `apps/web/components/calendar/event-dialog.test.tsx`.
+- MUTATES: none (calls `update`/`create`).
+- STEPS: 1) code-map; 2) render an event dialog with start and end time fields; 3) wire to `calendar_events.update`; 4) test edit saves and shows the new times.
+- DONE: `bun test apps/web/components/calendar/event-dialog.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: time pickers in the user's local timezone (product rule); 44×44 targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 1 · Depends: TRW-1090 · Size: ~2 h
+
+### TRW-1094 — Elastic vs inelastic events (fixed class stays put)
+- WHY: PRD F-07 "elastic vs inelastic events (a fixed class stays put)"; BACKEND-SCHEMA §4.4 `event.inelastic: true`.
+- SCOPE: `packages/utils/src/blocks.ts`, `convex/notes.ts`, `convex/calendar_events.test.ts`.
+- MUTATES: none; `event` blocks are `inelastic: true`; tasks default `inelastic: false` (elastic) so the reflow can move them.
+- STEPS: 1) code-map the block schemas; 2) enforce `event.inelastic === true` and default task `inelastic: false`; 3) test the flags.
+- DONE: `bun test convex/calendar_events.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: inelastic events never move during reflow (PRD F-07; product rule).
+- Pass: 1 · Depends: TRW-1086 · Size: ~1 h
+
+### TRW-1095 — Calendar day/week/month event render (event blocks on views)
+- WHY: PRD F-07 "daily, weekly and monthly views"; APP-FLOW §4.
+- SCOPE: `apps/web/components/calendar/`, `apps/web/components/calendar/views.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) render events as EventBlocks across day/week/month; 3) inelastic events stay at their time; 4) test each view shows the same event once.
+- DONE: `bun test apps/web/components/calendar/views.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 3 views from the same data (PRD F-07; product rule).
+- Pass: 1 · Depends: TRW-1094 · Size: ~2.5 h
+
+### TRW-1096 — Habit blocks as the habit authority (name/cadence/window, no streak field)
+- WHY: BACKEND-SCHEMA §4.4 `habit` block ("No streak field"); PRD F-10 "events and habits as blocks".
+- SCOPE: `packages/utils/src/blocks.ts`, `convex/notes.ts`, `convex/habits.test.ts` (exists — extend).
+- MUTATES: none to schema; `habit` blocks carry name/cadence(daily|weekly)/window? and are drawn by HabitBlock (TRW-1023).
+- STEPS: 1) code-map the habit block schema and `convex/habits.ts`; 2) confirm the block has no streak field (streaks are derived, informational); 3) link each habit block to a `habits` row; 4) test the block validates and links.
+- DONE: `bun test convex/habits.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 streak fields in the block (BACKEND-SCHEMA §4.4; product rule).
+- Pass: 1 · Depends: TRW-1017 · Size: ~1.5 h
+
+### TRW-1097 — `habitCheckIns` derived table (per habit per local day)
+- WHY: BACKEND-SCHEMA §3 `habitCheckIns`; B01 contract; folds #532's intent.
+- SCOPE: `convex/schema.ts` (additive `habitCheckIns`), `convex/habitCheckIns.ts` (new), `convex/habitCheckIns.test.ts` (new).
+- MUTATES: new `habitCheckIns` table (userId, habitId, localDate, checkedAt, source, note?); joins `USER_OWNED_TABLES`.
+- STEPS: 1) code-map `convex/schema.ts` and `convex/lib/accountDeletion.ts`; 2) add the table + `by_userId_deletedAt_localDate` and `by_habitId_deletedAt_localDate`; 3) `listForDate`, `listForHabit`; 4) test listing and owner isolation.
+- DONE: `bun test convex/habitCheckIns.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: one row per habit per local day (uniqueness enforced in the upsert; B01).
+- Pass: 1 · Depends: TRW-1096 · Size: ~2 h
+
+### TRW-1098 — Habit check-in by local calendar day (fix rolling 24h window)
+- WHY: BACKEND-SCHEMA §2 habits "rolling 24 h window, not a calendar day"; B01 `check`; folds factory issue #532's intent.
+- SCOPE: `convex/habitCheckIns.ts`, `convex/habits.ts`, `convex/habitCheckIns.test.ts`.
+- MUTATES: `check({habitId, localDate, source, note?})` upserts one check-in per local day and recomputes the `habits` cache; undo = soft delete.
+- STEPS: 1) code-map `convex/lib/habitStreak.ts` and `completeToday`; 2) implement `check` keyed by `localDate` (not a rolling UTC window); 3) `undo` soft-deletes and recomputes; 4) test check/undo and that two checks on one day are one row.
+- DONE: `bun test convex/habitCheckIns.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: local day = browser-computed `localDate` (B01; product rule); streak fields recomputed, informational only.
+- Pass: 1 · Depends: TRW-1097 · Size: ~2.5 h
+
+### TRW-1099 — Habit check-in undo + streak recompute
+- WHY: B01 `undo`; PRD F-10 "no streak counters as pressure"; folds #540's intent.
+- SCOPE: `convex/habitCheckIns.ts`, `convex/habits.ts`, `convex/habitCheckIns.test.ts`.
+- MUTATES: `undo({habitId, localDate})` soft-deletes the check-in and recomputes `currentStreak`/`longestStreak` (informational).
+- STEPS: 1) code-map; 2) implement undo + recompute; 3) test undo removes the check-in and the cache reflects it; 4) assert no shaming copy is produced.
+- DONE: `bun test convex/habitCheckIns.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: streaks are informational, never "pressure" (PRD F-10; product rule).
+- Pass: 1 · Depends: TRW-1098 · Size: ~1.5 h
+
+### TRW-1100 — Habit strip on Today (check/undo from the strip)
+- WHY: APP-FLOW §5 step 4 "Habit strip: check and undo by local calendar day"; folds #538's intent.
+- SCOPE: `apps/web/components/today/HabitCheckInStrip.tsx`, `apps/web/components/today/`, `apps/web/components/today/habit-strip.test.tsx`.
+- MUTATES: none (calls `check`/`undo`).
+- STEPS: 1) code-map `TodayHabitStrip`; 2) replace it with a strip that checks/undoes by local day; 3) test check toggles and undo reverts.
+- DONE: `bun test apps/web/components/today/habit-strip.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: strip reflects the local calendar day (B01; product rule).
+- Pass: 1 · Depends: TRW-1098 · Size: ~2 h
+
+### TRW-1101 — Habit 6-week detail grid
+- WHY: APP-FLOW §5 step 4 "/habits/[id] shows a 6-week grid"; folds #541's intent.
+- SCOPE: `apps/web/components/habits/HabitDetail.tsx`, `apps/web/components/habits/habit-grid.test.tsx`.
+- MUTATES: none (reads `listForHabit`).
+- STEPS: 1) code-map the habits detail route; 2) render a 6-week grid from `listForHabit`; 3) test the grid renders checked/unchecked days for a date range.
+- DONE: `bun test apps/web/components/habits/habit-grid.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 6-week grid (APP-FLOW §5; product rule).
+- Pass: 1 · Depends: TRW-1097 · Size: ~2 h
+
+### TRW-1102 — Habit streak cache recompute helper (informational)
+- WHY: BACKEND-SCHEMA §3 "habits cache fields stay and are recomputed"; PRD F-10 no pressure.
+- SCOPE: `convex/habits.ts`, `convex/lib/habitStreak.ts` (exists), `convex/habits.test.ts`.
+- MUTATES: recomputes `currentStreak`/`longestStreak` from `habitCheckIns` (not a rolling window).
+- STEPS: 1) code-map `convex/lib/habitStreak.ts`; 2) recompute from check-ins keyed by local day; 3) keep the values informational (never shown as "streak lost"); 4) test recompute correctness.
+- DONE: `bun test convex/habits.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: streak is a count of consecutive local-day check-ins (product rule); no external standard.
+- Pass: 1 · Depends: TRW-1098 · Size: ~1.5 h
+
+### TRW-1103 — Habit list + detail routes
+- WHY: APP-FLOW §3 "/habits wired but 24h window bug"; folds #455/#540's intent.
+- SCOPE: `apps/web/app/(tempo)/habits/`, `apps/web/app/(tempo)/habits/[id]/`, `apps/web/components/habits/habits-screen.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the routes; 2) wire the list to `habits.list` and detail to `habits.get` + `listForHabit`; 3) link detail from the list; 4) test list and detail render.
+- DONE: `bun test apps/web/components/habits/habits-screen.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: detail route reachable from the list (product rule).
+- Pass: 1 · Depends: TRW-1097, TRW-1101 · Size: ~2 h
+
+### TRW-1104 — Weekly habit cadence + week-start streak rule (OPEN)
+- WHY: BACKEND-SCHEMA §7 open question "(5) weekly habit streak rule"; plan conflict #10 week start.
+- SCOPE: `convex/habitCheckIns.ts`, `convex/lib/habitStreak.ts`, `convex/habitCheckIns.test.ts`.
+- MUTATES: none; implements weekly check-ins against a configurable week anchor, with the anchor marked UNKNOWN.
+- STEPS: 1) code-map; 2) weekly cadence counts a check-in once per local week; 3) the week anchor is read from preferences; 4) test weekly cadence and REPORT the OPEN week-start ruling (Amit).
+- DONE: `bun test convex/habitCheckIns.test.ts` exits 0.
+- EVIDENCE: test output; the OPEN ruling named in REPORT.
+- Numbers: week start Sunday vs Monday: UNKNOWN — Amit to answer (plan conflict #10). Weekly streak rule: UNKNOWN — Amit to answer.
+- Pass: 1 · Depends: TRW-1098 · Size: ~1.5 h
+
+### TRW-1105 — Day view timeline (blocks mounted on a timeline)
+- WHY: APP-FLOW §5 "Time blocks on a timeline for the local day"; PRD F-07.
+- SCOPE: `apps/web/components/plan/DayTimeline.tsx`, `apps/web/components/plan/day-timeline.test.tsx`.
+- MUTATES: none (reads time blocks + task/event blocks).
+- STEPS: 1) code-map `/plan` route; 2) render a day timeline with fixed events and flexible tasks; 3) test blocks render at their `startMinute`.
+- DONE: `bun test apps/web/components/plan/day-timeline.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: timeline starts at 06:00 by default (product rule; wake-time start: UNKNOWN — Amit to answer).
+- Pass: 1 · Depends: TRW-1113 · Size: ~2.5 h
+
+### TRW-1106 — Week grid view
+- WHY: PRD F-07 "weekly views"; APP-FLOW §4 "/plan day / week / month".
+- SCOPE: `apps/web/components/plan/WeekGrid.tsx`, `apps/web/components/plan/week-grid.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) render 7 columns (one per local day) from the same task/event blocks; 3) test a task appears on its `dueAt` day.
+- DONE: `bun test apps/web/components/plan/week-grid.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 7 columns (product rule); week anchor from preferences (week start OPEN — Amit).
+- Pass: 1 · Depends: TRW-1105 · Size: ~2 h
+
+### TRW-1107 — Month grid view
+- WHY: PRD F-07 "monthly views"; APP-FLOW §4 "/plan month".
+- SCOPE: `apps/web/components/plan/MonthGrid.tsx`, `apps/web/components/plan/month-grid.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) render a month grid from the same task/event/time blocks; 3) test a block appears on its local date.
+- DONE: `bun test apps/web/components/plan/month-grid.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: month grid keys by `localDate` (product rule).
+- Pass: 1 · Depends: TRW-1106 · Size: ~2 h
+
+### TRW-1108 — Reflow scheduler (elastic tasks bend around fixed events)
+- WHY: PRD F-07 "a fixed class stays put while a flexible walk bends around it"; ROADMAP P2 `schedule.ts` reflow.
+- SCOPE: `packages/utils/src/schedule.ts`, `packages/utils/src/schedule.test.ts`.
+- MUTATES: none (pure scheduling; the result is written only on accept).
+- STEPS: 1) code-map; 2) implement a deterministic `reflow(blocks)` that keeps inelastic events fixed and packs elastic tasks into the free slots (no overlaps, never moves a fixed item); 3) report unplaced work rather than dropping it; 4) test fixed-stays / elastic-moves / conflict-unplaced.
+- DONE: `bun test packages/utils/src/schedule.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 overlaps and 0 fixed-items moved (PRD F-07; product rule). No model call (deterministic) — APP-FLOW §7.
+- Pass: 1 · Depends: TRW-1094 · Size: ~2.5 h
+
+### TRW-1109 — Day/week/month derived from the same pages (no separate data)
+- WHY: PRD F-07 "daily, weekly and monthly views from the same markdown"; ROADMAP P2 "from the same pages".
+- SCOPE: `convex/notes.ts`, `convex/notes_period.test.ts`.
+- MUTATES: none; a single read path serves all three views (pageType daily/weekly/monthly + derived indexes).
+- STEPS: 1) code-map; 2) confirm the three views read the same `notes.body` + `noteBlocks`, differing only in the date window; 3) test one mutation is reflected in all three views.
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1 source of truth (21 Oct "Markdown is page truth"; product rule).
+- Pass: 1 · Depends: TRW-1105, TRW-1107 · Size: ~2 h
+
+### TRW-1110 — Calendar tokens in pages (`{{next_monday}}`, `{{today}}`, `{{tomorrow}}`)
+- WHY: PRD F-08 "calendar tokens ({{next_monday}})"; APP-FLOW §6 template flow "resolves tokens like {{next_monday}}".
+- SCOPE: `convex/templates.ts`, `convex/lib/templateCatalog.ts`, `convex/templates.test.ts` (exists — extend).
+- MUTATES: none; token resolution using the user's local date.
+- STEPS: 1) code-map the token set (TRW-1027); 2) implement `{{today}}`, `{{tomorrow}}`, `{{next_monday}}`, `{{next_week}}`, `{{next_month}}`; 3) test each token resolves to the correct local date.
+- DONE: `bun test convex/templates.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: ISO 8601 `YYYY-MM-DD` output (https://www.iso.org/iso-8601-date-and-time-format.html); week anchor from preferences (week start OPEN — Amit).
+- Pass: 1 · Depends: TRW-1027 · Size: ~1.5 h
+
+### TRW-1111 — View switch UI (day/week/month) + persistence
+- WHY: APP-FLOW §4 "/plan day / week / month"; PRD F-07.
+- SCOPE: `apps/web/components/plan/`, `apps/web/components/plan/view-switch.test.tsx`.
+- MUTATES: none; the chosen view persists per user (preferences).
+- STEPS: 1) code-map; 2) render a day/week/month switch; 3) persist the last view; 4) test switching and persistence.
+- DONE: `bun test apps/web/components/plan/view-switch.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 3 views (product rule).
+- Pass: 1 · Depends: TRW-1106 · Size: ~1.5 h
+
+### TRW-1112 — Reflow determinism test (fixed stays, elastic reflows, no model call)
+- WHY: APP-FLOW §7 Plan screen "No model; elastic items reflow around fixed ones".
+- SCOPE: `packages/utils/src/schedule.ts`, `apps/web/components/plan/`, `apps/web/components/plan/reflow.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) assert reflow is deterministic (same input → same output) and makes no model call; 3) test an inelastic event never moves while an elastic task reflows around it.
+- DONE: `bun test apps/web/components/plan/reflow.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 model calls in the Plan screen (APP-FLOW §7; product rule).
+- Pass: 1 · Depends: TRW-1108 · Size: ~1.5 h
+
+### TRW-1113 — `timeBlocks` derived table (planned slots)
+- WHY: BACKEND-SCHEMA §3 `timeBlocks`; B01 contract.
+- SCOPE: `convex/schema.ts` (additive `timeBlocks`), `convex/timeBlocks.ts` (new), `convex/timeBlocks.test.ts` (new).
+- MUTATES: new `timeBlocks` table (userId, localDate, dayPlanId?, title, startMinute 0–1439, durationMinutes 5–720, startsAtMs, endsAtMs, kind, taskId?, habitId?, status, source); joins `USER_OWNED_TABLES`.
+- STEPS: 1) code-map; 2) add the table + `by_userId_deletedAt_startsAtMs` and `by_taskId`; 3) `listForDate`, `create`, `update`, `setStatus`, `remove` (soft delete); 4) test create/list/soft-delete and the 5–720 minute clamp.
+- DONE: `bun test convex/timeBlocks.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: startMinute 0–1439, duration 5–720 min (B01; product rule).
+- Pass: 1 · Depends: TRW-1065 · Size: ~2.5 h
+
+### TRW-1114 — Time block create/edit on the timeline
+- WHY: APP-FLOW §5 step 2 "Time blocks on a timeline"; B01 contract.
+- SCOPE: `apps/web/components/plan/TimeBlockDialog.tsx`, `apps/web/components/plan/`, `apps/web/components/plan/time-block-dialog.test.tsx`.
+- MUTATES: none (calls `timeBlocks.create`/`update`).
+- STEPS: 1) code-map; 2) drag/create a block on the timeline with title + duration; 3) edit moves/resizes it; 4) test create and edit.
+- DONE: `bun test apps/web/components/plan/time-block-dialog.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: duration clamps to 5–720 min (B01).
+- Pass: 1 · Depends: TRW-1113 · Size: ~2.5 h
+
+### TRW-1115 — Time block status (planned/done/skipped; "skipped" is neutral)
+- WHY: APP-FLOW §5 "tick a block done or let it go ('skipped' is neutral)"; B01 `setStatus`.
+- SCOPE: `convex/timeBlocks.ts`, `apps/web/components/plan/`, `convex/timeBlocks.test.ts`.
+- MUTATES: `timeBlocks.status` planned|done|skipped; skipped is neutral, never "failed".
+- STEPS: 1) code-map; 2) `setStatus` transitions; 3) render done/skipped with neutral copy; 4) test transitions and no-shame copy.
+- DONE: `bun test convex/timeBlocks.test.ts` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 3 statuses (B01); 0 shaming strings (PRD tone rule).
+- Pass: 1 · Depends: TRW-1113 · Size: ~1.5 h
+
+### TRW-1116 — Time block soft-delete + undo
+- WHY: B01 `timeBlocks.remove` (soft delete); PRD F-131.
+- SCOPE: `convex/timeBlocks.ts`, `convex/lib/softDelete.ts`, `convex/timeBlocks.test.ts`.
+- MUTATES: `remove` soft-deletes (5-min undo window).
+- STEPS: 1) code-map; 2) `remove` → soft delete with `{success, undoUntilMs}`; 3) test undo and that a removed block stays restorable 30 days.
+- DONE: `bun test convex/timeBlocks.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-min undo, 30-day grace (PRD F-131).
+- Pass: 1 · Depends: TRW-1113 · Size: ~1 h
+
+### TRW-1117 — Focus block timer on "Next up" → `focusBlocks` row
+- WHY: APP-FLOW §4 "Start → Timer on Next up"; B02 `focusBlocks.create`.
+- SCOPE: `convex/schema.ts` (additive `focusBlocks`), `convex/focusBlocks.ts` (new), `convex/focusBlocks.test.ts` (new).
+- MUTATES: new `focusBlocks` table (userId, startedAtMs, durationMs, label?, taskId?); a timer start writes a row.
+- STEPS: 1) code-map; 2) add the table + `by_userId_deletedAt_startedAtMs`; 3) `create`, `listInRange` (max 93 days), `remove` (soft), `restore`; 4) test start→log→list.
+- DONE: `bun test convex/focusBlocks.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: 93-day max range (B02; product rule); 5-min undo (PRD F-131).
+- Pass: 1 · Depends: TRW-1113 · Size: ~2.5 h
+
+### TRW-1118 — Focus blocks survive reload
+- WHY: APP-FLOW §3 "/tracking focus blocks lost on reload"; folds #534/#544's intent.
+- SCOPE: `apps/web/components/tracking/`, `convex/focusBlocks.ts`, `apps/web/components/tracking/focus-persist.test.tsx`.
+- MUTATES: none (fixes persistence; the rows come from `focusBlocks`).
+- STEPS: 1) code-map `/tracking`; 2) read logged focus blocks from `focusBlocks.listInRange` instead of React state; 3) test a logged block survives reload.
+- DONE: `bun test apps/web/components/tracking/focus-persist.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 lost focus blocks on reload (APP-FLOW §3; product rule).
+- Pass: 1 · Depends: TRW-1117 · Size: ~2 h
+
+### TRW-1119 — Focus tracking list + remove/restore
+- WHY: B02 `focusBlocks.remove`/`restore`; APP-FLOW §5 step 5 "logged focus blocks are saved".
+- SCOPE: `convex/focusBlocks.ts`, `apps/web/components/tracking/`, `convex/focusBlocks.test.ts`.
+- MUTATES: soft-delete/restore of focus blocks.
+- STEPS: 1) code-map; 2) list logged blocks with label + duration; 3) remove/restore; 4) test list/remove/restore.
+- DONE: `bun test convex/focusBlocks.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: duration shown in minutes (product rule).
+- Pass: 1 · Depends: TRW-1117 · Size: ~1.5 h
+
+### TRW-1120 — Timeline start (06:00 or wake time) — UNKNOWN, default 06:00
+- WHY: APP-FLOW §9 open question "timeline start (06:00 or wake time)".
+- SCOPE: `apps/web/components/plan/`, `apps/web/components/plan/timeline-start.test.tsx`.
+- MUTATES: none; the timeline start is a constant with an override hook, defaulted to 06:00.
+- STEPS: 1) code-map; 2) default the timeline to 06:00; 3) leave a named hook for a wake-time value; 4) test the default and REPORT the OPEN ruling (Amit).
+- DONE: `bun test apps/web/components/plan/timeline-start.test.tsx` exits 0.
+- EVIDENCE: test output; the OPEN ruling named in REPORT.
+- Numbers: timeline start 06:00 (default) vs wake time: UNKNOWN — Amit to answer.
+- Pass: 1 · Depends: TRW-1105 · Size: ~1 h
+
+### TRW-1121 — `nags` table + nag blocks
+- WHY: PRD F-60/F-61 "nags in the user's own words"; B03 nag shapes.
+- SCOPE: `convex/schema.ts` (additive `nags`), `convex/nags.ts` (new), `convex/nags.test.ts` (new).
+- MUTATES: new `nags` table (userId, label, enabled, phrases[] of {id, text, source, status}, createdAt, updatedAt, deletedAt?); nag blocks drawn by NagBlock.
+- STEPS: 1) code-map; 2) add the table + `by_userId_deletedAt`; 3) `list`, `create`, `addPhrase`, `decidePhrase`, `setEnabled`, `remove` (soft); 4) test create/list.
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: label 1–60 chars, phrase 1–140 chars (B03; product rule).
+- Pass: 1 · Depends: TRW-1017 · Size: ~2 h
+
+### TRW-1122 — Nag phrase editor (user's own words; emoji rejected)
+- WHY: PRD F-60 "nags are in the user's own words"; BACKEND-SCHEMA §4.4 "emoji rejected".
+- SCOPE: `convex/nags.ts`, `apps/web/components/nags/NagPhraseEditor.tsx`, `convex/nags.test.ts`.
+- MUTATES: none; `addPhrase` rejects emoji (Zod).
+- STEPS: 1) code-map; 2) render a phrase editor accepting only the user's own words (1–140 chars); 3) reject emoji and empty phrases; 4) test emoji rejection and length caps.
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 emoji in nag phrases (PRD §6; product rule).
+- Pass: 1 · Depends: TRW-1121 · Size: ~1.5 h
+
+### TRW-1123 — Derived nag phrases (propose from the user's own words; show source)
+- WHY: PRD F-60 "may offer phrases derived from the user's own words; each shows where it came from"; B03 `proposePhrases`.
+- SCOPE: `convex/nags.ts`, `convex/lib/mockModel.ts`, `convex/nags.test.ts`.
+- MUTATES: none; `proposePhrases` returns ≤3 derived candidates, writes nothing; each carries `sourceRef`.
+- STEPS: 1) code-map; 2) `proposePhrases` derives ≤3 phrases from the accepted user phrases + label (runtime model via the seam; empty when no accepted phrase); 3) test candidates are marked `derived` with a source, and nothing is written.
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: ≤3 proposals (B03); 0 writes on propose (product rule).
+- Pass: 1 · Depends: TRW-1121, TRW-1055 · Size: ~2 h
+
+### TRW-1124 — Accept/reject phrases; no accepted phrase → cannot enable
+- WHY: PRD F-60 "a nag with no accepted phrase cannot be switched on"; B03 `decidePhrase`.
+- SCOPE: `convex/nags.ts`, `apps/web/components/nags/`, `convex/nags.test.ts`.
+- MUTATES: `decidePhrase` marks a phrase accepted/rejected; enabling is gated on ≥1 accepted phrase.
+- STEPS: 1) code-map; 2) accept/reject each derived phrase; 3) test enabling a nag with no accepted phrase throws "Add a phrase you accept first."
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 1 accepted phrase minimum before enable (PRD F-60; product rule).
+- Pass: 1 · Depends: TRW-1122, TRW-1123 · Size: ~1.5 h
+
+### TRW-1125 — Nag `setEnabled` guard + soft-delete
+- WHY: B03 `setEnabled` / `remove`; PRD F-43 "turn one off".
+- SCOPE: `convex/nags.ts`, `convex/lib/softDelete.ts`, `convex/nags.test.ts`.
+- MUTATES: `setEnabled` toggles `enabled` (throws when no accepted phrase); `remove` soft-deletes.
+- STEPS: 1) code-map; 2) implement the enable guard; 3) soft-delete a nag; 4) test guard + soft delete.
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-min undo on delete (PRD F-131).
+- Pass: 1 · Depends: TRW-1124 · Size: ~1.5 h
+
+### TRW-1126 — Nag delivery cron (in-app; do-it-now / snooze / not-today)
+- WHY: PRD F-60 delivery; APP-FLOW §6 nag flow; B03 delivery.
+- SCOPE: `convex/nags.ts`, `convex/crons.ts` (exists), `convex/nags.test.ts`.
+- MUTATES: a cron fires the due nag in-app; the answer is logged, never shown as a streak.
+- STEPS: 1) code-map `convex/crons.ts`; 2) deliver one nag with one accepted phrase in-app at the due time; 3) answers: "Do it now" (opens Today with the task as Next up), "Snooze", "Not today"; 4) test the answer logging.
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: in-app delivery only for now (PRD F-60); channel beyond in-app: UNKNOWN (TRW-1128).
+- Pass: 1 · Depends: TRW-1125 · Size: ~2.5 h
+
+### TRW-1127 — Nag answer logging (dosing data, partial credit, never a streak)
+- WHY: APP-FLOW §6 "the answer is logged as dosing data, never shown as a streak"; PRD tone rule.
+- SCOPE: `convex/nags.ts`, `convex/schema.ts` (additive `nagEvents`), `convex/nags.test.ts`.
+- MUTATES: new `nagEvents` (or a `nags.logAnswer`) rows record `firedAt` + `answer` now|snooze|notToday; never a streak.
+- STEPS: 1) code-map; 2) log each answer as dosing data (now/snooze/notToday); 3) "Not today" is never failure and earns partial credit; 4) test logging and that no streak is computed.
+- DONE: `bun test convex/nags.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: answer ∈ {now, snooze, notToday} (B03); 0 streaks shown (PRD tone rule).
+- Pass: 1 · Depends: TRW-1126 · Size: ~1.5 h
+
+### TRW-1128 — Nag delivery channel beyond in-app (OPEN)
+- WHY: PRD F-61 "Nag delivery beyond in-app. Channel: UNKNOWN"; plan conflict #11.
+- SCOPE: `docs/backlog/REWRITE-PLAN.md` (no code); the OPEN decision is recorded, not built.
+- MUTATES: none (this ticket is a decision gate, not an implementation).
+- STEPS: 1) confirm in-app delivery (TRW-1126) is the only channel; 2) leave the channel selector stubbed; 3) test nothing outside in-app fires; 4) REPORT the OPEN ruling needed (Amit: which channel — push, email, SMS, WhatsApp?).
+- DONE: `bun test convex/nags.test.ts` exits 0 (the in-app path only).
+- EVIDENCE: test output; the OPEN channel ruling named.
+- Numbers: nag delivery channel beyond in-app: UNKNOWN — Amit to answer (plan conflict #11).
+- Pass: 1 · Depends: TRW-1126 · Size: ~1 h
+
+### TRW-1129 — Goal blocks + linked `goals` rows
+- WHY: PRD F-08/F-10 goals in the planner surface; BACKEND-SCHEMA §2 `goals` table; folds factory issue #457 (T-SCR-09).
+- SCOPE: `convex/goals.ts`, `convex/notes.ts`, `convex/goals.test.ts` (exists — extend).
+- MUTATES: links a `goal` block (in a Goals page) to a stable-ID `goals` row; no new table.
+- STEPS: 1) code-map `convex/goals.ts` and the `goals` table; 2) confirm/verify `list`/`create`/`update` exist; 3) link goal blocks to `goals` rows and surface them in Today/views via `[[links]]`; 4) test a goal block links to its row.
+- DONE: `bun test convex/goals.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1 goal row per goal block (product rule); no industry number — UNKNOWN beyond the rule.
+- Pass: 1 · Depends: TRW-1020 · Size: ~2 h
+
+### TRW-1130 — Goals soft-delete (fix hard-delete defect)
+- WHY: BACKEND-SCHEMA §2 hard-delete defect `goals.remove`; PRD F-131.
+- SCOPE: `convex/goals.ts`, `convex/lib/softDelete.ts`, `convex/goals.test.ts`.
+- MUTATES: `goals.remove` becomes soft delete; add `restore` (30-day grace).
+- STEPS: 1) code-map; 2) `remove` → soft delete with undo window; 3) `restore`; 4) test undo + expiry.
+- DONE: `bun test convex/goals.test.ts` exits 0.
+- EVIDENCE: test output; the remaining `ctx.db.delete` list in REPORT.
+- Numbers: 5-min undo, 30-day grace (PRD F-131).
+- Pass: 1 · Depends: TRW-1129 · Size: ~1.5 h
+
+### TRW-1131 — Goal progress UI (progressPercent, no pressure)
+- WHY: PRD F-08 goals; APP-FLOW §3 "/goals placeholder".
+- SCOPE: `apps/web/components/goals/`, `apps/web/app/(tempo)/goals/`, `apps/web/components/goals/goal-progress.test.tsx`.
+- MUTATES: none (reads `goals.list` + `progressPercent`).
+- STEPS: 1) code-map; 2) render goal cards with a progress bar and status; 3) progress is informational, never shaming; 4) test render and no-shame copy.
+- DONE: `bun test apps/web/components/goals/goal-progress.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: progressPercent 0–100 (BACKEND-SCHEMA §2); 0 shaming strings (PRD tone rule).
+- Pass: 1 · Depends: TRW-1129 · Size: ~2 h
+
+### TRW-1132 — Goal ↔ task/event links via `[[links]]` and tags
+- WHY: PRD F-54 life-graph links; F-08 structured tags.
+- SCOPE: `convex/notes.ts`, `convex/goals.ts`, `convex/notes_links.test.ts` (exists — extend).
+- MUTATES: none; a goal page's `[[task]]`/tag links resolve to the linked rows via `noteLinks`.
+- STEPS: 1) code-map `noteLinks`; 2) link goals to tasks/events by `[[title]]`; 3) test a goal's linked tasks appear in its backlinks.
+- DONE: `bun test convex/notes_links.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: explicit `[[links]]` stay apart from AI-guessed links (PRD F-54; product rule).
+- Pass: 1 · Depends: TRW-1129, TRW-1019 · Size: ~1.5 h
+
+### TRW-1133 — Goals list/detail/progress routes
+- WHY: APP-FLOW §3 "/goals, /goals/[id], /goals/progress placeholder"; folds #458's intent.
+- SCOPE: `apps/web/app/(tempo)/goals/`, `apps/web/app/(tempo)/goals/[id]/`, `apps/web/components/goals/goals-screen.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) wire list/detail/progress routes to `goals.list`/`update`; 3) test list and detail render.
+- DONE: `bun test apps/web/components/goals/goals-screen.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 3 routes (product rule).
+- Pass: 1 · Depends: TRW-1131 · Size: ~2 h
+
+### TRW-1134 — Journal page type + daily-note backend
+- WHY: PRD F-04 Daily page; APP-FLOW §3 "/journal placeholder"; folds factory issue #446 (T-SCR-BE-JOURNAL).
+- SCOPE: `convex/notes.ts`, `convex/schema.ts` (additive `notes.pageType: "journal"` is already covered by TRW-1025), `convex/notes_period.test.ts`.
+- MUTATES: a `pageType: "journal"` page (one per local day) created from the Journal template on first open; no new table.
+- STEPS: 1) code-map `pageType` derivation (TRW-1025/1026); 2) journal open creates/loads the journal page for the local date; 3) test idempotence (one journal page per day).
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1 journal page per user per local day (product rule).
+- Pass: 1 · Depends: TRW-1026 · Size: ~2 h
+
+### TRW-1135 — Journal editor (markdown, RTL per paragraph)
+- WHY: PRD F-72 "mixed Hebrew/English inside one note renders each paragraph in its own direction"; APP-FLOW §4 note page.
+- SCOPE: `apps/web/components/journal/`, `apps/web/app/(tempo)/journal/`, `apps/web/components/journal/journal-editor.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the editor (TRW-1007); 2) render the journal page in the markdown editor with `dir="auto"` per paragraph; 3) test a mixed EN/HE paragraph renders each direction.
+- DONE: `bun test apps/web/components/journal/journal-editor.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: `dir="auto"` per paragraph (TRD §5b; product rule).
+- Pass: 1 · Depends: TRW-1134, TRW-1007 · Size: ~2 h
+
+### TRW-1136 — Journal prompts from the Daily template (gratitude/reflection)
+- WHY: PRD F-04 built-in templates; APP-FLOW §6 template flow.
+- SCOPE: `convex/templates.ts`, `apps/web/components/journal/`, `convex/templates.test.ts` (exists — extend).
+- MUTATES: none; the Journal template body carries gratitude/reflection headings with fresh block ids.
+- STEPS: 1) code-map the Daily/Journal template; 2) confirm the journal template includes the prompt sections; 3) test instantiation assigns fresh ULIDs.
+- DONE: `bun test convex/templates.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: fresh ULID per instantiated block (https://github.com/ulid/spec).
+- Pass: 1 · Depends: TRW-1134, TRW-1027 · Size: ~1.5 h
+
+### TRW-1137 — Journal list + date navigation
+- WHY: APP-FLOW §3 "/journal placeholder"; PRD F-04.
+- SCOPE: `apps/web/components/journal/`, `apps/web/components/journal/journal-list.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) list past journal pages by date; 3) navigate to a past date's page; 4) test list + navigation.
+- DONE: `bun test apps/web/components/journal/journal-list.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: pages ordered by `date` descending (product rule).
+- Pass: 1 · Depends: TRW-1134 · Size: ~1.5 h
+
+### TRW-1138 — Journal soft-delete + 30-day grace (amendment to #446)
+- WHY: BACKEND-SCHEMA §3 "journalEntries amendment to #446 (add deletedAt)"; PRD F-131.
+- SCOPE: `convex/notes.ts`, `convex/lib/softDelete.ts`, `convex/notes_period.test.ts`.
+- MUTATES: journal pages soft-delete (30-day grace) like every other note.
+- STEPS: 1) code-map notes soft-delete (TRW-1030); 2) confirm journal pages share the same soft-delete; 3) test delete + restore.
+- DONE: `bun test convex/notes_period.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 30-day grace (PRD F-131).
+- Pass: 1 · Depends: TRW-1134, TRW-1030 · Size: ~1 h
+
+### TRW-1139 — Routine page type + routine blocks
+- WHY: PRD F-04/F-08 routines; APP-FLOW §3 "/routines placeholder"; folds factory issue #447 (T-SCR-BE-ROUTINES).
+- SCOPE: `convex/notes.ts`, `convex/schema.ts` (additive `routineSteps` or a `routine` block schema), `convex/routines.test.ts` (new).
+- MUTATES: a `routine` block type (or a `notes` page with ordered step blocks) backed by a stable-ID row; no existing field changed.
+- STEPS: 1) code-map `docs/HARD_RULES.md:108` (routines as `libraryItems`) vs #447; 2) model a routine as a page (`pageType: "routine"`) with ordered step blocks + a linked row; 3) test the model validates.
+- DONE: `bun test convex/routines.test.ts` exits 0.
+- EVIDENCE: test output; the HARD_RULES-vs-#447 naming conflict noted in REPORT.
+- Numbers: routine steps are ordered (product rule); no industry number — UNKNOWN beyond the rule.
+- Pass: 1 · Depends: TRW-1025 · Size: ~2 h
+
+### TRW-1140 — Routine definition (ordered steps, cadence)
+- WHY: #447 routines backend; PRD F-04.
+- SCOPE: `convex/routines.ts` (new), `convex/schema.ts` (additive), `convex/routines.test.ts`.
+- MUTATES: a routine's ordered steps and cadence (daily/weekly/adhoc) stored on its row.
+- STEPS: 1) code-map; 2) define `create`/`update`/`list` for routines with ordered steps; 3) test ordering and cadence.
+- DONE: `bun test convex/routines.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: cadence ∈ {daily, weekly, adhoc} (product rule).
+- Pass: 1 · Depends: TRW-1139 · Size: ~2 h
+
+### TRW-1141 — Routine run flow (check off steps)
+- WHY: APP-FLOW §3 routines placeholder; PRD F-04.
+- SCOPE: `convex/routines.ts`, `apps/web/components/routines/`, `apps/web/components/routines/run-flow.test.tsx`.
+- MUTATES: none; a run checks steps off (done/not-done), "not-done" is neutral.
+- STEPS: 1) code-map; 2) render a routine with checkable steps; 3) test checking a step off and no-shame copy for skipped steps.
+- DONE: `bun test apps/web/components/routines/run-flow.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: skipped steps neutral (PRD tone rule).
+- Pass: 1 · Depends: TRW-1140 · Size: ~2 h
+
+### TRW-1142 — Routine list + detail routes
+- WHY: APP-FLOW §3 "/routines, /routines/[id] placeholder"; folds #456's intent.
+- SCOPE: `apps/web/app/(tempo)/routines/`, `apps/web/app/(tempo)/routines/[id]/`, `apps/web/components/routines/routines-screen.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) wire list/detail to `routines.list`/`get`; 3) test routes render.
+- DONE: `bun test apps/web/components/routines/routines-screen.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: detail reachable from the list (product rule).
+- Pass: 1 · Depends: TRW-1140 · Size: ~2 h
+
+### TRW-1143 — Routine soft-delete (fix hard-delete defect)
+- WHY: BACKEND-SCHEMA §2 hard-delete defects; PRD F-131.
+- SCOPE: `convex/routines.ts`, `convex/lib/softDelete.ts`, `convex/routines.test.ts`.
+- MUTATES: `remove` soft-deletes + `restore` (30-day grace).
+- STEPS: 1) code-map; 2) soft-delete + restore; 3) test undo + expiry.
+- DONE: `bun test convex/routines.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-min undo, 30-day grace (PRD F-131).
+- Pass: 1 · Depends: TRW-1140 · Size: ~1 h
+
+### TRW-1144 — FD-01 extension e2e (brain dump → proposal → Add N → reload → tick on blocks)
+- WHY: PRD §3.1 exit check 2/4; APP-FLOW §4 FD-01 click-path; ROADMAP MVP order 4 "prove reload".
+- SCOPE: `tests/e2e/fd01-planning.spec.ts` (new).
+- MUTATES: none (test only).
+- STEPS: 1) code-map the FD-01 spec (TRW-1057); 2) extend it: brain dump → proposal → Add N to Today → reload (same order) → tick one → habit check → plan commit; 3) assert no JSON anywhere; 4) run it.
+- DONE: `bunx playwright test tests/e2e/fd01-planning.spec.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: accepted rows survive reload; 0 raw JSON visible (PRD F-02; 21 Oct acceptance boundary).
+- Pass: 2 · Depends: TRW-1074, TRW-1080, TRW-1070 · Size: ~2.5 h
+
+### TRW-1145 — Planning-surface EN/HE strings
+- WHY: PRD F-70 English/Hebrew copy; TRD §5b typed message files.
+- SCOPE: `apps/web/messages/en.json`, `apps/web/messages/he.json`, `apps/web/lib/locale.test.ts`.
+- MUTATES: none; every planning-surface visible string (Today, plan, brain dump, habits, calendar, nags, goals, journal, routines) keyed EN+HE.
+- STEPS: 1) code-map the planning-surface components; 2) move their visible copy into `en.json`/`he.json`; 3) missing Hebrew key falls back to English; 4) test switch + fallback.
+- DONE: `bun test apps/web/lib/locale.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 100% of visible strings keyed EN+HE (product rule).
+- Pass: 2 · Depends: TRW-1058 · Size: ~2.5 h
+
+### TRW-1146 — Planning-surface accessibility (timeline/grid keyboard, contrast, touch)
+- WHY: UI-BRIEF §6; include.md §7.2 accessibility baseline.
+- SCOPE: `apps/web/components/plan/`, `apps/web/components/calendar/`, `apps/web/components/plan/a11y.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) timeline/grid fully keyboard-navigable, visible focus, labelled controls, 44×44 targets; 3) test focus order and contrast on the plan/calendar components.
+- DONE: `bun test apps/web/components/plan/a11y.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: WCAG AA 4.5:1 (3:1 large) contrast (https://www.w3.org/TR/WCAG21/#contrast-minimum); 44×44 targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 2 · Depends: TRW-1111 · Size: ~2.5 h
+
+### TRW-1147 — Planning-surface empty/error/offline states
+- WHY: APP-FLOW §7 screen states; 21 Oct "Honest empty/loading/error/offline states".
+- SCOPE: `apps/web/components/plan/`, `apps/web/components/brain-dump/`, `apps/web/components/plan/empty-states.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map; 2) implement the exact copy from APP-FLOW §7 (Today "Nothing on today yet…", Plan "Fixed events only", Brain dump "Everything. Any order."); 3) loading + offline states; 4) test each state.
+- DONE: `bun test apps/web/components/plan/empty-states.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: no false queued-save promise (21 Oct DESIGN; product rule).
+- Pass: 2 · Depends: TRW-1063 · Size: ~2 h
+
+### TRW-1148 — Week start Sunday/Monday + timezone storage (OPEN)
+- WHY: BACKEND-SCHEMA §7 open question "(3) week starts Sunday or Monday (code: Monday)"; plan conflicts #10 and #13.
+- SCOPE: `convex/preferences.ts` (exists), `apps/web/components/plan/`, `convex/preferences.test.ts`.
+- MUTATES: reads `preferences.weekStartsOn` (0|1|6) and `preferences.timeZone`; no schema field is invented.
+- STEPS: 1) code-map `convex/preferences.ts` (B04 Preferences shape); 2) wire week/month views and weekly habits to `weekStartsOn`; 3) default stays Monday (code today); 4) test Sunday/Monday rendering and REPORT the OPEN rulings (Amit) for the final anchor and timezone location.
+- DONE: `bun test convex/preferences.test.ts` exits 0.
+- EVIDENCE: test output; the two OPEN rulings named in REPORT.
+- Numbers: week start Sunday vs Monday: UNKNOWN — Amit to answer (plan conflict #10); user's IANA time zone location (`users` vs `preferences`): UNKNOWN — Amit to answer (plan conflict #13).
+- Pass: 2 · Depends: TRW-1111 · Size: ~1.5 h
