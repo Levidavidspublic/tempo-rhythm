@@ -1595,3 +1595,863 @@ the user's IANA time zone is stored (TRW-1065).
 - EVIDENCE: test output; the two OPEN rulings named in REPORT.
 - Numbers: week start Sunday vs Monday: UNKNOWN — Amit to answer (plan conflict #10); user's IANA time zone location (`users` vs `preferences`): UNKNOWN — Amit to answer (plan conflict #13).
 - Pass: 2 · Depends: TRW-1111 · Size: ~1.5 h
+
+
+## Rewrite — Chunk 3 (MVP · Coach & memory), tickets TRW-1149 … TRW-1232
+
+Added 1 Nov 2026 per `docs/backlog/REWRITE-PLAN.md`. All 84 tickets, in dependency order.
+Format per ticket: WHY / SCOPE / MUTATES / STEPS / DONE / EVIDENCE / Numbers / Pass + Depends + Size.
+STEPS step 1 is always the Graphify code-map check (the unit may already exist on `integration` — then
+verify and add the missing test, don't rebuild).
+
+Chunk 3 deepens the chunk 1 foundation rather than re-laying it. Chunk 1 built the memory adapter
+skeleton (remember / recall / context / forget / export / import + vector index + embedding pick,
+TRW-1039–1046) and the coach Agent skeleton (tools, crisis card, mock model, entitlement gate,
+TRW-1047–1056). Chunk 3 wires the four-way semantic recall (meaning + keyword + links + time), the
+forget lifecycle, nightly reflect → observations, the life graph (`entities` + `edges`), the Hebrew
+embedding eval, and the adaptive coach (dial injection, bad-day, panic 10-second action, realism,
+forgiveness, graduated load 2→4, late-task slide). It folds the chunk-3 wiring of open factory
+issues #743 (real AI replies via the seam) and #744 (Thinking state + Retry). Open conflicts that
+touch chunk 3 and must NOT be guessed: forget hard vs soft (TRW-1155/1156), accept-reject vs
+auto-apply + confidence threshold (TRW-1199), interim text model GLM vs DeepSeek (TRW-1202/1203),
+HARD_RULES §2 AI SDK vs TRD §3 (TRW-1203).
+
+### TRW-1149 — Recall four-way merge (meaning + keyword + links + time)
+- WHY: PRD F-54 "Search by meaning + keyword + links + time"; TRD §5c "Recall, four ways".
+- SCOPE: `convex/memory.ts`, `convex/memory.test.ts` (extend), `convex/lib/recall.ts` (new).
+- MUTATES: none; `recall` returns a merged, deduped list from four legs.
+- STEPS: 1) code-map `convex/memory.ts` `recall` (exists, keyword-only today) and `convex/memories.ts`; 2) add `convex/lib/recall.ts` with `mergeResults(legs, limit)` that dedupes by memory id, keeps the highest leg score, and caps at `limit`; 3) make `recall` call the four legs and merge; 4) test each leg alone and the merge (dedupe + cap + rank order).
+- DONE: `bun test convex/memory.test.ts` exits 0 with a four-leg merge case.
+- EVIDENCE: test output; `recall.ts` diff.
+- Numbers: cap 256 results per vector leg (https://docs.convex.dev/search/vector-search); merged cap `limit` (product rule).
+- Pass: 1 · Depends: TRW-1041 · Size: ~2.5 h
+
+### TRW-1150 — Memories full-text search index (keyword leg)
+- WHY: PRD F-50 "recall searches by meaning and by keyword"; TRD §5 "the existing search index (keyword)".
+- SCOPE: `convex/schema.ts` (additive search index on `memories.content`), `convex/memory.ts`, `convex/memory.test.ts`.
+- MUTATES: a `searchIndex` on `memories.content` (filter field `userId`); no existing field changed.
+- STEPS: 1) code-map `convex/schema.ts` `memories` (has no search index today); 2) add `searchIndex: "content"` with `searchField: "content"` and `filterFields: ["userId"]`; 3) confirm `recall`'s keyword leg uses it; 4) test a keyword hit returns the memory and a miss returns nothing.
+- DONE: `bun test convex/memory.test.ts` exits 0 with a keyword-leg case.
+- EVIDENCE: test output; schema diff.
+- Numbers: Convex search index is per-table and filtered by `userId` (https://docs.convex.dev/search/text-search).
+- Pass: 1 · Depends: TRW-1149 · Size: ~2 h
+
+### TRW-1151 — Memories vector index + embedding write path (meaning leg)
+- WHY: TRD §5 "`memories` gains an `embedding` field and a vector index (1024 dims, filter field `userId`)"; PRD F-50.
+- SCOPE: `convex/schema.ts` (additive `embedding` + `vectorIndex`), `convex/memory.ts`, `convex/memory.test.ts`.
+- MUTATES: `memories.embedding` (float32 array) + a 1,024-dim `vectorIndex`; `remember` writes the embedding.
+- STEPS: 1) code-map chunk 1 TRW-1039/1040 (`embedding` + `remember`) — if present, verify and add the missing test; 2) confirm `remember` runs the embedding model in an action and stores the 1,024-dim vector; 3) test remember stores a vector and recall's meaning leg hits it.
+- DONE: `bun test convex/memory.test.ts` exits 0 with a meaning-leg case.
+- EVIDENCE: test output.
+- Numbers: 1,024 dims (Matryoshka truncation of Qwen3-Embedding-8B's native 4,096), Convex vector range 2–2,048 dims (https://docs.convex.dev/search/vector-search).
+- Pass: 1 · Depends: TRW-1039, TRW-1150 · Size: ~2.5 h
+
+### TRW-1152 — Links leg: recall across `edges` (life-graph links)
+- WHY: PRD F-54 "Search by … links"; TRD §5c `edges` table with `origin` extracted|inferred.
+- SCOPE: `convex/schema.ts` (additive `edges` table), `convex/lib/recall.ts`, `convex/memory.test.ts`.
+- MUTATES: new `edges` table (userId, from, to, relation, origin, confidence, sourceRef); the links leg reads it.
+- STEPS: 1) code-map `convex/schema.ts` for any `edges`/`entities`; 2) add the `edges` table with `by_userId`, `by_userId_origin`, `by_userId_deletedAt` indexes; 3) the links leg returns memories reachable from the query's entities; 4) test a linked memory surfaces in recall.
+- DONE: `bun test convex/memory.test.ts` exits 0 with a links-leg case.
+- EVIDENCE: test output; schema diff.
+- Numbers: `origin` ∈ {extracted, inferred} (TRD §5c; product rule). Link rank weight: UNKNOWN — Amit to confirm.
+- Pass: 1 · Depends: TRW-1164, TRW-1165 · Size: ~2.5 h
+
+### TRW-1153 — Time leg: recall by `createdAt` range (recent first)
+- WHY: PRD F-54 "Search by … time"; TRD §5c "time (`createdAt` index)".
+- SCOPE: `convex/memory.ts`, `convex/lib/recall.ts`, `convex/memory.test.ts`.
+- MUTATES: none; the time leg reads `memories` ordered by `createdAt`.
+- STEPS: 1) code-map `convex/memory.ts` and `memories.by_userId` index; 2) add `by_userId_createdAt` index; 3) the time leg returns the most recent `k` memories for the user; 4) test ordering and a `since`/`until` bound.
+- DONE: `bun test convex/memory.test.ts` exits 0 with a time-leg case.
+- EVIDENCE: test output.
+- Numbers: `createdAt` ms ordering (repo convention); ISO 8601 for any date argument (https://www.iso.org/iso-8601-date-and-time-format.html).
+- Pass: 1 · Depends: TRW-1149 · Size: ~1.5 h
+
+### TRW-1154 — Recall merge dedupe + rank (unify the four legs)
+- WHY: PRD F-54; the four legs must never surface a duplicate or cross users.
+- SCOPE: `convex/lib/recall.ts`, `convex/memory.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `recall.ts` from TRW-1149; 2) rank merged results by a weighted score (meaning > keyword > links > time; weights UNKNOWN — default 4/3/2/1, mark for Amit); 3) dedupe by id keeping the best score; 4) test duplicate suppression, rank stability, and that no other user's memory ever appears.
+- DONE: `bun test convex/memory.test.ts` exits 0 with cross-user isolation + rank cases.
+- EVIDENCE: test output.
+- Numbers: 0 cross-user leakage (PRD F-130; security rule). Leg weights: UNKNOWN — Amit to confirm.
+- Pass: 1 · Depends: TRW-1151, TRW-1152, TRW-1153 · Size: ~2 h
+
+### TRW-1155 — Forget semantics: hard vs soft (OPEN #8 carried)
+- WHY: PRD "soft delete everywhere" vs memory spec "forget must be complete"; plan conflict #8.
+- SCOPE: `convex/memory.ts`, `convex/memory.test.ts`.
+- MUTATES: none (verification only); `forget` keeps today's behaviour (soft delete + `restore`).
+- STEPS: 1) code-map `convex/memory.ts` `forget`/`restore` (both exist, soft-delete); 2) confirm `forget` soft-deletes with 30-day grace and `restore` revives; 3) test forget → recall-excluded → restore → recall-included; 4) REPORT the OPEN ruling (Amit) for hard vs soft in the PR body.
+- DONE: `bun test convex/memory.test.ts` exits 0 with a forget/restore round-trip.
+- EVIDENCE: test output; the OPEN ruling named in REPORT.
+- Numbers: 30-day grace (PRD F-131). Hard vs soft delete for `forget`: UNKNOWN — Amit to answer (plan conflict #8).
+- Pass: 1 · Depends: TRW-1043 · Size: ~1.5 h
+
+### TRW-1156 — Forget one memory (soft-delete parity, note OPEN)
+- WHY: PRD F-52 "forget memories"; TRD §5 `forget(userId, memoryId | all)`.
+- SCOPE: `convex/memory.ts`, `convex/lib/softDelete.ts`, `convex/memory.test.ts`.
+- MUTATES: `forget({memoryId})` soft-deletes one memory; `forgetAll` soft-deletes all.
+- STEPS: 1) code-map `forget`/`forgetAll` (exist); 2) ensure `forget` rejects a memory owned by another user; 3) test single forget, cross-user refusal, and that a forgotten memory is excluded from `recall` and `context`.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 cross-user forget allowed (PRD F-130).
+- Pass: 1 · Depends: TRW-1155 · Size: ~1.5 h
+
+### TRW-1157 — Forget-all + restore-all verification
+- WHY: TRD §5 `forget(userId, all)`; PRD F-52.
+- SCOPE: `convex/memory.ts`, `convex/memory.test.ts`.
+- MUTATES: none (verify `forgetAll`/`restoreAll`).
+- STEPS: 1) code-map `forgetAll`/`restoreAll` (exist); 2) test forget-all clears recall/context, restore-all revives, and neither touches another user; 3) add the missing edge-case test (empty set, idempotence).
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: forget-all is scoped to `userId` (PRD F-130).
+- Pass: 1 · Depends: TRW-1156 · Size: ~1 h
+
+### TRW-1158 — Export all memories as markdown (verify + test)
+- WHY: PRD F-52 "export all memories as markdown"; TRD §5 `export(userId)`.
+- SCOPE: `convex/memory.ts`, `convex/memory.test.ts`.
+- MUTATES: none (verify `exportAll`).
+- STEPS: 1) code-map `exportAll` (exists); 2) confirm it returns every live memory as plain markdown with metadata; 3) test shape (one block per memory, no JSON leak) and that it excludes forgotten rows.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: every live memory included (PRD F-52); 0 forgotten rows (product rule).
+- Pass: 1 · Depends: TRW-1044 · Size: ~1 h
+
+### TRW-1159 — Memory import format handling (ChatGPT / Claude / paste)
+- WHY: PRD F-51 "upload or paste your ChatGPT or Claude memory"; TRD §5 `importPreview(..., source)`.
+- SCOPE: `convex/memoryImport.ts`, `convex/lib/memoryImport.ts`, `convex/memoryImport.test.ts`.
+- MUTATES: none (preview only); recognises `.txt`, `.md`, `.json` and pasted text.
+- STEPS: 1) code-map `convex/memoryImport.ts` + `convex/lib/memoryImport.ts` (exist); 2) ensure the parser accepts `.txt`, `.md`, `.json` and pasted text and tags `source` chatgpt|claude|paste; 3) test each source and a malformed file fails cleanly with a message, never a crash; 4) REPORT the exact ChatGPT/Claude export formats as UNKNOWN where they are not pinned.
+- DONE: `bun test convex/memoryImport.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: exact ChatGPT/Claude memory export formats: UNKNOWN — Amit to confirm (TRD open question 6).
+- Pass: 1 · Depends: TRW-1045 · Size: ~2.5 h
+
+### TRW-1160 — importPreview split candidates (verify + test)
+- WHY: PRD F-51 "shows each item to keep, edit or drop"; TRD §5 "Split pasted or uploaded text into candidate items; nothing is saved".
+- SCOPE: `convex/memoryImport.ts`, `convex/memoryImport.test.ts`.
+- MUTATES: none (preview returns candidate items, writes nothing).
+- STEPS: 1) code-map `importPreview`; 2) confirm it splits into candidate items with no write; 3) test split on newlines/records and that nothing is persisted.
+- DONE: `bun test convex/memoryImport.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 rows written by preview (PRD F-51).
+- Pass: 1 · Depends: TRW-1159 · Size: ~1.5 h
+
+### TRW-1161 — importCommit with `metadata.source`
+- WHY: PRD F-51 "saves the kept items"; TRD §5 "`remember` for each kept item, with `metadata.source`".
+- SCOPE: `convex/memoryImport.ts`, `convex/memoryImport.test.ts`.
+- MUTATES: writes a `memories` row per kept item (via `remember`), each with `metadata.source`.
+- STEPS: 1) code-map `importCommit`; 2) confirm it calls `remember` per kept item and carries `metadata.source`; 3) test kept items persist with the right source and dropped items never persist.
+- DONE: `bun test convex/memoryImport.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: kept items saved, dropped items not saved (PRD F-51).
+- Pass: 1 · Depends: TRW-1160 · Size: ~1.5 h
+
+### TRW-1162 — Salience decay + access tracking (verify)
+- WHY: `memories` schema has `salience`, `decayRate`, `lastAccessed`, `accessCount`; PRD F-50 memory adapter sits on it.
+- SCOPE: `convex/memories.ts`, `convex/memories.test.ts`.
+- MUTATES: none (verify `decayMemories` + access tracking).
+- STEPS: 1) code-map `convex/memories.ts` `decayMemories`/`updateSalience`/`extractMemories` (exist); 2) confirm recall bumps `accessCount`/`lastAccessed`; 3) test a decay pass lowers salience without deleting, and access tracking increments.
+- DONE: `bun test convex/memories.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: decay never hard-deletes (PRD F-131 soft-delete rule).
+- Pass: 1 · Depends: TRW-1040 · Size: ~1.5 h
+
+### TRW-1163 — Memory stats by sector (verify)
+- WHY: `memories` has `sector` (semantic/episodic/procedural/emotional/general); insights reference it.
+- SCOPE: `convex/memories.ts`, `convex/memories.test.ts`.
+- MUTATES: none (verify `getMemoryStats`).
+- STEPS: 1) code-map `getMemoryStats` (exists); 2) confirm it counts live memories per sector and ignores forgotten rows; 3) test counts and empty-state.
+- DONE: `bun test convex/memories.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: counts reflect live (non-deleted) rows only (product rule).
+- Pass: 1 · Depends: TRW-1162 · Size: ~1 h
+
+### TRW-1164 — `entities` table (additive) + schema
+- WHY: PRD F-54 "people, projects, goals, places and habits, linked"; TRD §5c `entities` table.
+- SCOPE: `convex/schema.ts` (additive `entities` table), `convex/entities.ts` (new), `convex/entities.test.ts` (new).
+- MUTATES: new `entities` table (userId, kind person|project|goal|place|habit, name, aliases, embedding); no existing field changed.
+- STEPS: 1) code-map `convex/schema.ts` for `entities`; 2) add the table with `by_userId`, `by_userId_kind`, `by_userId_deletedAt`; 3) add `convex/entities.ts` `upsert`/`list`/`remove` (soft-delete); 4) test upsert dedupes on (name, kind), remove soft-deletes.
+- DONE: `bun test convex/entities.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: `kind` ∈ {person, project, goal, place, habit} (TRD §5c; product rule).
+- Pass: 1 · Depends: TRW-1030 · Size: ~2.5 h
+
+### TRW-1165 — `edges` table (additive) + origin extracted|inferred
+- WHY: TRD §5c `edges` table with `origin` extracted|inferred and `confidence`.
+- SCOPE: `convex/schema.ts` (additive `edges` table), `convex/edges.ts` (new), `convex/edges.test.ts` (new).
+- MUTATES: new `edges` table (userId, from, to, relation, origin, confidence, sourceRef); no existing field changed.
+- STEPS: 1) code-map for `edges`; 2) add the table (indexes `by_userId`, `by_userId_origin`, `by_userId_deletedAt`); 3) `convex/edges.ts` `upsert`/`listByEntity`/`remove`; 4) test origin enum, confidence bounds [0,1], soft delete.
+- DONE: `bun test convex/edges.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: `origin` ∈ {extracted, inferred} (TRD §5c); `confidence` ∈ [0,1] (product rule).
+- Pass: 1 · Depends: TRW-1164 · Size: ~2 h
+
+### TRW-1166 — Retain action: extract entities + claims after chat turn / page save
+- WHY: TRD §5c "after each chat turn and each page save, a scheduled action extracts entities and claims into memories + entities + edges".
+- SCOPE: `convex/retain.ts` (new), `convex/retain.test.ts` (new).
+- MUTATES: writes `memories` (claims) + `entities` + `edges` (extracted origin).
+- STEPS: 1) code-map for any retain/extract action; 2) add `retain({sourceText, sourceRef})` that extracts entities and claims and upserts them with `origin: extracted`; 3) wire it to run after a coach turn and after `notes.save` (post-write, best-effort); 4) test extraction writes extracted-origin rows and never inferred rows.
+- DONE: `bun test convex/retain.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: extraction origin = `extracted` only (TRD §5c); retention is best-effort and never blocks a save (product rule).
+- Pass: 1 · Depends: TRW-1164, TRW-1165 · Size: ~3 h
+
+### TRW-1167 — Inferred links marked as guesses (distinct from user `[[links]]`)
+- WHY: PRD F-54 "links the user wrote (`[[links]]`, blocks) are kept apart from links the AI guessed, which are marked as guesses"; TRD §5c `origin`.
+- SCOPE: `convex/retain.ts`, `convex/edges.ts`, `convex/retain.test.ts`.
+- MUTATES: `edges.origin` — user-written links stay `extracted`; model-guessed links are `inferred`.
+- STEPS: 1) code-map wiki-links extraction (`packages/utils/src/wiki-links.ts`); 2) ensure `[[links]]` from a page → `origin: extracted` with `sourceRef`; 3) ensure model-guessed links → `origin: inferred` with `confidence`; 4) test the two never merge and inferred links render a "guess" marker.
+- DONE: `bun test convex/retain.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: `origin` distinguishes extracted vs inferred (TRD §5c; product rule).
+- Pass: 1 · Depends: TRW-1166 · Size: ~2 h
+
+### TRW-1168 — Life-graph query: by meaning + keyword + links + time
+- WHY: PRD F-54 "Search by meaning + keyword + links + time" over the life graph.
+- SCOPE: `convex/lib/recall.ts`, `convex/entities.ts`, `convex/memory.test.ts`.
+- MUTATES: none; a query returns entities + edges + supporting memories.
+- STEPS: 1) code-map `recall` (TRW-1154); 2) add `lifeGraph({query})` returning matched entities, their edges, and the memories that support them; 3) test each of the four ways and a merged result.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: merged result deduped and owner-scoped (PRD F-130).
+- Pass: 1 · Depends: TRW-1154, TRW-1165 · Size: ~2.5 h
+
+### TRW-1169 — Life-graph basic view (explorable list + map)
+- WHY: PRD F-54 "a Graphify / Understand Anything-style graph, but for life projects"; TRD §5c "Graph view … END".
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/life-graph.test.tsx`.
+- MUTATES: none (reads `lifeGraph`).
+- STEPS: 1) code-map the memory screens; 2) render a basic explorable list of entities + their edges (tap an entity to expand); 3) mark inferred edges with a "guess" badge; 4) test the list and the guess badge render EN/HE.
+- DONE: `bun test apps/web/components/memory/life-graph.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: inferred edges visibly marked (PRD F-54); 44×44 px targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 1 · Depends: TRW-1168 · Size: ~2.5 h
+
+### TRW-1170 — Reflect cron → observations (nightly, `crons.ts`)
+- WHY: PRD F-55 "a scheduled pass turns many memories into observations"; TRD §5c "Reflect: a Convex cron consolidates memories into `observations`"; §5d "nightly reflect (MVP)".
+- SCOPE: `convex/crons.ts` (add a cron), `convex/reflect.ts` (new), `convex/reflect.test.ts` (new).
+- MUTATES: writes `observations` rows (new additive table) + a nightly `crons` entry.
+- STEPS: 1) code-map `convex/crons.ts` (empty today); 2) add the `observations` table (userId, text, memoryIds, createdAt, deletedAt); 3) add `convex/reflect.ts` `runReflect` consolidating memories into observations, each storing its supporting `memoryIds`; 4) register a nightly cron; 5) test `runReflect` produces observations with correct `memoryIds` and is idempotent per day.
+- DONE: `bun test convex/reflect.test.ts` exits 0.
+- EVIDENCE: test output; schema diff.
+- Numbers: observations carry their supporting memory ids (TRD §5c); cron runs once nightly (product rule).
+- Pass: 1 · Depends: TRW-1040 · Size: ~3 h
+
+### TRW-1171 — Observations rows + delete (schema + mutation)
+- WHY: PRD F-55 "Observations are shown to the user and can be deleted"; TRD §5c.
+- SCOPE: `convex/reflect.ts`, `convex/schema.ts` (additive `observations`), `convex/reflect.test.ts`.
+- MUTATES: `observations.remove` soft-deletes one observation.
+- STEPS: 1) code-map `observations` from TRW-1170; 2) add `remove({observationId})` soft-delete; 3) test delete + 30-day grace and cross-user refusal.
+- DONE: `bun test convex/reflect.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 30-day grace (PRD F-131); 0 cross-user delete (PRD F-130).
+- Pass: 1 · Depends: TRW-1170 · Size: ~1.5 h
+
+### TRW-1172 — Reflect show observations to user (UI)
+- WHY: PRD F-55 "Observations are shown to the user"; APP-FLOW §6 memory flow.
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/observations.test.tsx`.
+- MUTATES: none (reads observations; delete calls `observations.remove`).
+- STEPS: 1) code-map the memory screens; 2) render the observations list with the exact "gym slips after late nights"-style copy and a delete affordance; 3) test list + delete render EN/HE.
+- DONE: `bun test apps/web/components/memory/observations.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: observations deletable, never a streak (PRD F-55 tone rule).
+- Pass: 1 · Depends: TRW-1171 · Size: ~2 h
+
+### TRW-1173 — Hebrew embedding eval run (Qwen3 vs bge-m3 vs e5, top-3 hit rate)
+- WHY: TRD §5 "Before locking one, run a check on 20 Hebrew + 20 English questions against about 200 of Amit's own notes. Compare Qwen3-Embedding-8B, bge-m3 and multilingual-e5-large-instruct on top-3 hit rate."
+- SCOPE: `scripts/embedding-eval/` (new), `scripts/embedding-eval/run.ts`, `scripts/embedding-eval/README.md`.
+- MUTATES: none (read-only eval; writes a report file).
+- STEPS: 1) code-map for an existing eval harness (chunk 1 TRW-1046 may have seeded one); 2) implement a runner that embeds 20 Hebrew + 20 English questions and about 200 notes, then scores each model's top-3 hit rate; 3) run it and write `top3HitRate` per model to the report; 4) if the eval cannot run (no key/no corpus), write `UNKNOWN` with the reason.
+- DONE: `bun run scripts/embedding-eval/run.ts` prints a per-model top-3 hit rate table.
+- EVIDENCE: report file + console output.
+- Numbers: Qwen3-Embedding-8B multilingual MTEB 70.58 (DeepInfra catalogue); top-3 hit rate target: UNKNOWN — Amit to set the acceptance bar.
+- Pass: 1 · Depends: TRW-1046 · Size: ~3 h
+
+### TRW-1174 — Embedding model lock + record winner
+- WHY: TRD §5 "Changing the model later means re-embedding everything" — lock once the eval (TRW-1173) has numbers.
+- SCOPE: `convex/memory.ts`, `convex/lib/embedding.ts` (new), `convex/memory.test.ts`.
+- MUTATES: none; the chosen model id + dims live in one place.
+- STEPS: 1) code-map where the embedding model id is referenced; 2) centralise it in `convex/lib/embedding.ts` (`EMBEDDING_MODEL`, `EMBEDDING_DIMS`); 3) default stays `Qwen/Qwen3-Embedding-8B` at 1,024 dims until the eval says otherwise; 4) test the constants drive the write path.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 1,024 dims (Matryoshka truncation, TRD §5). Final model: UNKNOWN — Amit to confirm from the eval.
+- Pass: 1 · Depends: TRW-1173 · Size: ~1.5 h
+
+### TRW-1175 — Re-embed migration path (model change → re-embed all)
+- WHY: TRD §5 "Changing the model later means re-embedding everything."
+- SCOPE: `convex/lib/embedding.ts`, `convex/memory.ts`, `convex/memory.test.ts`.
+- MUTATES: none (a migration action re-embeds `memories` without deleting rows).
+- STEPS: 1) code-map `remember`'s embedding write; 2) add `reEmbedAll()` (action) that re-embeds every live memory with the current model, in bounded batches; 3) test it re-writes vectors and leaves content untouched.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: bounded batches ≤ 100 docs/read to stay under Convex limits (https://docs.convex.dev/production/state/limits).
+- Pass: 1 · Depends: TRW-1174 · Size: ~2 h
+
+### TRW-1176 — Past-chat hybrid search (Agent `contextOptions`, `searchOtherThreads`)
+- WHY: PRD F-50 "the coach can also search the user's past chats"; TRD §5 "Past chats come from the Agent's `contextOptions.searchOptions` with textSearch and vectorSearch on, and searchOtherThreads: true".
+- SCOPE: `convex/coach.ts`, `convex/lib/agentComponent.ts`, `convex/coach.test.ts`.
+- MUTATES: none (Agent context configuration).
+- STEPS: 1) code-map `convex/coach.ts` Agent definition and `convex/lib/agentComponent.ts`; 2) enable `contextOptions.searchOptions` with `textSearch` + `vectorSearch` and `searchOtherThreads: true` for the same user; 3) test past-thread content is surfaced to the model context and other users' threads are not.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: search scoped to `userId` (PRD F-130); 0 cross-user thread leakage.
+- Pass: 1 · Depends: TRW-1047 · Size: ~2 h
+
+### TRW-1177 — Pages searchable via `@convex-dev/rag` (per-user namespace)
+- WHY: TRD §5 "Pages are searchable through `@convex-dev/rag`, one namespace per user, as the coach's `searchMemory` tool".
+- SCOPE: `convex/rag.ts` (new), `convex/search.ts`, `convex/search.test.ts` (extend).
+- MUTATES: none; page content is indexed into a per-user RAG namespace.
+- STEPS: 1) code-map `convex/search.ts` (has `all`); 2) add a per-user RAG namespace with the `notes` pages as sources; 3) expose `searchPages({query})`; 4) test a page query returns the right page and never another user's page.
+- DONE: `bun test convex/search.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: one namespace per user (TRD §5); 0 cross-user results (PRD F-130).
+- Pass: 1 · Depends: TRW-1050 · Size: ~2.5 h
+
+### TRW-1178 — `searchMemory` tool reads pages + memories (wiring)
+- WHY: PRD F-21 "the coach reads the user's pages and memory for context"; TRD §1 `searchMemory` tool.
+- SCOPE: `convex/coach.ts`, `convex/mcpTools.ts`, `convex/coach.test.ts`.
+- MUTATES: none; `searchMemory` returns merged page + memory results.
+- STEPS: 1) code-map `searchMemory` (chunk 1 TRW-1050); 2) make it call `recall` (memory) + `searchPages` (RAG); 3) test the tool returns both and a mock-model turn uses it; 4) no real model call in the test.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 network calls in tests (include.md §7.8); merged results owner-scoped (PRD F-130).
+- Pass: 1 · Depends: TRW-1154, TRW-1177 · Size: ~2 h
+
+### TRW-1179 — Dial 0–10 injection into the system prompt
+- WHY: PRD F-25 "dial 0–10"; `.cursorrules` "inject the current value into the system prompt".
+- SCOPE: `convex/coach.ts`, `convex/lib/coachPrompt.ts`, `convex/lib/coachPrompt.test.ts`.
+- MUTATES: none; the dial value is injected into the coach system prompt per turn.
+- STEPS: 1) code-map `coach.setDial` (exists) and `convex/lib/coachPrompt.ts` (exists); 2) confirm the stored dial is read and injected as a numbered instruction (0 = gentle, 10 = firm); 3) test each dial value (0, 5, 10) changes the prompt deterministically.
+- DONE: `bun test convex/lib/coachPrompt.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: dial range 0–10 inclusive (product rule).
+- Pass: 1 · Depends: TRW-1047 · Size: ~2 h
+
+### TRW-1180 — Coach chat opens at the current dial
+- WHY: APP-FLOW §6 "Coach: opens at the current dial (0–10)".
+- SCOPE: `apps/web/components/coach/`, `apps/web/components/coach-controls/`, `apps/web/components/coach/dial.test.tsx`.
+- MUTATES: none (reads `coach.getSettings`).
+- STEPS: 1) code-map `coach-controls` (dial control exists); 2) render the dial at the stored value on open; 3) test the initial value loads and a change persists via `setDial`.
+- DONE: `bun test apps/web/components/coach/dial.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: dial 0–10 (product rule); 44×44 px targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 1 · Depends: TRW-1179 · Size: ~1.5 h
+
+### TRW-1181 — Bad-day detection: words lower the dial by two + say so
+- WHY: APP-FLOW §6 "Bad-day words lower the dial by two and say so"; PRD F-25.
+- SCOPE: `convex/coach.ts`, `convex/lib/coachLoad.ts`, `convex/lib/coachLoad.test.ts`.
+- MUTATES: none (the effective dial for the turn is lowered; the stored dial is unchanged unless the user moves it).
+- STEPS: 1) code-map `convex/lib/coachLoad.ts` (exists); 2) detect bad-day words in the user's message and lower the *effective* dial by 2 (floor 0), and make the coach say it adjusted; 3) test a bad-day message lowers the effective dial and a neutral one leaves it.
+- DONE: `bun test convex/lib/coachLoad.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: lower by 2, floor 0 (APP-FLOW §6; product rule).
+- Pass: 1 · Depends: TRW-1179 · Size: ~2 h
+
+### TRW-1182 — Bad-day phrase list + neutral copy (no shame)
+- WHY: PRD F-25 "bad-day detection"; tone rule "never shame".
+- SCOPE: `convex/lib/coachLoad.ts`, `convex/lib/shameWords.ts`, `convex/lib/coachLoad.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map the bad-day phrase list; 2) maintain an explicit phrase list (e.g. "can't", "too much", "exhausted") and a neutral "adjusted" message; 3) test every phrase triggers detection and the reply copy contains no shame word.
+- DONE: `bun test convex/lib/coachLoad.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 shame words in bad-day copy (PRD tone rule).
+- Pass: 1 · Depends: TRW-1181 · Size: ~1.5 h
+
+### TRW-1183 — Panic button: grounding card + one 10-second action
+- WHY: PRD F-25 "panic button"; APP-FLOW §4 "Panic → Grounding card, 10-second action".
+- SCOPE: `convex/coach.ts`, `convex/crisis.ts`, `apps/web/components/coach-controls/`, `apps/web/components/coach-controls/panic.test.tsx`.
+- MUTATES: none (verify `pressPanic`; the action button adds one tiny task).
+- STEPS: 1) code-map `coach.pressPanic` (exists) and `convex/crisis.ts`; 2) render the grounding card + a single "10-second action" button; 3) test the button adds one tiny task to Today (or the action is a no-model, fixed flow).
+- DONE: `bun test apps/web/components/coach-controls/panic.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 1 grounding card + 1 ten-second action (APP-FLOW §4; product rule).
+- Pass: 1 · Depends: TRW-1053 · Size: ~2 h
+
+### TRW-1184 — 10-second action adds a tiny task
+- WHY: PRD F-25 "10-second action"; APP-FLOW §4 "adds a tiny task".
+- SCOPE: `convex/coach.ts`, `convex/tasks.ts`, `convex/coach.test.ts`.
+- MUTATES: writes one small task (via `tasks.create`), with 5-minute undo.
+- STEPS: 1) code-map `pressPanic` + `tasks.create`; 2) the 10-second action creates a tiny task (short title, no time entry demanded); 3) test the task lands on Today and undo removes it.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-minute undo (PRD F-131); no manual time entry demanded (BACKEND-SCHEMA §4.4 task rule).
+- Pass: 1 · Depends: TRW-1183 · Size: ~1.5 h
+
+### TRW-1185 — Crisis card per-country resources (verify; MVP per-country)
+- WHY: PRD F-24 "per-country data MVP"; "show real resources for the user's country".
+- SCOPE: `convex/crisis.ts`, `convex/lib/crisisWords.ts`, `convex/crisis.test.ts` (extend).
+- MUTATES: none (reads a static resources map; card text is fixed, never model-written).
+- STEPS: 1) code-map `convex/crisis.ts` `resourcesCard` (exists); 2) confirm the card returns fixed, per-country resource lines and no model is called; 3) test the crisis path returns fixed text for a known country and a generic fallback otherwise.
+- DONE: `bun test convex/crisis.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: crisis text is fixed content (PRD F-24; TRD security rule 7); 0 model calls on crisis (product rule).
+- Pass: 1 · Depends: TRW-1053 · Size: ~1.5 h
+
+### TRW-1186 — Crisis words → fixed card, no model call (verify)
+- WHY: PRD F-24 "when a user signals crisis, the coach stops coaching"; APP-FLOW §7 "Crisis words: fixed card, no model call".
+- SCOPE: `convex/lib/crisisWords.ts`, `convex/coach.ts`, `convex/lib/crisisWords.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `convex/lib/crisisWords.ts` (exists); 2) confirm a crisis-word message short-circuits the turn to the fixed card with no model call; 3) test the short-circuit and that a non-crisis message still reaches the model.
+- DONE: `bun test convex/lib/crisisWords.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 model calls on a crisis message (PRD F-24).
+- Pass: 1 · Depends: TRW-1185 · Size: ~1.5 h
+
+### TRW-1187 — Realism checker (reject over-optimistic plans)
+- WHY: PRD F-25 "realism checker"; F-26 "anti-slop verification".
+- SCOPE: `convex/lib/coachProposalGuard.ts`, `convex/coach.ts`, `convex/lib/coachProposalGuard.test.ts`.
+- MUTATES: none (a proposal whose plan is unrealistic is flagged for the user before it writes).
+- STEPS: 1) code-map `convex/lib/coachProposalGuard.ts` (exists); 2) add a realism check that flags a proposal packing more than a reasonable day's load (e.g. > 8 h of `durationMin`) and asks the user to confirm; 3) test an over-packed proposal is flagged and a normal one passes.
+- DONE: `bun test convex/lib/coachProposalGuard.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: over-packed threshold 8 h/day: UNKNOWN — Amit to confirm (product choice).
+- Pass: 1 · Depends: TRW-1199 · Size: ~2 h
+
+### TRW-1188 — Forgiveness contract (missed plan → neutral reset)
+- WHY: PRD F-25 "forgiveness contract"; tone rule "never shame".
+- SCOPE: `convex/coach.ts`, `convex/lib/coachPrompt.ts`, `convex/lib/coachPrompt.test.ts`.
+- MUTATES: none (system-prompt rule).
+- STEPS: 1) code-map `coachPrompt.ts`; 2) add a forgiveness-contract line: a missed plan resets neutrally, never counts against the user; 3) test the prompt contains the rule and no shame wording.
+- DONE: `bun test convex/lib/coachPrompt.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 shame wording in the forgiveness contract (PRD tone rule).
+- Pass: 1 · Depends: TRW-1179 · Size: ~1 h
+
+### TRW-1189 — Graduated load 2→4 pacing (Now shows 2, then up to 4)
+- WHY: PRD F-25 "graduated load 2→4"; APP-FLOW §7 "Pacing 2→4 tasks in Now".
+- SCOPE: `apps/web/components/today/`, `apps/web/components/today/pacing.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the Today "Now" list; 2) show 2 tasks in "Now" first, then expand to 4 on the user's action; 3) test 2 shown initially and up to 4 after expansion.
+- DONE: `bun test apps/web/components/today/pacing.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 2 → 4 pacing (APP-FLOW §7; product rule).
+- Pass: 1 · Depends: TRW-1067 · Size: ~1.5 h
+
+### TRW-1190 — Late tasks slide to Later without comment
+- WHY: APP-FLOW §7 "late tasks slide to Later without comment"; PRD F-25 no-shame pacing.
+- SCOPE: `apps/web/components/today/`, `apps/web/components/today/late-slide.test.tsx`.
+- MUTATES: none (display only).
+- STEPS: 1) code-map the Today list; 2) tasks past due slide to "Later" with no comment or badge; 3) test a late task renders under Later with no shame copy.
+- DONE: `bun test apps/web/components/today/late-slide.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 0 shame copy on late tasks (PRD tone rule).
+- Pass: 1 · Depends: TRW-1067 · Size: ~1 h
+
+### TRW-1191 — Anti-slop verification (basic heuristics)
+- WHY: PRD F-26 "anti-slop verification" (END; MVP ships the heuristic subset).
+- SCOPE: `convex/lib/shameWords.ts`, `convex/lib/coachProposalGuard.ts`, `convex/lib/coachProposalGuard.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `coachProposalGuard.ts`; 2) add a heuristic that flags proposal rows with no `reason` or a duplicated title; 3) test a sloppy row is flagged and a complete one passes.
+- DONE: `bun test convex/lib/coachProposalGuard.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: every proposal row needs a `reason` (B03 contract); full Socratic pass: UNKNOWN — Amit (END scope).
+- Pass: 1 · Depends: TRW-1199 · Size: ~1.5 h
+
+### TRW-1192 — Coach reads pages + memory for context (F-21 wiring)
+- WHY: PRD F-21 "the coach reads the user's pages and memory for context".
+- SCOPE: `convex/coach.ts`, `convex/lib/coachLoad.ts`, `convex/coach.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `runCoachReply` + `coachLoad.ts` (exists); 2) confirm the turn loads `context` (memory) + recent pages before composing the prompt; 3) test the loaded context reaches the prompt and is owner-scoped.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: context is owner-scoped (PRD F-130); token cap trim applied (TRD §5 `context`).
+- Pass: 1 · Depends: TRW-1178, TRW-1042 · Size: ~2 h
+
+### TRW-1193 — `createNote` tool wiring (accept/undo, writes a real note)
+- WHY: PRD F-22 "Coach actions: create a note"; each action shows 5-minute Undo.
+- SCOPE: `convex/coach.ts`, `convex/notes.ts`, `convex/coach.test.ts`.
+- MUTATES: writes a `notes` row (via the tool) with 5-minute undo.
+- STEPS: 1) code-map the `createNote` tool (chunk 1 TRW-1048); 2) confirm the tool writes a real note and the chat shows an Undo affordance; 3) test create → undo removes the note.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-minute undo (PRD F-131).
+- Pass: 1 · Depends: TRW-1048, TRW-1020 · Size: ~2 h
+
+### TRW-1194 — `addTaskToToday` tool wiring (accept/undo)
+- WHY: PRD F-22 "add a task to Today"; NW exit check 4.
+- SCOPE: `convex/coach.ts`, `convex/tasks.ts`, `convex/coach.test.ts`.
+- MUTATES: writes a task block/linked row on Today with 5-minute undo.
+- STEPS: 1) code-map `addTaskToToday` (chunk 1 TRW-1048); 2) confirm it writes a `task` block to today's daily page and links the stable row; 3) test add → undo.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-minute undo (PRD F-131); 0 JSON visible (PRD F-02).
+- Pass: 1 · Depends: TRW-1048, TRW-1079 · Size: ~2 h
+
+### TRW-1195 — `fillTemplate` tool wiring (accept/undo)
+- WHY: PRD F-22 "fill a template"; NW exit check 5.
+- SCOPE: `convex/coach.ts`, `convex/templates.ts`, `convex/coach.test.ts`.
+- MUTATES: none (writes a note from the template with token resolution + undo).
+- STEPS: 1) code-map `fillTemplate` (chunk 1 TRW-1048) and `convex/templates.ts`; 2) confirm it copies the template body, resolves tokens, fresh block ids, and shows undo; 3) test fill → undo.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: token resolution + fresh block ids (TRD §4a); 5-minute undo (PRD F-131).
+- Pass: 1 · Depends: TRW-1048, TRW-1027 · Size: ~2 h
+
+### TRW-1196 — `draftModule` approval → live + fallback
+- WHY: PRD F-41/F-42 "preview + Approve/Discard before a module goes live"; TRD §4a "draft → live only on the user's tap" and "a module that fails at render falls back to the built-in layout".
+- SCOPE: `convex/templates.ts`, `convex/coach.ts`, `convex/templates.test.ts`.
+- MUTATES: `template.data.status` draft→live; `enabled: false` on failure.
+- STEPS: 1) code-map `draftModule` (chunk 1 TRW-1049); 2) confirm approval is the only path to `live` and a failing module stays `draft` and falls back to the built-in layout; 3) test approve and fallback.
+- DONE: `bun test convex/templates.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: one bad module never breaks a page (PRD module RULE).
+- Pass: 1 · Depends: TRW-1049 · Size: ~2 h
+
+### TRW-1197 — `scheduleJob` tool needs approval (F-47 wiring)
+- WHY: PRD F-47 "the coach registers a recurring job, after approval"; TRD §5d "needs approval".
+- SCOPE: `convex/coach.ts`, `convex/coach.test.ts`.
+- MUTATES: none (a schedule proposal is created; approval registers it — the `crons` system is chunk 4).
+- STEPS: 1) code-map `scheduleJob` (chunk 1 TRW-1051); 2) confirm a job is only registered after the user's approval, and a rejected one never registers; 3) test approve/reject gating with a mock model.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 jobs registered without approval (PRD F-47).
+- Pass: 1 · Depends: TRW-1051 · Size: ~2 h
+
+### TRW-1198 — Every coach action shows 5-minute Undo (F-22)
+- WHY: PRD F-22 "Each action shows in the chat with a 5-minute Undo".
+- SCOPE: `convex/coach.ts`, `apps/web/components/coach/`, `apps/web/components/coach/action-undo.test.tsx`.
+- MUTATES: none (undo affordance on every coach action).
+- STEPS: 1) code-map `undoProposal` (exists) and the chat action cards; 2) confirm every coach action (createNote/addTaskToToday/fillTemplate/draftModule) renders an Undo with the remaining window; 3) test undo removes the change.
+- DONE: `bun test apps/web/components/coach/action-undo.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: 5-minute undo window (PRD F-131); undo survives a newer operation (21 Oct DESIGN).
+- Pass: 1 · Depends: TRW-1193, TRW-1194 · Size: ~2 h
+
+### TRW-1199 — Coach proposal accept/edit/reject + confidence threshold (OPEN #6/#9)
+- WHY: PRD "accept / edit / reject is law"; HARD_RULES §6.2 confirm/edit/reject vs §6.3 auto-apply ≥ 0.8 — plan conflicts #6 and #9.
+- SCOPE: `convex/lib/coachProposalGuard.ts`, `convex/coach.ts`, `convex/lib/coachProposalGuard.test.ts`.
+- MUTATES: none (proposal decisions gate writes).
+- STEPS: 1) code-map `coachProposalGuard.ts` + `acceptProposal`/`rejectProposal` (exist); 2) ensure every AI mutation surfaces accept/edit/reject, and auto-apply only at `confidence ≥ 0.8` with a 5-minute undo (the current code path); 3) test the ≥ 0.8 auto-apply and sub-0.8 confirm paths; 4) REPORT the two policies + the tunable-threshold location as OPEN (Amit).
+- DONE: `bun test convex/lib/coachProposalGuard.test.ts` exits 0.
+- EVIDENCE: test output; the two OPEN rulings named in REPORT.
+- Numbers: auto-apply ≥ 0.8, confirm 0.5–0.8, dialog < 0.5 (`.cursorrules`); whether it is user-tunable and where the number lives: UNKNOWN — Amit to answer (plan conflict #9).
+- Pass: 1 · Depends: TRW-1049 · Size: ~2.5 h
+
+### TRW-1200 — Anti-shaming on adaptive coach output (dial-varied + bad-day replies)
+- WHY: PRD tone rule "never shame"; the adaptive coach must stay shame-free at every dial and on bad days.
+- SCOPE: `convex/lib/shameWords.ts`, `convex/coach.ts`, `convex/lib/shameWords.test.ts` (extend).
+- MUTATES: none.
+- STEPS: 1) code-map `shameWords.ts` (chunk 1 TRW-1054); 2) run the check over adaptive coach outputs (dial 0/5/10 + bad-day + forgiveness copy); 3) test 0 matches.
+- DONE: `bun test convex/lib/shameWords.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 shame-word matches across adaptive copy (PRD tone rule).
+- Pass: 1 · Depends: TRW-1054, TRW-1181 · Size: ~1.5 h
+
+### TRW-1201 — Mock model extension for dial/bad-day/panic deterministic tests
+- WHY: include.md §7.8 "tests make no real model calls"; the adaptive behaviours need a scripted mock.
+- SCOPE: `convex/lib/mockModel.ts`, `convex/coach.test.ts`, `convex/lib/mockModel.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `convex/lib/mockModel.ts` (chunk 1 TRW-1055); 2) extend the script to vary output by the injected dial and to record the dial/bad-day flags it received; 3) test a dial-10 script differs from a dial-0 script and a bad-day flag is recorded.
+- DONE: `bun test convex/lib/mockModel.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 network calls in tests (include.md §7.8).
+- Pass: 1 · Depends: TRW-1055 · Size: ~2 h
+
+### TRW-1202 — Entitlement/quota ordering before model calls + interim model OPEN (#3)
+- WHY: TRD security rule 3 "auth → entitlement → quota" before any model call; plan conflict #3.
+- SCOPE: `convex/lib/aiGate.ts`, `convex/lib/subscriptionGuards.ts`, `convex/coach.ts`, `convex/lib/aiGate.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `aiGate.ts` + `subscriptionGuards.ts` (exist); 2) confirm every model call is gated auth → entitlement → quota, and an unentitled user gets no model call; 3) test the gate order and that the runtime model id is `deepseek-ai/DeepSeek-V4.1-Flash`; 4) REPORT the interim text model OPEN (GLM 5.3 Flash appears nowhere in the repo; `convex/lib/ai_router.ts` is the source of truth) for Amit.
+- DONE: `bun test convex/lib/aiGate.test.ts` exits 0.
+- EVIDENCE: test output; the OPEN ruling named in REPORT.
+- Numbers: runtime text model `deepseek-ai/DeepSeek-V4.1-Flash` 1M context (https://deepinfra.com/deepseek-ai/DeepSeek-V4.1-Flash). "GLM 5.3 Flash": UNKNOWN — Amit to answer (plan conflict #3).
+- Pass: 1 · Depends: TRW-1056 · Size: ~2 h
+
+### TRW-1203 — Text seam source of truth (verify `ai_router` + AI SDK OPEN #12)
+- WHY: TRD §3 ticket one "`convex/lib/ai_router.ts` is replaced by the Agent definition"; HARD_RULES §2 AI SDK forbidden vs TRD §3 permitted — plan conflict #12.
+- SCOPE: `convex/lib/ai_router.ts`, `convex/coach.ts`, `convex/lib/ai_router.test.ts`.
+- MUTATES: none (verification only).
+- STEPS: 1) code-map `convex/lib/ai_router.ts` (exists) and the Agent `languageModel`; 2) confirm nothing still calls `api.mistral.ai` and the Agent uses the DeepInfra seam; 3) test the seam resolves to DeepSeek V4.1 Flash; 4) REPORT the HARD_RULES §2 vs TRD §3 reconciliation (Amit) in the PR body.
+- DONE: `bun test convex/lib/ai_router.test.ts` exits 0.
+- EVIDENCE: test output; `grep -r MISTRAL_API_KEY convex/` returns nothing.
+- Numbers: 0 Mistral references (ROADMAP P-1 exit check). AI SDK reconciliation: UNKNOWN — Amit to answer (plan conflict #12).
+- Pass: 1 · Depends: TRW-1047 · Size: ~1.5 h
+
+### TRW-1204 — Coach turn claim / concurrency (cancelled request can't overwrite)
+- WHY: 21 Oct TRD "a cancelled or replaced request cannot later overwrite the accepted state"; plan chunk-1 concurrency carried forward.
+- SCOPE: `convex/coach.ts`, `convex/coach.test.ts`.
+- MUTATES: none (verify `claimTurn`/`releaseTurn`).
+- STEPS: 1) code-map `claimTurn`/`releaseTurn` (exist); 2) confirm a stale turn cannot overwrite a newer accepted reply; 3) test the claim guard rejects a late write.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: `TURN_CLAIM_MS` 10 min (coach.ts); generation-epoch guard (21 Oct TRD).
+- Pass: 1 · Depends: TRW-1047 · Size: ~1.5 h
+
+### TRW-1205 — Coach streaming deltas + read-back (verify)
+- WHY: PRD F-20 "replying live"; NW exit check 3 "a typed message gets a reply from the live runtime model".
+- SCOPE: `convex/coach.ts`, `apps/web/components/coach/`, `convex/coach.test.ts`.
+- MUTATES: none (verify `saveStreamDeltas` + read-back).
+- STEPS: 1) code-map `runCoachReply` + the chat UI streaming; 2) confirm replies stream via `saveStreamDeltas: true` and every spoken/text reply shows as text; 3) test a mock stream renders deltas.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: streaming via Convex deltas (TRD §1); no real model call in the test (include.md §7.8).
+- Pass: 1 · Depends: TRW-1052 · Size: ~1.5 h
+
+### TRW-1206 — Coach Thinking state + calm Retry (verify; folds #744)
+- WHY: PRD F-20; issue #744 "Thinking state + Retry"; APP-FLOW §7 coach error copy.
+- SCOPE: `apps/web/components/coach/`, `apps/web/components/coach/thinking-retry.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the coach chat UI; 2) confirm a visible Thinking state while a reply streams and a calm Retry on failure ("The coach is offline. Your list still works."); 3) test Thinking + Retry render EN/HE.
+- DONE: `bun test apps/web/components/coach/thinking-retry.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: offline copy exact (APP-FLOW §7); 44×44 px Retry target (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 1 · Depends: TRW-1052 · Size: ~1.5 h
+
+### TRW-1207 — Coach answers in the user's locale (F-73)
+- WHY: PRD F-73 "The coach and voice answer in the user's chosen language"; TRD §5b "The coach and TTS answer in `users.locale`".
+- SCOPE: `convex/coach.ts`, `convex/lib/coachPrompt.ts`, `convex/coach.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map where `users.locale` is read; 2) inject the locale into the system prompt so the coach replies in EN or HE; 3) test a `he` user's prompt instructs Hebrew and an `en` user's instructs English.
+- DONE: `bun test convex/coach.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: locale ∈ {en, he} (TRD §5b); RTL for he (TRD §5b).
+- Pass: 1 · Depends: TRW-1179 · Size: ~1.5 h
+
+### TRW-1208 — Coach/memory EN/HE strings
+- WHY: PRD F-70; TRD §5b typed message files.
+- SCOPE: `apps/web/messages/en.json`, `apps/web/messages/he.json`, `apps/web/lib/locale.test.ts`.
+- MUTATES: none; every coach + memory visible string keyed EN+HE.
+- STEPS: 1) code-map the coach + memory components; 2) move their visible copy into `en.json`/`he.json`; 3) test switch + Hebrew fallback to English.
+- DONE: `bun test apps/web/lib/locale.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 100% of visible coach/memory strings keyed EN+HE (product rule).
+- Pass: 2 · Depends: TRW-1058 · Size: ~2 h
+
+### TRW-1209 — Coach chat RTL (Hebrew)
+- WHY: PRD F-71/F-72; TRD §5b `dir` from locale, logical CSS.
+- SCOPE: `apps/web/components/coach/`, `apps/web/components/coach/rtl.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the coach chat layout; 2) confirm Hebrew flips the chat to RTL with logical CSS and `dir="auto"` on message text; 3) test RTL direction and mixed-line rendering.
+- DONE: `bun test apps/web/components/coach/rtl.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: `dir` from locale; logical CSS only (TRD §5b).
+- Pass: 2 · Depends: TRW-1208 · Size: ~1.5 h
+
+### TRW-1210 — Memory screen EN/HE strings
+- WHY: PRD F-70; "What Tempo remembers" is user-facing.
+- SCOPE: `apps/web/messages/en.json`, `apps/web/messages/he.json`, `apps/web/lib/locale.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map the memory screens; 2) key every visible string EN+HE; 3) test switch + fallback.
+- DONE: `bun test apps/web/lib/locale.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 100% keyed EN+HE (product rule).
+- Pass: 2 · Depends: TRW-1208 · Size: ~1.5 h
+
+### TRW-1211 — Memory screen RTL
+- WHY: PRD F-71/F-72.
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/rtl.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the memory screens; 2) confirm Hebrew RTL + `dir="auto"` per paragraph; 3) test RTL.
+- DONE: `bun test apps/web/components/memory/rtl.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: `dir` from locale (TRD §5b).
+- Pass: 2 · Depends: TRW-1210 · Size: ~1 h
+
+### TRW-1212 — Coach accessibility (keyboard, focus, labels, contrast)
+- WHY: UI-BRIEF §6; include.md §7.2 accessibility baseline.
+- SCOPE: `apps/web/components/coach/`, `apps/web/components/coach/a11y.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the coach chat; 2) full keyboard use, visible focus, labelled controls, 44×44 targets, AA contrast; 3) test focus order and contrast.
+- DONE: `bun test apps/web/components/coach/a11y.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: WCAG AA 4.5:1 (3:1 large) contrast (https://www.w3.org/TR/WCAG21/#contrast-minimum); 44×44 targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 2 · Depends: TRW-1206 · Size: ~2 h
+
+### TRW-1213 — Memory accessibility
+- WHY: UI-BRIEF §6; include.md §7.2.
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/a11y.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the memory screens; 2) keyboard, focus, labels, 44×44, contrast; 3) test.
+- DONE: `bun test apps/web/components/memory/a11y.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: WCAG AA 4.5:1 (https://www.w3.org/TR/WCAG21/#contrast-minimum); 44×44 targets (https://www.w3.org/TR/WCAG21/#target-size).
+- Pass: 2 · Depends: TRW-1216 · Size: ~2 h
+
+### TRW-1214 — Coach empty/loading/error/offline states
+- WHY: APP-FLOW §7 "Coach: opens at the dial; The coach is offline. Your list still works."; 21 Oct "honest states".
+- SCOPE: `apps/web/components/coach/`, `apps/web/components/coach/states.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the coach chat states; 2) implement exact copy for empty, loading, error, and offline; 3) test each state.
+- DONE: `bun test apps/web/components/coach/states.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: offline copy exact (APP-FLOW §7); no false queued-save promise (21 Oct DESIGN).
+- Pass: 2 · Depends: TRW-1206 · Size: ~1.5 h
+
+### TRW-1215 — Memory empty/loading/error states
+- WHY: APP-FLOW §7; 21 Oct "honest empty/loading/error/offline states".
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/states.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the memory screens; 2) implement exact empty/loading/error copy; 3) test each state.
+- DONE: `bun test apps/web/components/memory/states.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: honest empty/error copy (21 Oct DESIGN).
+- Pass: 2 · Depends: TRW-1216 · Size: ~1.5 h
+
+### TRW-1216 — Memory view ("What Tempo remembers") UI
+- WHY: PRD F-52 "See and forget memories"; APP-FLOW §6 memory flow.
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/memory-view.test.tsx`.
+- MUTATES: none (reads `memory.list`/`recall`; forget/export call their mutations).
+- STEPS: 1) code-map the memory components; 2) render the list with forget-one / forget-all / export affordances; 3) test list + forget + export buttons render EN/HE.
+- DONE: `bun test apps/web/components/memory/memory-view.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: every action reachable from the view (APP-FLOW §6).
+- Pass: 1 · Depends: TRW-1156, TRW-1158 · Size: ~2.5 h
+
+### TRW-1217 — Memory forget one / forget all UI + undo
+- WHY: PRD F-52; APP-FLOW §6.
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/forget.test.tsx`.
+- MUTATES: none (calls `memory.forget`/`forgetAll`).
+- STEPS: 1) code-map the forget affordances; 2) wire forget-one with 5-minute undo and forget-all with a confirm; 3) test undo + confirm render.
+- DONE: `bun test apps/web/components/memory/forget.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: 5-minute undo (PRD F-131); confirmation before forget-all (product rule).
+- Pass: 1 · Depends: TRW-1216 · Size: ~1.5 h
+
+### TRW-1218 — Memory export markdown UI (download)
+- WHY: PRD F-52 "export all memories as markdown".
+- SCOPE: `apps/web/components/memory-export/`, `apps/web/components/memory-export/export.test.tsx`.
+- MUTATES: none (downloads the `exportAll` markdown).
+- STEPS: 1) code-map `memory-export` components (exist); 2) wire the export button to `exportAll` and trigger a `.md` download; 3) test the download triggers with the expected content.
+- DONE: `bun test apps/web/components/memory-export/export.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: export is plain markdown (PRD F-52); 0 JSON in the export (PRD F-02).
+- Pass: 1 · Depends: TRW-1158 · Size: ~1.5 h
+
+### TRW-1219 — Memory import UI (review keep/edit/drop)
+- WHY: PRD F-51 "Tempo shows each item to keep, edit or drop".
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/import-review.test.tsx`.
+- MUTATES: none (calls `importPreview`/`importCommit`).
+- STEPS: 1) code-map the import UI; 2) render the review list with keep/edit/drop per item; 3) test keep commits and drop never persists.
+- DONE: `bun test apps/web/components/memory/import-review.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: kept items saved, dropped items not saved (PRD F-51).
+- Pass: 1 · Depends: TRW-1161 · Size: ~2.5 h
+
+### TRW-1220 — Life-graph basic view UI (wired to `lifeGraph`)
+- WHY: PRD F-54.
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/life-graph-view.test.tsx`.
+- MUTATES: none.
+- STEPS: 1) code-map the life-graph list (TRW-1169); 2) wire it to `lifeGraph`; 3) test entities + edges + guess badges render.
+- DONE: `bun test apps/web/components/memory/life-graph-view.test.tsx` exits 0.
+- EVIDENCE: test output; EN/HE keys.
+- Numbers: inferred links visibly marked (PRD F-54).
+- Pass: 1 · Depends: TRW-1168 · Size: ~2 h
+
+### TRW-1221 — Reflect observations UI (show + delete)
+- WHY: PRD F-55 "Observations are shown to the user and can be deleted".
+- SCOPE: `apps/web/components/memory/`, `apps/web/components/memory/observations-view.test.tsx`.
+- MUTATES: none (calls `observations.remove`).
+- STEPS: 1) code-map the observations list (TRW-1172); 2) wire show + delete; 3) test.
+- DONE: `bun test apps/web/components/memory/observations-view.test.tsx` exits 0.
+- EVIDENCE: test output.
+- Numbers: observations deletable (PRD F-55).
+- Pass: 1 · Depends: TRW-1172 · Size: ~1.5 h
+
+### TRW-1222 — FD-01 coach e2e (chat → addTaskToToday → undo)
+- WHY: PRD §3.1 exit checks 3–4; 21 Oct five-loop preview pattern.
+- SCOPE: `tests/e2e/fd01-coach.spec.ts` (new).
+- MUTATES: none (test only).
+- STEPS: 1) code-map the FD-01 spec (TRW-1057) and the coach e2e; 2) drive: sign in → chat "Add 'call the bank' to today" → a task block appears on Today → Undo removes it; 3) assert no JSON anywhere; 4) run it.
+- DONE: `bunx playwright test tests/e2e/fd01-coach.spec.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: accepted action survives reload; 0 raw JSON visible (PRD F-02).
+- Pass: 2 · Depends: TRW-1194, TRW-1198 · Size: ~2.5 h
+
+### TRW-1223 — Memory e2e (remember → recall → forget → export)
+- WHY: PRD §3.1 exit check 6; APP-FLOW §6.
+- SCOPE: `tests/e2e/fd01-memory.spec.ts` (new).
+- MUTATES: none (test only).
+- STEPS: 1) code-map the memory import e2e; 2) drive: paste a memory export → review → keep one → it appears under "What Tempo remembers" → forget it → export shows the rest; 3) run it.
+- DONE: `bunx playwright test tests/e2e/fd01-memory.spec.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: kept items persist; forgotten items excluded from export (PRD F-51/F-52).
+- Pass: 2 · Depends: TRW-1216, TRW-1219 · Size: ~2.5 h
+
+### TRW-1224 — Coach proposal e2e (accept/edit/reject)
+- WHY: PRD "accept / edit / reject is law"; 21 Oct five-loop "accept+Undo a proposal".
+- SCOPE: `tests/e2e/fd01-proposal.spec.ts` (new).
+- MUTATES: none (test only).
+- STEPS: 1) code-map the proposal card e2e; 2) drive: coach proposes a plan → reject one row → accept the rest → undo one accepted row; 3) assert nothing writes before accept; 4) run it.
+- DONE: `bunx playwright test tests/e2e/fd01-proposal.spec.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: nothing written until accept (PRD F-09); 5-minute undo (PRD F-131).
+- Pass: 2 · Depends: TRW-1199 · Size: ~2.5 h
+
+### TRW-1225 — Anti-shaming regression test (all coach copy + adaptive output)
+- WHY: PRD tone rule "never shame" must hold across every adaptive reply.
+- SCOPE: `convex/lib/shameWords.test.ts` (extend).
+- MUTATES: none (test only).
+- STEPS: 1) code-map `shameWords.ts`; 2) add a regression that scans fixed coach copy, nag defaults, bad-day, forgiveness and crisis copy; 3) assert 0 matches.
+- DONE: `bun test convex/lib/shameWords.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 shame-word matches (PRD tone rule).
+- Pass: 1 · Depends: TRW-1200 · Size: ~1 h
+
+### TRW-1226 — Coach quota/entitlement e2e (unentitled user gets no model call)
+- WHY: TRD security rule 3; PRD F-110 billing gating.
+- SCOPE: `convex/lib/aiGate.test.ts` (extend).
+- MUTATES: none (test only).
+- STEPS: 1) code-map `aiGate.ts`; 2) assert auth → entitlement → quota order and that an unentitled/over-quota user gets no model call (mock only); 3) test.
+- DONE: `bun test convex/lib/aiGate.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 model calls for an unentitled user (TRD security rule 3).
+- Pass: 1 · Depends: TRW-1202 · Size: ~1.5 h
+
+### TRW-1227 — Memory cross-user isolation test (recall never crosses users)
+- WHY: PRD F-130; BACKEND-SCHEMA §6 "a user sees only their own rows".
+- SCOPE: `convex/memory.test.ts` (extend).
+- MUTATES: none (test only).
+- STEPS: 1) code-map `recall`/`lifeGraph` owner filters; 2) assert a user's recall/life-graph/export never returns another user's memory/entity/edge; 3) test.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 cross-user leakage (PRD F-130).
+- Pass: 1 · Depends: TRW-1154, TRW-1168 · Size: ~1 h
+
+### TRW-1228 — Reflect cron e2e (run reflect once → observations appear)
+- WHY: PRD F-55; TRD §5c nightly reflect.
+- SCOPE: `convex/reflect.test.ts` (extend).
+- MUTATES: none (test only; runs `runReflect` once).
+- STEPS: 1) code-map `runReflect`; 2) seed memories → run reflect once → assert observations appear with correct `memoryIds` → run again → no duplicate for the same day; 3) test.
+- DONE: `bun test convex/reflect.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: idempotent per day (product rule); observations carry supporting ids (TRD §5c).
+- Pass: 1 · Depends: TRW-1170 · Size: ~1.5 h
+
+### TRW-1229 — Coach/memory perf budget (recall bounded + under budget)
+- WHY: TRD §7.6 "Bounded queries"; recall and life-graph must stay within Convex read limits.
+- SCOPE: `convex/lib/recall.ts`, `convex/lib/bounded.ts`, `convex/memory.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map `bounded.ts` (chunk 1 TRW-1035) and `recall.ts`; 2) bound each leg (page size, byte cap) and merge under a single read budget; 3) test a large corpus stays under the budget and returns a cursor.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: Convex 16 MiB read / 32,000 docs (https://docs.convex.dev/production/state/limits); page max 100.
+- Pass: 1 · Depends: TRW-1154, TRW-1035 · Size: ~2 h
+
+### TRW-1230 — Memory bounded queries + quotas (verify)
+- WHY: TRD §7.6; BACKEND-SCHEMA resource quotas.
+- SCOPE: `convex/memory.ts`, `convex/memories.ts`, `convex/memory.test.ts`.
+- MUTATES: none.
+- STEPS: 1) code-map the memory read paths; 2) confirm list/recall/export use `clampPageSize` and respect per-user caps; 3) test cap enforcement.
+- DONE: `bun test convex/memory.test.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: page max 100; 4 MiB read budget (docs.convex.dev limits; product rule).
+- Pass: 1 · Depends: TRW-1229 · Size: ~1.5 h
+
+### TRW-1231 — Coach/memory smoke (FD-01 extension: memory + coach)
+- WHY: PRD §3.1 exit checks; 21 Oct five-loop preview pattern.
+- SCOPE: `tests/e2e/fd01-coach-memory.spec.ts` (new).
+- MUTATES: none (test only).
+- STEPS: 1) code-map the prior FD-01 specs; 2) drive the combined path: sign in → paste a memory → coach "what do I remember about X" → a reply references the memory → add a task to today; 3) assert no JSON and owner isolation; 4) run it.
+- DONE: `bunx playwright test tests/e2e/fd01-coach-memory.spec.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: 0 JSON visible (PRD F-02); reply references the memory (PRD F-21).
+- Pass: 2 · Depends: TRW-1222, TRW-1223 · Size: ~3 h
+
+### TRW-1232 — Chunk-3 integration e2e (adaptive coach + semantic recall full path)
+- WHY: PRD §3.1; closes chunk 3 by proving the adaptive coach + semantic recall work end to end.
+- SCOPE: `tests/e2e/chunk3.spec.ts` (new).
+- MUTATES: none (test only).
+- STEPS: 1) code-map all chunk-3 units; 2) drive: bad-day message → dial lowers by 2 → coach replies neutrally → panic → 10-second action adds a tiny task → recall by meaning returns the relevant memory; 3) assert every step with mock runtime; 4) run it.
+- DONE: `bunx playwright test tests/e2e/chunk3.spec.ts` exits 0.
+- EVIDENCE: test output.
+- Numbers: dial −2 on bad day (APP-FLOW §6); 10-second action adds 1 task (APP-FLOW §4); 0 real model calls in the test (include.md §7.8).
+- Pass: 2 · Depends: TRW-1222, TRW-1223, TRW-1224 · Size: ~3 h
