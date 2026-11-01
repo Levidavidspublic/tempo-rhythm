@@ -7,9 +7,23 @@ This file plans the **v2** rewrite of the Tempo Flow backlog into buildable tick
 (`docs/backlog/REWRITE-PLAN.md`, tickets TRW-1001…TRW-1232), which stays on disk for history and is
 marked superseded. The new ticket text lands in `docs/backlog/BACKLOG-v2.md`, chunk by chunk.
 
-## 0. Summary (filled at the end of the run — see Step 4)
-Ticket counts by stage, OPEN count, page estimate, chunks done, and the old-ticket supersession map
-are added here once every chunk is written.
+## 0. Summary
+
+All 456 tickets are written. Chunks done: 6 of 6.
+
+- **Ticket count by stage:** MVP (chunks 1–4) 316 · Gen 1 (chunk 5) 80 · Gen 2 (chunk 6) 60 · **total 456**.
+- **OPEN count:** 163 tickets carry a non-`none` OPEN (109 in chunks 1–5, 54 in chunk 6); 293 are `none`. Every
+  OPEN names Amit and the fact it needs, rather than inventing a value.
+- **Page estimate:** ≈ 302 pages (≈ 151,000 words ÷ 500; BACKLOG-v2.md ticket text only).
+- **Supersession of old tickets:** the earlier thin-format rewrite (TRW-1001…TRW-1232, chunks 1–3) is superseded
+  chunk-for-chunk by this file's first three chunks, which re-derive the same inventory in the same build order
+  (both 64 / 84 / 84 tickets):
+  - TRW-1001…TRW-1064 → TFV2-0001…TFV2-0064 (chunk 1)
+  - TRW-1065…TRW-1148 → TFV2-0065…TFV2-0148 (chunk 2)
+  - TRW-1149…TRW-1232 → TFV2-0149…TFV2-0232 (chunk 3)
+  The old chunks 4–6 (TRW-1233…TRW-1456) were never written; this run's chunks 4–6 have no old-ticket predecessors.
+  The renumbering is a fresh derivation from the inventory, not a line-for-line copy, so a new ticket supersedes
+  the old ticket(s) covering the same unit, tracked here at chunk level.
 
 ## 1. Ticket ID scheme
 - Fresh IDs, `TFV2-0001` upward, one per ticket, in build order. No reuse of `TM-####` or `TRW-####`.
@@ -272,7 +286,7 @@ Listed by area; each is the unit a backend ticket targets. All exist on `integra
 | 3 | C · MVP coach & memory | Coach Agent tools (createNote/addTaskToToday/fillTemplate/draftModule/searchMemory/scheduleJob) · adaptive coach (dial, panic, bad-day, realism) · memory port (recall by meaning+keyword+links+time, forget, reflect, life graph) · embeddings + Hebrew eval · anti-shaming · mock model · entitlement/quota ordering | TFV2-0149 … TFV2-0232 | 84 | done |
 | 4 | D · MVP modules, jobs, billing, language, polish | Template/view/code modules + validation + Plain mode · sandboxed code (iframe + Vercel Sandbox) · scheduled jobs (crons) · coach artifacts (flashcard/quiz/checklist/tracker) · billing (Polar/RevenueCat) + entitlements/quota · EN/HE strings + RTL + a11y · landing EN/HE · PWA polish · ask-founder | TFV2-0233 … TFV2-0316 | 84 | done |
 | 5 | E · Gen 1 | Expo native shell (Android APK / iOS TestFlight) · study track (SM-2, flashcards, test, RAG) · connectors (Executor) · MCP server + CLI + REST · BYOK key vault · live voice (Deepgram STT, Chatterbox TTS, barge-in) | TFV2-0317 … TFV2-0396 | 80 | done |
-| 6 | F · Gen 2 (later) | Plugin SDK + marketplace · Tauri desktop + VPS `claude` · store-grade native (push, camera, App Store / Play) · later features (calendar sync, WhatsApp/Telegram, offline inference, family plans) | TFV2-0397 … TFV2-0456 | 60 | todo |
+| 6 | F · Gen 2 (later) | Plugin SDK + marketplace · Tauri desktop + VPS `claude` · store-grade native (push, camera, App Store / Play) · later features (calendar sync, WhatsApp/Telegram, offline inference, family plans) | TFV2-0397 … TFV2-0456 | 60 | done |
 
 ## 7. Open `factory` issues folded in (read 1 Nov 2026)
 Each is folded into exactly one chunk; its ticket notes the issue number so the promotion step dedupes.
