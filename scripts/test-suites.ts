@@ -20,19 +20,12 @@ const TEST_FILE = /(?:\.test|\.spec|_test|_spec)\.(?:[mc]?[jt]s|[jt]sx)$/i;
 const TEST_LIKE = /(?:\.test|\.spec|_test|_spec)\.[^/.]+$/i;
 const BROWSER_SUITE = /^tests\/unit\/kb-[^/]*\.test\.tsx$/;
 
-// `bun run test --timeout=120000` forwards the option to this script. Those are bun-test flags,
-// not suite names, so they are split out here and passed on to every `bun test` subprocess
-// instead of being consumed as a group selector.
-const argv = process.argv.slice(2);
-const runnerFlags = argv.filter((arg) => arg.startsWith("-"));
-const positional = argv.filter((arg) => !arg.startsWith("-"));
-
-const mode = positional[0] ?? "all";
+const mode = process.argv[2] ?? "all";
 // Optional: name browser suites to run (debugging one suite serially).
-const only = positional.slice(1);
+const only = process.argv.slice(3);
 if (!["all", "unit", "browser"].includes(mode)) {
   console.error(
-    `usage: bun scripts/test-suites.ts [all|unit|browser] [tests/unit/kb-*.test.tsx...] [--bun-test-flags] (got "${mode}")`
+    `usage: bun scripts/test-suites.ts [all|unit|browser] [tests/unit/kb-*.test.tsx...] (got "${mode}")`
   );
   process.exit(2);
 }
@@ -82,21 +75,12 @@ if (mode === "all" || mode === "browser") {
     console.error(`no browser suite matched ${only.join(", ")}`);
     process.exit(2);
   }
-  // --max-concurrency=1 last, so a forwarded --max-concurrency cannot re-parallelise the group.
-  for (const suite of selected) await run(["test", suite, ...runnerFlags, "--max-concurrency=1"], suite);
+  for (const suite of selected) await run(["test", suite, "--max-concurrency=1"], suite);
 }
 
 if (mode === "all" || mode === "unit") {
   await run(
-    [
-      "test",
-      "convex",
-      "apps/web/lib",
-      "apps/web/components",
-      "packages",
-      ...unitFiles,
-      ...runnerFlags,
-    ],
+    ["test", "convex", "apps/web/lib", "apps/web/components", "packages", ...unitFiles],
     `unit tests (${unitFiles.length} files in tests/unit, browser suites excluded)`
   );
 }
