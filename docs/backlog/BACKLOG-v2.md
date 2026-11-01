@@ -23,11 +23,7653 @@ build order. `Pass` 1 = clunky (every state works); `Pass` 2 = matches v3 tokens
 
 | Chunk | Stage | Ticket IDs | Count | Status |
 |---|---|---|---|---|
-| 1 | MVP · Core (chat-first) | TFV2-0001 … TFV2-0064 | 64 | todo |
-| 2 | MVP · Planning surface | TFV2-0065 … TFV2-0148 | 84 | todo |
-| 3 | MVP · Coach & memory | TFV2-0149 … TFV2-0232 | 84 | todo |
-| 4 | MVP · Modules, jobs, billing, language, polish | TFV2-0233 … TFV2-0316 | 84 | todo |
-| 5 | Gen 1 | TFV2-0317 … TFV2-0396 | 80 | todo |
+| 1 | MVP · Core (chat-first) | TFV2-0001 … TFV2-0064 | 64 | done |
+| 2 | MVP · Planning surface | TFV2-0065 … TFV2-0148 | 84 | done |
+| 3 | MVP · Coach & memory | TFV2-0149 … TFV2-0232 | 84 | done |
+| 4 | MVP · Modules, jobs, billing, language, polish | TFV2-0233 … TFV2-0316 | 84 | done |
+| 5 | Gen 1 | TFV2-0317 … TFV2-0396 | 80 | done |
 | 6 | Gen 2 (later) | TFV2-0397 … TFV2-0456 | 60 | todo |
 
-<!-- Each chunk's tickets are appended below under a `## Chunk N — …` heading as they are written. -->
+
+
+## Chunk 1 — MVP · Core (chat-first)
+
+### TFV2-0001 — Bounded query helper `convex/lib/bounded.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1348
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §4.11 F-130 (per-user isolation); REWRITE-PLAN-v2 §6 chunk 1 "bounded queries + resource quotas"; #1348 (TM-0032 — Bounded query helper).
+- **GOAL:** A reusable query-wrapper that reads every list the way a coach tool would — with a hard row and byte budget and an explicit `truncated` flag, so no query can ever run unbounded.
+- **SCOPE:** `convex/lib/bounded.ts` (+ `convex/lib/bounded.test.ts`).
+- **MUTATES:** none (adds a pure helper module; no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (the unit is MISSING today — confirmed no `bounded*` file); 2) write `convex/lib/bounded.ts` exporting `boundedQuery<T>(rows: readonly T[], opts: { maxRows: number; maxBytes: number }): { rows: T[]; truncated: boolean }`; 3) count rows first, then bytes by `JSON.stringify` length, stopping at the first budget exceeded and setting `truncated: true`; 4) handle `maxRows=0` (empty, not truncated) and `maxBytes=0` (empty, truncated if rows present); 5) add the unit test file.
+- **DONE:** `bun test convex/lib/bounded.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count) into the PR.
+- **DO NOT:** do not change any existing query's call site; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, any `.env` or workflow.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Pure function, no Convex context. `maxRows` and `maxBytes` are positive integers; a non-finite or negative option throws a `ConvexError`. Return type is always `{ rows, truncated }`; `truncated` is `true` only when at least one row was dropped for budget. Budget check order: row count first, then cumulative byte size. Rows are kept in input order (no sort). Error messages (surfaced by callers, EN/HE): `EN: "Showing the first {n} results." / HE: "מוצגות התוצאות הראשונות: {n}."`. There is no other user-facing copy in this module.
+- **TESTS:**
+  - Given `rows=[]`, `maxRows=10`, `maxBytes=1_000_000` / When `boundedQuery` runs / Then returns `{rows:[], truncated:false}`.
+  - Given 10 rows of 100 bytes and `maxRows=5` / Then `rows.length===5` and `truncated===true`.
+  - Given rows whose cumulative bytes exceed `maxBytes` at row 3 / Then exactly 2 rows return and `truncated===true`.
+  - Given `maxRows=0` with non-empty rows / Then `rows.length===0` and `truncated===true`.
+  - Given `maxRows=0` with empty rows / Then `truncated===false`.
+  - Given a negative `maxBytes` / Then a `ConvexError` is thrown.
+  - Given 5 rows all under budget / Then `rows.length===5` and `truncated===false`.
+- **NUMBERS:** `maxRows` and `maxBytes` are caller-set (UNKNOWN defaults until a caller fixes them — Amit). No industry number applies; correctness is byte-count exactness (deterministic, no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** default budgets for the coach-tool calls (UNKNOWN — Amit).
+
+### TFV2-0002 — Mock language model `convex/lib/mockModel.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1349
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §7 (runtime models); REWRITE-PLAN-v2 §6 chunk 1 "mock model"; #1349 (TM-0050 — Mock language model).
+- **GOAL:** A deterministic in-process stand-in for the runtime model that returns scripted replies and lets coach/chat tests assert exact behaviour without network, keys or spend.
+- **SCOPE:** `convex/lib/mockModel.ts` (+ `convex/lib/mockModel.test.ts`).
+- **MUTATES:** none (pure module; no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING — confirmed no `mockModel*` file); 2) write `mockModel.ts` exporting `mockModel({ queue }: { queue: readonly string[] }): (input: { messages: readonly { role: "system"|"user"|"assistant"; content: string }[] }) => Promise<{ text: string }>`; 3) replies consume `queue` in order; on empty queue return a fixed final reply `"Done."`; 4) record every received `messages` array on the returned callable (expose a `.calls` property) so tests assert the prompt; 5) no network, no `process.env`, no key reads; 6) add the unit test file.
+- **DONE:** `bun test convex/lib/mockModel.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not call any real model, `fetch`, or `ai_router`; do not read or log secrets; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The returned callable is the only API; it is async and always resolves (never rejects). `messages` is validated to be an array of objects with `role` in the allowed set and `content: string`; an invalid `messages` argument throws a `ConvexError` with `EN: "Bad messages for the mock model." / HE: "הודעות לא תקינות למודל המדומה."`. Reply shape mirrors `ai_router.AiResult` minimal (`{ text }`) so callers can substitute it without changes.
+- **TESTS:**
+  - Given `queue=["First","Second"]` / When called twice / Then replies are `"First"` then `"Second"`.
+  - Given empty `queue` / When called / Then returns `"Done."` and records the call.
+  - Given a call / Then `.calls[0]` equals the exact `messages` array passed (deep equal).
+  - Given `messages` missing `content` / Then a `ConvexError` is thrown.
+  - Given 3 queued replies and 4 calls / Then the 4th returns `"Done."`.
+- **NUMBERS:** reply determinism is exact (no range); no latency or score target applies (UNKNOWN — none needed; Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0003 — Anti-shaming copy check `convex/lib/shameWords.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1350
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §13 copy rules (never "failed", "overdue", "streak lost", "must"); REWRITE-PLAN-v2 §6 chunk 1 "anti-shaming"; #1350 (TM-0049 — Anti-shaming copy check).
+- **GOAL:** A word/pattern list plus a pure checker that flags shaming language in any coach or app copy before it reaches the user, so generated text can be rejected or rewritten.
+- **SCOPE:** `convex/lib/shameWords.ts` (+ `convex/lib/shameWords.test.ts`).
+- **MUTATES:** none (pure module; no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/` (unit MISSING today — `crisisWords.ts` exists but `shameWords.ts` does not); 2) write `shameWords.ts` exporting `SHAME_PATTERNS: readonly RegExp[]` (source strings only, no secrets) and `containsShame(text: string): { found: boolean; matches: string[] }`; 3) cover EN and HE shaming terms (e.g. EN "failed", "overdue", "lazy", "must", "should have", "streak lost", "you never"; HE "נכשל", "איחרת", "עצלן", "חייב", "היית צריך"); 4) match whole words case-insensitively (EN) and plain substrings (HE, no case); 5) return the list of matched raw terms, not the text; 6) add the unit test file.
+- **DONE:** `bun test convex/lib/shameWords.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not invent or hard-code user data; do not read/write any table; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not log secrets.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `SHAME_PATTERNS` is a frozen array of compiled RegExps (source strings kept readable for review). `containsShame` accepts a string, never mutates it, and returns `{found, matches}` where `matches` is the array of matched source terms (deduplicated). Matching is conservative (no shaming word may slip through): the checker is allowed to over-flag borderline terms for a human/reviewer pass, but never to under-flag the canonical list.
+- **TESTS:**
+  - Given `"You failed to finish it."` / Then `found===true` and `matches` contains `"failed"`.
+  - Given `"The task is overdue by a day."` / Then `found===true` and `matches` contains `"overdue"`.
+  - Given `"איחרת עם המשימה."` / Then `found===true` and `matches` contains `"איחרת"`.
+  - Given `"Write the plan for Monday."` / Then `found===false`.
+  - Given `"Must do the dishes"` / Then `found===true` (matches `"must"`).
+  - Given a word containing a term as a substring of a benign word (e.g. "mustard") / Then `found===false` for `"must"` (whole-word boundary).
+  - Given `matches` dedupe / When the same term appears twice / Then it appears once in `matches`.
+- **NUMBERS:** recall on the canonical shame list = 100% (must never under-flag); precision may be lower (over-flagging allowed). Source: product copy rule (PRD §13), no external standard — UNKNOWN numeric precision target (Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0004 — Entitlements `convex/lib/entitlements.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1340
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §4.11 F-110 (tiers), F-01a (every approved user gets the premium tier); REWRITE-PLAN-v2 §6 chunk 1 "entitlements"; #1340 (TEMPO-BL-0001 — Entitlements table).
+- **GOAL:** The entitlement decision (tier, user type, beta access, subscription grant) is one reviewed module whose tests prove every approved sign-up lands on the granted tier.
+- **SCOPE:** `convex/lib/entitlements.ts` (+ `convex/lib/entitlements.test.ts`).
+- **MUTATES:** none (reads `users` fields; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/entitlements.ts` (EXISTS: `EntitlementTier`, `GRANTED_ENTITLEMENT_TIER`, `newUserFields`, `buildReturningUserPatch`, `shouldGrantSubscription`, and a test file exist); 2) verify each exported symbol against `convex/schema.ts` `users` fields (`entitlementTier`, `userType`, `betaAccess`); 3) confirm `GRANTED_ENTITLEMENT_TIER === "max"` and `GRANTED_USER_TYPE === "paid"` (premium-for-all, PRD F-01a); 4) read the existing test file and add any missing error/boundary cases listed below; 5) do not rename or re-sign exported symbols (other modules import them).
+- **DONE:** `bun test convex/lib/entitlements.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change `GRANTED_*` values (they encode the premium-for-all ruling); do not edit `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not call RevenueCat or Polar (that is chunk D).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Decision functions are pure of the Convex DB (they take snapshots in, return patches/booleans out). `newUserFields` returns the initial user fields for a newly approved account; `buildReturningUserPatch` returns a minimal patch for an existing row (never overrides an existing paid tier downward); `shouldGrantSubscription` returns `true` for a fresh approved sign-in and `false` when a current grant is still valid. Any tier value is one of `EntitlementTier` (from `Doc<"users">["entitlementTier"]`); unknown tier strings are rejected. User-facing copy when a tier is missing: `EN: "Your plan isn't set up yet." / HE: "התוכנית שלך עדיין לא מוגדרת."`.
+- **TESTS:**
+  - Given a fresh approved sign-in / When `newUserFields` runs / Then `entitlementTier==="max"`, `userType==="paid"`, `betaAccess==="tester"`.
+  - Given an existing paid `max` user / When `buildReturningUserPatch` runs / Then the patch does not lower the tier.
+  - Given an existing grant still valid / When `shouldGrantSubscription` runs / Then `false`.
+  - Given an unknown tier string / Then the input is rejected (throw or `false`, matching current behaviour — assert the actual, documented behaviour).
+  - Given a revoked/absent user snapshot / Then `shouldGrantSubscription` returns the expected (assert current behaviour and add a test if untested).
+- **NUMBERS:** no industry number; correctness is the premium-for-all invariant (PRD F-01a). Pass range: invariant holds on 100% of test cases (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0005 — Lighthouse budget in CI
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** #1342
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §4.8 F-80 (polished look); TICKET-STANDARD.md NUMBERS (Core Web Vitals); REWRITE-PLAN-v2 §6 chunk 1 "smoke + a11y + perf budget"; #1342 (TEMPO-BL-0004 — Lighthouse budget in CI).
+- **GOAL:** CI runs a Lighthouse check against the preview build and fails the loop when performance, accessibility, best-practices or SEO fall under a fixed budget.
+- **SCOPE:** `.github/workflows/ci.yml` (+ `scripts/lighthouse-budget.mjs`, new).
+- **MUTATES:** CI workflow (config). This is the chunk's single config ticket (allowed by the config-guard gate).
+- **STEPS:** 1) Graphify code-map check of `.github/workflows/` (no Lighthouse job exists today — confirmed no `lighthouse` reference in any workflow); 2) add `scripts/lighthouse-budget.mjs` that runs `lighthouse-ci` (or the `lighthouse` package) against the local preview server, collects `performance`, `accessibility`, `best-practices`, `seo`, `largest-contentful-paint`, `cumulative-layout-shift`, `total-blocking-time`; 3) add one CI step that starts the dev server and runs the script, failing on any metric below budget; 4) keep the check non-blocking only for the font/network `UNKNOWN` case documented in AGENTS.md (report `UNKNOWN: lighthouse (Google Fonts blocked)`, do not hard-fail); 5) never weaken a threshold to pass.
+- **DONE:** `bun scripts/lighthouse-budget.mjs` → prints each metric with pass/fail and exits 0 only when all are in budget.
+- **EVIDENCE:** paste the CI step log line showing all four scores and the exit code.
+- **DO NOT:** do not touch secrets or any other workflow; do not lower a threshold, skip a category, or gate the check behind an env flag to make it pass; do not edit `convex/schema.ts`, `convex/auth*` or any `.env`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Budgets (all fail-fast, no ranges that hide regressions): performance ≥ 90, accessibility ≥ 90, best-practices ≥ 90, SEO ≥ 90, LCP ≤ 2500 ms, CLS ≤ 0.1, TBT ≤ 200 ms. The script prints one line per metric with `PASS`/`FAIL` and the measured value; on `FAIL` it exits 1. On a network-blocked font fetch it prints `UNKNOWN: lighthouse (<reason>)` and exits 0 (per AGENTS.md sandbox rule), never a silent pass.
+- **TESTS:** (config ticket — the check is the test) Given a preview server up / When the script runs / Then it prints all seven metrics; Given a metric below budget / Then exit code is 1; Given fonts blocked / Then it prints `UNKNOWN: lighthouse (Google Fonts blocked)` and exits 0.
+- **NUMBERS:** performance ≥ 90, accessibility ≥ 90, best-practices ≥ 90, SEO ≥ 90 (https://developer.chrome.com/docs/lighthouse/overview); LCP ≤ 2.5 s, CLS ≤ 0.1 (https://web.dev/articles/vitals); TBT ≤ 200 ms (https://web.dev/articles/lighthouse-total-blocking-time).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether Lighthouse runs per-PR or once per loop (UNKNOWN — Amit; the plan says the preview builds from the loop PR).
+
+### TFV2-0006 — Block codec + Zod schemas `packages/utils/src/blocks.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §4.1 F-02/F-03 (markdown + JSON blocks, JSON never shown); REWRITE-PLAN-v2 §6 chunk 1 "block codec + Zod schemas + derived indexes"; REWRITE-PLAN-v2 §4 conflict 7 (block model).
+- **GOAL:** The single block codec — Zod schemas, `parseTempoBlocks` and `serializeTempoBlocks` — is verified against its limits and every error/broken-block case is tested.
+- **SCOPE:** `packages/utils/src/blocks.ts` (+ `packages/utils/src/blocks.test.ts`).
+- **MUTATES:** none (shared pure module; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check of `packages/utils/src/blocks.ts` (EXISTS: `BLOCK_CODEC_LIMITS`, `pageMetaDataSchema`, `taskDataSchema`, `templateDataSchema`, `tempoBlockSchema`, `parseTempoBlocks`, `serializeTempoBlocks`, and `blocks.test.ts`); 2) verify `BLOCK_CODEC_LIMITS` against `convex/schema.ts` `noteBlocks` union (page-meta/task/template/broken, `v:1`); 3) confirm the block model: `notes.body` is the page-content authority and `noteBlocks` is a disposable derived index (mark the authority claim OPEN per §4 conflict 7); 4) read the existing test file and add the missing broken-block/limit cases below; 5) do not rename exported symbols or change limit values (other modules depend on them).
+- **DONE:** `bun test packages/utils/src/blocks.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change `BLOCK_CODEC_LIMITS` values or relax a Zod schema; do not surface JSON to the UI; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `parseTempoBlocks(body)` returns `BlockSegment[]` where each segment is `markdown`, `valid` (a parsed Tempo block) or `broken` (an `errorCode` + the offending source span). `serializeTempoBlocks(segments)` is the byte-exact inverse for valid segments. A block over `maxBodyChars`, `maxBlockChars`, `maxBlocks`, `maxJsonDepth`, `maxShortStringChars`, `maxTextChars` or `maxArrayItems` produces a `broken` segment with the matching `errorCode`, never a throw and never silent data loss. Broken-block `errorCode` values match the `noteBlocks` `broken` union in `convex/schema.ts` (`body_too_large`, `too_many_blocks`, `block_too_large`, …). No JSON is ever emitted to the UI.
+- **TESTS:**
+  - Given a body with one valid task block / When `parseTempoBlocks` runs / Then exactly one `valid` segment with `type==="task"`.
+  - Given `serializeTempoBlocks(parseTempoBlocks(body))` / Then output equals input (round-trip) for valid bodies.
+  - Given a block over `maxBlockChars` / Then a `broken` segment with `errorCode==="block_too_large"`.
+  - Given a body over `maxBodyChars` / Then a `broken` segment with `errorCode==="body_too_large"`.
+  - Given more than `maxBlocks` blocks / Then a `broken` segment with `errorCode==="too_many_blocks"`.
+  - Given malformed JSON inside a block fence / Then a `broken` segment (never a throw).
+  - Given a `page-meta` block with a bad `date` / Then Zod rejects (broken), asserting `isoDate` refinement.
+  - Given plain markdown with no block fences / Then all segments are `markdown`.
+- **NUMBERS:** limits are `BLOCK_CODEC_LIMITS` (repo code truth): `maxBodyChars 1_048_576`, `maxBlockChars 65_536`, `maxBlocks 256`, `maxJsonDepth 16`, `maxShortStringChars 200`, `maxTextChars 500`, `maxArrayItems 100`. Round-trip fidelity = byte-exact for valid segments (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** block-model authority — `notes.body` as the single page-content authority with typed tables migrating into blocks and retiring (REWRITE-PLAN-v2 §4 conflict 7; UNKNOWN — Amit). The 12 Oct contracts are the newest and lean toward `notes.body`.
+
+### TFV2-0007 — `notes.save` / `notes.patchBlock` (notes.body authority)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0006.
+- **WHY:** PRD §4.1 F-02/F-03 (every page one markdown document; blocks drawn as elements); REWRITE-PLAN-v2 §6 chunk 1 "notes/pages port (notes.body authority, save/patchBlock)"; REWRITE-PLAN-v2 §4 conflict 7.
+- **GOAL:** `convex/notes.ts` gains a block-aware `save` (whole-body, revision-advancing) and `patchBlock` (one block by id), both writing `notes.body`, advancing `revision`, and leaving an operation receipt for Undo.
+- **SCOPE:** `convex/notes.ts` (+ `convex/notes.test.ts`).
+- **MUTATES:** `notes` table writes (body, revision, updatedAt); adds mutations `save`, `patchBlock`.
+- **STEPS:** 1) Graphify code-map check of `convex/notes.ts` (EXISTS `get`, `getSafe`, `create`, `update`, `remove`, `restore`, `togglePin`, `backlinks`; `save`/`patchBlock` are MISSING); 2) add `save({ id, body, expectedRevision? })` that validates `body` via `parseTempoBlocks`, rejects over-budget bodies, writes `body`, advances `revision` by exactly one, sets `updatedAt`, and writes the operation receipt through `convex/lib/pageLedger.ts`; 3) add `patchBlock({ id, blockId, patch })` that reads `notes.body`, re-serializes only the addressed block (byte-exact elsewhere), and routes through the same save path; 4) keep `update` working for legacy callers or mark it internal; 5) every body-changing write is owner-scoped (`userId` must equal the caller); 6) add the unit test file covering every error case below.
+- **DONE:** `bun test convex/notes.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not write `noteBlocks` directly here (that is TFV2-0008); do not bypass `parseTempoBlocks`; do not change `notes.body` schema; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not surface JSON.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Mutations run in `convex/notes.ts` under the user's own `userId` (auth via `lib/requireUser.ts`). `save` args: `{ id: Id<"notes">, body: string, expectedRevision?: number }`; returns `{ ok: true, revision: number }`. `patchBlock` args: `{ id, blockId, patch: TempoBlock }`; returns `{ ok: true, revision: number }`. On `expectedRevision` mismatch return a `ConvexError` with code `REVISION_CONFLICT`. Over-budget body returns code `BODY_TOO_LARGE`. A missing page or non-owner returns code `NOT_FOUND`. Error copy (EN/HE): `EN: "Someone else changed this page. Reload and try again." / HE: "מישהו אחר שינה את הדף. טענו מחדש ונסו שוב."` (conflict); `EN: "This page is too large to save." / HE: "הדף הזה גדול מדי לשמירה."` (too large).
+- **TESTS:**
+  - Given an owner calls `save` with a valid body / Then `body` updates, `revision` advances by 1, `updatedAt` increases, a page operation receipt exists.
+  - Given `expectedRevision` stale / Then `REVISION_CONFLICT` and `body` unchanged.
+  - Given a body over `BLOCK_CODEC_LIMITS.maxBodyChars` / Then `BODY_TOO_LARGE` and no write.
+  - Given a non-owner calls `save` / Then `NOT_FOUND` (or auth reject) and no write.
+  - Given `patchBlock` on an existing `blockId` / Then only that block's source changes; other segments byte-identical.
+  - Given `patchBlock` on a missing `blockId` / Then `NOT_FOUND` and no write.
+  - Given two sequential `save` calls / Then `revision` is 1 then 2.
+- **NUMBERS:** `notes.body` budget = `BLOCK_CODEC_LIMITS.maxBodyChars` = 1,048,576 chars (repo code). Save round-trip of untouched blocks = byte-exact (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** block-model authority (same as TFV2-0006; UNKNOWN — Amit). `expectedRevision` opt-in vs mandatory (UNKNOWN — Amit).
+
+### TFV2-0008 — `noteBlocks` derived index
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0007.
+- **WHY:** PRD §4.1 F-02 (blocks drawn as their own elements); REWRITE-PLAN-v2 §6 chunk 1 "derived indexes".
+- **GOAL:** Every write through `notes.save`/`patchBlock` keeps the disposable `noteBlocks` derived index in sync with `notes.body`, so block reads never re-parse the whole body.
+- **SCOPE:** `convex/notes.ts` (+ `convex/notes.test.ts`).
+- **MUTATES:** `noteBlocks` table writes (derived index rows for page-meta/task/template/broken blocks).
+- **STEPS:** 1) Graphify code-map check of `convex/schema.ts` `noteBlocks` (EXISTS: union of page-meta/task/template/broken, `v:1`, positional `position`); 2) in the TFV2-0007 save path, after writing `notes.body`, delete-and-reinsert the page's `noteBlocks` rows derived from `parseTempoBlocks(body)` in the same transaction; 3) keep `position` in block order and `blockId` stable; 4) mark `deletedAt` on removed blocks (soft) or hard-delete — assert the existing convention and follow it; 5) add tests proving index/body consistency.
+- **DONE:** `bun test convex/notes.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change the `noteBlocks` schema shape; do not write `noteBlocks` from any other module; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The derived index is disposable (rebuildable from `notes.body` at any time). For each valid block, one `noteBlocks` row is written with `userId`, `noteId`, `type`, `blockId`, `v:1`, `data`, `position`, `createdAt`, `updatedAt`. Broken blocks write a `broken` row with `errorCode`. A save that changes no blocks writes no rows. Consistency invariant: `parseTempoBlocks(body)` block list and `noteBlocks` rows for that page are equal in count, type and `blockId`.
+- **TESTS:**
+  - Given a save with 3 task blocks + 1 page-meta block / Then 4 `noteBlocks` rows exist in block order.
+  - Given a save that removes a block / Then the removed block's row is gone and remaining `position` values are contiguous.
+  - Given a broken block / Then one `broken` row with the right `errorCode`.
+  - Given a save with zero blocks / Then zero rows.
+  - Given index rebuild from the same body / Then the rows are identical (idempotent).
+- **NUMBERS:** row count bound = `BLOCK_CODEC_LIMITS.maxBlocks` = 256 per page (repo code). Index/body consistency = exact on every save (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** block-model authority (same as TFV2-0006; UNKNOWN — Amit).
+
+### TFV2-0009 — `noteLinks` / backlinks derived index
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0007.
+- **WHY:** PRD §4.1 (pages), §4.5 F-54 (user-written `[[links]]`); DESIGN.md §9 (Wikilink → "Linked here"); REWRITE-PLAN-v2 §6 chunk 1 "noteLinks/backlinks derived index".
+- **GOAL:** `[[page]]` links inside `notes.body` are indexed on every save so the editor's "Linked here" list and any backlink query return correct, current links without re-scanning pages.
+- **SCOPE:** `convex/notes_links.ts` (+ `convex/notes_links.test.ts`).
+- **MUTATES:** link-derived index writes (rows keyed by target page id); adds nothing to the `notes` schema itself.
+- **STEPS:** 1) Graphify code-map check of `convex/notes_links.ts` and `convex/notes.ts` `backlinks` query (EXISTS; `notes.ts` `backlinks` is the reader); 2) confirm `notes.save`/`patchBlock` (TFV2-0007) invokes the link-index writer; if not wired, wire it in `notes_links.ts`; 3) index each `[[target]]` occurrence with source page, target page and a snippet; 4) de-duplicate and remove stale links on save; 5) add the unit test file for every error case below.
+- **DONE:** `bun test convex/notes_links.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change the `notes` or `noteBlocks` schema; do not write links from the UI directly; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** A `[[target]]` match uses the same wikilink tokenizer as `packages/utils/src/wiki-links.ts` (EXISTS) so the editor and the index agree. Each indexed link records `sourceId`, `targetId`, a short context snippet and `updatedAt`. The `backlinks({ pageId })` query returns links whose target is `pageId`, ordered newest first, with the source title and snippet. User-facing header copy (EN/HE): `EN: "Linked here" / HE: "מקושר לכאן"`; empty state `EN: "Nothing links here yet." / HE: "עוד אין קישורים לכאן."`.
+- **TESTS:**
+  - Given a page body with `[[Target]]` / When saved / Then one link row exists targeting `Target`.
+  - Given two pages both linking `[[Target]]` / When `backlinks({ pageId: Target })` runs / Then two links return, newest first.
+  - Given a save removes `[[Target]]` / Then its link row is gone.
+  - Given `[[Target]]` appears twice / Then one de-duplicated row.
+  - Given a non-owner calls `backlinks` for another user's page / Then it returns only the caller's own links (isolation).
+  - Given a `[[Target]]` where no page exists / Then the index records the raw text target without a resolved id (unresolved), and the query tolerates it.
+- **NUMBERS:** link scan bound = `LINK_SCAN_LIMIT` (500) and `LINK_SCAN_BYTES` (12 KiB) already in `convex/notes.ts` (repo code). Index correctness = exact after every save (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** block-model authority affects what "a link" is stored as (UNKNOWN — Amit).
+
+### TFV2-0010 — Operation ledger + 5-min Undo `convex/lib/pageLedger.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0006.
+- **WHY:** PRD §4.11 F-131 (Undo 5 minutes on internal changes); §6 rules (accept/reject, undo); REWRITE-PLAN-v2 §6 chunk 1 "operation ledger + 5-min Undo"; REWRITE-PLAN-v2 §4 conflict 6.
+- **GOAL:** The existing page-operation ledger and its 5-minute Undo path are verified end-to-end, with every error and conflict case under test.
+- **SCOPE:** `convex/lib/pageLedger.ts` (+ `convex/lib/pageLedger.test.ts`).
+- **MUTATES:** none (pure ledger helpers; the write path lives in `notes.save`, TFV2-0007).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/pageLedger.ts` (EXISTS: `PAGE_LEDGER_LIMITS`, `PAGE_LEDGER_TIMING`, `validatePageOperationFacts`, `applyPageSplices`, `invertPageSplices`, `diffToSingleSplice`, `checkExpectedRevision`, `digestBody`, `sha256Hex`, and a test file); 2) verify `PAGE_LEDGER_TIMING` encodes the 5-minute Undo window; 3) confirm `notes.save` (TFV2-0007) writes a receipt with the body digest and previous revision; 4) read the existing test file and add the missing error/boundary cases below; 5) do not rename exported symbols.
+- **DONE:** `bun test convex/lib/pageLedger.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change the Undo window duration (5 minutes is a product rule); do not weaken `checkExpectedRevision`; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** A page operation receipt stores `userId`, `pageId`, `kind`, `source`, the `before`/`after` body digests, the previous `revision`, and a `createdAt` timestamp. `checkExpectedRevision` compares the stored revision to the caller's and returns a `PageLedgerResult`. Undo eligibility: an operation is undoable only while `now - createdAt ≤ PAGE_LEDGER_TIMING.undoWindowMs` (5 minutes) and the current revision still equals the receipt's post-revision. `applyPageSplices(base, splices)` and `invertPageSplices(splices)` are exact inverses. User-facing Undo copy (EN/HE): `EN: "Done. You can undo for 5 minutes." / HE: "בוצע. אפשר לבטל למשך 5 דקות."` and `EN: "Undo" / HE: "ביטול"`.
+- **TESTS:**
+  - Given a valid operation receipt / When `validatePageOperationFacts` runs / Then `ok:true`.
+  - Given a missing required field / Then `ok:false` with the right `errorCode`.
+  - Given `checkExpectedRevision` with equal revisions / Then success.
+  - Given a stale revision / Then a conflict result and no mutation.
+  - Given `applyPageSplices` then `invertPageSplices` / Then the body round-trips byte-exact.
+  - Given a receipt older than 5 minutes / Then it is not undoable (window enforced).
+  - Given an invalid sha256 hex / Then `isValidSha256Hex` rejects it.
+  - Given `digestBody` on the same body twice / Then equal digests (determinism).
+- **NUMBERS:** Undo window = 5 minutes (`PAGE_LEDGER_TIMING`, repo code + PRD F-131). Digest determinism = exact (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** accept-reject vs auto-apply (REWRITE-PLAN-v2 §4 conflict 6): whether every AI mutation goes through `proposals.ts` confirm/edit/reject or `confidence ≥ 0.8` auto-applies with this 5-min Undo (UNKNOWN — Amit). The ledger supports both; the caller policy is not decided here.
+
+### TFV2-0011 — `pagePrivacy` + resource quotas (4 MiB/file · 50 MiB · 100 files)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0006.
+- **WHY:** PRD §4.11 F-130 (per-user isolation); REWRITE-PLAN-v2 §6 chunk 1 "bounded queries + resource quotas".
+- **GOAL:** Every page read and block read goes through owner-scoped access checks, and per-user storage quotas (4 MiB per file, 50 MiB total, 100 files) are enforced at write time.
+- **SCOPE:** `convex/lib/pagePrivacy.ts` (+ `convex/lib/pagePrivacy.test.ts`).
+- **MUTATES:** none for existing helpers; adds quota constants and a `checkStorageQuota` helper (reads `notes`/file metadata only).
+- **STEPS:** 1) Graphify code-map check of `convex/lib/pagePrivacy.ts` (EXISTS: `requireActiveOwner`, `requireLivePage`, `readLivePageBlocks`, `requireUndoAccess`, `requireLiveProposal`; quota constants 4 MiB/50 MiB/100 files are MISSING); 2) add `RESOURCE_QUOTA = { maxFileBytes: 4 * 1024 * 1024, maxTotalBytes: 50 * 1024 * 1024, maxFiles: 100 }`; 3) add `checkStorageQuota(ctx, userId, incomingBytes)` that sums the user's current stored bytes/file count and rejects when the incoming write would exceed a quota; 4) keep owner isolation (a `userId` can only ever read/write its own rows); 5) add the unit test file for every error case below.
+- **DONE:** `bun test convex/lib/pagePrivacy.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change `convex/schema.ts`; do not add a new table for quota (compute from existing rows); do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `checkStorageQuota` is called before any file/blob write and before page-attachment writes. A single file over `maxFileBytes` is rejected with code `FILE_TOO_LARGE`; exceeding `maxTotalBytes` → `STORAGE_FULL`; exceeding `maxFiles` → `FILE_COUNT_EXCEEDED`. Quota user-facing copy (EN/HE): `EN: "This file is larger than the 4 MB limit." / HE: "הקובץ גדול מהמגבלה של 4 מגה־בייט."`; `EN: "You've reached your 50 MB storage limit." / HE: "הגעת למגבלת האחסון של 50 מגה־בייט."`; `EN: "You've reached the 100-file limit." / HE: "הגעת למגבלה של 100 קבצים."`.
+- **TESTS:**
+  - Given an owner reading its own live page / When `requireLivePage` runs / Then success.
+  - Given a non-owner / Then a denial result, never the row.
+  - Given a file of 5 MiB / When `checkStorageQuota` runs / Then `FILE_TOO_LARGE`.
+  - Given a user already at 50 MiB / Then any added byte → `STORAGE_FULL`.
+  - Given a user at 100 files / Then another file → `FILE_COUNT_EXCEEDED`.
+  - Given a user under all quotas / Then success.
+  - Given a soft-deleted page / Then `requireLivePage` denies it (30-day grace honoured).
+- **NUMBERS:** 4 MiB per file, 50 MiB total, 100 files (product decision in REWRITE-PLAN-v2 §6 chunk 1; not an industry standard — UNKNOWN source beyond the plan; Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether the 50 MiB / 100 files quotas are per-user storage on Convex or a provider-side cap (UNKNOWN — Amit).
+
+### TFV2-0012 — Approval-gated sign-up (`convex/auth.ts` + `convex/lib/approval.ts`)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0004 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0004.
+- **WHY:** PRD §4.1 F-01a (approval-gated sign-up; unapproved email can never sign in; every approved user gets the premium tier); REWRITE-PLAN-v2 §6 chunk 1 "approval-gated sign-up"; REWRITE-PLAN-v2 §4 conflict 4.
+- **GOAL:** The approval gate is verified: a pending email cannot sign in or receive a magic link, and an approved email gets the granted premium tier through `entitlements`.
+- **SCOPE:** `convex/auth.ts` + `convex/lib/approval.ts` (+ `convex/lib/approval.test.ts`).
+- **MUTATES:** none (reads approval state; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/auth.ts` `convexAuth`, `convex/lib/approval.ts` `ApprovalStatus`, `PENDING_APPROVAL_ERROR`, `isAdminUser`, `initialApprovalStatus`, `approvalStatusOf`, `isApproved`, `releaseApprovalDecision`, plus `approval.test.ts`); 2) verify the sign-in path refuses a `pending`/absent email before any magic link is sent; 3) verify an approved email proceeds to `entitlements.newUserFields` (TFV2-0004) and lands on `entitlementTier==="max"`; 4) read the existing test file and add the missing error cases below; 5) do not rename exported symbols.
+- **DONE:** `bun test convex/lib/approval.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not change the premium-for-all grant; do not invent an approval UI here (that is TFV2-0060); do not touch `.github/**`, `.env` or workflows; do not read or log the admin email list values.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `approvalStatusOf(email)` returns `pending` | `approved` | `revoked`. `isApproved` gates the magic-link send. `initialApprovalStatus` is applied at first contact. `isAdminUser` derives admins from `adminEmails()`. Pending-approval user-facing copy (EN/HE): `EN: "You're on the list. We'll write when you're in." / HE: "אתה ברשימה. נכתוב כשתיכנס."` and `EN: "Your account is waiting for approval." / HE: "החשבון שלך ממתין לאישור."`.
+- **TESTS:**
+  - Given a `pending` email / When sign-in is attempted / Then no magic link is sent and `PENDING_APPROVAL_ERROR` is raised.
+  - Given an `approved` email / Then a link is sent and the new user fields carry `entitlementTier==="max"`.
+  - Given a `revoked` email / Then sign-in is refused.
+  - Given an unknown email / Then it is treated as pending (never reveals existence) — assert the actual behaviour.
+  - Given an admin email / Then `isAdminUser` is true.
+  - Given `approvalStatusOf` with a normalized email (case, whitespace) / Then it matches the stored form.
+- **NUMBERS:** no industry number; correctness is the F-01a invariant (unapproved can never sign in). Pass: invariant on 100% of cases (no range).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** sign-up policy (REWRITE-PLAN-v2 §4 conflict 4): the cap (PRD says 30) vs "unlimited, each approved by Amit", and the approval order, and where Amit approves (admin screen vs Convex dashboard vs email link) are all UNKNOWN — Amit.
+
+### TFV2-0013 — Magic-link sign-in / sign-out parity (remove passkeys)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0012 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0012.
+- **WHY:** PRD §4.1 F-01 (magic link only; no password, no passkeys); REWRITE-PLAN-v2 §6 chunk 1 "magic-link sign-in/sign-out parity (remove passkeys)".
+- **GOAL:** Sign-in is magic-link only and sign-out is symmetric; there is no passkey/webauthn surface anywhere in auth.
+- **SCOPE:** `convex/auth.ts` + `convex/lib/signInEmail.ts` (+ `convex/lib/signInEmail.test.ts`).
+- **MUTATES:** none (auth wiring; removes nothing new because no passkey code exists).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/auth.ts` `signIn`/`signOut`/`store`, `convex/lib/signInEmail.ts` `signInEmail`; a repo-wide grep for `passkey|webauthn` returns nothing today, so the removal is already done); 2) verify `signOut` clears the session and returns the user to an unauthenticated state; 3) verify the email subject/body (`signInEmail`) carries both EN and HE and a 30-minute validity note; 4) add the missing parity tests below; 5) do not change the magic-link sender address or link lifetime.
+- **DONE:** `bun test convex/lib/signInEmail.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count), plus the grep output showing zero passkey references.
+- **DO NOT:** do not reintroduce passkeys, passwords or any second sign-in method; do not change the Resend sender or secret names; do not touch `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `signInEmail({ url, host })` returns the Resend payload with subject `EN: "Your Tempo Flow sign-in link · קישור הכניסה שלכם"` (already bilingual) and a link valid 30 minutes. `signOut` is idempotent (calling it twice is safe). The auth surface exposes exactly one sign-in method: email magic link. Link-sent copy (EN/HE): `EN: "We sent a link. It works for 30 minutes." / HE: "שלחנו קישור. הוא עובד 30 דקות."`.
+- **TESTS:**
+  - Given a valid `url` and `host` / When `signInEmail` runs / Then the payload has a subject containing both languages and a body containing the link.
+  - Given `signOut` then a read / Then the session is unauthenticated.
+  - Given `signOut` twice / Then no error.
+  - Given a repo grep for `passkey|webauthn|WebAuthn` / Then zero matches (assert in test or as EVIDENCE).
+  - Given the email HTML / Then it escapes user-controlled characters (no injection).
+- **NUMBERS:** magic-link lifetime = 30 minutes (PRD F-01 + sign-in screen copy). No industry number; link lifetime is a product decision.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0014 — Chat backend: real AI replies via the seam `convex/lib/ai_router.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** 0002, 0004 · **Folds-in:** #743
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0002, TFV2-0004.
+- **WHY:** PRD §4.2 F-20 (coach replies live from the runtime model); REWRITE-PLAN-v2 §6 chunk 1 "chat backend real AI replies via seam"; #743 (TEMPO-N2-01); REWRITE-PLAN-v2 §4 conflict 3.
+- **GOAL:** The AI seam (`callLLM` in `ai_router.ts`) is verified as the single point where the coach and chat call the runtime model, with tier routing and no key leakage.
+- **SCOPE:** `convex/lib/ai_router.ts` (+ `convex/lib/ai_router.test.ts`).
+- **MUTATES:** none (seam wiring; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/lib/ai_router.ts` `AiTier`, `AiMessage`, `AiResult`, `DEFAULT_AI_MODEL`, `DEEPINFRA_CHAT_COMPLETIONS_URL`, `resolveAiModel`, `callLLM`, plus a test file); 2) verify `callLLM` accepts the mock model from TFV2-0002 (so tests never hit the network); 3) confirm the model id comes from the seam only and never reads a key into a log; 4) read the existing test file and add the missing error cases below; 5) do not rename exported symbols.
+- **DONE:** `bun test convex/lib/ai_router.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not call a real model, the network or `fetch` in tests; do not print or log any key; do not change the provider URL; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `callLLM({ tier, messages })` returns `AiResult { text }` (or the existing richer shape). `resolveAiModel()` returns the configured model id, defaulting to `DEFAULT_AI_MODEL`. `AiTier` is `"fast"| "balanced"| "deep"`. Error cases return a typed error result (not a thrown `ConvexError`) so callers can degrade gracefully. The seam must never log the request/response body, the provider URL with credentials, or any key value. User-facing failure copy (EN/HE): `EN: "The coach is having a moment. Try again." / HE: "המאמן תקוע לרגע. נסו שוב."`.
+- **TESTS:**
+  - Given a mock model / When `callLLM` runs / Then it returns the mock reply and records the call.
+  - Given a tier of `"fast"| "balanced"| "deep"` / Then the resolved model is a non-empty string.
+  - Given an empty messages array / Then a typed error result, not a throw.
+  - Given a missing model id / Then `resolveAiModel` falls back to `DEFAULT_AI_MODEL`.
+  - Given a provider failure (mocked) / Then a typed error result with no key in the message.
+  - Given the same input twice / Then deterministic with the mock (assert replay).
+- **NUMBERS:** no latency/success-rate target is verifiable offline (UNKNOWN — Amit). Model string is a product decision (see OPEN).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** interim text model (REWRITE-PLAN-v2 §4 conflict 3): repo `DEFAULT_AI_MODEL` is `deepseek-ai/DeepSeek-V4.1-Flash` on DeepInfra; a later note says `GLM 5.3 Flash on DeepInfra` (that string appears nowhere in the repo). UNKNOWN — Amit; `ai_router.ts` is the source of truth until settled.
+
+### TFV2-0015 — `/coach` chat uses `chat.send` + Thinking + Retry
+- **Stage:** A · **Pass:** 1 · **Depends:** 0014 · **Folds-in:** #744
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0014.
+- **WHY:** PRD §4.2 F-20 (coach chat); REWRITE-PLAN-v2 §6 chunk 1 "/coach chat uses chat.send + Thinking + Retry"; #744 (TEMPO-N2-02).
+- **GOAL:** The coach chat path is verified to send messages through the chat send, surface a Thinking state, and retry once on a transient seam failure.
+- **SCOPE:** `convex/coach.ts` (+ `convex/coach_chat.test.ts`).
+- **MUTATES:** none (wiring; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/coach.ts`, `convex/coach_chat.test.ts`); 2) verify the send path calls `callLLM` (TFV2-0014) and not a hand-rolled `fetch`; 3) verify a Thinking/typing state precedes the reply; 4) verify one retry on a transient failure then a graceful error; 5) read the existing test file and add the missing cases below; 6) do not rename exported mutations/queries.
+- **DONE:** `bun test convex/coach_chat.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not call a real model in tests (use `mockModel`); do not print keys; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The coach send path is: validate auth and AI gate (TFV2-0018) → enqueue the user message → set Thinking → `callLLM` → stream/write reply → clear Thinking. On a transient seam error, retry once; on the second failure, surface the graceful error copy. User-facing strings (EN/HE): `EN: "Coach is typing" / HE: "המאמן מקליד"`; `EN: "Couldn't reach the coach. Try again." / HE: "לא הצלחנו להגיע למאמן. נסו שוב."`.
+- **TESTS:**
+  - Given a queued mock reply / When the user sends a message / Then the reply appears and Thinking is cleared.
+  - Given a transient failure then success / When sent / Then exactly one retry happens and the reply lands.
+  - Given two failures / Then a graceful error, no infinite retry.
+  - Given an unapproved user / Then the send is refused at the AI gate.
+  - Given the Thinking state / Then it is announced (`role=status` equivalent) before the reply.
+- **NUMBERS:** retry count = exactly 1 (product rule; PRD/TRD). No latency target offline (UNKNOWN — Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** interim text model (same as TFV2-0014; UNKNOWN — Amit).
+
+### TFV2-0016 — Coach Agent foundation `convex/lib/agentComponent.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** 0002, 0018 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0002, TFV2-0018.
+- **WHY:** PRD §4.2 F-20 (built on Convex's official Agent component: threads, tool calls, streaming); REWRITE-PLAN-v2 §6 chunk 1 "coach Agent foundation (convex/lib/agentComponent.ts)".
+- **GOAL:** A thin `agentComponent.ts` wrapper over the pinned `@convex-dev/agent` 0.3.2 component exposes thread/message/tool primitives so `coach.ts` and `chat` use one reviewed integration point instead of raw component calls.
+- **SCOPE:** `convex/lib/agentComponent.ts` (+ `convex/lib/agentComponent.test.ts`).
+- **MUTATES:** none (wrapper over the existing component; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check (the wrapper is MISSING today — only `agentComponent.test.ts` exists, which loads the pinned component from `node_modules` to prove it runs under Bun; `convex/coach.ts` imports `@convex-dev/agent` pieces directly); 2) write `agentComponent.ts` exporting `agentComponent()` returning the component handle, and helpers `agentThreads` / `agentMessages` that `coach.ts` can call; 3) keep the wrapper typed against `@convex-dev/agent/_generated/component`; 4) do not call a model or the network in tests; 5) add/reconcile the test file to import the wrapper, not raw `node_modules` paths.
+- **DONE:** `bun test convex/lib/agentComponent.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not upgrade or unpin `@convex-dev/agent`; do not call a real model; do not print keys; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The wrapper returns the component's threads/messages sub-components and their types. Every call is delegated to the pinned component with no added state. The wrapper must be side-effect-free at import time and must not run `import.meta.glob` (Bun unsupported, per the existing test's notes). Thread/message rows remain owned by the component's schema; the wrapper adds no new tables.
+- **TESTS:**
+  - Given the wrapper / When instantiated under `convex-test` / Then threads and messages sub-components resolve without network.
+  - Given a synthetic user id / When a thread is created and a message appended / Then the message is retrievable (assert with synthetic data).
+  - Given the wrapper import / Then no `import.meta.glob` is executed (assert the module loads under Bun).
+  - Given a second instantiation / Then it returns an equivalent handle (no duplicate registration).
+- **NUMBERS:** pinned `@convex-dev/agent` version = 0.3.2 (repo `package.json`). No industry number.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether the wrapper is required or `coach.ts` may keep importing the component directly (UNKNOWN — Amit); interim text model (UNKNOWN — Amit).
+
+### TFV2-0017 — Crisis card `convex/crisis.ts` + `convex/lib/crisisWords.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** 0003 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0003.
+- **WHY:** PRD §4.2 F-24 (fixed crisis card; text fixed, never model-written; stop coaching, show real resources); REWRITE-PLAN-v2 §6 chunk 1 "crisis card".
+- **GOAL:** The crisis detection and fixed resource card are verified: crisis text stops coaching and returns the human-written card, never a model reply.
+- **SCOPE:** `convex/crisis.ts` + `convex/lib/crisisWords.ts` (+ `convex/lib/crisisWords.test.ts`).
+- **MUTATES:** none (read-only queries + fixed copy; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/crisis.ts` `check`/`resourcesCard`, `convex/lib/crisisWords.ts` `CRISIS_CARD`, `crisisCardText`, `isCrisisText`, plus `crisisWords.test.ts`); 2) verify `isCrisisText` matches EN and HE crisis signals (self-harm, no sleep, escalating distress); 3) verify `check`/`resourcesCard` return the fixed `CRISIS_CARD` copy and that `coach.ts` stops coaching on crisis; 4) read the existing test file and add the missing cases below; 5) do not rename exported symbols or edit the fixed copy (it is written by people).
+- **DONE:** `bun test convex/lib/crisisWords.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not let a model write the card text; do not add emoji or animation to the card; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `CRISIS_CARD` is a frozen literal (per-country resources may expand later; the structure is fixed). `isCrisisText(text)` returns a boolean and is case-insensitive for EN, substring for HE. On crisis, `coach.ts` must not call `callLLM`; it returns the card. The card copy (EN/HE) must match the committed `CRISIS_CARD` exactly; the standard header `EN: "Let's pause coaching." / HE: "בואו נעצור את האימון."` plus real local helpline entries. No colour-only signalling (icon + word, per DESIGN.md §2).
+- **TESTS:**
+  - Given `"I want to hurt myself"` / Then `isCrisisText` is true.
+  - Given `"לא ישנתי שלושה לילות ואני גמור"` / Then true.
+  - Given `"Help me plan my Tuesday"` / Then false.
+  - Given crisis text / Then the coach returns `resourcesCard`, not a model reply.
+  - Given the card / Then it contains a real helpline (phone link) and no model-generated sentence.
+  - Given the card in HE / Then it renders RTL and the numbers stay LTR (`.tp-num`).
+- **NUMBERS:** no industry number; correctness is F-24 (coaching stops on crisis = 100% of matched cases, no range). Crisis-word recall = 100% on the committed list.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** per-country resource list completeness (PRD F-24: per-country data is MVP; UNKNOWN — Amit).
+
+### TFV2-0018 — auth → entitlement → quota ordering `convex/lib/aiGate.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** 0004, 0012 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0004, TFV2-0012.
+- **WHY:** PRD §4.11 (per-user isolation, tiers); REWRITE-PLAN-v2 §6 chunk 1 "auth→entitlement→quota ordering".
+- **GOAL:** The AI gate is verified to enforce, in order, authentication → approval/entitlement → quota, so no model call happens before all three pass.
+- **SCOPE:** `convex/lib/aiGate.ts` (+ `convex/lib/aiGate.test.ts`).
+- **MUTATES:** none (read-only gate; adds no table, route or env).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/lib/aiGate.ts` `requireApprovedForAi`); 2) verify the ordering: `requireUser` (auth) → `isApproved` (entitlement, TFV2-0012/0004) → quota check (TFV2-0011); 3) confirm `requireApprovedForAi` throws `ConvexError` before any model call when any stage fails; 4) add the unit test file for every error case below; 5) do not rename the exported symbol.
+- **DONE:** `bun test convex/lib/aiGate.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not reorder the three stages; do not call a model in the gate; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `requireApprovedForAi(ctx)` returns `void` on success and throws a typed `ConvexError` on failure, in this order: (1) unauthenticated → `UNAUTHENTICATED`; (2) pending/revoked → `PENDING_APPROVAL_ERROR`; (3) quota exhausted → `QUOTA_EXCEEDED`. User-facing copy (EN/HE): `EN: "You're signed out." / HE: "התנתקת."`; `EN: "Your account is waiting for approval." / HE: "החשבון שלך ממתין לאישור."`; `EN: "You've used today's coach time." / HE: "ניצלת את זמן המאמן של היום."` (quota text is a placeholder until the voice/call quota lands in chunk E).
+- **TESTS:**
+  - Given an authenticated, approved, under-quota user / Then `requireApprovedForAi` resolves without throwing.
+  - Given unauthenticated / Then `UNAUTHENTICATED` (and no quota/entitlement evaluation happens).
+  - Given authenticated but pending / Then `PENDING_APPROVAL_ERROR`.
+  - Given authenticated, approved, quota exhausted / Then `QUOTA_EXCEEDED`.
+  - Given authenticated, approved, under quota / Then no model/network call is made.
+- **NUMBERS:** no industry number; ordering invariant = exact (auth → entitlement → quota).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** quota value/source for the AI gate (voice-minute cap vs model-call cap) is UNKNOWN — Amit (chunk E).
+
+### TFV2-0019 — Memory adapter foundation `convex/memory.ts`
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §4.5 F-50 (one memory adapter over the `memories` table: remember, recall, context, forget, export); REWRITE-PLAN-v2 §6 chunk 1 "memory adapter foundation".
+- **GOAL:** The memory adapter's five operations (remember, recall, context, forget, export) are verified owner-scoped and complete for the coach to consume in chunk C.
+- **SCOPE:** `convex/memory.ts` (+ `convex/memory.test.ts`).
+- **MUTATES:** none (reads/writes the existing `memories` table only; adds no schema).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `convex/memory.ts` `remember`, `recall`, `list`, `context`, `forget`, `restore`, `forgetAll`, `restoreAll`, `exportAll`); 2) verify owner scoping (a user can only touch its own memories); 3) verify `forget` hard-deletes today and `restore` is the soft path (mark the forget-semantics question OPEN per §4 conflict 8); 4) read the existing `convex/memoryUndo.test.ts` and add the missing error cases below; 5) do not rename exported symbols.
+- **DONE:** `bun test convex/memory.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not add an outside memory engine; do not change `forget` to hard-delete without the OPEN ruling; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows; do not call an embedding model here (chunk C).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `remember({ fact, source })` inserts under the caller's `userId`; `recall({ query })` and `context({})` return only the caller's items (keyword match now; meaning-search arrives in chunk C); `forget({ id })` removes the item (current code hard-deletes); `exportAll()` returns all items as Markdown. Error copy (EN/HE): `EN: "That memory isn't here anymore." / HE: "הזיכרון הזה כבר לא כאן."` (missing id).
+- **TESTS:**
+  - Given an owner calls `remember` / Then the item is retrievable by `list`.
+  - Given a second user / Then `list` returns only its own items (isolation).
+  - Given `forget({ id })` / Then the item is gone from `list`.
+  - Given `forget` on a missing id / Then a graceful error, no crash.
+  - Given `exportAll` / Then output is Markdown containing every item.
+  - Given `restore` after `forget` (if soft path exists) / Then the item returns.
+- **NUMBERS:** no industry number; correctness is owner isolation (100% of reads/writes scoped). Recall-by-meaning arrives in chunk C (UNKNOWN numeric benchmark — Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** `forget` semantics (REWRITE-PLAN-v2 §4 conflict 8): PRD "soft delete everywhere, 30-day grace" vs memory spec "forget must be complete" (`deleteMemory` hard-deletes today). UNKNOWN — Amit.
+
+### TFV2-0020 — EN/HE message baseline + RTL (`apps/web/lib/i18n.ts` + `apps/web/lib/i18n-groups/`)
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD §4.7 F-70/F-71/F-72 (EN+HE copy; layout flips RTL/LTR; mixed direction per paragraph); REWRITE-PLAN-v2 §6 chunk 1 "EN/HE + RTL baseline".
+- **GOAL:** The existing i18n baseline is verified: every string has EN and HE, `lang=he` sets `dir="rtl"` on `<html>`, and numbers/code stay LTR.
+- **SCOPE:** `apps/web/lib/i18n.ts` + `apps/web/lib/i18n-groups/*` (+ `apps/web/lib/i18n.test.ts`).
+- **MUTATES:** none (message dictionary; adds no route or env).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `apps/web/lib/i18n.ts` `LANG_STORAGE_KEY`, `LANGS`, `dirFor`, `resolveLang`, the EN/HE dictionaries, plus `apps/web/lib/i18n-groups/`; NOTE: the planned location `apps/web/messages/en.json`/`he.json` does NOT exist — the repo uses TS dictionaries in `apps/web/lib/`); 2) verify `resolveLang` precedence (URL param → stored → English); 3) verify `dirFor("he")==="rtl"` and digits use `.tp-num`/`.tp-mono` LTR isolation; 4) read the existing `i18n.test.ts` and add the missing cases below; 5) do not relocate the dictionaries (keep the existing file layout).
+- **DONE:** `bun test apps/web/lib/i18n.test.ts` → all tests pass.
+- **EVIDENCE:** paste the `bun test` output (pass count).
+- **DO NOT:** do not create `apps/web/messages/*.json` (the repo's truth is `lib/i18n.ts`); do not machine-translate new copy as "final" (Hebrew needs native review — OVERNIGHT-RUN.md hard limit); do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `resolveLang(param, stored)` returns `"en" | "he"`. `dirFor` maps `he`→`rtl`. Every visible string has an EN and HE entry; keys are dotted (`nav.today`). Hebrew digits/times/dates/prices wrap in `.tp-num` (LTR isolate, tabular) and times also take `.tp-mono` (DESIGN.md §10). User-written text uses `dir="auto"` per paragraph (F-72). The baseline must compile both languages with no missing-key runtime error.
+- **TESTS:**
+  - Given `resolveLang("he", null)` / Then `"he"`.
+  - Given `resolveLang(null, "he")` / Then `"he"`.
+  - Given `resolveLang(null, null)` / Then `"en"`.
+  - Given `dirFor("he")` / Then `"rtl"`; `dirFor("en")` → `"ltr"`.
+  - Given the EN and HE dictionaries / Then every EN key exists in HE (no missing key).
+  - Given a mixed-direction paragraph / Then `dir="auto"` is applied (component-level assert).
+- **NUMBERS:** no industry number; completeness = every EN key has a HE value (100%).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** the task-specified location `apps/web/messages/en.json`/`he.json` differs from the repo reality `apps/web/lib/i18n.ts` (GitHub is truth; UNKNOWN whether to migrate to JSON — Amit).
+
+### TFV2-0021 — TempoShell
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §8 (grid areas rail/top/main/coach); components.md §1 TempoShell; REWRITE-PLAN-v2 §6 chunk 1 "shell & editor primitives".
+- **GOAL:** The app shell grid (rail / topbar / main / coach, with scrim) is verified at every breakpoint and both directions.
+- **SCOPE:** `apps/web/components/tempo/TempoShell.tsx` (+ `tests/e2e/screens/tempo-shell.spec.ts`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `TempoShell.tsx` with `ShellSlots.tsx`, `ScaffoldScreen.tsx`); 2) verify grid areas `rail / top / main / coach` and the `toggle-rail` + scrim behaviour; 3) verify rail is a drawer under 1024 and a docked 264px column at ≥1280; 4) add the Playwright spec below; 5) no new tokens or colours in the component.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tempo-shell.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours/fonts/spacing (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Grid `rail` (264px, `--tp-rail-w`), `top` (56px, `--tp-topbar-h`), `main` (centred paper, max 760px `--tp-paper-max`), `coach` (400px, `--tp-coach-w`, docked ≥1280). Under 768: full-bleed paper, bottom tab bar, coach as bottom sheet. Scrim `--tp-scrim`. Glass only on floating chrome. One primary action per screen. Motion ≤250ms (`--tp-dur-slow` 240ms, `--tp-ease-out`).
+- **TESTS:** Given viewport 1280 / When shell renders / Then rail, topbar, main are visible and coach is dockable. Given 390 / Then rail is hidden behind a menu and main is full-bleed. Given `lang=he` / Then `dir=rtl` and rail moves to the right (logical properties). Given `toggle-rail` / Then the drawer opens and focus moves in; Esc closes.
+- **NUMBERS:** rail 264px, coach 400px, topbar 56px (tokens, repo). WCAG 2.2 AA text 4.5:1 (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum); target ≥24×24px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum); motion ≤250ms (DESIGN.md §7).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0022 — Sidebar / PageTree
+- **Stage:** A · **Pass:** 1 · **Depends:** 0021 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0021.
+- **WHY:** DESIGN.md §9 Sidebar/PageTree; components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The page rail (brand, CommandTrigger, page tree with `aria-current`, nested folders) is verified, including the under-1024 drawer.
+- **SCOPE:** `apps/web/components/tempo/Sidebar.tsx` (+ `tests/e2e/screens/sidebar.spec.ts`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `Sidebar.tsx`; `PageTree` is rendered inside it); 2) verify `aria-current="page"`, collapsible folders, and the `Pages` label; 3) verify the drawer variant under 1024; 4) add the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sidebar.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-rail` width 264px; groups `Today / Inbox / Coach`, then `Library`, then `Pages` with nested folders. `aria-current="page"` on the active row. Rows use `--tp-hover` on hover/focus; active text `--tp-ink`, muted `--tp-ink-muted`. Copy (EN/HE): `EN: "Pages" / HE: "דפים"`; `EN: "Library" / HE: "ספרייה"`; `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`; `EN: "Reading font" / HE: "גופן קריאה"`; `EN: "Settings" / HE: "הגדרות"`. RTL: rail on the right; chevrons flip.
+- **TESTS:** Given 1280 / Then the rail shows all groups and the current page has `aria-current`. Given a folder with children / Then tapping toggles collapse. Given 390 / Then the rail is a drawer opened from the topbar. Given `lang=he` / Then labels are Hebrew and the rail is on the right.
+- **NUMBERS:** rail 264px (token). WCAG contrast 4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0023 — Topbar
+- **Stage:** A · **Pass:** 1 · **Depends:** 0021 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0021.
+- **WHY:** DESIGN.md §9 Topbar (breadcrumb, glass); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The glass topbar (menu, breadcrumbs, "Saved" state, theme toggle, avatar) is verified at both breakpoints.
+- **SCOPE:** `apps/web/components/tempo/Topbar.tsx` (+ `tests/e2e/screens/topbar.spec.ts`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `Topbar.tsx`); 2) verify breadcrumb (`crumbs[]`), `Saved` status hides when offline, theme toggle `aria-pressed`, avatar; 3) verify glass (`tp-glass`) with solid fallback; 4) add the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/topbar.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Height 56px (`--tp-topbar-h`), glass recipe from DESIGN.md §5. Breadcrumbs with a chevron that flips in RTL (`tp-icon--flip`). Copy (EN/HE): `EN: "Saved" / HE: "נשמר"`; `EN: "Open pages" / HE: "פתיחת הדפים"`; `EN: "Dark theme" / HE: "ערכת צבעים כהה"`. Offline: "Saved" is hidden and the offline banner takes its meaning.
+- **TESTS:** Given 1280 / Then breadcrumbs, Saved, theme toggle, avatar are visible. Given 390 / Then crumbs collapse (hide `--hide-sm`). Given offline / Then "Saved" is hidden. Given `lang=he` / Then crumbs are RTL and the chevron flips. Given theme toggle / Then `aria-pressed` flips and `data-theme` changes.
+- **NUMBERS:** height 56px (token). WCAG contrast 4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0024 — Avatar
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Avatar (person's initials, never "User"); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** An accessible initials avatar (name → initials, `role="img"` + `aria-label`, never the word "User") exists in the design-system package.
+- **SCOPE:** `packages/ui/src/primitives/Avatar.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Avatar.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — no `Avatar` primitive; the editor HTML uses `tp-avatar` but no React component exists); 2) implement `Avatar({ name, initials? })` deriving initials from `name` (first letter of first + last word, uppercased); 3) render `role="img"` with `aria-label={name}`; 4) export from `index.ts`; 5) add render test + Playwright assertions via the topbar spec.
+- **DONE:** `bun test packages/ui/src/primitives/Avatar.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not fall back to the text "User"; do not add colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** 32px circle, `--tp-paper` ground with `--tp-ink` initials, `--tp-line-strong` hairline. `initials` derived when omitted. `EN/HE` — no visible text; `aria-label` is the person's name in both scripts (name is user data, not translated). Keyboard: not focusable (decorative); `role="img"` exposes the name to screen readers.
+- **TESTS:** Given `name="Maya Ronen"` / Then initials are `"MR"` and `aria-label="Maya Ronen"`. Given `name="Yoni"` / Then initials `"Y"`. Given `initials="D"` / Then it overrides derivation. Given a screen reader / Then it announces the name, never "User".
+- **NUMBERS:** size 32px; contrast ≥4.5:1 (initials `--tp-ink` on `--tp-paper` = 16.67:1 light). WCAG 2.2 AA.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0025 — TabBar
+- **Stage:** A · **Pass:** 1 · **Depends:** 0021 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0021.
+- **WHY:** DESIGN.md §8 (glass tab bar under 768); components.md §1 TabBar; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The mobile glass tab bar (Today / Tasks / Pages / Calendar / More) is verified with `aria-current` and RTL.
+- **SCOPE:** `apps/web/components/tempo/TabBar.tsx` (+ `tests/e2e/screens/tabbar.spec.ts`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `TabBar.tsx`); 2) verify it renders only under 768, glass with solid fallback, `aria-current` on the active tab; 3) verify the "More" tab opens the rail; 4) add the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/tabbar.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Height 64px (`--tp-tabbar-h`), glass, icons + labels. Copy (EN/HE): `EN: "Today" / HE: "היום"`; `EN: "Tasks" / HE: "משימות"`; `EN: "Pages" / HE: "דפים"`; `EN: "Calendar" / HE: "לוח שנה"`; `EN: "More" / HE: "עוד"`. Under 768 only; content reserves `padding-bottom` = tab bar + 64. RTL mirrors and chevrons flip.
+- **TESTS:** Given 390 / Then the tab bar shows five tabs with the active tab `aria-current`. Given 1280 / Then the tab bar is hidden. Given `lang=he` / Then labels are Hebrew and order mirrors. Given "More" / Then the rail opens.
+- **NUMBERS:** height 64px (token); target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0026 — CommandTrigger
+- **Stage:** A · **Pass:** 1 · **Depends:** 0022 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0022.
+- **WHY:** DESIGN.md §9 CommandTrigger (Ctrl K in dialog); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "Search or jump to" rail trigger opens the command palette on click and on Ctrl/Cmd+K, with focus moved into the dialog.
+- **SCOPE:** `apps/web/components/tempo/CommandTrigger.tsx` (+ `tests/e2e/screens/command.spec.ts`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (CommandTrigger is MISSING; `CommandPalette.tsx`/`CommandList.tsx` exist and are the dialog it opens); 2) implement `CommandTrigger` as a `--tp-btn--secondary` button labelled "Search or jump to" with a `Kbd` hint `Ctrl K`; 3) wire click and Ctrl/Cmd+K to open `CommandPalette`; 4) focus moves into the dialog and Esc returns focus to the trigger; 5) add the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/command.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not rebuild the palette itself; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-rail__search` button (secondary), search icon, label `EN: "Search or jump to" / HE: "חיפוש או מעבר אל"`, trailing `Kbd` `Ctrl K` (renders `⌘ K` on macOS). Keyboard: Enter/Space opens, Esc closes and returns focus. RTL mirrors the trailing kbd to the start.
+- **TESTS:** Given a click / Then the palette opens and focus is inside. Given Ctrl+K / Then it opens. Given Esc / Then it closes and focus returns to the trigger. Given 390 vs 1280 / Then the trigger renders in the rail/drawer in both. Given `lang=he` / Then label is Hebrew.
+- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms (dialog 180ms).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0027 — Page / PageEditor (CodeMirror live preview + remark-gfm)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0007 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0007.
+- **WHY:** PRD §4.1 F-02/F-03 (markdown editor, blocks as elements, no JSON); DESIGN.md §9 Page/PageEditor; REWRITE-PLAN-v2 §6 chunk 1 "markdown editor (CodeMirror live preview + GFM)".
+- **GOAL:** The page editor renders `notes.body` as CodeMirror with a live `remark-gfm` preview and never shows raw JSON.
+- **SCOPE:** `apps/web/components/notes/PageEditorView.tsx` + `apps/web/components/editor/LivePreviewEditor.tsx` (+ `tests/e2e/screens/notes-save.spec.ts`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `PageEditorView.tsx`, `LivePreviewEditor.tsx`, `editor/live-preview.ts`, `editor/ReadView.tsx`); 2) verify CodeMirror 6 editing + `remark-gfm` preview; 3) verify `- [ ]` stays plain markdown and `[[links]]` render as Wikilinks; 4) verify autosave calls `notes.save` (TFV2-0007) and no JSON appears; 5) add/refresh the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-save.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not surface JSON; do not bypass `notes.save`; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-paper` centred, max 760px. CodeMirror edits + live preview via `remark-gfm`. `- [ ]` renders as a TaskBlock/TaskRow (tick → `tasks.complete`), `[[page]]` as Wikilink. Save is optimistic with the topbar "Saved" state and 5-min Undo. Empty state `EN: "This page is empty." / HE: "הדף הזה ריק."`; `EN: "Just start writing. Type / on a new line for tasks, time blocks and more." / HE: "פשוט להתחיל לכתוב. הקלדת / בשורה חדשה מוסיפה משימות, בלוקי זמן ועוד."`. Offline keeps editing; error shows `EN: "Couldn't open this page. Your data is safe." / HE: "לא הצלחנו לפתוח את הדף הזה. המידע שלך שמור."` + Retry.
+- **TESTS:** Given a page / When a task block is ticked / Then optimistic check and Undo toast. Given a typed `[[Other page]]` / Then a Wikilink renders. Given `/` on an empty line / Then the SlashMenu opens (TFV2-0036). Given `lang=he` / Then the editor is RTL and `dir="auto"` per paragraph. Given 390 and 1280 / Then editing works at both. Assert no `{`-led JSON string is visible anywhere.
+- **NUMBERS:** paper max 760px; text min 13px; contrast ≥4.5:1; motion ≤250ms; save autosave (no loss on refresh).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** block-model authority (UNKNOWN — Amit).
+
+### TFV2-0028 — PageTitle / Headings
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §3 (serif 42px page title, headings weight 560); components.md §1 PageTitle/Headings; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** Serif page-title and heading primitives (h1 `.tp-page-title`, h2 `.tp-h2`, h3 `.tp-h3`) exist in the design-system package with correct type tokens.
+- **SCOPE:** `packages/ui/src/primitives/PageTitle.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/PageTitle.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageTitle({ children, as })` and `Heading({ level, children })` using `--tp-font-serif` / `--tp-text-3xl` (title 42px) and `--tp-text-xl` (h2 26px) / `--tp-text-lg` (h3 20px); 3) editable title uses `contenteditable` + `dir="auto"`; 4) export; 5) add render test + Playwright via the page-editor spec.
+- **DONE:** `bun test packages/ui/src/primitives/PageTitle.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not set colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Title: `--tp-font-serif`, `--tp-text-3xl` (42px), weight 560, tracking −0.02em (0 for Hebrew). h2 `--tp-text-xl` 26px, h3 `--tp-text-lg` 20px, `--tp-leading-heading` 1.18. Editable title focus ring `--tp-accent` 2px. No visible copy beyond the title text itself.
+- **TESTS:** Given a title / Then it renders in the serif face at 42px (assert class/token). Given an editable title / Then typing updates it and `dir="auto"` is set. Given `lang=he` / Then the serif face is Frank Ruhl Libre and tracking is 0.
+- **NUMBERS:** title 42px, h2 26px, h3 20px (tokens). Contrast ≥4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0029 — Tag
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Tag (inline `#tag`, badge); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** An inline `#tag` badge primitive (pill, `--tp-accent-wash` on selected, linkable) exists in the design system.
+- **SCOPE:** `packages/ui/src/primitives/Tag.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Tag.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Tag({ name, href? })` rendering `tp-tag`; 3) selected state uses `--tp-accent-wash` with `--tp-accent` text (word + no colour-only signal); 4) export; 5) render test + Playwright via the editor/notes spec.
+- **DONE:** `bun test packages/ui/src/primitives/Tag.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours (tokens only); do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Pill radius `--tp-radius-pill`, text `--tp-text-xs` (13px min), `#` prefix inline. Default `--tp-ink-muted` text on `--tp-paper` with `--tp-line` hairline; selected `--tp-accent` text on `--tp-accent-wash`. Linkable (`href`) with hover lift. The tag text is user data (untranslated), shown `dir="auto"`.
+- **TESTS:** Given `name="home"` / Then it renders `#home`. Given selected / Then accent wash + accent text. Given `href` / Then it is a link. Given 390 vs 1280 / Then the pill wraps in both.
+- **NUMBERS:** text ≥13px; contrast ≥4.5:1 (accent on wash; default muted on paper).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0030 — Wikilink
+- **Stage:** A · **Pass:** 1 · **Depends:** 0009 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0009.
+- **WHY:** DESIGN.md §9 Wikilink (`[[page]]`, popover picker); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** A `[[page]]` link primitive renders inline, links to the page, and offers a popover picker; it feeds the backlinks index.
+- **SCOPE:** `packages/ui/src/primitives/Wikilink.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Wikilink.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Wikilink({ page, href? })` rendering `tp-wikilink`; 3) unresolved links (no page yet) render as plain text with a create affordance; 4) resolved links navigate and register in `notes_links` (TFV2-0009); 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test packages/ui/src/primitives/Wikilink.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Inline link `--tp-accent` text with a subtle underline; `dir="auto"` for the page name. Resolved → navigate; unresolved → `EN: "Create '…'" / HE: "ליצור '…'"` affordance. Popover picker (command) lists matching pages on typing; arrows/Enter/Esc. Backlinks section header `EN: "Linked here" / HE: "מקושר לכאן"`.
+- **TESTS:** Given `[[Moving checklist]]` / Then it renders as a link. Given a resolved page / Then clicking navigates and the target's backlinks list it. Given an unresolved page / Then a create affordance shows. Given `lang=he` / Then `dir="auto"` per name.
+- **NUMBERS:** contrast ≥4.5:1 (accent on paper 5.78:1 light); target ≥24px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0031 — Chip
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Chip (`--fixed`/`--flex`/`--done`, word always present); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** A status chip primitive (done/fixed/flexible tones, icon + word, never colour-only) exists in the design system.
+- **SCOPE:** `packages/ui/src/primitives/Chip.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Chip.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING; `Pill.tsx` exists but is not the Chip); 2) implement `Chip({ tone: "done"|"info"|"caution"|"danger", label, icon? })` rendering `tp-chip`; 3) map tones to `--tp-done`/`--tp-info`/`--tp-caution`/`--tp-danger` + their `-wash`; 4) always render icon + word; 5) render test + Playwright via the editor/calendar spec.
+- **DONE:** `bun test packages/ui/src/primitives/Chip.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not signal by colour alone; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Small badge with `--tp-text-xs` label, radius `--tp-radius-sm`, tone wash + tone text. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Fixed" / HE: "קבוע"`; `EN: "Flexible" / HE: "גמיש"`. Icon always accompanies the word.
+- **TESTS:** Given `tone="done"` / Then it renders icon + "Done" in `--tp-done`. Given `tone="caution"` / Then icon + "Flexible". Given `lang=he` / Then Hebrew word + icon. Given forced-colours mode / Then the word remains (no colour-only signal).
+- **NUMBERS:** text ≥13px; contrast ≥4.5:1 (done 5.22:1, info 5.13:1, caution 5.05:1, danger 5.26:1 light).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0032 — Button
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Button (primary/secondary/ghost/icon, primary once per screen); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The button primitive's variants, sizes and focus ring are verified against tokens, with the accent reserved for one primary per screen.
+- **SCOPE:** `packages/ui/src/primitives/Button.tsx` (+ `packages/ui/src/primitives/Button.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `packages/ui/src/primitives/Button.tsx`; also `apps/web/components/ui/button.tsx` shadcn wrapper — the ticket verifies the design-system primitive); 2) verify `variant: primary|secondary|ghost|icon|danger-ghost` and `size: sm|md`; 3) verify focus ring `--tp-accent` 2px with 2px gap and press/hover motion ≤250ms; 4) render test + Playwright via a screen with one primary.
+- **DONE:** `bun test packages/ui/src/primitives/Button.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not use accent on more than one primary per screen; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** primary `--tp-accent`/`--tp-on-accent` (6.08:1 light); secondary `--tp-line-control` outline; ghost transparent; danger-ghost `--tp-danger`. Radius `--tp-radius-md` (10px). Height ≥44px (`--tp-touch`). Press = 1px down 98% scale 120ms; hover fade 120ms. Disabled: reduced opacity + `aria-disabled` + no action. Copy is per-screen (no fixed label).
+- **TESTS:** Given `variant=primary` / Then accent background and white label. Given keyboard Tab / Then a 2px accent focus ring shows. Given disabled / Then no click handler fires. Given 390 / Then target ≥44px (tap). Given `lang=he` / Then label direction is correct.
+- **NUMBERS:** min height 44px; contrast ≥4.5:1 (primary 6.08:1); target ≥24px (≥44px preferred); motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0033 — Kbd
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Kbd; components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** A keyboard-key hint primitive (`Ctrl K`, `⌘ K`, `[]`, `#`, `-`) exists in the design system, mono and LTR-isolated.
+- **SCOPE:** `packages/ui/src/primitives/Kbd.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Kbd.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Kbd({ keys })` rendering `tp-kbd` + `tp-num` (mono, LTR isolate); 3) map platform (Ctrl vs ⌘); 4) export; 5) render test + Playwright via the slash menu / command trigger spec.
+- **DONE:** `bun test packages/ui/src/primitives/Kbd.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `--tp-font-mono` (`IBM Plex Mono`), `--tp-text-xs`, radius `--tp-radius-sm`, subtle sunken ground `--tp-sunken`. Always LTR (`direction:ltr; unicode-bidi:isolate`) even in Hebrew. Examples: `Ctrl K`, `⌘ K`, `[]`, `#`, `-`, `[[`.
+- **TESTS:** Given `keys=["Ctrl","K"]` / Then it renders `Ctrl K` in mono, LTR. Given `lang=he` / Then the kbd stays LTR. Given macOS / Then it renders `⌘ K`. Given `keys=["#"]` / Then `#`.
+- **NUMBERS:** text ≥13px; no contrast requirement below 3:1 for decorative hint (but label text beside it must clear 4.5:1).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0034 — Card
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Card (quiet inline block card); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The card primitive (`__head`/`__title`, paper surface, `--tp-shadow-card`) is verified.
+- **SCOPE:** `packages/ui/src/primitives/SoftCard.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/SoftCard.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `SoftCard.tsx`; also `apps/web/components/ui/card.tsx`); 2) verify `--tp-paper` surface, `--tp-radius-lg` (14px), `--tp-shadow-card`; 3) verify hover lift (180ms) only when it is a link/button; 4) render test + Playwright via the blocks spec.
+- **DONE:** `bun test packages/ui/src/primitives/SoftCard.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not put glass on a card; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Solid `--tp-paper`, `--tp-radius-lg`, `--tp-shadow-card`, head/title using `--tp-ink` and `--tp-ink-muted`. Cards on paper use the `raise` shadow. Interactive cards lift 1px at 180ms and show a focus ring.
+- **TESTS:** Given a Card / Then paper surface + card shadow. Given interactive / Then hover lifts and it is keyboard-focusable. Given a block card / Then it is solid, never glass.
+- **NUMBERS:** radius 14px (token); contrast ≥4.5:1; motion ≤250ms (180ms lift).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0035 — BlockHandle
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** DESIGN.md §9 BlockHandle (add below + options; buttons, never drag-only); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** Each block exposes a keyboard-reachable handle with "Add a block below" and "Block options" (move/copy/delete), never drag-only.
+- **SCOPE:** `apps/web/components/editor/BlockHandle.tsx` (+ `apps/web/components/editor/BlockHandle.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BlockHandle({ onAdd, onMove, onCopy, onDelete })` rendering two ghost icon buttons; 3) wire to `pages.insertBlock` / `pages.moveBlock` / `pages.duplicateBlock` / `pages.removeBlock` (TFV2-0007); 4) each action offers 5-min Undo; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/editor/BlockHandle.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not make actions drag-only; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Two ghost buttons (`.tp-block__handle`): add (`aria-label` `EN: "Add a block below" / HE: "הוספת בלוק מתחת"`) and options (`EN: "Block options: move, copy, delete" / HE: "אפשרויות בלוק: הזזה, העתקה, מחיקה"`). Hidden under 768 (long-press later). Options open a dropdown-menu with Move up / Move down / Duplicate / Delete (Delete uses `--tp-danger` + confirmation + Undo).
+- **TESTS:** Given a block / When hovering/focusing / Then both buttons appear and are keyboard-focusable. Given "Add" / Then a new empty block inserts below and Undo shows. Given "Delete" / Then a confirm appears, then the block removes with Undo. Given 390 / Then the handle is hidden (menu via long-press later).
+- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0036 — SlashMenu
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** DESIGN.md §9 SlashMenu (listbox, arrows/Enter/Esc); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The slash menu (`/` on an empty line) is verified: filter, arrow/Enter/Esc, RTL arrow swap, and insert calls `pages.insertBlock`.
+- **SCOPE:** `apps/web/components/editor/SlashMenu.tsx` (+ `apps/web/components/editor/SlashMenu.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `editor/SlashMenu.tsx`); 2) verify listbox semantics (`role=listbox`, `aria-activedescendant`), item set (Task, Time block, Habit, Energy, Nag, Heading, Bullet, Link); 3) verify arrows move, Enter inserts, Esc closes; 4) verify RTL arrow swap; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/editor/SlashMenu.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Glass popover (`.tp-slash-menu.tp-glass`), grouped items. Copy (EN/HE): group `EN: "Tempo blocks" / HE: "בלוקים של Tempo"`, `EN: "Text" / HE: "טקסט"`; items `Task/משימה`, `Time block/בלוק זמן`, `Habit/הרגל`, `Energy check-in/בדיקת אנרגיה`, `Nag/תזכורת`, `Heading/כותרת`, `Bullet list/רשימת נקודות`, `Link to a page/קישור לדף`; hint `EN: "Type to filter · ↑ ↓ to move · Enter to add" / HE: "הקלידו לסינון · ↑ ↓ למעבר · Enter להוספה"`. Arrow direction flips in RTL.
+- **TESTS:** Given `/` / Then the menu opens focused. Given typing "ta" / Then only matching items remain. Given ↓ then Enter / Then the highlighted block inserts and the menu closes. Given Esc / Then it closes with focus returned. Given `lang=he` / Then arrows are mirrored.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms (popover 180ms).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0037 — Composer
+- **Stage:** A · **Pass:** 1 · **Depends:** 0015 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0015.
+- **WHY:** DESIGN.md §9 Composer (textarea + send, send is ink not accent); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The coach message composer (textarea, Enter to send, Shift+Enter newline, ink send button) is verified.
+- **SCOPE:** `apps/web/components/coach/Composer.tsx` (+ `apps/web/components/coach/Composer.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING as a component; the panel renders it inline in the coach HTML); 2) implement `Composer({ onSend, disabled? })`; 3) wire send to the coach send path (TFV2-0015); 4) voice button placeholder (`.tp-btn--ghost` mic, disabled until chunk E); 5) render test + Playwright via the coach spec.
+- **DONE:** `bun test apps/web/components/coach/Composer.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not colour the send button accent (it is ink); do not enable voice yet; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Textarea `dir="auto"`, `rows=2`, grow with content; send button `--tp-btn--icon` with ink colour (not accent). Placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`; send `aria-label` `EN: "Send" / HE: "שליחה"`. Hint `EN: "Enter to send · Shift+Enter for a new line" / HE: "Enter לשליחה · Shift+Enter לשורה חדשה"`. Disabled while Thinking.
+- **TESTS:** Given Enter / Then it sends and clears. Given Shift+Enter / Then a newline, no send. Given disabled (Thinking) / Then send is blocked. Given empty / Then send does nothing. Given `lang=he` / Then placeholder is Hebrew and `dir="auto"`.
+- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0038 — UndoToast
+- **Stage:** A · **Pass:** 1 · **Depends:** 0010 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0010.
+- **WHY:** DESIGN.md §9 UndoToast (sonner, 5:00 countdown, Undo); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The Undo toast (title + countdown + Undo, 5-minute window) is verified with keyboard and screen-reader behaviour.
+- **SCOPE:** `apps/web/components/you/UndoToast.tsx` (+ `apps/web/components/you/UndoToast.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `you/UndoToast.tsx` and `habits/UndoToast.tsx` — verify the canonical `you/` one); 2) verify it accepts `{ title, sub?, undoMs, onUndo }`; 3) verify 5:00 countdown and `aria-live=polite` region; 4) verify `prefers-reduced-motion` stops the countdown animation; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/you/UndoToast.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not shorten the 5-minute window; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Glass toast (`.tp-toast.tp-glass`), title + optional sub + Undo button + dismiss. Copy (EN/HE): `EN: "Done" / HE: "בוצע"`; `EN: "Undo" / HE: "ביטול"`; `EN: "Dismiss" / HE: "סגירה"`; countdown `EN: "You can undo for 5:00" / HE: "אפשר לבטל למשך 5:00"`. Rises 240ms (`--tp-dur-slow`), exits 160ms. Live region `aria-live=polite`.
+- **TESTS:** Given an action / Then a toast with Undo shows and the 5:00 countdown starts. Given Undo / Then `onUndo` fires and the change reverts. Given dismiss / Then it closes. Given reduced motion / Then no countdown animation. Given `lang=he` / Then Hebrew copy, numbers LTR.
+- **NUMBERS:** window = 5 minutes (PRD F-131); motion ≤250ms; contrast ≥4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0039 — Skeleton
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Skeleton (content >100ms; shimmer stops with reduced motion); components.md §1/§2.18; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** A skeleton primitive (`--w40/w60/w80/w100/sm/block` widths, shimmer gated on reduced motion) exists in the design system.
+- **SCOPE:** `packages/ui/src/primitives/Skeleton.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Skeleton.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Skeleton({ width?: "w40"|"w60"|"w80"|"w100"|"sm"|"block" })`; 3) shimmer uses opacity only and stops under `prefers-reduced-motion`; 4) export; 5) render test + Playwright via the loading states spec.
+- **DONE:** `bun test packages/ui/src/primitives/Skeleton.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not animate transform; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `--tp-sunken` fill on `--tp-paper`, radius `--tp-radius-sm`; shimmer opacity pulse, static under reduced motion. Widths map to the `--w40/w60/w80/w100` classes; a `block` variant is full-width card-shaped. Used only for content that takes >100ms.
+- **TESTS:** Given `width="w80"` / Then it renders at 80% width. Given reduced motion / Then no shimmer animation. Given `width="block"` / Then a card-shaped block. Given a list / Then `tp-skel-list` rows render.
+- **NUMBERS:** motion ≤250ms (and none under reduced motion); no contrast target (decorative).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0040 — Empty
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §9 Empty (kind copy + next step); PRD §13 copy rules; components.md §1/§2.18; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The web Empty-state primitive (icon + kind title + body + next-step action) is verified.
+- **SCOPE:** `packages/ui/src/primitives/Empty.tsx` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Empty.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (mobile `TempoEmptyState.tsx` EXISTS; the web design-system `Empty` is MISSING); 2) implement `Empty({ icon?, title, body, action? })`; 3) no illustration — a line icon on a parchment disc (`--tp-sunken` + hairline + halo) or the shared page drawing; 4) copy is kind and offers a next step; 5) render test + Playwright via the notes/empty spec.
+- **DONE:** `bun test packages/ui/src/primitives/Empty.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not shame the user (no "failed"/"overdue"/"must"); do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-state.tp-state--empty` with `__icon`, `__title`, `__body`, `__actions`. Copy example (EN/HE): `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + a next-step button. Icon on `--tp-sunken` disc with hairline ring and soft halo.
+- **TESTS:** Given an empty list / Then the kind title, body and one next-step action render. Given no `action` / Then no dangling button. Given `lang=he` / Then Hebrew copy. Given a screen reader / Then title is announced.
+- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0041 — Glass + Helpers
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** DESIGN.md §5 (glass recipe + fallbacks), §10 (RTL helpers), §9 Helpers; components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The shared Glass mixin/component and the type/utility Helpers (`tp-num/mono/muted/small/eyebrow/sr-only/skip/icon--flip`) exist and fall back to a solid surface when unsupported.
+- **SCOPE:** `packages/ui/src/primitives/Glass.tsx` + `packages/ui/src/primitives/helpers.ts` + `packages/ui/src/primitives/index.ts` (+ `packages/ui/src/primitives/Glass.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Glass` applying the §5 recipe with `--tp-glass-solid` fallback for `prefers-reduced-transparency`, no `backdrop-filter`, and `?glass=off`/`data-glass=off`; 3) implement the helper utilities (`tp-num` LTR isolate, `tp-mono`, `tp-muted`, `tp-small`, `tp-eyebrow`, `tp-sr-only`, `tp-skip`, `tp-icon--flip`); 4) export; 5) render test + Playwright via the shell spec.
+- **DONE:** `bun test packages/ui/src/primitives/Glass.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not apply glass to non-floating surfaces (paper, cards, blocks, text); do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Glass: `background var(--tp-glass)` (82% light / 86% dark), `backdrop-filter: blur(18px) saturate(150%)`, 1px `--tp-glass-line` border, inset top highlight + `--tp-shadow-float`. Fallback switches to `--tp-glass-solid`. Helpers: `tp-num` = `direction:ltr; unicode-bidi:isolate` + tabular; `tp-mono` = `--tp-font-mono`; `tp-muted`/`tp-small`/`tp-eyebrow` map type tokens; `tp-sr-only` visually hidden; `tp-skip` the skip link; `tp-icon--flip` mirrors chevrons in RTL.
+- **TESTS:** Given glass / Then it uses `--tp-glass` and blur. Given `prefers-reduced-transparency` / Then it uses `--tp-glass-solid`. Given `data-glass=off` / Then solid. Given `tp-num` around `"12:30"` in HE / Then it stays LTR. Given `tp-icon--flip` in RTL / Then the icon mirrors.
+- **NUMBERS:** blur 18px, saturate 150% (tokens); worst-case glass text contrast ≥4.5:1 (DESIGN.md §6: muted-on-glass 5.13:1 light).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0042 — TaskBlock / TaskRow
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** PRD §4.1 F-05 (tasks as task blocks); DESIGN.md §9 TaskBlock/TaskRow (optimistic tick); components.md §1/§2.2; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The task block renders a list of TaskRows; ticking a row is optimistic, announces the change, and fires `tasks.complete({id})` with a 5-minute Undo.
+- **SCOPE:** `apps/web/components/blocks/TaskBlock.tsx` (+ `apps/web/components/blocks/TaskBlock.test.tsx`).
+- **MUTATES:** none (calls the existing `tasks.complete`; no schema change).
+- **STEPS:** 1) Graphify code-map check (`TaskRow` EXISTS in `packages/ui/src/primitives/TaskRow.tsx`; `TaskBlock` is MISSING); 2) implement `TaskBlock({ tasks })` rendering a `tp-block-task` list of `TaskRow`; 3) tick is optimistic (`aria-checked`, check pop 180ms) and calls `tasks.complete({ id })` with Undo; 4) `- [ ]` markdown stays plain markdown; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/TaskBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not surface JSON; do not break `- [ ]` markdown parity; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Row shows title (`dir="auto"`), duration `EN: "min" / HE: "דק׳"` with `.tp-num`, optional day. Tick button is `role=checkbox aria-checked`, check pops 180ms; done row uses `--tp-done` + word `EN: "Done" / HE: "בוצע"` (never colour-only). Announce new state via the live region.
+- **TESTS:** Given a task / When ticked / Then `aria-checked=true` immediately and `tasks.complete` is called with Undo shown. Given `lang=he` / Then duration `דק׳` and RTL. Given a done task / Then struck-through style + "Done". Given 390 and 1280 / Then rows render in both.
+- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms (check 180ms).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0043 — EnergyBlock / Dial
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** DESIGN.md §9 EnergyBlock/Dial (quiet/steady/push, radio + arrows); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The energy check-in block (three-segment toggle: quiet/steady/push, `role=radio` + arrows, RTL arrow swap) is verified.
+- **SCOPE:** `apps/web/components/blocks/EnergyBlock.tsx` (+ `apps/web/components/blocks/EnergyBlock.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (`Dial` helper EXISTS at `apps/web/components/coach-controls/dial.ts`; `EnergyBlock` is MISSING); 2) implement `EnergyBlock({ value })` with three `role=radio` options; 3) arrow keys move the selection and swap direction in RTL; 4) announce the chosen word; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/EnergyBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Three `tp-seg__opt` segments, one selected. Copy (EN/HE): `EN: "Quiet" / HE: "שקט"`; `EN: "Steady" / HE: "יציב"`; `EN: "Push" / HE: "דחיפה"`. `role=radio` group, `aria-checked` on the selected, arrows move selection (LTR ↔ RTL). The word always carries meaning.
+- **TESTS:** Given value `steady` / Then "Steady" is selected and `aria-checked=true`. Given ← / Then selection moves left (right in RTL). Given `lang=he` / Then words are Hebrew and arrows swapped. Given 390 and 1280 / Then the toggle fits both.
+- **NUMBERS:** target ≥24px; contrast ≥4.5:1; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0044 — Backlinks
+- **Stage:** A · **Pass:** 1 · **Depends:** 0009 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0009.
+- **WHY:** DESIGN.md §9 Backlinks ("Linked here", card list); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "Linked here" section renders a list of linking pages (page + context snippet) from `notes.backlinks`, verified with empty state.
+- **SCOPE:** `apps/web/components/blocks/Backlinks.tsx` (+ `apps/web/components/blocks/Backlinks.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `Backlinks({ links })`; 3) render header `EN: "Linked here" / HE: "מקושר לכאן"` + count `.tp-num`; 4) each row shows page title + context snippet (`dir="auto"`); 5) empty → hide or show kind copy `EN: "Nothing links here yet." / HE: "עוד אין קישורים לכאן."`; 6) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/Backlinks.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-backlinks` section with eyebrow header + count; rows `tp-backlink` with `__page` and `__ctx`. Snippet clamps to 2 lines. Count uses `.tp-num`.
+- **TESTS:** Given 3 links / Then 3 rows render with page + snippet. Given 0 links / Then the empty copy shows. Given `lang=he` / Then header Hebrew and snippets `dir="auto"`. Given a row click / Then it navigates to that page.
+- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0045 — PageMetaBlock
+- **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0006.
+- **WHY:** components.md §2.2 PageMetaBlock (renders nothing; `display:none` + `aria-hidden`); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The page-meta block carries `pageType`/`date`/`tags` metadata but renders nothing and is hidden from assistive tech.
+- **SCOPE:** `apps/web/components/blocks/PageMetaBlock.tsx` (+ `apps/web/components/blocks/PageMetaBlock.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `PageMetaBlock({ meta })` that returns an element with `display:none !important` + `aria-hidden="true"` and no text; 3) never leak JSON into the DOM; 4) render test + Playwright assert invisibility via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/PageMetaBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not render metadata text; do not surface JSON; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-block-meta` with `display:none !important` and `aria-hidden="true"`. Holds `{ pageType, date?, tags[] }` in memory for the page head, but paints nothing and announces nothing.
+- **TESTS:** Given a page-meta block / Then the DOM node is hidden and `aria-hidden`. Given a screen reader / Then nothing is announced. Given the page head / Then it reads `pageType` from this block (not from the DOM).
+- **NUMBERS:** none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0046 — BrokenBlock
+- **Stage:** A · **Pass:** 1 · **Depends:** 0006 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0006.
+- **WHY:** PRD §4.1 F-03 (broken block draws as a quiet card with Undo); components.md §2.2 BrokenBlock (never shows JSON); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** A broken block renders as a quiet card with a kind message and an Undo/revert action, never showing raw JSON.
+- **SCOPE:** `apps/web/components/blocks/BrokenBlock.tsx` (+ `apps/web/components/blocks/BrokenBlock.test.tsx`).
+- **MUTATES:** none (calls `pages.revertBlock`; no schema change).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `BrokenBlock({ blockId, canUndo })` rendering `tp-block-broken`; 3) message `EN: "This part has a problem." / HE: "לחלק הזה יש בעיה."` and action `EN: "Restore" / HE: "שחזור"` → `pages.revertBlock` with Undo; 4) never render the raw source/JSON; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/BrokenBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not show JSON or ids; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Quiet `alert`-tone card, icon + word (never colour-only). Action `broken-undo` replaces the card with `EN: "Restored…" / HE: "שוחזר…"`.
+- **TESTS:** Given a broken block / Then the kind message renders, no JSON/block id visible. Given Restore / Then `pages.revertBlock` fires with Undo. Given `lang=he` / Then Hebrew message. Given no undo available / Then the action is hidden.
+- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0047 — TemplateBlock
+- **Stage:** A · **Pass:** 1 · **Depends:** 0046 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0046.
+- **WHY:** PRD §4.1 F-06 (app proposes the right template, one tap accepts); DESIGN.md §9 TemplateBlock; components.md §2.2; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The template-offer block (icon, name, what-it-adds, Use / Not now) is verified; Use applies the template with a 5-minute Undo.
+- **SCOPE:** `apps/web/components/blocks/TemplateBlock.tsx` (+ `apps/web/components/blocks/TemplateBlock.test.tsx`).
+- **MUTATES:** none (calls `templates.apply`; no schema change).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `TemplateBlock({ template, why })` rendering `tp-template-offer`; 3) Use (primary) → `templates.apply` + Undo toast; Not now (ghost) → `templates.dismissOffer`; 4) one primary per screen; 5) render test + Playwright via the new-page spec.
+- **DONE:** `bun test apps/web/components/blocks/TemplateBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not use accent on Not now; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Card with icon, title `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"`, reason, and a bulleted `adds[]` (e.g. Intention / Energy check-in / Top three tasks / End of day → `כוונה / בדיקת אנרגיה / שלוש משימות עיקריות / סוף היום`). Use = one primary; Not now = ghost `EN: "Not now" / HE: "לא עכשיו"`. Dismissed state persists.
+- **TESTS:** Given an offer / When Use is tapped / Then `templates.apply` fires and an Undo toast shows. Given Not now / Then the offer dismisses and the page stays. Given `lang=he` / Then Hebrew copy. Given 390 and 1280 / Then the offer card renders in both.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0048 — EventBlock
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** PRD §4.1 F-07 (fixed vs flexible events); DESIGN.md §9 EventBlock (solid "Fixed" / dashed "Flexible"); components.md §2.2; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The event block (time, title, place, fixed/flexible kind with word + edge) is verified.
+- **SCOPE:** `apps/web/components/blocks/EventBlock.tsx` (+ `apps/web/components/blocks/EventBlock.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `EventBlock({ event })`; 3) render `__time` (mono LTR), `__title` (`dir="auto"`), `__place`, kind chip (solid edge + "Fixed" / dashed + "Flexible"); 4) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/EventBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-block-event` card. Time `EN: "08:00"` in `.tp-mono` `.tp-num` (LTR). Kind copy `EN: "Fixed" / HE: "קבוע"` (solid edge, `--tp-info`) and `EN: "Flexible" / HE: "גמיש"` (dashed edge, `--tp-caution`). Word + shape, never shape alone.
+- **TESTS:** Given a fixed event / Then solid edge + "Fixed". Given a flexible event / Then dashed edge + "Flexible". Given `lang=he` / Then time stays LTR and kind is Hebrew. Given 390 and 1280 / Then the card renders in both.
+- **NUMBERS:** contrast ≥4.5:1 (info 5.13:1, caution 5.05:1); text ≥13px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0049 — HabitBlock
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** PRD §4.1 F-10 (habits as blocks, no streak counters); components.md §2.2 HabitBlock (no streak, per-day sr text); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The habit block (name, last-7 days as rings/dots, Log today, no streak counter) is verified.
+- **SCOPE:** `apps/web/components/blocks/HabitBlock.tsx` (+ `apps/web/components/blocks/HabitBlock.test.tsx`).
+- **MUTATES:** none (calls `habits.log`; no schema change).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `HabitBlock({ habit })`; 3) render last-7 days with `data-done`/`data-today` and per-day sr text `EN: "logged" / HE: "נרשם"` / `EN: "not logged" / HE: "לא נרשם"`; 4) Log today → `habits.log({ habitId, date })`; 5) NO streak counter; 6) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/HabitBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add a streak counter; do not shame missed days; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-block-habit` card with `__log` toggle (Log today / Logged today). Missed day = empty ring (no "broken streak"). Per-day dot carries sr text. Copy `EN: "Log today" / HE: "לרשום להיום"`; `EN: "Logged today" / HE: "נרשם היום"`.
+- **TESTS:** Given a habit / Then 7 day-dots render with sr text each. Given Log today / Then `habits.log` fires and today's dot fills with "Logged today". Given `lang=he` / Then Hebrew. Given a missed day / Then an empty ring, no counter or shame word.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0050 — NagBlock
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** PRD §4.6 F-60 (nags in the user's own words; no stock copy, no emoji); components.md §2.2 NagBlock; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The nag block (user's own phrase, Now / Snooze / Not today choices) is verified with no emoji or stock copy.
+- **SCOPE:** `apps/web/components/blocks/NagBlock.tsx` (+ `apps/web/components/blocks/NagBlock.test.tsx`).
+- **MUTATES:** none (calls `nags.respond`; no schema change).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `NagBlock({ nag })`; 3) render the user's phrase (`dir="auto"`) with origin, choices Now / Snooze / Not today → `nags.respond`; 4) no icon, no emoji, no stock copy; 5) render test + Playwright via the editor spec.
+- **DONE:** `bun test apps/web/components/blocks/NagBlock.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not use emoji or stock copy; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-block-nag` card, `__label` + `__phrase` (the user's own words, `dir="auto"`), `__meta` (about/at), `__actions` Now / Snooze / Not today (`nag` + `data-choice` → `nags.respond`). Copy (EN/HE): `EN: "Now" / HE: "עכשיו"`; `EN: "Snooze" / HE: "נדנוד"`; `EN: "Not today" / HE: "לא היום"`.
+- **TESTS:** Given a nag / Then the user's phrase renders verbatim, no emoji. Given Now / Then `nags.respond` fires. Given Not today / Then status updates without shame. Given `lang=he` / Then choices Hebrew, phrase `dir="auto"`.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** nag delivery channel beyond in-app (REWRITE-PLAN-v2 §4 conflict 11; UNKNOWN — Amit; chunk B).
+
+### TFV2-0051 — NextUpCard
+- **Stage:** A · **Pass:** 1 · **Depends:** 0027 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0027.
+- **WHY:** DESIGN.md §9 NextUpCard (the one primary); components.md §1; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "Next up" card (one task + why, Start / Not now / Make it smaller) is verified.
+- **SCOPE:** `apps/web/components/today/NextUpCard.tsx` (+ `apps/web/components/today/NextUpCard.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS: `today/NextUpCard.tsx`); 2) verify it renders one task with the reason (why) and three actions; 3) Start is the one primary; 4) render test + Playwright via the today spec (chunk 2 exercises the screen; here assert the card).
+- **DONE:** `bun test apps/web/components/today/NextUpCard.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-nextup` card with task title (`dir="auto"`), `why` line, and actions Start (primary) / Not now (ghost) / Make it smaller (ghost). Copy (EN/HE): `EN: "Next up" / HE: "הבא בתור"`; `EN: "Start" / HE: "להתחיל"`; `EN: "Not now" / HE: "לא עכשיו"`; `EN: "Make it smaller" / HE: "לחלק לקטן"`.
+- **TESTS:** Given a task / Then title + why render. Given Start / Then the one primary action fires. Given Not now / Then it dismisses without shame. Given 390 and 1280 / Then the card renders in both. Given `lang=he` / Then Hebrew.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0052 — AuthCard
+- **Stage:** A · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** components.md §2.15 AuthCard (bare layout, no shell); DESIGN.md §9; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The bare auth card (brand, title, lede, form slot, foot) exists with no app shell.
+- **SCOPE:** `apps/web/components/auth/AuthCard.tsx` (+ `apps/web/components/auth/AuthCard.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `AuthCard({ title, lede, children, foot? })` rendering `tp-auth-card` with brand, title, lede; 3) bare layout, no shell; 4) render test + Playwright via the sign-in/sign-up specs.
+- **DONE:** `bun test apps/web/components/auth/AuthCard.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not render the app shell; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-auth` wrapper centred on `--tp-ground`; `tp-auth-card` is `--tp-paper` with `--tp-radius-xl` (20px) and `--tp-shadow-card`. Brand `Tempo`, title `--tp-text-2xl`, lede `--tp-ink-muted`. Foot holds the language switch.
+- **TESTS:** Given title/lede / Then both render in the card. Given no shell / Then no rail/topbar renders. Given 390 and 1280 / Then the card centres in both. Given `lang=he` / Then title/lede Hebrew, RTL.
+- **NUMBERS:** contrast ≥4.5:1; radius 20px (token); motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0053 — EmailField
+- **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0052.
+- **WHY:** components.md §2.15 EmailField (`type=email dir=ltr`); DESIGN.md §2.8; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** An email field (label, help, error, `autocomplete=email`, `dir="ltr"`, inline error + `aria-invalid`) exists.
+- **SCOPE:** `apps/web/components/auth/EmailField.tsx` (+ `apps/web/components/auth/EmailField.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `EmailField({ id, label, help, error? })`; 3) validate against a Zod email schema shared with the backend; 4) `aria-describedby`, `aria-invalid`, inline error with icon; 5) render test + Playwright via the sign-in/sign-up specs.
+- **DONE:** `bun test apps/web/components/auth/EmailField.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-field` + `tp-input[type=email][autocomplete=email][inputmode=email][dir=ltr][spellcheck=false]`. Label `EN: "Email" / HE: "מייל"`; help `EN: "Use the email you asked to join with." / HE: "המייל שאיתו ביקשת להצטרף."`; error `EN: "Enter your email, like name@example.com" / HE: "כתבו את המייל שלכם, למשל name@example.com"`; placeholder `name@example.com`. Invalid → `aria-invalid="true"` + visible error.
+- **TESTS:** Given empty submit / Then error shows and `aria-invalid`. Given `"maya@"` / Then error. Given valid email / Then no error. Given `lang=he` / Then the input stays `dir="ltr"` while the label is Hebrew.
+- **NUMBERS:** contrast ≥4.5:1; input outline ≥3:1 (`--tp-line-control` 3.89:1 light); target ≥24px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0054 — GuestButton
+- **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0052.
+- **WHY:** components.md §2.15 GuestButton (secondary, never accent; preview only); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "Continue as guest" button is a secondary block button shown only on preview, never live.
+- **SCOPE:** `apps/web/components/auth/GuestButton.tsx` (+ `apps/web/components/auth/GuestButton.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `GuestButton({ onContinue })`; 3) secondary block (`tp-btn--secondary.tp-btn--block`), label `EN: "Continue as guest" / HE: "המשך כאורח/ת"` + help `EN: "Try it without an account. Guest notes stay on this preview." / HE: "לנסות בלי חשבון. פתקי אורח נשארים בגרסת התצוגה הזו."`; 4) render only when the preview flag is set; 5) render test + Playwright via the sign-in spec.
+- **DONE:** `bun test apps/web/components/auth/GuestButton.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not use accent; do not render on live; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Secondary (never accent), full-width block. Preview-only: gated by a `NEXT_PUBLIC_` preview flag (name only, no value here).
+- **TESTS:** Given preview / Then the button renders. Given live / Then it does not render. Given click / Then `auth.continueAsGuest` is called. Given `lang=he` / Then Hebrew label.
+- **NUMBERS:** target ≥24px; contrast ≥4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0055 — DividerText
+- **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0052.
+- **WHY:** components.md §2.15 DividerText ("or"); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** An "or" separator with hairline dividers and an accessible label exists.
+- **SCOPE:** `apps/web/components/auth/DividerText.tsx` (+ `apps/web/components/auth/DividerText.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `DividerText({ label? })`; 3) default label `EN: "or" / HE: "או"`; 4) hairline dividers `--tp-line` either side; 5) render test + Playwright via the sign-in spec.
+- **DONE:** `bun test apps/web/components/auth/DividerText.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-divider-text` with `--tp-line` hairlines and a `--tp-muted` `--tp-xs` label; decorative lines `aria-hidden`. The word carries the meaning.
+- **TESTS:** Given default / Then "or" renders between two hairlines. Given `lang=he` / Then "או". Given a screen reader / Then the label is announced once.
+- **NUMBERS:** contrast ≥4.5:1 for the label.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0056 — StatusPanel
+- **Stage:** A · **Pass:** 1 · **Depends:** 0052 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0052.
+- **WHY:** components.md §2.15 StatusPanel (link sent / approval pending; no illustration); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** A status panel (tone, icon, title, body, meta, actions: resend/back) exists with no illustration.
+- **SCOPE:** `apps/web/components/auth/StatusPanel.tsx` (+ `apps/web/components/auth/StatusPanel.test.tsx`).
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) implement `StatusPanel({ tone, title, body, meta?, actions? })`; 3) map tone to `--tp-info`/`--tp-done` wash; 4) no illustration (icon only); 5) render test + Playwright via the link-sent/approval-pending specs.
+- **DONE:** `bun test apps/web/components/auth/StatusPanel.test.tsx` → all pass.
+- **EVIDENCE:** paste the test pass count.
+- **DO NOT:** do not add an illustration; do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tp-status-panel[data-tone]` with `__icon`, `__title`, `__body`, `__meta`, `__actions`. Tones: info (link sent), done/caution (pending). Icon + word always. Title `--tp-text-xl`, body `--tp-ink-muted`.
+- **TESTS:** Given tone=info + title/body / Then icon + title + body render, no illustration. Given actions / Then Resend/Back render. Given `lang=he` / Then Hebrew + RTL. Given 390 and 1280 / Then it centres in both.
+- **NUMBERS:** contrast ≥4.5:1; text ≥13px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0057 — Sign-in screen
+- **Stage:** A · **Pass:** 1 · **Depends:** 0012, 0052, 0053, 0054, 0055 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0012, TFV2-0052, TFV2-0053, TFV2-0054, TFV2-0055.
+- **WHY:** PRD §4.1 F-01 (magic link only); `screens/web/sign-in.html`; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The sign-in screen (email → magic link, sending/error/offline states, preview-only guest) matches the v3 spec in EN and HE at 390 and 1280.
+- **SCOPE:** `apps/web/app/sign-in/page.tsx` + `apps/web/components/auth/SignInForm.tsx` (+ `tests/e2e/screens/sign-in.spec.ts`).
+- **MUTATES:** none (screen + form; calls `auth.sendMagicLink`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `sign-in/page.tsx` + `SignInForm.tsx`; route is `/sign-in`, the v3 target is `(auth)/sign-in` — keep the existing route); 2) verify one email field, "Send magic link" primary, error summary, sending/offline states; 3) verify `getPostAuthDestination` returns `/today` for `/dashboard` and self-redirects; 4) add the Playwright spec below asserting each state at 390 and 1280, EN and HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sign-in.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add passkeys/password; do not touch `convex/auth*`, `.github/**`, `.env` or workflows; do not restyle with new colours.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Auth layout (no shell). One `EmailField`; primary `EN: "Send magic link" / HE: "שליחת קישור כניסה"`; note `EN: "The link works for 30 minutes." / HE: "הקישור עובד במשך 30 דקות."`. States: default, loading (`EN: "Sending…" / HE: "שולחים…"`, button disabled + `aria-busy`), empty (error summary), error (`EN: "Couldn't send the link. Nothing was lost." / HE: "לא הצלחנו לשלוח את הקישור. שום דבר לא אבד."`), offline (banner + disabled button with reason), invalid (inline email error), plus preview-only DividerText + GuestButton. On success → `/link-sent?email=&next=`.
+- **TESTS:** Given 390 / When empty submit / Then the error summary focuses and shows the email error. Given valid email / When submit / Then "Sending…" then navigation to `/link-sent`. Given `?state=error` / Then the error alert shows and the email stays in the field. Given offline / Then the banner shows and the button is disabled. Given `lang=he` / Then all copy Hebrew, `dir=rtl`, input `dir=ltr`. Repeat at 1280. Assert no passkey/password field.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** route group `(auth)/sign-in` vs existing `/sign-in` (UNKNOWN — Amit).
+
+### TFV2-0058 — Sign-up screen
+- **Stage:** A · **Pass:** 1 · **Depends:** 0012, 0052, 0053, 0056 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0012, TFV2-0052, TFV2-0053, TFV2-0056.
+- **WHY:** PRD §4.1 F-01a (approval-gated sign-up); `screens/web/sign-up.html`; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "Ask to join" screen (email + human check → pending request) matches the v3 spec in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/sign-up/page.tsx` + `apps/web/components/auth/SignUpForm.tsx` (+ `tests/e2e/screens/sign-up.spec.ts`).
+- **MUTATES:** none (screen + form; calls `access.request`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `sign-up/page.tsx` + `SignUpForm.tsx`); 2) verify email field + human check (Turnstile placeholder) + "Ask to join" primary; 3) verify same-answer-on-already-listed email (never reveal existence); 4) add the Playwright spec below asserting each state at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/sign-up.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not reveal whether an email exists; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Auth layout. EmailField (help `EN: "We only use it to let you in. No newsletters." / HE: "נשתמש בו רק כדי להכניס אותך. בלי ניוזלטרים."`); human check label `EN: "Quick check that you're a person" / HE: "בדיקה קצרה שאת/ה אדם"`; primary `EN: "Ask to join" / HE: "בקשה להצטרף"`; note `EN: "You'll get one email when you're in." / HE: "תקבלו מייל אחד כשתיכנסו."`. States: default, sending, invalid (email + check errors), error (`EN: "Couldn't send your request. Nothing was lost." / HE: "לא הצלחנו לשלוח את הבקשה. שום דבר לא אבד."`), offline. Success → `/approval-pending?email=`.
+- **TESTS:** Given 390 / When submit without the check / Then the check error shows in the summary. Given valid email + check / When submit / Then "Sending…" then `/approval-pending`. Given `lang=he` / Then Hebrew + RTL. Given error / Then the typed email is kept. Repeat at 1280.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** sign-up policy (cap vs unlimited, approval order/location — UNKNOWN, Amit; REWRITE-PLAN-v2 §4 conflict 4).
+
+### TFV2-0059 — Link-sent screen
+- **Stage:** A · **Pass:** 1 · **Depends:** 0056, 0057 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0056, TFV2-0057.
+- **WHY:** `screens/web/sign-in.html` @flow (link-sent); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "link sent" status screen (resend + back, email shown, 30-minute note) exists in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/(auth)/link-sent/page.tsx` (+ `tests/e2e/screens/link-sent.spec.ts`).
+- **MUTATES:** none (screen).
+- **STEPS:** 1) Graphify code-map check (MISSING — no `link-sent` route exists); 2) build the screen on `StatusPanel`; 3) show the email, a 30-minute note, Resend (→ `auth.sendMagicLink`) and Back (→ `/sign-in`); 4) add the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/link-sent.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not reveal whether the email has access; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Auth layout + StatusPanel (tone info). Copy (EN/HE): title `EN: "Check your email" / HE: "בדקו את המייל"`; body `EN: "We sent a sign-in link to {email}. It works for 30 minutes." / HE: "שלחנו קישור כניסה אל {email}. הוא עובד 30 דקות."`; meta `EN: "Didn't get it? Check spam, or resend." / HE: "לא קיבלתם? בדקו ספאם, או שלחו שוב."`; actions Resend `EN: "Resend link" / HE: "שליחה חוזרת"` and Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`. Email shown LTR (`tp-num`).
+- **TESTS:** Given `?email=` / Then the email shows and the 30-minute note. Given Resend / Then `auth.sendMagicLink` fires. Given Back / Then it returns to `/sign-in`. Given `lang=he` / Then Hebrew + RTL, email LTR. At 390 and 1280.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0060 — Approval-pending screen
+- **Stage:** A · **Pass:** 1 · **Depends:** 0056, 0058 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0056, TFV2-0058.
+- **WHY:** PRD §4.1 F-01a; `screens/web/sign-up.html` @flow (approval-pending); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The "You're on the list" status screen exists in EN/HE at 390/1280, without revealing existence or sending email before approval.
+- **SCOPE:** `apps/web/app/(auth)/approval-pending/page.tsx` (+ `tests/e2e/screens/approval-pending.spec.ts`).
+- **MUTATES:** none (screen).
+- **STEPS:** 1) Graphify code-map check (MISSING); 2) build the screen on `StatusPanel`; 3) show the email and a "we'll write when you're in" note; 4) no email is sent to the person until Amit approves; 5) add the Playwright spec below.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/approval-pending.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not send email before approval; do not reveal list membership; do not touch `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Auth layout + StatusPanel (tone done). Copy (EN/HE): title `EN: "You're on the list" / HE: "אתה ברשימה"`; body `EN: "We let people in a few at a time. We'll email {email} when you're in." / HE: "אנחנו מכניסים אנשים בהדרגה. נשלח מייל אל {email} כשתיכנס."`; meta `EN: "No email has been sent yet." / HE: "עדיין לא נשלח מייל."`; action Back `EN: "Back to sign in" / HE: "חזרה לכניסה"`.
+- **TESTS:** Given `?email=` / Then the email and note render. Given Back / Then `/sign-in`. Given `lang=he` / Then Hebrew + RTL. At 390 and 1280. Assert no sign-in link is sent (the screen only displays).
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** where Amit approves (admin screen vs Convex dashboard vs email link) — UNKNOWN, Amit (PRD F-01a).
+
+### TFV2-0061 — Onboarding screen
+- **Stage:** A · **Pass:** 1 · **Depends:** 0020 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0020.
+- **WHY:** PRD §4.7 (language first); `screens/web/onboarding.html`; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The 5-step onboarding (language/font, name, dial, brain dump, privacy) is verified in EN/HE at 390/1280 with resume and save states.
+- **SCOPE:** `apps/web/components/onboarding/OnboardingFlow.tsx` + `apps/web/app/(auth)/onboarding/page.tsx` (+ `tests/e2e/wiring/templates-onboarding.spec.ts`).
+- **MUTATES:** none (calls `profiles.*`; no schema change).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `onboarding/OnboardingFlow.tsx`, `onboarding/NameStep.tsx`, `OnboardingFlow.test.tsx`); 2) verify the 5 steps, per-step save, "Step n of 5", Back/Skip, and Finish → `/today`; 3) verify language choice flips RTL/LTR at once; 4) refresh the Playwright spec below to assert each state at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/wiring/templates-onboarding.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not touch `convex/**`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Auth layout; progress `EN: "Step {n} of 5" / HE: "שלב {n} מתוך 5"`. Step 1 language/font, Step 2 name (optional), Step 3 dial 0–10 (quiet/steady/push, starts 4), Step 4 brain dump (optional), Step 5 privacy + analytics (default Off). Primary `EN: "Continue" / HE: "המשך"`; final `EN: "Start using Tempo" / HE: "להתחיל להשתמש ב-Tempo"`. Saving `EN: "Saving…" / HE: "שומרים…"`; error `EN: "Couldn't save this step. What you entered is still here." / HE: "לא הצלחנו לשמור את השלב הזה. מה שכתבת עדיין כאן."`; offline keeps choices.
+- **TESTS:** Given step 1 / When Hebrew chosen / Then `dir=rtl` at once and copy flips. Given step 3 / Then the dial shows a number and word. Given Finish / Then it navigates to `/today`. Given refresh mid-flow / Then it resumes on the saved step. Given error / Then the entered text stays. At 390 and 1280, EN and HE.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms; dial words: quiet 0–3, steady 4–7, push 8–10.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0062 — Page-editor screen (`notes/[id]`)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0021, 0027, 0035, 0036, 0044 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0021, TFV2-0027, TFV2-0035, TFV2-0036, TFV2-0044.
+- **WHY:** PRD §4.1 F-02/F-03 (markdown editor, blocks drawn as elements); DESIGN.md §8/§9 (TempoShell layout, PageEditor); `screens/web/page-editor.html`; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The full page-editor screen (rail, topbar, paper editor, slash menu, backlinks, coach button, states) is verified end-to-end in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/(tempo)/notes/[id]/page.tsx` + `apps/web/components/notes/PageEditorView.tsx` (+ `tests/e2e/screens/notes-save.spec.ts`).
+- **MUTATES:** none (screen wiring; calls `notes.save`, `notes.backlinks`, `tasks.complete`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `notes/[id]/page.tsx` + `PageEditorView.tsx`); 2) verify the screen composes TempoShell + Topbar + PageEditor + Backlinks + CoachButton + TabBar; 3) verify every state (default/empty/loading/error/offline) via `?state=`; 4) refresh the Playwright spec below to assert each state at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes-save.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not surface JSON; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `@route apps/web/app/(tempo)/notes/[id]/page.tsx`, `@layout TempoShell`. Data: `page = notes.get({ id })`, `backlinks = notes.backlinks({ pageId })`. States: default (editor + blocks), empty (`EN: "This page is empty. Just start writing…"` + template CTA), loading (skeleton rows), error (`EN: "Couldn't open this page. Your data is safe."` + Retry), offline (banner + keep editing). Backlinks "Linked here". Coach button bottom-right (Ctrl J).
+- **TESTS:** Given a page / When a block is edited / Then "Saved" shows and `notes.save` is called. Given `/` / Then the slash menu opens. Given `[[page]]` / Then a Wikilink renders and backlinks update. Given `?state=error` / Then the error state with Retry. Given `?state=empty` / Then the empty state. Given offline / Then the banner and editing still works. At 390 and 1280, EN and HE. Assert no JSON visible.
+- **NUMBERS:** contrast ≥4.5:1; paper max 760px; text min 13px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** block-model authority (UNKNOWN — Amit).
+
+### TFV2-0063 — Notes list screen
+- **Stage:** A · **Pass:** 1 · **Depends:** 0021, 0022 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0021, TFV2-0022.
+- **WHY:** PRD §4.1 (notes/pages list); `screens/web/notes.html`; REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The Notes screen (folder tree + paginated page list, search/sort, pinned, states) is verified in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/(tempo)/notes/page.tsx` + `apps/web/components/notes/NotesScreen.tsx` (+ `tests/e2e/screens/notes.spec.ts`).
+- **MUTATES:** none (screen wiring; calls `pages.tree`, `pages.list`).
+- **STEPS:** 1) Graphify code-map check (EXISTS: `notes/page.tsx`, `notes/NotesScreen.tsx`, `notes-pages/NotesList.tsx`); 2) verify folder filter, search, sort (recent/title), pinned section, count status; 3) verify empty/loading/error/offline states; 4) refresh the Playwright spec below at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/notes.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not add colours; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `@route apps/web/app/(tempo)/notes/page.tsx`, `@layout TempoShell`. Header title `EN: "Notes" / HE: "פתקים"` + New page primary. Folder tree (`All pages`, folders), list rows (icon, title `dir="auto"`, edited time, folder, tags), pinned first. Status `EN: "Showing {n} pages" / HE: "מוצגים {n} דפים"`. Empty `EN: "No pages yet. Your first one can be tiny." / HE: "עוד אין דפים. הראשון יכול להיות קטנטן."` + template CTA. Error `EN: "Couldn't load your pages." / HE: "לא הצלחנו לטעון את הדפים."` + Retry.
+- **TESTS:** Given a folder pick / Then the list narrows and the count updates. Given search / Then rows filter. Given sort=title / Then A–Z (Hebrew too). Given no pages / Then the empty state. Given `?state=error` / Then error + Retry. At 390 and 1280, EN and HE.
+- **NUMBERS:** row min height 56px; contrast ≥4.5:1; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0064 — New-page screen + States (empty/loading/error/offline/switch)
+- **Stage:** A · **Pass:** 1 · **Depends:** 0047, 0062 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0047, TFV2-0062.
+- **WHY:** PRD §4.1 F-06 (propose template, one tap); `screens/web/new-page.html`; components.md §4 (state switch contract); REWRITE-PLAN-v2 §6 chunk 1.
+- **GOAL:** The new-page screen (one proposed template, full picker, plain-note, make-a-template) renders with the full state contract (default/empty/loading/error/offline) in EN/HE at 390/1280.
+- **SCOPE:** `apps/web/app/(tempo)/notes/new/page.tsx` (+ `tests/e2e/screens/new-page.spec.ts`).
+- **MUTATES:** none (screen wiring; calls `templates.suggest`, `templates.list`, `templates.apply`, `pages.create`, `templates.createFromPage`).
+- **STEPS:** 1) Graphify code-map check (MISSING — no `notes/new` route); 2) build the screen composing TempoShell + PageEditor (empty) + TemplateBlock (offer) + TemplatePicker + "Start a plain note" + "Make this page a template"; 3) implement the `?state=` StateSwitch contract from components.md §4 (default/empty/loading/error/offline); 4) add the Playwright spec below at 390/1280, EN/HE.
+- **DONE:** `CI=1 bunx playwright test tests/e2e/screens/new-page.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** paste the Playwright pass count.
+- **DO NOT:** do not surface JSON; do not touch `convex/schema.ts`, `convex/auth*`, `.github/**`, `.env` or workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `@route apps/web/app/(tempo)/notes/new/page.tsx`, `@layout TempoShell`. Offer `EN: "Use the Daily template?" / HE: "להשתמש בתבנית היומית?"` + adds + Use (primary) / Not now. Picker `EN: "Or pick another" / HE: "או לבחור תבנית אחרת"` (Daily/Weekly/Project/own/Plain note). Buttons `EN: "Use this one" / HE: "להשתמש בזו"`, `EN: "Start a plain note" / HE: "להתחיל פתק פשוט"`, `EN: "Make this page a template" / HE: "להפוך את הדף הזה לתבנית"`. States via `?state=`: empty (no own templates — built-ins + hint), loading (skeleton), error (`EN: "Couldn't load templates. Your data is safe." / HE: "לא הצלחנו לטעון את התבניות. המידע שלך שמור."` + Retry), offline (write works, templates load later).
+- **TESTS:** Given `?state=empty` / Then built-ins show plus the kind hint. Given Use / Then `templates.apply` + Undo toast. Given Not now / Then the offer dismisses, picker stays. Given plain note / Then `pages.create({ templateId:null })` then `/notes/[id]`. Given `?state=error` / Then error + Retry. Given `?state=loading` / Then skeletons. Given `lang=he` / Then RTL. At 390 and 1280.
+- **NUMBERS:** contrast ≥4.5:1; target ≥24px; motion ≤250ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+## Chunk 2 — MVP · Planning surface
+
+### TFV2-0065 — Tasks: soft delete, carry-over, move-to-today (`convex/tasks.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** APP-FLOW §5 items 3–4; BACKEND-SCHEMA §3 (`tasks soft delete + carry-over #530`); PRD F-05.
+- **GOAL:** Open tasks can be soft-deleted, carried over to a later day, and moved onto Today, all with a 5-minute Undo.
+- **SCOPE:** `convex/tasks.ts` · `convex/tasks.test.ts` (test; create if absent).
+- **MUTATES:** `tasks` rows (`deletedAt`, `scheduledAt`/carry-over date, `status`); `activity` rows for Undo.
+- **STEPS:** 1) Graphify code-map check of `convex/tasks.ts` (a `softDelete` helper exists in `convex/lib/softDelete.ts` — verify and reuse); 2) add `tasks.softDelete({ taskId })` (sets `deletedAt`, returns `{ ok: true }`); 3) add `tasks.carryOver({ taskId, date })` (sets the target local date, keeps status open); 4) add `tasks.moveToToday({ taskId, date })` (target = the caller's Today local date); 5) both mutations write an `activity` row and accept a 5-minute `undoId`; 6) write the tests; 7) run DONE.
+- **DONE:** `bun run test convex/tasks.test.ts` → all cases pass, including every error case below.
+- **EVIDENCE:** terminal output of DONE (pass count) + the `tasks.test.ts` file listing every Given/When/Then.
+- **DO NOT:** change `convex/schema.ts`; touch any other module; delete a task hard (must be soft); invent a new table.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Mutations on `convex/tasks.ts`, owner-scoped (`requireUser`): `softDelete({taskId})`, `carryOver({taskId, date})`, `moveToToday({taskId, date})`. All return `{ taskId, undone: boolean }`. Auth: only the row's `userId`; reject missing/foreign/deleted task with typed `ConvexError("task_not_found")`. Errors (tested): missing args → `invalid_args`; task owned by another user → `forbidden`; already `deletedAt` → `already_deleted`; `date` not a valid `YYYY-MM-DD` → `invalid_date`. Limits: `date` parsed strictly (`YYYY-MM-DD`), carry-over date within ±1 year of today. No UI strings in this ticket (errors surface as codes; the screen renders copy).
+- **TESTS:** Given an open task owned by U / When `softDelete` / Then `deletedAt` set and list excludes it. Given a deleted task / When `carryOver` / Then `already_deleted`. Given `date:"2026-13-40"` / When any mutation / Then `invalid_date`. Given task owned by V / When U calls / Then `forbidden`. Given `moveToToday` / When success / Then activity row exists and `undo` restores the prior status/date.
+- **NUMBERS:** mutation round-trip p95 latency — UNKNOWN (Amit answers) · no N+1 on the happy path (code review) · every error path returns a typed error, never throws raw (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0066 — Calendar events: `endsAtMs` + edit + soft delete (`convex/calendar_events.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** #1341
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** APP-FLOW §5 item 7; BACKEND-SCHEMA §3 (`calendarEvents.endsAtMs?` additive); PRD F-07.
+- **GOAL:** Calendar events carry an optional end time, can be edited, and are soft-deleted (never hard).
+- **SCOPE:** `convex/calendar_events.ts` · `convex/calendar_events.test.ts` (test; create if absent).
+- **MUTATES:** `calendarEvents.endsAtMs` (additive read/write); event `title`/`startAtMs`/`endsAtMs` on edit; `deletedAt` on delete.
+- **STEPS:** 1) Graphify code-map of `convex/calendar_events.ts` (endsAtMs may already be on the row — verify against `convex/schema.ts`, which you may NOT edit); 2) add `calendar_events.update({ eventId, title?, startAtMs?, endsAtMs? })`; 3) add `calendar_events.delete({ eventId })` (soft); 4) extend the return validator for the optional `endsAtMs`; 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/calendar_events.test.ts` → all pass, incl. the end-before-start rejection.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** edit `convex/schema.ts`; hard-delete; allow `endsAtMs <= startAtMs`; touch any other module.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped mutations: `update({eventId, title?, startAtMs?, endsAtMs?})`, `delete({eventId})`; queries already list by month/day. Returns `{ eventId }`. Auth: `requireUser`, row owner only. Errors: `event_not_found`, `forbidden`, `end_before_start` (when `endsAtMs <= startAtMs`), `invalid_time` (non-integer ms). Limits: duration ≥ 5 min and ≤ 24 h; a future event's `endsAtMs` may be cleared (`null`) to restore an all-day event. The `endsAtMs` column is additive; if the schema validator must change, that change rides on the chunk-1 architecture ticket — do not touch `convex/schema.ts` here (see OPEN).
+- **TESTS:** Given an event / When `update({title})` / Then only title changes. Given `endsAtMs <= startAtMs` / When `update` / Then `end_before_start`. Given missing id / When any / Then `event_not_found`. Given other user's event / When call / Then `forbidden`. Given `delete` / When list / Then event absent but row keeps `deletedAt`.
+- **NUMBERS:** p95 mutation latency — UNKNOWN (Amit answers) · duration bounds 5 min–24 h enforced in the validator (code review) · no N+1 on month/day list (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** `endsAtMs` schema-column ownership (this ticket vs the chunk-1 architecture ticket) — UNKNOWN, Amit answers.
+
+### TFV2-0067 — Habit check-ins by local day + Undo (`convex/habitCheckIns.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** APP-FLOW §5 item 4; BACKEND-SCHEMA §3 (`habitCheckIns`); PRD F-10.
+- **GOAL:** A habit can be checked in and un-checked for the caller's local calendar day, with one row per habit per day.
+- **SCOPE:** `convex/habitCheckIns.ts` · `convex/habitCheckIns.test.ts` (extend if present).
+- **MUTATES:** `habitCheckIns` rows (check-in / soft-delete undo); `habits` cache fields recomputed.
+- **STEPS:** 1) Graphify code-map of `convex/habitCheckIns.ts`; 2) ensure `habits.log({ habitId, localDate })` upserts exactly one row per habit per `localDate` (Convex mutation is transactional); 3) ensure undo = soft delete (`deletedAt`) and recompute the habit cache; 4) reject future local dates beyond today and dates > 7 days past (configurable); 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/habitCheckIns.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** add a streak counter to any query result; touch `convex/schema.ts`; log in UTC instead of the passed `localDate`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `habits.log({ habitId, localDate })` and `habits.undo({ habitId, localDate })`, owner-scoped. Returns `{ habitId, localDate, checked }`. Auth: habit owner only. Errors: `habit_not_found`, `forbidden`, `future_date`, `out_of_range` (outside ±7-day window). Limits: `localDate` is `YYYY-MM-DD`, computed in the browser (server has no user time zone — conflict #13); uniqueness enforced inside the mutation. Never surface a streak number (F-10).
+- **TESTS:** Given no row / When `log` / Then one row with `source`. Given an existing check-in / When `log` again / Then idempotent (still one row). Given `localDate` tomorrow / When `log` / Then `future_date`. Given `undo` / When `log` list / Then row soft-deleted and habit cache recomputed. Given other user's habit / When call / Then `forbidden`.
+- **NUMBERS:** p95 mutation latency — UNKNOWN (Amit answers) · one upsert, one cache recompute, no fan-out (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** time-zone source — UNKNOWN, Amit answers (conflict #13).
+
+### TFV2-0068 — Habits: 6-week detail grid + summary + cache recompute (`convex/habits.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0067.
+- **WHY:** APP-FLOW §5 item 4 (`/habits/[id]` 6-week grid); PRD F-10; screen `web/habit-detail.html`.
+- **GOAL:** The habit detail screen can read a 6-week day grid and a summary, with the habit cache recomputed on every check-in.
+- **SCOPE:** `convex/habits.ts` · `convex/habits.test.ts` (create if absent).
+- **MUTATES:** `habits` cache fields (recomputed read); no new tables.
+- **STEPS:** 1) Graphify code-map of `convex/habits.ts` and `convex/lib/habitStreak.ts` / `habitCheckInStreak.ts`; 2) add `habits.listDays({ habitId, localDate })` returning 42 days (6 weeks ending today, Monday-first per code; see OPEN #10); 3) add `habits.summary({ habitId })` returning `{ totalLogged, daysThisWeek, lastLoggedAt }` with **no streak counter**; 4) recompute cache in `habits.log`/`undo`; 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/habits.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** return a streak number anywhere; touch `convex/schema.ts`; add a new table.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Queries (read-only): `listDays({habitId, localDate}) -> { days: {localDate, checked}[] }`, `summary({habitId}) -> { totalLogged, daysThisWeek, lastLoggedAt }`. Auth: owner only. Errors: `habit_not_found`, `forbidden`. Limits: grid is exactly 42 days; `localDate` defaults to today in the caller's zone. The streak libs (`lib/habitStreak.ts`, `lib/habitCheckInStreak.ts`) may already compute totals — reuse them, never expose the streak to the UI.
+- **TESTS:** Given 3 check-ins in the last 6 weeks / When `listDays` / Then 42 days, 3 `checked`. Given none / When `summary` / Then `{0,0,null}` and no streak field. Given a check-in today / When `summary` / Then `daysThisWeek` increments and `lastLoggedAt` = today. Given other user / When any / Then `forbidden`.
+- **NUMBERS:** query has no N+1 and returns ≤42 rows (code review) · p95 latency — UNKNOWN (Amit answers).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start (Sunday/Monday) — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0069 — Goals backend (`convex/goals.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** #457
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** PRD F-08 (structured tags/projects); BACKEND-SCHEMA §3 (`goals`); screen `web/goals.html`, `web/goal-detail.html`, `web/goals-progress.html`.
+- **GOAL:** Goals can be created, listed, opened, linked to projects/tasks, and read back as progress.
+- **SCOPE:** `convex/goals.ts` · `convex/goals.test.ts` (create if absent).
+- **MUTATES:** `goals` rows; `projects`/`tasks` goal links (read).
+- **STEPS:** 1) Graphify code-map of `convex/goals.ts`; 2) add `goals.create({ title })`, `goals.update({ goalId, title? })`, `goals.list()`, `goals.get({ goalId })`; 3) add `goals.progressByGoal()` and `goals.stepsByWeek({ goalId })` for the progress screen; 4) add `goals.nextStep({ goalId })` returning one suggested next action or `null`; 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/goals.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** touch `convex/schema.ts`; auto-create projects/tasks from goals; add a model call.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped: `create({title})`, `update({goalId, title?})`, `list()`, `get({goalId})`, `progressByGoal()`, `stepsByWeek({goalId})`, `nextStep({goalId})`. Titles are user text (`dir="auto"` at render). Errors: `goal_not_found`, `forbidden`, `empty_title`. Limits: title 1–200 chars; `nextStep` returns the earliest open task linked to the goal, else `null` (no model call).
+- **TESTS:** Given none / When `list` / Then `[]`. Given empty title / When `create` / Then `empty_title`. Given a goal with 2 linked tasks / When `progressByGoal` / Then counts reflect open vs done. Given no open tasks / When `nextStep` / Then `null`. Given other user / When `get` / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no N+1 in `progressByGoal` (code review) · title 1–200 chars (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0070 — Day plans (`convex/dayPlans.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** APP-FLOW §5 item 1; BACKEND-SCHEMA §3 (`dayPlans` #531); screen `web/today.html`, `web/plan.html`.
+- **GOAL:** One day plan per user per local day stores intention, top 3 tasks, energy, and a draft/committed status.
+- **SCOPE:** `convex/dayPlans.ts` · `convex/dayPlans.test.ts` (extend if present).
+- **MUTATES:** `dayPlans` rows (upsert); no new tables.
+- **STEPS:** 1) Graphify code-map of `convex/dayPlans.ts`; 2) ensure `getByDate({ localDate })` returns the row or `null`; 3) ensure `upsert({ localDate, intention?, topTaskIds?, energy?, status? })` enforces one row per `localDate`; 4) add `commit({ localDate })` (draft → committed, sets `committedAt`); 5) add `setEnergy({ localDate, energy })` and `setIntention({ localDate, intention })`; 6) write tests; 7) run DONE.
+- **DONE:** `bun run test convex/dayPlans.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** touch `convex/schema.ts`; allow two rows per `localDate`; mix energy words (quiet/steady/push only).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped: `getByDate({localDate})`, `upsert({localDate, intention?, topTaskIds?, energy?, status?})`, `commit({localDate})`, `setEnergy({localDate, energy})`, `setIntention({localDate, intention})`. `energy` ∈ `"quiet"|"steady"|"push"`; `status` ∈ `"draft"|"committed"`; `topTaskIds` length ≤ 3. Errors: `invalid_energy`, `too_many_top_tasks`, `invalid_date`. Uniqueness (one row per `localDate`) enforced inside the mutation.
+- **TESTS:** Given none / When `getByDate` / Then `null`. Given `upsert` twice same day / Then one row updated, not two. Given `energy:"turbo"` / When `upsert` / Then `invalid_energy`. Given 4 top tasks / When `upsert` / Then `too_many_top_tasks`. Given `commit` / When `getByDate` / Then `status="committed"` and `committedAt` set.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `topTaskIds` ≤ 3 enforced (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0071 — Time blocks (`convex/timeBlocks.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0070 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0070.
+- **WHY:** APP-FLOW §5 item 2; BACKEND-SCHEMA §3 (`timeBlocks`); PRD F-07.
+- **GOAL:** Planned slots on one local day can be listed, created, edited, marked done/skipped, and soft-deleted.
+- **SCOPE:** `convex/timeBlocks.ts` · `convex/timeBlocks.test.ts` (create if absent).
+- **MUTATES:** `timeBlocks` rows; `taskId`/`habitId` links (read).
+- **STEPS:** 1) Graphify code-map of `convex/timeBlocks.ts`; 2) add `listForDay({ localDate })` ordered by `startMinute`; 3) add `create({ localDate, title, startMinute, durationMinutes, kind, taskId?, habitId? })`; 4) add `update({ timeBlockId, ... })`, `delete({ timeBlockId })` (soft), `setDone({ timeBlockId, status })`; 5) validate `startMinute` 0–1439, `durationMinutes` 5–720; 6) write tests; 7) run DONE.
+- **DONE:** `bun run test convex/timeBlocks.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** touch `convex/schema.ts`; allow overlap checking that isn't required; hard-delete.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `create` returns `{ timeBlockId }`; `kind` ∈ `focus|task|habit|break|other`; `status` ∈ `planned|done|skipped`. Errors: `invalid_minute`, `invalid_duration`, `time_block_not_found`, `forbidden`. Limits: `startMinute` 0–1439 (half-hour slots), `durationMinutes` 5–720; `skipped` is neutral (never failure copy).
+- **TESTS:** Given create at 08:00 for 25 min / When `listForDay` / Then ordered first. Given `startMinute:1500` / When create / Then `invalid_minute`. Given `durationMinutes:1` / When create / Then `invalid_duration`. Given `setDone("skipped")` / When list / Then status `skipped` and no failure wording. Given other user / When any / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · list sorted by `startMinute` (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** timeline start (06:00 vs wake time) — UNKNOWN, Amit answers.
+
+### TFV2-0072 — Focus blocks (`convex/focusBlocks.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0071 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0071.
+- **WHY:** APP-FLOW §5 item 5; BACKEND-SCHEMA §3 (`focusSessions` #534); screen `web/today.html` Next up timer.
+- **GOAL:** Focus sessions start, pause/resume locally, and complete as logged rows that survive reload.
+- **SCOPE:** `convex/focusBlocks.ts` · `convex/focusBlocks.test.ts` (extend if present).
+- **MUTATES:** `focusBlocks` rows; optional `timeBlockId`/`taskId` links.
+- **STEPS:** 1) Graphify code-map of `convex/focusBlocks.ts`; 2) add `start({ taskId, minutes })` returning `{ sessionId }`; 3) add `complete({ sessionId, minutes })` writing a row with `durationMinutes` and `completedAt`; 4) keep pause/resume as local timer state (no server row); 5) add `listForDay({ localDate })`; 6) write tests; 7) run DONE.
+- **DONE:** `bun run test convex/focusBlocks.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** persist pause/resume as rows; touch `convex/schema.ts`; round minutes dishonestly.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped: `start({taskId, minutes}) -> {sessionId}`, `complete({sessionId, minutes}) -> {sessionId}`, `listForDay({localDate})`. `minutes` ∈ 1–180. Errors: `session_not_found`, `forbidden`, `invalid_minutes`. Pause/resume is browser-local; only `complete` persists.
+- **TESTS:** Given start 25 min / When complete / Then row with `durationMinutes:25` and `completedAt`. Given unknown session / When complete / Then `session_not_found`. Given `minutes:0` / When start / Then `invalid_minutes`. Given list after reload / When `listForDay` / Then the completed session is present (persisted). Given other user / When any / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · `minutes` 1–180 (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0073 — Brain-dump inbox (`convex/brain_dump.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** PRD F-09; APP-FLOW §5 item 6; BACKEND-SCHEMA §3 (`inboxItems` #535); screen `web/brain-dump.html`.
+- **GOAL:** Brain-dump raw text is captured and held as a draft before any sorting.
+- **SCOPE:** `convex/brain_dump.ts` · `convex/lib/brainDumpInput.ts` · `convex/brain_dump.test.ts`.
+- **MUTATES:** brain-dump draft (inbox item) rows; no task/note/event until apply.
+- **STEPS:** 1) Graphify code-map of `convex/brain_dump.ts` and `convex/lib/brainDumpInput.ts`; 2) add `saveDraft({ rawText })` (idempotent single draft per user); 3) add `getDraft()` returning `{ rawText, updatedAt } | null`; 4) add `clearDraft()`; 5) sanitize input (trim, length cap) via `brainDumpInput`; 6) write tests; 7) run DONE.
+- **DONE:** `bun run test convex/brain_dump.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** parse into tasks here (that is TFV2-0074); persist raw messages anywhere else (RAM-only rule); touch `convex/schema.ts`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped: `saveDraft({rawText})`, `getDraft()`, `clearDraft()`. Raw text is user text. Errors: `too_long` (over 20,000 chars). Limits: 0–20,000 chars; one draft per user; the draft is never auto-sorted. Copy surfaced by the screen, not here.
+- **TESTS:** Given save "a;b;c" / When `getDraft` / Then returns it. Given save twice / When `getDraft` / Then only the latest (single draft). Given 30,000 chars / When save / Then `too_long`. Given clear / When getDraft / Then `null`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 20,000-char cap (code review) · input sanitised before persist (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0074 — Brain-dump prioritize → proposal (`convex/lib/brainDumpParse.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0073, TFV2-0065 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0073 and TFV2-0065.
+- **WHY:** PRD F-09 (brain dump → ordered plan → add to Today); APP-FLOW §5 item 6 and §6 (proposal); BACKEND-SCHEMA §4.3 (`proposals` table).
+- **GOAL:** Raw brain-dump text becomes an ordered proposal of rows, each accepted/edited/rejected, and only accepted rows are applied to Today.
+- **SCOPE:** `convex/lib/brainDumpParse.ts` · `convex/brain_dump.ts` (apply mutations) · `convex/brain_dump.test.ts`.
+- **MUTATES:** proposal rows; `tasks`/`calendarEvents`/`notes` only on apply.
+- **STEPS:** 1) Graphify code-map of `brainDumpParse.ts` (a rule-based local split already exists — reuse it as the fallback); 2) add `prioritize({ draftId })` returning `{ rows: {sourceLine,title,durationMin,reason,kind}[] }`; 3) add `apply({ draftId, acceptedRowIds })` that creates tasks/events and soft-deletes the accepted inbox lines; 4) on parse failure, return the rule-based split (no model call required — conflict #6: model-written vs rule-based is UNKNOWN); 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/brain_dump.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** write to Today before `apply`; call a paid model; invent a proposal shape not in `proposals` rows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped: `prioritize({draftId}) -> {rows[]}`, `apply({draftId, acceptedRowIds}) -> {createdTaskIds, createdEventIds}`. Each row carries `sourceLine` (user's own words), `reason` (short, specific). Errors: `draft_not_found`, `empty_draft`, `no_rows_accepted`. Limits: ≤ 20 rows per proposal; `durationMin` default 15. Nothing is written until `apply`; `apply` is undoable for 5 minutes via `activity`.
+- **TESTS:** Given "call bank; slides; email Dana" / When `prioritize` / Then ≤3 rows, each with a reason. Given empty draft / When prioritize / Then `empty_draft`. Given accept 2 rows / When `apply` / Then exactly 2 tasks created, others untouched. Given apply with no accepted rows / Then `no_rows_accepted`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤20 proposal rows (code review) · `apply` idempotent per row (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** model-written vs rule-based proposal, and auto-apply threshold — UNKNOWN, Amit answers (conflict #6).
+
+### TFV2-0075 — Journal + daily note backend (`convex/journal.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** #446
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** #446 (Journal + Daily note backend); PRD F-05/F-06; screen `web/journal.html`, `web/daily-note.html`.
+- **GOAL:** Journal entries and daily-note pages can be listed, created, read, and soft-deleted for the caller's local day.
+- **SCOPE:** `convex/journal.ts` · `convex/journal.test.ts` (both new).
+- **MUTATES:** journal/daily entries (backed by `notes` rows of `pageType:"journal"`/`"daily"`); `deletedAt` for soft delete.
+- **STEPS:** 1) Graphify code-map of `convex/notes.ts` and `notes_period.ts` (journal may be partially wired via page period — verify); 2) add `journal.list()`, `journal.get({ date })`, `journal.saveEntry({ date, body })`, `journal.promptForToday({ date })`; 3) daily note uses `notes` with `pageType:"daily"` and `date`, soft-delete via the existing `notes` path; 4) write tests; 5) run DONE.
+- **DONE:** `bun run test convex/journal.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** add a new table if `notes` with `pageType` already serves journal; touch `convex/schema.ts`; invent prompts (return the fixed prompt text defined in the screen copy).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `journal.list() -> {date, body, updatedAt}[]`; `saveEntry({date, body})`; `promptForToday({date}) -> string` returns fixed copy (EN: "One line about today, or answer the question." / HE: "שורה אחת על היום, או תשובה לשאלה."). Errors: `invalid_date`, `entry_too_long` (>20,000 chars). Storage: `notes` rows with `pageType:"journal"` (12 Oct contracts are the newest authority — conflict #7).
+- **TESTS:** Given no entry today / When `get` / Then `null`. Given save / When list / Then one entry. Given 30,000 chars / When save / Then `entry_too_long`. Given soft delete / When list / Then absent but row keeps `deletedAt`. Given other user / When get / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 20,000-char cap (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** journal storage authority (notes vs a journalEntries table) — UNKNOWN, Amit answers (conflict #7).
+
+### TFV2-0076 — Routines backend (`convex/routines.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0075 · **Folds-in:** #447
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0075.
+- **WHY:** #447 (Routines backend); screen `web/routines.html`, `web/routine-detail.html`.
+- **GOAL:** Routines (ordered step lists) can be listed, opened, run step by step, and soft-deleted.
+- **SCOPE:** `convex/routines.ts` · `convex/routines.test.ts` (both new).
+- **MUTATES:** routine definitions and a run cursor (or a note page of `pageType:"routine"`); `deletedAt` on delete.
+- **STEPS:** 1) Graphify code-map of `convex/notes.ts` (routines are step lists — verify whether they reuse notes); 2) add `routines.list()`, `routines.get({ routineId })`, `routines.create({ title, steps[] })`, `routines.startRun({ routineId })`, `routines.completeStep({ runId, stepIndex })`, `routines.suggestNow({ localDate })`; 3) write tests; 4) run DONE.
+- **DONE:** `bun run test convex/routines.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** add a model call to `suggestNow` (return the time-based suggestion); touch `convex/schema.ts`; invent a steps schema different from a string array.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `steps` is `string[]` (user text, `dir="auto"`), ≤ 20 steps, each ≤ 200 chars. Errors: `routine_not_found`, `forbidden`, `too_many_steps`, `step_out_of_range`. `suggestNow` returns the routine whose window matches the local hour, else `null`. Runs keep a cursor; completing a step advances it.
+- **TESTS:** Given create with 3 steps / When list / Then one routine. Given 21 steps / When create / Then `too_many_steps`. Given startRun / When completeStep(0) / Then cursor advanced. Given completeStep(99) / When call / Then `step_out_of_range`. Given other user / When get / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤20 steps, ≤200 chars each (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** routine storage authority — UNKNOWN, Amit answers (conflict #7).
+
+### TFV2-0077 — Nags + nag phrase (`convex/nags.ts`, `convex/lib/nagPhrase.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0068 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0065 and TFV2-0068.
+- **WHY:** PRD F-60, F-61; APP-FLOW §6 (nag flow); screen `web/nags.html`, `web/task-sheet.html`, `web/habit-detail.html`.
+- **GOAL:** A nag can be created, given phrases in the user's own words, switched on only with an accepted phrase, and answered (now / snooze / not today).
+- **SCOPE:** `convex/nags.ts` · `convex/lib/nagPhrase.ts` · `convex/nags.test.ts` (create if absent).
+- **MUTATES:** `nags` rows (enabled, phrases, answers); dosing-data answer log (never a streak).
+- **STEPS:** 1) Graphify code-map of `convex/nags.ts` and `convex/lib/nagPhrase.ts`; 2) add `nags.create({ targetId, targetType })`, `nags.addPhrase({ nagId, text, origin, sourceRef? })`, `nags.setEnabled({ nagId, enabled })`, `nags.respond({ nagId, answer, phraseId })`; 3) enforce: `enabled` may not be true with zero accepted phrases, and emoji are rejected; 4) write tests; 5) run DONE.
+- **DONE:** `bun run test convex/nags.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** add stock copy or emoji; surface a streak; touch `convex/schema.ts`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `phrase.origin ∈ "user"|"derived"`; a `derived` phrase requires `sourceRef`. `answer ∈ "now"|"snooze"|"notToday"`. Errors: `nag_not_found`, `forbidden`, `enable_without_phrase`, `emoji_rejected`, `empty_phrase`. Copy: answers are logged as dosing data; "Not today" is never failure (partial credit). EN: now "Do it now" / HE: "לעשות עכשיו"; EN: snooze "Snooze" / HE: "לדחות"; EN: not today "Not today" / HE: "לא היום".
+- **TESTS:** Given enable with no phrase / When `setEnabled(true)` / Then `enable_without_phrase`. Given phrase "do it 👊" / When addPhrase / Then `emoji_rejected`. Given `respond("notToday")` / When log / Then answer stored with no failure/streak wording. Given derived phrase without sourceRef / When addPhrase / Then `missing_source`. Given other user / When any / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · phrase ≤ 200 chars (code review) · emoji/stock copy rejected by `nagPhrase` (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** delivery channel beyond in-app — UNKNOWN, Amit answers (conflict #11).
+
+### TFV2-0078 — Notifications (`convex/notifications.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** screen `web/notifications.html`; BACKEND-SCHEMA §5.3 (`notifications`).
+- **GOAL:** In-app notifications can be listed, marked read singly and in bulk.
+- **SCOPE:** `convex/notifications.ts` · `convex/notifications.test.ts` (create if absent).
+- **MUTATES:** `notifications` rows (readAt).
+- **STEPS:** 1) Graphify code-map of `convex/notifications.ts`; 2) add `list()`, `markRead({ notificationId })`, `markAllRead()`; 3) ensure list is newest-first and capped; 4) write tests; 5) run DONE.
+- **DONE:** `bun run test convex/notifications.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** add push/email delivery (conflict #11); touch `convex/schema.ts`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `list() -> {id, kind, title, body, createdAt, readAt}[]`, `markRead`, `markAllRead`. Errors: `notification_not_found`, `forbidden`. Limits: return the latest 100.
+- **TESTS:** Given 3 notifications / When list / Then newest-first. Given markRead / When list / Then `readAt` set. Given markAllRead / When list / Then all read. Given other user / When markRead / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · ≤100 rows returned (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none (in-app only).
+
+### TFV2-0079 — Analytics (`convex/analytics.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** screen `web/insights.html` (`insights.tasksByWeekday`, `insights.focusMinutesByWeek`); BACKEND-SCHEMA §5.4.
+- **GOAL:** Aggregated, non-identifying analytics feed the insights charts without inventing metrics.
+- **SCOPE:** `convex/analytics.ts` · `convex/analytics.test.ts` (extend if present).
+- **MUTATES:** none (read-only aggregates).
+- **STEPS:** 1) Graphify code-map of `convex/analytics.ts`; 2) add `tasksByWeekday({ localDate })` and `focusMinutesByWeek({ localDate })`; 3) ensure aggregates are computed over soft-delete-aware rows; 4) write tests; 5) run DONE.
+- **DONE:** `bun run test convex/analytics.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** invent a metric the data does not support; expose raw rows; touch `convex/schema.ts`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped read queries. `tasksByWeekday` returns `{weekday, doneCount}[]` (Mon–Sun per conflict #10); `focusMinutesByWeek` returns `{week, minutes}[]` for the trailing 12 weeks. Errors: `invalid_date`. Empty input returns empty arrays, never synthesized values.
+- **TESTS:** Given 2 done tasks Monday, 1 Tuesday / When `tasksByWeekday` / Then correct counts. Given a soft-deleted task / When aggregate / Then excluded. Given no data / When both / Then empty arrays. Given other user / When query / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · soft-delete-aware aggregation (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0080 — Insights (`convex/insights.ts`, `convex/lib/insights_summary.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0079 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0079.
+- **WHY:** screen `web/insights.html` (`insights.getPatterns`); PRD F-55 (observations, later).
+- **GOAL:** Pattern observations are surfaced as plain sentences, each deletable, never as judgement.
+- **SCOPE:** `convex/insights.ts` · `convex/lib/insights_summary.ts` · `convex/insights.test.ts`.
+- **MUTATES:** insight observation rows (delete only).
+- **STEPS:** 1) Graphify code-map of `convex/insights.ts` and `lib/insights_summary.ts`; 2) add `getPatterns({ localDate })` returning `{text, source, createdAt}[]`; 3) add `dismiss({ insightId })`; 4) write the summary into one required sentence per pattern; 5) write tests; 6) run DONE.
+- **DONE:** `bun run test convex/insights.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** write shaming copy; auto-generate patterns from a model here; touch `convex/schema.ts`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `getPatterns -> {id, text, createdAt}[]`; `dismiss({insightId})`. Patterns are descriptive ("gym slips after late nights"), never prescriptive or shaming. Errors: `insight_not_found`, `forbidden`. Empty data → empty list, with the empty-state copy rendered by the screen.
+- **TESTS:** Given 2 observations / When getPatterns / Then 2 sentences. Given dismiss / When getPatterns / Then absent. Given other user / When dismiss / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · one sentence per pattern (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0081 — Activity (`convex/activity.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** screen `web/activity.html` (`activity.listRecent`); PRD F-22 (5-min Undo of coach actions).
+- **GOAL:** A 7-day activity feed lists changes by the user and the coach, each coach change undoable for 5 minutes.
+- **SCOPE:** `convex/activity.ts` · `convex/activity.test.ts` (extend if present).
+- **MUTATES:** activity rows (read) + undo of coach changes.
+- **STEPS:** 1) Graphify code-map of `convex/activity.ts`; 2) add `listRecent({ limit })` newest-first; 3) add `undo({ activityId })` valid only within 5 minutes and only for coach-originated changes; 4) write tests; 5) run DONE.
+- **DONE:** `bun run test convex/activity.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** undo user's own actions via this feed; touch `convex/schema.ts`; drop the 5-minute window.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped. `listRecent({limit=50}) -> {id, actor:"you"|"coach", text, createdAt, undone}[]`; `undo({activityId})`. Errors: `activity_not_found`, `forbidden`, `undo_window_expired`, `not_undoable`. Limits: window = 5 minutes from `createdAt`; coach-origin only.
+- **TESTS:** Given a coach change 1 min old / When undo / Then restored. Given a coach change 6 min old / When undo / Then `undo_window_expired`. Given a user change / When undo / Then `not_undoable`. Given other user / When list / Then `forbidden`.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · 5-minute window enforced server-side (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0082 — Streaks (`convex/streaks.ts`)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0067.
+- **WHY:** BACKEND-SCHEMA §5.4 (`streaks.ts`); PRD F-10 (no streak counter as pressure).
+- **GOAL:** Habit streaks are computed internally for insights only and are never surfaced as a pressure counter.
+- **SCOPE:** `convex/streaks.ts` · `convex/streaks.test.ts` (create if absent).
+- **MUTATES:** none (derived read).
+- **STEPS:** 1) Graphify code-map of `convex/streaks.ts` and `convex/lib/habitStreak.ts`; 2) ensure `streaks.getForHabit({ habitId })` is internal-only and returns a plain number for insights aggregation; 3) ensure NO UI query in chunk B exposes it; 4) write tests; 5) run DONE.
+- **DONE:** `bun run test convex/streaks.test.ts` → all pass.
+- **EVIDENCE:** DONE output + test file listing.
+- **DO NOT:** add a streak field to `habits.list` / `habits.summary` / `habits.listDays` or any block; render a counter anywhere.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Owner-scoped internal read: `getForHabit({habitId}) -> number`. Missed day = broken streak (no ring). Errors: `habit_not_found`, `forbidden`. The number feeds `analytics` only; the UI never receives it.
+- **TESTS:** Given check-ins 3 consecutive days / When getForHabit / Then 3. Given a missed day / When getForHabit / Then reset to current run length. Given other user / When call / Then `forbidden`. Given the habit screens' queries / When inspect return shapes / Then no `streak` field present.
+- **NUMBERS:** p95 latency — UNKNOWN (Amit answers) · no `streak` key in any UI-facing query (code review).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0083 — Component: EventBlock
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0066 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0066.
+- **WHY:** components.md §2.2; PRD F-07, F-10; used in `web/today.html`, `web/daily-note.html`.
+- **GOAL:** An event renders as a fixed (solid edge) or flexible (dashed) block with time, title, meta and place.
+- **SCOPE:** `packages/ui/src/blocks/EventBlock.tsx` · `packages/ui/src/blocks/EventBlock.test.tsx` · `packages/ui/src/index.ts` (export).
+- **MUTATES:** none (read-only render).
+- **STEPS:** 1) Graphify code-map of `packages/ui/src/blocks`; 2) implement per SPEC; 3) add the export; 4) write tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → EventBlock cases pass; Playwright asserts both states at 390 and 1280, EN and HE.
+- **EVIDENCE:** test output + the two Playwright screenshots (390/1280, EN/HE).
+- **DO NOT:** edit `convex/`; set colours inline; render JSON; exceed 250 ms motion.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-block-event` / `.tp-event[data-kind]`; `data-component="EventBlock"`; shadcn `card`. Props `{ event: {id, title, start, end, place?, kind:"fixed"|"flex"} }`. Layout: `__time` (`--tp-mono`, `.tp-num`), `__title`, `__meta`, `__place`. `kind="fixed"` → solid `--tp-accent` left edge + label "Fixed"; `kind="flex"` → dashed edge + "Flexible". States: default, `[data-kind]`. Copy: EN Fixed/Flexible "Fixed"·"Flexible" / HE "קבוע"·"גמיש". RTL: time stays `.tp-num`/`.tp-mono` (isolated), edge flips to the inline-start. Keyboard/SR: the block is a `<article>`; time is a visible label. Breakpoints: full width under 390, inline card at 1280. Motion: none (no animation).
+- **TESTS:** Given fixed event / When render / Then solid edge + "Fixed" and time in mono. Given flex / When render / Then dashed edge + "Flexible". Playwright: at 390 and 1280, assert the two `[data-kind]` states and EN/HE labels via `?lang=`.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms transform/opacity only (components.md) · body text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0084 — Component: HabitBlock
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0067.
+- **WHY:** components.md §2.2; PRD F-10 (no streak counter); used in `web/daily-note.html`, `web/today.html`.
+- **GOAL:** A habit renders as a card with a log toggle and a 7-day dot ring; no streak counter.
+- **SCOPE:** `packages/ui/src/blocks/HabitBlock.tsx` · `packages/ui/src/blocks/HabitBlock.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none (render + `habits.log` call).
+- **STEPS:** 1) Graphify code-map; 2) implement per SPEC; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → HabitBlock cases pass; Playwright asserts log/undo and dot states at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** draw a streak counter; touch `convex/`; label a missed day as failure.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-block-habit` / `.tp-habit[data-logged]` / `.tp-habit-days` / `.tp-habit-day[data-done][data-today]`; `data-component="HabitBlock"`; shadcn `card + toggle`. Props `{ habit: {id, name, when, last7:boolean[], loggedToday} }`. Events: `habit-log` → `habits.log({habitId, localDate})`. States: default, `data-logged` (today), each day `data-done`/`data-today`. Each day has sr text EN "logged"/"not logged" / HE "תועד"/"לא תועד". Copy: EN "Log today" / HE "לתעד היום"; EN "Logged today" / HE "תועד היום". RTL: dots flow inline-start. Keyboard: toggle is a `<button role="switch" aria-checked>`. Breakpoints: full width 390, card 1280. Motion: dot fill ≤250 ms opacity.
+- **TESTS:** Given last7 with today logged / When render / Then today dot `data-done data-today` and 7 dots, no number. Given click toggle / When `habits.log` / Then `data-logged` toggles optimistically. Playwright asserts dot states + no streak number at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0085 — Component: NagBlock
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0077 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0077.
+- **WHY:** components.md §2.2; PRD F-60; used in `web/daily-note.html`, `web/today.html`.
+- **GOAL:** A nag renders the user's own phrase with three answers; no icon, no emoji, no stock copy.
+- **SCOPE:** `packages/ui/src/blocks/NagBlock.tsx` · `packages/ui/src/blocks/NagBlock.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none (render + `nags.respond` call).
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → NagBlock cases pass; Playwright asserts the three answers at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** add an icon or emoji; use stock copy; touch `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-block-nag` / `.tp-nag[data-status]`; `data-component="NagBlock"`; shadcn `card (+ alert-dialog)`. Props `{ nag: {id, phrase, about, at} }`. Events: `data-choice="now|snooze|nottoday"` → `nags.respond`. States: default, `data-status` after answer. Copy (user's own words only) plus answers: EN "Do it now"/"Snooze"/"Not today" / HE "לעשות עכשיו"/"לדחות"/"לא היום". Phrase uses `dir="auto"`. RTL: actions mirror. Keyboard: three `<button>`s. Breakpoints: 390/1280. Motion: status change ≤250 ms.
+- **TESTS:** Given a nag with a phrase / When render / Then phrase shown verbatim and no icon/emoji. Given click "now" / When `nags.respond` / Then `data-status` set. Playwright: three answers, phrase text, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** delivery channel — UNKNOWN, Amit answers (conflict #11).
+
+### TFV2-0086 — Component: PageLayout
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; used by every non-document screen in chunk B.
+- **GOAL:** A page container with narrow/wide widths inside the app main area.
+- **SCOPE:** `packages/ui/src/layout/PageLayout.tsx` · `packages/ui/src/layout/PageLayout.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → PageLayout cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** set colours/type here (screens add layout only); touch `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-page` (`--wide`, `--narrow`); `data-component="PageLayout"`; props `{ width:"wide"|"narrow", children }`. Layout: max-width via `--tp-*` spacing, centered, gap `--tp-space-6`. States: none. No visible copy. Breakpoints: narrow ~68ch, wide fills `--tp-app__main`. Motion: none.
+- **TESTS:** Given width narrow / When render / Then max-width 68ch. Given wide / When render / Then fills main. (No Playwright needed — layout primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0087 — Component: Surface
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; solid paper panel for chunk B screens.
+- **GOAL:** A solid paper panel used as the background for cards and lists.
+- **SCOPE:** `packages/ui/src/layout/Surface.tsx` · `packages/ui/src/layout/Surface.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Surface cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** make it glass (glass is floating chrome only); set type sizes.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-surface`; `data-component="Surface"`; shadcn `card`; props `{ children }`. Uses `--tp-surface`, `--tp-border`, `--tp-radius-*`. States: none. Motion: none.
+- **TESTS:** Given children / When render / Then background `--tp-surface` and border. (Layout primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0088 — Component: PageHeader
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; one H1 per screen.
+- **GOAL:** A screen header with one H1 title, subtitle and action slot.
+- **SCOPE:** `packages/ui/src/layout/PageHeader.tsx` · `packages/ui/src/layout/PageHeader.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → PageHeader cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** render more than one H1; hide the subtitle on mobile.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-pagehead`, `__text`, `__title`, `__sub`, `__actions`; `data-component="PageHeader"`; props `{ title, subtitle?, actions? }`. `__title` is the sole `<h1>`. States: none. RTL: title/user text `dir="auto"`. Breakpoints: actions wrap under the title at 390, inline-end at 1280. Motion: none.
+- **TESTS:** Given title+subtitle / When render / Then one `<h1>` + subtitle. Given actions / When render / Then present. (No Playwright — primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · body text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0089 — Component: Toolbar
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; search + filter + sort on list screens.
+- **GOAL:** A toolbar row hosting search, filter and sort controls.
+- **SCOPE:** `packages/ui/src/layout/Toolbar.tsx` · `packages/ui/src/layout/Toolbar.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Toolbar cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** hardcode a control type (accept children).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-toolbar`, `__grow`, `__end`; `data-component="Toolbar"`; props `{ children }`. `__grow` expands the search input; `__end` holds sort/filter. Breakpoints: wraps to two rows at 390, one row at 1280. Motion: none.
+- **TESTS:** Given children / When render / Then `__grow` and `__end` regions present. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0090 — Component: Section
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; grouped sections with a count.
+- **GOAL:** A titled section with an optional item count.
+- **SCOPE:** `packages/ui/src/layout/Section.tsx` · `packages/ui/src/layout/Section.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Section cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** invent a heading level (accept `as`).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-section`, `__head`, `__title`, `__count`; `data-component="Section"`; props `{ title, count?, children, as? }`. `__count` uses `.tp-num`. States: none. Motion: none.
+- **TESTS:** Given title + count 3 / When render / Then title + "3" in `.tp-num`. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · count isolated via `.tp-num` (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0091 — Component: CardGrid
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; auto-fill card layout.
+- **GOAL:** An auto-filling grid of cards, small or default.
+- **SCOPE:** `packages/ui/src/layout/CardGrid.tsx` · `packages/ui/src/layout/CardGrid.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → CardGrid cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** fix a column count (auto-fill).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-cards` (`--sm`); `data-component="CardGrid"`; props `{ size?, children }`. CSS `grid-template-columns: repeat(auto-fill, minmax(…, 1fr))`. States: none. Motion: none.
+- **TESTS:** Given 4 cards / When render at 390 vs 1280 / Then 1 column vs multiple. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0092 — Component: Notice
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; icon + words, never colour alone.
+- **GOAL:** An alert with tone, icon, title, body and optional action; never colour-only.
+- **SCOPE:** `packages/ui/src/layout/Notice.tsx` · `packages/ui/src/layout/Notice.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Notice cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** rely on colour alone (always icon + word).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-notice[data-tone]`, `__icon`, `__text`, `__title`, `__action`; `data-component="Notice"`; shadcn `alert`; props `{ tone:"info"|"caution"|"success"|"error", title?, body?, action? }`. Each tone pairs an icon with a word (never colour only). States: per `data-tone`. Copy is supplied by the screen. Motion: none.
+- **TESTS:** Given tone error / When render / Then icon + word present, not colour alone. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · icon ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0093 — Component: Badge
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.1; labels like "Built-in" / "Your plan".
+- **GOAL:** A small tone badge with label and optional icon.
+- **SCOPE:** `packages/ui/src/layout/Badge.tsx` · `packages/ui/src/layout/Badge.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Badge cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** use colour alone (label always present).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-badge[data-tone]`; `data-component="Badge"`; shadcn `badge`; props `{ label, icon?, tone? }`. Word always present. RTL: label `dir="auto"`. Motion: none.
+- **TESTS:** Given label "Built-in" / When render / Then label present. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0094 — Component: PageHead
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0088 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0088.
+- **WHY:** components.md §2.3; wraps page title + meta for daily/weekly/project/note.
+- **GOAL:** A variant head wrapping the page title and meta for four page kinds.
+- **SCOPE:** `packages/ui/src/layout/PageHead.tsx` · `packages/ui/src/layout/PageHead.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → PageHead cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** set the title font size (PageTitle owns it); add a second H1.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-page-head[data-variant]`; `data-component="PageHead"`; props `{ variant:"daily"|"weekly"|"project"|"note", title, meta? }`. Wraps `.tp-page-title` + `.tp-page-meta`. States: per variant. Motion: none.
+- **TESTS:** Given variant daily / When render / Then `data-variant="daily"` + one title. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0095 — Component: WeekStrip
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.3; weekly page head; used in `web/weekly-page.html`.
+- **GOAL:** A 7-day toggle strip selects one day and shows its open count.
+- **SCOPE:** `packages/ui/src/layout/WeekStrip.tsx` · `packages/ui/src/layout/WeekStrip.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → WeekStrip cases pass; Playwright asserts selection at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** hardcode Sunday-first (see OPEN); navigate away (emit `select-day`).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-week-strip`, `__day[aria-pressed][aria-current="date"]`, `__dow`, `__n`, `__count`; `data-component="WeekStrip"`; shadcn `toggle-group`; props `{ days: {localDate, dow, n, count}[] }`. Event: `select-day` → `pages.getDaily({date})`. Day names EN Mon–Sun / HE שני–ראשון. RTL: days flow right-to-left. Keyboard: radiogroup arrows (Stage 1 `segKeys`). Breakpoints: scrolls inside itself on phone, static at 1280. Motion: none.
+- **TESTS:** Given 7 days / When render / Then 7 `__day` with counts in `.tp-num`. Given select Tuesday / When click / Then `aria-pressed` + `aria-current="date"`. Playwright: selection + count at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start (Sunday/Monday) — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0096 — Component: ProjectStatus
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0093 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0093.
+- **WHY:** components.md §2.3; used in `web/projects.html`, `web/project-detail.html`.
+- **GOAL:** A badge showing a project's idea/active/paused/done status with icon and word.
+- **SCOPE:** `packages/ui/src/layout/ProjectStatus.tsx` · `packages/ui/src/layout/ProjectStatus.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → ProjectStatus cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** use colour alone; invent statuses beyond the four.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-status[data-status]`; `data-component="ProjectStatus"`; shadcn `badge`; props `{ status:"idea"|"active"|"paused"|"done", label }`. Icon + word. Copy: EN idea/active/paused/done "Idea"·"Active"·"Paused"·"Done" / HE "רעיון"·"פעיל"·"מושהה"·"הושלם". RTL: label `dir="auto"`. Motion: none.
+- **TESTS:** Given status active / When render / Then icon + "Active". (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0097 — Component: ListRow
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.4; used by tasks, habits, routines, goals, projects, activity, notifications lists.
+- **GOAL:** A 56px-min list row with icon, title, meta and end slot, link or button.
+- **SCOPE:** `packages/ui/src/lists/ListRow.tsx` · `packages/ui/src/lists/ListRow.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → ListRow cases pass; Playwright asserts focus + 56px at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** go below 56px tall; omit an accessible name for icon-only rows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-list`, `.tp-list-row`, `__icon`, `__body`, `__title`, `__meta`, `__end`; `data-component="ListRow"`; props `{ icon, title, meta?, href?, onClick? }`. Height ≥56px. RTL: icon inline-start, end slot inline-end. Keyboard: focusable (`<a>`/`<button>`), visible focus ring. Breakpoints: same at 390/1280. Motion: none.
+- **TESTS:** Given a row / When render / Then height ≥56px and title present. Given href / When render / Then `<a>` with aria-label if icon-only. Playwright: focus ring + height at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · row ≥56px (components.md) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0098 — Component: Segmented / Filter
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.4; used by plan, tasks, goals, projects, insights, activity.
+- **GOAL:** A single-choice segmented control (radiogroup) with dot + word marks.
+- **SCOPE:** `packages/ui/src/lists/Segmented.tsx` · `packages/ui/src/lists/Segmented.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Segmented cases pass; Playwright asserts arrow-key selection in RTL and LTR at 390/1280.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** allow multiple selection; omit `role=radio`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-segmented` (`--block`), `.tp-seg__opt[role=radio]`; `data-component="Segmented"`; shadcn `toggle-group`; props `{ options:{label,value}[], value, onChange }`. Dot + word mark the choice. Keyboard: radiogroup arrows, swapped in RTL (`segKeys`). Breakpoints: full width (`--block`) at 390, inline at 1280. Motion: none.
+- **TESTS:** Given options / When render / Then radiogroup with `aria-checked` on value. Given ArrowRight in RTL / When keypress / Then moves opposite visually. Playwright: arrow selection LTR + RTL at 390/1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0099 — Component: SearchInput
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0098 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0098.
+- **WHY:** components.md §2.4; used by tasks, search, command, notes, templates.
+- **GOAL:** A labelled search input (label always present, visible or sr-only).
+- **SCOPE:** `packages/ui/src/forms/SearchInput.tsx` · `packages/ui/src/forms/SearchInput.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → SearchInput cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** omit the label; break the clear affordance.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-search`, `__box`, `__icon`, `.tp-label`, `.tp-input`; `data-component="SearchInput"`; shadcn `input`; props `{ label, placeholder, value, onChange }`. Label always present (visible or `.tp-sr-only`). Placeholder EN "Search…" / HE "חיפוש…" (caller may override). RTL: input `dir="auto"`, icon flips. Keyboard: standard input + Escape clears. Breakpoints: 390/1280. Motion: none.
+- **TESTS:** Given a query / When render / Then label present and input bound. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0100 — Component: SortMenu
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.4; sort control on list screens.
+- **GOAL:** A radio dropdown menu for sort options with arrows, Esc and focus return.
+- **SCOPE:** `packages/ui/src/lists/SortMenu.tsx` · `packages/ui/src/lists/SortMenu.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → SortMenu cases pass; Playwright asserts open/choose/close at 390/1280.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** trap focus incorrectly; omit `role=menu`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-menu`, `__list.tp-glass[role=menu]`, `__label`, `__item[role=menuitemradio]`, `__check`, `[data-menu-value]`; `data-component="SortMenu"`; shadcn `dropdown-menu (radio)`; props `{ options, value, onChange }`. Event: `menu` toggles; choose → `TP.onSort(value)`. Keyboard: arrows, Enter, Esc, focus returns to trigger. Copy: EN "Sort" / HE "מיון" (label). RTL: menu mirrors. Breakpoints: 390/1280. Motion: open/close ≤250 ms opacity.
+- **TESTS:** Given options / When open / Then `role=menu` + `aria-expanded`. Given choose / When Enter / Then value label updates + focus returns. Playwright: full cycle at 390/1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0101 — Component: LoadMore
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.4; pagination on list screens.
+- **GOAL:** A "show more" control with a running "Showing 20 of 48" status.
+- **SCOPE:** `packages/ui/src/lists/LoadMore.tsx` · `packages/ui/src/lists/LoadMore.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → LoadMore cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** auto-load on scroll (explicit button).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-load-more`, `__status`; rows `[data-row]`, hidden `[data-more][hidden]`; `data-component="LoadMore"`; shadcn `button`; props `{ shown, total, onLoadMore }`. Status copy: EN "Showing 20 of 48" / HE "מוצגות 20 מתוך 48". Counts in `.tp-num`. States: default, `__status` updates. Motion: none.
+- **TESTS:** Given shown 20 total 48 / When render / Then status "Showing 20 of 48" and button when `shown < total`. Given shown = total / When render / Then no button. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0102 — Component: MonthGrid
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.5; used in `web/calendar.html`, `web/plan.html`.
+- **GOAL:** A month grid with dots, day number, item count, and day selection.
+- **SCOPE:** `packages/ui/src/calendar/MonthGrid.tsx` · `packages/ui/src/calendar/MonthGrid.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → MonthGrid cases pass; Playwright asserts selection + count at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** render the count text visually under 768 (sr-only); hardcode Sunday-first.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-month`, `__head`, `__title`, `__grid`, `__dow`, `__day[data-outside][aria-current][aria-pressed]`, `__n`, `__dots`, `__count`; `data-component="MonthGrid"`; shadcn `calendar`; props `{ days, monthTitle, onSelectDay }`. `__count` is "N items" EN "N items" / HE "N פריטים" (sr-only under 768). Day dots via Dot. Keyboard: arrow grid, Home/End. Breakpoints: count text sr-only at 390, visible at 1280. Motion: none.
+- **TESTS:** Given a day with 3 items / When render / Then 3 dots + count. Given select / When click / Then `aria-pressed` + `onSelectDay`. Playwright: select + count at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0103 — Component: Dot
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.5; decorative shapes for fixed/flex/done/habit.
+- **GOAL:** A decorative dot with four kinds; shapes differ (filled vs ring).
+- **SCOPE:** `packages/ui/src/calendar/Dot.tsx` · `packages/ui/src/calendar/Dot.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Dot cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** use colour alone as the only signal (always paired with a word elsewhere).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-dot` (`--fixed`, `--flex`, `--done`, `--habit`); `data-component="Dot"`; props `{ kind }`. Decorative (`aria-hidden`). Motion: none.
+- **TESTS:** Given each kind / When render / Then correct modifier and shape. (Primitive.)
+- **NUMBERS:** none beyond token usage (decorative, not interactive).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0104 — Component: WeekColumns
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0103 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0103.
+- **WHY:** components.md §2.5; used in `web/calendar.html`, `web/plan.html`.
+- **GOAL:** Seven side-by-side day columns that scroll sideways inside themselves only.
+- **SCOPE:** `packages/ui/src/calendar/WeekColumns.tsx` · `packages/ui/src/calendar/WeekColumns.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → WeekColumns cases pass; Playwright asserts internal scroll at 390 and static at 1280.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** scroll the whole page; fix columns wider than the container.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-week`, `__col[aria-current]`, `__head`, `__item[data-kind]`, `__time`, `__title`, `__kind`; `data-component="WeekColumns"`; props `{ days }`. `__item[data-kind]` solid fixed / dashed flex. Time `.tp-week__time` is `.tp-mono`/`.tp-num`. Breakpoints: internal horizontal scroll at 390; static fit at 1280. Motion: none.
+- **TESTS:** Given 7 days / When render / Then 7 columns. Given overflow at 390 / When render / Then `overflow-x` on the week container only. Playwright: scroll container at 390 vs 1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0105 — Component: DayTimeline
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0103 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0103.
+- **WHY:** components.md §2.5; half-hour slots; used in `web/calendar.html`, `web/plan.html`.
+- **GOAL:** A day timeline of half-hour slots with fixed/flexible items and a now line.
+- **SCOPE:** `packages/ui/src/calendar/DayTimeline.tsx` · `packages/ui/src/calendar/DayTimeline.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → DayTimeline cases pass; Playwright asserts now line + slot heights at 390/1280.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** use whole-hour-only slots (half-hour); animate the now line.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-timeline`, `__hours`, `__hour`, `__items` (`--cols`), `__item[data-kind]` (`--row`, `--span`, `--col`), `__time`, `__title`, `__now`; `data-component="DayTimeline"`; props `{ items, now }`. Rows are half-hour slots; fixed = solid + "Fixed", flex = dashed + "Flexible". Time `.tp-mono`/`.tp-num`. Breakpoints: 390/1280. Motion: none.
+- **TESTS:** Given an item 08:00–08:30 / When render / Then `--span` correct. Given now / When render / Then `__now` positioned. Playwright: slot span + now at 390/1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** timeline start (06:00 vs wake time) — UNKNOWN, Amit answers.
+
+### TFV2-0106 — Component: Kanban
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.6; used in `web/project-kanban.html`.
+- **GOAL:** A multi-column kanban board that snap-scrolls on phone.
+- **SCOPE:** `packages/ui/src/kanban/Kanban.tsx` · `packages/ui/src/kanban/Kanban.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Kanban cases pass; Playwright asserts snap-scroll at 390 and columns at 1280.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** require drag (cards have move buttons); exceed the page with columns.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-kanban`, `__col`, `__head`, `__name`, `__count`, `__list`, `__empty`; `data-component="Kanban"`; shadcn `card`; props `{ columns: {id,name,count,cards[]}[] }`. Column names EN "To do"·"Doing"·"Done" / HE "לעשות"·"בעבודה"·"הושלם" (caller may override). `__empty` per column. Breakpoints: snap-scroll horizontally at 390; static grid at 1280. Motion: none.
+- **TESTS:** Given 3 columns / When render / Then 3 `__col` with name + count. Given empty column / When render / Then `__empty` shows. Playwright: snap-scroll at 390, grid at 1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0107 — Component: KanbanCard
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0106 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0106.
+- **WHY:** components.md §2.6; move buttons on every card.
+- **GOAL:** A kanban card with title, meta and prev/next move buttons; edges disabled.
+- **SCOPE:** `packages/ui/src/kanban/KanbanCard.tsx` · `packages/ui/src/kanban/KanbanCard.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → KanbanCard cases pass; Playwright asserts move buttons + disabled edges at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** rely on drag; miss `aria-label` on move buttons.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-kanban-card`, `__title`, `__meta`, `__move`; `data-component="KanbanCard"`; shadcn `card + button`; props `{ card, canPrev, canNext, onMove }`. Event `kanban-move` + `data-dir="prev|next"` → `tasks.moveColumn`. Move buttons on every card; edge buttons disabled; icons `.tp-icon--flip`/`.tp-icon--back`. Copy (aria): EN "Move left"/"Move right" / HE "הזזה שמאלה"/"הזזה ימינה". Breakpoints: 390/1280. Motion: none.
+- **TESTS:** Given a middle card / When render / Then both move buttons enabled. Given first column / When render / Then prev disabled. Given move / When click next / Then `onMove("next")`. Playwright: disabled edges + move at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0108 — Component: BarChart
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.7; used in `web/insights.html`, `web/goals-progress.html`.
+- **GOAL:** A bar chart where every bar has a number and a label.
+- **SCOPE:** `packages/ui/src/charts/BarChart.tsx` · `packages/ui/src/charts/BarChart.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → BarChart cases pass; Playwright asserts bars + labels at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** omit a label or number per bar; colour-only bars.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-chart` (figure), `__title`, `__bars`, `__bar[data-highlight]` (`--pct`), `__value`, `__track`, `__fill`, `__label`; `data-component="BarChart"`; shadcn `chart`; props `{ title, bars:{label,value,pct}[] }`. Every bar has a number and a label. Requires a ChartSummary sibling (figcaption). RTL: labels flip, values stay `.tp-num`. Breakpoints: 390/1280. Motion: none.
+- **TESTS:** Given bars / When render / Then each has `--pct`, value and label. Given highlight / When render / Then `data-highlight`. Playwright: bars + labels at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · values isolated via `.tp-num` (components.md) · INP ≤200 ms (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0109 — Component: LineChart
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.7; used in `web/insights.html`, `web/goals-progress.html`.
+- **GOAL:** An SVG line chart with labelled points and an accessible summary.
+- **SCOPE:** `packages/ui/src/charts/LineChart.tsx` · `packages/ui/src/charts/LineChart.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → LineChart cases pass; Playwright asserts points at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** skip `role="img"` + `aria-labelledby`; use an external chart lib.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `svg.tp-chart__svg` with `__axis`, `__grid`, `__line`, `__point`, `<text>`; `data-component="LineChart"`; shadcn `chart`; props `{ points:{label,value}[], summaryId }`. Points labelled in the SVG; svg has `role="img"` + `aria-labelledby` the summary. Breakpoints: 390/1280 (viewBox scales). Motion: none.
+- **TESTS:** Given points / When render / Then each point has a `<text>` label and `aria-labelledby`. Playwright: points at 390/1280.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · INP ≤200 ms (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0110 — Component: ChartSummary
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.7; required figcaption for every chart.
+- **GOAL:** A one-sentence summary of a chart, required as its figcaption.
+- **SCOPE:** `packages/ui/src/charts/ChartSummary.tsx` · `packages/ui/src/charts/ChartSummary.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → ChartSummary cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** render a chart without a summary; write shaming copy.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-chart__summary`; `data-component="ChartSummary"`; shadcn `figcaption`; props `{ text }`. The chart in one sentence. Copy supplied by the screen. Motion: none.
+- **TESTS:** Given text / When render / Then `<figcaption>` with text. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0111 — Component: Form
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.8; used by task sheet, nags, goals, journal, calendar.
+- **GOAL:** A form container (width up to 68ch) with an actions slot and submit handling.
+- **SCOPE:** `packages/ui/src/forms/Form.tsx` · `packages/ui/src/forms/Form.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Form cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** exceed 68ch width; suppress native validation.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-form`, `__actions`; `data-component="Form"`; shadcn `form`; props `{ onSubmit, children }`. Width up to 68ch. Motion: none.
+- **TESTS:** Given children / When render / Then `<form>` with max-width 68ch. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · form width ≤68ch (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0112 — Component: Field
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.8; label + help + error with `aria-describedby`.
+- **GOAL:** A form item with label, help and error text, wired to `aria-describedby`/`aria-invalid`.
+- **SCOPE:** `packages/ui/src/forms/Field.tsx` · `packages/ui/src/forms/Field.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Field cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** omit `aria-describedby`; use colour alone for error.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-field`, `.tp-label`, `.tp-label__opt`, `.tp-help`, `.tp-error-text`; `data-component="Field"`; shadcn `form item`; props `{ id, label, help?, error?, children }`. `aria-describedby="x-help x-error"`, `aria-invalid="true"` on error. Copy: label + help supplied by caller. Motion: none.
+- **TESTS:** Given error / When render / Then `aria-invalid` + error text linked. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0113 — Component: TextInput
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0112.
+- **WHY:** components.md §2.8; emails `dir="ltr"`.
+- **GOAL:** A text input; emails force LTR.
+- **SCOPE:** `packages/ui/src/forms/TextInput.tsx` · `packages/ui/src/forms/TextInput.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → TextInput cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** omit `dir="ltr"` for email; break the label link.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-input`; `data-component="TextInput"`; shadcn `input`; props `{ type?, value, onChange, id, aria-* }`. `type="email"` forces `dir="ltr"`. Motion: none.
+- **TESTS:** Given type email / When render / Then `dir="ltr"` and `autocomplete=email`. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0114 — Component: Textarea
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0112.
+- **WHY:** components.md §2.8; user text `dir="auto"`.
+- **GOAL:** A textarea with `dir="auto"` for mixed-language user text.
+- **SCOPE:** `packages/ui/src/forms/Textarea.tsx` · `packages/ui/src/forms/Textarea.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Textarea cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** fix a hard direction (must be auto).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-textarea`; `data-component="Textarea"`; shadcn `textarea`; props `{ rows?, value, onChange }`. `dir="auto"`. Motion: none.
+- **TESTS:** Given rows 4 / When render / Then `dir="auto"` + rows=4. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0115 — Component: Select
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0112.
+- **WHY:** components.md §2.8; used by task sheet, habits, settings.
+- **GOAL:** A native select with options and an icon.
+- **SCOPE:** `packages/ui/src/forms/Select.tsx` · `packages/ui/src/forms/Select.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Select cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** build a custom dropdown (native select); omit the label.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-select` > `select.tp-select__input` + `.tp-select__icon`; `data-component="Select"`; shadcn `select`; props `{ options:{label,value}[], value, onChange, id }`. Motion: none.
+- **TESTS:** Given options / When render / Then native `<select>` with options. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0116 — Component: Switch
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.8; visible On/Off word.
+- **GOAL:** A switch with a visible "On"/"Off" word and correct `role="switch"`.
+- **SCOPE:** `packages/ui/src/forms/Switch.tsx` · `packages/ui/src/forms/Switch.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Switch cases pass; Playwright asserts toggle + word at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** omit the word; use `aria-checked` incorrectly.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `button.tp-switch[role=switch][aria-checked]`, `__track`, `__thumb`, `__state`; `data-component="Switch"`; shadcn `switch`; props `{ checked, onChange }`. Visible word: EN On/Off "On"·"Off" / HE "פועל"·"כבוי". RTL: thumb origin flips (`[dir="rtl"]` rule). Breakpoints: 390/1280. Motion: thumb ≤250 ms transform.
+- **TESTS:** Given checked / When render / Then `aria-checked=true` + "On". Given click / When toggle / Then `onChange(false)` + "Off". Playwright: toggle + word at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0117 — Component: Checkbox
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0112.
+- **WHY:** components.md §2.8; used in forms and checklists.
+- **GOAL:** A checkbox inside a labelled choice with text and hint.
+- **SCOPE:** `packages/ui/src/forms/Checkbox.tsx` · `packages/ui/src/forms/Checkbox.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Checkbox cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** render a bare checkbox without a label.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `input.tp-checkbox` inside `label.tp-choice` (`__text`, `__hint`); `data-component="Checkbox"`; shadcn `checkbox`; props `{ checked, label, hint?, onChange }`. Motion: none.
+- **TESTS:** Given label + hint / When render / Then checkbox inside `<label>` with text + hint. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0118 — Component: Radio
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0112 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0112.
+- **WHY:** components.md §2.8; used in task sheet, energy pick.
+- **GOAL:** A radio inside a labelled choice within a radiogroup.
+- **SCOPE:** `packages/ui/src/forms/Radio.tsx` · `packages/ui/src/forms/Radio.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Radio cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** omit `name` (grouping).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `input.tp-radio` inside `label.tp-choice`; `data-component="Radio"`; shadcn `radio-group`; props `{ name, value, label, checked, onChange }`. Motion: none.
+- **TESTS:** Given name "energy" / When render / Then radio with matching `name`. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0119 — Component: Dial 0–10
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.8; used by Today energy and coach dial.
+- **GOAL:** A 0–10 slider showing number and word (quiet/steady/push).
+- **SCOPE:** `packages/ui/src/forms/Dial.tsx` · `packages/ui/src/forms/Dial.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests + Playwright; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → Dial cases pass; Playwright asserts number + word at 390/1280, EN/HE.
+- **EVIDENCE:** test output + Playwright screenshots.
+- **DO NOT:** show only a number (word required); miss `aria-valuetext`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-dial`, `__head`, `__value`, `__num [data-dial-num]`, `__of`, `__word [data-dial-word]`, `__scale` + `input.tp-slider`; `data-component="Dial"`; shadcn `slider`; props `{ value, label, onChange }`. Words: 0–3 EN "Quiet" / HE "שקט"; 4–7 EN "Steady" / HE "יציב"; 8–10 EN "Push" / HE "דחיפה". `aria-valuetext` = "N of 10, word". RTL: slider direction flips. Breakpoints: 390/1280. Motion: thumb ≤250 ms.
+- **TESTS:** Given value 2 / When render / Then number 2 + word "Quiet" + `aria-valuetext`. Given value 9 / When render / Then "Push". Playwright: drag to change + word updates at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0120 — Component: StateEmpty
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.18; every screen's empty state.
+- **GOAL:** An empty state with icon, title, body and a next-step action.
+- **SCOPE:** `packages/ui/src/states/StateEmpty.tsx` · `packages/ui/src/states/StateEmpty.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → StateEmpty cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** write shaming empty copy (kind copy only).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-state.tp-state--empty`, `__icon`, `__title`, `__body`, `__actions`; `data-component="StateEmpty"`; props `{ title, body, action? }`. Copy supplied by the screen (kind + next step). Motion: none.
+- **TESTS:** Given title/body/action / When render / Then all present. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0121 — Component: StateLoading
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0001 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0001.
+- **WHY:** components.md §2.18; skeleton rows + sr-only label.
+- **GOAL:** Skeleton loading rows with a screen-reader "Loading…" label.
+- **SCOPE:** `packages/ui/src/states/StateLoading.tsx` · `packages/ui/src/states/StateLoading.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → StateLoading cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** animate shimmer under reduced motion.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-state--loading[role=status]`, `.tp-skel-list`, `.tp-skel-row`, `__box`, `__lines`, `.tp-skeleton--w40/w60/w80/w100/sm/block`; `data-component="StateLoading"`; props `{ rows, label }`. `.tp-sr-only` label e.g. EN "Loading your tasks" / HE "טוען את המשימות שלך" (caller supplies). Shimmer stops with reduced motion. Motion: shimmer only, ≤250 ms opacity loop or off.
+- **TESTS:** Given rows 4 / When render / Then 4 skeleton rows + sr-only label + `role="status"`. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · reduced-motion respected (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0122 — Component: StateError
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0120 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0120.
+- **WHY:** components.md §2.18; "Couldn't load… your data is safe" + Retry.
+- **GOAL:** An error state with a safe-reassurance line and a Retry action.
+- **SCOPE:** `packages/ui/src/states/StateError.tsx` · `packages/ui/src/states/StateError.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → StateError cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** show JSON or a raw error; omit Retry.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-state.tp-state--error`; `data-component="StateError"`; shadcn `alert`; props `{ what, onRetry }`. Copy supplied by screen: EN "Couldn't load your … Your data is safe." + "Retry" / HE "לא הצלחנו לטעון… המידע שלך שמור." + "לנסות שוב". Motion: none.
+- **TESTS:** Given what "tasks" / When render / Then title + body + Retry button, no JSON. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0123 — Component: StateOffline
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0092 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0092.
+- **WHY:** components.md §2.18; offline banner; content stays.
+- **GOAL:** An offline banner that says changes save when back, while content stays usable.
+- **SCOPE:** `packages/ui/src/states/StateOffline.tsx` · `packages/ui/src/states/StateOffline.test.tsx` · `packages/ui/src/index.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map; 2) implement; 3) export; 4) tests; 5) run DONE.
+- **DONE:** `bun run test packages/ui` → StateOffline cases pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** hide content when offline.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Class `.tp-notice[data-tone=caution].tp-offline[role=status]`; `data-component="StateOffline"`; shadcn `alert`; props `{ text }`. Copy: EN "You're offline. Changes save when you're back." / HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת." Content stays. Motion: none.
+- **TESTS:** Given offline / When render / Then banner `role=status` + text, and page content still rendered. (Primitive.)
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0124 — Screen: Today
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0070, TFV2-0071, TFV2-0072, TFV2-0084, TFV2-0119, TFV2-0120, TFV2-0121, TFV2-0122, TFV2-0123 · **Folds-in:** #537
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-05; APP-FLOW §5 item 1; screen `web/today.html`.
+- **GOAL:** Today shows the daily page with intention, energy pick, tasks, time blocks and Next up, all five states working.
+- **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/components/today/today-client.tsx` · `apps/web/e2e/today.spec.ts`.
+- **MUTATES:** none (wires `pages.getDaily`, `tasks.nextUp`, `tasks.complete`, `tasks.skipNextUp`, `focus.start`, `energy.log`, `tasks.create`).
+- **STEPS:** 1) Graphify code-map of `apps/web/app/(tempo)/today` and `components/today`; 2) wire the queries/actions per SPEC; 3) implement the five states + Undo toast; 4) copy the full string table from `web/today.html` `TP_STRINGS`; 5) write the Playwright test; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test today.spec.ts` → pass; all states asserted at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + the two-viewport, two-lang screenshots for each state.
+- **DO NOT:** call the model on load; edit `convex/`; add a second `.tp-btn--primary`; merge energy pick with the coach dial.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/today`, layout TempoShell. Data: `dailyPage = pages.getDaily({date})`, `nextUp = tasks.nextUp({date})`, `backlinks = pages.backlinks({pageId})`. Actions: tick → `tasks.complete` (optimistic, 5-min Undo); Start → `focus.start({taskId, minutes:25})`; Not now → `tasks.skipNextUp`; Make it smaller → open CoachPanel with task attached (proposal-only); set energy → `energy.log({date, value})`; add task → `tasks.create`. States: default, empty, loading, error, offline. One primary: Next up "Start 25 minutes". Key copy EN/HE — EN "Next up"/HE "הבא בתור"; EN "How is your energy right now?"/HE "איך האנרגיה שלך עכשיו?"; energy EN Quiet·Steady·Push /HE שקט·יציב·דחיפה; empty EN "Nothing on Today yet."/HE "עוד אין כלום בהיום."; error EN "Couldn't load your day."/HE "לא הצלחנו לטעון את היום שלך."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי לרשת."; done EN "That's the list. Rest counts."/HE "זו הרשימה. גם מנוחה נחשבת." RTL: full mirror, times `.tp-num`/`.tp-mono`, energy radio arrows swap. Breakpoints 390/768/1024/1280 (rail collapses under 768). Motion: tick strike ≤250 ms; toast ≤250 ms. Full string table = `web/today.html`.
+- **TESTS:** Given a day with 3 tasks / When open / Then intention, energy, tasks, Next up show. Given empty / When open / Then empty copy + "Open brain dump". Given error / When query fails / Then safe copy + Retry. Given offline / When open / Then banner + content stays. Given tick a task / When click / Then struck + Undo toast for 5 min. Playwright: click through default/empty/error/offline and tick→undo at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md) · one `.tp-btn--primary` (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0125 — Screen: Daily note
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0075, TFV2-0124 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0075 and TFV2-0124.
+- **WHY:** PRD F-05/F-06; screen `web/daily-note.html`.
+- **GOAL:** The bare daily-note page offers the Daily template on first open and saves the day's sections.
+- **SCOPE:** `apps/web/app/(bare)/daily-note/page.tsx` · `apps/web/components/today/daily-note-client.tsx` · `apps/web/e2e/daily-note.spec.ts`.
+- **MUTATES:** none (wires `pages.getDaily`, `pages.backlinks`, journal save).
+- **STEPS:** 1) Graphify code-map of the bare daily-note route; 2) wire queries; 3) implement template offer + five states; 4) copy `web/daily-note.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test daily-note.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** add a second primary; edit `convex/`; offer the template twice once accepted.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(bare)/daily-note`, layout Bare. Data: `pages.getDaily({date})`, `pages.backlinks({pageId})`. Actions: accept template → apply Daily template (fresh block ids); save sections. States: default, empty (template offer), loading, error, offline. One primary: "Use template". Key copy: EN "Use the Daily template?"/HE "להשתמש בתבנית היום?"; EN "Use template"/HE "להשתמש בתבנית"; EN "Not now"/HE "לא עכשיו"; EN "One thing that went okay today:"/HE "דבר אחד שהלך בסדר היום:"; EN "Couldn't load today's page."/HE "לא הצלחנו לטעון את הדף של היום."; EN "Saved"/HE "נשמר". RTL full mirror. Breakpoints 390/768/1024/1280. Motion: template insert ≤250 ms. Full strings = `web/daily-note.html`.
+- **TESTS:** Given first open / When load / Then template offer shows. Given accept / When click / Then sections appear + no second offer. Given empty / When dismiss / Then blank editor. Given error / When fail / Then safe copy + Retry. Playwright: offer→accept→sections→save at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0126 — Screen: Brain dump (with proposal)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0073, TFV2-0074 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0073 and TFV2-0074.
+- **WHY:** PRD F-09; APP-FLOW §5 item 6; screen `web/brain-dump.html`.
+- **GOAL:** Brain dump captures raw text and turns it into an accept/edit/reject proposal, adding only accepted rows to Today.
+- **SCOPE:** `apps/web/app/(tempo)/brain-dump/page.tsx` · `apps/web/components/brain-dump/brain-dump-client.tsx` · `apps/web/e2e/brain-dump.spec.ts`.
+- **MUTATES:** none (wires `brainDumps.getDraft`, `brainDumps.saveDraft`, `brainDumps.prioritize`, `brainDumps.apply`).
+- **STEPS:** 1) Graphify code-map of `components/brain-dump`; 2) wire; 3) implement default + `?view=review` (proposal) + five states; 4) copy `web/brain-dump.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test brain-dump.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** write to Today before Add; call the model without a fallback; show JSON.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/brain-dump`, layout TempoShell. Data: `brainDumps.getDraft()`. Actions: `saveDraft({rawText})` on input; "Turn this into a plan" → `prioritize`; accept/edit/reject per row; "Add to Today" → `apply` (Undo 5 min). States: default, `?view=review` (proposal), empty, loading, error, offline. One primary: "Turn this into a plan". Key copy: EN "What's on your mind?"/HE "מה יש לך בראש?"; EN "Everything. Any order. Fragments are fine."/HE "הכול. בכל סדר. גם חצאי משפטים זה בסדר."; EN "Turn this into a plan"/HE "להפוך את זה לתוכנית"; EN "Here's a plan"/HE "הנה תוכנית"; EN "Accept, edit or reject each line. Nothing is added until you tap Add."/HE "לאשר, לערוך או לדחות כל שורה. שום דבר לא נוסף עד שתלחצי על הוספה."; EN "Add to Today"/HE "להוסיף להיום"; EN "Nothing goes onto your lists until you choose."/HE "שום דבר לא נכנס לרשימות שלך עד שתבחרי."; EN "Added to Today. You can undo for 5 minutes."/HE "נוסף להיום. אפשר לבטל במשך 5 דקות."; error EN "Couldn't make a plan just now."/HE "לא הצלחנו ליצור תוכנית כרגע." RTL full mirror; rows `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: proposal rows enter ≤250 ms. Full strings = `web/brain-dump.html`.
+- **TESTS:** Given raw text / When type / Then draft saved. Given submit / When click / Then `?view=review` rows appear. Given reject all / When click / Then Add disabled. Given accept 2 + Add / When click / Then toast + 2 tasks on Today (Undo). Given empty / When load / Then "Start with whatever is loudest." Playwright: type→plan→accept→add→undo, and empty/error, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · body text ≥13 px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** model-written vs rule-based proposal, auto-apply threshold — UNKNOWN, Amit answers (conflict #6).
+
+### TFV2-0127 — Screen: Plan (day / week / month)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0070, TFV2-0071, TFV2-0102, TFV2-0104, TFV2-0105, TFV2-0098 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-07; APP-FLOW §5 item 2; screen `web/plan.html`.
+- **GOAL:** Plan switches day/week/month views of the same time data; elastic items reflow around fixed ones.
+- **SCOPE:** `apps/web/app/(tempo)/plan/page.tsx` · `apps/web/components/today/plan-client.tsx` · `apps/web/e2e/plan.spec.ts`.
+- **MUTATES:** none (wires `plan.getDay`, `plan.getWeek`, `plan.getMonth`, `timeBlocks.*`).
+- **STEPS:** 1) Graphify code-map of the plan route; 2) wire; 3) implement `?view=day|week|month` + five states; 4) copy `web/plan.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test plan.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** call the model; reflow fixed events; edit `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/plan`, layout TempoShell. Data: `plan.getDay` / `getWeek` / `getMonth`. Views via Segmented (Day/Week/Month) + `?view=`. Components: MonthGrid (month), WeekColumns (week), DayTimeline (day). States: default, empty, loading, error, offline. One primary: none (read + add). Key copy: EN "Plan"/HE "תכנון"; empty EN "No plans for this day yet."/HE "עדיין אין תוכניות ליום הזה."; empty body EN "Fixed events will show here, and flexible things will settle around them."/HE "אירועים קבועים יופיעו כאן, ודברים גמישים יסתדרו סביבם."; error EN "Couldn't load the plan."/HE "לא הצלחנו לטעון את התוכנית."; month title EN "October 2026"/HE "אוקטובר 2026"; prev/next EN "Previous month"/"Next month" /HE "החודש הקודם"/"החודש הבא". RTL: calendar mirrors, weeks run right-to-left per conflict #10. Breakpoints 390/768/1024/1280. Motion: view switch ≤250 ms opacity. Full strings = `web/plan.html`.
+- **TESTS:** Given day view / When load / Then DayTimeline. Given week / When switch / Then WeekColumns. Given month / When switch / Then MonthGrid. Given empty / When load / Then empty copy. Given error / When fail / Then safe copy + Retry. Playwright: switch all three views + empty/error at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0128 — Screen: Tasks list
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0097, TFV2-0098, TFV2-0099, TFV2-0100, TFV2-0101 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-05 (task blocks); screen `web/tasks.html`.
+- **GOAL:** Tasks list shows all open tasks with search, filter, sort and load-more, all five states.
+- **SCOPE:** `apps/web/app/(tempo)/tasks/page.tsx` · `apps/web/components/tasks/tasks-client.tsx` · `apps/web/e2e/tasks.spec.ts`.
+- **MUTATES:** none (wires `tasks.list`, `tasks.listChecklists`, `tasks.complete`).
+- **STEPS:** 1) Graphify code-map of `components/tasks`; 2) wire; 3) implement toolbar (SearchInput + Segmented filter + SortMenu) + ListRow + LoadMore; 4) copy `web/tasks.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test tasks.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; show JSON; filter client-side if the query supports it server-side.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/tasks`, layout TempoShell. Data: `tasks.list`, `tasks.listChecklists`. Actions: tick → `tasks.complete` (optimistic, Undo). Components: Toolbar (SearchInput, Segmented, SortMenu), ListRow, LoadMore. States: default, empty, filtered-to-nothing, loading, error, offline. One primary: none (list). Key copy: EN "Tasks"/HE "משימות"; empty EN "No tasks yet. An empty list is a good place to start."/HE "עוד אין משימות. רשימה ריקה היא מקום טוב להתחיל בו."; empty body EN "Add one from quick add, or dump everything in a brain dump and pick from there."/HE "אפשר להוסיף אחת בהוספה המהירה, או לפרוק הכול בפריקת מחשבות ולבחור משם."; error EN "Couldn't load tasks."/HE "לא הצלחנו לטעון את המשימות."; filtered-none EN "Nothing here for this filter."/HE "אין כאן כלום עם הסינון הזה."; sort EN "Sort"/HE "מיון". RTL full mirror. Breakpoints 390/768/1024/1280. Motion: tick strike ≤250 ms. Full strings = `web/tasks.html`.
+- **TESTS:** Given 3 tasks / When load / Then 3 ListRows. Given search "bank" / When type / Then filtered. Given sort / When choose / Then reordered. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: search→filter→sort→tick, plus empty/error, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · row ≥56px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0129 — Screen: Task sheet
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0077, TFV2-0111, TFV2-0112, TFV2-0113, TFV2-0114, TFV2-0115, TFV2-0116, TFV2-0117, TFV2-0118 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** screen `web/task-sheet.html`; PRD F-60 (nag target).
+- **GOAL:** The task sheet edits a task and offers a nag, with new-task and error states.
+- **SCOPE:** `apps/web/components/tasks/TaskSheet.tsx` · `apps/web/components/tasks/task-sheet-form.tsx` · `apps/web/e2e/task-sheet.spec.ts`.
+- **MUTATES:** none (wires `tasks.get`, `nags.getForTarget`).
+- **STEPS:** 1) Graphify code-map of `components/tasks` TaskSheet; 2) wire; 3) implement form + nag + five states + empty=new task; 4) copy `web/task-sheet.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test task-sheet.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; submit without validation; add a second primary.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Component `components/tasks/TaskSheet` (`?task=<id>`), sheet (bottom under 900px) / dialog. Data: `tasks.get({id})`, `nags.getForTarget({taskId})`. Actions: edit fields, Save; "Nag me about this" → nag. States: default, empty (new task), loading, error, offline. One primary: "Save". Key copy: EN "Edit task"/HE "עריכת משימה"; EN "Couldn't load the task."/HE "לא הצלחנו לטעון את המשימה."; EN "Nag me about this"/HE "לנדנד לי על זה"; EN "Today"/HE "היום" (background group). RTL full mirror; title `dir="auto"`. Breakpoints 390/768/1024/1280 (sheet vs dialog). Motion: sheet slide ≤250 ms. Full strings = `web/task-sheet.html`.
+- **TESTS:** Given an existing task / When open / Then fields prefilled. Given new task / When open empty / Then blank form. Given invalid (empty title) / When Save / Then field error + `aria-invalid`. Given Save valid / When click / Then toast. Given "Nag me" / When click / Then nag form. Playwright: open→edit→save, empty→new, error state, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0130 — Screen: Journal
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0075 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0075.
+- **WHY:** #446 (Journal backend); screen `web/journal.html`.
+- **GOAL:** Journal shows a daily prompt and saves one entry per day, all five states.
+- **SCOPE:** `apps/web/app/(tempo)/journal/page.tsx` · `apps/web/components/journal/journal-client.tsx` · `apps/web/e2e/journal.spec.ts`.
+- **MUTATES:** none (wires `journal.list`, `journal.promptForToday`, `journal.saveEntry`).
+- **STEPS:** 1) Graphify code-map of `components/journal`; 2) wire; 3) implement prompt + save + five states; 4) copy `web/journal.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test journal.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; invent prompts; add a second primary.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/journal`, layout TempoShell. Data: `journal.list()`, `journal.promptForToday({date})`. Actions: `saveEntry({date, body})`. States: default, empty, loading, error, offline. One primary: "Write a line" (or Save). Key copy: EN "Journal"/HE "יומן"; empty EN "The journal is here when you want it."/HE "היומן מחכה לך כשתרצי."; empty body EN "Write one line about today, or answer the question. There is no right length."/HE "אפשר לכתוב שורה אחת על היום, או לענות על השאלה. אין אורך נכון."; error EN "Couldn't load the journal."/HE "לא הצלחנו לטעון את היומן." RTL full mirror; entry `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: save ≤250 ms. Full strings = `web/journal.html`.
+- **TESTS:** Given no entry / When load / Then prompt + empty copy. Given type + Save / When submit / Then saved toast. Given error / When fail / Then safe copy + Retry. Playwright: prompt→write→save, empty/error, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · form width ≤68ch (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** journal storage authority — UNKNOWN, Amit answers (conflict #7).
+
+### TFV2-0131 — Screen: Calendar
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0066, TFV2-0102, TFV2-0103, TFV2-0104, TFV2-0105 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-07; APP-FLOW §5 item 7; screen `web/calendar.html`.
+- **GOAL:** Calendar shows month/day/week with a legend, add event, and edit/delete, all five states.
+- **SCOPE:** `apps/web/app/(tempo)/calendar/page.tsx` · `apps/web/components/calendar/calendar-client.tsx` · `apps/web/e2e/calendar.spec.ts`.
+- **MUTATES:** none (wires `events.listMonth`, `events.listDay`, `events.update`, `events.delete`).
+- **STEPS:** 1) Graphify code-map of the calendar route; 2) wire; 3) implement month grid + day timeline + legend + add/edit/delete + five states; 4) copy `web/calendar.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test calendar.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; allow end-before-start; hard-delete.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/calendar`, layout TempoShell. Data: `events.listMonth`, `events.listDay`. Actions: add event, edit, delete (soft). Components: MonthGrid, DayTimeline, WeekColumns, Dot, legend. States: default, empty day, form error (end before start), loading, error, offline. One primary: "Add event". Key copy: EN "Calendar"/HE "לוח שנה"; EN "Add event"/HE "הוספת אירוע"; legend EN "What the dots mean"/HE "מה הנקודות אומרות"; EN Fixed "Fixed"/HE "קבוע"; EN Flexible "Flexible"/HE "גמיש"; empty day EN "Nothing on this day. A free day is allowed."/HE "אין כלום ביום הזה. מותר שיהיה יום פנוי."; error EN "Couldn't load the calendar."/HE "לא הצלחנו לטעון את לוח השנה."; form error EN "End can't be before start."/HE "הסיום לא יכול להיות לפני ההתחלה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: event add ≤250 ms. Full strings = `web/calendar.html`.
+- **TESTS:** Given events / When load / Then grid with dots + day list. Given empty day / When select / Then empty-day copy. Given add with end before start / When Save / Then form error. Given edit / When change title / Then saved. Given delete / When confirm / Then event gone (soft). Playwright: add→edit→delete, empty-day, form-error, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0132 — Screen: Habits
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0068, TFV2-0084, TFV2-0097, TFV2-0111 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-10; screen `web/habits.html`.
+- **GOAL:** Habits list shows each habit with a log toggle and a welcome-back state, all five states.
+- **SCOPE:** `apps/web/app/(tempo)/habits/page.tsx` · `apps/web/components/habits/habits-client.tsx` · `apps/web/e2e/habits.spec.ts`.
+- **MUTATES:** none (wires `habits.list`, `habits.log`).
+- **STEPS:** 1) Graphify code-map of `components/habits`; 2) wire; 3) implement ListRow/HabitBlock + add form + welcome-back + five states; 4) copy `web/habits.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test habits.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** show a streak counter; edit `convex/`; label a missed day as failure.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/habits`, layout TempoShell. Data: `habits.list`. Actions: `habits.log({habitId, localDate})` toggle; add habit. States: default, welcome back (untouched 7+ days), empty, loading, error, offline. One primary: "Add habit". Key copy: EN "Habits"/HE "הרגלים"; empty EN "No habits yet. You don't need one for a good day."/HE "עוד אין הרגלים. לא צריך אף אחד כדי שיהיה יום טוב."; welcome back EN "Welcome back"/HE "ברוך שובך" (kind, no pressure); EN "Log today"/HE "לתעד היום"; error EN "Couldn't load habits."/HE "לא הצלחנו לטעון את ההרגלים." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: toggle dot ≤250 ms. Full strings = `web/habits.html`.
+- **TESTS:** Given 2 habits / When load / Then 2 HabitBlocks. Given toggle / When click / Then logged today + Undo. Given none / When load / Then empty copy. Given untouched 7+ days / When load / Then welcome-back state. Playwright: toggle→undo, empty, welcome-back, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · row ≥56px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0133 — Screen: Habit detail
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0067, TFV2-0068, TFV2-0084, TFV2-0077 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** APP-FLOW §5 item 4 (6-week grid); screen `web/habit-detail.html`.
+- **GOAL:** Habit detail shows a 6-week day grid and a nag, with a paused state.
+- **SCOPE:** `apps/web/app/(tempo)/habits/[id]/page.tsx` · `apps/web/components/habit-detail/habit-detail-client.tsx` · `apps/web/e2e/habit-detail.spec.ts`.
+- **MUTATES:** none (wires `habits.get`, `habits.listDays`, `habits.summary`, `nags.getForHabit`).
+- **STEPS:** 1) Graphify code-map of `components/habit-detail`; 2) wire; 3) implement 42-day grid + summary + nag + paused + five states; 4) copy `web/habit-detail.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test habit-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** show a streak counter; edit `convex/`; ring a missed day as failure.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/habits/[id]`, layout TempoShell. Data: `habits.get`, `habits.listDays` (42 days), `habits.summary`, `nags.getForHabit`. Actions: log/undo by day; edit; nag. States: default, paused, empty (no check-ins yet), loading, error, offline. One primary: none (log). Key copy: EN "No check-ins yet. Every habit starts this way."/HE "עוד לא נרשם כלום. ככה כל הרגל מתחיל."; EN "logged"/"not logged" sr /HE "תועד"/"לא תועד"; nag title EN "Your reminder"/HE "התזכורת שלך"; error EN "Couldn't load the habit."/HE "לא הצלחנו לטעון את ההרגל." RTL full mirror; day grid flows RTL. Breakpoints 390/768/1024/1280. Motion: dot fill ≤250 ms. Full strings = `web/habit-detail.html`.
+- **TESTS:** Given a habit / When load / Then name + 42-day grid. Given check-in / When log today / Then today's ring fills. Given none / When load / Then empty copy, no streak number. Given paused / When load / Then paused state. Playwright: log→undo, empty, paused, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md) · 42-day grid (BACKEND-SCHEMA §3).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+
+### TFV2-0134 — Screen: Routines
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0076, TFV2-0097 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0076 and TFV2-0097.
+- **WHY:** #447 (Routines backend); screen `web/routines.html`.
+- **GOAL:** Routines list shows each routine with a run suggestion and a paused-run state.
+- **SCOPE:** `apps/web/app/(tempo)/routines/page.tsx` · `apps/web/components/routines/routines-client.tsx` · `apps/web/e2e/routines.spec.ts`.
+- **MUTATES:** none (wires `routines.list`, `routines.suggestNow`, `routines.startRun`).
+- **STEPS:** 1) Graphify code-map of `components/routines`; 2) wire; 3) implement ListRow + suggest + five states; 4) copy `web/routines.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test routines.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; call a model; auto-run a routine.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/routines`, layout TempoShell. Data: `routines.list`, `routines.suggestNow`. Actions: start a run. States: default, paused run, empty, loading, error, offline. One primary: "Start". Key copy: EN "Routines"/HE "שגרות"; empty EN "No routines yet. Your days count without them too."/HE "עוד אין שגרות. הימים שלך נחשבים גם בלי."; empty body EN "If mornings or evenings feel like many small decisions, write the steps once and let Tempo walk you through."/HE "אם הבקרים או הערבים מרגישים כמו הרבה החלטות קטנות, אפשר לכתוב את הצעדים פעם אחת ולתת ל־Tempo ללוות אותך."; error EN "Couldn't load routines."/HE "לא הצלחנו לטעון את השגרות." RTL full mirror; step text `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: run start ≤250 ms. Full strings = `web/routines.html`.
+- **TESTS:** Given 2 routines / When load / Then 2 rows. Given suggestNow / When matches / Then one routine suggested. Given start / When click / Then run opens. Given empty / When load / Then empty copy. Playwright: list→suggest→start, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0135 — Screen: Routine detail
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0076, TFV2-0097 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0076 and TFV2-0097.
+- **WHY:** screen `web/routine-detail.html`.
+- **GOAL:** Routine detail shows ordered steps and a run cursor, with paused and finished states.
+- **SCOPE:** `apps/web/app/(tempo)/routines/[id]/page.tsx` · `apps/web/components/routines/routine-detail-client.tsx` · `apps/web/e2e/routine-detail.spec.ts`.
+- **MUTATES:** none (wires `routines.get`, `routines.getRun`, `routines.completeStep`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement step list + run cursor + paused/finished + five states; 4) copy `web/routine-detail.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test routine-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; auto-advance without a tap.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/routines/[id]`, layout TempoShell. Data: `routines.get`, `routines.getRun`. Actions: `completeStep({runId, stepIndex})`; edit steps. States: default, paused, finished, empty (no steps), loading, error, offline. One primary: "Next step". Key copy: EN "This routine has no steps yet."/HE "לשגרה הזאת עוד אין צעדים."; EN "Add two or three small steps. You can change them anytime."/HE "אפשר להוסיף שניים או שלושה צעדים קטנים. אפשר לשנות אותם בכל זמן."; EN "Paused"/HE "מושהה"; EN "Finished"/HE "הסתיים"; error EN "Couldn't load the routine."/HE "לא הצלחנו לטעון את השגרה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: step advance ≤250 ms. Full strings = `web/routine-detail.html`.
+- **TESTS:** Given a routine with 3 steps / When load / Then 3 steps, cursor at 0. Given Next / When click / Then cursor advances. Given last step / When click / Then finished state. Given no steps / When load / Then empty copy. Playwright: advance→finish, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0136 — Screen: Goals
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0096, TFV2-0097, TFV2-0098 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** #457 (Goals); screen `web/goals.html`.
+- **GOAL:** Goals list shows goals with status and a filter, all five states.
+- **SCOPE:** `apps/web/app/(tempo)/goals/page.tsx` · `apps/web/components/goals/goals-client.tsx` · `apps/web/e2e/goals.spec.ts`.
+- **MUTATES:** none (wires `goals.list`, `goals.create`, `projects.listByGoals`).
+- **STEPS:** 1) Graphify code-map of the goals route; 2) wire; 3) implement ListRow + Segmented filter + create + five states; 4) copy `web/goals.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test goals.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; auto-link projects; add a second primary.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/goals`, layout TempoShell. Data: `goals.list`, `projects.listByGoals`. Actions: `goals.create({title})`; filter. States: default, filtered-to-nothing, empty, loading, error, offline. One primary: "Write a goal". Key copy: EN "Goals"/HE "מטרות"; empty EN "No goals yet. That's fine."/HE "עדיין אין מטרות. זה בסדר."; empty body EN "A goal is just something you'd like to be true. Write one in your own words, and link a project later."/HE "מטרה היא פשוט משהו שהיית רוצה שיתקיים. כתבי אחת במילים שלך, ואפשר לקשר פרויקט אחר כך."; filtered-none EN "Nothing here for this filter."/HE "אין כאן כלום עם הסינון הזה."; error EN "Couldn't load your goals."/HE "לא הצלחנו לטעון את המטרות שלך." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goals.html`.
+- **TESTS:** Given 2 goals / When load / Then 2 rows. Given create / When submit / Then new goal appears. Given filter / When choose / Then filtered. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0137 — Screen: Goal detail
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0097 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0069 and TFV2-0097.
+- **WHY:** screen `web/goal-detail.html`.
+- **GOAL:** Goal detail shows linked projects/tasks and a suggested next step.
+- **SCOPE:** `apps/web/app/(tempo)/goals/[id]/page.tsx` · `apps/web/components/goals/goal-detail-client.tsx` · `apps/web/e2e/goal-detail.spec.ts`.
+- **MUTATES:** none (wires `goals.get`, `projects.listByGoal`, `tasks.listByGoal`, `goals.nextStep`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement links + next step + five states; 4) copy `web/goal-detail.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test goal-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; call a model for next step; add a second primary.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/goals/[id]`, layout TempoShell. Data: `goals.get`, `projects.listByGoal`, `tasks.listByGoal`, `goals.nextStep`. Actions: link project, add task. States: default, empty (no steps yet), loading, error, offline. One primary: "Add a step". Key copy: EN "This goal has no steps yet."/HE "למטרה הזו עדיין אין צעדים."; EN "You can link a project that already exists, or add one small task that points here."/HE "אפשר לקשר פרויקט שכבר קיים, או להוסיף משימה קטנה אחת שמכוונת לשם."; EN "Next step"/HE "הצעד הבא"; error EN "Couldn't open this goal."/HE "לא הצלחנו לפתוח את המטרה הזו." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goal-detail.html`.
+- **TESTS:** Given a goal with 2 projects / When load / Then both listed. Given next step / When load / Then suggested step. Given no steps / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: open→next step, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0138 — Screen: Goals progress
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0108, TFV2-0109, TFV2-0110 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** screen `web/goals-progress.html`.
+- **GOAL:** Goals progress shows per-goal and per-week charts, each with a required summary.
+- **SCOPE:** `apps/web/app/(tempo)/goals/progress/page.tsx` · `apps/web/components/goals/goals-progress-client.tsx` · `apps/web/e2e/goals-progress.spec.ts`.
+- **MUTATES:** none (wires `goals.progressByGoal`, `goals.stepsByWeek`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement BarChart/LineChart + ChartSummary + five states; 4) copy `web/goals-progress.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test goals-progress.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** render a chart without a summary; edit `convex/`; invent metrics.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/goals/progress`, layout TempoShell. Data: `goals.progressByGoal`, `goals.stepsByWeek`. Components: BarChart, LineChart, ChartSummary (required figcaption). States: default, empty, loading, error, offline. One primary: none. Key copy: EN "How your goals are going"/HE "איך המטרות שלך מתקדמות"; empty EN "Nothing to show yet."/HE "עדיין אין מה להציג."; empty body EN "Once a goal has a task or two linked, a quiet picture appears here."/HE "ברגע שלמטרה יהיו משימה או שתיים מקושרות, תופיע כאן תמונה שקטה שלה."; offline EN "You're offline. These charts are from your last visit."/HE "אין חיבור כרגע. הגרפים האלה מהביקור הקודם שלך."; error EN "Couldn't load your progress."/HE "לא הצלחנו לטעון את ההתקדמות שלך." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/goals-progress.html`.
+- **TESTS:** Given goals with tasks / When load / Then BarChart + LineChart each with a ChartSummary. Given empty / When load / Then empty copy, no charts. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0139 — Screen: Projects
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0096, TFV2-0098 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-08; screen `web/projects.html`.
+- **GOAL:** Projects list shows projects with status badges and a filter.
+- **SCOPE:** `apps/web/app/(tempo)/projects/page.tsx` · `apps/web/components/projects/projects-client.tsx` · `apps/web/e2e/projects.spec.ts`.
+- **MUTATES:** none (wires `projects.list`, `goals.listNames`).
+- **STEPS:** 1) Graphify code-map of `components/projects`; 2) wire; 3) implement ListRow + ProjectStatus + Segmented + create + five states; 4) copy `web/projects.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test projects.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; invent statuses beyond four.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/projects`, layout TempoShell. Data: `projects.list`, `goals.listNames`. Actions: create project; filter by status. States: default, filtered-to-nothing, empty, loading, error, offline. One primary: "Start a project". Key copy: EN "Projects"/HE "פרויקטים"; empty EN "No projects yet."/HE "עדיין אין פרויקטים."; empty body EN "A project is just a name and a few tasks. Start with one thing on your mind."/HE "פרויקט הוא רק שם וכמה משימות. אפשר להתחיל מדבר אחד שמעסיק אותך."; statuses EN Idea·Active·Paused·Done /HE רעיון·פעיל·מושהה·הושלם; error EN "Couldn't load your projects."/HE "לא הצלחנו לטעון את הפרויקטים שלך." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/projects.html`.
+- **TESTS:** Given 3 projects / When load / Then 3 rows with status badges. Given filter Active / When choose / Then filtered. Given create / When submit / Then new project. Given empty / When load / Then empty copy. Playwright: create→filter, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · row ≥56px (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0140 — Screen: Project detail
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0069, TFV2-0097, TFV2-0096 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** screen `web/project-detail.html`.
+- **GOAL:** Project detail shows linked pages, tasks and goals, with empty and error states.
+- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/page.tsx` · `apps/web/components/projects/project-detail-client.tsx` · `apps/web/e2e/project-detail.spec.ts`.
+- **MUTATES:** none (wires `projects.get`, `pages.listByProject`, `tasks.listByProject`, `pages.backlinks`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement pages/tasks/goals sections + five states; 4) copy `web/project-detail.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test project-detail.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; auto-rename; add a second primary.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/projects/[id]`, layout TempoShell. Data: `projects.get`, `pages.listByProject`, `tasks.listByProject`, `pages.backlinks`. Actions: add task. States: default, empty (name only), loading, error, offline. One primary: "Add task". Key copy: EN "Pages in this project"/HE "דפים בפרויקט הזה"; EN "Tasks"/HE "משימות"; EN "Goals"/HE "מטרות"; empty EN "This project is just a name for now."/HE "הפרויקט הזה הוא בינתיים רק שם."; EN "Add a first task"/HE "הוספת משימה ראשונה"; error EN "Couldn't open this project."/HE "לא הצלחנו לפתוח את הפרויקט הזה." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/project-detail.html`.
+- **TESTS:** Given a project / When load / Then title + pages + tasks + goals. Given empty / When load / Then empty copy + Add first task. Given error / When fail / Then Retry. Playwright: open, empty, error, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0141 — Screen: Project kanban
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0106, TFV2-0107 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** screen `web/project-kanban.html`; PRD F-08.
+- **GOAL:** Project kanban shows task columns with move buttons on every card.
+- **SCOPE:** `apps/web/app/(tempo)/projects/[id]/kanban/page.tsx` · `apps/web/components/projects/project-kanban-client.tsx` · `apps/web/e2e/project-kanban.spec.ts`.
+- **MUTATES:** none (wires `projects.get`, `tasks.listByProjectColumns`, `tasks.moveColumn`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement Kanban + KanbanCard + five states; 4) copy `web/project-kanban.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test project-kanban.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** require drag; edit `convex/`; enable an edge move button.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/projects/[id]/kanban`, layout TempoShell. Data: `projects.get`, `tasks.listByProjectColumns`. Actions: `tasks.moveColumn` via `kanban-move` `data-dir`. States: default, empty board, empty column, loading, error, offline. One primary: "Add card". Key copy: column names EN "To do"·"Doing"·"Done" /HE "לעשות"·"בעבודה"·"הושלם"; empty board EN "This board is empty for now."/HE "הלוח הזה ריק בינתיים."; empty column EN "Nothing waiting here."/HE "שום דבר לא מחכה כאן."; error EN "Couldn't load this board."/HE "לא הצלחנו לטעון את הלוח הזה." RTL: move buttons `.tp-icon--flip`/`.tp-icon--back`; columns flow RTL. Breakpoints 390/768/1024/1280 (snap-scroll at 390). Motion: card move ≤250 ms. Full strings = `web/project-kanban.html`.
+- **TESTS:** Given 3 columns / When load / Then 3 columns with counts. Given move next / When click / Then card moves + counts update, edge disabled. Given empty column / When render / Then column empty copy. Given error / When fail / Then Retry. Playwright: move card between columns, disabled edges, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0142 — Screen: Insights
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0079, TFV2-0080, TFV2-0108, TFV2-0109, TFV2-0110 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** screen `web/insights.html`; PRD F-55 (observations).
+- **GOAL:** Insights shows pattern sentences plus weekday and focus charts, each with a summary.
+- **SCOPE:** `apps/web/app/(tempo)/insights/page.tsx` · `apps/web/components/insights/insights-client.tsx` · `apps/web/e2e/insights.spec.ts`.
+- **MUTATES:** none (wires `insights.getPatterns`, `insights.tasksByWeekday`, `insights.focusMinutesByWeek`).
+- **STEPS:** 1) Graphify code-map of `components/insights`; 2) wire; 3) implement pattern list + charts + summaries + five states; 4) copy `web/insights.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test insights.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** write shaming copy; render a chart without a summary; edit `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/insights`, layout TempoShell. Data: `insights.getPatterns`, `insights.tasksByWeekday`, `insights.focusMinutesByWeek`. Components: BarChart, LineChart, ChartSummary. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Insights"/HE "תובנות"; empty EN "Patterns need about a week."/HE "לדפוסים צריך בערך שבוע."; empty body EN "Use Tempo however works for you. Gentle patterns appear here on their own. There is nothing to do."/HE "השתמשי ב־Tempo איך שנוח לך. דפוסים עדינים יופיעו כאן מעצמם. אין שום דבר שצריך לעשות."; error EN "Couldn't load insights."/HE "לא הצלחנו לטעון את התובנות." RTL full mirror; chart values `.tp-num`. Breakpoints 390/768/1024/1280. Motion: none. Full strings = `web/insights.html`.
+- **TESTS:** Given patterns + data / When load / Then sentences + two charts each with summary. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: charts + summaries, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · every chart has a summary (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0143 — Screen: Activity
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0081, TFV2-0097, TFV2-0098 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-22 (5-min Undo); screen `web/activity.html`.
+- **GOAL:** Activity shows a 7-day feed of changes, coach changes undoable for 5 minutes.
+- **SCOPE:** `apps/web/app/(tempo)/activity/page.tsx` · `apps/web/components/activity/activity-client.tsx` · `apps/web/e2e/activity.spec.ts`.
+- **MUTATES:** none (wires `activity.listRecent`, `activity.undo`).
+- **STEPS:** 1) Graphify code-map of `components/activity`; 2) wire; 3) implement feed + filter + Undo + five states; 4) copy `web/activity.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test activity.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** show Undo after 5 minutes; edit `convex/`; undo a user's own action.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/activity`, layout TempoShell. Data: `activity.listRecent`. Actions: `activity.undo({activityId})` (coach-origin, ≤5 min). Components: ListRow, Segmented filter. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Recent activity"/HE "פעילות אחרונה"; EN "Everything that changed in the last seven days, by you or the coach."/HE "כל מה שהשתנה בשבעת הימים האחרונים, על ידייך או על ידי המאמן."; empty EN "Nothing changed this week."/HE "שום דבר לא השתנה השבוע."; filter EN "By you"/"By the coach"/HE "על ידייך"/"על ידי המאמן"; EN "Undo"/HE "ביטול"; undo toast EN "The change was undone."/HE "השינוי בוטל. שום דבר אחר לא זז."; error EN "Couldn't load recent activity."/HE "לא הצלחנו לטעון את הפעילות האחרונה." RTL full mirror; timestamps `.tp-num`. Breakpoints 390/768/1024/1280. Motion: row removal ≤250 ms. Full strings = `web/activity.html`.
+- **TESTS:** Given feed / When load / Then rows by you + coach. Given a coach change <5 min / When load / Then Undo shown. Given >5 min / When load / Then no Undo. Given Undo / When click / Then row removed + toast. Playwright: filter→undo, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0144 — Screen: Search
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0099, TFV2-0097, TFV2-0100 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** screen `web/search.html`.
+- **GOAL:** Search searches pages, tasks and coach threads, with a no-results state.
+- **SCOPE:** `apps/web/app/(tempo)/search/page.tsx` · `apps/web/components/global-search/search-client.tsx` · `apps/web/e2e/search.spec.ts`.
+- **MUTATES:** none (wires `search.query`, `search.recentQueries`).
+- **STEPS:** 1) Graphify code-map of `components/global-search`; 2) wire; 3) implement SearchInput + results + no-results + five states; 4) copy `web/search.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test search.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** search only client-side; edit `convex/`; show raw JSON.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/search`, layout TempoShell. Data: `search.query`, `search.recentQueries`. Actions: type → query. States: default, no results (`?results=none`), empty (no query), loading, error, offline. One primary: none. Key copy: EN "What are you looking for?"/HE "מה את מחפשת?"; empty body EN "Type a word or idea you roughly remember. Tempo searches pages, tasks and coach chats."/HE "הקלידי מילה או רעיון שאת זוכרת בערך. Tempo יחפש בדפים, במשימות ובשיחות עם המאמן."; no-results EN "Nothing found for"/HE "לא נמצא כלום עבור"; loading EN "Searching"/HE "מחפש"; error EN "Couldn't search right now."/HE "לא הצלחנו לחפש כרגע."; offline EN "You're offline. Searching pages and tasks on this device; chats return when connected."/HE "אין חיבור כרגע. עדיין מחפשים בדפים ובמשימות שבמכשיר. השיחות יחזרו כשתהיי מחוברת." RTL full mirror; query `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: results ≤250 ms. Full strings = `web/search.html`.
+- **TESTS:** Given query "bank" / When type / Then results grouped. Given no match / When search / Then no-results copy. Given empty / When load / Then prompt. Given error / When fail / Then Retry. Playwright: search→results, no-results, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0145 — Screen: Command palette
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0099 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0099.
+- **WHY:** components.md §8 (CommandPalette candidate); screen `web/command.html`.
+- **GOAL:** The Ctrl K command palette jumps to pages and actions, with an empty recent list state.
+- **SCOPE:** `apps/web/app/(tempo)/command/page.tsx` · `apps/web/components/global-search/command-palette.tsx` · `apps/web/e2e/command.spec.ts`.
+- **MUTATES:** none (wires `pages.listRecent`, static jump targets, `search.quick`).
+- **STEPS:** 1) Graphify code-map of `components/global-search`; 2) implement the palette (dialog + listbox, reusing SlashMenu styling); 3) five states; 4) copy `web/command.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test command.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** duplicate the slash-menu listbox (share one list component); edit `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/command` (dialog over the last page); also the Ctrl K trigger on every TempoShell screen. Data: `pages.listRecent`, static jump targets, `search.quick`. Keyboard: arrows, Enter, Esc; focus returns on close. States: default, empty (no recent pages), loading, error, offline. Key copy: EN "Search or jump to"/HE "חיפוש או מעבר אל"; EN "Type a page, place or action"/HE "הקלידי דף, מקום או פעולה"; EN "Results"/HE "תוצאות"; empty EN "Pages you open will show here."/HE "דפים שתפתחי יופיעו כאן."; error EN "Couldn't load recent pages. Your data is safe; everything below still works."/HE "לא הצלחנו לטעון את הדפים האחרונים. המידע שלך שמור, וכל מה שלמטה עדיין עובד." RTL full mirror. Breakpoints 390/768/1024/1280 (centred dialog ≥768). Motion: open ≤250 ms opacity. Full strings = `web/command.html`.
+- **TESTS:** Given recent pages / When open Ctrl K / Then list. Given no recent / When open / Then empty copy. Given type / When keys / Then filtered + arrow + Enter navigates. Given Esc / When press / Then closes + focus returns. Playwright: open→type→navigate, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0146 — Screen: Notifications
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0078, TFV2-0097 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0078 and TFV2-0097.
+- **WHY:** screen `web/notifications.html`.
+- **GOAL:** Notifications list shows in-app notifications with mark-read, all five states.
+- **SCOPE:** `apps/web/app/(tempo)/notifications/page.tsx` · `apps/web/components/notifications-preferences/notifications-client.tsx` · `apps/web/e2e/notifications.spec.ts`.
+- **MUTATES:** none (wires `notifications.list`, `notifications.markRead`, `notifications.markAllRead`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement list + mark-read + five states; 4) copy `web/notifications.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test notifications.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** add push/email delivery (conflict #11); edit `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/notifications`, layout TempoShell. Data: `notifications.list`. Actions: `markRead`, `markAllRead`. States: default, empty, loading, error, offline. One primary: "Mark all read". Key copy: EN "Notifications"/HE "התראות"; empty EN "Nothing new. Quiet is good."/HE "אין שום דבר חדש. שקט זה טוב."; empty body EN "When Amit replies, when your week is ready, or when the coach saves something, it shows here."/HE "כשעמית עונה, כשהשבוע שלך מוכן, או כשהמאמן שומר משהו, זה יופיע כאן."; error EN "Couldn't load notifications."/HE "לא הצלחנו לטעון את ההתראות."; offline EN "You're offline. Changes save when you're back."/HE "אין חיבור כרגע. השינויים יישמרו כשתחזרי." RTL full mirror. Breakpoints 390/768/1024/1280. Motion: read-state ≤250 ms. Full strings = `web/notifications.html`.
+- **TESTS:** Given 3 notifications / When load / Then 3 rows. Given markRead / When click / Then read. Given markAllRead / When click / Then all read. Given empty / When load / Then empty copy. Playwright: markRead→markAllRead, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none (in-app only).
+
+### TFV2-0147 — Screen: Nags
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0077, TFV2-0111, TFV2-0112, TFV2-0113, TFV2-0114, TFV2-0115, TFV2-0116 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-60, F-61; screen `web/nags.html`.
+- **GOAL:** Nags screen lists the user's phrases and enforces "no accepted phrase → cannot switch on".
+- **SCOPE:** `apps/web/app/(tempo)/nags/page.tsx` · `apps/web/components/nags/nags-client.tsx` · `apps/web/e2e/nags.spec.ts`.
+- **MUTATES:** none (wires `nags.list`, `nags.addPhrase`, `nags.setEnabled`).
+- **STEPS:** 1) Graphify code-map of `components/nags`; 2) wire; 3) implement phrase list + add form + switch + five states; 4) copy `web/nags.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test nags.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** add stock copy or emoji; allow enable with no phrase; edit `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/nags`, layout TempoShell. Data: `nags.list`. Actions: `nags.addPhrase`, `nags.setEnabled` (blocked until ≥1 phrase). Components: Form, Field, Textarea, Switch. States: default, empty, loading, error, offline. One primary: "Add phrase". Key copy: EN "Nags"/HE "נדנודים"; EN "Your nags"/HE "הנדנודים שלך"; empty EN "No nags yet."/HE "עוד אין נדנודים."; empty body EN "On any task or habit, choose 'Nag me about this', then write what you'd like to hear. Tempo uses only your words."/HE "בכל משימה או הרגל, בחרי ״לנדנד לי על זה״, ואז כתבי מה היית רוצה לשמוע. Tempo משתמש רק במילים שלך."; EN "Your words"/HE "המילים שלך"; EN "Add phrase"/HE "הוספת משפט"; error EN "Couldn't load nags."/HE "לא הצלחנו לטעון את הנדנודים." RTL full mirror; phrases `dir="auto"`. Breakpoints 390/768/1024/1280. Motion: phrase add ≤250 ms. Full strings = `web/nags.html`.
+- **TESTS:** Given a nag with 1 phrase / When load / Then phrase shown. Given enable with no phrase / When try / Then switch disabled. Given add phrase / When submit / Then phrase added + switch enabled. Given empty / When load / Then empty copy. Playwright: add phrase→enable, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** delivery channel beyond in-app — UNKNOWN, Amit answers (conflict #11).
+
+### TFV2-0148 — Screen: Weekly page (with WeekStrip)
+- **Stage:** B · **Pass:** 1 · **Depends:** TFV2-0065, TFV2-0095, TFV2-0124 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after the Depends set.
+- **WHY:** PRD F-07 (weekly view); screen `web/weekly-page.html`.
+- **GOAL:** The weekly page shows intentions and tasks by day, with a WeekStrip to pick the day.
+- **SCOPE:** `apps/web/app/(tempo)/week/[week]/page.tsx` · `apps/web/components/today/weekly-page-client.tsx` · `apps/web/e2e/weekly-page.spec.ts`.
+- **MUTATES:** none (wires `pages.getWeekly`, `tasks.listForWeek`, `pages.backlinks`).
+- **STEPS:** 1) Graphify code-map; 2) wire; 3) implement WeekStrip + intentions + tasks-by-day + five states; 4) copy `web/weekly-page.html` strings; 5) Playwright; 6) run DONE.
+- **DONE:** `CI=1 bunx playwright test weekly-page.spec.ts` → pass at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshots.
+- **DO NOT:** edit `convex/`; hardcode the week; mix weekly view into Today.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Route `(tempo)/week/[week]` (entry `/week/[isoWeek]`), layout TempoShell. Data: `pages.getWeekly`, `tasks.listForWeek`, `pages.backlinks`. Components: WeekStrip, Section, ListRow. States: default, empty, loading, error, offline. One primary: none. Key copy: EN "Week"/HE "שבוע"; EN "Intentions for this week"/HE "כוונות לשבוע הזה"; EN "Tasks by day"/HE "משימות לפי יום"; empty EN "This week is still open."/HE "השבוע הזה עוד פתוח."; empty body EN "Write one intention, or give one day one small task."/HE "אפשר לכתוב כוונה אחת, או לתת ליום אחד משימה קטנה אחת."; error EN "Couldn't load your week."/HE "לא הצלחנו לטעון את השבוע שלך." RTL: days run RTL per conflict #10; counts `.tp-num`. Breakpoints 390/768/1024/1280. Motion: day select ≤250 ms. Full strings = `web/weekly-page.html`.
+- **TESTS:** Given a week / When load / Then WeekStrip + intentions + tasks-by-day. Given select Tuesday / When click / Then that day's tasks highlight. Given empty / When load / Then empty copy. Given error / When fail / Then Retry. Playwright: select day, empty, at 390/1280, EN/HE.
+- **NUMBERS:** contrast ≥4.5:1 AA (https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum) · target ≥24×24 px (https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) · INP ≤200 ms / LCP ≤2.5 s / CLS ≤0.1 (https://web.dev/articles/vitals) · motion ≤250 ms (components.md).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start — UNKNOWN, Amit answers (conflict #10).
+
+## Chunk 3 — MVP · Coach & memory
+
+### TFV2-0149 — Schema: `memories.embedding` field + 1024-dim vector index
+- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
+- **WHEN:** first (backend architecture ticket for this chunk).
+- **WHY:** TRD §5 ("`memories` gains an `embedding` field and a vector index, 1,024 dimensions, filter field `userId`"); PRD F-50 (recall by meaning).
+- **GOAL:** `memories` holds an optional 1,024-float embedding and a Convex vector index over it, filtered by `userId`, so recall-by-meaning can run.
+- **SCOPE:** `convex/schema.ts` (one table edit + one index) · `convex/lib/testFakeCtx.ts` (add a fake embedding helper if absent) · test: `convex/schema.test.ts`.
+- **MUTATES:** `convex/schema.ts` (additive column + vector index; no existing column changed).
+- **STEPS:** 1) Graphify code-map check of `convex/schema.ts` → `memories` (the field/index may already exist — then verify and add the missing test). 2) Add `embedding: v.optional(v.array(v.float64()))` to `memories`. 3) Add `.vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })`. 4) Add a Zod/validator guard elsewhere is out of scope; only the column + index land here. 5) Write a schema unit test asserting the index registers (dimensions 1024, filter `userId`) and that an insert with and without `embedding` validates. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="schema"` → all schema tests pass (no Convex schema error for the new column/index).
+- **EVIDENCE:** terminal output of DONE + the exact diff lines for the `embedding` field and `.vectorIndex` line.
+- **DO NOT:** change any existing `memories` column, drop/rename the existing indexes, edit any other table, or write an embedding *value* (dimension constants only, never data).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `memories` (convex/schema.ts) gains `embedding: v.optional(v.array(v.float64()))` (exactly 1,024 floats when present; empty array rejected at insert time by the index) and `.vectorIndex("by_userId_embedding", { vectorField: "embedding", dimensions: 1024, filterFields: ["userId"] })`. No other table changes. Error case: a vector of wrong length must be rejected by Convex at insert. Limit: Convex vector search is action-only and returns at most 256 results (callers enforce the cap; this ticket only declares the index).
+- **TESTS:** Given `memories` has no `embedding` column / When the schema file is compiled with the new field + index / Then it registers with dimensions 1024 and filter `userId`. Given a memory insert with `embedding` of 1,024 floats / When validated / Then it passes. Given an insert with a 1,023-float vector / When validated / Then Convex rejects it.
+- **NUMBERS:** vector dimensions 1024 → pass (Convex 2–2,048 dims, source https://docs.convex.dev/search/vector-search) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0150 — Schema: `entities` table (life graph)
+- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
+- **WHEN:** first (backend architecture).
+- **WHY:** TRD §5c (`entities` table: `userId`, `kind`, `name`, `aliases`, `embedding`); PRD F-54 (life graph).
+- **GOAL:** An `entities` table exists to hold people/projects/goals/places/habits with aliases and an embedding.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
+- **MUTATES:** `convex/schema.ts` (new table).
+- **STEPS:** 1) Graphify code-map of `convex/schema.ts` (table may exist — then verify + add missing test). 2) Add `entities: defineTable({ userId: v.id("users"), kind: v.union(v.literal("person"), v.literal("project"), v.literal("goal"), v.literal("place"), v.literal("habit")), name: v.string(), aliases: v.array(v.string()), embedding: v.optional(v.array(v.float64())), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with indexes `by_userId` and `by_userId_kind`. 3) Test the validators.
+- **DONE:** `bun run test -- --test-name-pattern="schema"` → green.
+- **EVIDENCE:** DONE output + the `entities` defineTable lines.
+- **DO NOT:** add business logic, wire extraction, or edit any other table.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** New table `entities` (fields above). `kind` is one of `person|project|goal|place|habit`. `aliases` are alternative names used for matching (no uniqueness constraint). `embedding` mirrors `memories.embedding` (1,024 floats, optional). Soft delete via `deletedAt`. No extraction logic here.
+- **TESTS:** Given a valid `entities` row / When inserted / Then it validates. Given `kind:"person"` vs an out-of-union `kind` / Then the latter is rejected. Given a row with `deletedAt` set / When queried by a live-entities index / Then soft-deleted rows are excluded.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0151 — Schema: `edges` table (life graph)
+- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
+- **WHEN:** first (backend architecture).
+- **WHY:** TRD §5c (`edges`: `userId`, `from`, `to`, `relation`, `origin`, `confidence`, `sourceRef`); PRD F-54.
+- **GOAL:** An `edges` table links entities and memories with an extracted/inferred origin tag and confidence.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
+- **MUTATES:** `convex/schema.ts` (new table).
+- **STEPS:** 1) Graphify code-map (table may exist — verify + add test). 2) Add `edges: defineTable({ userId: v.id("users"), from: v.string(), to: v.string(), relation: v.string(), origin: v.union(v.literal("extracted"), v.literal("inferred")), confidence: v.number(), sourceRef: v.optional(v.string()), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with indexes `by_userId`, `by_userId_from`, `by_userId_to`. 3) Test validators.
+- **DONE:** `bun run test -- --test-name-pattern="schema"` → green.
+- **EVIDENCE:** DONE output + the `edges` defineTable lines.
+- **DO NOT:** add extraction/confirm logic, or edit any other table.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** New table `edges`. `from`/`to` are entity names (string keys, not ids, per TRD §5c mirroring Graphify's tags). `origin` is `extracted` (from `[[links]]`/blocks, no model) or `inferred` (model-guessed). `confidence` 0..1. `sourceRef` points at the note/chat that produced it. Soft delete via `deletedAt`.
+- **TESTS:** Given a valid `edges` row / When inserted / Then validates. Given `origin:"inferred"` vs `origin:"extracted"` / Then both validate; an out-of-union origin is rejected. Given `confidence:1.4` / When validated / Then accepted by Convex (clamping is a caller concern; document it) — assert the validator accepts a number in 0..1.
+- **NUMBERS:** `confidence` range 0..1 → pass (caller clamp; no numeric source needed) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0152 — Schema: `observations` table (reflect)
+- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `convex-arch` per `factory/SLOTS.md`.
+- **WHEN:** first (backend architecture).
+- **WHY:** TRD §5c (`observations` rows, each with the memory ids that support it); PRD F-55 (reflect).
+- **GOAL:** An `observations` table exists to hold reflect consolidations with their supporting memory ids.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/testFakeCtx.ts` · test: `convex/schema.test.ts`.
+- **MUTATES:** `convex/schema.ts` (new table).
+- **STEPS:** 1) Graphify code-map (table may exist — verify + add test). 2) Add `observations: defineTable({ userId: v.id("users"), text: v.string(), memoryIds: v.array(v.id("memories")), createdAt: v.number(), updatedAt: v.number(), deletedAt: v.optional(v.number()) })` with index `by_userId_deletedAt`. 3) Test validators.
+- **DONE:** `bun run test -- --test-name-pattern="schema"` → green.
+- **EVIDENCE:** DONE output + the `observations` defineTable lines.
+- **DO NOT:** add the reflect cron or deletion logic, or edit any other table.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** New table `observations`. `text` is a human-readable observation. `memoryIds` are the memories that support it. Soft delete via `deletedAt`.
+- **TESTS:** Given a valid `observations` row / When inserted / Then validates. Given a row with `memoryIds` referencing `memories` ids / Then validates. Given a row with non-id strings in `memoryIds` / Then Convex rejects.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0153 — Coach Agent: `Agent` definition, languageModel, streaming (folds-in #743)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149 · **Folds-in:** #743
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0149.
+- **WHY:** TRD §3 (coach is one `Agent` with `createTool` tools + `streamText(..., { saveStreamDeltas: true })`); PRD F-20; TRD §7.3 (auth → entitlement → quota order before any model call).
+- **GOAL:** `convex/lib/agentComponent.ts` defines the coach `Agent` with a runtime language model and embedding model, streaming reply deltas, so the coach stops returning fixed technique replies.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/ai_router.ts` · test: `convex/lib/agentComponent.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (new), `convex/lib/ai_router.ts` (expose the language/embedding model seams).
+- **STEPS:** 1) Graphify code-map of `convex/lib/agentComponent.ts` + `convex/lib/ai_router.ts` (the Agent may already be defined — then verify and add the missing test). 2) Define `export const coachAgent = new Agent(...)` with `languageModel` from the AI SDK DeepInfra provider (`deepInfra("…")`) and `embeddingModel` (`deepInfra.embeddingModel("…")`). 3) Set `saveStreamDeltas: true` so replies stream token-by-token to open screens. 4) Register `createTool` stubs for the six tools named in TFV2-0156…0161 (empty handlers that throw `not_implemented` until those tickets land). 5) Keep `requireApprovedForAi` as the first call. 6) Run DONE.
+- **DONE:** `bun run typecheck` → 0 errors, and `bun run test -- --test-name-pattern="agentComponent"` → the component loads its real schema under `convex-test`.
+- **EVIDENCE:** DONE output + the `Agent` definition lines (model ids as names only).
+- **DO NOT:** hard-code a real key value, call `api.mistral.ai`, edit `convex/auth.ts`, or open the streaming path to unapproved users.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `coachAgent` is an `Agent` whose `languageModel` resolves through the one model seam (names only; the exact runtime model id is OPEN §4.3, source of truth `convex/lib/ai_router.ts` until Amit settles it). `embeddingModel` is the embedding seam (OPEN §4.3/TRD §5 — the pick is Qwen3-Embedding-8B by default, UNKNOWN until the Hebrew eval in TFV2-0185 lands). Replies stream via `saveStreamDeltas`. Auth rule: approved-for-AI accounts only (`requireApprovedForAi` runs first). Error cases: missing provider key → the Agent's stream resolves to `unavailable` (no key text ever surfaced).
+- **TESTS:** Given `coachAgent` is instantiated under `convex-test` / When the component's schema loads / Then no import-time error. Given a signed-out or unapproved identity / When a model call is attempted / Then it is rejected before any provider request. Given `saveStreamDeltas` is set / When a reply is produced / Then deltas are observable.
+- **NUMBERS:** streaming first-token budget — ack < 0.2 s, response ~1 s (16 Sep latency budget, PRD §4.3) → pass range ≤ 1.2 s | UNKNOWN (measured later; Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.3 interim text model id and §4.12 AI SDK vs HARD_RULES §2 — the model id and the SDK choice are UNKNOWN; answerer: Amit.
+
+### TFV2-0154 — Coach chat: send + Thinking + Retry (folds-in #744)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** #744
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** PRD F-20 (live replies, Thinking + Retry); #744 (/coach chat uses chat.send, Thinking + Retry); TRD §3.
+- **GOAL:** The coach chat surfaces a `send` action that stores the user message, streams the Agent reply with a "Thinking…" indicator, and exposes Retry that re-runs only the last turn.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/agentComponent.ts` · test: `convex/coach_chat.test.ts`.
+- **MUTATES:** `convex/coach.ts` (send/reply surface), `convex/lib/agentComponent.ts` (send plumbing).
+- **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`sendMessage`/`reply` exist — extend, don't replace). 2) Add a `send` surface that trims and validates the message (non-empty, ≤ `MAX_MESSAGE_CHARS` 4000), inserts the user `messages` row, then starts the Agent turn. 3) Add a per-turn "Thinking…" state and a Retry idempotency key so Retry re-runs only the newest unanswered turn and overlapping sends resolve to one model call (the existing `claimTurn` lease holds). 4) Surface the exact user-facing error strings below in EN/HE. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → send/Thinking/Retry cases green.
+- **EVIDENCE:** DONE output + the send/retry handler lines.
+- **DO NOT:** replace `claimTurn`'s lease logic, bypass approval, or call the model directly from a mutation.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `send({ conversationId, content })` returns `{ success, crisis? }`. Empty message → `EN: "Message is empty." / HE: "ההודעה ריקה."`. Too long → `EN: "That message is too long. Try a shorter one." / HE: "ההודעה ארוכה מדי. נסו קצרה יותר."`. Crisis text stores the fixed card (no model). Thinking state copy `EN: "Thinking…" / HE: "חושב…"`. Retry re-runs the last user turn once; a second concurrent Retry returns "busy" and waits for the in-flight answer. Auth: approved user owning the conversation.
+- **TESTS:** Given an empty message / When `send` runs / Then "Message is empty." / "ההודעה ריקה." is thrown. Given a >4000-char message / When `send` runs / Then the too-long message is thrown. Given crisis words / When `send` runs / Then the fixed card is stored and no model is called. Given two overlapping Retries / When both run / Then one claims the turn and the other resolves "busy".
+- **NUMBERS:** `MAX_MESSAGE_CHARS` 4000 → pass (already the product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0155 — Coach context: page + memory injection (F-21)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** PRD F-21 (coach reads the user's pages and memory for context); TRD §5 (`context` = recall trimmed to a token cap).
+- **GOAL:** Each coach turn is built with the open page (title + trimmed text) and the user's top memories (recalled + token-capped), never the other user's data.
+- **SCOPE:** `convex/lib/coachPrompt.ts` · `convex/lib/coachLoad.ts` · test: `convex/lib/coachPrompt.test.ts`.
+- **MUTATES:** `convex/lib/coachPrompt.ts` (context assembly), `convex/lib/coachLoad.ts` (no change — read only).
+- **STEPS:** 1) Graphify code-map of `convex/lib/coachPrompt.ts` (`buildCoachMessages` already injects the page — extend for memory). 2) Add a `memory` context block (recalled memories, capped to `COACH_LIMITS` chars) between the page block and the tasks block. 3) Keep the existing owner-isolation check (only the caller's live page is included, never named otherwise). 4) Add the memory block to the unit test. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachPrompt"` → green including a memory-context assertion.
+- **EVIDENCE:** DONE output + the `buildCoachMessages` memory-block lines.
+- **DO NOT:** read another user's memories, exceed the char caps, or persist memories in the prompt.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `buildCoachMessages(args)` gains `memory?: readonly string[]`; each item is a single-line `- <content>` under a `<memory>` system block, truncated to `COACH_LIMITS.memoryChars` (new constant, 2000). Order of system blocks: role → today's date → `<page>` → `<memory>` → `<tasks>` → web-search line → thread. Page cap stays `COACH_LIMITS.pageChars` (6000). No cross-user data.
+- **TESTS:** Given an owned page + 3 memories / When `buildCoachMessages` runs / Then the system block contains `<memory>` with the three `- ` lines and no other user's text. Given memories exceeding the cap / When built / Then they are truncated with a visible `…` (never a split surrogate pair). Given no memories / Then no `<memory>` block is emitted.
+- **NUMBERS:** memory context cap 2000 chars → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0156 — Coach Agent tool: `createNote`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §3 (tools: `createNote`); PRD F-22 (create a note); HARD_RULES §1/§6.2 (proposal, 5-min Undo).
+- **GOAL:** `createNote` proposes a new Markdown page; Accept creates it and Undo soft-deletes it for 5 minutes.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path uses the tool's proposal shape).
+- **STEPS:** 1) Graphify code-map of the existing `note` proposal (coachPrompt.ts `readProposal` + coach.ts `acceptProposal` already do note insert — reuse). 2) Implement `createNote` as a `createTool` whose output is the `note` proposal `{ kind:"note", title, body }`. 3) Title ≤ `COACH_LIMITS.titleChars` (200), body plain Markdown ≤ `COACH_LIMITS.bodyChars` (20,000), both required. 4) Nothing is written until Accept; Accept inserts `notes` with `pageType:"plain"`, `aiGenerated:true`; Undo soft-deletes within 5 min. 5) Test every error case below. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → createNote cases green.
+- **EVIDENCE:** DONE output + the `createNote` tool definition.
+- **DO NOT:** auto-create a note (must be a proposal), bypass the 5-min Undo window, or write to any other table.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tool `createNote({ title, body })` → proposal `{ kind:"note", title, body }`. Auth: approved-for-AI. Error cases: missing title → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; body containing Tempo JSON blocks is stripped to plain Markdown (`plainMarkdown`); body > 20,000 chars truncated. Limits: title 200, body 20,000.
+- **TESTS:** Given `createNote` with a title and body / When run / Then a `note` proposal returns and nothing is in `notes`. Given an empty title / When run / Then the "name and words" error is thrown. Given a body with a `json tempo` fence / When parsed / Then the fence is dropped (plain Markdown only). Given Accept then Undo within 5 min / Then the note is soft-deleted; after 5 min Undo throws.
+- **NUMBERS:** title 200 / body 20,000 chars → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0157 — Coach Agent tool: `addTaskToToday`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §3 (`addTaskToToday`); PRD F-22 (add a task to Today); HARD_RULES §6.2 (proposal + Undo).
+- **GOAL:** `addTaskToToday` proposes a task due today (or with no date); Accept creates it; Undo soft-deletes within 5 minutes.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path).
+- **STEPS:** 1) Graphify code-map of the existing `task` proposal (coachPrompt.ts + coach.ts `acceptProposal` already create tasks — reuse). 2) Implement `addTaskToToday` as a `createTool` producing `{ kind:"task", title, minutes, when:"today"|"later" }`. 3) `minutes` clamped 1..`COACH_LIMITS.maxMinutes` (480); `when` is `today` or `later` (no other day or clock time). 4) Accept creates the task (`dueAt` = end of the caller's local day for "today", from the client's `dueTodayAt`); Undo soft-deletes within 5 min. 5) Test errors. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → addTaskToToday cases green.
+- **EVIDENCE:** DONE output + the tool definition.
+- **DO NOT:** accept a day other than today/later, create the task without Accept, or bypass Undo.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tool `addTaskToToday({ title, minutes?, when })` → `{ kind:"task", title, minutes, when }`. Auth: approved-for-AI. Error cases: empty title → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; `when` not `today`/`later` → coerce to `later` (the model is separately told not to propose other days). Limits: title 200, minutes 1..480.
+- **TESTS:** Given a valid task / When run / Then a `task` proposal returns. Given minutes 1000 / When clamped / Then it is 480. Given "today" and a valid `dueTodayAt` / When Accept runs / Then the task is created due that day. Given Undo within 5 min / Then the task soft-deletes.
+- **NUMBERS:** minutes 1..480 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0158 — Coach Agent tool: `fillTemplate`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §3 (`fillTemplate`); PRD F-22 (fill a template); HARD_RULES §6.2.
+- **GOAL:** `fillTemplate` proposes a `template` (name, body, period) that Accept saves as a template and Undo soft-deletes.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/coach.ts` · test: `convex/coach_chat.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/coach.ts` (accept path).
+- **STEPS:** 1) Graphify code-map of the existing `template` proposal (coachPrompt.ts `readProposal` + coach.ts `acceptProposal` insert into `templates` — reuse). 2) Implement `fillTemplate` producing `{ kind:"template", name, body, period }`, `period` ∈ `daily|weekly|none`. 3) Name ≤ 200, body plain Markdown ≤ 20,000, tokens such as `{{date}}` / `{{weekday}}` allowed verbatim. 4) Accept inserts `templates`; Undo soft-deletes within 5 min. 5) Test errors. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coach_chat"` → fillTemplate cases green.
+- **EVIDENCE:** DONE output + the tool definition.
+- **DO NOT:** set a default template weekday (that is chunk D/billing-scope), or write the template without Accept.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tool `fillTemplate({ name, body, period })` → `{ kind:"template", name, body, period }`. Auth: approved-for-AI. Error cases: empty name → `EN: "Give it a name and some words first." / HE: "תנו לו שם וקצת מילים קודם."`; `period` not daily/weekly → `none`; body with Tempo JSON stripped to Markdown; body > 20,000 truncated.
+- **TESTS:** Given a template proposal / When run / Then it returns and nothing is in `templates`. Given empty name / Then error. Given `period:"daily"` / Then Accept inserts a `daily` template. Given Undo within 5 min / Then soft-delete.
+- **NUMBERS:** name 200 / body 20,000 chars → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0159 — Coach Agent tool: `draftModule`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §3 (`draftModule` + built-in tool approval for Approve/Discard); PRD F-40/F-41; TRD §4a.
+- **GOAL:** `draftModule` produces a validated module draft that enters the Agent's approval-requested state, so it goes live only on the user's tap.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/aiGate.ts` (read only) · test: `convex/lib/agentComponent.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (tool).
+- **STEPS:** 1) Graphify code-map of module validation (chunk D owns modules; here the tool emits a `draft` module spec using only catalog component/action names). 2) Implement `draftModule` as a `createTool` that returns a `draft` module spec (a data module, catalog-only). 3) Route it through the Agent's built-in tool approval (`approval-requested` state) so the UI shows Approve/Discard. 4) Validation (Zod against the catalog) is invoked here; an unknown component/action/URL/script is rejected and the module stays `draft`. 5) Test the rejection cases. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → draftModule cases green.
+- **EVIDENCE:** DONE output + the tool definition + approval wiring.
+- **DO NOT:** run module code, touch `convex/templates.ts` schema, or make a module `live` without approval.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tool `draftModule({ spec })` → `{ status:"draft", spec }`; a valid spec uses only catalog component names and catalog action names (Zod-validated). Error cases: unknown component → rejected, stays `draft`; unknown action → rejected; any URL or script → rejected. Auth: approved-for-AI. Approval: the Agent's tool-approval state carries the Approve/Discard step.
+- **TESTS:** Given a valid catalog-only spec / When `draftModule` runs / Then it returns `draft` and awaits approval. Given a spec with an unknown component / Then it is rejected and stays `draft`. Given a spec with a URL or script / Then it is rejected. Given approval / Then only the approving mutation can flip it to `live`.
+- **NUMBERS:** module never `live` without approval → pass (boolean gate) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (AI SDK vs HARD_RULES §2) — whether the Agent tool-approval path is permitted as written is UNKNOWN; answerer: Amit.
+
+### TFV2-0160 — Coach Agent tool: `searchMemory`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149, TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0149 + TFV2-0153.
+- **WHY:** TRD §3 (`searchMemory` tool; `@convex-dev/rag` one namespace per user, MVP); PRD F-50.
+- **GOAL:** `searchMemory` lets the coach search the user's pages + memories by meaning and keyword, scoped to that user.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/search.ts` · test: `convex/lib/agentComponent.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/search.ts` (read path).
+- **STEPS:** 1) Graphify code-map of `convex/search.ts` (`all` keyword query exists) and `memories` recall (TFV2-0173…0177). 2) Implement `searchMemory` as a `createTool` that merges keyword results (`search.all`) with vector results (the recall-by-meaning path) over the caller's own data. 3) Return at most 8 results per group (notes/tasks/habits/goals/memories), owner-filtered. 4) Test the empty-query and owner-isolation cases. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → searchMemory cases green.
+- **EVIDENCE:** DONE output + the tool definition.
+- **DO NOT:** search another user's rows, leak embeddings, or persist a search query.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tool `searchMemory({ query })` → `{ notes[], tasks[], habits[], goals[], memories[] }`, each capped at 8 (the existing `GROUP_LIMIT`). Empty query → empty groups. Auth: approved-for-AI + owner filter on every index. Meaning search runs only in an action (Convex vector search is action-only).
+- **TESTS:** Given a query with hits in notes and memories / When `searchMemory` runs / Then both groups return, capped at 8, owner-filtered. Given an empty query / Then all groups are empty. Given a second user's memory matching the query / Then it never appears.
+- **NUMBERS:** 8 results per group → pass (existing `GROUP_LIMIT`) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (RAG/vector search permitted vs HARD_RULES §2) — UNKNOWN; answerer: Amit.
+
+### TFV2-0161 — Coach Agent tool: `scheduleJob`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §3 + §5d (`scheduleJob({ cron, task, targetPageType })` needs approval, registered with `@convex-dev/crons`); PRD F-47.
+- **GOAL:** `scheduleJob` proposes a recurring job; approval registers it; Undo removes it within 5 minutes.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/crons.ts` · test: `convex/lib/agentComponent.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (tool), `convex/crons.ts` (runtime job registration).
+- **STEPS:** 1) Graphify code-map of `convex/crons.ts` (system crons exist — add the runtime path). 2) Implement `scheduleJob` producing a `job` proposal `{ cron, task, targetPageType }`. 3) Route through tool approval; on approval register with `@convex-dev/crons`; each run writes the plan into the target page (e.g. Today). 4) Times stored in UTC, shown in the user's zone. 5) Test invalid cron and approval-gate. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → scheduleJob cases green.
+- **EVIDENCE:** DONE output + the tool definition.
+- **DO NOT:** register a job without approval, run `convex dev`/`convex deploy`, or write job output to a page the user did not approve.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tool `scheduleJob({ cron, task, targetPageType })` → a `job` proposal (kind `job`). Auth: approved-for-AI. Error cases: invalid cron → `EN: "That schedule doesn't parse. Try something like 'every weekday at 8'." / HE: "הלוח הזה לא נקרא. נסו משהו כמו 'כל יום חול ב־8'."`; no approval → nothing registered. Times UTC internally, displayed in the user's time zone. Limits: one job per approval; Undo removes within 5 min.
+- **TESTS:** Given a valid cron + task / When `scheduleJob` runs / Then a `job` proposal returns and nothing is registered. Given an invalid cron / Then the parse error is thrown. Given approval / Then the job registers; Undo within 5 min removes it. Given no approval / Then no job row exists.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0162 — Coach tool approval: draftModule Approve/Discard gate
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0159 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0159.
+- **WHY:** TRD §3 (module drafts use the Agent's built-in tool approval — Approve/Discard without custom code); PRD F-41.
+- **GOAL:** The approval-requested state is surfaced and the Approve/Discard decision flips a draft module to live or discards it, with no custom approval code.
+- **SCOPE:** `convex/lib/agentComponent.ts` · `convex/lib/aiGate.ts` (read) · test: `convex/lib/agentComponent.test.ts`.
+- **MUTATES:** `convex/lib/agentComponent.ts` (approval surface).
+- **STEPS:** 1) Graphify code-map of the Agent tool-approval surface. 2) Expose `approval-requested` → pending, and the Approve/Discard actions that resolve it. 3) On Approve a validated draft flips to `live`; on Discard it is dropped (nothing persisted live). 4) A draft that fails validation can never be approved. 5) Test all three. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="agentComponent"` → approval cases green.
+- **EVIDENCE:** DONE output + the approval surface lines.
+- **DO NOT:** approve a draft that failed validation, write a second approval system, or bypass the owner.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Approval states: `approval-requested` (pending) → Approve (`live`) / Discard (dropped). Auth: the approving caller must be the conversation owner. Error cases: approving an invalid draft → rejected; approving twice → `EN: "This draft was already decided." / HE: "הטיוטה הזו כבר הוכרעה."`.
+- **TESTS:** Given a pending valid draft / When approved / Then it flips to `live`. Given a pending invalid draft / When approved / Then rejected. Given Discard / Then nothing live is persisted. Given a second approve / Then "already decided" error.
+- **NUMBERS:** one decision per draft → pass (boolean gate) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 — UNKNOWN; answerer: Amit.
+
+### TFV2-0163 — Coach history: `listThreads` (paginated, grouped)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** PRD F-20 (Convex Agent provides chat threads); screen coach-history.html `@data threads = coach.listThreads({ paginationOpts })`.
+- **GOAL:** `listThreads` returns the user's conversations newest-first, grouped Today / Last week / Earlier, each with title, last line, and time.
+- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
+- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (re-export/query).
+- **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`conversations`/`messages` exist; `coachHistory.ts` is MISSING). 2) Add `listThreads` as a paginated query over `conversations` (owner-filtered, live only), newest-first. 3) Derive `title` (the conversation title), `lastLine` (last message content, clamped to 2 lines / 160 chars), and `time` (updatedAt). 4) Group client-side into Today / Last week / Earlier (the backend returns a flat newest-first list; the grouping constants are documented). 5) Test empty + owner-isolation. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachHistory"` → listThreads cases green.
+- **EVIDENCE:** DONE output + the `listThreads` query.
+- **DO NOT:** return another user's conversations, load full thread bodies, or exceed pagination defaults.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `listThreads({ paginationOpts })` → `{ page }` of `{ id, title, lastLine, updatedAt }`. Auth: `requireUser`. Error cases: none beyond owner filter (empty page is valid). Limits: default page size 20, `lastLine` 160 chars.
+- **TESTS:** Given two conversations / When `listThreads` runs / Then newest-first order. Given another user's conversations / Then none appear. Given none / Then empty page. Given a long last line / Then clamped to 160 chars with `…`.
+- **NUMBERS:** page size 20 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0164 — Coach history: `searchThreads` (meaning + keyword)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149, TFV2-0163 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0149 + TFV2-0163.
+- **WHY:** PRD F-50 (coach can search the user's past chats — hybrid search across threads); screen coach-history.html `searchThreads({ query, mode })`.
+- **GOAL:** `searchThreads` searches past conversations by meaning (vector) or exact words (keyword), merged, owner-scoped.
+- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/search.ts` · test: `convex/lib/coachHistory.test.ts`.
+- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/search.ts` (read path).
+- **STEPS:** 1) Graphify code-map of `convex/search.ts` and the `conversations`/`messages` indexes. 2) Add `searchThreads({ query, mode })` — `mode:"words"` = full-text/keyword only; `mode:"meaning"` = vector over thread content merged with keyword. 3) Return `{ id, title, lastLine, updatedAt }` matches, owner-filtered, capped at 20. 4) Empty query returns the newest list. 5) Test both modes + owner isolation. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachHistory"` → searchThreads cases green.
+- **EVIDENCE:** DONE output + the `searchThreads` action.
+- **DO NOT:** run vector search in a query (action-only), or search another user's threads.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `searchThreads({ query, mode })` → array of `{ id, title, lastLine, updatedAt }` (≤ 20). `mode` ∈ `meaning|words`. Auth: `requireUser`. Error cases: empty query → newest list. Limits: 20 results, vector dims 1024 (from TFV2-0149).
+- **TESTS:** Given `mode:"words"` and a literal term / When run / Then literal matches only. Given `mode:"meaning"` and a paraphrase / Then vector matches surface. Given another user's thread / Then never returned.
+- **NUMBERS:** 20 results max → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 — vector search across threads permitted vs HARD_RULES §2 is UNKNOWN; answerer: Amit.
+
+### TFV2-0165 — Coach history: `getThread` + `createThread`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** coach-thread.html `@data thread = coach.getThread({ threadId })`; coach-history.html `coach.createThread({})`.
+- **GOAL:** `getThread` returns one conversation's messages + proposals live, and `createThread` opens an empty conversation.
+- **SCOPE:** `convex/lib/coachHistory.ts` · `convex/coach.ts` · test: `convex/lib/coachHistory.test.ts`.
+- **MUTATES:** `convex/lib/coachHistory.ts` (new), `convex/coach.ts` (query/mutation).
+- **STEPS:** 1) Graphify code-map of `messages` (`storedProposal` already reconstructs proposal cards). 2) Add `getThread({ threadId })` → `{ id, title, messages:[{ role, content, proposal?, status?, streaming? }] }`, owner-filtered, live. 3) Add `createThread({})` → inserts a `conversations` row and returns its id. 4) Proposals reconstructed via `storedProposal` (kind, status, preview). 5) Test owner isolation + empty. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachHistory"` → getThread/createThread cases green.
+- **EVIDENCE:** DONE output + the two functions.
+- **DO NOT:** return another user's thread, persist model replies as stored text, or create a thread without an owner.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `getThread({ threadId })` → thread with messages in ascending order; each assistant message carries `proposal` (kind/status/`preview`) when present and a `streaming` flag. `createThread({})` → `v.id("conversations")`. Auth: `requireUser`; owner check on every read. Error cases: wrong owner / missing thread → `EN: "Conversation not found." / HE: "השיחה לא נמצאה."`.
+- **TESTS:** Given an owned thread with a proposal message / When `getThread` runs / Then messages + proposal status return. Given another user's threadId / Then "Conversation not found." is thrown. Given `createThread` / Then a new owned conversation returns its id.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+### TFV2-0166 — Adaptive coach: dial backend (`getSettings` + `setDial`)
+- **Stage:** C · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** first in adaptive coach.
+- **WHY:** PRD F-25 (adaptive coach dial 0–10); components.md §2.8 Dial 0–10 (`profiles.setCoachDial`).
+- **GOAL:** The 0–10 coach dial is persisted per user and read back, clamped and validated.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **MUTATES:** `convex/coach.ts` (verify existing `getSettings`/`setDial`).
+- **STEPS:** 1) Graphify code-map of `convex/coach.ts` (`getSettings`/`setDial` + `coachSettings` exist — verify and add the missing test). 2) Confirm `setDial` validates integer 0..10 and `getSettings` returns defaults when no row exists (dial 5). 3) Add the error string EN/HE below. 4) Test clamp/validation + default. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → dial cases green.
+- **EVIDENCE:** DONE output + the `setDial` validation lines.
+- **DO NOT:** change the dial's effect on the system prompt here (that is TFV2-0226), or allow out-of-range values.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `setDial({ dial })` → `{ success:true }`; `getSettings({})` → `{ dial, taskLoad, panicUntil, acceptedStreak }`. Default dial 5. Error case (non-integer or <0 or >10): `EN: "The dial is a whole number from 0 to 10." / HE: "החוגה היא מספר שלם מ־0 עד 10."`. Auth: `requireUser`.
+- **TESTS:** Given `setDial(4)` / When run / Then `getSettings().dial === 4`. Given `setDial(11)` / Then the range error. Given `setDial(3.5)` / Then the whole-number error. Given no `coachSettings` row / Then `getSettings().dial === 5`.
+- **NUMBERS:** dial integer 0..10 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0167 — Adaptive coach: panic backend (`pressPanic` + `clearPanic` + 10-second action)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0166.
+- **WHY:** PRD F-25 (panic button, 10-second action); components.md §2.10 PanicButton (`panic`, no model call).
+- **GOAL:** Pressing panic sets a 30-minute panic window, returns one fixed 10-second action, and clearPanic ends the window.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **MUTATES:** `convex/coach.ts` (verify `pressPanic`/`clearPanic`).
+- **STEPS:** 1) Graphify code-map (`pressPanic`/`clearPanic` + `pickTenSecondAction` exist — verify + test). 2) Confirm `pressPanic` sets `panicUntil = now + 30 min` and returns a deterministic action from the fixed list. 3) Add EN/HE for the five actions and the two realism notes (shared with TFV2-0169). 4) Test window + deterministic pick + clear. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → panic cases green.
+- **EVIDENCE:** DONE output + the panic lines.
+- **DO NOT:** call a model for panic, randomise the action per call (deterministic by seed), or leak the panic reason.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `pressPanic({})` → `{ panicUntil, action:{ text } }`; `clearPanic({})` → `{ success:true }`. `PANIC_MS = 30 min`. The action is `TEN_SECOND_ACTIONS` picked by seed. EN/HE (five actions): 1 `EN: "Take one slow breath, then put your hand on the first thing you need." / HE: "קחי נשימה איטית אחת, ואז הניחי את היד על הדבר הראשון שאת צריכה."` · 2 `EN: "Stand up and drink a sip of water." / HE: "קומי ושתי לגימה של מים."` · 3 `EN: "Open the first task and read just its title." / HE: "פתחי את המשימה הראשונה וקראי רק את הכותרת שלה."` · 4 `EN: "Unclench your jaw and drop your shoulders once." / HE: "שחררי את הלסת והורידי את הכתפיים פעם אחת."` · 5 `EN: "Put one thing you do not need away from your desk." / HE: "הרחיקי דבר אחד שאת לא צריכה מהשולחן."`. Auth: `requireUser`. No model call.
+- **TESTS:** Given `pressPanic` / When run / Then `panicUntil > now` by 30 min and `action.text` is one of the five. Given the same seed / Then the same action returns (deterministic). Given `clearPanic` / Then `panicUntil` is cleared.
+- **NUMBERS:** panic window 30 min → pass (product constant `PANIC_MS`) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0168 — Adaptive coach: bad-day detection
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0167.
+- **WHY:** PRD F-25 (bad-day detection); HARD_RULES (no shame — low activity is a quiet stretch, never failure).
+- **GOAL:** `badDay` reports a bad day (panic window, or no completed task in 3 days) and a suggested load of 2.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **MUTATES:** `convex/coach.ts` (verify `badDay`/`computeBadDay`).
+- **STEPS:** 1) Graphify code-map (`computeBadDay`/`badDay` + `effectiveLoad` exist — verify + test). 2) Confirm reasons `panic` (window active) and `low_activity` (no `done` task in 3 days) and `suggestedLoad = MIN_LOAD` (2). 3) Confirm a completed task in-window clears `low_activity`. 4) Test both reasons + clear. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → bad-day cases green.
+- **EVIDENCE:** DONE output + the `computeBadDay` lines.
+- **DO NOT:** word a bad day as failure/shame in any string, or raise load on a bad day.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `badDay({})` → `{ isBadDay, reason: "panic"|"low_activity"|null, suggestedLoad }`. `LOW_ACTIVITY_DAYS = 3`. A panic window (panicUntil > now) → `{ isBadDay:true, reason:"panic", suggestedLoad:2 }`; else no completed live task in the last 3 days → `{ isBadDay:true, reason:"low_activity", suggestedLoad:2 }`; else `{ isBadDay:false, reason:null, suggestedLoad: effectiveLoad(taskLoad,false) }`. Auth: `requireUser`.
+- **TESTS:** Given an active panic window / Then `reason:"panic"`. Given no done task in 3 days / Then `reason:"low_activity"`. Given a done task within 3 days / Then `isBadDay:false`. Given a bad day / Then `suggestedLoad === 2`.
+- **NUMBERS:** 3-day quiet window → pass (product constant `LOW_ACTIVITY_DAYS`) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0169 — Adaptive coach: realism checker
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0168 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0168.
+- **WHY:** PRD F-25 (realism checker); components.md (a plan is checked against available minutes).
+- **GOAL:** `checkRealism` compares planned minutes against available minutes and returns an honest, non-shaming note.
+- **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
+- **MUTATES:** `convex/lib/coachLoad.ts` (verify `checkRealism`).
+- **STEPS:** 1) Graphify code-map (`checkRealism` exists — verify + test). 2) Confirm it sums `taskMinutes` (default 25) vs `availableMinutes` and returns `ok` + EN/HE note. 3) Add Hebrew to the two notes. 4) Test fits / over / defaults. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → realism cases green.
+- **EVIDENCE:** DONE output + the `checkRealism` lines.
+- **DO NOT:** shame on an over-full plan, lower the threshold silently, or change `DEFAULT_TASK_MINUTES`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `checkRealism(tasks, availableMinutes)` → `{ ok, totalMinutes, availableMinutes, note }`. `taskMinutes` = rounded estimate/60,000 or `DEFAULT_TASK_MINUTES` (25). `ok = totalMinutes <= availableMinutes`. Notes: fits → `EN: "This fits the time you have. Pick it up when you are ready." / HE: "זה מתאים לזמן שיש לך. קחי את זה כשאת מוכנה."`; over → `EN: "This is more than the time you have today. Do what you can; the rest can wait, and that is fine." / HE: "זה יותר מהזמן שיש לך היום. עשי מה שאפשר; השאר יכול לחכות, וזה בסדר."`. Pure (no ctx).
+- **TESTS:** Given tasks summing 50 min vs 120 available / Then `ok:true` and the fits note. Given 200 min vs 60 available / Then `ok:false` and the over note. Given a task with no estimate / Then it counts as 25 min. Given `availableMinutes: 60` on a bad day (60-min budget) / Then the over note never shames.
+- **NUMBERS:** default task 25 min → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0170 — Adaptive coach: proposal lifecycle (create / current / decide)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0169 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0169.
+- **WHY:** PRD F-25 (graduated load 2→4, forgiveness contract); components.md §3 (`TP.acceptProposal`/`rejectProposal`); HARD_RULES §1 (accept/reject is law).
+- **GOAL:** A code-built proposal (tasks + 10-second action + realism) is created once, and Accept/Reject is the only path that changes tasks and load.
+- **SCOPE:** `convex/coach.ts` · `convex/lib/coachLoad.ts` · test: `convex/coachLoad.test.ts`.
+- **MUTATES:** `convex/coach.ts` (verify `createProposal`/`currentProposal`/`decideProposal`).
+- **STEPS:** 1) Graphify code-map (the three exist — verify + test). 2) Confirm `createProposal` returns the existing pending proposal id (idempotent), picks open tasks up to `effectiveLoad`, and builds `realism`. 3) Confirm `decideProposal` Accept sets `dueAt: now` on the chosen tasks and raises load after 3 accepts in a row (max 4); Reject resets load to 2 (forgiveness). 4) Test idempotency, accept, reject, load transitions. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → proposal lifecycle cases green.
+- **EVIDENCE:** DONE output + the three functions.
+- **DO NOT:** let a rejected proposal change tasks, or accept twice.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `createProposal({})` → `v.id("coachProposals")` (idempotent — returns the existing pending id); `currentProposal({})` → proposal or null; `decideProposal({ proposalId, decision })` → `{ status, taskLoad }`. `afterAccept`: streak ≥ `STREAK_FOR_RAISE` (3) → `min(MAX_LOAD, taskLoad+1)`, streak 0; else streak+1. `afterReject` → `{ taskLoad: MIN_LOAD(2), acceptedStreak:0 }`. Error cases: no open tasks → `EN: "No open tasks to plan yet. Add one and come back." / HE: "אין עדיין משימות פתוחות לתכנון. הוסיפי אחת וחזרי."`; already decided → `EN: "This proposal was already decided." / HE: "ההצעה הזו כבר הוכרעה."`; not found → `EN: "Proposal not found." / HE: "ההצעה לא נמצאה."`. Auth: `requireUser`.
+- **TESTS:** Given a pending proposal / When `createProposal` runs again / Then the same id returns. Given 2 tasks / When `createProposal` runs on load 2 / Then the proposal holds ≤ 2 tasks. Given Accept / Then the tasks get `dueAt: now`. Given 3 accepts in a row / Then `taskLoad` rises by 1 (≤ 4). Given Reject / Then `taskLoad` resets to 2 and no task changes.
+- **NUMBERS:** load 2..4, raise at streak 3 → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0171 — Memory: `remember`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0149.
+- **WHY:** TRD §5 (`remember(userId, text, meta)` → insert into `memories`); PRD F-50.
+- **GOAL:** `remember` inserts a live memory for the caller, trimmed and length-bounded.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `remember`).
+- **STEPS:** 1) Graphify code-map of `convex/memory.ts` (`remember` exists — verify + test). 2) Confirm trim, non-empty, `CONTENT_MAX` 2000, sector default `general`, salience 0.5. 3) Add EN/HE errors. 4) Test empty/too-long/success. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → remember cases green.
+- **EVIDENCE:** DONE output + the `remember` mutation.
+- **DO NOT:** accept empty content, exceed 2000 chars, or store another user's memory.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `remember({ content, sector? })` → `v.id("memories")`. Trims; empty → `EN: "Write something to remember first." / HE: "קודם כתבי משהו לזכור."`; > 2000 → `EN: "Keep a memory to 2000 characters or fewer." / HE: "שמרי זיכרון עד 2000 תווים או פחות."`. Sector ∈ `semantic|episodic|procedural|emotional|general`, default `general`. Auth: `requireUser`.
+- **TESTS:** Given valid content / When `remember` runs / Then a live memory row returns. Given empty / Then the empty error. Given 2001 chars / Then the length error.
+- **NUMBERS:** content ≤ 2000 chars → pass (product constant `CONTENT_MAX`) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0172 — Memory: `list`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** PRD F-52 (see memories); memory.html `memory.list({ kind })`.
+- **GOAL:** `list` returns the caller's live memories by salience, optionally filtered by sector, bounded.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `list`).
+- **STEPS:** 1) Graphify code-map (`list` exists — verify + test). 2) Confirm sector filter, salience desc (then updatedAt desc), limit clamp 1..200 (default 50). 3) Test filter/bound/owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → list cases green.
+- **EVIDENCE:** DONE output + the `list` query.
+- **DO NOT:** return soft-deleted rows or another user's rows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `list({ sector?, limit? })` → `memoryValidator[]` (`{ _id, content, sector, salience, createdAt, updatedAt, lastAccessed, importedFrom? }`). Live rows only, owner-filtered. Sort salience desc → updatedAt desc. Limit clamp `clampLimit` (1..200, default 50).
+- **TESTS:** Given memories in two sectors / When `list({ sector })` / Then only that sector returns. Given limit 5 / Then ≤ 5 rows. Given a soft-deleted row / Then excluded. Given another user's row / Then excluded.
+- **NUMBERS:** limit 1..200, default 50 → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0173 — Memory: `recall` — keyword (search index)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** TRD §5 (`recall` = keyword via the existing search index, part of the merged recall); PRD F-50.
+- **GOAL:** `recall` finds live memories whose content contains the query, case-insensitive, bounded.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `recall` keyword path).
+- **STEPS:** 1) Graphify code-map (`recall` exists as substring match — verify + test). 2) Confirm lowercase normalize, empty → `[]`, limit clamp. 3) Test case/empty/owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-keyword cases green.
+- **EVIDENCE:** DONE output + the `recall` query.
+- **DO NOT:** return another user's rows or soft-deleted rows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `recall({ query, limit? })` → `memoryValidator[]`. Normalizes the query to lower-case, substring match on `content`. Empty query → `[]`. Sort salience desc. Limit clamp (default 50). Auth: `requireUser`.
+- **TESTS:** Given a memory "Phone calls before noon" / When `recall({ query:"phone" })` / Then it returns. Given `query:"PHONE"` / Then still returns (case-insensitive). Given empty query / Then `[]`. Given another user's match / Then excluded.
+- **NUMBERS:** limit clamp default 50 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0174 — Memory: `recall` — vector (meaning)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149, TFV2-0183 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0149 + TFV2-0183 (embedding action).
+- **WHY:** TRD §5 (`recall` = Convex vector search (meaning)); PRD F-50.
+- **GOAL:** `recallMeaning` returns memories by embedding similarity, action-only, owner-filtered.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (add `recallMeaning` action).
+- **STEPS:** 1) Graphify code-map (no vector recall yet — add it). 2) Add an action that embeds the query (via TFV2-0183's seam), runs Convex vector search over `by_userId_embedding` filtered by `userId`, and returns the top ≤ 256 → capped to `limit` (default 10). 3) Test empty query, owner filter, result cap. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-vector cases green (with a fake embedding seam).
+- **EVIDENCE:** DONE output + the `recallMeaning` action.
+- **DO NOT:** run vector search in a query, or use a real provider key in tests.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `recallMeaning({ query, limit? })` (action) → `memoryValidator[]`. Embeds the query (1,024 dims), vector-search over `by_userId_embedding` with filter `userId`, returns ≤ min(256, limit) (default 10). Empty query → `[]`. Auth: `requireApprovedForAi` (embedding is a provider call).
+- **TESTS:** Given a query and a fake embedding seam / When `recallMeaning` runs / Then owner-filtered results return. Given empty query / Then `[]`. Given limit 5 / Then ≤ 5.
+- **NUMBERS:** ≤ 256 results (Convex cap) → pass (https://docs.convex.dev/search/vector-search) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (vector search permitted) — UNKNOWN; answerer: Amit.
+
+### TFV2-0175 — Memory: `recall` — links (edges)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0186, TFV2-0187 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0186 (entities) + TFV2-0187 (edges).
+- **WHY:** TRD §5c (recall four ways: links via `edges`); PRD F-54.
+- **GOAL:** `recallLinks` returns memories linked to entities whose names/aliases match the query.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (add `recallLinks`).
+- **STEPS:** 1) Graphify code-map of `edges` (table lands in TFV2-0151). 2) Add `recallLinks` that finds edges (from/to) matching the query or an entity alias, then returns the related memories/entities. 3) Test match-by-alias + owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-links cases green.
+- **EVIDENCE:** DONE output + the `recallLinks` query.
+- **DO NOT:** cross user boundaries, or mix user-written vs guessed links without the `origin` tag.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `recallLinks({ query, limit? })` → `{ entities[], memories[] }`. Matches `edges.from`/`edges.to` against the query and entity `aliases`; returns the matched entities and the memories referenced. Guessed (`inferred`) links carry `origin` so the UI can mark them. Empty query → empty. Auth: `requireUser`.
+- **TESTS:** Given an edge "Dana → Thursday talk" with alias "manager" / When `recallLinks({ query:"Dana" })` / Then the edge's memories return. Given query "manager" / Then the alias still matches. Given another user's edge / Then excluded.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0176 — Memory: `recall` — time
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** TRD §5c (recall by time via `createdAt` index); PRD F-54.
+- **GOAL:** `recallByTime` returns the caller's memories within a time range, newest-first.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (add `recallByTime`).
+- **STEPS:** 1) Graphify code-map of `memories` indexes. 2) Add `recallByTime({ fromMs, toMs, limit? })` reading the `createdAt` range, owner-filtered, live only. 3) Test range + order + owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-time cases green.
+- **EVIDENCE:** DONE output + the `recallByTime` query.
+- **DO NOT:** read another user's rows or soft-deleted rows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `recallByTime({ fromMs, toMs, limit? })` → `memoryValidator[]` newest-first, live only. `toMs > fromMs`. Limit clamp default 50. Auth: `requireUser`.
+- **TESTS:** Given memories at t1 < t2 / When `recallByTime({ fromMs:t1, toMs:t2 })` / Then both return newest-first. Given `toMs <= fromMs` / Then `[]`. Given another user's row in range / Then excluded.
+- **NUMBERS:** limit default 50 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0177 — Memory: `recall` — merged router (meaning + keyword + links + time)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0173, TFV2-0174, TFV2-0175, TFV2-0176 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0173…0176.
+- **WHY:** TRD §5 (`recall` = vector (meaning) + search index (keyword), merged; links and time as further signals); PRD F-50/F-54.
+- **GOAL:** One `recall` action merges the four recall modes, dedupes by id, and returns a ranked, bounded result.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (unify `recall`).
+- **STEPS:** 1) Graphify code-map of the four recall paths. 2) Add `recall({ query, limit?, modes? })` that merges keyword + vector (+ links + time when requested), dedupes by `_id`, and caps at `limit` (default 10). 3) Preserve the keyword results when the vector seam is unavailable (degrade gracefully). 4) Test merge + dedupe + degrade. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → recall-merged cases green.
+- **EVIDENCE:** DONE output + the merged `recall` action.
+- **DO NOT:** leak provider errors, or let a vector failure empty the keyword results.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `recall({ query, limit?, modes? })` (action) → `memoryValidator[]`. `modes` ∈ subset of `keyword|meaning|links|time` (default `keyword|meaning`). Merge by `_id` union, dedupe, cap `limit` (default 10). If meaning fails (no key/provider), return keyword-only (never empty on provider error). Auth: `requireApprovedForAi`.
+- **TESTS:** Given a query matching both keyword and meaning / When `recall` runs / Then one row per memory (deduped). Given meaning fails / Then keyword results still return. Given `modes:["keyword"]` / Then only keyword runs. Given limit 3 / Then ≤ 3.
+- **NUMBERS:** default limit 10 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (meaning mode) — UNKNOWN; answerer: Amit.
+
+### TFV2-0178 — Memory: `context` (token cap)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0177 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0177.
+- **WHY:** TRD §5 (`context(userId, topic)` = recall then trim to a token cap).
+- **GOAL:** `context` returns the top memories as a single trimmed text block for the coach prompt.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify/extend `context`).
+- **STEPS:** 1) Graphify code-map (`context` exists — verify + test). 2) Confirm it sorts by salience, takes ≤ limit (default 10), joins as `- <content>` lines, returns `{ text, count }`. 3) Add a char/token cap constant. 4) Test cap + join + owner. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → context cases green.
+- **EVIDENCE:** DONE output + the `context` query.
+- **DO NOT:** return another user's memories, or exceed the cap.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `context({ limit? })` → `{ text, count }`. Live memories sorted by salience desc, slice ≤ limit (default 10), joined `- <content>\n`. Cap the joined text at 4000 chars (truncate with `…`, never split a surrogate pair). Auth: `requireUser`.
+- **TESTS:** Given 3 memories / When `context({ limit:2 })` / Then `count:2` and text has 2 lines. Given a huge memory set / Then text ≤ 4000 chars. Given another user's row / Then excluded.
+- **NUMBERS:** text cap 4000 chars → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0179 — Memory: `forget` (soft delete — OPEN §4.8)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** PRD F-52 (forget memories); TRD §5 (`forget(userId, memoryId|all)`; hard vs soft: open, patch C4).
+- **GOAL:** `forget` removes one memory with a 5-minute Undo window.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `forget`).
+- **STEPS:** 1) Graphify code-map (`forget` soft-deletes via `deletedAt` — verify + test). 2) Confirm owner check, "Memory not found" for missing/foreign, and that the row is soft-deleted (not hard-deleted). 3) Test missing/foreign/already-deleted. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → forget cases green.
+- **EVIDENCE:** DONE output + the `forget` mutation.
+- **DO NOT:** hard-delete here (semantics are OPEN §4.8 — soft delete is the current code, kept as-is), or forget another user's row.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `forget({ memoryId })` → `{ success:true }`. Soft delete (`deletedAt = now`). Error cases: missing/foreign/already-deleted → `EN: "Memory not found." / HE: "הזיכרון לא נמצא."`. Auth: `requireUser`.
+- **TESTS:** Given an owned memory / When `forget` runs / Then `deletedAt` is set (not hard-deleted). Given a foreign memoryId / Then "Memory not found." Given an already-deleted id / Then "Memory not found."
+- **NUMBERS:** 30-day grace (HARD_RULES §9 soft delete) → pass | **UNKNOWN** — whether `forget` must be *complete* (hard) per the memory spec is OPEN §4.8; answerer: Amit.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.8 — hard vs soft `forget` semantics: UNKNOWN; answerer: Amit.
+
+### TFV2-0180 — Memory: `restore`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0179 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0179.
+- **WHY:** PRD §5 (Undo within the grace window); memory.html `memory.restore({ id })`.
+- **GOAL:** `restore` brings back a forgotten memory while still inside the grace window.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `restore`).
+- **STEPS:** 1) Graphify code-map (`restore` exists — verify + test). 2) Confirm `isRestorable` grace check and clearing `deletedAt`. 3) Test in-window success / out-of-window false / foreign. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → restore cases green.
+- **EVIDENCE:** DONE output + the `restore` mutation.
+- **DO NOT:** restore after the grace window, or restore another user's row.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `restore({ memoryId })` → `{ success:boolean }`. Clears `deletedAt` only while `isRestorable(deletedAt, now)`. Error: missing/foreign → `EN: "Memory not found." / HE: "הזיכרון לא נמצא."`. Auth: `requireUser`.
+- **TESTS:** Given a memory forgotten 1 min ago / When `restore` runs / Then `success:true`, `deletedAt` cleared. Given forgotten 31 days ago / Then `success:false`. Given a foreign id / Then "Memory not found."
+- **NUMBERS:** 5-minute Undo + 30-day grace → pass (product constants) | **UNKNOWN** — grace length if `forget` becomes hard-delete (OPEN §4.8); answerer: Amit.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.8 — UNKNOWN; answerer: Amit.
+
+### TFV2-0181 — Memory: `forgetAll` + `restoreAll` (batch)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0180 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0180.
+- **WHY:** memory.html `memory.forgetAll({})` (asks first) + `memory.restoreAll({ batchId })`.
+- **GOAL:** `forgetAll` soft-deletes a batch (or everything) as one `forgottenAt` stamp; `restoreAll` brings that batch back within the grace window.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `forgetAll`/`restoreAll`).
+- **STEPS:** 1) Graphify code-map (both exist — verify + test). 2) Confirm `BATCH_MAX` 300, same `deletedAt` stamp, and `restoreAll({ forgottenAt })` restores only that stamp. 3) Test batch bound, restore, foreign ids. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → forgetAll cases green.
+- **EVIDENCE:** DONE output + the two mutations.
+- **DO NOT:** forget without a batch stamp, exceed 300, or restore a stamp that is another user's.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `forgetAll({ memoryIds? })` → `{ count, forgottenAt }`; without `memoryIds` forgets all live memories. > 300 ids → `EN: "Forget up to 300 memories at a time." / HE: "אפשר לשכוח עד 300 זיכרונות בבת אחת."`. `restoreAll({ forgottenAt })` → `{ restored }` (0 if out of window). Auth: `requireUser`.
+- **TESTS:** Given 3 memories / When `forgetAll` runs / Then all get the same `deletedAt`. Given 301 ids / Then the 300 error. Given `restoreAll({ forgottenAt })` in-window / Then the batch restores. Given out-of-window / Then `restored:0`.
+- **NUMBERS:** batch ≤ 300 → pass (product constant `BATCH_MAX`) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.8 (if `forget` becomes hard, batch restore semantics change) — UNKNOWN; answerer: Amit.
+
+### TFV2-0182 — Memory: `export` (Markdown)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** PRD F-52 (export all memories as markdown); TRD §5 (`export(userId)` → plain markdown).
+- **GOAL:** `exportAll` returns every live memory as one Markdown string, grouped by sector, with source marks.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify `exportAll`).
+- **STEPS:** 1) Graphify code-map (`exportAll` exists — verify + test). 2) Confirm sections per sector, imported sources marked, empty → "No memories saved yet.". 3) Test grouping + source marks + empty. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → export cases green.
+- **EVIDENCE:** DONE output + the `exportAll` query.
+- **DO NOT:** remove anything, or export another user's rows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `exportAll({})` → `{ filename, exportedAt, count, markdown }`. `filename` `tempo-memories-<YYYY-MM-DD>.md`. Markdown: `# Tempo memories`, one `## <Sector>` per non-empty sector, bullets `- <content>`; imported rows append `(imported from ChatGPT|Claude|Grok)` or `(imported)`. Empty → a line `EN: "No memories saved yet." / HE: "עוד אין זיכרונות שמורים."`. Auth: `requireUser`.
+- **TESTS:** Given memories in 2 sectors / When `exportAll` runs / Then two `##` sections appear. Given an imported row / Then its bullet ends with `(imported from ChatGPT)`. Given none / Then the empty line and `count:0`.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0183 — Memory: embedding generation action
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0149 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0149.
+- **WHY:** TRD §5 (embedding model Qwen3-Embedding-8B, 1,024 dims via Matryoshka truncation); PRD F-50.
+- **GOAL:** `embedMemory` generates and stores a 1,024-float embedding for a memory via the one embedding seam.
+- **SCOPE:** `convex/memory.ts` · `convex/lib/ai_router.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (add `embedMemory` action), `convex/lib/ai_router.ts` (expose `embeddingModel` seam).
+- **STEPS:** 1) Graphify code-map of `convex/lib/ai_router.ts` (add an embedding seam, names only). 2) Add `embedMemory({ memoryId })` that calls the embedding model, keeps the first 1,024 values (re-normalised), and patches `memories.embedding`. 3) Test with a fake embedding seam (no real key). 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → embedding cases green.
+- **EVIDENCE:** DONE output + the `embedMemory` action.
+- **DO NOT:** print a key value, call the provider from a query, or exceed 1,024 dims.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `embedMemory({ memoryId })` (action) → `{ success:true }`. Embedding model id resolved through the seam (names only; default `Qwen/Qwen3-Embedding-8B`, OPEN §4.3). Native 4,096 → keep first 1,024, re-normalise to unit length. Patch `memories.embedding`. Error: missing key → throw internal (never surface key text). Auth: `requireApprovedForAi`.
+- **TESTS:** Given a fake seam returning 4,096 floats / When `embedMemory` runs / Then the stored vector has exactly 1,024 floats and unit norm. Given a missing key seam / Then it throws without surfacing key text. Given a foreign memoryId / Then "Memory not found."
+- **NUMBERS:** 1,024 dims → pass (Convex 2–2,048 dims, https://docs.convex.dev/search/vector-search) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.3 embedding model id (default Qwen3-Embedding-8B, EXTRAPOLATED) — UNKNOWN; answerer: Amit.
+
+### TFV2-0184 — Memory: re-embed backfill action
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0183 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0183.
+- **WHY:** TRD §5 ("Changing the model later means re-embedding everything"); PRD F-50.
+- **GOAL:** `reembedAll` re-embeds every live memory missing an embedding (or on model change) in bounded batches.
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (add `reembedAll` action).
+- **STEPS:** 1) Graphify code-map. 2) Add `reembedAll({})` that batches live memories without an embedding (≤ 50 per run) and patches each via the seam. 3) Test batch bound + skip-already-embedded. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → reembed cases green.
+- **EVIDENCE:** DONE output + the `reembedAll` action.
+- **DO NOT:** re-embed rows that already have a current-model embedding, or exceed the batch bound.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `reembedAll({})` (action) → `{ embedded }`. Processes live memories with no `embedding` (or a stale model tag) up to 50 per run. Auth: internal/system only.
+- **TESTS:** Given 3 un-embedded memories / When `reembedAll` runs / Then all 3 get embeddings (≤ 50). Given an already-embedded row / Then it is skipped. Given > 50 un-embedded / Then only 50 are done per run.
+- **NUMBERS:** 50 per run → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.3 (model change re-embed) — UNKNOWN; answerer: Amit.
+
+### TFV2-0185 — Memory: Hebrew embedding eval
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0183 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0183.
+- **WHY:** TRD §5 ("Before locking one, run a check on 20 Hebrew + 20 English questions against about 200 of Amit's own notes. Compare Qwen3-Embedding-8B, bge-m3 and multilingual-e5-large-instruct on top-3 hit rate."); PRD §7.
+- **GOAL:** A scripted eval compares the three candidate embedding models on top-3 hit rate over 20 Hebrew + 20 English questions, and records the result (no model is locked in by this ticket).
+- **SCOPE:** `scripts/` (one eval script) · `convex/lib/ai_router.ts` (read the seam) · test: `scripts/hebrew-embedding-eval.test.ts`.
+- **MUTATES:** `scripts/` (new eval script).
+- **STEPS:** 1) Graphify code-map of the embedding seam. 2) Write `scripts/hebrew-embedding-eval.mjs` that, given 20 Hebrew + 20 English (question, expected note) pairs and ~200 note embeddings per model, computes top-3 hit rate for `Qwen/Qwen3-Embedding-8B`, `BAAI/bge-m3`, `intfloat/multilingual-e5-large-instruct`. 3) Print a per-model table (names only, no keys). 4) Unit-test the scoring function (deterministic). 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="hebrew-embedding"` → the scoring function is green (network run reported separately as UNKNOWN if offline).
+- **EVIDENCE:** DONE output + the script + the scoring test.
+- **DO NOT:** run a paid API without Amit's OK, print a key, or write a value to `convex/`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Scoring = fraction of 40 questions whose correct note is in the top-3 by cosine similarity. Model ids are names only. The real network run is `UNKNOWN` in a sandbox without keys/network.
+- **TESTS:** Given a fixed embedding matrix and expected hits / When the scorer runs / Then the top-3 hit rate matches a hand-computed value. Given 0 questions / Then the scorer returns 0 (not NaN).
+- **NUMBERS:** top-3 hit rate (higher is better) → pass range ≥ 0.7 (internal bar) | **UNKNOWN** — no public Hebrew-specific benchmark exists (TRD §5); answerer: Amit.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.3 (which embedding model locks in) — UNKNOWN; answerer: Amit.
+### TFV2-0186 — Life graph: `entities` CRUD
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0150 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0150.
+- **WHY:** TRD §5c (`entities` table); PRD F-54.
+- **GOAL:** Entities (person/project/goal/place/habit) can be created, read, and soft-deleted with aliases.
+- **SCOPE:** `convex/lib/lifeGraph.ts` (new) · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (new).
+- **STEPS:** 1) Graphify code-map of `entities` (table from TFV2-0150). 2) Add `upsertEntity({ kind, name, aliases })` (dedupe by lower-case name+owner), `listEntities({ kind? })`, and `forgetEntity({ id })` (soft delete). 3) Owner-filter every read. 4) Test dedupe/kind/owner/delete. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → entities cases green.
+- **EVIDENCE:** DONE output + the three functions.
+- **DO NOT:** infer entities from text here (that is edges/extraction), or cross user boundaries.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `upsertEntity({ kind, name, aliases })` → `v.id("entities")` (dedupe by lower-case name within the owner); `listEntities({ kind? })` → `{ _id, kind, name, aliases }[]`; `forgetEntity({ id })` → `{ success:true }`. Error: name empty → `EN: "Give it a name." / HE: "תני לו שם."`. Auth: `requireUser`.
+- **TESTS:** Given two upserts of the same name / Then one row. Given `kind:"person"` / Then `listEntities({ kind:"person" })` returns only people. Given `forgetEntity` / Then soft-deleted and excluded. Given another user's entity / Then never returned.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0187 — Life graph: `edges` extraction (extracted vs inferred)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0151, TFV2-0186 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0151 + TFV2-0186.
+- **WHY:** TRD §5c (extract entities and claims into `edges`; `origin: extracted` from `[[links]]`/blocks, no model; `inferred` model-guessed); PRD F-54.
+- **GOAL:** Links the user wrote (`[[links]]`, blocks) become `extracted` edges with no model; a model may add `inferred` edges marked as guesses.
+- **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (add extraction).
+- **STEPS:** 1) Graphify code-map of `notes.body` and `[[links]]`. 2) Add `extractEdges({ noteId })` that reads the caller's page, finds `[[links]]`/block references, and writes `origin:"extracted"` edges (no model). 3) Add `inferEdges({ noteId })` (action) that may write `origin:"inferred"` edges with `confidence` from the model (approved-for-AI). 4) Test extracted vs inferred origin + owner. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → edges cases green.
+- **EVIDENCE:** DONE output + the two functions.
+- **DO NOT:** mark an inferred link as extracted, or let a model write `extracted`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `extractEdges({ noteId })` → `{ created }` (links the user wrote, `origin:"extracted"`, `confidence:1`); `inferEdges({ noteId })` (action) → `{ created }` (`origin:"inferred"`, `confidence` 0..1, model-guessed, approved-for-AI). Both owner-filtered. `sourceRef` = the note id.
+- **TESTS:** Given a page with `[[Dana]]` / When `extractEdges` runs / Then an `extracted` edge appears (no model called). Given `inferEdges` / Then `inferred` edges carry `confidence` and origin. Given another user's note / Then rejected.
+- **NUMBERS:** `confidence` 0..1 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.6/§4.9 (whether inferred edges may be auto-applied vs confirm-first) — UNKNOWN; answerer: Amit.
+
+### TFV2-0188 — Life graph: `edges` confirm + query
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0187 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0187.
+- **WHY:** memory.html `lifeGraph.confirmGuess({ id })` (Guess → "You confirmed this"); PRD F-54 (guesses kept apart until confirmed).
+- **GOAL:** `confirmEdge` flips an inferred edge to confirmed; `listEdges` returns edges with their origin.
+- **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (add confirm + query).
+- **STEPS:** 1) Graphify code-map. 2) Add `confirmEdge({ id })` (inferred → confirmed; the badge changes) and `listEdges({ from?|to? })`. 3) Test confirm + origin preserved + owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → confirm/query cases green.
+- **EVIDENCE:** DONE output + the two functions.
+- **DO NOT:** let a confirmed edge revert to a guess, or expose another user's edges.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `confirmEdge({ id })` → `{ success:true }` (sets a `confirmed` flag while keeping `origin:"inferred"` for provenance); `listEdges({ from?, to? })` → edges array with `origin`, `confidence`, `confirmed`. Auth: `requireUser`.
+- **TESTS:** Given an inferred edge / When `confirmEdge` runs / Then it is confirmed. Given a foreign edge / Then rejected. Given `listEdges({ from })` / Then only that side returns, owner-filtered.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0189 — Life graph: graph neighbors query
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0188 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0188.
+- **WHY:** TRD §5c (graph view of life projects — END; the neighbors read is MVP); PRD F-54.
+- **GOAL:** `graphNeighbors` returns an entity plus its directly linked entities (one hop), owner-scoped.
+- **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (add query).
+- **STEPS:** 1) Graphify code-map of `edges`. 2) Add `graphNeighbors({ entityName })` returning the entity and its `from`/`to` neighbors in one hop. 3) Test one-hop + owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → neighbors cases green.
+- **EVIDENCE:** DONE output + the `graphNeighbors` query.
+- **DO NOT:** traverse beyond one hop, or cross users.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `graphNeighbors({ entityName })` → `{ entity?, neighbors[] }`. Neighbors = entities sharing an edge with the name/alias (one hop). Owner-filtered. Auth: `requireUser`.
+- **TESTS:** Given "Dana" ↔ "Thursday talk" ↔ "Slides" / When `graphNeighbors({ entityName:"Thursday talk" })` / Then both neighbors return (one hop, no further). Given a foreign entity / Then empty.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0190 — Reflect: consolidation cron → `observations`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0152, TFV2-0183 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0152 + TFV2-0183.
+- **WHY:** TRD §5c (reflect cron consolidates memories into `observations`, each with the memory ids that support it); PRD F-55.
+- **GOAL:** A nightly cron consolidates many memories into observations, each recording its supporting memory ids.
+- **SCOPE:** `convex/crons.ts` · `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/crons.ts` (register nightly reflect), `convex/lib/lifeGraph.ts` (add `reflect`).
+- **STEPS:** 1) Graphify code-map of `convex/crons.ts`. 2) Add `reflect({})` (action) that groups recent memories and writes `observations` rows (model-written text + `memoryIds`). 3) Register a nightly cron in `crons.ts`. 4) Test grouping + ids + no-op when few memories. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → reflect cases green.
+- **EVIDENCE:** DONE output + the cron registration + `reflect`.
+- **DO NOT:** run reflect per-message (nightly only), or write observations without supporting memory ids.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `reflect({})` (action) → `{ created }`. Consolidates the owner's memories into observation text via the model (approved-for-AI), each row carrying `memoryIds`. Cron: nightly in `crons.ts`. Auth: system/internal.
+- **TESTS:** Given 5 related memories / When `reflect` runs / Then an observation is written with all 5 ids. Given 1 memory / Then no observation (needs a minimum of 3). Given another user's memories / Then never consolidated into this user's observations.
+- **NUMBERS:** minimum 3 memories per observation → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (model-written observation text vs HARD_RULES §2) — UNKNOWN; answerer: Amit.
+
+### TFV2-0191 — Reflect: `observations` list + delete
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0190 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0190.
+- **WHY:** TRD §5c (observations shown to the user, deletable); PRD F-55.
+- **GOAL:** Observations can be listed (newest-first) and soft-deleted by the user.
+- **SCOPE:** `convex/lib/lifeGraph.ts` · test: `convex/lib/lifeGraph.test.ts`.
+- **MUTATES:** `convex/lib/lifeGraph.ts` (add list + delete).
+- **STEPS:** 1) Graphify code-map of `observations`. 2) Add `listObservations({})` and `forgetObservation({ id })` (soft delete). 3) Test owner + delete. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="lifeGraph"` → observations cases green.
+- **EVIDENCE:** DONE output + the two functions.
+- **DO NOT:** surface another user's observations, or hard-delete.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `listObservations({})` → `{ _id, text, memoryIds, createdAt }[]` newest-first; `forgetObservation({ id })` → `{ success:true }` (soft delete). Auth: `requireUser`.
+- **TESTS:** Given two observations / When listed / Then newest-first. Given `forgetObservation` / Then soft-deleted and excluded. Given a foreign id / Then rejected.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0192 — Memory import: `importPreview` (parse, save nothing)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** TRD §5 (`importPreview(userId, text, source)` splits into candidate items; nothing saved); PRD F-51; RAM-only rule.
+- **GOAL:** `importPreview` splits pasted/uploaded text into candidate memory items, in RAM, saving nothing.
+- **SCOPE:** `convex/memoryImport.ts` · `convex/lib/memoryImport.ts` · test: `convex/lib/memoryImport.test.ts`.
+- **MUTATES:** `convex/memoryImport.ts` (add preview surface), `convex/lib/memoryImport.ts` (parse helpers).
+- **STEPS:** 1) Graphify code-map of `convex/lib/memoryImport.ts` (`parseMemoryExport` exists — verify + test). 2) Add `importPreview({ source, text })` returning `{ items: string[] }` (≤ 300, cleaned, deduped). 3) Confirm nothing is inserted. 4) Test JSON/line parsing + dedupe + bound. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → preview cases green.
+- **EVIDENCE:** DONE output + the `importPreview` mutation.
+- **DO NOT:** save anything, persist the raw text, or exceed 1 MB.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `importPreview({ source, text })` → `{ items: string[] }`. `source` ∈ `chatgpt|claude|grok|other`. > 1 MB → `EN: "That memory import is too large. Keep it under 1 MB." / HE: "הייבוא הזה גדול מדי. עד 1 MB."`. Parses JSON or lines via `parseMemoryExport`; ≤ 300 items, each ≤ 1000 chars, deduped case-insensitively. Saves nothing. Auth: `requireUser`.
+- **TESTS:** Given pasted ChatGPT JSON / When `importPreview` runs / Then cleaned items return and nothing is in `memories`. Given 3 duplicate lines / Then deduped. Given > 1 MB / Then the size error. Given > 300 candidates / Then ≤ 300.
+- **NUMBERS:** ≤ 300 items, ≤ 1000 chars each, ≤ 1 MB input → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0193 — Memory import: `importCommit` (save kept items)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0192 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0192.
+- **WHY:** TRD §5 (`importCommit(userId, items)` → `remember` for each kept item with `metadata.source`); PRD F-51.
+- **GOAL:** `importCommit` saves the kept/edited items, skips duplicates, and returns the new ids for the 5-minute Undo.
+- **SCOPE:** `convex/memoryImport.ts` · test: `convex/memoryImport.test.ts`.
+- **MUTATES:** `convex/memoryImport.ts` (verify `saveReviewed`/add `importCommit`).
+- **STEPS:** 1) Graphify code-map (`saveReviewed` exists — verify + test). 2) Add `importCommit({ source, items })` that cleans each item, skips duplicates (case-insensitive), inserts with `metadata:{ source, importedAt }`, and returns `{ added, skipped, memoryIds }`. 3) Test duplicate skip + bound + owner. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → commit cases green.
+- **EVIDENCE:** DONE output + the `importCommit` mutation.
+- **DO NOT:** persist raw import text, or create a second copy of an existing memory.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `importCommit({ source, items })` → `{ added, skipped, memoryIds }`. Items cleaned via `cleanImportItem`; duplicates (lower-case) skipped; each saved with `metadata.source` and `metadata.importedAt`. ≤ 300 items; > 300 → `EN: "Save up to 300 items at a time." / HE: "אפשר לשמור עד 300 פריטים בבת אחת."`. Auth: `requireUser`.
+- **TESTS:** Given 3 kept items / When `importCommit` runs / Then 3 memories with source metadata and 3 ids. Given one duplicate of an existing memory / Then `skipped:1`. Given 301 items / Then the 300 error.
+- **NUMBERS:** ≤ 300 items → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0194 — Memory import: `undoImport` (5-minute)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0193 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0193.
+- **WHY:** memory-import.html `memory.undoImport({ batchId })` within 5 minutes; PRD §5.
+- **GOAL:** `undoImport` forgets exactly the batch committed, within the 5-minute window.
+- **SCOPE:** `convex/memoryImport.ts` · test: `convex/memoryImport.test.ts`.
+- **MUTATES:** `convex/memoryImport.ts` (add `undoImport`).
+- **STEPS:** 1) Graphify code-map (`forgetAll({ memoryIds })` exists — reuse). 2) Add `undoImport({ memoryIds })` that soft-deletes exactly those ids (≤ 300) via `forgetAll`. 3) Test window + exact batch. 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → undo cases green.
+- **EVIDENCE:** DONE output + the `undoImport` mutation.
+- **DO NOT:** forget ids the user did not just import, or bypass the 5-minute window.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `undoImport({ memoryIds })` → `{ count, forgottenAt }`. Delegates to `memory.forgetAll({ memoryIds })`. Only the caller's own ids. Auth: `requireUser`.
+- **TESTS:** Given 3 just-imported ids / When `undoImport` runs / Then all 3 soft-delete. Given a foreign id in the list / Then it is skipped. Given out-of-window restore attempt / Then restore fails.
+- **NUMBERS:** 5-minute Undo → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.8 (if `forget` becomes hard-delete) — UNKNOWN; answerer: Amit.
+
+### TFV2-0195 — Memory: salience decay cron
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0171 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0171.
+- **WHY:** PRD F-50 (salience decay over time); `memories.decayRate`.
+- **GOAL:** A cron lowers salience of long-unaccessed memories toward a floor, never below 0.1.
+- **SCOPE:** `convex/crons.ts` · `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/crons.ts` (register), `convex/memory.ts` (add `decay` action).
+- **STEPS:** 1) Graphify code-map of `memories.decayRate`/`salience`. 2) Add `decay({})` (action) that, for live memories accessed > 1 day ago, lowers `salience` by `salience * (1 - decayRate * days)`, floor 0.1. 3) Register a daily cron. 4) Test floor + decay. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → decay cases green.
+- **EVIDENCE:** DONE output + the cron + `decay`.
+- **DO NOT:** lower below 0.1, or touch a memory accessed today.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `decay({})` → `{ updated }`. For each live memory with `now - lastAccessed > 1 day`, `salience = max(0.1, salience * (1 - decayRate * daysSince))`. Daily cron. Auth: system.
+- **TESTS:** Given a memory 10 days un-accessed with decayRate 0.01 / Then salience drops toward 0.1 (never below). Given accessed today / Then unchanged. Given already at 0.1 / Then unchanged.
+- **NUMBERS:** salience floor 0.1 → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0196 — Anti-shaming wiring (shame-word guard)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** PRD F-25/F-26 (anti-shaming, never say they are behind/failing/lazy); HARD_RULES §6 (no shame).
+- **GOAL:** A fixed shame-word list flags shaming phrases in a coach reply, and the reply path filters/refuses them.
+- **SCOPE:** `convex/lib/shameWords.ts` (new) · `convex/lib/coachPrompt.ts` · test: `convex/lib/shameWords.test.ts`.
+- **MUTATES:** `convex/lib/shameWords.ts` (new), `convex/lib/coachPrompt.ts` (guard hook).
+- **STEPS:** 1) Graphify code-map (no `shameWords.ts` yet — create it). 2) Add `SHAME_PHRASES` (fixed list: "you are lazy", "why didn't you", "you're behind", "you keep failing", "you should have", "that's easy", "just", etc.) and `isShaming(text)` (normalised substring). 3) Hook a guard into the reply path that, when a reply is shaming, replaces it with a fixed neutral line (no model). 4) Add the neutral line EN/HE. 5) Test detection + replacement. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="shameWords"` → guard cases green.
+- **EVIDENCE:** DONE output + the list + guard.
+- **DO NOT:** call a model to detect shame, or silently drop a reply without the neutral line.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `SHAME_PHRASES` fixed in code; `isShaming(text)` normalises (lower-case, apostrophes, single spaces) and substring-matches. Neutral replacement: `EN: "I would not put it that way. Let me try again more gently." / HE: "לא הייתי מנסחת את זה ככה. אנסה שוב בעדינות."`. Auth: the guard runs inside the coach reply path (already approved-for-AI). No model call.
+- **TESTS:** Given "Why didn't you do this yet?" / When `isShaming` runs / Then true. Given a neutral reply / Then false. Given a shaming model reply / When the guard runs / Then it is replaced by the neutral line. Given empty text / Then false.
+- **NUMBERS:** none → n/a | **UNKNOWN** — whether a shaming reply is auto-filtered vs surfaced for edit (OPEN §4.6 accept-reject vs auto-apply) and the confidence threshold for any auto-behaviour (OPEN §4.9); answerer: Amit.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.6, §4.9 — UNKNOWN; answerer: Amit.
+
+### TFV2-0197 — Mock model wiring (`lib/mockModel.ts`)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §3 (a mock model seam so tests/dev run with no key); `convex/lib/mockModel.ts` (MISSING).
+- **GOAL:** `mockModel.ts` provides a deterministic, key-free model/embedding seam for tests and local dev.
+- **SCOPE:** `convex/lib/mockModel.ts` (new) · test: `convex/lib/mockModel.test.ts`.
+- **MUTATES:** `convex/lib/mockModel.ts` (new).
+- **STEPS:** 1) Graphify code-map (file is MISSING — create). 2) Add `mockLanguageModel` and `mockEmbeddingModel` returning deterministic replies/vectors (no network, no key). 3) Make the coach Agent accept a model seam override so tests inject the mock. 4) Test determinism + no-key. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="mockModel"` → mock cases green.
+- **EVIDENCE:** DONE output + the mock seam.
+- **DO NOT:** let the mock ever hit a network or read a real key; never use the mock as evidence for a real-model DONE check.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `mockLanguageModel` returns a fixed `{ content }` for any input (deterministic); `mockEmbeddingModel` returns a fixed 1,024-float unit vector. Both typed to the AI SDK model interface so the Agent accepts them. No key read, no network.
+- **TESTS:** Given the same input / When `mockLanguageModel` runs twice / Then identical content. Given `mockEmbeddingModel` / Then a 1,024-float vector. Given no key in env / Then the mock still works.
+- **NUMBERS:** mock embedding 1,024 dims → pass (product constant) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.3 (the real model the mock mirrors) — UNKNOWN; answerer: Amit.
+
+### TFV2-0198 — Entitlement gate: approved + premium tier before AI
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0153 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0153.
+- **WHY:** TRD §7.3 (auth → entitlement → quota before any model call); `convex/lib/entitlements.ts` (GRANTED_ENTITLEMENT_TIER = "max", GRANTED_USER_TYPE = "paid").
+- **GOAL:** Every coach/memory AI action checks auth then entitlement (approved + entitled tier) before any provider call, verified by test.
+- **SCOPE:** `convex/lib/aiGate.ts` · `convex/lib/entitlements.ts` · test: `convex/lib/aiGate.test.ts`.
+- **MUTATES:** `convex/lib/aiGate.ts` (verify/extend), `convex/lib/entitlements.ts` (read only).
+- **STEPS:** 1) Graphify code-map of `requireApprovedForAi` + `entitlements.ts`. 2) Confirm the order: `ctx.auth` → approval (`assertApprovedForAi`) → entitlement tier check → provider. 3) Add a pure helper `assertEntitledForAi(user)` that reads the granted tier. 4) Test signed-out / pending / revoked / entitled. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="aiGate"` → entitlement-order cases green.
+- **EVIDENCE:** DONE output + the gate order.
+- **DO NOT:** move the gate after the provider call, or grant AI to a non-entitled account.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `requireApprovedForAi(ctx)` runs `approval.assertApprovedForAi` then an entitlement check (every approved user gets the premium tier per F-01a). Order is asserted by test: no provider call may precede the gate. Auth: actions pass identity to `ctx.runQuery`.
+- **TESTS:** Given a signed-out identity / When a model action runs / Then rejected before provider. Given a revoked account / Then rejected. Given an approved+entitled account / Then the gate passes.
+- **NUMBERS:** gate strictly before provider → pass (boolean ordering) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0199 — Quota gate: daily coach-turn limit before AI
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0198 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0198.
+- **WHY:** TRD §7.3 (quota step in the server-side order); `convex/lib/bounded.ts` (MISSING).
+- **GOAL:** A per-user daily coach-turn quota is enforced before the model call, in the auth → entitlement → quota order.
+- **SCOPE:** `convex/lib/bounded.ts` (new) · `convex/lib/aiGate.ts` · test: `convex/lib/bounded.test.ts`.
+- **MUTATES:** `convex/lib/bounded.ts` (new), `convex/lib/aiGate.ts` (call quota after entitlement).
+- **STEPS:** 1) Graphify code-map (no quota yet). 2) Add `bounded.ts` with `assertWithinQuota({ used, limit })` and a daily coach-turn counter (UTC day, like `coachWebSearches`). 3) Insert the quota check in the reply path after entitlement. 4) Add the EN/HE over-limit line. 5) Test order + over-limit. 6) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="bounded"` → quota cases green.
+- **EVIDENCE:** DONE output + the quota gate.
+- **DO NOT:** bill/charge, or let the quota run after the provider call.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `assertWithinQuota({ used, limit })` throws over-limit; counter counts coach turns per UTC day (like `WEB_SEARCH_DAILY_LIMIT`). Over-limit user line: `EN: "You've reached today's coach limit. It resets at midnight." / HE: "הגעת למגבלת המאמן היומית. היא מתאפסת בחצות."`. Order: auth → entitlement → quota → provider. Auth: `requireApprovedForAi`.
+- **TESTS:** Given used == limit / When a turn starts / Then the over-limit line returns and no model call. Given used < limit / Then it proceeds. Given a fresh UTC day / Then the counter resets.
+- **NUMBERS:** daily coach-turn limit → pass | **UNKNOWN** — the exact per-day turn cap is not in the docs; answerer: Amit.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** daily turn cap — UNKNOWN; answerer: Amit.
+
+### TFV2-0200 — UI: `CoachPanel`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0154 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0154.
+- **WHY:** components.md §1 Stage 1 (`CoachPanel`) + §2.10; coach.html `@component CoachPanel`.
+- **GOAL:** A dockable glass `CoachPanel` shell renders the coach head, thread slot, composer slot, and all states, docked at 1280+ and a sheet below.
+- **SCOPE:** `apps/web/components/coach/CoachPanel.tsx` · `apps/web/components/coach/CoachPanel.css` (or tokens via classes) · test: `apps/web/components/coach/CoachPanel.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/CoachPanel.tsx` (new).
+- **STEPS:** 1) Graphify code-map of `apps/web` coach folder. 2) Build the component per the markup below. 3) Wire `data-component="CoachPanel"`, `role`/`aria` per the catalogue. 4) Add the Playwright click-through. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "CoachPanel"` → all states asserted at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + a screenshot of the default state.
+- **DO NOT:** edit `convex/`, invent copy, or dock the panel as a modal on mobile.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Classes: `.tp-coach-panel.tp-glass`, `__head`, `__title`, plus the head actions. Copy EN/HE: `coach.name` `EN: "Coach" / HE: "מאמן"`; `coach.sub` `EN: "Reads Today and your pages. Asks before changing anything." / HE: "קורא את היום ואת הדפים שלך. שואל לפני כל שינוי."`; close aria `EN: "Close coach" / HE: "סגירת המאמן"`; voice aria `EN: "Talk with voice" / HE: "לדבר בקול"`. States: default (thread + composer), empty, loading, error, offline all render inside the panel; the page behind stays. Breakpoints: docked right of Today at 1280 and up (`.tp-coach-panel` fixed width 360), a bottom sheet below 1280. Motion ≤ 250 ms ease-out on open/close; Esc closes; focus returns to the opener. RTL: `dir="rtl"`, logical `start/end` spacing, chevron icons mirrored.
+- **TESTS:** Given a closed panel / When `Ctrl J` or the CoachButton opens it / Then it docks (1280) or sheets (390), focus lands on the thread. Given offline state / Then "The coach is offline. Your list still works." shows. Given empty / Then the opener shows. Playwright asserts each state at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) · target size 24×24 px (WCAG 2.5.8, https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0201 — UI: `CoachMessage`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0200.
+- **WHY:** components.md §1 (`CoachMessage`); coach.html `@component CoachMessage`.
+- **GOAL:** A coach message bubble shows the who-label, `dir="auto"` text, a Read-aloud action, and a streaming variant.
+- **SCOPE:** `apps/web/components/coach/CoachMessage.tsx` · test: `apps/web/components/coach/CoachMessage.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/CoachMessage.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build per markup. 3) Support `streaming` (aria-busy) and read-aloud. 4) Playwright states. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "CoachMessage"` → states at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** invent copy, or read aloud automatically.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-msg` (no `--user`), `__who` `EN: "Coach" / HE: "מאמן"`, `__text` `dir="auto"`, `__actions` with `ReadAloudButton`. Streaming adds `aria-busy="true"` and a `TypingIndicator` under the text. RTL: `dir="auto"` per paragraph; the who-label sits at the logical start.
+- **TESTS:** Given a message / When rendered / Then the who-label and text show. Given `streaming` / Then `aria-busy` and the indicator show. Given HE locale / Then `dir="rtl"` and Hebrew who-label. Playwright asserts each at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0202 — UI: `UserMessage`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0200.
+- **WHY:** components.md §1 (`UserMessage`); coach.html `@component UserMessage`.
+- **GOAL:** A user message bubble shows the "You" label and `dir="auto"` text.
+- **SCOPE:** `apps/web/components/coach/UserMessage.tsx` · test: `apps/web/components/coach/UserMessage.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/UserMessage.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-msg.tp-msg--user` with `__who` and `__text`. 3) Playwright. 4) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "UserMessage"` → states at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** add actions to a user message.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-msg.tp-msg--user`, `__who` `EN: "You" / HE: "את"`, `__text` `dir="auto"`. No read-aloud on user messages.
+- **TESTS:** Given a message / When rendered / Then "You"/"את" and the text show with `dir="auto"`.
+- **NUMBERS:** contrast 4.5:1 · target 24×24.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0203 — UI: `CoachButton`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0200.
+- **WHY:** components.md §1 (`CoachButton`); coach.html `@component CoachButton` (Ctrl J).
+- **GOAL:** A floating glass button opens the coach panel (Ctrl J) with the correct label and aria.
+- **SCOPE:** `apps/web/components/coach/CoachButton.tsx` · test: `apps/web/components/coach/CoachButton.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/CoachButton.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-coach-fab.tp-glass` with `data-action="open-coach"`, `aria-expanded`, `aria-controls="coach"`. 3) Keyboard Ctrl J. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "CoachButton"` → open at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** open the panel on hover, or drop the Ctrl J shortcut.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-coach-fab.tp-glass`, icon `#i-coach`, label `EN: "Coach" / HE: "מאמן"`, aria `EN: "Open coach (Ctrl J)" / HE: "פתיחת המאמן (Ctrl J)"`. Bottom-right at 1280+, above the tabbar on mobile. Motion ≤ 250 ms.
+- **TESTS:** Given a closed panel / When the button or Ctrl J is pressed / Then the panel opens and `aria-expanded` flips. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** target 24×24 · contrast 4.5:1 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0204 — UI: `Composer` (coach wiring)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0154, TFV2-0200 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0154 + TFV2-0200.
+- **WHY:** components.md §1 (`Composer`); coach.html `@component Composer`.
+- **GOAL:** The coach composer sends a message, shows the hint, and disables offline.
+- **SCOPE:** `apps/web/components/coach/Composer.tsx` · test: `apps/web/components/coach/Composer.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/Composer.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-composer` with textarea, attach, send. 3) Wire `onSend → coach.send`. 4) Playwright: type + send, empty disabled, offline hidden. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "Composer"` → send + offline at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** send an empty message, or allow send while offline.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-composer`, `__box`, textarea `dir="auto"` placeholder `EN: "Ask, plan, or think out loud" / HE: "לשאול, לתכנן, או לחשוב בקול"`, label `EN: "Message the coach" / HE: "הודעה למאמן"`, attach aria `EN: "Attach a page" / HE: "צירוף דף"`, send aria `EN: "Send" / HE: "שליחה"`, hint `EN: "The coach can be wrong. Every change waits for your yes." / HE: "המאמן יכול לטעות. כל שינוי מחכה לאישור שלך."`. Offline hides the form (`data-state-hide="offline"`). Empty textarea → send disabled.
+- **TESTS:** Given text / When send / Then `coach.send` is called and the box clears. Given empty / Then send is disabled. Given offline / Then the form is hidden. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0205 — UI: `TypingIndicator`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0200.
+- **WHY:** components.md §2.10 (`TypingIndicator` — text carries meaning, dots pulse only without reduced motion).
+- **GOAL:** A status indicator shows a label with pulsing dots that stop under reduced motion.
+- **SCOPE:** `apps/web/components/coach/TypingIndicator.tsx` · test: `apps/web/components/coach/TypingIndicator.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/TypingIndicator.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-typing[role=status]` with `__dots` and a label. 3) Respect `prefers-reduced-motion`. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "TypingIndicator"` → label + reduced-motion at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** animate under reduced motion, or use dots without a text label.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `.tp-typing[role=status]`, `__dots` (three spans, aria-hidden), label default `EN: "Opening your conversation" / HE: "פותח את השיחה שלך"` and streaming `EN: "Coach is writing" / HE: "המאמן כותב"`. Reduced motion → dots static.
+- **TESTS:** Given the indicator / When rendered / Then role=status and the label show. Given reduced motion / Then no pulse animation. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · motion ≤ 250 ms (or none under reduced motion).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+### TFV2-0206 — UI: `ReadAloudButton`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0201 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0201.
+- **WHY:** components.md §2.10 (`ReadAloudButton` → `voice.speak`); coach.html `@component ReadAloudButton`.
+- **GOAL:** A ghost toggle reads a message aloud and swaps volume/pause icon and label.
+- **SCOPE:** `apps/web/components/coach/ReadAloudButton.tsx` · test: `apps/web/components/coach/ReadAloudButton.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ReadAloudButton.tsx` (new).
+- **STEPS:** 1) Graphify code-map of the voice speak surface (chunk E owns voice; here the button calls the `voice.speak` stub). 2) Build `.tp-btn.tp-btn--ghost.tp-btn--sm.tp-readaloud[aria-pressed]` with `[data-label]`. 3) Toggle label/icon. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ReadAloudButton"` → toggle at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** ship a real voice call here (chunk E), or keep the label fixed on toggle.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** classes above; labels `EN: "Read aloud" / HE: "הקראה"` ↔ `EN: "Stop reading" / HE: "עצירת ההקראה"`; icon swaps `#i-volume` ↔ `#i-pause`. `aria-pressed` reflects state. Motion ≤ 250 ms.
+- **TESTS:** Given a message / When the button is pressed / Then label/icon swap and `aria-pressed` flips; pressing again stops. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0207 — UI: `ChatHistoryList`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0163 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0163.
+- **WHY:** components.md §2.10 (`ChatHistoryList`); coach-history.html `@component ChatHistoryList`.
+- **GOAL:** A grouped list (Today / Last week / Earlier) renders conversation rows with title, time, and a 2-line clamped last line.
+- **SCOPE:** `apps/web/components/coach/ChatHistoryList.tsx` · test: `apps/web/components/coach/ChatHistoryList.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ChatHistoryList.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-chat-list`/`.tp-chat-group`/`.tp-chat-row[aria-current]` with `__title`, `__time`, `__last`. 3) Group headers `g.today`/`g.week`/`g.earlier`. 4) Clamp last line to 2 lines, time in `.tp-num`. 5) Playwright. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ChatHistoryList"` → rows + groups at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** render more than 2 lines of the last line, or invent group names.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** group headers `EN: "Today"/"Last week"/"Earlier" / HE: "היום"/"בשבוע שעבר"/"מוקדם יותר"`. Row: title `dir="auto"`, time `.tp-num.tp-mono`, last line clamped to 2 lines. Row opens the conversation. `aria-current` on the open one.
+- **TESTS:** Given 3 groups / When rendered / Then each header shows and rows are newest-first within groups. Given a long last line / Then it clamps to 2 lines. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** last line 2 lines max → pass (product constant) · contrast 4.5:1 · target 24×24.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0208 — UI: `ChatSearch`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0164 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0164.
+- **WHY:** components.md §2.10 (`ChatSearch`); coach-history.html `@component ChatSearch` + mode `Segmented`.
+- **GOAL:** A search box + "By meaning / Exact words" toggle drives `coach.searchThreads` with a 250 ms debounce.
+- **SCOPE:** `apps/web/components/coach/ChatSearch.tsx` · test: `apps/web/components/coach/ChatSearch.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ChatSearch.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-search` input + `.tp-segmented` meaning/words. 3) Debounce 250 ms, then `coach.searchThreads({ query, mode })`. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ChatSearch"` → debounce + mode at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** search on every keystroke without debounce, or drop the mode toggle.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** label `EN: "Search conversations" / HE: "חיפוש בשיחות"`, placeholder `EN: "Try “tired” or “lease”" / HE: "נסי ״עייפה״ או ״חוזה״"`, modes `EN: "By meaning"/"Exact words" / HE: "לפי משמעות"/"מילים מדויקות"`, mode group aria `EN: "Search by" / HE: "חיפוש לפי"`. Debounce 250 ms. `role="search"`.
+- **TESTS:** Given typing / When 250 ms passes / Then one `searchThreads` call. Given mode switch to "Exact words" / Then `mode:"words"`. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** debounce 250 ms → pass (product constant) · contrast 4.5:1 · target 24×24.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (meaning mode) — UNKNOWN; answerer: Amit.
+
+### TFV2-0209 — UI: `CrisisCard`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0230 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0230 (fixed-card content).
+- **WHY:** components.md §2.10 (`CrisisCard` — fixed text written by people; coaching stops; no animation); PRD F-24.
+- **GOAL:** A fixed crisis card renders real resources with `tel:` links; coaching pauses; no animation.
+- **SCOPE:** `apps/web/components/coach/CrisisCard.tsx` · test: `apps/web/components/coach/CrisisCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/CrisisCard.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-crisis` with `__title`, `__body`, `__list`, `__item`, `__item-text`, `__name`, `__detail`, `__note`. 3) `tel:` links. 4) Playwright crisis view. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "CrisisCard"` → crisis view at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** write any card text from a model, or animate the card.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE (Israel, from coach-thread.html): `cr.title` `EN: "You don't have to carry this alone." / HE: "את לא צריכה לשאת את זה לבד."`; `cr.body` `EN: "What you're feeling matters. The people below are trained to help, any hour, and talking to them is free." / HE: "מה שאת מרגישה חשוב. האנשים כאן למטה הוכשרו לעזור, בכל שעה, והשיחה איתם בחינם."`; resources ERAN `1201`, SAHAR `sahar.org.il`, MDA `101` (each with `tel:` / link). Note `cr.note` `EN: "This card was written by people, not by the coach. The coach has paused. Resources shown for Israel; you can change the country in Settings." / HE: "את הכרטיס הזה כתבו אנשים, לא המאמן. המאמן עצר. המידע מוצג לישראל; אפשר לשנות מדינה בהגדרות."`. Coaching paused notice `EN: "Coaching is paused." / HE: "האימון מושהה."` + `EN: "Your list and pages still work. You can come back to the coach whenever you want." / HE: "הרשימה והדפים שלך ממשיכים לעבוד. אפשר לחזור למאמן מתי שתרצי."`. No animation; fixed focus on the card.
+- **TESTS:** Given crisis view / When rendered / Then the fixed card, `tel:` links, and paused notice show; the composer hides. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · no animation.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** per-country resources (PRD F-24 "per-country data MVP") — UNKNOWN beyond Israel; answerer: Amit.
+
+### TFV2-0210 — UI: `GroundingCard`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0167.
+- **WHY:** components.md §2.10 (`GroundingCard` — steps every 4 s, each transition ≤ 240 ms; the word carries meaning); PRD F-25.
+- **GOAL:** A grounding card shows a breathing line with words and one 10-second action; no model call.
+- **SCOPE:** `apps/web/components/coach/GroundingCard.tsx` · test: `apps/web/components/coach/GroundingCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/GroundingCard.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-grounding` with `__title`, `__body`, `.tp-breath[data-phase]`, `__track`, `__line`, `__label`, `__action`, `[data-grounding-done]`. 3) Phase cycle in/out every 4 s, transition ≤ 240 ms; the word ("Breathe in"/"Hold"/"Breathe out") carries meaning. 4) Done button reveals the after-line. 5) Playwright. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "GroundingCard"` → phases + done at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** call a model, or animate under reduced motion.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: `gr.title` `EN: "Let's slow down for a moment." / HE: "בואי נאט רגע."`; `gr.body` `EN: "Nothing needs deciding right now. Your list will wait. Follow the line with your breath." / HE: "שום דבר לא צריך החלטה עכשיו. הרשימה תחכה. עקבי אחרי הקו עם הנשימה."`; phases `breath.in/out` `EN: "Breathe in"/"Breathe out" / HE: "שאיפה"/"נשיפה"` and hold `EN: "Hold" / HE: "החזקה"`; action lead `EN: "One thing," / HE: "דבר אחד,"`; `gr.done` `EN: "Done" / HE: "סיימתי"`; after `gr.after` `EN: "That counts. Stay here as long as you like, or carry on when you're ready." / HE: "זה נחשב. אפשר להישאר כאן כמה שתרצי, או להמשיך כשתהיי מוכנה."`. `aria-live` on the phase label; reduced motion → static line.
+- **TESTS:** Given the card / When open / Then the word cycle runs every 4 s with each transition ≤ 240 ms. Given "Done" / Then the after-line reveals. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** phase 4 s, transition ≤ 240 ms → pass (product constants) · contrast 4.5:1 · target 24×24.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0211 — UI: `CoachDial` (component)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0166.
+- **WHY:** components.md §2.8 Dial 0–10 + §2.10 (`CoachDial`); coach-thread.html dial sheet.
+- **GOAL:** A 0–10 slider shows both the number and the word (quiet/steady/push) and debounces `setCoachDial` 400 ms.
+- **SCOPE:** `apps/web/components/coach/CoachDial.tsx` · test: `apps/web/components/coach/CoachDial.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/CoachDial.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-dial` with `__head`, `__value`, `__num[data-dial-num]`, `__of`, `__word[data-dial-word]`, `__scale`, `input.tp-slider`. 3) Words: quiet 0–3, steady 4–7, push 8–10. 4) Debounce 400 ms → `coach.setDial`. 5) Playwright. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "CoachDial"` → value + word at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** set the dial on every pixel without debounce, or show a number without the word.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: `dial.label` `EN: "How much should the coach push?" / HE: "כמה המאמן ידחוף?"`; `dial.of` `EN: "of 10" / HE: "מתוך 10"`; words `EN: "Quiet"/"Steady"/"Push" / HE: "שקט"/"יציב"/"דוחף"`; help `EN: "Quiet: the coach waits for you to ask. Steady: gentle check-ins. Push: more nudges and firmer plans. You can change this any time." / HE: "שקט: המאמן מחכה שתשאלי. יציב: בדיקות עדינות. דוחף: יותר תזכורות ותוכניות נחרצות יותר. אפשר לשנות בכל רגע."`. Debounce 400 ms. `aria-valuetext` carries number + word.
+- **TESTS:** Given value 4 / Then "4 of 10" and "Steady" show. Given value 9 / Then "Push". Given a change / Then one `setDial` after 400 ms. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** dial 0–10, debounce 400 ms → pass (product constants) · contrast 4.5:1 · target 24×24.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0212 — UI: `PanicButton` (component)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0167 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0167.
+- **WHY:** components.md §2.10 (`PanicButton` — no model call); coach-thread.html `@component PanicButton`.
+- **GOAL:** A panic button opens the GroundingCard at once with no model call, and exposes its `aria-controls`.
+- **SCOPE:** `apps/web/components/coach/PanicButton.tsx` · test: `apps/web/components/coach/PanicButton.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/PanicButton.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-panic` with `data-action="panic"`, `aria-controls="grounding"`, `aria-expanded`. 3) On press call `coach.pressPanic` (no model) and open the GroundingCard. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "PanicButton"` → open at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** call a model, or open the card without setting `aria-expanded`.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** label `EN: "I'm overwhelmed" / HE: "יותר מדי לי עכשיו"`. On press: `pressPanic` then show GroundingCard (`aria-controls`). No model call.
+- **TESTS:** Given press / When the button is clicked / Then the grounding card opens, `aria-expanded` flips, and `pressPanic` ran. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · no model call.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0213 — UI: `ProposalCard` base + task variant
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0157 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0157.
+- **WHY:** components.md §1/§2.10 (`ProposalCard`, `data-kind`); coach.html `@component ProposalCard`.
+- **GOAL:** The shared proposal card shell (header, changes, Accept/Edit/Reject, note) with the task variant (kind label, title, minutes, before-time).
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-proposal` shell + task variant per markup. 3) Wire Accept/Edit/Reject → `coach.acceptProposal`/`editProposal`/`rejectProposal`; Undo toast on Accept. 4) Playwright accept/reject/edit/undo. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → task accept/edit/reject/undo at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** apply the change before Accept, or offer Undo after 5 minutes.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE (task): kind `EN: "Task" / HE: "משימה"`; head `EN: "1 change to Today" / HE: "שינוי אחד בהיום"`; target `EN: "Mon 12 Oct" / HE: "יום ב׳ 12.10"`; op `EN: "Add" / HE: "הוספה"`; detail `EN: "Task · 10 min · before 12:00" / HE: "משימה · 10 דק׳ · עד 12:00"`; buttons `EN: "Accept"/"Edit"/"Reject" / HE: "אישור"/"עריכה"/"דחייה"`; note `EN: "Done. “Call the bank” is on Today, before 12:00." / HE: "בוצע. ״להתקשר לבנק״ בהיום, עד 12:00."`. Accept applies the exact preview; Edit edits titles in place; Reject changes nothing; Undo 5 min.
+- **TESTS:** Given a pending task proposal / When Accept / Then the change applies and Undo shows. Given Edit / Then the title becomes editable in place. Given Reject / Then nothing changes and the card says so. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · Undo 5 min.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0214 — UI: `ProposalCard` template variant
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0158 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0158.
+- **WHY:** components.md §2.10 (`ProposalCard` `data-kind="template"`); coach-thread.html turn 2.
+- **GOAL:** The template variant shows name, adds, changes (`dl` of `.tp-what-row`) and the Accept/Edit/Reject actions.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (template variant).
+- **STEPS:** 1) Graphify code-map. 2) Add the template variant markup (`data-kind="template"`, `__what` dl). 3) Wire Accept → `fillTemplate` apply. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → template variant at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** apply before Accept, or invent the "what it does" summary.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: kind `EN: "Template" / HE: "תבנית"`; rows `EN: "Name"/"Adds"/"Changes" / HE: "שם"/"מוסיפה"/"משנה"`; example `EN: "Start Mondays from a gentler template" / HE: "להתחיל את ימי שני מתבנית רכה יותר"` with `name` "Gentle Monday"/"יום שני רך", `adds` "At most 3 tasks, a 10-minute walk, and one quiet hour"/"לכל היותר 3 משימות, הליכה של 10 דקות, ושעה שקטה אחת", `changes` "New Monday pages from 19 Oct…"/"דפי יום שני חדשים החל מ־19.10…". Accept applies the template; Undo 5 min.
+- **TESTS:** Given a template proposal / When rendered / Then the three `what` rows show. Given Accept / Then it applies and Undo shows. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0215 — UI: `ProposalCard` module variant
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0159 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0159.
+- **WHY:** components.md §2.10 (`ProposalCard` `data-kind="module"`); coach-thread.html turn 3.
+- **GOAL:** The module variant shows name, adds, changes and the Approve/Discard-style Accept/Edit/Reject actions.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (module variant).
+- **STEPS:** 1) Graphify code-map. 2) Add the module variant (`data-kind="module"`). 3) Wire Accept → `draftModule` approval. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → module variant at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** install a module before approval, or invent module behaviour.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: kind `EN: "Module" / HE: "מודול"`; example `EN: "Turn on a water tracker" / HE: "להפעיל מעקב מים"`, `name` "Water"/"מים", `adds` "A tracker on Today, goal 6 glasses"/"מעקב בהיום, יעד של 6 כוסות", `changes` "Nothing else. No reminders unless you ask."/"שום דבר אחר. בלי תזכורות אלא אם תבקשי.". Accept approves → live; Undo uninstalls within 5 min.
+- **TESTS:** Given a module proposal / When rendered / Then the rows show. Given Accept / Then it goes live and Undo shows. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (module approval path) — UNKNOWN; answerer: Amit.
+
+### TFV2-0216 — UI: `ProposalCard` job variant
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0161 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0161.
+- **WHY:** components.md §2.10 (`ProposalCard` `data-kind="job"`); coach-thread.html turn 4.
+- **GOAL:** The job variant shows name, when, does, stop-it rows and the Accept/Edit/Reject actions.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (job variant).
+- **STEPS:** 1) Graphify code-map. 2) Add the job variant (`data-kind="job"`). 3) Wire Accept → `scheduleJob` approval. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → job variant at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** register the job before approval, or omit the stop-it row.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: kind `EN: "Scheduled job" / HE: "משימה מתוזמנת"`; rows `EN: "Name"/"When"/"Does"/"Stop it" / HE: "שם"/"מתי"/"מה עושה"/"להפסיק"`; example `EN: "Write my plan into Today" / HE: "לכתוב את התוכנית שלי בהיום"`, when `Mon–Fri 08:00` (LTR mono), does "Reads your tasks and calendar, then writes a short plan at the top of Today."/"קורא את המשימות ואת היומן שלך, ואז כותב תוכנית קצרה בראש דף היום.", stop "Switch it off in Modules, any time."/"לכבות במודולים, בכל רגע.". Accept registers; Undo removes within 5 min.
+- **TESTS:** Given a job proposal / When rendered / Then the four rows show (When in LTR mono). Given Accept / Then it registers and Undo shows. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0217 — UI: `ProposalCard` decision variant
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0170.
+- **WHY:** coachPrompt.ts (`CoachProposal` `kind:"decision"` — an order of steps); PRD F-22 (decision "what order should I do these in?").
+- **GOAL:** The decision variant lists ordered steps (title, minutes, reason) and Accept saves them to Today's page.
+- **SCOPE:** `apps/web/components/coach/ProposalCard.tsx` · test: `apps/web/components/coach/ProposalCard.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/coach/ProposalCard.tsx` (decision variant).
+- **STEPS:** 1) Graphify code-map. 2) Add the decision variant (ordered list of steps). 3) Wire Accept → `acceptProposal` (saves steps to Today). 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ProposalCard"` → decision variant at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** save the order before Accept, or drop a step's reason.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** kind `EN: "Plan" / HE: "תוכנית"`; head e.g. `EN: "An order for this afternoon" / HE: "סדר לאחר הצהריים"`; steps are `1. <title> · N min · <reason?>`; buttons `EN: "Accept"/"Edit"/"Reject" / HE: "אישור"/"עריכה"/"דחייה"`. Accept appends the steps as task blocks to Today's page; Undo removes them within 5 min.
+- **TESTS:** Given a decision with 3 steps / When rendered / Then 3 ordered steps with minutes show. Given Accept / Then the steps land on Today and Undo shows. Given Reject / Then nothing changes. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** steps 2..7 (COACH_LIMITS.minSteps/maxSteps) → pass (product constant) · contrast 4.5:1 · target 24×24.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0218 — UI: `MemoryItem`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0179 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0179.
+- **WHY:** components.md §2.12 (`MemoryItem` — forget → `memory.forget` + Undo); memory.html `@component MemoryItem`.
+- **GOAL:** A memory row shows fact, source, when, and a Forget button with Undo; guessed links add a "Guess" badge and confirm.
+- **SCOPE:** `apps/web/components/memory/MemoryItem.tsx` · test: `apps/web/components/memory/MemoryItem.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/memory/MemoryItem.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-memory-list`/`.tp-memory-row` with `__fact`, `__source`, `__action`. 3) Forget (`.tp-btn--danger-ghost`) → `memory.forget` + Undo; guess rows add a caution `Badge` and "That's right" confirm → `lifeGraph.confirmGuess`. 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "MemoryItem"` → forget + confirm at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** hard-delete, or show "Guess" for a confirmed link.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** fact `dir="auto"`; source labels `EN: "You said it to the coach"/"From your page …"/"You said it in a voice call"/"Imported from ChatGPT"/"Imported from Claude" / HE: "אמרת את זה למאמן"/"מהדף שלך …"/"אמרת את זה בשיחה קולית"/"יובא מ־ChatGPT"/"יובא מ־Claude"`; Forget `EN: "Forget" / HE: "לשכוח"`; guess badge `EN: "Guess" / HE: "ניחוש"`; confirm `EN: "That's right" / HE: "נכון"` → badge `EN: "You confirmed this" / HE: "את אישרת את זה"`. Forget hides the row + Undo toast; focus moves to the next row.
+- **TESTS:** Given a memory row / When Forget / Then it hides and Undo shows. Given a guess row / When confirm / Then the badge flips to confirmed. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · Undo 5 min.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.8 (forget semantics) — UNKNOWN; answerer: Amit.
+
+### TFV2-0219 — UI: `ImportReview`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0192 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0192.
+- **WHY:** components.md §2.12 (`ImportReview` — keep/edit/drop, nothing saved until Save); memory-import.html.
+- **GOAL:** A review list gives each candidate item Keep/Edit/Drop (role=radio), with a running count and nothing saved until Save.
+- **SCOPE:** `apps/web/components/memory/ImportReview.tsx` · test: `apps/web/components/memory/ImportReview.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/memory/ImportReview.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-import-list`/`.tp-import-row[data-choice]` with `__text`, `__bar`, `__note`, and a per-row `Segmented` keep/edit/drop. 3) Edit makes text contenteditable; Drop strikes through and says "Will be left out"; count updates. 4) Save → `memory.importCommit`. 5) Playwright. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ImportReview"` → keep/edit/drop + save at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** save before Save, or let a dropped item be committed.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** choices `EN: "Keep"/"Edit"/"Drop" / HE: "לשמור"/"לערוך"/"לוותר"`; note `EN: "Will be saved" / HE: "יישמר"`, edit `EN: "Editing: type your change" / HE: "עריכה: הקלידי את השינוי"`, drop `EN: "Will be left out" / HE: "לא יישמר"`; save `EN: "Save N items" / HE: "לשמור N פריטים"`; duplicate note `EN: "Tempo already remembers something close to this. Keeping it won't make a second copy." / HE: "Tempo כבר זוכר משהו קרוב לזה. שמירה לא תיצור עותק שני."`. role=radio per choice.
+- **TESTS:** Given 7 items / When Drop is chosen on one / Then it strikes through and count → 6. Given Edit / Then text is editable in place. Given Save / Then `importCommit` is called with only kept+edited items. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0220 — UI: `ExportArea`
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0182 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0182.
+- **WHY:** components.md §2.12 (`ExportArea` → `memory.exportMarkdown`); memory.html.
+- **GOAL:** An export card triggers the Markdown download and shows a status note; nothing is removed.
+- **SCOPE:** `apps/web/components/memory/ExportArea.tsx` · test: `apps/web/components/memory/ExportArea.test.tsx` + Playwright.
+- **MUTATES:** `apps/web/components/memory/ExportArea.tsx` (new).
+- **STEPS:** 1) Graphify code-map. 2) Build `.tp-export` with `__text`, `__title`, `__note`, and a button. 3) Button → `memory.exportMarkdown` → download `memories.md`; note shows "Making your file…" then "Your file is ready…". 4) Playwright. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "ExportArea"` → download + note at 390/1280, EN/HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** remove any memory, or download before the file is ready.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: `ex.title` `EN: "Export as Markdown" / HE: "ייצוא כ־Markdown"`; `ex.note` `EN: "One file with every memory and where it came from. Nothing is removed." / HE: "קובץ אחד עם כל זיכרון ומאיפה הוא הגיע. שום דבר לא נמחק."`; `ex.btn` `EN: "Export" / HE: "ייצוא"`; status `EN: "Making your file…"/"Your file is ready. It downloaded as memories.md." / HE: "מכין את הקובץ שלך…"/"הקובץ מוכן. הוא ירד בשם memories.md."`.
+- **TESTS:** Given the card / When Export is pressed / Then the status note updates and `memories.md` downloads. Playwright at 390/1280, EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0221 — Screen: coach panel (over Today)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0200, TFV2-0204, TFV2-0213 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0200 + TFV2-0204 + TFV2-0213.
+- **WHY:** REWRITE-PLAN §5.1 ("Coach (panel over Today)" — `components/coach/CoachPanel` opened in `(tempo)/today`); coach.html.
+- **GOAL:** The coach opens as a panel beside Today, with the accept/edit/reject/undo flow and the "moved to tomorrow" note working.
+- **SCOPE:** `apps/web/app/(tempo)/today/page.tsx` · `apps/web/components/coach/CoachPanel.tsx` (wiring) · test: Playwright spec.
+- **MUTATES:** `apps/web/app/(tempo)/today/page.tsx` (open the panel + wiring).
+- **STEPS:** 1) Graphify code-map of Today's route. 2) Mount `CoachPanel` beside Today, docked at 1280+, sheet below. 3) Wire Accept → apply + Undo toast; Edit inline; Reject no-op. 4) Show the `moved.note` line on a move change. 5) Playwright click-through of every state at 390 and 1280, EN and HE. 6) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "coach-panel"` → every state asserted at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** edit `convex/`, or render JSON anywhere.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The Today page renders as coach.html: TaskBlock with 3 tasks, open count, and the panel. States: default, empty (opener `EN: "Hi Maya. I can see Today. Ask me to plan, shrink or sort anything. Nothing changes until you say yes." / HE: "היי מאיה. אני רואה את היום. אפשר לבקש ממני לתכנן, להקטין או לסדר כל דבר. שום דבר לא משתנה עד שתאשרי."`), loading (`EN: "Opening your conversation" / HE: "פותח את השיחה שלך"`), error (`EN: "Couldn't reach the coach." / HE: "לא הצלחנו להגיע למאמן."` + body), offline (`EN: "The coach is offline. Your list still works." / HE: "המאמן לא זמין כרגע. הרשימה שלך ממשיכה לעבוד."`). Accept shows toast `EN: "2 changes made to Today" / HE: "בוצעו 2 שינויים בהיום"` + Undo. Moved note `EN: "Moved to tomorrow: Draft 3 slides for Thursday." / HE: "עבר למחר: לנסח 3 שקפים ליום חמישי."`. No JSON visible.
+- **TESTS:** Playwright: open panel, send, accept proposal → Undo toast; edit title; reject → unchanged; empty/loading/error/offline states. Each at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0222 — Screen: coach thread
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0165, TFV2-0213…0217, TFV2-0209, TFV2-0210 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0165 + the ProposalCard variants + CrisisCard + GroundingCard.
+- **WHY:** REWRITE-PLAN §5.1 ("Coach thread" — `(tempo)/coach/[threadId]`); coach-thread.html.
+- **GOAL:** The full conversation screen shows all proposal kinds, streaming, the dial sheet, panic/grounding, crisis view, and all states.
+- **SCOPE:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` · `apps/web/components/coach/CoachThread.tsx` (or inline) · test: Playwright spec.
+- **MUTATES:** `apps/web/app/(tempo)/coach/[threadId]/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map of coach-thread.html. 2) Build the thread with newest turn at bottom, composer under it, and the four proposal kinds + decision + streaming turn. 3) Dial sheet (CoachDial), PanicButton → GroundingCard, CrisisCard on `?view=crisis`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "coach-thread"` → every state at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** edit `convex/`, show JSON, or auto-apply proposals.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Renders coach-thread.html faithfully: header (`EN: "A lighter Monday" / HE: "יום שני קליל יותר"`, `EN: "Started today at 08:58 · Reads Today and your pages. Asks before changing anything." / HE: "התחילה היום ב־08:58 · קורא את היום ואת הדפים שלך. שואל לפני כל שינוי."`); PanicButton; "Coach style" sheet; "Talk with voice" link. Proposals: task/template/module/job/decision (per TFV2-0213…0217). Streaming turn with `EN: "Coach is writing" / HE: "המאמן כותב"`. Crisis view hides the composer and shows CrisisCard + paused notice. States default/empty/loading/error/offline + crisis + undo.
+- **TESTS:** Playwright clicks through: accept each proposal kind → Undo; open dial sheet and set value; press panic → grounding; `?view=crisis` → CrisisCard + paused; empty/loading/error/offline. Each at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** per-country crisis resources — UNKNOWN; answerer: Amit.
+
+### TFV2-0223 — Screen: coach history
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0207, TFV2-0208 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0207 + TFV2-0208.
+- **WHY:** REWRITE-PLAN §5.1 ("Coach history" — `(tempo)/history`); coach-history.html.
+- **GOAL:** The history screen lists grouped conversations, searches by meaning/words, and handles empty/no-results/loading/error/offline.
+- **SCOPE:** `apps/web/app/(tempo)/history/page.tsx` · `apps/web/components/coach/ChatHistoryList.tsx` (wiring) · test: Playwright spec.
+- **MUTATES:** `apps/web/app/(tempo)/history/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map of coach-history.html. 2) Build the screen per markup. 3) Wire `listThreads`, `searchThreads`, `createThread`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "coach-history"` → every state at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** edit `convex/`, or run vector search from the client.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: `hist.title` `EN: "Chat history" / HE: "היסטוריית שיחות"`; `hist.sub` `EN: "Every conversation with your coach. Search by what it was about, or by the exact words." / HE: "כל השיחות שלך עם המאמן. אפשר לחפש לפי מה שדיברתן עליו, או לפי המילים המדויקות."`; `hist.new` `EN: "New conversation" / HE: "שיחה חדשה"`; no-results `EN: "Nothing matches that yet." / HE: "עוד אין התאמה."` + `EN: "Clear search" / HE: "ניקוי החיפוש"`; empty `EN: "No conversations yet." / HE: "עוד אין שיחות."` + `EN: "Talk to the coach" / HE: "לדבר עם המאמן"`; loading `EN: "Loading your conversations" / HE: "טוען את השיחות שלך"`; error `EN: "Couldn't load your conversations." / HE: "לא הצלחנו לטעון את השיחות."`; offline `EN: "You're offline. Your conversations are still here. Search uses exact words until you're back." / HE: "אין חיבור לרשת. השיחות שלך עדיין כאן. החיפוש עובד לפי מילים מדויקות עד שהחיבור יחזור."`. Count `EN: "conversations"/"conversation" / HE: "שיחות"/"שיחה"`.
+- **TESTS:** Playwright: list groups render; type a query → results filter; switch mode; no-results → clear; empty state; loading; error; offline. Each at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.12 (meaning search) — UNKNOWN; answerer: Amit.
+
+### TFV2-0224 — Screen: memory
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0218, TFV2-0220 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0218 + TFV2-0220.
+- **WHY:** REWRITE-PLAN §5.1 ("Memory" — `(tempo)/settings/memory`); memory.html.
+- **GOAL:** The memory screen lists/filters memories, shows life-graph guesses, exports, and forgets everything with a confirm sheet.
+- **SCOPE:** `apps/web/app/(tempo)/settings/memory/page.tsx` · `apps/web/components/memory/MemoryItem.tsx` (wiring) · test: Playwright spec.
+- **MUTATES:** `apps/web/app/(tempo)/settings/memory/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map of memory.html. 2) Build per markup. 3) Wire `memory.list`, `memory.forget`, `memory.forgetAll`, `memory.exportMarkdown`, `lifeGraph.confirmGuess`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "memory-screen"` → every state at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** edit `convex/`, or forget without the confirm sheet.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: `mm.title` `EN: "What Tempo remembers" / HE: "מה Tempo זוכר"`; `mm.sub` `EN: "Small things Tempo keeps so the coach doesn't make you repeat yourself. Forget anything, any time. Only you can see this." / HE: "דברים קטנים ש־Tempo שומר כדי שהמאמן לא יבקש ממך לחזור על עצמך. אפשר לשכוח כל דבר, בכל רגע. רק את רואה את זה."`; `mm.import` `EN: "Import from ChatGPT or Claude" / HE: "ייבוא מ־ChatGPT או מ־Claude"`; filter `EN: "All"/"From you"/"Imported" / HE: "הכול"/"ממך"/"מיובאים"`; `mem.title` `EN: "Things Tempo remembers" / HE: "דברים ש־Tempo זוכר"`; `g.title` `EN: "Links Tempo guessed" / HE: "קשרים ש־Tempo ניחש"`; export + `fa.label` `EN: "Forget everything" / HE: "לשכוח הכול"` with confirm sheet `fs.title` `EN: "Forget everything Tempo remembers?" / HE: "לשכוח את כל מה ש־Tempo זוכר?"` + `fs.confirm` `EN: "Forget everything" / HE: "לשכוח הכול"`; empty `EN: "Tempo doesn't remember anything yet." / HE: "Tempo עוד לא זוכר כלום."`; error `EN: "Couldn't load your memories." / HE: "לא הצלחנו לטעון את הזיכרונות."`; offline `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור כרגע. השינויים יישמרו כשתחזרי."`.
+- **TESTS:** Playwright: filter All/From you/Imported; forget one → Undo; confirm a guess; export; forget-all confirm sheet → empty + Undo; empty/loading/error/offline. Each at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.8 (forget semantics) — UNKNOWN; answerer: Amit.
+
+### TFV2-0225 — Screen: memory import
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0219 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `web` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0219.
+- **WHY:** REWRITE-PLAN §5.1 ("Memory import" — `(tempo)/settings/memory/import`); memory-import.html.
+- **GOAL:** The import screen runs the paste/upload → review → save flow, with nothing saved until Save and a 5-minute Undo.
+- **SCOPE:** `apps/web/app/(tempo)/settings/memory/import/page.tsx` · `apps/web/components/memory/ImportReview.tsx` (wiring) · test: Playwright spec.
+- **MUTATES:** `apps/web/app/(tempo)/settings/memory/import/page.tsx` (new).
+- **STEPS:** 1) Graphify code-map of memory-import.html. 2) Build the 3-step flow (paste/upload → review → saved). 3) Wire `importPreview`/`importCommit`/`undoImport`. 4) Playwright every state at 390/1280, EN/HE. 5) Run DONE.
+- **DONE:** `CI=1 bunx playwright test -- --grep "memory-import"` → every state at 390 and 1280, EN and HE.
+- **EVIDENCE:** Playwright output + screenshot.
+- **DO NOT:** save before Save, or persist the raw text.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy EN/HE: `mi.title` `EN: "Bring your memory from ChatGPT or Claude" / HE: "להביא את הזיכרון שלך מ־ChatGPT או מ־Claude"`; `mi.sub` `EN: "So you don't have to explain yourself twice. You'll see every item first and choose what to keep. Nothing is saved until you press Save." / HE: "כדי שלא תצטרכי להסביר את עצמך פעמיים. תראי כל פריט קודם ותבחרי מה לשמור. שום דבר לא נשמר עד שתלחצי על שמירה."`; `s1.title` `EN: "Add the memory text" / HE: "להוסיף את טקסט הזיכרון"`; `s1.from` `EN: "Where is it from?" / HE: "מאיפה זה?"` (ChatGPT/Claude); `s1.paste`/`s1.upload` `EN: "Paste text"/"Upload a file" / HE: "הדבקת טקסט"/"העלאת קובץ"`; tip `EN: "Tip: ask ChatGPT or Claude \"List everything you remember about me\", then copy the whole answer." / HE: "טיפ: בקשי מ־ChatGPT או מ־Claude ״תכתוב את כל מה שאתה זוכר עליי״, ואז העתיקי את כל התשובה."`; `s1.find` `EN: "Find the items" / HE: "למצוא את הפריטים"`; `s2.title` `EN: "Choose what Tempo keeps" / HE: "לבחור מה Tempo ישמור"`; saved `EN: "memories saved." / HE: "זיכרונות נשמרו."`; empty `EN: "Tempo didn't find anything to remember in that text." / HE: "Tempo לא מצא בטקסט הזה משהו לזכור."`; error `EN: "Couldn't read that." / HE: "לא הצלחנו לקרוא את זה."`; offline `EN: "You're offline. Changes save when you're back." / HE: "אין חיבור כרגע. השינויים יישמרו כשתחזרי."`.
+- **TESTS:** Playwright: empty paste → inline error; paste text → Find → review; keep/edit/drop → count; Save → saved panel + Undo toast; undo → back to review; empty/loading/error/offline. Each at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 · target 24×24 · motion ≤ 250 ms · LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1 (web.dev).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0226 — Coach prompt build + dial tone (verify + full test)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0166 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0166.
+- **WHY:** PRD F-25 (dial changes tone); `convex/lib/coachPrompt.ts` (`systemPrompt(dial)`).
+- **GOAL:** The system prompt carries the dial (0–10) and the never-shame / proposal-only rules, covered by a full unit test.
+- **SCOPE:** `convex/lib/coachPrompt.ts` · test: `convex/lib/coachPrompt.test.ts`.
+- **MUTATES:** `convex/lib/coachPrompt.ts` (verify existing).
+- **STEPS:** 1) Graphify code-map (`systemPrompt(dial)` + `buildCoachMessages` exist — verify). 2) Confirm the dial is injected and tone rules are present. 3) Fill any missing unit-test coverage (dial range, page/memory/task block order, no-shame line). 4) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachPrompt"` → full coverage green.
+- **EVIDENCE:** DONE output + the prompt lines.
+- **DO NOT:** change the proposal JSON shape, or remove the never-shame rule.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `systemPrompt(dial)` includes "Current accountability dial: N / 10" and the never-shame line. `buildCoachMessages` emits role → today → page → memory → tasks → web → thread. Coverage: every `COACH_LIMITS` truncation, JSON parse, `withoutAcceptPromise`.
+- **TESTS:** Given dial 0 and 10 / Then each injects its number and the tone line. Given a page + memory + tasks / Then blocks appear in the documented order. Given a reply promising a card with no proposal / Then `withoutAcceptPromise` strips it.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0227 — Coach load rules (verify + full test)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0170 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0170.
+- **WHY:** PRD F-25 (graduated load 2→4, forgiveness contract); `convex/lib/coachLoad.ts`.
+- **GOAL:** The pure load rules are fully unit-tested (accept/reject/raise/floor/10-second action).
+- **SCOPE:** `convex/lib/coachLoad.ts` · test: `convex/lib/coachLoad.test.ts`.
+- **MUTATES:** `convex/lib/coachLoad.ts` (verify existing).
+- **STEPS:** 1) Graphify code-map (exists — verify). 2) Fill coverage for `afterAccept`, `afterReject`, `effectiveLoad`, `taskMinutes`, `checkRealism`, `pickTenSecondAction`. 3) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachLoad"` → full coverage green.
+- **EVIDENCE:** DONE output + coverage report.
+- **DO NOT:** change the constants, or lower a threshold.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `MIN_LOAD=2`, `MAX_LOAD=4`, `STREAK_FOR_RAISE=3`, `DEFAULT_TASK_MINUTES=25`, `PANIC_MS=30 min`. Tests cover every branch.
+- **TESTS:** Given streak 3 / Then load rises ≤ 4 and streak resets. Given reject / Then load 2, streak 0. Given bad day / Then effective load 2. Given a task with no estimate / Then 25 min.
+- **NUMBERS:** load 2..4 → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0228 — Coach proposal guard (verify + full test)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0157 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0157.
+- **WHY:** `convex/lib/coachProposalGuard.ts` (a task already open on Today is never offered again); #1031.
+- **GOAL:** The duplicate open-task guard is verified and fully tested (duplicate dropped + note appended).
+- **SCOPE:** `convex/lib/coachProposalGuard.ts` · test: `convex/lib/coachProposalGuard.test.ts`.
+- **MUTATES:** `convex/lib/coachProposalGuard.ts` (verify existing).
+- **STEPS:** 1) Graphify code-map (exists — verify). 2) Fill coverage for `duplicateOfOpenTask`, `cardTitle`, and the `ALREADY_ON_TODAY_NOTE` EN/HE. 3) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coachProposalGuard"` → green.
+- **EVIDENCE:** DONE output + coverage.
+- **DO NOT:** change the note copy, or let a duplicate task card pass.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `duplicateOfOpenTask(proposal, openToday)` returns the matching open task title or null; `cardTitle` normalises title for comparison. Note EN/HE kept as-is.
+- **TESTS:** Given a proposal for an already-open task / Then it is dropped and the note appended. Given a genuinely new task / Then the card stays.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0229 — Memory: salience/access bump on recall
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0177 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0177.
+- **WHY:** `memories.accessCount`/`lastAccessed`/`salience` (access strengthens a memory).
+- **GOAL:** A recalled memory has its `lastAccessed` and `accessCount` bumped and salience nudged up (capped 1.0).
+- **SCOPE:** `convex/memory.ts` · test: `convex/memory.test.ts`.
+- **MUTATES:** `convex/memory.ts` (add a touch step).
+- **STEPS:** 1) Graphify code-map. 2) Add an internal `touchMemories(ids)` mutation that sets `lastAccessed = now`, `accessCount += 1`, and nudges `salience` up (capped 1.0). 3) Call it after recall returns. 4) Test bump/cap/owner. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memory"` → access-bump cases green.
+- **EVIDENCE:** DONE output + the touch step.
+- **DO NOT:** touch another user's rows, or exceed salience 1.0.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `touchMemories({ memoryIds })` → `{ touched }` (internal). Sets `lastAccessed`, increments `accessCount`, `salience = min(1.0, salience + 0.02)`.
+- **TESTS:** Given a recall / Then the recalled rows get a bump. Given salience already 1.0 / Then unchanged. Given a foreign id / Then skipped.
+- **NUMBERS:** salience cap 1.0, bump +0.02 → pass (product constants) | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0230 — Crisis fixed card + Hebrew crisis phrases (verify + test)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0154 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0154.
+- **WHY:** PRD F-24 (fixed crisis card, never model-written); `convex/lib/crisisWords.ts`, `convex/crisis.ts`.
+- **GOAL:** The fixed crisis word list and card are verified and the Hebrew crisis phrases are added, all model-free.
+- **SCOPE:** `convex/lib/crisisWords.ts` · `convex/crisis.ts` · test: `convex/lib/crisisWords.test.ts`.
+- **MUTATES:** `convex/lib/crisisWords.ts` (add Hebrew phrases), `convex/crisis.ts` (verify).
+- **STEPS:** 1) Graphify code-map (exists — verify). 2) Add Hebrew crisis phrases (`להתאבד`, `רוצה למות`, `פגיעה עצמית`, `לפגוע בעצמי`, etc.) to a parallel list; `isCrisisText` matches either language. 3) Confirm `resourcesCard` is fixed content and no model is called. 4) Test EN + HE detection. 5) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="crisisWords"` → EN + HE cases green.
+- **EVIDENCE:** DONE output + the phrase lists.
+- **DO NOT:** write card text from a model, or remove an existing English phrase.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `isCrisisText(text)` normalises and substring-matches the EN `CRISIS_PHRASES` plus the new HE `CRISIS_PHRASES_HE`. The card stays fixed. Per-country resources: UNKNOWN (PRD F-24 "per-country data MVP").
+- **TESTS:** Given "I want to die" / Then crisis true. Given "אני רוצה למות" / Then crisis true. Given a non-crisis message / Then false. Given crisis / Then `resourcesCard` returns the fixed text and no model call.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** per-country crisis resources — UNKNOWN; answerer: Amit.
+
+### TFV2-0231 — Memory import source handling (verify + test)
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0192 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `memory` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0192.
+- **WHY:** `convex/memory.ts` `importSourceOf`/`SOURCE_NAME` (import source labels); memory.html source marks.
+- **GOAL:** Import-source metadata round-trips (store → read → label) and is fully tested.
+- **SCOPE:** `convex/memory.ts` · `convex/lib/memoryImport.ts` · test: `convex/lib/memoryImport.test.ts`.
+- **MUTATES:** `convex/memory.ts` (verify), `convex/lib/memoryImport.ts` (verify).
+- **STEPS:** 1) Graphify code-map (exists — verify). 2) Fill coverage for `importSourceOf`, `SOURCE_NAME`, `exportLine` source marks, `parseMemoryExport` shapes. 3) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="memoryImport"` → source-handling cases green.
+- **EVIDENCE:** DONE output + coverage.
+- **DO NOT:** change the source labels, or mislabel an imported source.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `importSourceOf(metadata)` reads `metadata.source` ∈ `chatgpt|claude|grok|other`; `SOURCE_NAME` maps to `ChatGPT|Claude|Grok`; `exportLine` appends `(imported from X)` or `(imported)`.
+- **TESTS:** Given `metadata:{ source:"chatgpt" }` / Then `importSourceOf` → `chatgpt` and export appends `(imported from ChatGPT)`. Given `other` / Then `(imported)`. Given no source / Then no mark.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0232 — Chunk 3 integration E2E: coach tool → accept → memory recall
+- **Stage:** C · **Pass:** 1 · **Depends:** TFV2-0157, TFV2-0177, TFV2-0222, TFV2-0224 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane `coach` per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0157 + TFV2-0177 + TFV2-0222 + TFV2-0224.
+- **WHY:** PRD §3.1 exit checks (coach acts on Today; memory recall feeds the coach); b03-style contract test.
+- **GOAL:** One contract test proves: coach proposes a task → Accept → task on Today → memory recalls it → coach context sees it, end to end.
+- **SCOPE:** `convex/coach_memory_smoke.test.ts` (new) · test only.
+- **MUTATES:** `convex/coach_memory_smoke.test.ts` (new test).
+- **STEPS:** 1) Graphify code-map. 2) Write a `convex-test` scenario (mock model seam) that: sends a message → gets a task proposal → accepts → asserts the task exists → recalls a related memory → asserts the coach context includes it. 3) Run DONE.
+- **DONE:** `bun run test -- --test-name-pattern="coach_memory_smoke"` → the full round trip passes.
+- **EVIDENCE:** DONE output + the scenario.
+- **DO NOT:** call a real provider, or assert UI outside Playwright (covered by TFV2-0222/0224).
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Uses the mock model seam; asserts: (1) user message stored; (2) a `task` proposal returned; (3) Accept creates the task; (4) `recall` finds a memory; (5) `context`/coach messages include it. No network, no key.
+- **TESTS:** Given the scenario / When each step runs in order / Then all five assertions hold.
+- **NUMBERS:** none → n/a | UNKNOWN none.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** §4.3 (mock mirrors which real model) — UNKNOWN; answerer: Amit.
+
+## Chunk 4 — MVP · Modules, jobs, billing, language, polish
+
+### TFV2-0233 — Template module data fields (origin / status / enabled / summary)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-41/F-42/F-43; TRD §4a; BACKEND-SCHEMA `templates`.
+- **GOAL:** A template carries the four module fields so it can be validated, approved and switched off.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates` docs (new optional fields `origin`, `status`, `enabled`, `summary`), `template.data` block.
+- **STEPS:** 1) Graphify code-map check of `convex/templates.ts` (the unit already EXISTS — verify and extend); 2) add `origin: "builtin"|"user"`, `status: "draft"|"live"`, `enabled: boolean`, `summary: string` to the template doc validator and the `template.data` envelope; 3) default `origin:"user"`, `status:"live"`, `enabled:true`, `summary:""` on existing rows; 4) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output + diff; `REPORT` lists every STEP.
+- **DO NOT:** touch `convex/schema.ts` (fields are inside `template.data`, not new columns); do not change starter template bodies.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `templateValidator` gains four optional fields. `origin` is `builtin` only for `starter:*` ids and is never writable by the client; `status` moves `draft → live` only via the approve mutation (TFV2-0246); `enabled` defaults true; `summary` is the plain-language "what this module does" text generated by code from validated content, never by the model (TRD §4a). Auth: `requireUser`; owner-only for `user` docs. Error cases: missing user → unauthenticated; a `starter:*` id carrying `origin:"user"` → rejected.
+- **TESTS:** Given a user template · When `create` is called · Then the doc has `origin:"user"`, `status:"live"`, `enabled:true`, `summary:""`. Given a starter id · When read through `get` · Then `origin:"builtin"` and `status:"live"`. Given a client that passes `origin:"builtin"` on `create` · Then it is ignored/overridden to `"user"`.
+- **NUMBERS:** none applicable · `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0234 — Templates list / get return module fields
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0233.
+- **WHY:** PRD F-43; TRD §4a; components.md §2.13 (`ModuleCard`).
+- **GOAL:** `templates.list` and `templates.get` return the module fields so the Modules screen can render built-in and user modules.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** none (read path).
+- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) include `origin`, `status`, `enabled`, `summary` in `templateValidator`/`TemplateView`; 3) `list({scope})` returns starters + live mine, marking each `builtIn = origin==="builtin"`; 4) `get({templateId})` returns null for a soft-deleted or foreign doc; 5) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** return raw `body` to unauthenticated callers; do not expose other users' templates.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `list(scope: "all"|"starter"|"mine")` → `TemplateView[]`; `get(templateId: string)` → `TemplateView|null`. Auth: `requireUser`; owner-only. Error cases: unauthenticated → error; foreign/soft-deleted doc → `null`; unknown starter id → `null`. Limits: starters are static (9 entries); user rows paginated by the existing `by_userId` index.
+- **TESTS:** Given a user with 2 live and 1 soft-deleted template · When `list({scope:"mine"})` · Then only the 2 live return. Given a `starter:daily-page` id · When `get` · Then `builtIn:true` and `origin:"builtin"`. Given another user's template id · When `get` by this user · Then `null`. Given no auth · When `list` · Then unauthenticated error.
+- **NUMBERS:** none applicable · `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0235 — Templates create / update for user modules
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0233.
+- **WHY:** PRD F-42/F-43; TRD §4a.
+- **GOAL:** A user can create and update their own template modules; built-ins stay read-only.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates` docs.
+- **STEPS:** 1) Graphify code-map check (EXISTS — `create`/`update` present, verify); 2) `create({name,description,periodType,body})` sets `origin:"user"`, `status:"live"`, `enabled:true`; 3) `update` refuses `starter:*` ids with "Starter templates cannot be changed"; 4) trim-empty name → error; 5) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** allow editing built-ins; do not let `update` change `origin`/`status`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `create({name: string, description?: string, periodType, body: string})` → `Id<"templates">`; `update({templateId: Id<"templates">, name?, description?, periodType?, body?})` → `Id<"templates">`. Auth: `requireUser` + `ownedTemplate` owner check. Error cases: empty name → `"Name is required"`; starter id → `"Starter templates cannot be changed"`; missing/foreign/soft-deleted doc → `"Template not found"`/`"Access denied"`. `status` is never set by `create`/`update` (only the approval flow in TFV2-0246).
+- **TESTS:** Given valid input · When `create` · Then doc has `origin:"user"`, `enabled:true`. Given empty name · When `create`/`update` · Then `"Name is required"`. Given a `starter:*` id · When `update` · Then `"Starter templates cannot be changed"`. Given another user's id · When `update` · Then `"Access denied"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0236 — Templates remove (soft delete) + restore
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235.
+- **WHY:** PRD F-131 (soft delete 30-day grace); TRD §7.5.
+- **GOAL:** Deleting a template hides it at once and can be undone for 5 minutes.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates.deletedAt`, `templates.updatedAt`.
+- **STEPS:** 1) Graphify code-map check (`remove` EXISTS — verify); 2) `remove` sets `deletedAt` (no hard delete); 3) add `restore({templateId})` clearing `deletedAt`; 4) both refuse `starter:*`; 5) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** hard-delete rows; do not touch `convex/pageCleanup.ts`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `remove({templateId: Id<"templates">})` → `null`; `restore({templateId: Id<"templates">})` → `null`. Auth: `requireUser` + owner. Error cases: starter id → `"Starter templates cannot be removed"`; foreign/soft-deleted/missing → `"Template not found"`/`"Access denied"`; no auth → unauthenticated. Undo window is 5 minutes at the UI layer; the 30-day grace is `deletedAt`.
+- **TESTS:** Given a user template · When `remove` · Then `deletedAt` set and `list` omits it. Given `restore` on the same id · Then `deletedAt` cleared and `list` includes it. Given a starter id · When `remove`/`restore` · Then error. Given another user's id · Then `"Access denied"`.
+- **NUMBERS:** soft-delete grace 30 days (repo convention; PRD F-131) · `UNKNOWN` (exact sweep job is chunk A).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0237 — Templates duplicate
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235.
+- **WHY:** components.md §2.3 (`SortMenu` duplicate); templates screen `templates.duplicate`.
+- **GOAL:** "Duplicate" copies a template (body and sections) as a new user template.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates` docs (insert one copy).
+- **STEPS:** 1) Graphify code-map check (`duplicate` MISSING — add); 2) `duplicate({templateId})` reads a starter or owned user template, inserts a copy named `<name> (2)` with `origin:"user"`, `status:"live"`, `enabled:true`; 3) return the new id; 4) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** mutate the source; do not copy `deletedAt`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `duplicate({templateId: string})` → `Id<"templates">`. Auth: `requireUser`. Error cases: no auth → unauthenticated; unknown/soft-deleted id → `"Template not found"`; foreign id → `"Access denied"`. Starter ids may be duplicated (copy becomes `origin:"user"`).
+- **TESTS:** Given a starter id · When `duplicate` · Then a new user template with the same `body` and name suffix ` (2)` exists. Given an owned template · When `duplicate` · Then `origin:"user"` and independent id. Given unknown id · Then `"Template not found"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0238 — Templates applyToNote / proposeForPage (verify existing)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-04/F-05/F-06; templates screen flow.
+- **GOAL:** Confirm the existing starter-proposal and apply paths still satisfy the module flow and add the missing test coverage.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `notes` (insert on apply).
+- **STEPS:** 1) Graphify code-map check (EXISTS — `proposeForPage`/`applyToNote`); 2) verify `proposeForPage` returns `null` for `periodType:"none"`; 3) verify `applyToNote` resolves starter or owned user template and inserts a `notes` row with `periodType`; 4) add the missing unit tests; 5) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** change the proposal reason copy; do not write JSON into `notes.body` beyond the existing block envelope.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `proposeForPage({periodType, title?})` → `{templateId,name,reason}|null`; `applyToNote({templateId, title?})` → `Id<"notes">`. Auth: `requireUser`. Error cases: `none` period → `null` proposal; unknown template id → `"Template not found"`; no auth → unauthenticated.
+- **TESTS:** Given `periodType:"daily"` · When `proposeForPage` · Then `starter:daily-page` returned with a reason. Given `periodType:"none"` · Then `null`. Given a valid template id · When `applyToNote` · Then a `notes` row with that `body` and `periodType`. Given an unknown id · Then `"Template not found"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0239 — Template run draft (saveRunDraft / getRunDraft / apply)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0234.
+- **WHY:** template-run screen (`@data templates.getRunDraft`; `@actions saveRunDraft`/`apply`).
+- **GOAL:** A half-finished template run is saved per user and resumed later; applying makes the page.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** a `templateRunDrafts` row per user+template (via `templates` body or a side doc — see OPEN).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getRunDraft({templateId})` → `{answers: Record<step,string>}|null`; 3) `saveRunDraft({templateId, step, answer})` upserts; 4) `apply({templateId, answers})` resolves the template, substitutes question answers into the body, inserts a `notes` page, returns `pageId`; 5) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** charge a model call; do not persist raw answers outside this user's row.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `getRunDraft({templateId: string})`, `saveRunDraft({templateId: string, step: string, answer: string})`, `apply({templateId: string, answers: Record<string,string>})` → `Id<"notes">`. Auth: `requireUser`, owner. Error cases: no auth → unauthenticated; unknown template → `"Template not found"`; foreign → `"Access denied"`. Blank answers are allowed (leave the heading empty).
+- **TESTS:** Given a template with 2 question blocks · When `saveRunDraft` twice then `getRunDraft` · Then both answers persist. Given `apply` with answers · Then a page whose body contains the substituted answers. Given an unknown template · Then `"Template not found"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** where run drafts are stored (a dedicated `templateRunDrafts` table vs a field on `templates`) — Amit. This ticket may need `convex/schema.ts`; if so, stop and report `blocked: scope overflow`.
+
+### TFV2-0240 — Template builder blocks (insert/move/duplicate/remove/publish)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235.
+- **WHY:** template-builder screen (`@actions templates.insertBlock/moveBlock/duplicateBlock/removeBlock/publish`).
+- **GOAL:** The builder edits a template's blocks and publishes it so it appears in Templates.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** `templates.body` (block list), `templates.status`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `insertBlock({id, afterId, type})`, `moveBlock({id, blockId, toIndex})`, `duplicateBlock({id, blockId})`, `removeBlock({id, blockId})` operate on the fenced-JSON blocks inside `body`; 3) `publish({id})` sets `status:"live"`; 4) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** render blocks; do not call a model; do not touch `convex/notes.ts`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. All five mutations auth via `requireUser` + owner. Block list edits must keep valid `json tempo` fences; an invalid edit is rejected. Error cases: no auth → unauthenticated; unknown id → `"Template not found"`; foreign → `"Access denied"`; `blockId` not found → `"Block not found"`; starter id → `"Starter templates cannot be changed"`.
+- **TESTS:** Given a template body with 2 blocks · When `insertBlock` after block 1 · Then 3 blocks. When `removeBlock` block 2 · Then 2 blocks. When `moveBlock` block 2 to index 0 · Then order swaps. Given a bad `blockId` · Then `"Block not found"`. Given a starter id · Then `"Starter templates cannot be changed"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0241 — Template sketch (saveSketch / getSketch / proposeTemplate / createFromProposal)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235.
+- **WHY:** template-sketch screen (`@actions templates.saveSketch`, `coach.proposeTemplate`, `templates.createFromProposal`).
+- **GOAL:** A rough outline autosaves; the coach turns it into a proposal; Accept creates the template.
+- **SCOPE:** `convex/templates.ts` + `convex/templates.test.ts`.
+- **MUTATES:** sketch draft row; `templates` (on create).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getSketch({})` → `{text}|null`; `saveSketch({text})` upserts; 3) `proposeTemplate({outline})` calls the coach (action) and returns a proposal card payload, saving nothing; 4) `createFromProposal({proposalId})` validates and inserts the template; 5) run DONE.
+- **DONE:** `bun test convex/templates.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist a proposal as a live template before Accept; do not call the model in unit tests (mock the seam).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; empty outline → `"Outline is required"`; invalid proposal → `"Proposal is invalid"` (stays a draft); missing proposal id → `"Proposal not found"`. `proposeTemplate` runs in an action and returns a JSON-render-spec proposal, validated before return.
+- **TESTS:** Given text · When `saveSketch` then `getSketch` · Then text round-trips. Given an empty outline · When `proposeTemplate` · Then `"Outline is required"`. Given a valid proposal · When `createFromProposal` · Then a `live` template exists. Given an invalid proposal · Then `"Proposal is invalid"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0242 — View module: `view` block schema + Zod validation
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0233 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0233.
+- **WHY:** PRD F-44; TRD §4a ("View module [MVP]").
+- **GOAL:** A `view` block type exists whose `data` is a validated json-render spec using only catalog components and actions.
+- **SCOPE:** `convex/lib/moduleValidation.ts` + `convex/lib/moduleValidation.test.ts`.
+- **MUTATES:** none (new library).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) define Zod schemas for `view` spec: `type` ∈ catalog component names, `actions` ∈ catalog action names; 3) reject any URL, `script`, unknown component or unknown action; 4) export `validateViewSpec(spec)` → `{ok, problems[]}`; 5) run DONE.
+- **DONE:** `bun test convex/lib/moduleValidation.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** execute the spec; do not import React; keep the validator pure.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend library. `validateViewSpec(spec: unknown): { ok: boolean; problems: string[] }`. The allowed `type` set and `action` set come from the catalog (components.md §2). Error cases: unknown component → problem listing the name; unknown action → problem; any `url`, `http`, `script`, `eval` string → problem; non-object → problem. A spec with any problem is invalid and its module stays `draft`.
+- **TESTS:** Given a spec with a catalog component · When validated · Then `ok:true`. Given a spec with an unknown component · Then `ok:false` + problem names it. Given a spec with a `script` string · Then `ok:false`. Given a spec with a URL field · Then `ok:false`. Given a non-object · Then `ok:false`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** the exact catalog component/action name list as exported constants — Amit (syncs with chunk A's catalog).
+
+### TFV2-0243 — View module: layout resolution + fallback
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0242.
+- **WHY:** PRD F-44; TRD §4a ("a module that fails at render falls back to the built-in layout").
+- **GOAL:** A page type resolves its enabled view modules; a failing one falls back to the built-in layout without breaking the page.
+- **SCOPE:** `convex/lib/moduleResolution.ts` + `convex/lib/moduleResolution.test.ts`.
+- **MUTATES:** none (pure resolution).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `resolveViewFor(pageType, modules)` returns the highest-priority enabled `view` module for the type, else `null`; 3) wrap resolution so an invalid/failed spec returns the built-in layout; 4) run DONE.
+- **DONE:** `bun test convex/lib/moduleResolution.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** render React here; do not mutate pages.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend library. Input: page type + list of enabled user modules. Output: a resolvable spec or `null` (built-in). Error case: any module that throws or fails validation during resolution is skipped (never breaks the page).
+- **TESTS:** Given one enabled `view` for `daily` · When resolved for `daily` · Then that spec. When resolved for `weekly` · Then `null`. Given a module that fails validation · Then resolution returns the next module or `null` (built-in), never throws.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** priority/ordering of multiple view modules per type — Amit.
+
+### TFV2-0244 — Code module: sandboxed iframe widget (postMessage)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0242.
+- **WHY:** PRD F-46; TRD §1 (Sandboxed code [MVP]).
+- **GOAL:** A page code block renders as a widget inside a sandboxed iframe that talks only via `postMessage` with catalog actions.
+- **SCOPE:** `apps/web/components/modules/CodeWidget.tsx` + `apps/web/components/modules/CodeWidget.test.tsx`.
+- **MUTATES:** none (render surface).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `<iframe sandbox="allow-scripts" srcDoc=…>` without `allow-same-origin`; 3) accept only whitelisted catalog-action `postMessage` from the frame; 4) no env/keys are ever passed in; 5) run DONE.
+- **DONE:** `bun run test -- apps/web/components/modules/CodeWidget.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** add `allow-same-origin`; do not forward user keys into the iframe; do not run code in the app process.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. `CodeWidget({spec, onAction})`. Sandbox flags: `sandbox="allow-scripts"` only. `postMessage` protocol `{type:"tempo-action", action, payload}`; unknown actions ignored. States: default (widget drawn), error (frame refuses → quiet `BrokenBlock` copy), offline (widget unavailable). Copy EN/HE: `EN:"This part has a problem." / HE:"יש בעיה בחלק הזה."`
+- **TESTS:** Given a spec · When rendered · Then an iframe with `sandbox="allow-scripts"` and no `allow-same-origin`. Given a foreign message · Then `onAction` is not called. Given an unknown action · Then ignored.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0245 — Code module: Vercel Sandbox script micro-VM
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0242.
+- **WHY:** PRD F-46; TRD §1 (Vercel Sandbox, fresh micro-VM per run, timeout).
+- **GOAL:** A script block runs only in a fresh Vercel Sandbox micro-VM with a timeout, never in the app process.
+- **SCOPE:** `convex/lib/sandboxRunner.ts` + `convex/lib/sandboxRunner.test.ts`.
+- **MUTATES:** none (execution wrapper).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) wrap `@vercel/sandbox` behind `runInSandbox({code, timeoutMs})` → `{stdout, stderr, timedOut}`; 3) enforce a hard timeout; 4) never pass env vars or keys; 5) run DONE.
+- **DONE:** `bun test convex/lib/sandboxRunner.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** run code in-process; do not pass `process.env`; do not invent pricing (see OPEN).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `runInSandbox({code: string, timeoutMs: number}): Promise<{stdout:string; stderr:string; timedOut:boolean}>`. Auth: caller must be an approved code-module run (server-side gate). Error cases: timeout → `timedOut:true`; sandbox unavailable → `UNKNOWN` (report, do not fake). Limits: fresh micro-VM per run.
+- **TESTS:** Given a script printing to stdout · When run · Then stdout captured. Given a script exceeding timeout · Then `timedOut:true`. Given unavailable sandbox in CI · Then the test asserts the `UNKNOWN` branch (mocked) rather than failing.
+- **NUMBERS:** timeout value · `UNKNOWN` (Amit — Vercel Sandbox limits/pricing are UNKNOWN, TRD §1).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Vercel Sandbox pricing/limits + timeout — Amit.
+
+### TFV2-0246 — Module validation + approve / discard draft
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0242.
+- **WHY:** PRD F-41/F-42; TRD §4a ("draft → live only on the user's tap").
+- **GOAL:** A module that fails validation never goes live; Approve and Discard are the only path to live/removed.
+- **SCOPE:** `convex/modules.ts` + `convex/modules.test.ts`.
+- **MUTATES:** `templates.status` (and module docs).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getDraft({draftId})` returns `{name, madeBy, validation:{ok,problems[]}, summary, previewPage}`; 3) `approve({draftId})` re-validates server-side and only then sets `status:"live"`; 4) `discardDraft({draftId})` removes the draft (nothing live changes); 5) run DONE.
+- **DONE:** `bun test convex/modules.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** let `approve` succeed on a failed validation; do not change any page on `discard`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser` + owner. Error cases: no auth → unauthenticated; unknown draft → `"Draft not found"`; validation failed → `"Validation failed"` (approve refuses); foreign → `"Access denied"`. `summary` is generated by code from the validated content, never by the model.
+- **TESTS:** Given a valid draft · When `approve` · Then `status:"live"`. Given an invalid draft · When `approve` · Then `"Validation failed"` and status stays `draft`. Given `discard` · Then draft gone and no page changed. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether `getDraft` lives in `modules.ts` vs `templates.ts` (module registry split) — Amit.
+
+### TFV2-0247 — Plain mode flag + setPlainMode
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0246 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0246.
+- **WHY:** PRD F-43 ("Plain mode turns every user module off"); TRD §4a.
+- **GOAL:** One flag pauses every `origin:"user"` module; built-ins keep working.
+- **SCOPE:** `convex/modules.ts` + `convex/modules.test.ts`.
+- **MUTATES:** per-user `plainMode` flag.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getPlainMode({})` → boolean; `setPlainMode({on})` toggles; 3) `modules.list` omits user modules when plain mode is on (built-ins remain); 4) run DONE.
+- **DONE:** `bun test convex/modules.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** disable built-ins under plain mode; do not delete anything.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated. `setPlainMode({on: boolean})` → `null`. Plain mode affects only `origin:"user"` modules.
+- **TESTS:** Given plain mode off · When `list` · Then user modules present. Given `setPlainMode({on:true})` · When `list` · Then user modules omitted, built-ins present. Given `setPlainMode({on:false})` · Then user modules return. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** where `plainMode` is stored (`users` vs `preferences`) — Amit (see REWRITE-PLAN §4 conflict 13).
+
+### TFV2-0248 — Modules list + setEnabled + built-in catalog
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0247 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0247.
+- **WHY:** PRD F-43; modules screen (`@data modules.list`, `@actions modules.setEnabled`).
+- **GOAL:** `modules.list` returns built-in + user modules with on/off state; `setEnabled` toggles one (built-ins can be turned off, never deleted).
+- **SCOPE:** `convex/modules.ts` + `convex/modules.test.ts`.
+- **MUTATES:** module `enabled` flags.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `list({})` → `{id,name,does,kind,builtIn,madeByCoach,on}[]`; 3) `setEnabled({moduleId, on})` toggles; built-ins cannot be deleted (no remove path); 4) run DONE.
+- **DONE:** `bun test convex/modules.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** expose a delete path for built-ins; do not let plain mode flip `enabled` on disk.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; unknown module id → `"Module not found"`; foreign → `"Access denied"`. Built-ins map from `STARTER_TEMPLATES` (`Daily page`, `Weekly page`, `Project page`, `Habits on Today`).
+- **TESTS:** Given 2 built-ins + 1 user module · When `list` · Then built-ins have `builtIn:true`, user has `madeByCoach`/`madeByYou`. When `setEnabled({on:false})` on a built-in · Then it is off but still listed. Given an unknown id · Then `"Module not found"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0249 — Scheduled jobs: @convex-dev/crons component install + config
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-47; TRD §1 + §5d (runtime-registered per-user jobs).
+- **GOAL:** The `@convex-dev/crons` component is installed and configured so jobs can be registered at runtime per user.
+- **SCOPE:** `convex/convex.config.ts` + `package.json` + `convex/jobs.ts`.
+- **MUTATES:** Convex component config (new component).
+- **STEPS:** 1) Graphify code-map check (`crons.ts` EXISTS — only the static 5-min cleanup; component MISSING); 2) add `@convex-dev/crons` to `convex.config.ts`; 3) create `convex/jobs.ts` exporting the component; 4) `bun install`; 5) run DONE.
+- **DONE:** `bun run typecheck` → no errors (component registers).
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** edit `convex/schema.ts` or `convex/auth*`; do not deploy; do not register a live job yet.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend config. The component enables `registerCron` at runtime. Names only, never keys.
+- **TESTS:** none beyond typecheck (component install). Given the component · When `typecheck` · Then it resolves.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether `convex/convex.config.ts` edit is allowed by scope-guard for a non-`convex-arch` ticket — Amit (if refused, report `blocked: config guard`).
+
+### TFV2-0250 — Scheduled jobs: scheduleJob mutation + approval
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0249 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0249.
+- **WHY:** PRD F-47; TRD §5d (`scheduleJob({cron, task, targetPageType})` needs approval).
+- **GOAL:** The coach registers a recurring job only after the user approves it; times are stored in UTC.
+- **SCOPE:** `convex/jobs.ts` + `convex/jobs.test.ts`.
+- **MUTATES:** job docs (schedule, task, target page type, enabled).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `scheduleJob({cron, task, targetPageType})` inserts a job with `enabled:true` only after approval; 3) store the cron in UTC and the user's time zone separately; 4) run DONE.
+- **DONE:** `bun test convex/jobs.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** register without approval; do not run a model in unit tests.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; invalid cron → `"Invalid schedule"`; empty task → `"Task is required"`; invalid target page type → `"Invalid target page type"`.
+- **TESTS:** Given a valid cron/task · When `scheduleJob` · Then a job doc with `enabled:true`. Given invalid cron · Then `"Invalid schedule"`. Given empty task · Then `"Task is required"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0251 — Scheduled jobs: run action writes into a page
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0250 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0250.
+- **WHY:** PRD F-47 ("each run's output lands in a page"); TRD §5d.
+- **GOAL:** A job run executes a one-off agent task (ToolLoopAgent) and writes its output into the target page.
+- **SCOPE:** `convex/jobs.ts` + `convex/jobs.test.ts`.
+- **MUTATES:** target `notes` page (append run output).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `runJob({jobId})` (internal action) loads the job, runs the agent with `stopWhen`, and writes output into the target page; 3) record `lastRun {at, result, pageTitle}` or a plain "didn't finish" state; 4) run DONE.
+- **DONE:** `bun test convex/jobs.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** run a real model in CI (mock the seam); do not write into another user's page.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: internal (scheduled). Error cases: unknown job → `"Job not found"`; disabled job → skipped; model failure → record `lastRun.result:"didn't finish"` and change nothing. Output is appended to the target page as markdown, never as raw JSON.
+- **TESTS:** Given an enabled job · When `runJob` (mocked agent) · Then output appears in the target page and `lastRun.result` is set. Given a disabled job · Then skipped. Given an agent failure · Then `lastRun.result:"didn't finish"` and the page unchanged.
+- **NUMBERS:** agent step cap 20 (AI SDK 6 default; TRD §1) · `UNKNOWN` (product confirm).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+### TFV2-0252 — Scheduled jobs: jobs.list + setEnabled
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0250 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0250.
+- **WHY:** PRD F-47; modules screen (`@data jobs.list`, `@actions jobs.setEnabled`).
+- **GOAL:** Jobs appear in the Modules list with name, schedule, last run and an on/off switch.
+- **SCOPE:** `convex/jobs.ts` + `convex/jobs.test.ts`.
+- **MUTATES:** job `enabled` flag.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `list({})` → `{id,name,scheduleText,lastRun{at,result,pageTitle},on}[]`; 3) `setEnabled({jobId,on})` toggles; 4) run DONE.
+- **DONE:** `bun test convex/jobs.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** delete jobs here; do not expose cron internals as JSON.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. `scheduleText` is rendered in the user's time zone but stored in UTC (TRD §5d). Error cases: no auth → unauthenticated; unknown job → `"Job not found"`; foreign → `"Access denied"`.
+- **TESTS:** Given 2 jobs · When `list` · Then both return with `scheduleText` and `lastRun`. When `setEnabled({on:false})` · Then `on:false`. Given unknown job · Then `"Job not found"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0253 — Coach artifacts: makeArtifact tool + catalog validation
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0242 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0242.
+- **WHY:** PRD F-28; TRD §4b (`makeArtifact(spec)`, catalog Zod schemas, `catalog.prompt()`).
+- **GOAL:** One coach tool creates flashcards, quizzes, checklists and trackers from a validated json-render spec.
+- **SCOPE:** `convex/lib/artifacts.ts` + `convex/lib/artifacts.test.ts`.
+- **MUTATES:** none (validation + factory).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `makeArtifact(spec)` validates against catalog Zod schemas (`Flashcard`, `Quiz`, `Checklist`, `Tracker` only); 3) reject unknown components/actions, URLs and scripts; 4) run DONE.
+- **DONE:** `bun test convex/lib/artifacts.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** save directly (the caller saves the artifact block); do not call the model in unit tests.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend library. `makeArtifact(spec: unknown): {ok:boolean; kind?; artifact?; problems:string[]}`. Kind ∈ `flashcard|quiz|checklist|tracker`. Error cases: unknown kind → problem; unknown component/action → problem; any URL/script → problem. The system prompt for this tool comes from `catalog.prompt()` with Tempo `customRules`.
+- **TESTS:** Given a valid flashcard spec · Then `ok:true`, `kind:"flashcard"`. Given a valid quiz spec · Then `ok:true`. Given an unknown kind · Then `ok:false` + problem. Given a spec with a script · Then `ok:false`. Given a non-object · Then `ok:false`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether json-render "inline mode" works with Convex Agent delta streaming (TRD §4b) — Amit.
+
+### TFV2-0254 — Coach artifacts: Flashcard schema + review
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0253.
+- **WHY:** PRD F-28/F-90; components.md §2.2 (`Flashcard`, `card-flip`/`card-step` → `studyCards.review`).
+- **GOAL:** The flashcard artifact has a Zod schema and a review step that flips and steps without hover.
+- **SCOPE:** `convex/lib/artifacts.ts` + `convex/lib/artifacts.test.ts`.
+- **MUTATES:** none (schema + pure review).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `FlashcardSchema = {cards:[{front,back}]}`; 3) `review({cards, index, dir})` returns the next index (clamped); 4) run DONE.
+- **DONE:** `bun test convex/lib/artifacts.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist a "streak"; do not auto-flip on hover.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `FlashcardSchema` requires non-empty `cards` with string `front`/`back`. `review` steps with wrap-around disabled at the ends. Error cases: empty cards → invalid; missing `front`/`back` → invalid.
+- **TESTS:** Given 3 cards · When `review` at index 1 dir=next · Then index 2. At index 2 dir=next · Then stays 2 (clamped). At index 0 dir=prev · Then stays 0. Given empty cards · Then invalid.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0255 — Coach artifacts: Quiz schema + answer
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0253.
+- **WHY:** PRD F-28; components.md §2.2 (`Quiz`, `quiz-check` → `quizzes.answer`).
+- **GOAL:** The quiz artifact validates options and scores an answer with right/wrong feedback.
+- **SCOPE:** `convex/lib/artifacts.ts` + `convex/lib/artifacts.test.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `QuizSchema = {question, options:[{id,text,correct}]}` with exactly one `correct`; 3) `answer({options, chosenId})` → `{result:"right"|"wrong", correctId}`; 4) run DONE.
+- **DONE:** `bun test convex/lib/artifacts.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist scores; do not allow multiple correct answers.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Error cases: zero or multiple `correct` → invalid; `chosenId` not in options → `"Option not found"`; empty question → invalid.
+- **TESTS:** Given a correct choice · When `answer` · Then `result:"right"`. Given a wrong choice · Then `result:"wrong"` + `correctId`. Given multiple correct flags · Then invalid. Given an unknown `chosenId` · Then `"Option not found"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0256 — Coach artifacts: Checklist schema + updateBlock
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0253.
+- **WHY:** PRD F-28; components.md §2.2 (`Checklist`, change → `pages.updateBlock`, "2 of 5 done").
+- **GOAL:** The checklist artifact validates items and computes the done count.
+- **SCOPE:** `convex/lib/artifacts.ts` + `convex/lib/artifacts.test.ts`.
+- **MUTATES:** none (pure).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `ChecklistSchema = {items:[{text,done}]}`; 3) `progress({items})` → `{done, total}`; 4) run DONE.
+- **DONE:** `bun test convex/lib/artifacts.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist; do not render.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Error cases: empty items → invalid; non-string `text` → invalid.
+- **TESTS:** Given 5 items with 2 done · When `progress` · Then `{done:2,total:5}`. Given empty items · Then invalid. Given 0 done · Then `{done:0}`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0257 — Coach artifacts: Tracker schema + log
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0253.
+- **WHY:** PRD F-28; components.md §2.2 (`Tracker`, `tracker` + `data-dir="inc/dec"` → `trackers.log`).
+- **GOAL:** The tracker artifact validates label/unit/goal and logs increments/decrements.
+- **SCOPE:** `convex/lib/artifacts.ts` + `convex/lib/artifacts.test.ts`.
+- **MUTATES:** none (pure log math).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `TrackerSchema = {label, value, goal, unit}`; 3) `log({value, goal, dir})` → new value (clamped at 0); 4) run DONE.
+- **DONE:** `bun test convex/lib/artifacts.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist; do not allow negative values.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Error cases: non-numeric value/goal → invalid; missing unit → invalid. `dir:"dec"` clamps at 0.
+- **TESTS:** Given value 4 goal 6 dir inc · Then 5. Given dir dec at 0 · Then 0 (clamped). Given non-numeric goal · Then invalid.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0258 — Billing backend: revenuecat.ts webhook (verify)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-110; TRD §8 (`ci`/`secret-scan`); existing `convex/revenuecat.ts`.
+- **GOAL:** The RevenueCat webhook correctly maps events to entitlements with auth + error handling.
+- **SCOPE:** `convex/revenuecat.ts` + `convex/revenuecat.test.ts`.
+- **MUTATES:** none (webhook handler verification).
+- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) confirm Authorization header check returns 401 on mismatch and 503 when secret unset; 3) confirm `mapRevenueCatEventToUserType` (INITIAL_PURCHASE/RENEWAL/PRODUCT_CHANGE/UNCANCELLATION → paid; EXPIRATION/CANCELLATION/SUBSCRIBER_ALIAS → free; unknown → free); 4) add missing tests; 5) run DONE.
+- **DONE:** `bun test convex/revenuecat.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** log or print `REVENUECAT_WEBHOOK_SECRET` (names only); do not change the webhook route.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend httpAction. `POST /api/revenuecat-webhook`. Error cases: missing secret → 503 `"Webhook not configured"`; bad header → 401; invalid JSON → 400; missing `event` → 400. Internal update errors still return 200 (so RevenueCat does not retry our internal errors).
+- **TESTS:** Given a bad auth header · When posted · Then 401. Given no secret configured · Then 503. Given invalid JSON · Then 400. Given a paid event type · Then user set paid. Given an unknown event type · Then free.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0259 — Billing backend: entitlements.ts (verify)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-110; existing `convex/lib/entitlements.ts`.
+- **GOAL:** Confirm the pure grant helpers keep the sign-up grant correct and add any missing tests.
+- **SCOPE:** `convex/lib/entitlements.ts` + `convex/lib/entitlements.test.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) verify `newUserFields`/`buildReturningUserPatch` never return an `undefined`-valued key; 3) verify `shouldGrantSubscription`; 4) add the missing regression tests; 5) run DONE.
+- **DONE:** `bun test convex/lib/entitlements.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** change the grant constants (`max`/`paid`/`tester`) — those are Amit's sign-up policy; do not print values.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend library. `GRANTED_ENTITLEMENT_TIER:"max"`, `GRANTED_USER_TYPE:"paid"`, `GRANTED_BETA_ACCESS:"tester"`. Pure (no ctx/db). The invariant: `buildReturningUserPatch` must never include a key whose value is `undefined`.
+- **TESTS:** Given a new profile · When `newUserFields` · Then `approvalStatus:"pending"` and `entitlementTier:"max"`. Given an existing user missing `entitlementTier` · When `buildReturningUserPatch` · Then it heals to `"max"`. Given an explicit `"free"` userType · Then it is left alone. Given no subscription row · When `shouldGrantSubscription` · Then true.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0260 — Billing backend: subscriptionGuards.ts (verify)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-110; existing `convex/lib/subscriptionGuards.ts`.
+- **GOAL:** Confirm the client may never self-upgrade to paid outside mock mode.
+- **SCOPE:** `convex/lib/subscriptionGuards.ts` + `convex/lib/subscriptionGuards.test.ts`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) verify `assertClientMaySetUserType` throws for `"paid"` when `MOCK_PAYMENTS !== "true"`; 3) add missing tests; 4) run DONE.
+- **DONE:** `bun test convex/lib/subscriptionGuards.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** print or set `MOCK_PAYMENTS`; do not add a real upgrade path here.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `assertClientMaySetUserType(userType)` throws `"Paid upgrades must go through RevenueCat checkout."` when `userType:"paid"` and mock payments off.
+- **TESTS:** Given mock off · When `assertClientMaySetUserType("paid")` · Then throws. Given `"free"` · Then no throw. Given mock on · When `"paid"` · Then no throw.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0261 — Billing backend: billing.listTiers + getMine
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0258 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0258.
+- **WHY:** PRD F-110; billing screen (`@data plan = billing.getMine`, `@data tiers = billing.listTiers`).
+- **GOAL:** The price table and the user's current plan are queryable.
+- **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
+- **MUTATES:** none (read path).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `listTiers({})` → fixed tier table; 3) `getMine({})` → `{tier, source, interval, renewsAt?, trialEndsAt?, liveVoiceMinutesPerDay}`; 4) run DONE.
+- **DONE:** `bun test convex/billing.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** hard-code a price that contradicts the OPEN (use the config constant that Amit sets); do not return card numbers (never stored).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `listTiers` returns Trial/Basic/Pro/Max with interval prices and live-voice minutes (Pro 90, Max 180/day — repo PRD F-35). Auth: `requireUser`. Error cases: no auth → unauthenticated.
+- **TESTS:** Given a user on Max early access · When `getMine` · Then `tier:"max"`, `source:"earlyAccess"`. Given `listTiers` · Then four tiers in order with `liveVoiceMinutesPerDay` 90 for Pro and 180 for Max. Given no auth · Then unauthenticated.
+- **NUMBERS:** price values ($1/3w, $10, $20, $40, annual = 10× monthly) · `UNKNOWN` (Amit — REWRITE-PLAN §4 conflict 2: a later note says "$20 and $50").
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** final prices/billing tiers — Amit.
+
+### TFV2-0262 — Billing backend: billing.checkout (Polar)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0261.
+- **WHY:** PRD F-110 ("Polar on web"); billing screen (`@actions billing.checkout({tier, interval})`).
+- **GOAL:** Choosing a plan returns a Polar checkout URL the client opens in the same tab.
+- **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
+- **MUTATES:** none (returns a URL).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `checkout({tier, interval})` validates tier/interval and returns a Polar checkout URL via an action; 3) no card data is handled; 4) run DONE.
+- **DONE:** `bun test convex/billing.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use Stripe; do not print the Polar key (names only: `POLAR_API_KEY`/`POLAR_WEBHOOK_SECRET`); do not mock a real charge.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend action. Auth: `requireUser` + `assertClientMaySetUserType` (mock gated). Error cases: unknown tier → `"Unknown tier"`; unknown interval → `"Unknown interval"`; no auth → unauthenticated; Polar unavailable → `UNKNOWN` (report, do not fake a URL).
+- **TESTS:** Given a valid tier+interval · When `checkout` (mocked Polar) · Then a URL is returned. Given unknown tier · Then `"Unknown tier"`. Given unknown interval · Then `"Unknown interval"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Polar env var names — Amit (names only in this ticket).
+
+### TFV2-0263 — Billing backend: billing.cancel + acknowledgeConversion
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0262 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0262.
+- **WHY:** PRD F-110; trial-end screen (`@actions billing.acknowledgeConversion`, `billing.cancel`).
+- **GOAL:** Cancelling or acknowledging conversion is explicit, asks first, and access stays until period end.
+- **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
+- **MUTATES:** subscription state (cancel/ack flags).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `cancel({})` sets a cancel flag (access until `trialEndsAt`/period end); 3) `acknowledgeConversion({})` records consent with no immediate charge; 4) run DONE.
+- **DONE:** `bun test convex/billing.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** charge now; do not hard-delete subscription rows.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; no active trial/plan → `"No active plan"`. Cancel is idempotent.
+- **TESTS:** Given an active trial · When `cancel` · Then cancelled with `trialEndsAt` retained. When `cancel` again · Then no error (idempotent). Given `acknowledgeConversion` · Then consent recorded, no charge. Given no active plan · Then `"No active plan"`.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0264 — Billing backend: trial conversion notices (F-110)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0263 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0263.
+- **WHY:** PRD F-110 ("notices at 3 days, 1 day and 1 hour before conversion"); billing screen "Before any charge".
+- **GOAL:** A scheduled pass queues the 3-day / 1-day / 1-hour conversion notices by email and in-app.
+- **SCOPE:** `convex/billing.ts` + `convex/billing.test.ts`.
+- **MUTATES:** notice delivery (in-app notification + email via Resend).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) an internal function computes, for each converting trial/plan, whether the 3d/1d/1h threshold was just crossed; 3) enqueue the notice (names only: `RESEND_API_KEY`); 4) run DONE.
+- **DONE:** `bun test convex/billing.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** send real email in tests; do not print keys; do not edit `crons.ts` (registration is TFV2-0249's lane).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Pure helper `noticesDue({now, trialEndsAt, sent})` → `[] | ["3d"] | ["3d","1d"] | ["3d","1d","1h"]`. Auth: internal.
+- **TESTS:** Given trial ends in 72h and none sent · Then `["3d"]`. Given 24h left and 3d sent · Then `["1d"]`. Given 1h left and 3d+1d sent · Then `["1h"]`. Given 1h left and all sent · Then `[]`.
+- **NUMBERS:** notice thresholds 3 days / 1 day / 1 hour (PRD F-110) · pass = exact.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0265 — Preferences backend: preferences.ts get/update (verify + analyticsOptIn)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** settings-prefs screen; existing `convex/preferences.ts`.
+- **GOAL:** Confirm the preferences query/mutation and add `analyticsOptIn` (default off).
+- **SCOPE:** `convex/preferences.ts` + `convex/preferences.test.ts`.
+- **MUTATES:** `userPreferences` (add `analyticsOptIn`).
+- **STEPS:** 1) Graphify code-map check (EXISTS — verify); 2) verify `get`/`update`/`preferencesFor` and defaults (`theme:"system"`, `locale:"en"`, `weekStartsOn:1`, `timeZone:"UTC"`, `emailReminders:true`, `inAppNotifications:true`, `coachWebSearch:false`); 3) add `analyticsOptIn:boolean` default `false`; 4) add missing tests; 5) run DONE.
+- **DONE:** `bun test convex/preferences.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** touch `convex/schema.ts` (field is on the existing row shape via the validator); do not change defaults without Amit.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. `get({})` → `Preferences`; `update({...optional})` → `null` (upserts, clears `deletedAt`). Error cases: no auth → unauthenticated; empty timeZone → `"Time zone is required"`.
+- **TESTS:** Given no row · When `get` · Then defaults incl. `analyticsOptIn:false`. Given `update({analyticsOptIn:true})` · Then persisted. Given `update({timeZone:""})` · Then `"Time zone is required"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** where the user's IANA time zone is stored (`users` vs `preferences`) — Amit (REWRITE-PLAN §4 conflict 13).
+
+### TFV2-0266 — Profiles backend: profiles.getMine + update
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0265 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0265.
+- **WHY:** settings-profile screen (`@data profiles.getMine`, `@actions profiles.update`).
+- **GOAL:** The profile (full name, call-me, Hebrew address, language) is readable and editable.
+- **SCOPE:** `convex/profiles.ts` + `convex/profiles.test.ts`.
+- **MUTATES:** `users` profile fields.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `getMine({})` → `{fullName, callMe, address:"fem"|"masc", email, lang}`; 3) `update({fullName?, callMe?, address?, lang?})` → `null`; 4) run DONE.
+- **DONE:** `bun test convex/profiles.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** store a placeholder name "User"; do not let email change here (email change is `auth.requestEmailChange`).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; blank fullName → `"Name is required"`; blank callMe → `"Name is required"`; invalid address → `"Invalid address"`. `lang` accepts `en|he`.
+- **TESTS:** Given a user · When `getMine` · Then returns email and profile. When `update({fullName:"Maya"})` · Then persisted. Given blank fullName · Then `"Name is required"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0267 — Profiles backend: profiles.setCoachDial
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0266 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0266.
+- **WHY:** PRD F-25; settings-prefs screen (`@actions profiles.setCoachDial`, debounced 400 ms).
+- **GOAL:** The coach dial (0–10) persists and injects into the coach system prompt.
+- **SCOPE:** `convex/profiles.ts` + `convex/profiles.test.ts`.
+- **MUTATES:** coach dial value.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `setCoachDial({value: 0..10})` validates range and persists; 3) default for new users is 4; 4) run DONE.
+- **DONE:** `bun test convex/profiles.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** change the prompt itself (chunk C owns the coach prompt); do not accept fractional values.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; value < 0 or > 10 → `"Dial must be 0 to 10"`; non-integer → `"Dial must be a whole number"`.
+- **TESTS:** Given value 7 · When `setCoachDial` · Then persisted. Given value 11 · Then `"Dial must be 0 to 10"`. Given -1 · Then error. Given no auth · Then unauthenticated.
+- **NUMBERS:** dial range 0–10 (PRD F-25; quiet 0–3, steady 4–7, push 8–10) · pass = exact.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0268 — Ask founder backend: askFounder.submit + queue
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #475
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-110 (founder contact); ask-founder screen (`@actions askFounder.submit({subject, body, priority})`).
+- **GOAL:** A message to the founder is validated and queued with the user's name/email only.
+- **SCOPE:** `convex/askFounder.ts` + `convex/askFounder.test.ts`.
+- **MUTATES:** a founder-message queue row.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) `submit({subject, body, priority:"low"|"medium"|"high"})` validates and inserts; 3) attach only name + email (nothing from pages/tasks/chats); 4) run DONE.
+- **DONE:** `bun test convex/askFounder.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** attach page/task/chat content; do not send email in the mutation (defer to TFV2-0269).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend. Auth: `requireUser`. Error cases: no auth → unauthenticated; blank subject → `"Subject is required"`; blank body → `"Message is required"`; invalid priority → `"Invalid priority"`. `subject` max 120 chars.
+- **TESTS:** Given valid fields · When `submit` · Then a queue row with subject/body/priority/email. Given blank subject · Then `"Subject is required"`. Given blank body · Then `"Message is required"`. Given invalid priority · Then `"Invalid priority"`. Given no auth · Then unauthenticated.
+- **NUMBERS:** subject max length 120 chars (ask-founder screen `maxlength="120"`) · pass = exact.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0269 — Ask founder backend: notify Amit (http action webhook)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0268 · **Folds-in:** #475
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0268.
+- **WHY:** ask-founder screen ("webhook notifies Amit privately").
+- **GOAL:** A queued founder message triggers a private notification to Amit (a person reads every message).
+- **SCOPE:** `convex/askFounder.ts` + `convex/askFounder.test.ts`.
+- **MUTATES:** none (delivery side-effect).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) an internal action/queue processor notifies Amit via the configured channel (names only); 3) do not log message bodies; 4) run DONE.
+- **DONE:** `bun test convex/askFounder.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** print message content or keys; do not invent a channel (see OPEN).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend internal action. Error cases: notify failure → retry queue (idempotent), never drop the message. Delivery is fire-and-forget after the queue insert.
+- **TESTS:** Given a queued message · When processed (mocked notifier) · Then notifier called once with subject+email, never body. Given a notifier failure · Then row stays queued for retry. Given duplicate processing · Then notifier called once.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** the founder notification channel (email vs Slack vs other) — Amit.
+
+### TFV2-0270 — Built-in module catalog (starter templates → built-in modules)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0234.
+- **WHY:** PRD F-43 ("built-in templates appear as built-in modules"); modules screen "Built in".
+- **GOAL:** The built-in templates are listed as built-in modules with a lock badge and no delete path.
+- **SCOPE:** `convex/lib/templateCatalog.ts` + `convex/lib/templateCatalog.test.ts`.
+- **MUTATES:** none (catalog read).
+- **STEPS:** 1) Graphify code-map check (`STARTER_TEMPLATES` EXISTS — verify); 2) map each starter to a built-in module view `{id,name,does,kind,builtIn:true,on}`; 3) expose the "Habits on Today" built-in (turned off by default); 4) run DONE.
+- **DONE:** `bun test convex/lib/templateCatalog.test.ts` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** change starter bodies/copy; do not add a delete path.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Backend library. `builtInModules()` returns Daily page, Weekly page, Project page, Habits on Today. Each has a `does` string and `builtIn:true`. Copy EN/HE: `EN:"Daily page" / HE:"דף יומי"`; `EN:"Built-in" / HE:"מובנה"`.
+- **TESTS:** Given the catalog · When `builtInModules` · Then four entries, all `builtIn:true`, Habits off by default. Given a starter id · When mapped · Then no `delete` flag present.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether "Habits on Today" is its own built-in module or a page-type flag — Amit.
+### TFV2-0271 — ModuleCard
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0248 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0248.
+- **WHY:** components.md §2.13 (`ModuleCard`); modules screen.
+- **GOAL:** A card shows one module (icon, name, one-line "does", badges, on/off switch) with the word always present.
+- **SCOPE:** `apps/web/components/modules/ModuleCard.tsx` + `apps/web/components/modules/ModuleCard.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-module-card` with `data-on`/`data-builtin`; 3) switch calls `modules.setEnabled`; built-in shows a lock badge and no delete; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/modules/ModuleCard.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** add a delete button for built-ins; do not use colour alone (badge + word).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Layout: `.tp-card` grid, icon `.tp-icon` at start, name as `<h3>` link to module-preview, `.tp-module-card__does` one line, badges row, `.tp-module-card__switch` with a `Switch`. Tokens: `--tp-space-3` gaps, `--tp-text-sm` meta. States: default (on/off), built-in (lock + `Built-in`), disabled-while-plain (switch `aria-disabled`). Copy EN/HE: `EN:"Built-in" / HE:"מובנה"`; `EN:"Made with the coach" / HE:"נוצר עם המאמן"`; `EN:"Made by you" / HE:"נוצר על ידך"`; `EN:"On" / HE:"פועל"`; `EN:"Off" / HE:"כבוי"`. RTL: logical properties; switch thumb flips via `[dir="rtl"]`. Screen reader: switch `aria-labelledby` the name, `aria-describedby` the "does". Breakpoints: card stacks full-width at 390, sits in auto-fill grid ≥768. Motion: switch 120 ms.
+- **TESTS:** Playwright: at 390 and 1280, EN and HE — given a user module, assert name/does/badges render; toggle the switch, assert `data-on` and the word flips On↔Off; given a built-in, assert the lock badge and that no delete control exists.
+- **NUMBERS:** target size ≥ 24×24 CSS px (WCAG 2.2 2.5.8, https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) · text ≥ 13 px (DESIGN.md §3) · motion ≤ 250 ms (DESIGN.md §7).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0272 — ModuleSummary
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0271 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0271.
+- **WHY:** components.md §2.13 (`ModuleSummary`); module-preview screen.
+- **GOAL:** A "What this module does" card lists page types, adds, changes, runs, and the validation check.
+- **SCOPE:** `apps/web/components/modules/ModuleSummary.tsx` + `apps/web/components/modules/ModuleSummary.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-module-what` with a `<dl>` of `.tp-what-row`; 3) show check passed/failed with word + icon; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/modules/ModuleSummary.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use colour alone for pass/fail; do not show raw JSON.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{shapes, adds, changes, runs, checkOk}`. Layout: `.tp-module-what__title` + `<dl>`. Copy EN/HE: `EN:"What this module does" / HE:"מה המודול הזה עושה"`; `EN:"Page types" / HE:"סוגי דפים"`; `EN:"Adds" / HE:"מוסיף"`; `EN:"Changes" / HE:"משנה"`; `EN:"Runs" / HE:"מריץ"`; `EN:"Check" / HE:"בדיקה"`; `EN:"Passed. It only uses things Tempo can draw." / HE:"עבר. הוא משתמש רק במה ש־Tempo יודע לצייר."`; `EN:"Didn't pass. See the note above." / HE:"לא עבר. ראי את ההערה למעלה."`; `EN:"Stop it" / HE:"להפסיק"`. RTL: `dl` logical. States: default, check-failed.
+- **TESTS:** Given shapes/adds/changes/runs · When rendered · Then each `.tp-what-row` shows a label and value. Given `checkOk:false` · Then the failed row with alert icon. Playwright asserts both EN and HE at 390 and 1280.
+- **NUMBERS:** text ≥ 13 px · contrast 4.5:1 (WCAG 2.2 AA, https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0273 — PlainModeBanner
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0247 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0247.
+- **WHY:** components.md §2.13 (`PlainModeBanner`); modules screen.
+- **GOAL:** A banner says Plain mode is on, sets `html[data-plain]`, and explains built-ins still work.
+- **SCOPE:** `apps/web/components/modules/PlainModeBanner.tsx` + `apps/web/components/modules/PlainModeBanner.test.tsx`.
+- **MUTATES:** none (sets `html[data-plain]`).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-notice[data-tone=info].tp-plain-banner`; 3) set `document.documentElement.dataset.plain` when on; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/modules/PlainModeBanner.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** disable built-in switches; do not hide content.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Copy EN/HE: `EN:"Plain mode is on." / HE:"מצב פשוט פועל."`; `EN:"Your own modules are paused, so Tempo looks the way it did on day one. Built-in pages and scheduled jobs work as usual. Turn it off to bring everything back as it was." / HE:"המודולים שלך מושהים, ו־Tempo נראה כמו ביום הראשון. הדפים המובנים והמשימות המתוזמנות עובדים כרגיל. כבי אותו כדי להחזיר הכול כמו שהיה."` States: hidden (off), shown (on). `role="status"` live region.
+- **TESTS:** Given on=true · Then banner shown and `html[data-plain]` set. Given on=false · Then hidden and attribute cleared. Playwright EN/HE at 390/1280.
+- **NUMBERS:** text ≥ 13 px · contrast 4.5:1 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0274 — ScheduledJobRow
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0252 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0252.
+- **WHY:** components.md §2.13 (`ScheduledJobRow`); modules screen.
+- **GOAL:** A row shows a job's name, schedule (mono, LTR), last run and an on/off switch.
+- **SCOPE:** `apps/web/components/modules/ScheduledJobRow.tsx` + `apps/web/components/modules/ScheduledJobRow.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-job-row` with `.tp-job-row__schedule` in `.tp-num`; 3) switch → `jobs.setEnabled`; a failed last run says plainly nothing changed; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/modules/ScheduledJobRow.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** show cron internals; do not allow deleting a job here.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{job:{id,name,scheduleText,lastRun{at,result,pageTitle},on}}`. Copy EN/HE: `EN:"Last ran today at" / HE:"רצה לאחרונה היום ב־"`; `EN:"didn't finish. Nothing was changed." / HE:"לא הסתיימה. שום דבר לא השתנה."`; `EN:"On" / HE:"פועل"`; `EN:"Off" / HE:"כבוי"`. Schedule uses `.tp-num`/`.tp-mono` (LTR isolate). States: default, on, off, failed-last-run.
+- **TESTS:** Playwright: assert name/schedule/last-run render in EN and HE at 390/1280; toggle switch → `data-on` flips; given a failed last run → the plain "didn't finish" copy, not JSON.
+- **NUMBERS:** target ≥ 24×24 px · schedule text LTR isolate · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0275 — Modules screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0271, TFV2-0272, TFV2-0273, TFV2-0274 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0271 … TFV2-0274.
+- **WHY:** modules.html; PRD F-43; components.md §2.13.
+- **GOAL:** The Modules screen lists plain mode, your modules, scheduled jobs and built-ins with every state working.
+- **SCOPE:** `apps/web/app/(tempo)/modules/page.tsx` + `apps/web/e2e/modules.spec.ts`.
+- **MUTATES:** route `(tempo)/modules`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build the screen from ModuleCard/PlainModeBanner/ScheduledJobRow/Section/SettingsSection; 3) wire `modules.list`, `modules.getPlainMode`, `jobs.list`, `modules.setEnabled`, `modules.setPlainMode`, `jobs.setEnabled`; 4) add the Playwright spec; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/modules.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** edit `convex/`; do not render JSON; one `.tp-btn--primary` ("Ask the coach for a module").
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout` + `PageHeader`; `--tp-space-10` section gap. States: default (plain switch + 3 sections), empty (no user modules/jobs; built-ins stay; kind copy + "Talk to the coach"), loading (5 skeleton rows), error ("Couldn't load your modules."), offline (banner, switches apply on reconnect), plain (`?plain=on`: banner + user switches disabled). Copy EN/HE (from modules.html): `EN:"Modules" / HE:"מודולים"`; `EN:"Your modules" / HE:"המודולים שלך"`; `EN:"Scheduled jobs" / HE:"משימות מתוזמנות"`; `EN:"Built in" / HE:"מובנים"`; `EN:"Plain mode" / HE:"מצב פשוט"`; `EN:"You haven't made a module yet." / HE:"עוד לא יצרת מודול."`; `EN:"Couldn't load your modules. Your pages are safe." / HE:"לא הצלחנו לטעון את המודולים."`; `EN:"You're offline. Changes save when you're back." / HE:"אין חיבור כרגע. השינויים יישמרו כשתחזרי."`. RTL: `dir` from locale; schedule `.tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Playwright EN and HE at 390 and 1280: default → assert three sections and plain switch; toggle a module switch → word flips and toast "turned on/off" with Undo; `?plain=on` → banner + user switches `aria-disabled`; `?state=empty` → kind empty state, built-ins visible; `?state=loading` → skeletons; `?state=error` → error copy + Retry; `?state=offline` → offline banner.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 (Core Web Vitals, https://web.dev/articles/vitals) · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0276 — Module preview screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0272 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0272.
+- **WHY:** module-preview.html; PRD F-41/F-42.
+- **GOAL:** A draft module is previewed on a real page; Approve goes live, Discard asks first, invalid never goes live.
+- **SCOPE:** `apps/web/app/(tempo)/modules/preview/[draftId]/page.tsx` + `apps/web/e2e/module-preview.spec.ts`.
+- **MUTATES:** route `(tempo)/modules/preview/[draftId]`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/Card/CoachArtifact/ModuleSummary/Notice/MobileSheet; 3) wire `modules.getDraft`, `modules.approve`, `modules.discardDraft`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/module-preview.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** let Approve work when validation failed; do not change pages on Discard.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `Split` (preview left, summary/decision right). States: default (read-only preview + summary + Approve/Discard), invalid (`?view=invalid`: notice + Approve disabled with reason + "Ask the coach to fix it"), approved (done notice + Undo 5 min), discarded (notice), empty ("There's nothing to preview here."), loading, error ("Couldn't load this preview. Nothing has changed."), offline (preview readable, Approve waits). Copy EN/HE (from module-preview.html): `EN:"New module · waiting for your approval" / HE:"מודול חדש · מחכה לאישור שלך"`; `EN:"Approve" / HE:"אישור"`; `EN:"Discard" / HE:"לוותר"`; `EN:"Discard this module?" / HE:"לוותר על המודול הזה?"`; `EN:"This module has a problem, so it can't go live." / HE:"יש במודול הזה בעיה, ולכן הוא לא יכול לעלות."`; `EN:"Read only" / HE:"לקריאה בלבד"`. Approve is the one primary. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: default → preview + summary render, Approve present; click Approve → live notice + Undo toast; open Discard sheet → cancel and confirm paths; `?view=invalid` → Approve `aria-disabled` + fix link; `?state=empty|loading|error|offline` each asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo window 5:00 · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0277 — CoachArtifact (wrapper)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0253 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0253.
+- **WHY:** components.md §2.2 (`CoachArtifact`); PRD F-28.
+- **GOAL:** A wrapper card for the four artifacts, drawn as a page block; the user never sees JSON.
+- **SCOPE:** `apps/web/components/blocks/CoachArtifact.tsx` + `apps/web/components/blocks/CoachArtifact.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-artifact` with `__head/__kind/__title/__by/__body/__foot`; 3) dispatch by `kind` to Flashcard/Quiz/Checklist/Tracker; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/blocks/CoachArtifact.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** render raw JSON; do not invent a kind.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{kind, title, by, data}`. `kind` ∈ `flashcard|quiz|checklist|tracker`. Copy EN/HE: `EN:"Added by this module" / HE:"נוסף על ידי המודול"`. RTL logical; title `dir="auto"`. States: default; unknown kind → quiet fallback.
+- **TESTS:** Given kind=checklist · Then Checklist rendered. Given kind=flashcard · Then Flashcard. Given an unknown kind · Then fallback (no crash, no JSON).
+- **NUMBERS:** text ≥ 13 px · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0278 — Flashcard component
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0277.
+- **WHY:** components.md §2.2 (`Flashcard`); PRD F-28.
+- **GOAL:** Flashcards flip by button (never hover) and step with a counter, announcing each face.
+- **SCOPE:** `apps/web/components/blocks/Flashcard.tsx` + `apps/web/components/blocks/Flashcard.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-flashcard[data-side]` with `__face/__side/__text/__count`; 3) `card-flip` button + `card-step` with `data-dir`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/blocks/Flashcard.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** flip on hover; do not persist a streak.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{cards:[{front,back}], index}`. Copy EN/HE: `EN:"Card {n} of {total}" / HE:"כרטיס {n} מתוך {total}"`; `EN:"Flip" / HE:"הפוך"`. Faces are buttons; `aria-pressed` reflects side. States: front, back. RTL logical; counter `.tp-num`. Motion 180 ms flip (transform only).
+- **TESTS:** Given 3 cards · When rendered · Then card 1 front shown. Click flip → back shown and announced. Click next → card 2, counter updated; at end, next disabled.
+- **NUMBERS:** target ≥ 24×24 px · motion ≤ 250 ms (180 ms flip, transform/opacity only).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0279 — Quiz component
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0277.
+- **WHY:** components.md §2.2 (`Quiz`); PRD F-28.
+- **GOAL:** A quiz shows one question, scores an answer and shows feedback with a word and icon.
+- **SCOPE:** `apps/web/components/blocks/Quiz.tsx` + `apps/web/components/blocks/Quiz.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-quiz` (fieldset/legend) with `.tp-choice` options; 3) `quiz-check` → `quizzes.answer`, feedback `data-result`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/blocks/Quiz.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use colour alone (icon + word); do not allow re-answer after check.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{question, options:[{id,text,correct}]}`. Copy EN/HE: `EN:"Right." / HE:"נכון."`; `EN:"Not quite. The answer is: {text}" / HE:"לא מדויק. התשובה היא: {text}"`; `EN:"Check" / HE:"בדיקה"`. `fieldset` + radio-group semantics. States: unanswered, checked-right, checked-wrong. RTL logical.
+- **TESTS:** Given a question · When a wrong option checked · Then "Not quite." + correct answer shown. When correct checked · Then "Right.". Check button disabled after answer.
+- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0280 — Checklist component
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0277.
+- **WHY:** components.md §2.2 (`Checklist`); PRD F-28.
+- **GOAL:** A checklist toggles items and shows "2 of 5 done".
+- **SCOPE:** `apps/web/components/blocks/Checklist.tsx` + `apps/web/components/blocks/Checklist.test.tsx`.
+- **MUTATES:** none (calls `pages.updateBlock`).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-checklist` with `.tp-checkbox` items; 3) change → `pages.updateBlock`, update `.tp-checklist__count`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/blocks/Checklist.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** persist locally; do not show a streak.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{items:[{text,done}]}`. Copy EN/HE: `EN:"{done} of {total} done" / HE:"{done} מתוך {total} בוצעו"`. Checkboxes announce "done/not done". RTL logical; count `.tp-num`.
+- **TESTS:** Given 5 items, 2 done · Then count reads "2 of 5 done". Toggle item 3 → count "3 of 5 done". Toggle off → decrements.
+- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0281 — Tracker component
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0277 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0277.
+- **WHY:** components.md §2.2 (`Tracker`); PRD F-28.
+- **GOAL:** A tracker increments/decrements a value toward a goal and announces the new value.
+- **SCOPE:** `apps/web/components/blocks/Tracker.tsx` + `apps/web/components/blocks/Tracker.test.tsx`.
+- **MUTATES:** none (calls `trackers.log`).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-tracker` with `__value`; 3) `tracker` + `data-dir="inc/dec"` → `trackers.log`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/blocks/Tracker.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** go below 0; do not use colour alone.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{label, value, goal, unit}`. Copy EN/HE: `EN:"{value} {unit} of {goal}" / HE:"{value} {unit} מתוך {goal}"`; inc/dec buttons with `aria-label`. States: default, at-goal, at-zero (dec disabled). `.tp-num` for the value.
+- **TESTS:** Given value 4 goal 6 · When inc · Then 5. At 0 · Then dec disabled. At goal · Then inc disabled.
+- **NUMBERS:** target ≥ 24×24 px · value announced via live region.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0282 — TierCard
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0261 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0261.
+- **WHY:** components.md §2.14 (`TierCard`); PRD F-110.
+- **GOAL:** A tier card shows name, price, features and a choose action; the current plan is marked.
+- **SCOPE:** `apps/web/components/billing/TierCard.tsx` + `apps/web/components/billing/TierCard.test.tsx`.
+- **MUTATES:** none (calls `billing.checkout`).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-tier[data-current]`; 3) choose → `billing.checkout({tier, interval})`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/billing/TierCard.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** hide or collapse a tier; do not show a price that contradicts the OPEN (use the config value).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{tier:{name,price,per,desc,features[],current?}}`. Copy EN/HE: `EN:"Your plan" / HE:"המסלול שלך"`; `EN:"a month" / HE:"לחודש"`; `EN:"a year, two months free" / HE:"לשנה, חודשיים במתנה"`. Price uses `.tp-tier__amount.tp-num` (LTR). States: default, current (badge + no choose), disabled (early-access). Stacks on phone. RTL logical.
+- **TESTS:** Given a tier with current · Then "Your plan" badge, no choose button. Given a non-current tier · Then choose button present. Playwright EN/HE at 390/1280: all four tiers visible, never collapsed.
+- **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px · price values `UNKNOWN` (Amit — conflict 2).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** price values — Amit (REWRITE-PLAN §4 conflict 2).
+
+### TFV2-0283 — BillingNotice
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0282 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0282.
+- **WHY:** components.md §2.14 (`BillingNotice`); billing screen.
+- **GOAL:** A notice shows trial/conversion dates with a word and icon, never colour alone.
+- **SCOPE:** `apps/web/components/billing/BillingNotice.tsx` + `apps/web/components/billing/BillingNotice.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-notice` with tone/text; 3) run DONE.
+- **DONE:** `bun run test -- apps/web/components/billing/BillingNotice.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** invent dates; do not use colour alone.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{tone, text}`. Copy EN/HE: `EN:"You were approved early, so you have Max." / HE:"אושרת מוקדם, אז יש לך Max."`. Tones: done/info/caution. `role="status"`.
+- **TESTS:** Given tone done · Then `.tp-notice[data-tone=done]` with icon + text. Playwright EN/HE.
+- **NUMBERS:** contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0284 — Billing screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0282, TFV2-0283 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0282, TFV2-0283.
+- **WHY:** billing.html; PRD F-110 ("Billing visible, never hidden").
+- **GOAL:** The Plan and billing screen shows the full price table, monthly/yearly switch and "before any charge" notices.
+- **SCOPE:** `apps/web/app/(tempo)/settings/billing/page.tsx` + `apps/web/e2e/billing.spec.ts`.
+- **MUTATES:** route `(tempo)/settings/billing`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from TierCard/BillingNotice/Segmented/SettingRow; 3) wire `billing.getMine`, `billing.listTiers`, `billing.checkout`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/billing.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** hide any tier; do not store/print card numbers; do not hard-code a price (use config; values UNKNOWN).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout` + `PageHeader`; `--tp-space-8` gaps. States: default (4 tiers always visible + cycle switch + "Before any charge"), loading, error ("Couldn't load your plan."), offline (prices readable, change needs connection). Copy EN/HE (from billing.html): `EN:"Plan and billing" / HE:"מסלול ותשלום"`; `EN:"Every price, in full, all the time. No surprises." / HE:"כל מחיר, במלואו, כל הזמן. בלי הפתעות."`; `EN:"Plans" / HE:"מסלולים"`; `EN:"Monthly" / HE:"חודשי"`; `EN:"Yearly, two months free" / HE:"שנתי, חודשיים במתנה"`; `EN:"Before any charge" / HE:"לפני כל חיוב"`; `EN:"Payments go through Polar, a payment service. Tempo never sees your card number." / HE:"התשלומים עוברים דרך Polar, שירות תשלומים. Tempo אף פעם לא רואה את מספר הכרטיס שלך."`. Monthly/yearly switch reveals yearly price + "two months free". RTL logical; prices `.tp-num`. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: assert 4 tier cards visible (never collapsed); switch to yearly → yearly prices + "two months free" appear; assert "Before any charge" lists 3 days/1 day/1 hour; `?state=loading|error|offline` each asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · price values `UNKNOWN` (Amit — conflict 2).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** price values — Amit.
+
+### TFV2-0285 — Trial end screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0284 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0284.
+- **WHY:** trial-end.html; PRD F-110.
+- **GOAL:** The trial-end screen says plainly what happens at conversion with three calm choices and a confirmation.
+- **SCOPE:** `apps/web/app/(bare)/billing/trial-end/page.tsx` + `apps/web/e2e/trial-end.spec.ts`.
+- **MUTATES:** route `(bare)/billing/trial-end`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from AuthCard/Notice/StatusPanel; 3) wire `billing.getMine`, `billing.acknowledgeConversion`, `billing.cancel`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/trial-end.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** charge now; do not guilt-trip ("are you sure you want to lose…"); no guilt copy.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `Bare` + `AuthCard`. States: default (choose), continued (StatusPanel "You're all set"), cancelled ("Your trial is cancelled"), loading, error ("Couldn't load your trial details."), offline (choice sent when back). Copy EN/HE (from trial-end.html): `EN:"Your trial ends tomorrow" / HE:"הניסיון שלך מסתיים מחר"`; `EN:"Continue with Basic" / HE:"להמשיך עם Basic"`; `EN:"See every plan" / HE:"לראות את כל המסלולים"`; `EN:"Cancel before I'm charged" / HE:"לבטל לפני שיש חיוב"`; `EN:"Cancel your trial?" / HE:"לבטל את הניסיון?"`; `EN:"Yes, cancel my trial" / HE:"כן, לבטל את הניסיון"`. "Continue with Basic" is the one primary. RTL logical; price `.tp-num`.
+- **TESTS:** Playwright EN/HE at 390/1280: default → facts render; click Continue → done panel; click Cancel → inline confirm, then confirm → cancelled panel; `?state=loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · price after trial `UNKNOWN` (Amit — conflict 2).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** price after trial — Amit.
+
+### TFV2-0286 — Templates screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0234, TFV2-0270 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0234, TFV2-0270.
+- **WHY:** templates.html; PRD F-04/F-06.
+- **GOAL:** The Templates screen lists built-ins and the user's templates with search, filter, use/edit/duplicate/delete.
+- **SCOPE:** `apps/web/app/(tempo)/templates/page.tsx` + `apps/web/e2e/templates.spec.ts`.
+- **MUTATES:** route `(tempo)/templates`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Card/CardGrid/Badge/SortMenu/SearchInput/Segmented; 3) wire `templates.list`, `templates.remove`, `templates.restore`, `templates.duplicate`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/templates.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** edit `convex/`; do not delete built-ins (no delete control).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `PageHeader` (two actions: "New template", "Ask the coach for a template" — one primary). States: default, empty (built-ins stay + "You haven't made a template yet."), loading (4 skeleton cards), error ("Couldn't load your templates."), offline. Copy EN/HE (from templates.html): `EN:"Templates" / HE:"תבניות"`; `EN:"Built-in" / HE:"מובנית"`; `EN:"Yours" / HE:"שלך"`; `EN:"Use" / HE:"שימוש"`; `EN:"Edit" / HE:"עריכה"`; `EN:"Duplicate" / HE:"שכפול"`; `EN:"Delete" / HE:"מחיקה"`; `EN:"Made with the coach" / HE:"נוצרה עם המאמן"`; `EN:"Made by you" / HE:"נוצרה על ידייך"`. Delete → soft delete + Undo 5 min. Search filters by name; segmented filter all/built-in/yours. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: default → built-ins + yours; search "moving" → only matching card; filter "Yours" → built-in section hidden; delete a card → hidden + Undo toast, Undo restores; `?state=empty|loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0287 — Template builder screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0240 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0240.
+- **WHY:** template-builder.html; PRD F-06/F-23.
+- **GOAL:** The builder edits a template as blocks with a live preview and a slash menu.
+- **SCOPE:** `apps/web/app/(bare)/templates/builder/page.tsx` + `apps/web/e2e/template-builder.spec.ts`.
+- **MUTATES:** route `(bare)/templates/builder`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from PageEditor/Split/SlashMenu/BlockHandle/TemplatePreview; 3) wire `templates.get`, `templates.update`, `templates.insertBlock/moveBlock/duplicateBlock/removeBlock`, `templates.publish`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-builder.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** edit `convex/`; do not render JSON; block handles are buttons (never drag-only).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `Bare` + `MobileTopBar` ("Saved" + "Save template"). `Split --even`: builder left, live preview right (below on phones). States: default, empty (brand-new, hint to name + type "/"), loading, error ("Couldn't open this template."), offline (keep editing). Copy EN/HE (from template-builder.html): `EN:"Template builder" / HE:"בניית תבנית"`; `EN:"Template name" / HE:"שם התבנית"`; `EN:"What it is for" / HE:"למה היא נועדה"`; `EN:"Save template" / HE:"שמירת התבנית"`; `EN:"Preview of the page it makes" / HE:"תצוגה מקדימה של הדף שייווצר"`; slash menu items (`EN:"Question" / HE:"שאלה"`, `EN:"Task" / HE:"משימה"`, `EN:"Time block" / HE:"בלוק זמן"`, `EN:"Energy check-in" / HE:"בדיקת אנרגיה"`, `EN:"Heading" / HE:"כותרת"`, `EN:"Bullet list" / HE:"רשימת נקודות"`). Slash menu: type "/", arrows, Enter, Esc. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: type "/" → slash menu; Enter adds a block and preview updates; rename updates preview title; "Save template" → toast; `?state=empty|loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0288 — Template run screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0239 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0239.
+- **WHY:** template-run.html; PRD F-06.
+- **GOAL:** Using a template walks one question at a time, autosaves, and "Make the page" applies it with Undo.
+- **SCOPE:** `apps/web/app/(bare)/templates/run/[id]/page.tsx` + `apps/web/e2e/template-run.spec.ts`.
+- **MUTATES:** route `(bare)/templates/run/[id]`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Split/TemplateRunStep/RunSteps/Card/StatusPanel; 3) wire `templates.get`, `templates.getRunDraft`, `templates.saveRunDraft`, `templates.apply`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-run.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** judge answers; do not require an answer (all optional).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `Bare` + `MobileTopBar`; `Split` (step left, progress/gets right). States: default ("Step 2 of 4"), done (StatusPanel "Your Week 42 page is ready."), empty (no questions → "Make the page" at once), loading, error, offline (answers stay on device). Copy EN/HE (from template-run.html): `EN:"Step {n} of {total}" / HE:"שלב {n} מתוך {total}"`; `EN:"Next" / HE:"הבא"`; `EN:"Back" / HE:"חזרה"`; `EN:"Skip this one" / HE:"לדלג על זה"`; `EN:"Make the page" / HE:"ליצור את הדף"`; `EN:"Done" / HE:"בוצע"`; `EN:"Now" / HE:"עכשיו"`; `EN:"The page will get" / HE:"מה ייכנס לדף"`. "Make the page" is the one primary (last step). RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: step 1→Next→step 2 with progress chips Done/Now/Next; Skip leaves blank; last step "Make the page" → done panel + Undo; `?state=empty|loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo 5:00.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0289 — Template editor screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0235 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0235.
+- **WHY:** template-editor.html (legacy form alternative).
+- **GOAL:** The form view edits a template's name, type, tags and sections with a summary on validation failure.
+- **SCOPE:** `apps/web/app/(tempo)/templates/editor/[id]/page.tsx` + `apps/web/e2e/template-editor.spec.ts`.
+- **MUTATES:** route `(tempo)/templates/editor/[id]`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Field/Select/Section/TemplateSectionRow/FormErrorSummary/Switch; 3) wire `templates.get`, `templates.update`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-editor.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** edit `convex/`; do not lose edits on validation failure.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow` + `PageHeader` (action "Open in the builder"). States: default, invalid (missing name → summary + field error), empty (no sections → "Add a section"), loading, error, offline. Copy EN/HE (from template-editor.html): `EN:"Edit template" / HE:"עריכת תבנית"`; `EN:"Name" / HE:"שם"`; `EN:"Page type" / HE:"סוג דף"`; `EN:"Tags" / HE:"תגיות"`; `EN:"Sections, in order" / HE:"קטעים, לפי הסדר"`; `EN:"Add a section" / HE:"הוספת קטע"`; `EN:"Save changes" / HE:"שמירת השינויים"`; `EN:"One thing to fix before saving" / HE:"דבר אחד לתקן לפני השמירה"`; `EN:"Offer on new empty pages" / HE:"להציע בדפים ריקים חדשים"`. "Save changes" is the one primary. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: save with empty name → summary focused + field error; add/remove/move sections; "Open in the builder" link; `?state=empty|loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · motion ≤ 250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0290 — Template sketch screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0241 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0241.
+- **WHY:** template-sketch.html; PRD F-23.
+- **GOAL:** A rough outline becomes a coach proposal the user can accept, edit or reject; nothing saves until Accept.
+- **SCOPE:** `apps/web/app/(tempo)/templates/sketch/page.tsx` + `apps/web/e2e/template-sketch.spec.ts`.
+- **MUTATES:** route `(tempo)/templates/sketch`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from Form/Textarea/ProposalCard/TypingIndicator/Notice; 3) wire `templates.getSketch`, `templates.saveSketch`, `coach.proposeTemplate`, `templates.createFromProposal`, `coach.rejectProposal`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/template-sketch.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** save before Accept; do not call a real model in e2e (mock the seam).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --wide` + `Split --even` (outline left, coach answer right). States: default, thinking ("Coach is writing" typing indicator), stale (outline changed → "Out of date"), empty ("Nothing sketched yet."), loading, error ("The coach couldn't answer just now."), offline. Copy EN/HE (from template-sketch.html): `EN:"Sketch a template" / HE:"שרטוט תבנית"`; `EN:"Your outline" / HE:"המתווה שלך"`; `EN:"Turn into a template" / HE:"להפוך לתבנית"`; `EN:"Accept" / HE:"לאשר"`; `EN:"Edit in the builder" / HE:"לערוך בבנייה"`; `EN:"Reject" / HE:"לדחות"`; `EN:"Out of date" / HE:"לא מעודכן"`; `EN:"Coach is writing" / HE:"המאמן כותב"`. "Turn into a template" is the one primary. Accept → Undo 5 min. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: type outline → autosave ("Saved"); submit → proposal card; Accept → saved + Undo; change outline → "Out of date"; `?state=empty|loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · Undo 5:00.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0291 — Ask founder screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0268 · **Folds-in:** #475
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0268.
+- **WHY:** ask-founder.html; PRD F-110; #475 (T-SCR-25).
+- **GOAL:** A form sends a message to Amit with only name/email attached, with field validation and a calm confirmation.
+- **SCOPE:** `apps/web/app/(tempo)/ask-founder/page.tsx` + `apps/web/e2e/ask-founder.spec.ts`.
+- **MUTATES:** route `(tempo)/ask-founder`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/Form/Field/Textarea/Radio/FormErrorSummary/Notice/StatusPanel; 3) wire `profiles.getMine`, `askFounder.submit`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/ask-founder.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** attach page/task/chat content; do not email in the UI.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. States: default, field-errors (summary + under-field error), sent (StatusPanel), loading, error ("Couldn't send your message."), offline (form stays, send waits). Copy EN/HE (from ask-founder.html): `EN:"Ask the founder" / HE:"לשאול את המייסד"`; `EN:"Amit builds Tempo and reads every message himself." / HE:"עמית בונה את Tempo וקורא כל הודעה בעצמו."`; `EN:"Subject" / HE:"נושא"`; `EN:"Message" / HE:"הודעה"`; `EN:"How soon does this matter?" / HE:"כמה מהר זה חשוב?"`; `EN:"Low" / HE:"נמוך"`; `EN:"Medium" / HE:"בינוני"`; `EN:"High" / HE:"גבוה"`; `EN:"What gets sent" / HE:"מה נשלח"`; `EN:"Send to Amit" / HE:"לשלוח לעמית"`; `EN:"Sent. Thank you, Maya." / HE:"נשלח. תודה, מאיה."`. "Send to Amit" is the one primary. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: empty submit → summary focused + 2 field errors; fill + send → sent panel with subject; offline → toast "will send when you're back"; `?state=loading|error` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · subject ≤ 120 chars.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0292 — Container (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** components.md §2.16 (`Container`, 1120 max).
+- **GOAL:** The marketing layout container caps content width at 1120 px.
+- **SCOPE:** `apps/web/components/marketing/Container.tsx` + `apps/web/components/marketing/Container.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-container` (max-width 1120, centered, logical padding); 3) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/Container.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** set colours/fonts here (layout only).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{children}`. Max-width 1120 px, `margin-inline:auto`, `padding-inline: var(--tp-space-4)`.
+- **TESTS:** Given content · Then it renders within `.tp-container` (max-width 1120).
+- **NUMBERS:** max-width 1120 px (components.md §2.16).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** body typeface value (Source Sans 3 vs Inter) — Amit (REWRITE-PLAN §4 conflict 5); use `--tp-*` tokens, not a named font.
+
+### TFV2-0293 — SiteHeader (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292, TFV2-0301 · **Folds-in:** #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292, TFV2-0301.
+- **WHY:** components.md §2.16 (`SiteHeader`); landing.html.
+- **GOAL:** The site header shows brand, section links, "Sign in" and the language switch; solid, not glass.
+- **SCOPE:** `apps/web/components/marketing/SiteHeader.tsx` + `apps/web/components/marketing/SiteHeader.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-site-header` with `.tp-site-nav` + `LanguageSwitch`; 3) `aria-current` on the active link; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/SiteHeader.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use glass; do not copy Claude.ai wording.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{links, current, lang}`. Copy EN/HE: `EN:"What it is" / HE:"מה זה"`; `EN:"Pricing" / HE:"מחירים"`; `EN:"About" / HE:"אודות"`; `EN:"Sign in" / HE:"כניסה"`. Solid surface. RTL logical (nav order mirrors). `.tp-site-link--wide` hidden under 768.
+- **TESTS:** Given links · Then rendered with `aria-current` on active. Playwright EN/HE at 390/1280: brand + links + language switch visible; RTL flips order.
+- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** body typeface — Amit (conflict 5).
+### TFV2-0294 — Hero (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0293.
+- **WHY:** components.md §2.16 (`Hero`); landing.html.
+- **GOAL:** The hero states the product in one line with one primary action ("Ask to join").
+- **SCOPE:** `apps/web/components/marketing/Hero.tsx` + `apps/web/components/marketing/Hero.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-hero` with eyebrow/title/lede/actions/note; 3) one primary only; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/Hero.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** invent metrics; do not use glass.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{eyebrow, title, lede, primary, note}`. Copy EN/HE: `EN:"A starter for your brain" / HE:"סטרטר למוח שלך"`; `EN:"Tempo Flow — your brain's operating system" / HE:"Tempo Flow — מערכת ההפעלה של המוח שלך"`; `EN:"Ask to join" / HE:"בקשה להצטרף"`. `--tp-text-4xl` title. RTL logical.
+- **TESTS:** Given props · Then rendered; exactly one `.tp-btn--primary`. Playwright EN/HE at 390/1280.
+- **NUMBERS:** text ≥ 13 px · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** body/display typeface — Amit (conflict 5).
+
+### TFV2-0295 — FeatureRow (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292.
+- **WHY:** components.md §2.16 (`FeatureRow`); landing.html.
+- **GOAL:** A feature row pairs text with a figure built from real Tempo components; supports flip.
+- **SCOPE:** `apps/web/components/marketing/FeatureRow.tsx` + `apps/web/components/marketing/FeatureRow.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-feature` (with `--flip`) with `__text` and `__figure`; 3) figure uses real components (inert); 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/FeatureRow.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use stock screenshots; figures must be real Tempo components.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{title, body, figure, flip?}`. Copy EN/HE (from landing.html): `EN:"Pages in plain Markdown" / HE:"דפים ב-Markdown פשוט"`; `EN:"Templates that do the setup for you" / HE:"תבניות שעושות את ההכנה בשבילך"`; `EN:"A coach with memory that can change the app" / HE:"מאמן עם זיכרון שיכול לשנות את האפליקציה"`. RTL flips order.
+- **TESTS:** Given flip · Then text and figure order reversed. Playwright EN/HE at 390/1280 (figure stacks above text under 768).
+- **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0296 — HowItWorks (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292.
+- **WHY:** components.md §2.16 (`HowItWorks`); landing.html.
+- **GOAL:** An ordered list of three steps ("Write. Talk. Say yes.") with numbers and copy.
+- **SCOPE:** `apps/web/components/marketing/HowItWorks.tsx` + `apps/web/components/marketing/HowItWorks.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `ol.tp-steps` with `.tp-step__num/__title/__body`; 3) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/HowItWorks.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** invent steps beyond the landing copy.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{steps:[{title, body}]}`. Copy EN/HE: `EN:"Write" / HE:"כותבים"`; `EN:"Talk" / HE:"מדברים"`; `EN:"Accept, with Undo" / HE:"מאשרים, עם ביטול"`. Numbers `.tp-num`.
+- **TESTS:** Given 3 steps · Then ordered list renders 1/2/3. Playwright EN/HE at 390/1280.
+- **NUMBERS:** contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0297 — Quote (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292.
+- **WHY:** components.md §2.16 (`Quote`, fictional people only).
+- **GOAL:** A quote block renders a blockquote with a fictional byline.
+- **SCOPE:** `apps/web/components/marketing/Quote.tsx` + `apps/web/components/marketing/Quote.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `figure.tp-quote` with `blockquote` + `figcaption`; 3) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/Quote.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use real people; no invented testimonials.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{text, by}`. Fictional people only (e.g. "Maya Ronen"). RTL logical; text `dir="auto"`.
+- **TESTS:** Given text/by · Then `blockquote` + `figcaption` render.
+- **NUMBERS:** contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0298 — Pricing (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0282 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0282.
+- **WHY:** components.md §2.16 (`Pricing`, "same as billing"); landing.html pricing teaser.
+- **GOAL:** The landing pricing teaser reuses TierCard with always-visible prices and a join link.
+- **SCOPE:** `apps/web/components/marketing/Pricing.tsx` + `apps/web/components/marketing/Pricing.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) reuse `TierCard`; 3) link to `/sign-up`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/Pricing.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** hide a tier; do not hard-code prices (config value; UNKNOWN).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Copy EN/HE: `EN:"Clear prices. Always visible." / HE:"מחירים ברורים. תמיד גלויים."`; `EN:"Pay yearly and get two months free." / HE:"בתשלום שנתי מקבלים חודשיים חינם."`. RTL logical; prices `.tp-num`.
+- **TESTS:** Given the 4-tier config · Then 4 tier cards rendered. Playwright EN/HE at 390/1280.
+- **NUMBERS:** contrast 4.5:1 · price values `UNKNOWN` (Amit — conflict 2).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** price values — Amit.
+
+### TFV2-0299 — FAQ (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292.
+- **WHY:** components.md §2.16 (`FAQ`, native `details`, no JS).
+- **GOAL:** FAQ items use native `<details>` disclosure, no script.
+- **SCOPE:** `apps/web/components/marketing/FAQ.tsx` + `apps/web/components/marketing/FAQ.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-faq > details > summary` + `.tp-faq__answer`; 3) no JS; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/FAQ.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** add JS or an accordion library.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{items:[{q,a}]}`. Copy EN/HE (from landing.html): `EN:"Why do I have to ask to join?" / HE:"למה צריך לבקש להצטרף?"`; `EN:"Is there a password?" / HE:"יש סיסמה?"`; `EN:"Does it work in Hebrew?" / HE:"זה עובד בעברית?"`; `EN:"Can the coach change things without asking?" / HE:"המאמן יכול לשנות דברים בלי לשאול?"`; `EN:"What does Tempo remember about me?" / HE:"מה Tempo זוכר עליי?"`; `EN:"Is Tempo therapy?" / HE:"Tempo זה טיפול?"`. Native disclosure, icon `.tp-faq__icon`.
+- **TESTS:** Given 6 items · Then 6 `details` render. Playwright EN/HE: toggle a `details` open/closed natively.
+- **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0300 — SiteFooter (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292, TFV2-0301 · **Folds-in:** #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292, TFV2-0301.
+- **WHY:** components.md §2.16 (`SiteFooter`); landing.html.
+- **GOAL:** The footer holds Terms/Privacy/Contact/Changelog links, the language switch and the disclaimer.
+- **SCOPE:** `apps/web/components/marketing/SiteFooter.tsx` + `apps/web/components/marketing/SiteFooter.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-site-footer` with links + `LanguageSwitch`; 3) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/SiteFooter.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** omit the disclaimer.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Copy EN/HE: `EN:"Terms" / HE:"תנאים"`; `EN:"Privacy" / HE:"פרטיות"`; `EN:"Contact" / HE:"יצירת קשר"`; `EN:"What's new" / HE:"מה חדש"`; `EN:"Tempo Flow. A coach, not a therapist." / HE:"Tempo Flow. מאמן, לא מטפל."`. RTL logical.
+- **TESTS:** Given links · Then rendered with language switch. Playwright EN/HE.
+- **NUMBERS:** contrast 4.5:1 · target ≥ 24×24 px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0301 — LanguageSwitch
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** components.md §2.16 (`LanguageSwitch`); landing.html + settings-prefs; #752 (EN/HE switcher + RTL).
+- **GOAL:** A two-option switcher (English / עברית) sets the locale and flips the layout to RTL.
+- **SCOPE:** `apps/web/components/marketing/LanguageSwitch.tsx` + `apps/web/components/marketing/LanguageSwitch.test.tsx`.
+- **MUTATES:** none (sets locale cookie + `<html lang dir>`).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-lang-switch` with `a[hreflang][lang]` for en/he; 3) on choose, set locale; `he` → `dir="rtl"`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/LanguageSwitch.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use a dropdown that hides Hebrew; language names carry their own `lang`.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{current}`. Links: `<a hreflang="en" lang="en">EN</a>` / `<a hreflang="he" lang="he">עב</a>` (full names "English"/"עברית" in the footer variant). `aria-current` on current. Hebrew name wrapped `<span lang="he">`. RTL: the switch itself stays logical.
+- **TESTS:** Given current=en · Then EN link `aria-current`. Given current=he · Then `<html lang="he" dir="rtl">`. Playwright EN/HE at 390/1280.
+- **NUMBERS:** target ≥ 24×24 px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0302 — Landing EN/HE copy dictionaries (#751)
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-70/F-71; TRD §5b (typed message files); #751 (landing copy → en/he dictionaries).
+- **GOAL:** Every landing string lives in typed `en` and `he` dictionaries with a missing-key fallback to English.
+- **SCOPE:** `apps/web/messages/en.json` + `apps/web/messages/he.json` + `apps/web/messages/index.ts`.
+- **MUTATES:** message dictionaries.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) write `en.json`/`he.json` with the full landing/about/changelog key set (from landing.html `TP_STRINGS`); 3) `index.ts` exports a typed `t(key, locale)` with English fallback for a missing Hebrew key; 4) run DONE.
+- **DONE:** `bun run typecheck` → no errors (typed keys resolve).
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** introduce an i18n library (typed files only, TRD §1); do not use a machine translation service.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Data ticket. Keys match the screens' `data-i18n` keys. A missing Hebrew key falls back to English (TRD §5b). Numbers/dates use `.tp-num` at render, not in the string.
+- **TESTS:** Given `t("hero.title","he")` · Then the Hebrew value. Given a key missing in `he` · Then English fallback. Given `t(...,"en")` · Then English.
+- **NUMBERS:** none applicable · `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0303 — Landing screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293, TFV2-0294, TFV2-0295, TFV2-0296, TFV2-0298, TFV2-0299, TFV2-0300 · **Folds-in:** #751, #752
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0293 … TFV2-0300.
+- **WHY:** landing.html; PRD F-70/F-71.
+- **GOAL:** The marketing home page assembles header, hero, features, how-it-works, voice, who-for, pricing teaser, FAQ and footer in EN and HE.
+- **SCOPE:** `apps/web/app/(marketing)/page.tsx` + `apps/web/e2e/landing.spec.ts`.
+- **MUTATES:** route `(marketing)/page`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) compose the screen from the marketing components; 3) wire the language switch (`?lang=en|he`); 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/landing.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** invent metrics; do not fetch (static); do not copy Claude.ai wording/logo.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `Marketing` (no shell). Sections in order: hero, "What it is" (3 FeatureRows), "How it works" (3 steps), live voice FeatureRow, "Who it's for" (2 cards), pricing teaser (4 tiers), FAQ, footer. States: default; empty/loading/error show the default page (nothing fetched); offline adds a banner. Copy EN/HE (from landing.html dictionaries). `?lang=he` → `dir="rtl"` and Hebrew copy. One primary "Ask to join". RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN and HE at 390 and 1280: assert hero title, "Ask to join", 4 tier cards, 6 FAQ items render; switch to Hebrew → `dir="rtl"` + Hebrew hero; offline banner shows; no fetch occurs.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · body typeface `UNKNOWN` (Amit — conflict 5).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** body typeface — Amit (conflict 5).
+
+### TFV2-0304 — About screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293, TFV2-0294, TFV2-0300 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0293, TFV2-0294, TFV2-0300.
+- **WHY:** about.html; PRD F-70.
+- **GOAL:** The About page tells why Tempo exists and five promises, ending with "Ask to join".
+- **SCOPE:** `apps/web/app/(marketing)/about/page.tsx` + `apps/web/e2e/about.spec.ts`.
+- **MUTATES:** route `(marketing)/about`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) compose header/hero/5 promise cards/footer; 3) add Playwright; 4) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/about.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** invent founding stories; do not copy wording.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout `Marketing`. Promise cards copy EN/HE: `EN:"Calm by default" / HE:"רגוע כברירת מחדל"`; `EN:"You decide" / HE:"אתה מחליט"`; `EN:"Everything can be undone" / HE:"הכול אפשר לבטל"`; `EN:"Prices you can always see" / HE:"מחירים שתמיד גלויים"`; `EN:"Your words stay yours" / HE:"המילים שלך נשארות שלך"`. States: default + offline banner.
+- **TESTS:** Playwright EN/HE at 390/1280: 5 promise cards + "Ask to join" render; Hebrew flips RTL.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** body typeface — Amit (conflict 5).
+
+### TFV2-0305 — Changelog screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0293, TFV2-0300, TFV2-0316 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0293, TFV2-0300, TFV2-0316.
+- **WHY:** changelog.html.
+- **GOAL:** The changelog lists entries (version, date, changes marked New/Better/Fixed) newest first.
+- **SCOPE:** `apps/web/app/(marketing)/changelog/page.tsx` + `apps/web/e2e/changelog.spec.ts`.
+- **MUTATES:** route `(marketing)/changelog`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) read `content/changelog/*.md` at build time; 3) render with `ChangelogEntry`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/changelog.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** show ticket numbers or code words; do not use colour alone (icon + word).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout `Marketing`. Copy EN/HE: `EN:"Version" / HE:"גרסה"`; `EN:"New" / HE:"חדש"`; `EN:"Better" / HE:"טוב יותר"`; `EN:"Fixed" / HE:"תוקן"`. Plain language only. States: default (built at deploy, so empty/loading/error show default) + offline banner.
+- **TESTS:** Playwright EN/HE at 390/1280: newest entry first, each change carries a word+icon.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0306 — SettingsSection
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** components.md §2.9 (`SettingsSection`).
+- **GOAL:** A settings card with a title and optional description groups settings rows.
+- **SCOPE:** `apps/web/components/settings/SettingsSection.tsx` + `apps/web/components/settings/SettingsSection.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-settings-section` with `__head/__title/__desc`; 3) run DONE.
+- **DONE:** `bun run test -- apps/web/components/settings/SettingsSection.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** set colours here (`.tp-surface`).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{title, description?, children}`. `--tp-space-5` padding.
+- **TESTS:** Given title+rows · Then title and rows render. Playwright EN/HE.
+- **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0307 — SettingRow
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0306.
+- **WHY:** components.md §2.9 (`SettingRow`).
+- **GOAL:** A settings row puts the label/help at the start and the control at the end.
+- **SCOPE:** `apps/web/components/settings/SettingRow.tsx` + `apps/web/components/settings/SettingRow.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `.tp-setting-row` with `__text` + `__control`; 3) support `--stack` and `data-tone=danger`; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/settings/SettingRow.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** invent controls; do not use colour alone (danger has word + icon).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{label, help?, control, stack?, tone?}`. RTL logical (label start, control end).
+- **TESTS:** Given label+switch · Then label at start, switch at end. Given `tone=danger` · Then danger styling. Playwright EN/HE.
+- **NUMBERS:** target ≥ 24×24 px · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0308 — Settings profile screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306, TFV2-0307, TFV2-0266 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0306, TFV2-0307, TFV2-0266.
+- **WHY:** settings-profile.html.
+- **GOAL:** The profile screen edits full name, call-me, Hebrew address, email and language with validation.
+- **SCOPE:** `apps/web/app/(tempo)/settings/profile/page.tsx` + `apps/web/e2e/settings-profile.spec.ts`.
+- **MUTATES:** route `(tempo)/settings/profile`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/SettingRow/Form/Field/Radio/Select/EmailField/FormErrorSummary; 3) wire `profiles.getMine`, `profiles.update`, `auth.requestEmailChange`, `auth.signOut`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/settings-profile.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** store a password (none exists); do not change email without the link flow.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. States: default, field-errors (summary + under-field), loading, error ("Couldn't load your profile."), offline. Copy EN/HE (from settings-profile.html): `EN:"Profile" / HE:"פרופיל"`; `EN:"Full name" / HE:"שם מלא"`; `EN:"What should Tempo call you?" / HE:"איך ש־Tempo יקרא לך?"`; `EN:"How should Tempo speak to you in Hebrew?" / HE:"איך ש־Tempo ידבר אלייך בעברית?"`; `EN:"Feminine" / HE:"בלשון נקבה"`; `EN:"Masculine" / HE:"בלשון זכר"`; `EN:"Email" / HE:"אימייל"`; `EN:"Language" / HE:"שפה"`; `EN:"Save changes" / HE:"שמירת השינויים"`; `EN:"Sign out" / HE:"יציאה"`. "Save changes" is the one primary. RTL logical; email `dir="ltr"`. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: save with blank name → summary + field error; email change → "We sent a link…"; sign out → toast; `?state=loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · email regex `name@example.com`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0309 — Settings preferences screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306, TFV2-0307, TFV2-0265, TFV2-0267 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0306, TFV2-0307, TFV2-0265, TFV2-0267.
+- **WHY:** settings-prefs.html.
+- **GOAL:** Preferences (theme, language, text size, reading font, coach dial, week start, notices) save on change with a "Saved" status.
+- **SCOPE:** `apps/web/app/(tempo)/settings/preferences/page.tsx` + `apps/web/e2e/settings-prefs.spec.ts`.
+- **MUTATES:** route `(tempo)/settings/preferences`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/SettingRow/Segmented/Switch/Select/Dial; 3) wire `profiles.getPrefs`, `profiles.updatePrefs`, `profiles.setCoachDial`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/settings-prefs.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** add a Save button (saves on change); do not make billing notices toggleable (locked).
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. Copy EN/HE (from settings-prefs.html): `EN:"Preferences" / HE:"העדפות"`; `EN:"How Tempo looks" / HE:"איך Tempo נראה"`; `EN:"Theme" / HE:"ערכת צבעים"`; `EN:"Light" / HE:"בהירה"`; `EN:"Dark" / HE:"כהה"`; `EN:"Match this device" / HE:"כמו במכשיר"`; `EN:"Language" / HE:"שפה"`; `EN:"Text size" / HE:"גודל טקסט"`; `EN:"Reading font" / HE:"גופן קריאה"`; `EN:"Less motion" / HE:"פחות תנועה"`; `EN:"How the coach works" / HE:"איך המאמן עובד"`; `EN:"Week starts on" / HE:"השבוע מתחיל ביום"`; `EN:"Billing notices" / HE:"הודעות על תשלום"` (locked, always on). Coach dial 0–10 shows number + word (Quiet/Steady/Push). Reduced motion: "Follows device" badge, not a switch. RTL logical; billing notices switch `aria-disabled`. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: change theme → "Saved" + theme applied; language → layout flips RTL; dial slider → number+word update (debounced); billing switch is disabled; `?state=loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · dial 0–10 · debounce 400 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start default (Sunday vs Monday) — Amit (REWRITE-PLAN §4 conflict 10).
+
+### TFV2-0310 — Settings privacy screen
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306, TFV2-0307, TFV2-0311 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0306, TFV2-0307, TFV2-0311.
+- **WHY:** settings-privacy.html.
+- **GOAL:** Privacy settings (usage data, export, delete account with 30-day grace) work end to end.
+- **SCOPE:** `apps/web/app/(tempo)/settings/privacy/page.tsx` + `apps/web/e2e/settings-privacy.spec.ts`.
+- **MUTATES:** route `(tempo)/settings/privacy`.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) build from SettingsSection/SettingRow/Switch/ConfirmDialog/Notice; 3) wire `profiles.updatePrefs`, `dsr.requestDataExport`, `dsr.requestAccountDeletion`, `dsr.cancelAccountDeletion`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/settings-privacy.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** delete immediately (30-day grace); do not share usage data by default.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout: `TempoShell` + `PageLayout --narrow`. Copy EN/HE (from settings-privacy.html): `EN:"Privacy" / HE:"פרטיות"`; `EN:"Help improve Tempo" / HE:"לעזור לשפר את Tempo"`; `EN:"Download a copy of everything" / HE:"להוריד עותק של הכול"`; `EN:"Request my copy" / HE:"לבקש עותק"`; `EN:"Leave Tempo" / HE:"לעזוב את Tempo"`; `EN:"Delete my account" / HE:"למחוק את החשבון שלי"`; `EN:"Delete your account?" / HE:"למחוק את החשבון שלך?"`; `EN:"Tick this to turn on the delete button." / HE:"סמני כאן כדי להפעיל את כפתור המחיקה."`; `EN:"Restore my account" / HE:"לשחזר את החשבון"`. Delete requires a tick before the button enables (ConfirmDialog). Usage data off by default. RTL logical. Motion ≤250 ms.
+- **TESTS:** Playwright EN/HE at 390/1280: usage-data switch off by default → on → toast; export → status line; delete → sheet requires tick → confirm → pending notice + Restore; restore → welcome back; `?state=loading|error|offline` asserted.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1 · target ≥ 24×24 px · deletion grace 30 days.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0311 — ConfirmDialog
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** components.md §8 (`ConfirmDialog`); used by module-preview, settings-privacy, trial-end.
+- **GOAL:** A confirmation dialog with a title, one plain sentence and two buttons, where the destructive button is not the accent.
+- **SCOPE:** `apps/web/components/settings/ConfirmDialog.tsx` + `apps/web/components/settings/ConfirmDialog.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render as a sheet (`tp-sheet`) on phone, centered dialog ≥768; 3) focus trap + Esc + focus return; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/settings/ConfirmDialog.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** make the destructive button the accent; do not trap focus incorrectly.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{open, title, body, confirmLabel, cancelLabel, onConfirm, onCancel, tone}`. `role="alertdialog" aria-modal`. Destructive button is `.tp-btn--danger` (not primary). States: open, closed. RTL logical; focus returns to opener. Motion 240 ms.
+- **TESTS:** Given open · Then dialog shown with title/body/2 buttons, focus trapped. Esc closes. Given tone=danger · Then confirm is `.tp-btn--danger`, cancel `.tp-btn--secondary`. Playwright EN/HE at 390/1280.
+- **NUMBERS:** target ≥ 24×24 px · motion ≤ 250 ms (240 ms).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0312 — PWA manifest + icons
+- **Stage:** D · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-120 (web PWA); TRD §1.
+- **GOAL:** The PWA has a manifest with name, icons and theme colour so it installs.
+- **SCOPE:** `apps/web/app/manifest.ts` + `apps/web/public/icons/` + `apps/web/app/icon.svg`.
+- **MUTATES:** PWA manifest/icon assets.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) emit a manifest (name, short name, start URL, display standalone, background/theme colour from `--tp-ground`/`--tp-accent`); 3) add 192/512 icons + maskable; 4) run DONE.
+- **DONE:** `bun run typecheck` → no errors.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** reference a CDN icon; do not set a live URL.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** Data/asset ticket. Manifest fields only (no keys).
+- **TESTS:** none beyond typecheck (static manifest).
+- **NUMBERS:** icon sizes 192/512 px (PWA install criteria) · pass = exact.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0313 — PWA service worker + offline page
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0312 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0312.
+- **WHY:** PRD F-120; offline states across screens.
+- **GOAL:** A service worker caches the shell so the app opens offline and shows the offline banner, never a dead page.
+- **SCOPE:** `apps/web/app/sw.ts` + `apps/web/app/offline/page.tsx` + `apps/web/e2e/offline.spec.ts`.
+- **MUTATES:** service worker + offline route.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) register a service worker that precaches the app shell; 3) an `/offline` route renders the offline state; 4) add Playwright (network emulation); 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/offline.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** cache user data/keys; do not break authenticated routes.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** PWA. Precaches static shell only (never Convex data or user content). Offline copy EN/HE: `EN:"You're offline. Changes save when you're back." / HE:"אין חיבור כרגע. השינויים יישמרו כשתחזרי."`
+- **TESTS:** Playwright: go offline → shell still loads with the offline banner; online → banner clears.
+- **NUMBERS:** shell precache size budget · `UNKNOWN` (Amit — no budget set).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** shell cache size budget — Amit.
+
+### TFV2-0314 — PWA install prompt + meta
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0312 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0312.
+- **WHY:** PRD F-120.
+- **GOAL:** The app offers an install prompt and sets theme-colour/title meta.
+- **SCOPE:** `apps/web/app/layout.tsx` + `apps/web/e2e/install.spec.ts`.
+- **MUTATES:** root layout meta + install prompt.
+- **STEPS:** 1) Graphify code-map check (PARTIAL — verify); 2) add `theme-color` + `apple-mobile-web-app-*` meta; 3) show a quiet install button on `beforeinstallprompt`; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/install.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** auto-install; do not nag repeatedly.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** PWA/meta. Install prompt copy EN/HE: `EN:"Install Tempo" / HE:"התקנת Tempo"`. Never auto-prompts repeatedly.
+- **TESTS:** Playwright: `beforeinstallprompt` fires → button appears → click shows native prompt (mocked).
+- **NUMBERS:** theme-colour from `--tp-ground` · contrast n/a (chrome).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0315 — Empty states gallery
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0306 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0306.
+- **WHY:** empty-states.html (internal reference).
+- **GOAL:** One internal page shows every empty/loading/error/offline pattern with the screen it belongs to.
+- **SCOPE:** `apps/web/app/(tempo)/empty-states/page.tsx` + `apps/web/e2e/empty-states.spec.ts`.
+- **MUTATES:** route `(tempo)/empty-states` (not in product navigation).
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render each state pattern grouped by kind with a screen-name badge; 3) copy rules at top; 4) add Playwright; 5) run DONE.
+- **DONE:** `CI=1 bunx playwright test apps/web/e2e/empty-states.spec.ts --reporter=line` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** create new components (reuse StateEmpty/StateLoading/StateError/StateOffline); do not link in product nav.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI screen. Layout `TempoShell` + `PageLayout --wide`. Copy EN/HE: `EN:"Empty, loading, error and offline" / HE:"ריק, טוען, שגיאה וללא חיבור"`. Copy rules: kind and plain, never shaming, always a next step, "Your data is safe." on every error. States: default + offline only (gallery is static).
+- **TESTS:** Playwright EN/HE at 390/1280: every state pattern renders with a screen-name badge and link.
+- **NUMBERS:** LCP ≤ 2.5 s, CLS ≤ 0.1 · contrast 4.5:1.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0316 — ChangelogEntry (marketing)
+- **Stage:** D · **Pass:** 1 · **Depends:** TFV2-0292 · **Folds-in:** #751
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0292.
+- **WHY:** changelog.html (`@component ChangelogEntry ×4`).
+- **GOAL:** One changelog entry shows version, date and changes each marked New/Better/Fixed with a word and icon.
+- **SCOPE:** `apps/web/components/marketing/ChangelogEntry.tsx` + `apps/web/components/marketing/ChangelogEntry.test.tsx`.
+- **MUTATES:** none.
+- **STEPS:** 1) Graphify code-map check (MISSING — add); 2) render `article.cl-entry` with version/date/changes; 3) each change carries an icon + word; 4) run DONE.
+- **DONE:** `bun run test -- apps/web/components/marketing/ChangelogEntry.test.tsx` → all pass.
+- **EVIDENCE:** DONE output; `REPORT` lists every STEP.
+- **DO NOT:** use colour alone; no ticket numbers/code words.
+- **REPORT:** status/evidence/changed/unknowns/notes for ticket sync.
+- **SPEC:** UI component. Props `{version, date, changes:[{kind:"new"|"better"|"fixed", text}]}`. Copy EN/HE: `EN:"New" / HE:"חדש"`; `EN:"Better" / HE:"טוב יותר"`; `EN:"Fixed" / HE:"תוקן"`. Date `.tp-num`. RTL logical.
+- **TESTS:** Given 3 changes of each kind · Then each row shows its word + icon. Playwright EN/HE at 390/1280.
+- **NUMBERS:** contrast 4.5:1 · text ≥ 13 px.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+## Chunk 5 — Gen 1
+
+### TFV2-0317 — Expo native shell foundation (newest stable SDK + NativeWind)
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** first.
+- **WHY:** PRD F-121 (one-to-one Expo native shell, not a WebView); TRD §1; DESIGN.md §8/§9; components.md §2.17.
+- **GOAL:** `apps/mobile` runs on the newest stable Expo SDK with NativeWind wired, and the root `(tempo)/_layout.tsx` mounts the theme/safe-area/i18n providers so every later screen inherits them.
+- **SCOPE:** `apps/mobile/package.json` · `apps/mobile/app/(tempo)/_layout.tsx` · `apps/mobile/app/_layout.tsx` · test `apps/mobile/components/v3/__tests__/shell-foundation.test.tsx`.
+- **MUTATES:** `apps/mobile` dependencies and the root layout providers (no Convex, no schema, no env).
+- **STEPS:** 1) Graphify code-map of `apps/mobile/app/_layout.tsx` and `apps/mobile/package.json`; 2) record the installed Expo SDK major and NativeWind major; 3) pin the newest stable Expo SDK major that Metro accepts with the locked `react-native` and `react-native-reanimated` (do NOT bump RN/Reanimated beyond what the SDK pairs); 4) ensure `_layout.tsx` wraps the tree in `SafeAreaProvider`, the theme provider (light/dark from `usePrefs`), and the i18n/RTL provider; 5) run the render test.
+- **DONE:** `bun --filter tempo-rhythm-mobile run typecheck` → exit 0; `bun test apps/mobile/components/v3/__tests__/shell-foundation.test.tsx` → all pass.
+- **EVIDENCE:** paste the SDK/NativeWind majors read in step 2, the `typecheck` exit code, and the test output.
+- **DO NOT:** do not add new dependencies beyond the SDK pin; do not touch `convex/`, `.github/`, any `.env`, or workflow files; do not record a key value.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The layout renders an empty `(tempo)` stack inside `SafeAreaProvider`. Tokens used: `--tp-ground`, `--tp-paper`, `--tp-tabbar-h` (reserved padding). States: default (blank paper), loading (a `StateLoading` skeleton for the first provider hydration), offline (`StateOffline` banner `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`). Breakpoints 390/768/1024/1280 (no sideways scroll at 390 per DESIGN.md §8). Motion none. The newest-stable SDK exact major is a build decision: `UNKNOWN` — answerer Amit (verify against the Expo release calendar at ticket time).
+- **TESTS:** Given the root layout mounts / When the render tree is committed / Then `SafeAreaProvider`, the theme provider and the i18n provider are present exactly once, and no provider is nested inside another provider of the same kind. Given RTL locale `he` / When the provider hydrates / Then `I18nManager.isRTL` is true.
+- **NUMBERS:** no sideways scroll at 390 px (DESIGN.md §8) · Expo SDK major → `UNKNOWN` (Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** newest stable Expo SDK major — Amit.
+
+### TFV2-0318 — TempoShell (MobileTopBar + screen frame + floating capture button)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0317 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0317.
+- **WHY:** components.md §2.17 (MobileTopBar, `.tp-mtopbar.tp-glass`); DESIGN.md §5 (glass + solid fallback), §7 (motion), §10 (RTL).
+- **GOAL:** `Shell.tsx` exposes a `TempoShell` that renders a glass `MobileTopBar` (`title`, optional `back`), the screen frame and the floating capture button, with the solid-glass fallback already used in the app.
+- **SCOPE:** `apps/mobile/components/v3/Shell.tsx` · `apps/mobile/components/v3/primitives.tsx` (no-op unless a token is missing) · test `apps/mobile/components/v3/__tests__/shell.test.tsx`.
+- **MUTATES:** `apps/mobile` UI only (no Convex, no schema).
+- **STEPS:** 1) Graphify code-map of `Shell.tsx`; 2) verify the existing `TempoShell`/`MobileTopBar` exports and their `title`/`back` props against components.md §2.17; 3) add any missing `data-component`/`aria` wiring (`aria-label` on back, header `role="banner"`); 4) implement the render test.
+- **DONE:** `bun test apps/mobile/components/v3/__tests__/shell.test.tsx` → all pass; `bun --filter tempo-rhythm-mobile run typecheck` → exit 0.
+- **EVIDENCE:** test output + typecheck exit code.
+- **DO NOT:** do not add a blur dependency (DESIGN.md §5 solid fallback is allowed); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Top bar is a solid glass surface (`--tp-glass-solid` fallback) at height `--tp-topbar-h`; title uses `--tp-text-lg` `--tp-font-serif`, `--tp-ink`. Back chevron `.tp-icon--flip` mirrors in RTL and is ≥ `--tp-touch` (24×24 CSS px min, WCAG 2.5.8; 44×44 native target). Floating capture button sits above the tab bar, accent `--tp-accent` with label `--tp-on-accent`. Copy: `EN: Back / HE: חזרה`. States: default, with-back, offline (banner). Keyboard: back is focusable, `Enter`/`Space` activates. Screen-reader: back labelled, top bar `role="banner"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms (panel slide `--tp-ease-out`).
+- **TESTS:** Given `title="Today"` / When the shell renders / Then the top bar shows `Today`, and no `Back` is present. Given `back` / When pressed / Then the router pops or replaces to `/coach`. Given `dir=rtl` / When the shell renders / Then the back chevron flips (`.tp-icon--flip`).
+- **NUMBERS:** target ≥24×24 CSS px / 44×44 native px (WCAG 2.2 2.5.8; Apple HIG) · motion ≤250 ms (DESIGN.md §7).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0319 — MobileTabBar + TouchRow + `(tabs)` route layout
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0317 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0317.
+- **WHY:** components.md §2.17 (MobileTabBar `.tp-tabbar.tp-glass[data-count]`, TouchRow `.tp-touch-row`); DESIGN.md §8 (tab bar at bottom under 768) and §10 (RTL).
+- **GOAL:** `TabBar.tsx` renders the four glass tabs (Today, Coach, Tasks, Notes) with the active tab marked and a `TouchRow` primitive of at least 56 px, wired into `(tabs)/_layout.tsx`.
+- **SCOPE:** `apps/mobile/components/v3/TabBar.tsx` · `apps/mobile/app/(tempo)/(tabs)/_layout.tsx` · test `apps/mobile/components/v3/__tests__/tabbar.test.tsx`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `TabBar.tsx` and `(tabs)/_layout.tsx`; 2) verify the four tabs and active state match the v3 target; 3) add `TouchRow` (≥56 px, chevron `.tp-icon--flip`) if missing; 4) implement the render test.
+- **DONE:** `bun test apps/mobile/components/v3/__tests__/tabbar.test.tsx` → all pass; `bun --filter tempo-rhythm-mobile run typecheck` → exit 0.
+- **EVIDENCE:** test output + typecheck exit code.
+- **DO NOT:** do not add a fifth tab; do not change routes; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Tab bar is glass `--tp-glass-solid` at height `--tp-tabbar-h`, fixed at the bottom. Four tabs with icon + label; the active tab uses `--tp-accent` for icon and `--tp-ink` label, inactive `--tp-ink-muted`; `aria-current` on the active tab. Copy `EN / HE`: Today `היום`, Coach `מאמן`, Tasks `משימות`, Notes `הערות`. `TouchRow`: icon `__icon`, label `__label`, value `__value`, chevron `__chev`, min height 56 px. States: default, active, offline. Breakpoints: under 768 fixed tab bar; ≥768 it is not rendered (web/desktop shell). Motion ≤250 ms. RTL: tab order flows inline-start→inline-end; chevrons flip.
+- **TESTS:** Given the tabs layout / When rendered / Then exactly four tabs appear in order Today, Coach, Tasks, Notes. Given the Today route is active / When rendered / Then the Today tab carries `aria-current`. Given `dir=rtl` / When rendered / Then the tab order mirrors and the TouchRow chevron flips.
+- **NUMBERS:** tab/TouchRow target ≥56 px (Apple HIG 44×44, min) · motion ≤250 ms (DESIGN.md §7).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0320 — MobileSheet (bottom sheet / drawer, focus trap + scroll lock)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0318 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0318.
+- **WHY:** components.md §2.17 (MobileSheet `.tp-sheet.tp-glass[role=dialog][aria-labelledby][hidden]`, scrim); DESIGN.md §8 (coach and slash menu open as bottom sheets under 768).
+- **GOAL:** `MobileSheet` opens a glass bottom sheet with grabber, `aria-labelledby` title, a scrim, Esc/back close, a Tab focus trap, and scroll lock, returning focus to the opener on close; at ≥768 it centres as a dialog.
+- **SCOPE:** `apps/mobile/components/v3/Shell.tsx` (the `MobileSheet` portion) · test `apps/mobile/components/v3/__tests__/sheet.test.tsx`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of the `MobileSheet` in `Shell.tsx`; 2) verify grabber/head/body/foot structure, `hidden`, `aria-labelledby`, scrim `data-for`; 3) add the focus trap and focus-return if missing; 4) implement the render test.
+- **DONE:** `bun test apps/mobile/components/v3/__tests__/sheet.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not implement a router inside the sheet; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Sheet slides from the bottom at <768 (`--tp-radius-xl` top corners, `--tp-shadow-modal`); ≥768 it centres with `--tp-radius-lg`. Scrim `--tp-scrim`. Grabber is a decorative `--tp-line` handle. States: open, closed, offline. Copy is caller-supplied (title prop), so no fixed copy. Keyboard: `Esc` and Android back close; Tab cycles within the sheet. Screen-reader: `role="dialog"`, `aria-labelledby` points at `__title`. Motion: open 240 ms `--tp-ease-out`, close 160 ms `--tp-ease-in`; `prefers-reduced-motion` → instant.
+- **TESTS:** Given the sheet is opened / When `open-sheet` fires / Then the scrim shows, `hidden` is removed, body scroll is locked, and focus moves into the sheet. Given Tab / When pressed past the last focusable / Then focus wraps to the first. Given `Esc` / When pressed / Then the sheet closes and focus returns to the opener.
+- **NUMBERS:** motion ≤250 ms (DESIGN.md §7) · focus trap wraps within 1 Tab cycle (WCAG 2.4.3 focus order).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0321 — Mobile i18n EN/HE strings + RTL (I18nManager) baseline
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0317 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0317.
+- **WHY:** PRD F-70/F-71/F-72; TRD §5b; DESIGN.md §10; components.md §6 (Hebrew/RTL notes).
+- **GOAL:** `i18n.ts`/`strings.ts` resolve every screen label from `en`/`he` dictionaries with English fallback for a missing key, and set `I18nManager.forceRTL` from the locale so all screens render correctly RTL.
+- **SCOPE:** `apps/mobile/lib/v3/i18n.ts` · `apps/mobile/lib/v3/strings.ts` · test `apps/mobile/lib/v3/__tests__/i18n.test.ts`.
+- **MUTATES:** `apps/mobile` strings only.
+- **STEPS:** 1) Graphify code-map of `i18n.ts`/`strings.ts`; 2) confirm the dictionary shape and the fallback rule; 3) add missing shared labels (`Back`, `Retry`, `Loading…`, `Today`, `Coach`, `Tasks`, `Notes`, `Journal`, `Habits`, `Calendar`, `Routines`, `Templates`, `Settings`, `Onboarding`); 4) implement the unit test.
+- **DONE:** `bun test apps/mobile/lib/v3/__tests__/i18n.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not invent Hebrew where a dictionary value is missing — keep the key and fall back to EN; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Locale `en`/`he` (any code accepted, default from device). RTL list `he`/`ar`/`fa`/`ur` → `I18nManager.forceRTL(true)`. Numbers/dates stay LTR via `tp-num` (`direction:ltr; unicode-bidi:isolate`). Copy pairs: `EN / HE` — Today `היום`; Coach `מאמן`; Tasks `משימות`; Notes `הערות`; Journal `יומן`; Habits `הרגלים`; Calendar `לוח שנה`; Routines `שגרות`; Templates `תבניות`; Settings `הגדרות`; Onboarding `תחילת השימוש`; Back `חזרה`; Retry `נסה שוב`; Loading… `טוען…`.
+- **TESTS:** Given locale `he` / When a label is resolved / Then the Hebrew value returns. Given a key missing from `he` / When resolved / Then the English value returns. Given locale `he` / When the app mounts / Then `I18nManager.isRTL` is true.
+- **NUMBERS:** 100% of shared labels present in both dictionaries (internal completeness, no external standard).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0322 — Mobile screen: Today
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; screen `docs/design/v3/screens/mobile/today.html`; DESIGN.md §8/§10; components.md §2.17.
+- **GOAL:** `(tabs)/today.tsx` renders the Today screen (greeting, day's tasks, capture button) against the v3 tokens with all states wired to real queries.
+- **SCOPE:** `apps/mobile/app/(tempo)/(tabs)/today.tsx` · `apps/mobile/lib/v3/daily-page.ts` (read-only reuse) · test `tests/e2e/mobile-today.spec.ts`.
+- **MUTATES:** `apps/mobile` UI (no Convex, no schema).
+- **STEPS:** 1) Graphify code-map of `today.tsx`; 2) align the layout with `today.html` and tokens; 3) wire default/loading/empty/error/offline states to the query; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-today.spec.ts` → all pass; `bun --filter tempo-rhythm-mobile run typecheck` → exit 0.
+- **EVIDENCE:** Playwright output + typecheck exit code.
+- **DO NOT:** do not edit `convex/` or `daily-page.ts` logic (reuse only); do not add copy beyond the screen; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Layout: top bar `Today`, greeting serif `--tp-text-2xl`, task list rows (TaskRow), floating capture `+`. Tokens: `--tp-ground`, `--tp-paper`, `--tp-ink`, `--tp-ink-muted`, `--tp-accent`, `--tp-space-*`, `--tp-radius-*`. States: default (list), loading (skeleton `StateLoading`), empty (`EN: Nothing planned for today. / HE: לא תוכנן כלום להיום.` with a next step), error (`StateError` `EN: Couldn't load your tasks. Your data is safe. / HE: לא הצלחנו לטעון את המשימות שלך. הנתונים שלך בטוחים.` + Retry), offline (banner `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`), success. RTL: list flows inline-start; digits LTR via `tp-num`. Breakpoints 390/768/1024/1280 (no sideways scroll at 390). Motion ≤250 ms row drop-in.
+- **TESTS:** Given a fresh account / When Today loads / Then the empty state copy shows. Given tasks exist / When the list renders / Then each task title shows and the capture button is reachable. Given offline / When rendered / Then the offline banner shows and content stays. Run at 390 and 1280, in EN and HE, asserting each state.
+- **NUMBERS:** no sideways scroll at 390 px (DESIGN.md §8) · text contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px / 44×44 native (WCAG 2.5.8 / Apple HIG) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0323 — Mobile screen: Capture
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/capture.html`; DESIGN.md §8/§10.
+- **GOAL:** `capture.tsx` renders the Capture screen (title input + body, quick-add), saving through the existing note/task path with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/capture.tsx` · test `tests/e2e/mobile-capture.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `capture.tsx`; 2) align layout with `capture.html`; 3) wire default/loading/empty/error/offline/success states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-capture.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not add copy beyond the screen; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Text input `--tp-field`/`--tp-input`, save button `--tp-btn` accent. Copy: `EN: Capture / HE: לכידה`; `EN: What's on your mind? / HE: מה על דעתך?`; save `EN: Save / HE: שמור`. States: default, loading (button spinner), empty (disabled save until non-empty), error, offline, success (toast `EN: Saved. / HE: נשמר.` + 5-min Undo). RTL: input `dir="auto"` per paragraph. Breakpoints 390/768/1024/1280. Motion ≤250 ms toast.
+- **TESTS:** Given empty input / When rendered / Then Save is disabled. Given text / When Save is tapped / Then the success toast and Undo appear. Given offline / When Save is tapped / Then the offline banner shows and input is retained. Run at 390 and 1280, EN and HE, asserting each state.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0324 — Mobile screen: Coach
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121, F-20…F-25; `docs/design/v3/screens/mobile/coach.html`; components.md §2.10/§2.11; DESIGN.md §10.
+- **GOAL:** `(tabs)/coach.tsx` renders the Coach tab (thread list + composer + mic entry) with all states wired and the mic button gated by the voice `availability` query.
+- **SCOPE:** `apps/mobile/app/(tempo)/(tabs)/coach.tsx` · test `tests/e2e/mobile-coach.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `coach.tsx`; 2) align layout with `coach.html`; 3) wire default/loading/empty/error/offline states; 4) gate the mic button on `voice.availability` (show disabled + reason when unavailable); 5) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-coach.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not implement live voice here (that is TFV2-0389); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Thread list rows, composer `--tp-field`, mic entry (MicToggle accent). Copy: `EN: Coach / HE: מאמן`; `EN: Say hello, or tell the coach what's on your mind. / HE: אמור שלום, או ספר למאמן מה על דעתך.`; mic-unavailable reasons reuse the voice calm copy (`EN: Voice isn't switched on yet. Typing works as always. / HE: הקול עדיין לא מופעל. ההקלדה עובדת כרגיל.`). States: default, loading, empty (no threads), error, offline, mic-disabled. RTL: composer `dir="auto"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no threads / When Coach loads / Then the empty state shows. Given threads / When rendered / Then each thread title shows. Given voice unavailable / When rendered / Then the mic button is disabled with the calm reason. Run at 390 and 1280, EN and HE, asserting each state.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0325 — Mobile screen: Voice call (layout + honest not-connected state)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-30; `docs/design/v3/screens/mobile/voice-call.html`; components.md §2.11; DESIGN.md §8/§10. OPEN conflict §4.1 (voice stage) — this ticket assumes Gen 1 layout only; live wiring is TFV2-0389.
+- **GOAL:** `voice-call.tsx` renders the full call layout (title, state word, transcript, mic, hold-to-talk, interrupt, end-call, language chip, minutes) with the honest "Not connected" state and every control disabled, until TFV2-0389 wires it live.
+- **SCOPE:** `apps/mobile/app/(tempo)/voice-call.tsx` · test `tests/e2e/mobile-voice-call.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `voice-call.tsx`; 2) align the layout with `voice-call.html` (transcript, audio-level bars, mic accent, hold-to-talk, interrupt, end-call, language chip, minutes); 3) keep every control disabled with the calm not-connected copy; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-voice-call.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not add a provider, key, or recording here; do not enable the mic; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Call with your coach / HE: שיחה עם המאמן שלך`; `EN: Not connected / HE: לא מחובר`; `EN: Live calls aren't ready yet. / HE: שיחות קול עוד לא מוכנות.`; `EN: Hold to talk / HE: החזק כדי לדבר`; `EN: Interrupt / HE: קטע`; `EN: End call / HE: סיים שיחה`; `EN: Back to chat / HE: חזרה לצ'אט`; `EN: English / HE: אנגלית`. States: default (not-connected), offline (banner `EN: You're offline. / HE: אין חיבור.`). Mic (`--tp-accent`), end-call (`--tp-danger`), interrupt secondary. RTL: language chip keeps each language name in its own `lang`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given the screen / When rendered / Then "Not connected" shows and Mic/Hold-to-talk/Interrupt are disabled. Given End call / When tapped / Then it returns to Coach. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
+
+### TFV2-0326 — Mobile screen: Tasks
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/tasks.html`; DESIGN.md §8/§10.
+- **GOAL:** `(tabs)/tasks.tsx` renders the Tasks screen (list + complete toggle + add) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/(tabs)/tasks.tsx` · `apps/mobile/components/v3/TaskRow.tsx` (reuse only) · test `tests/e2e/mobile-tasks.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `tasks.tsx`; 2) align layout with `tasks.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-tasks.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not change TaskRow's contract; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Tasks / HE: משימות`; `EN: No tasks yet. / HE: אין משימות עדיין.`; `EN: Couldn't load your tasks. Your data is safe. / HE: לא הצלחנו לטעון את המשימות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`. States: default, loading, empty, error, offline, success (checkmark pops 180 ms). RTL rows inline-start; due times LTR `tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no tasks / When loaded / Then empty state shows. Given tasks / When one is toggled / Then it completes and the checkmark pops. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0327 — Mobile screen: Notes
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/notes.html`; DESIGN.md §8/§10.
+- **GOAL:** `(tabs)/notes.tsx` renders the Notes list/tree with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/(tabs)/notes.tsx` · test `tests/e2e/mobile-notes.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `notes.tsx`; 2) align layout with `notes.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-notes.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not add copy beyond the screen; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Notes / HE: הערות`; `EN: No notes yet. / HE: אין הערות עדיין.`; error `EN: Couldn't load your notes. Your data is safe. / HE: לא הצלחנו לטעון את ההערות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. RTL tree inline-start; note titles `dir="auto"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no notes / When loaded / Then empty state shows. Given notes / When rendered / Then each title shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0328 — Mobile screen: Journal
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/journal.html`; DESIGN.md §8/§10.
+- **GOAL:** `journal.tsx` renders the Journal screen (entries list + new entry) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/journal.tsx` · `apps/mobile/lib/v3/journal.ts` (reuse only) · test `tests/e2e/mobile-journal.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `journal.tsx`; 2) align layout with `journal.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-journal.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/` or `journal.ts` logic; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Journal / HE: יומן`; `EN: No entries yet. / HE: אין רשומות עדיין.`; error `EN: Couldn't load your journal. Your data is safe. / HE: לא הצלחנו לטעון את היומן שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. Entry body `dir="auto"`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no entries / When loaded / Then empty state shows. Given entries / When rendered / Then each entry's first line shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0329 — Mobile screen: Habits
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/habits.html`; DESIGN.md §8/§10.
+- **GOAL:** `habits.tsx` renders the Habits screen (habit list + today's check-ins) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/habits.tsx` · `apps/mobile/lib/v3/habits.ts` (reuse only) · test `tests/e2e/mobile-habits.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `habits.tsx`; 2) align layout with `habits.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-habits.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/` or `habits.ts` logic; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Habits / HE: הרגלים`; `EN: No habits yet. / HE: אין הרגלים עדיין.`; error `EN: Couldn't load your habits. Your data is safe. / HE: לא הצלחנו לטעון את ההרגלים שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline, success (today's dot `data-logged`). Streak counts LTR `tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no habits / When loaded / Then empty state shows. Given a habit / When logged for today / Then today's dot fills. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0330 — Mobile screen: Calendar
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/calendar.html`; DESIGN.md §8/§10; components.md §2.5.
+- **GOAL:** `calendar.tsx` renders the Calendar screen (month grid + day's events) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/calendar.tsx` · `apps/mobile/lib/v3/dates.ts` (reuse only) · test `tests/e2e/mobile-calendar.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `calendar.tsx`; 2) align layout with `calendar.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-calendar.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/` or `dates.ts` logic; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Calendar / HE: לוח שנה`; `EN: No events. / HE: אין אירועים.`; error `EN: Couldn't load your calendar. Your data is safe. / HE: לא הצלחנו לטעון את לוח השנה שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. Dates/times LTR `tp-num` (mono). RTL: weekday header flows inline-start, week starts Monday (`UNKNOWN` week start — see OPEN). Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no events / When loaded / Then empty state shows. Given events / When a day is selected / Then its events show. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** week start Sunday vs Monday — Amit (REWRITE-PLAN-v2 §4.10); code currently uses Monday.
+
+### TFV2-0331 — Mobile screen: Routines
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/routines.html`; DESIGN.md §8/§10.
+- **GOAL:** `routines.tsx` renders the Routines screen (routine list + run) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/routines.tsx` · `apps/mobile/lib/v3/routine-run.ts` (reuse only) · test `tests/e2e/mobile-routines.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `routines.tsx`; 2) align layout with `routines.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-routines.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/` or `routine-run.ts` logic; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Routines / HE: שגרות`; `EN: No routines yet. / HE: אין שגרות עדיין.`; error `EN: Couldn't load your routines. Your data is safe. / HE: לא הצלחנו לטעון את השגרות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline, running (progress). Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no routines / When loaded / Then empty state shows. Given routines / When rendered / Then each routine name shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0332 — Mobile screen: Templates
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/templates.html`; DESIGN.md §8/§10.
+- **GOAL:** `templates.tsx` renders the Templates screen (template list + apply) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/templates.tsx` · test `tests/e2e/mobile-templates.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `templates.tsx`; 2) align layout with `templates.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-templates.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Templates / HE: תבניות`; `EN: No templates yet. / HE: אין תבניות עדיין.`; error `EN: Couldn't load your templates. Your data is safe. / HE: לא הצלחנו לטעון את התבניות שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no templates / When loaded / Then empty state shows. Given templates / When rendered / Then each template name shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0333 — Mobile screen: Settings
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/settings.html`; DESIGN.md §8/§10; components.md §2.9.
+- **GOAL:** `settings.tsx` renders the Settings screen (profile, preferences, accessibility, language) with every state wired.
+- **SCOPE:** `apps/mobile/app/(tempo)/settings.tsx` · test `tests/e2e/mobile-settings.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only (preferences read/write via existing `preferences` functions).
+- **STEPS:** 1) Graphify code-map of `settings.tsx`; 2) align layout with `settings.html`; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-settings.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not add a BYOK section (that is TFV2-0364); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Settings / HE: הגדרות`; `EN: Profile / HE: פרופיל`; `EN: Preferences / HE: העדפות`; `EN: Accessibility / HE: נגישות`; `EN: Language / HE: שפה`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, error, offline. Switch rows use On/Off words. RTL: chevrons flip. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given the screen / When rendered / Then Profile, Preferences, Accessibility, Language rows show. Given a switch / When toggled / Then `aria-checked` updates and On/Off word shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0334 — Mobile screen: Onboarding
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0319, TFV2-0321 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0319 and TFV2-0321.
+- **WHY:** PRD F-121; `docs/design/v3/screens/mobile/onboarding.html`; DESIGN.md §8/§10; components.md §2.15.
+- **GOAL:** `(auth)/onboarding.tsx` renders the Onboarding flow (welcome + first preferences) with every state wired.
+- **SCOPE:** `apps/mobile/app/(auth)/onboarding.tsx` · test `tests/e2e/mobile-onboarding.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only (initial preferences write via existing `preferences` functions).
+- **STEPS:** 1) Graphify code-map of `onboarding.tsx`; 2) align layout with `onboarding.html`; 3) wire default/loading/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-onboarding.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not change the sign-in/sign-up gating; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Onboarding / HE: תחילת השימוש`; `EN: Welcome to Tempo / HE: ברוכים הבאים ל-Tempo`; `EN: Get started / HE: להתחלה`; `EN: Skip / HE: דלג`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, error, offline. Breakpoints 390/768/1024/1280. Motion ≤250 ms step transition.
+- **TESTS:** Given the flow / When "Get started" is tapped / Then the first preferences step shows. Given "Skip" / When tapped / Then the flow completes to Today. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0335 — Study track: SM-2 algorithm (`convex/lib/sm2.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** first (study track; after chunk D coach artifacts F-28 which produce flashcards).
+- **WHY:** PRD F-90 (SM-2); TRD §5c; the SM-2 spec (https://super-memory.com/english/ol/sm2.htm).
+- **GOAL:** `convex/lib/sm2.ts` exports a pure `scheduleSm2` function that maps (quality, previous state) to the next (intervalDays, repetitions, easeFactor).
+- **SCOPE:** `convex/lib/sm2.ts` · test `convex/lib/sm2.test.ts`.
+- **MUTATES:** none (pure module; no schema).
+- **STEPS:** 1) Graphify code-map to confirm no `sm2.ts` exists; 2) implement `scheduleSm2(prev, quality)` with the canonical formulas; 3) clamp EF at 1.3; 4) write the unit test.
+- **DONE:** `bun test convex/lib/sm2.test.ts` → all pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** test output + typecheck exit code.
+- **DO NOT:** do not persist anything; do not import Convex server types; do not touch `convex/schema.ts` (schema is TFV2-0336); do not weaken a check.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Signature: `scheduleSm2(prev: { repetitions: number; easeFactor: number; intervalDays: number }, quality: 0|1|2|3|4|5): { repetitions: number; easeFactor: number; intervalDays: number }`. Rules: quality < 3 resets repetitions to 0 and returns intervalDays 1 (relearn). Otherwise: repetitions n+1; interval = n===1 ? 1 : n===2 ? 6 : round(prev.intervalDays * prev.easeFactor); EF' = prev.easeFactor + (0.1 − (5−q)·(0.08 + (5−q)·0.02)), clamped to ≥1.3. Error cases: quality out of 0–5 → throw `RangeError`; non-finite easeFactor/interval → throw `RangeError`. Limits: EF ≥1.3 always; intervalDays integer ≥1.
+- **TESTS:** Given quality 5, repetitions 0, EF 2.5 / When scheduled / Then repetitions 1, intervalDays 1. Given quality 5, repetitions 2, EF 2.5, interval 6 / When scheduled / Then intervalDays 15. Given quality 0 / When scheduled / Then repetitions 0, intervalDays 1. Given EF 1.3 and quality 0 / When scheduled / Then EF stays ≥1.3. Given quality 6 / When scheduled / Then throws RangeError.
+- **NUMBERS:** SM-2 EF floor 1.3, I(1)=1 day, I(2)=6 days (https://super-memory.com/english/ol/sm2.htm).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0336 — Study track: `studyCards` table (schema + indexes)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0335 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md` (needs `convex-arch` label per AGENTS.md rule 4).
+- **WHEN:** after TFV2-0335.
+- **WHY:** PRD F-90 (record → notes → flashcards → test); BACKEND-SCHEMA (generic tables rule); TRD §7 (soft delete, userId isolation).
+- **GOAL:** `convex/schema.ts` gains a `studyCards` table (front/back, source note, SM-2 scheduling fields) plus the indexes the review queries need.
+- **SCOPE:** `convex/schema.ts` · test `convex/studyCards.test.ts` (schema-shape assertion only).
+- **MUTATES:** `convex/schema.ts` (new table + indexes).
+- **STEPS:** 1) Graphify code-map of `schema.ts`; 2) add `studyCards` with the fields below and indexes `by_userId`, `by_userId_dueAtMs`, `by_sourceNoteId`; 3) write a test that inserts a row and asserts the fields/round-trip.
+- **DONE:** `bun test convex/studyCards.test.ts` → all pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** test output + typecheck exit code.
+- **DO NOT:** do not touch any other table; do not touch `convex/auth*`, `.env`, workflows; do not write a key value.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `studyCards: defineTable({ userId: v.id("users"), front: v.string(), back: v.string(), sourceNoteId: v.optional(v.id("notes")), repetitions: v.number(), easeFactor: v.number(), intervalDays: v.number(), dueAtMs: v.number(), status: v.union(v.literal("new"), v.literal("learning"), v.literal("reviewing")), createdAt, updatedAt, deletedAt: v.optional(v.number()) })` with the three indexes. Every row is scoped by `userId` (TRD §7 rule 4); soft delete via `deletedAt`.
+- **TESTS:** Given a card / When inserted / Then all fields round-trip and `dueAtMs` is a finite number. Given the `by_userId_dueAtMs` index / When queried / Then cards sort by due time for that user only.
+- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0337 — Study track: `convex/study.ts` (deck + review + schedule)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0336 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0336.
+- **WHY:** PRD F-90; TRD §7 (auth → entitlement → quota; userId filter; soft delete).
+- **GOAL:** `convex/study.ts` exposes `createCard`, `listDue`, `reviewCard` (which applies `scheduleSm2`) with auth and every error case.
+- **SCOPE:** `convex/study.ts` · test `convex/study.test.ts`.
+- **MUTATES:** `studyCards` table (via the functions only).
+- **STEPS:** 1) Graphify code-map to confirm `study.ts` is missing; 2) implement the three mutations/query; 3) call `scheduleSm2` from TFV2-0335; 4) write the unit test covering every error case.
+- **DONE:** `bun test convex/study.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not edit `convex/schema.ts` (done in TFV2-0336); do not call a model here; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `createCard({ front, back, sourceNoteId? }) → id` (requireUser; front/back non-empty ≤2000 chars each; insert status "new", repetitions 0, EF 2.5, intervalDays 0, dueAtMs now). `listDue({ limit? }) → cards[]` (query; default limit 50, max 100; returns cards with dueAtMs ≤ now). `reviewCard({ cardId, quality }) → next` (requireUser; owner check; quality 0–5 else error; applies `scheduleSm2`; sets status "learning" if repetitions 0–1 else "reviewing", dueAtMs = now + intervalDays·86_400_000). Error cases: not owner → `ConvexError` "Card not found"; bad quality → `RangeError`; missing front/back → `ConvexError`.
+- **TESTS:** Given user A's card / When B reviews it / Then error, nothing changes. Given quality 5 on a new card / When reviewed / Then repetitions 1 and dueAtMs advances. Given quality < 3 / When reviewed / Then repetitions reset to 0. Given empty front / When createCard / Then error. Given limit 500 / When listDue / Then clamped to 100.
+- **NUMBERS:** SM-2 intervals (https://super-memory.com/english/ol/sm2.htm); list limit default 50 / max 100 (internal).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0338 — Study track: flashcards from a note (note → cards)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0337.
+- **WHY:** PRD F-90 (record → notes → flashcards) and F-28 (coach artifacts feed the study track).
+- **GOAL:** `convex/study.ts` gains `cardsFromNote({ noteId })` that turns a note's markdown into flashcard candidates as proposals (never silently saved), reusing the accept/reject path.
+- **SCOPE:** `convex/study.ts` · test `convex/study.test.ts`.
+- **MUTATES:** `studyCards` and `pageProposals` (proposals only).
+- **STEPS:** 1) Graphify code-map of the proposal guard (`convex/lib/coachProposalGuard.ts`); 2) implement `cardsFromNote` to split the note into Q/A pairs (headings or `- ` bullet pairs) and return them as a proposal, not saved; 3) wire accept to `createCard`; 4) write the unit test.
+- **DONE:** `bun test convex/study.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not auto-save (every mutation surfaces a confirm/reject per HARD_RULES §6.2); do not call a model (deterministic split only); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `cardsFromNote({ noteId }) → { cards: { front, back }[], proposalId }`. Deterministic split: for each `## heading` followed by a paragraph → front = heading, back = paragraph (≤500 chars); for each `- Q: … / - A: …` pair → front/back. Limits: at most 100 cards per call. Errors: note not owner → `ConvexError`; empty note → empty proposal. Accept path calls `createCard` per card (each still an individual proposal with Undo).
+- **TESTS:** Given a note with `## X` + paragraph / When cardsFromNote / Then one card front X, back paragraph. Given a note with `- Q:`/`- A:` pairs / When cardsFromNote / Then paired cards. Given another user's note / When cardsFromNote / Then error. Given an empty note / When cardsFromNote / Then empty proposal.
+- **NUMBERS:** max 100 cards per call (internal guard).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0339 — Study track: scoped RAG (study context retrieval)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0336 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0336.
+- **WHY:** PRD F-90 (scoped RAG); TRD §5 (memory/embeddings); `convex/search.ts` (existing vector search).
+- **GOAL:** `convex/study.ts` gains `retrieveContext({ deckNoteIds, query, limit? })` that returns the most relevant note passages scoped strictly to the deck's source notes.
+- **SCOPE:** `convex/study.ts` · test `convex/study.test.ts`.
+- **MUTATES:** none (reads `notes` + `search.ts` indexes).
+- **STEPS:** 1) Graphify code-map of `convex/search.ts` and its embedding index; 2) implement `retrieveContext` to embed `query` and rank only passages whose note is in `deckNoteIds`; 3) write the unit test.
+- **DONE:** `bun test convex/study.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not persist raw messages (RAM-only scan rule); do not leak other users' notes (strict `userId` filter); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `retrieveContext({ deckNoteIds, query, limit? }) → { passage, noteId, score }[]`. Embed `query` (same seam as `search.ts`), filter candidate passages to `note.userId === caller` AND `note._id ∈ deckNoteIds`, return top-k by cosine similarity, k default 5 max 20. Errors: query empty → `ConvexError`; deckNoteIds empty → empty array; caller not owner of any → empty array. RAM-only: no new persisted copies.
+- **TESTS:** Given a query and a deck with one matching note / When retrieveContext / Then that note's passage ranks first. Given a note outside the deck / When retrieveContext / Then it is never returned. Given another user's note id / When retrieveContext / Then it is excluded. Given limit 50 / When retrieveContext / Then clamped to 20.
+- **NUMBERS:** top-k default 5 / max 20 (internal).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0340 — Study track: Anki export
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0337.
+- **WHY:** PRD F-90 (Anki export).
+- **GOAL:** `convex/study.ts` gains `exportAnki({ deckNoteIds? })` returning an Anki-importable plain-text file (front tab back, one card per line) for the user's cards.
+- **SCOPE:** `convex/study.ts` · test `convex/study.test.ts`.
+- **MUTATES:** none (reads `studyCards`).
+- **STEPS:** 1) Graphify code-map; 2) implement `exportAnki` as a mutation returning UTF-8 text in Anki's "Basic" import format (`front<TAB>back`); 3) write the unit test.
+- **DONE:** `bun test convex/study.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not add a dependency for `.apkg` (text import is the deterministic, dependency-free form); do not write files to disk; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `exportAnki({ deckNoteIds? }) → { text, count }`. Each card becomes one line `front\tback` (escape tab/newline inside fields as spaces); cards filtered to caller's own and, when `deckNoteIds` given, to those source notes. Limits: max 10,000 cards; over → `ConvexError`. Errors: no cards → `{ text: "", count: 0 }`.
+- **TESTS:** Given 3 cards / When exportAnki / Then text has 3 lines with tab separators. Given a card whose fields contain a newline / When exported / Then the newline is replaced by a space. Given deckNoteIds excludes one card / When exported / Then that card is omitted. Given another user's card id / When exported / Then it is never included.
+- **NUMBERS:** Anki plain-text import format (https://docs.ankiweb.net/importing/text-files.html) · max 10,000 cards per export (internal).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0341 — Study track: Flashcard component (card-flip)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0336 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile` (+ web reuse), lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0336.
+- **WHY:** components.md §2.2 (Flashcard, `card-flip`/`card-step`); PRD F-90; DESIGN.md §7 motion.
+- **GOAL:** A `Flashcard` component flips front↔back and steps through a deck, exposing `data-side`, `aria-pressed` and a counter.
+- **SCOPE:** `apps/mobile/components/v3/Flashcard.tsx` · test `apps/mobile/components/v3/__tests__/flashcard.test.tsx`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/mobile/components/v3/Flashcard.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `Flashcard` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/mobile/components/v3/__tests__/flashcard.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not call the backend (props only); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Card surface `--tp-paper`, radius `--tp-radius-lg`, shadow `--tp-shadow-card`. Front/back toggle via flip (only `transform`+`opacity`, ≤250 ms `--tp-ease-out`). Copy (caller-supplied, no fixed copy) + counter `EN: n of m / HE: n מתוך m` (digits `tp-num`). States: front, back, disabled, reduced-motion (no flip). Screen-reader: `aria-pressed` on flip, counter `aria-live=polite`. RTL: counter order mirrors.
+- **TESTS:** Given a card / When rendered / Then front shows and `aria-pressed` is false. Given a tap / When flip fires / Then back shows and `aria-pressed` true. Given reduced motion / When rendered / Then no transform animation runs. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** motion ≤250 ms (DESIGN.md §7) · target ≥24×24 CSS px (WCAG 2.5.8).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0342 — Study track: Quiz component (quiz-check)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0336 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile` (+ web reuse), lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0336.
+- **WHY:** components.md §2.2 (Quiz, `quiz-check`); PRD F-90 (recall quiz); DESIGN.md §7.
+- **GOAL:** A `Quiz` component renders a question with choices and marks an answer `data-checked`/`data-result` after `quiz-check`.
+- **SCOPE:** `apps/mobile/components/v3/Quiz.tsx` · test `apps/mobile/components/v3/__tests__/quiz.test.tsx`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/mobile/components/v3/Quiz.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `Quiz` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/mobile/components/v3/__tests__/quiz.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not call the backend (props only); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Question `--tp-ink` `--tp-text-lg`; choices as radios (role=radio, `aria-checked`); after answer, correct choice gets `data-result=correct` (`--tp-done`), wrong `data-result=wrong` (`--tp-danger`). Copy: `EN: Question n of m / HE: שאלה n מתוך m`; `EN: Check / HE: בדוק`; `EN: Correct / HE: נכון`; `EN: Not quite / HE: לא בדיוק`. States: unanswered, answered-correct, answered-wrong, disabled. RTL: choice order inline-start. Motion ≤250 ms feedback.
+- **TESTS:** Given a question / When rendered / Then no choice is checked. Given a choice / When checked and Check tapped / Then `data-result` shows on the chosen and correct rows. Given answered / When re-checked / Then input is disabled. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** motion ≤250 ms (DESIGN.md §7) · target ≥24×24 CSS px (WCAG 2.5.8).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0343 — Study track: deck list screen (mobile)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337, TFV2-0341, TFV2-0342 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0337, TFV2-0341, TFV2-0342.
+- **WHY:** PRD F-90 (separate mode, never mixed into Today); DESIGN.md §8/§10.
+- **GOAL:** `apps/mobile/app/(tempo)/study/index.tsx` lists the user's study decks/cards with due counts, as a separate mode reachable outside Today.
+- **SCOPE:** `apps/mobile/app/(tempo)/study/index.tsx` · test `tests/e2e/mobile-study-decks.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map; 2) build the deck list on `study.ts` queries; 3) wire default/loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-study-decks.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not mix study into the Today tab; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Study / HE: לימוד`; `EN: No decks yet. / HE: אין ערכות עדיין.`; `EN: n due today / HE: n מתוכננים להיום` (digits `tp-num`); `EN: Start review / HE: להתחלת חזרה`; error `EN: Couldn't load your study. Your data is safe. / HE: לא הצלחנו לטעון את הלימוד שלך. הנתונים שלך בטוחים.`; offline `EN: You're offline. / HE: אין חיבור.`. States: default, loading, empty, error, offline. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no decks / When loaded / Then empty state shows. Given decks / When rendered / Then each deck name and due count show. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0344 — Study track: review screen (mobile)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0343 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0343.
+- **WHY:** PRD F-90; DESIGN.md §8/§10.
+- **GOAL:** `apps/mobile/app/(tempo)/study/review.tsx` runs a flashcard review session calling `study.reviewCard` on each answer, with all states.
+- **SCOPE:** `apps/mobile/app/(tempo)/study/review.tsx` · test `tests/e2e/mobile-study-review.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only (calls `study.reviewCard`).
+- **STEPS:** 1) Graphify code-map; 2) render Flashcard + quality buttons (Again/Hard/Good/Easy → quality 0/3/4/5); 3) wire `reviewCard`; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-study-review.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not auto-advance without a quality choice; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Review / HE: חזרה`; `EN: Again / HE: שוב`; `EN: Hard / HE: קשה`; `EN: Good / HE: טוב`; `EN: Easy / HE: קל`; `EN: Session complete / HE: החזרה הסתיימה`. States: loading, active (card), answered (feedback), complete, error, offline. Quality maps: Again→0, Hard→3, Good→4, Easy→5. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given a due card / When loaded / Then the front shows. Given a quality button / When tapped / Then `reviewCard` advances to the next card. Given the last card / When answered / Then "Session complete" shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0345 — Study track: test screen (recall quiz) (mobile)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0343 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0343.
+- **WHY:** PRD F-90 (recall quiz / test); DESIGN.md §8/§10.
+- **GOAL:** `apps/mobile/app/(tempo)/study/test.tsx` runs a recall quiz (typed or chosen answers) over a deck and scores it, with all states.
+- **SCOPE:** `apps/mobile/app/(tempo)/study/test.tsx` · test `tests/e2e/mobile-study-test.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map; 2) render Quiz questions from the deck; 3) score locally and show a result; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-study-test.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not mix into Today; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Test / HE: מבחן`; `EN: You scored n of m / HE: קיבלת n מתוך m`; `EN: Try again / HE: נסה שוב`. States: loading, active, answered, complete (score), error, offline. RTL inline-start; digits `tp-num`. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given a deck / When Test loads / Then question 1 shows. Given answers / When all answered / Then the score shows. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0346 — Study track: stats/progress screen (mobile)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0337 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0337.
+- **WHY:** PRD F-90; DESIGN.md §8/§10; components.md §2.7 (charts).
+- **GOAL:** `apps/mobile/app/(tempo)/study/stats.tsx` shows per-deck mastery (due, learning, mature counts) with every state.
+- **SCOPE:** `apps/mobile/app/(tempo)/study/stats.tsx` · test `tests/e2e/mobile-study-stats.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only.
+- **STEPS:** 1) Graphify code-map; 2) aggregate `studyCards` by status; 3) render counts/chart; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-study-stats.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not edit `convex/`; do not invent metrics; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Progress / HE: התקדמות`; `EN: New / HE: חדש`; `EN: Learning / HE: בלמידה`; `EN: Reviewing / HE: בחזרה`; empty `EN: No study activity yet. / HE: אין פעילות לימוד עדיין.`; offline `EN: You're offline. / HE: אין חיבור.`. Counts are real (digits `tp-num`); no invented percentages. States: default, loading, empty, error, offline. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no cards / When loaded / Then empty state shows. Given cards across statuses / When rendered / Then the three counts match the data. Given offline / When rendered / Then the offline banner shows. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0347 — Connectors: Executor connect/setup verify (fold-in #748)
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** #748
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** first (connectors; `convex/connections.ts` already exists on `integration`).
+- **WHY:** PRD F-100; TRD §6; issue #748 (Executor connector setup); `docs/research/EXECUTOR-IN-TEMPO.md` §5.1 (if present).
+- **GOAL:** The Executor connect flow (`startExecutorConnect` → OAuth callback → `confirmExecutorConnect`) is verified end-to-end against `fakeExecutor.testkit.ts`, with one live usable row per person and nonce-confirmed tokens.
+- **SCOPE:** `convex/connections.ts` (fix only if a defect) · `convex/lib/connections/fakeExecutor.testkit.ts` · test `convex/connections.test.ts`.
+- **MUTATES:** `connections`, `connectionSecrets`, `oauthPending`, `connectionLimits` (via existing functions; no schema change).
+- **STEPS:** 1) Graphify code-map of `startExecutorConnect`, `handleExecutorCallback`, `confirmExecutorConnect`; 2) run the existing `connections.test.ts`; 3) add any missing coverage for the connect happy path and the nonce-expiry path; 4) re-run.
+- **DONE:** `bun test convex/connections.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not change the OAuth flow shape; do not record a key/token value (names only); do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Verified invariants: only one `connected`/`needs_reauth`/`unavailable` row per person+provider; `pending_confirm` rows are unusable until the nonce (SHA-256 stored, alive ≤ `CONFIRM_TTL_MS`) confirms; confirming retires the previous row; connect attempts capped at `CONNECT_ATTEMPTS_PER_HOUR` via `connectionLimits`. Executor's call shape/env names remain `UNKNOWN` (TRD §6). Error cases: expired nonce → error; double-confirm → same answer; revoked token → `needs_reauth`.
+- **TESTS:** Given a connect attempt / When the OAuth callback returns a code / Then a `pending_confirm` row with a nonce hash is staged and no token is usable. Given the owner confirms / When `confirmExecutorConnect` runs / Then the row becomes `connected` and the prior row retires. Given an expired nonce / When confirmed / Then it errors and nothing changes. Given a connect attempt over the hourly cap / When started / Then it is refused.
+- **NUMBERS:** `CONFIRM_TTL_MS` 10 min, `CONNECT_ATTEMPTS_PER_HOUR` 5, `CALLS_PER_HOUR` 30 (repo constants, `convex/connections.ts`).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Executor call shape + env var names — Amit (TRD §6).
+
+### TFV2-0348 — Connectors: Executor reads adapter (list/search)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0347 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0347.
+- **WHY:** PRD F-100 (reads plus light writes, heavy writes hard-refused); `convex/connections.ts` `searchExecutorFor` and `lib/connections/mcpClient.ts`.
+- **GOAL:** `searchExecutorFor` and a new `listExecutorFor` read through the Executor MCP client return normalized results scoped to the caller, with reads audited and rate-limited.
+- **SCOPE:** `convex/connections.ts` · `convex/lib/connections/mcpClient.ts` · test `convex/connections.test.ts`.
+- **MUTATES:** `connectionCalls` audit rows (reads); no external writes.
+- **STEPS:** 1) Graphify code-map of `searchExecutorFor` and `mcpClient.ts`; 2) verify reads are rate-limited (`reserveCall`) and audited (`recordCall`); 3) add `listExecutorFor` (list tasks/notes) if missing; 4) write the test.
+- **DONE:** `bun test convex/connections.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not perform writes; do not expose raw tokens; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `listExecutorFor(ctx, userId, { kind: "tasks"|"notes", limit? }) → items[]` and `searchExecutorFor` normalize Executor results to `{ id, title, … }`. Auth: caller's own connection only; `requireApprovedUser`. Limits: `CALLS_PER_HOUR` 30; read results ≤ `DEFAULT_LIMIT` 50. Errors: no connected row → `ConvexError`; provider rate-limit → `rate_limited`; timeout → `timeout`; each recorded in `connectionCalls` (`outcome`).
+- **TESTS:** Given a connected row / When `listExecutorFor` runs / Then normalized items return and a `tool_call` audit row is written. Given no connection / When called / Then error, nothing audited as `ok`. Given over the hourly cap / When called / Then `rate_limited`. Given a provider timeout / When called / Then `timeout` outcome is recorded.
+- **NUMBERS:** 30 calls/hour, 50 default read limit (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Executor MCP tool names beyond `search` — Amit (TRD §6).
+
+### TFV2-0349 — Connectors: Executor light writes (hard-refuse heavy writes)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0348 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0348.
+- **WHY:** PRD F-100 ("reads plus light writes, heavy writes hard-refused, every external write confirmed").
+- **GOAL:** `convex/connections.ts` gains `executorWrite` that permits only light writes (create/update a task or event) and hard-refuses heavy writes (delete, bulk, destructive) before any external call.
+- **SCOPE:** `convex/connections.ts` · test `convex/connections.test.ts`.
+- **MUTATES:** `connectionCalls` audit rows; external Executor writes (light only).
+- **STEPS:** 1) Graphify code-map; 2) add a policy table of permitted/refused Executor write tools; 3) implement `executorWrite` with the hard-refuse check first; 4) write the test.
+- **DONE:** `bun test convex/connections.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not permit delete/bulk/destructive writes; do not bypass the confirmation gate (TFV2-0350); do not record tokens; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `executorWrite(ctx, userId, { tool, args }) → { id }`. Permit list: `task_create`, `task_update`, `calendar_create`, `calendar_update` (light). Refuse list: any delete, bulk, move, account, or unknown tool → `ConvexError` `blocked` BEFORE the external call, recorded with `decision: "blocked"`. Every permitted write records `decision: "approved"`/`"auto"` and `outcome`. Errors: no connection, rate-limit, timeout, unauthorized — mirror TFV2-0348.
+- **TESTS:** Given `task_create` / When `executorWrite` runs / Then it succeeds and audits `ok`. Given a delete tool / When `executorWrite` runs / Then it is hard-refused with `blocked` and NO external call. Given an unknown tool / When called / Then `blocked`. Given no connection / When called / Then error.
+- **NUMBERS:** 30 calls/hour cap (repo constant) · light-write permit list = 4 tools (internal).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Executor write-tool names — Amit (TRD §6).
+
+### TFV2-0350 — Connectors: external write confirmation (every write confirmed)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0349 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0349.
+- **WHY:** PRD F-100/F-131 ("every external write confirmed"); HARD_RULES §6.2 (accept/reject before mutation).
+- **GOAL:** Every `executorWrite` requires a prior confirmed proposal; an unconfirmed write is refused, and the confirmation returns a 5-minute Undo path.
+- **SCOPE:** `convex/connections.ts` · test `convex/connections.test.ts`.
+- **MUTATES:** `pageProposals`/`connectionCalls` (proposal + audit); external writes only after confirm.
+- **STEPS:** 1) Graphify code-map of the proposal guard; 2) add a `proposalId` arg to `executorWrite` and verify it is confirmed; 3) refuse unconfirmed writes; 4) write the test.
+- **DONE:** `bun test convex/connections.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not auto-apply an external write; do not weaken the confirm gate; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `executorWrite(ctx, userId, { tool, args, proposalId })`. A `proposalId` whose proposal is not the caller's, or not confirmed, → `ConvexError` and NO external call. Confirmed → perform the light write, then surface an Undo (undo reissues a compensating light write where one exists, else a notice). Errors: missing proposalId → `ConvexError`.
+- **TESTS:** Given no proposalId / When `executorWrite` runs / Then it is refused and no external call happens. Given an unconfirmed proposal / When called / Then refused. Given a confirmed proposal / When called / Then the write runs and an Undo is returned.
+- **NUMBERS:** Undo window 5 minutes (HARD_RULES §6.2 / PRD F-131).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0351 — Connectors: connectionCalls audit + rate limits verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0347 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0347.
+- **WHY:** PRD F-100; `convex/connections.ts` `reserveCall`/`recordCall`/`markStatus`; research doc §4.5 (audit).
+- **GOAL:** The `connectionCalls` audit is verified: one content-free row per call/disconnect with a SHA-256 input digest, and the fixed-window limits are enforced.
+- **SCOPE:** `convex/connections.ts` (fix only) · test `convex/connections.test.ts`.
+- **MUTATES:** `connectionCalls` (audit only).
+- **STEPS:** 1) Graphify code-map of `reserveCall`/`recordCall`/`markStatus`; 2) verify no inputs/results are persisted (digest only) and `resultBytes`/`durationMs` are set; 3) add missing coverage; 4) re-run.
+- **DONE:** `bun test convex/connections.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not persist raw input/result; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Audit row fields: `kind`, `tool`/`path`, `decision`, `outcome`, `inputDigest` (SHA-256), `resultBytes`, `durationMs`, `messageId?`, timestamps; soft-deleted with the account. Limits: `CALLS_PER_HOUR` 30, `HOUR_MS` 60 min, `SWEEP_BATCH` 50.
+- **TESTS:** Given a call / When audited / Then a row exists with a digest, no raw input, and `outcome` set. Given a call over the cap / When attempted / Then `rate_limited` and no external call. Given a disconnect / When recorded / Then a `disconnect` audit row exists.
+- **NUMBERS:** 30 calls/hour, sweep batch 50 (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0352 — Connectors: Executor disconnect/revoke + sweep verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0347 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0347.
+- **WHY:** PRD F-100; TRD §7 rule 5/6 (soft delete, scrub secrets); `convex/connections.ts` `disconnect`/`revokeConnection`/`sweep`.
+- **GOAL:** Disconnect revokes tokens at Executor, retires the connection, scrubs `connectionSecrets` ciphertexts, and the sweep removes stale rows.
+- **SCOPE:** `convex/connections.ts` (fix only) · test `convex/connections.test.ts`.
+- **MUTATES:** `connections`, `connectionSecrets`, `connectionCalls` (disconnect audit).
+- **STEPS:** 1) Graphify code-map of `disconnectFlow`/`revokeConnection`/`sweep`; 2) verify ciphertexts go to `undefined` + `deletedAt`; 3) add missing coverage; 4) re-run.
+- **DONE:** `bun test convex/connections.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not hard-delete secrets rows (scrub + `deletedAt` only, HARD_RULES §5); do not record tokens; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `disconnect` → `revokeConnection` (provider revoke, `revokedAtProvider`), row → `disconnected`/`revoking` tombstoned, `disconnectGeneration`++ so in-flight connects never confirm. `sweep` batches `SWEEP_BATCH` stale rows. Errors: provider unreachable → `unavailable`/`needs_reauth`, not silent success.
+- **TESTS:** Given a connected row / When disconnected / Then the row tombstones, secrets scrub to `undefined`, and a disconnect audit row is written. Given an in-flight connect / When a newer disconnect runs / Then the old connect cannot confirm. Given stale rows / When sweep runs / Then only the batch is scrubbed.
+- **NUMBERS:** `SWEEP_BATCH` 50, `REVOKE_GRACE_MS` 1 hour (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0353 — MCP: tool catalog + input schemas verify (`lib/mcp/tools.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** first (MCP; `convex/lib/mcp/tools.ts` exists).
+- **WHY:** PRD F-101; `convex/mcp.ts`, `convex/mcpTools.ts`, `convex/lib/mcp/*`; issue #747 (adjacent).
+- **GOAL:** The MCP tool catalog (`lib/mcp/tools.ts`) and its JSON schemas are verified to list every implemented read/write/action tool with correct input validation, and `findTool` resolves names.
+- **SCOPE:** `convex/lib/mcp/tools.ts` · `convex/lib/mcp/schema.ts` (fix only) · test `convex/lib/mcp/mcp.test.ts`.
+- **MUTATES:** none (catalog only).
+- **STEPS:** 1) Graphify code-map of `tools.ts`/`schema.ts`; 2) verify the catalog covers `tasks_list`, `task_create`, `task_update`, `notes_list`, `note_create`, `note_update`, `calendar_list`, `calendar_create`, `calendar_update`, `today_plan_get`, `brain_dump`; 3) verify each `inputSchema` validates required fields; 4) run the test.
+- **DONE:** `bun test convex/lib/mcp/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not add tools here (today_plan_set is TFV2-0354); do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Catalog shape `McpTool { name, kind: "query"|"mutation"|"action", description, inputSchema }`. `findTool(name)` returns the tool or `undefined`. Errors: unknown tool → caller-side `Unknown tool: <name>`.
+- **TESTS:** Given `findTool("tasks_list")` / When resolved / Then kind query and a valid schema return. Given `findTool("nope")` / When resolved / Then undefined. Given each catalog tool / When its schema validates a minimal valid input / Then it passes; and an input missing a required field fails.
+- **NUMBERS:** catalog completeness = 11 tools (internal, must equal the implemented set).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0354 — MCP: `today_plan_set` write tool (fold-in #747)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353 · **Folds-in:** #747
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0353.
+- **WHY:** PRD F-101; issue #747 (`today_plan_set`); `convex/dayPlans.ts` (existing day-plan write functions).
+- **GOAL:** `mcpTools.ts` gains a `today_plan_set` mutation tool that sets a day plan (intention, energy, reflection, top tasks) for a date, scoped to the token owner, returning the saved plan.
+- **SCOPE:** `convex/mcpTools.ts` · `convex/lib/mcp/tools.ts` (catalog entry) · test `convex/mcp.test.ts`.
+- **MUTATES:** `dayPlans` (via the existing plan function); no schema change.
+- **STEPS:** 1) Graphify code-map of `dayPlans.ts` and `runWriteTool`; 2) add `today_plan_set` to `runWriteTool` and the catalog; 3) validate timezone/date and plan fields; 4) write the test.
+- **DONE:** `bun test convex/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not edit `convex/schema.ts`; do not add a second day-plan writer (reuse `dayPlans.ts`); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `today_plan_set({ date?, timezone?, intention?, energy?, reflection?, topTaskIds? }) → { plan }`. Auth: token-owner `userId` (internal, via `authorizeCall`). Validation: timezone `isValidTimeZone` (default UTC); date `YYYY-MM-DD` (default today in that zone); intention/reflection ≤ 2000 chars; energy ∈ `low|medium|high`|undefined; `topTaskIds` ≤ 10 and all owned. Errors: unknown timezone → `ConvexError`; too many topTaskIds → `ConvexError`; a foreign taskId → `ConvexError`; invalid date → `ConvexError`.
+- **TESTS:** Given valid args / When `today_plan_set` runs / Then the plan is saved and returned. Given a bad timezone / When called / Then error. Given 11 topTaskIds / When called / Then error. Given a foreign taskId / When called / Then error and nothing saved.
+- **NUMBERS:** topTaskIds ≤ 10, intention/reflection ≤ 2000 chars (internal guards).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0355 — MCP: read tools verify (`tasks_list`, `notes_list`, `calendar_list`, `today_plan_get`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0353.
+- **WHY:** PRD F-101; `convex/mcpTools.ts` `runReadTool`.
+- **GOAL:** The four read tools return normalized views scoped to the token owner, with limit/range validation and every error case covered.
+- **SCOPE:** `convex/mcpTools.ts` (fix only) · test `convex/mcp.test.ts`.
+- **MUTATES:** none (reads only).
+- **STEPS:** 1) Graphify code-map of `runReadTool`; 2) verify each view shape and limit; 3) add missing error-case coverage; 4) run the test.
+- **DONE:** `bun test convex/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not change view shapes; do not cross user boundaries; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `tasks_list({status, dueFrom, dueTo})`, `notes_list({pinnedOnly})`, `calendar_list({fromMs, toMs})` (range ≤ `maxCalendarRangeMs`), `today_plan_get({timezone, date})`. All read through `list*ForUser` scoped to `userId`. Errors: calendar `toMs ≤ fromMs` → `ConvexError`; range too large → `ConvexError`; bad timezone → `ConvexError`.
+- **TESTS:** Given user A's tasks / When B calls `tasks_list` / Then only B's tasks return. Given `toMs ≤ fromMs` / When `calendar_list` / Then error. Given a range over `maxCalendarRangeMs` / When `calendar_list` / Then error. Given a bad timezone / When `today_plan_get` / Then error.
+- **NUMBERS:** `DEFAULT_LIMIT` 50 (repo constant) · calendar range ≤ `maxCalendarRangeMs` (repo constant).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0356 — MCP: write tools verify (`task_create/update`, `note_create/update`, `calendar_create/update`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0353.
+- **WHY:** PRD F-101; `convex/mcpTools.ts` `runWriteTool`.
+- **GOAL:** The six write tools create/update only the token owner's rows and return normalized views, with every error case covered.
+- **SCOPE:** `convex/mcpTools.ts` (fix only) · test `convex/mcp.test.ts`.
+- **MUTATES:** `tasks`, `notes`, `calendarEvents` (via existing `*ForUser` helpers).
+- **STEPS:** 1) Graphify code-map of `runWriteTool`; 2) verify owner-scoped helpers and id normalization; 3) add missing error-case coverage; 4) run the test.
+- **DONE:** `bun test convex/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not edit `convex/schema.ts`; do not write outside the owner's rows; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `task_create({title, notes?, dueAtMs?, priority?, energy?})`, `task_update({taskId, title?, notes?, dueAtMs?, completed?})`, `note_create({title, body?})`, `note_update({noteId, title?, body?, pinned?})`, `calendar_create({title, startsAtMs})`, `calendar_update({eventId, title?, startsAtMs?})`. Ids are normalized; foreign/unknown ids → `ConvexError` "not found".
+- **TESTS:** Given a foreign taskId / When `task_update` runs / Then error and the foreign row is unchanged. Given a title-only create / When run / Then a row is created for the caller. Given a malformed id / When any update runs / Then error. Given `calendar_create` with missing title / When run / Then error.
+- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0357 — MCP: `brain_dump` action verify (crisis guard)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0353.
+- **WHY:** PRD F-101, F-24; `convex/mcpTools.ts` `runBrainDump`.
+- **GOAL:** `runBrainDump` is verified to run the planner, short-circuit crisis text to the fixed card (never a model call), and only save when `accept` is true.
+- **SCOPE:** `convex/mcpTools.ts` (fix only) · test `convex/mcp.test.ts`.
+- **MUTATES:** `tasks` (only on `accept`); no schema change.
+- **STEPS:** 1) Graphify code-map of `runBrainDump` and `lib/crisisWords.ts`; 2) verify crisis short-circuit and accept flow; 3) add missing coverage; 4) run the test.
+- **DONE:** `bun test convex/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not let crisis text reach the model; do not auto-accept; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `runBrainDump({userId, text, accept?})`. If `isCrisisText(text)` → return `{ crisis: true, accepted: false, created: 0, resources: crisisCardText(CRISIS_CARD) }` with NO model call. Else plan via `planBrainDump`; `accept:false` returns the plan; `accept:true` with items saves tasks via `acceptBrainDump`.
+- **TESTS:** Given crisis text / When `runBrainDump` runs / Then `crisis` true and no tasks created. Given normal text with `accept:false` / When run / Then a plan returns and nothing is saved. Given normal text with `accept:true` / When run / Then tasks are created. Given empty priorities / When accepted / Then `created: 0`.
+- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0358 — MCP: Streamable HTTP endpoint verify (`mcpHttp.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0353.
+- **WHY:** PRD F-101; `convex/mcpHttp.ts` (TEMPO-MCP-01); `convex/lib/mcp/jsonrpc.ts`, `origin.ts`, `token.ts`.
+- **GOAL:** `mcpPost` is verified to enforce origin, bearer token, protocol version, body size, and rate-limit, returning JSON-RPC responses and 202 for notifications.
+- **SCOPE:** `convex/mcpHttp.ts` (fix only) · test `convex/mcp.test.ts`.
+- **MUTATES:** none (HTTP endpoint behaviour only).
+- **STEPS:** 1) Graphify code-map of `mcpPost`/`mcpOptions`/`mcpNotAllowed`; 2) verify each guard; 3) add missing coverage; 4) run the test.
+- **DONE:** `bun test convex/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not weaken origin/token/rate checks; do not add server-initiated streams (GET stays 405); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `POST` with `Authorization: Bearer tmcp_…` and allowed `Origin`; JSON-RPC 2.0. Guards: bad origin → 403; missing/malformed token → 401 + `WWW-Authenticate`; unsupported `MCP-Protocol-Version` → 400; pending account → 403; rate-limited → 429 + `Retry-After: 60`; body > `MAX_BODY_BYTES` → 413; parse error → 400; batches → 400 (unsupported); notification → 202. `GET`/`DELETE` → 405; `OPTIONS` → 204 with CORS for allowed origins.
+- **TESTS:** Given a bad origin / When POST / Then 403. Given a missing token / When POST / Then 401. Given rate-limit exceeded / When POST / Then 429. Given a notification / When POST / Then 202. Given GET / When called / Then 405. Given an oversized body / When POST / Then 413.
+- **NUMBERS:** `MAX_BODY_BYTES` 256 KB, rate 120/min (repo constants) · HTTP status codes per JSON-RPC 2.0 spec (https://www.jsonrpc.org/specification).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0359 — MCP: CLI client (Streamable HTTP)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0358 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend` (new `packages/mcp-cli`), lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0358.
+- **WHY:** PRD F-101 (MCP server + CLI + REST).
+- **GOAL:** `packages/mcp-cli` is a Bun CLI (`tempo-mcp`) that connects to the Streamable HTTP endpoint with a `tmcp_` token, lists tools, and calls a read tool.
+- **SCOPE:** `packages/mcp-cli/package.json` · `packages/mcp-cli/src/index.ts` · test `packages/mcp-cli/src/index.test.ts`.
+- **MUTATES:** adds a workspace package under `packages/` (auto-included by the `packages/*` glob); no Convex/schema/env.
+- **STEPS:** 1) Graphify code-map to confirm no CLI exists; 2) implement `initialize` + `tools/list` + `tools/call` over Streamable HTTP; 3) read the token from `TEMPO_MCP_TOKEN` env (name only); 4) write the unit test against a local JSON-RPC stub.
+- **DONE:** `bun test packages/mcp-cli/src/index.test.ts` → all pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** test output + typecheck exit code.
+- **DO NOT:** do not embed or print a token value; do not add native deps; do not touch `.env` (read the env var name only), workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** CLI commands: `tempo-mcp tools` (list), `tempo-mcp call <name> [json]`, `tempo-mcp init <url>`. Sends `Authorization: Bearer $TEMPO_MCP_TOKEN`, header `MCP-Protocol-Version`. Errors: missing token → exit 1 with `EN: Missing TEMPO_MCP_TOKEN / HE: חסר TEMPO_MCP_TOKEN`; non-2xx → exit 1 with the JSON-RPC error message. No secrets logged.
+- **TESTS:** Given a stubbed JSON-RPC server / When `tools` runs / Then the tool list prints. Given a missing token / When run / Then exit 1 with the missing-token message. Given a server 401 / When `call` runs / Then exit 1 and the error prints. Given `call tasks_list` / When run / Then the JSON-RPC body carries the method/params.
+- **NUMBERS:** JSON-RPC 2.0 (https://www.jsonrpc.org/specification).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0360 — MCP: token lifecycle + rate limit verify (`mcp.ts`)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0353 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0353.
+- **WHY:** PRD F-101; `convex/mcp.ts` (create/list/revoke/resolve/authorize); `convex/lib/mcp/token.ts`.
+- **GOAL:** `createToken` returns the plaintext once (hash-only stored), `listTokens` hides it, `revokeToken` blocks it, and `authorizeCall` enforces the 120/min rate limit and approval.
+- **SCOPE:** `convex/mcp.ts` (fix only) · test `convex/mcp.test.ts`.
+- **MUTATES:** `mcpTokens` (via existing functions).
+- **STEPS:** 1) Graphify code-map of `mcp.ts` and `lib/mcp/token.ts`; 2) run `convex/mcp.test.ts`; 3) add missing coverage (rate limit, revoke); 4) re-run.
+- **DONE:** `bun test convex/mcp.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store or return the plaintext; do not raise `MAX_ACTIVE_TOKENS_PER_USER`; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `createToken({name}) → { tokenId, token, prefix }` (plaintext once; only `tokenHash` + `prefix` stored); `listTokens()` returns `prefix` only; `revokeToken` sets `revokedAt`; `authorizeCall` resolves hash → ok/pending/rate_limited/unauthorized. Errors: empty name → `ConvexError`; > max active → `ConvexError`.
+- **TESTS:** Given a create / When stored / Then the stored row has no plaintext. Given a list / When run / Then no `tokenHash`/plaintext appears. Given a revoked token / When authorized / Then `unauthorized`. Given 121 calls in a minute / When the 121st runs / Then `rate_limited`.
+- **NUMBERS:** rate 120/min, `MAX_ACTIVE_TOKENS_PER_USER` (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0361 — BYOK key vault: `byokKeys` table + per-user crypto
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md` (needs `convex-arch` label).
+- **WHEN:** first (BYOK; reuse `convex/lib/connections/crypto.ts` AES-256-GCM).
+- **WHY:** PRD F-102 (BYOK, encrypted per user); TRD §7 rule 6 (BYOK keys encrypted per user, never returned to client).
+- **GOAL:** `convex/schema.ts` gains a `byokKeys` table storing only ciphertext (AES-256-GCM, key from `TEMPO_CONNECTIONS_KEY`), plus a crypto helper that encrypts/decrypts a user-supplied OpenAI-compatible key.
+- **SCOPE:** `convex/schema.ts` · `convex/lib/byokCrypto.ts` · test `convex/byok.test.ts`.
+- **MUTATES:** `convex/schema.ts` (new table).
+- **STEPS:** 1) Graphify code-map of `convex/schema.ts` and `lib/connections/crypto.ts`; 2) add `byokKeys`; 3) add `byokCrypto.ts` (encrypt/decrypt, reusing the GCM helper); 4) write the test.
+- **DONE:** `bun test convex/byok.test.ts` → all pass; `bun run typecheck` → exit 0.
+- **EVIDENCE:** test output + typecheck exit code.
+- **DO NOT:** do not store plaintext; do not return a key to the client; do not write a key value (names only: `TEMPO_CONNECTIONS_KEY`); do not touch `convex/auth*`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `byokKeys: defineTable({ userId, provider: v.literal("openai_compatible"), label, keyCipher, endpointUrl, keyVersion, lastCheckedAt?, lastCheckOk?, createdAt, updatedAt, deletedAt })` indexed `by_userId`. `byokCrypto.encrypt(plaintext) → { cipher, keyVersion }`, `decrypt(cipher, keyVersion) → plaintext`; GCM nonce unique per encryption. Errors: missing key env → throw (fail closed); bad cipher → throw.
+- **TESTS:** Given a plaintext / When encrypted then decrypted / Then it round-trips. Given two encryptions of the same text / When compared / Then nonces differ (ciphertexts differ). Given tampered ciphertext / When decrypted / Then throws. Given a stored row / When listed / Then no `keyCipher` is returned by the public path.
+- **NUMBERS:** AES-256-GCM (NIST SP 800-38D) · nonce ≥ 96 bits unique per message.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0362 — BYOK: set/list-masked/delete + endpoint health-check
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0361 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0361.
+- **WHY:** PRD F-102; TRD §7 rule 6.
+- **GOAL:** `convex/byok.ts` exposes `setKey`, `listKeys` (masked), `deleteKey`, and `checkKey` (a one-call health probe to the endpoint), never returning the plaintext.
+- **SCOPE:** `convex/byok.ts` · test `convex/byok.test.ts`.
+- **MUTATES:** `byokKeys` (via functions).
+- **STEPS:** 1) Graphify code-map; 2) implement the mutations/action; 3) return only masked labels (`sk-…` + last 4) in `listKeys`; 4) write the test.
+- **DONE:** `bun test convex/byok.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not return plaintext anywhere; do not log the endpoint probe body; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `setKey({ label, key, endpointUrl? }) → { id }` (requireApprovedUser; encrypt; one active key per user or allow many — allow many, ≤ 10; endpoint must be `https://`). `listKeys() → { id, label, masked, endpointUrl, lastCheckedAt?, lastCheckOk? }[]` (masked = first 3 + `…` + last 4). `deleteKey({ id })` soft-deletes. `checkKey({ id })` action: a minimal `GET /models` probe (or `POST /chat/completions` with 1 token) → set `lastCheckedAt`/`lastCheckOk`. Errors: > 10 keys → `ConvexError`; non-https endpoint → `ConvexError`; foreign id → `ConvexError`.
+- **TESTS:** Given a setKey / When listed / Then only the masked form appears. Given a setKey / When checkKey probes a stub / Then `lastCheckOk` reflects it. Given 11 keys / When setKey / Then error. Given a foreign id / When deleteKey / Then error and nothing changes.
+- **NUMBERS:** ≤ 10 keys per user (internal) · endpoint must be HTTPS (TRD §7 rule 6 / security).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0363 — BYOK: runtime model routing via `ai_router` seam
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362.
+- **WHY:** PRD F-102; TRD §3/§7 (seam is the source of truth; BYOK overrides default); `convex/lib/ai_router.ts`.
+- **GOAL:** `ai_router.ts` gains a route that, when the caller has an active BYOK key, sends their model calls to their own OpenAI-compatible endpoint/key, else the default DeepInfra seam; the key never leaves the server.
+- **SCOPE:** `convex/lib/ai_router.ts` · test `convex/lib/ai_router.test.ts`.
+- **MUTATES:** none (routing only; reads `byokKeys`).
+- **STEPS:** 1) Graphify code-map of `ai_router.ts`; 2) add `resolveRuntimeRoute(userId)` returning either `{ kind: "byok", endpoint, key }` (decrypted in-process, never returned) or the default; 3) keep the existing callers' signatures; 4) write the test.
+- **DONE:** `bun test convex/lib/ai_router.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not log or return the key; do not change the default model id; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `resolveRuntimeRoute(userId): Promise<Route>` where `Route = { kind: "default" } | { kind: "byok"; endpoint: string }`. The key is decrypted and used only inside the `fetch`; the caller never sees it. Errors: BYOK endpoint unhealthy (`lastCheckOk === false`) → fall back to default (or throw with a clear error if `strict` is set); no active key → default.
+- **TESTS:** Given a user with a healthy BYOK key / When a call routes / Then it hits the BYOK endpoint. Given no BYOK key / When a call routes / Then it uses the default. Given an unhealthy BYOK key / When routed / Then it falls back to default. Given any route / When serialized / Then no key material appears in logs/returns.
+- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0364 — BYOK: key vault screen (settings)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0362 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0362.
+- **WHY:** PRD F-102; DESIGN.md §8/§10; components.md §2.9.
+- **GOAL:** `apps/web/app/(tempo)/settings/byok/page.tsx` lists masked keys and lets the user add (label + endpoint + key, key never echoed back), test-connect, and delete, with all states.
+- **SCOPE:** `apps/web/app/(tempo)/settings/byok/page.tsx` · test `tests/e2e/byok.spec.ts`.
+- **MUTATES:** `apps/web` UI only (calls `convex/byok.ts`).
+- **STEPS:** 1) Graphify code-map; 2) build the list + add/test/delete forms; 3) wire loading/empty/error/offline states; 4) implement the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/byok.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not echo the key back; do not store the key client-side; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy: `EN: Bring your own key / HE: הבא מפתח משלך`; `EN: Add key / HE: הוסף מפתח`; `EN: Label / HE: תווית`; `EN: Endpoint / HE: נקודת קצה`; `EN: API key / HE: מפתח API`; `EN: Test connection / HE: בדיקת חיבור`; `EN: Connected / HE: מחובר`; `EN: Couldn't reach that endpoint / HE: לא הצלחנו להגיע לנקודת הקצה`; `EN: Delete / HE: מחק`. States: default, loading, empty (no keys), error, offline, testing, tested-ok, tested-fail. Key input `type=password autocomplete=off dir=ltr`, never pre-filled. RTL: labels inline-start; endpoint/key LTR. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given no keys / When loaded / Then empty state shows. Given a masked key / When listed / Then only the masked form shows. Given an invalid endpoint / When Test connection runs / Then the fail copy shows. Given Delete / When confirmed / Then the key leaves the list. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0365 — Voice: `voicePolicy` minutes cap + tier limits verify
+- **Stage:** E · **Pass:** 1 · **Depends:** none · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** first (live voice; `convex/lib/voicePolicy.ts` exists).
+- **WHY:** PRD F-35, F-30; TRD §5a; HARD_RULES §9; `convex/lib/voicePolicy.ts`; `convex/voice.ts`.
+- **GOAL:** `voicePolicy` limits (per-user daily minutes, tier caps, global ceiling, TTS char cap, lease windows) are verified against HARD_RULES §9 and unit-tested.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · test `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** none (policy constants + pure functions).
+- **STEPS:** 1) Graphify code-map of `voicePolicy.ts`; 2) run `voicePolicy.test.ts`; 3) verify `dailyMinutesFor` caps each tier under the preview cap and fails closed for unknown tiers; 4) add missing coverage.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not raise a limit or lower a threshold to pass; do not remove the preview cap; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `TIER_LIVE_MINUTES = { none:0, basic:30, pro:90, max:180, god:180 }`; `VOICE_LIMITS.dailyMinutesPerUser = 15` preview cap that only lowers a tier; `dailyMinutesFor(tier)` = min(tier, 15), unknown tier → 0 (fail closed). `leaseMs`/`leaseExpired` count a stale lease only to last renewal + `renewEveryMs`, never past `maxSessionMs`. `localDateKey`/`utcDateKey` partition per-user vs global.
+- **TESTS:** Given tier `pro` / When `dailyMinutesFor` / Then 15 (min of 90 and the 15 preview cap). Given tier `max` / When called / Then 15. Given an unknown tier / When called / Then 0. Given a lease past `maxSessionMs` / When `leaseMs` / Then it counts to `startedAt + maxSessionMs`. Given a stale lease / When `leaseExpired` / Then true.
+- **NUMBERS:** 30/90/180 min per tier, 15 min preview cap, 20,000 TTS chars/day, 120 global min/day (HARD_RULES §9 + `voicePolicy.ts`).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
+
+### TFV2-0366 — Voice: `availability` + admission order verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** TRD §7 rule 3 (auth → entitlement → quota order); `convex/voice.ts` `availability`.
+- **GOAL:** `voice.availability` returns the correct `{available, reason, minutesLeft}` for off/language/budget/resting/pending, in the admission order, and is unit-tested for each reason.
+- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
+- **MUTATES:** none (read-only query).
+- **STEPS:** 1) Graphify code-map of `availability`; 2) run `voice.test.ts`; 3) verify the admission order (approved → keys → language → minutes → sessions → global); 4) add missing coverage.
+- **DONE:** `bun test convex/voice.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not reorder admission (A-1); do not weaken a gate; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Returns `{ available: boolean, reason: null|"off"|"language"|"budget"|"resting"|"pending", minutesLeft }`. `off` = a provider key missing; `language` = no lane for locale (Hebrew off until a Hebrew crisis list is approved); `budget` = own minutes/sessions spent; `resting` = global ceiling spent; `pending` = account not approved.
+- **TESTS:** Given keys missing / When `availability` / Then reason `off`. Given Hebrew locale / When called / Then reason `language`. Given paid user with minutes left / When called / Then `available` true. Given unapproved user / When called / Then reason `pending`. Given global ceiling spent / When called / Then reason `resting`.
+- **NUMBERS:** `minStartMs` 60,000 ms gate; `sessionsPerUserPerDay` 40 (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Hebrew crisis phrase list approval — Amit (voicePolicy `laneFor`); voice stage — Amit (REWRITE-PLAN-v2 §4.1).
+
+### TFV2-0367 — Voice: lease lifecycle start/renew/stop verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** PRD F-30; TRD §5a; `convex/voice.ts` `start`/`renew`/`stop`.
+- **GOAL:** The `voiceSessions` lease lifecycle is verified: one active lease per person, idempotent re-start on the same `clientKey`, heartbeat renewal, and idempotent stop.
+- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
+- **MUTATES:** `voiceSessions` (via functions).
+- **STEPS:** 1) Graphify code-map of `start`/`renew`/`stop`/`endLease`; 2) run `voice.test.ts`; 3) verify A-1…A-5; 4) add missing coverage.
+- **DONE:** `bun test convex/voice.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store audio/transcript/token in a lease; do not weaken `endLease` counting; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `start({conversationId, clientKey})` ends an existing active lease (reason `replaced`) and returns `{sessionId, language, renewEveryMs, minutesLeft}`; same `clientKey` + live conversation + unexpired → same lease idempotently. `renew` returns `ok|revoked|exhausted|expired` and ends the lease accordingly. `stop` is idempotent. Errors: voice off, language, daily limit, global rest → calm `ConvexError` codes.
+- **TESTS:** Given an active lease / When `start` with a new clientKey / Then the old lease ends `replaced` and a new one starts. Given the same clientKey / When `start` again / Then the same lease id returns. Given an expired lease / When `renew` / Then `expired` and the lease ends. Given `stop` twice / When run / Then idempotent (second no-op).
+- **NUMBERS:** `renewEveryMs` 15,000; `leaseExpiresAfterMs` 45,000; `maxSessionMs` 15 min (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0368 — Voice: Deepgram STT token grant verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367.
+- **WHY:** PRD F-32/F-33; TRD §5a step 1 and §7 rule 2 (30-second token, key never leaves the server); `convex/voice.ts` `grant`/`admitGrant`/`releaseGrant`.
+- **GOAL:** `voice.grant` is verified to mint a 30-second Deepgram token for a live lease, reserve/release the grant on failure, and never log the key or token.
+- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
+- **MUTATES:** `voiceSessions.grants` (reserve/release only).
+- **STEPS:** 1) Graphify code-map of `grant`/`admitGrant`/`mintDeepgramToken`; 2) run `voice.test.ts`; 3) verify grant-count cap and release-on-failure; 4) add missing coverage.
+- **DONE:** `bun test convex/voice.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store or log the token; do not raise `grantsPerLease`; do not call the real provider in tests (stub `fetch`); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `grant({sessionId}) → { token, url }` (action; `requireApprovedForAi`; uses `DEEPGRAM_API_KEY`). `admitGrant` increments `grants` (cap `grantsPerLease` 3); `releaseGrant` decrements on a failed mint so failures don't consume the lease. Provider errors surface as `voice_connect` (nothing about the body).
+- **TESTS:** Given a live lease / When `grant` runs against a stubbed Deepgram / Then a token + the server-chosen `url` return and `grants` increments. Given a stub that fails / When `grant` runs / Then `releaseGrant` runs and `grants` does not grow. Given 3 grants used / When a 4th is admitted / Then `voice_session_ended`. Given a stub returning an unusable token / When `grant` runs / Then `voice_connect`.
+- **NUMBERS:** token TTL 30 s (`tokenTtlSeconds`), `grantsPerLease` 3 (repo constants / TRD §5a).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0369 — Voice: Chatterbox TTS `speak` + sentence admit/release verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367.
+- **WHY:** PRD F-32/F-33; TRD §5a step 4; `convex/voice.ts` `speak`/`admitSentence`/`releaseSentence`.
+- **GOAL:** `voice.speak` is verified to resolve one sentence of a coach reply (never the crisis card), count read-aloud chars, synthesize audio, and release the sentence on failure.
+- **SCOPE:** `convex/voice.ts` (fix only) · test `convex/voice.test.ts`.
+- **MUTATES:** `voiceSessions.sentences`/`ttsChars` (admit/release only).
+- **STEPS:** 1) Graphify code-map of `speak`/`admitSentence`/`synthesize`/`audioFrom`; 2) run `voice.test.ts`; 3) verify crisis-card exclusion and char cap; 4) add missing coverage.
+- **DONE:** `bun test convex/voice.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store audio; do not read the crisis card aloud; do not raise `dailyTtsCharsPerUser`; do not call the real provider in tests; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `speak({sessionId, messageId, index}) → {status:"audio", audio, mime, count} | {status:"done"} | {status:"exhausted"}`. `admitSentence` resolves sentence `index` server-side from the assistant message (never client text), refuses the crisis card (`modelUsed === "crisis-card"`), enforces `dailyTtsCharsPerUser`, and counts before synthesis. `releaseSentence` gives back the chars on failure.
+- **TESTS:** Given a coach reply / When `speak` index 0 against a stubbed TTS / Then audio returns and `ttsChars` increments. Given the crisis card / When `speak` runs / Then status `done` and no audio. Given char cap exceeded / When `admitSentence` / Then `exhausted`. Given a stub failure / When `speak` runs / Then `releaseSentence` restores the count.
+- **NUMBERS:** `dailyTtsCharsPerUser` 20,000; `maxAudioBytes` 4 MB; `maxSentenceChars` 300 (repo constants).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0370 — Voice: `speechSentences` split + `ttsLanguage` verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** TRD §5a (sentence-at-a-time); `convex/lib/voicePolicy.ts` `speechSentences`/`ttsLanguage`.
+- **GOAL:** `speechSentences` deterministically splits a markdown reply into speakable sentences (markdown marks dropped, long sentences cut under the limit), and `ttsLanguage` maps a lane to the Chatterbox language id.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · test `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** none (pure functions).
+- **STEPS:** 1) Graphify code-map of `speechSentences`/`ttsLanguage`; 2) run the test; 3) verify determinism (same reply → same sentences) and markdown stripping; 4) add missing coverage.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not change the sentence grammar; do not allow the crisis card into TTS (caller-level, but keep the split deterministic); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Split after `. ! ? … 。 ！ ？` and line breaks; strip code fences, inline code, images, links, heading/list marks; a sentence > `maxSentenceChars` (300) is cut at a comma/space. `ttsLanguage("en")→"en"`, `ttsLanguage("he")→"he"`.
+- **TESTS:** Given `"Hi **there**.\nHow are you?"` / When `speechSentences` / Then two sentences, bold stripped. Given a 500-char sentence / When split / Then no piece exceeds 300 and no words are lost. Given the same input twice / When split / Then identical output. Given `ttsLanguage("he")` / When called / Then `"he"`.
+- **NUMBERS:** `maxSentenceChars` 300 (repo constant).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0371 — Voice: Deepgram STT WebSocket client (browser)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0368 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0368.
+- **WHY:** TRD §5a step 2; PRD F-32/F-33.
+- **GOAL:** A browser client opens the Deepgram `/listen` WebSocket with the 30-second token, streams `MediaRecorder` mic audio, and emits interim + final transcripts plus end-of-turn.
+- **SCOPE:** `apps/web/lib/voice-stt.ts` · test `apps/web/lib/voice-stt.test.ts`.
+- **MUTATES:** none (client-side streaming; no storage).
+- **STEPS:** 1) Graphify code-map of `apps/web/lib/voice-call.ts` and `apps/web/components/coach/voice/voiceSession.ts`; 2) implement (or verify) the socket open (token as `bearer` subprotocol), mic capture, and transcript events; 3) write the unit test with a fake WebSocket.
+- **DONE:** `bun test apps/web/lib/voice-stt.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store or log audio or transcripts; do not embed a key; do not call the real provider in tests; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `openSttSocket({ url, token, onInterim, onFinal, onUtteranceEnd, onError })` returns a handle with `close()`. Audio is WebM/Opus (`MediaRecorder`); the socket sends binary frames. Interim transcripts feed `onInterim` (live transcript); final feed `onFinal`; `vad_events`/`utterance_end` drive `onUtteranceEnd` (end-of-turn and barge-in signal). Errors surface as `voice_connect` copy.
+- **TESTS:** Given a fake WebSocket / When opened / Then the subprotocol carries the token and the URL is unchanged. Given a final transcript event / When received / Then `onFinal` fires with the text. Given an utterance-end event / When received / Then `onUtteranceEnd` fires. Given a socket error / When fired / Then `onError` fires.
+- **NUMBERS:** token TTL 30 s (opens once, valid at connect) (TRD §5a).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0372 — Voice: Deepgram STT WebSocket client (native/Expo)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0368 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0368.
+- **WHY:** TRD §5a step 2; PRD F-121/F-32/F-33.
+- **GOAL:** The mobile voice-call screen can open the same Deepgram socket on Expo (RN WebSocket + `expo-av`/mic) and emit the same interim/final/utterance events.
+- **SCOPE:** `apps/mobile/lib/v3/voice-stt.ts` · test `apps/mobile/lib/v3/__tests__/voice-stt.test.ts`.
+- **MUTATES:** none (client streaming; no storage).
+- **STEPS:** 1) Graphify code-map of `apps/mobile/app/(tempo)/voice-call.tsx`; 2) implement `openSttSocket` on RN WebSocket + mic capture; 3) write the unit test with a fake socket.
+- **DONE:** `bun test apps/mobile/lib/v3/__tests__/voice-stt.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not record/persist audio; do not embed a key; do not call the real provider; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Same contract as TFV2-0371 (`openSttSocket({url, token, onInterim, onFinal, onUtteranceEnd, onError})`), RN-native: `WebSocket` from `react-native`, mic via `expo-av` (or the platform mic API), binary frames. Mic permission denied → `onError` with calm copy.
+- **TESTS:** Given a fake RN socket / When opened / Then the subprotocol carries the token. Given mic permission denied / When opened / Then `onError` fires with the permission copy. Given a final event / When received / Then `onFinal` fires.
+- **NUMBERS:** token TTL 30 s (TRD §5a).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0373 — Voice: TTS playback sentence queue
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0369 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0369.
+- **WHY:** TRD §5a step 4 (speech starts before the whole reply); `VOICE_LIMITS.sentencesAhead` 2.
+- **GOAL:** The client fetches sentences `K=2` ahead, plays them in order, and stops on an interrupt signal, without skipping or duplicating audio.
+- **SCOPE:** `apps/web/lib/voice-tts.ts` · test `apps/web/lib/voice-tts.test.ts`.
+- **MUTATES:** none (client playback only).
+- **STEPS:** 1) Graphify code-map of the existing playback in `apps/web/components/coach/voice/`; 2) implement a queue that prefetches `sentencesAhead` and plays in order; 3) expose `stop()`; 4) write the test.
+- **DONE:** `bun test apps/web/lib/voice-tts.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store audio beyond playback; do not call the real provider; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `TtsQueue({ speak })` with `enqueue(messageId, count)`, `play()`, `stop()`. Prefetch the next 2 sentences while the current plays; `stop()` cancels the current audio and the pending fetches. Emits `onDone` when `count` sentences have played or `done` is returned.
+- **TESTS:** Given a reply of 3 sentences / When played / Then sentences play in index order with no duplicates. Given `stop()` / When called mid-playback / Then the current audio stops and no further sentence plays. Given `done` returned / When the queue drains / Then `onDone` fires.
+- **NUMBERS:** `sentencesAhead` 2 (repo constant).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0374 — Voice: barge-in (interrupt playback on speech)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0373 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0373.
+- **WHY:** TRD §5a step 5 (barge-in); PRD F-30.
+- **GOAL:** When the user speaks mid-reply (Deepgram reports speech), the client stops TTS at once and starts the new turn.
+- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` (or the state hook) · test `apps/web/components/coach/voice/useVoiceCall.test.ts`.
+- **MUTATES:** none (client behaviour).
+- **STEPS:** 1) Graphify code-map of `useVoiceCall.ts`; 2) wire `onUtteranceStart` (speech detected) to `TtsQueue.stop()` + new turn; 3) write the test.
+- **DONE:** `bun test apps/web/components/coach/voice/useVoiceCall.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not restart TTS until the new reply; do not record audio; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** On `speechDetected` while `playing`: stop audio immediately (≤ 250 ms), clear the transcript's live state, and start the user's turn. Interrupt button fires the same handler. Playback never resumes for the interrupted sentence.
+- **TESTS:** Given playing audio / When speech is detected / Then `stop()` is called and the turn flips to user. Given an Interrupt press / When fired / Then the same stop+turn happens. Given no speech / When the reply ends / Then playback completes normally.
+- **NUMBERS:** interrupt latency ≤ 250 ms (DESIGN.md §7 / TRD §5a ack < 0.2 s).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0375 — Voice: call client state machine + heartbeat renew
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0367, TFV2-0371 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0367 and TFV2-0371.
+- **WHY:** TRD §5a; `convex/voice.ts` `renew` (heartbeat A-3).
+- **GOAL:** The client call state machine (`idle → connecting → live → ending`) drives the UI and renews the lease every `renewEveryMs`, tearing down on `revoked|exhausted|expired`.
+- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` · test `apps/web/components/coach/voice/useVoiceCall.test.ts`.
+- **MUTATES:** none (client state; calls `voice.start`/`renew`/`stop`).
+- **STEPS:** 1) Graphify code-map of `useVoiceCall.ts`; 2) implement the state machine + heartbeat timer; 3) map each `renew` status to a teardown; 4) write the test.
+- **DONE:** `bun test apps/web/components/coach/voice/useVoiceCall.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not start the heartbeat before `start` succeeds; do not continue after `revoked`/`exhausted`; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** States `idle | connecting | live | ending | error`. Transitions: mic press → `connecting`; `voice.start` ok → `live` + schedule `renew` every `renewEveryMs`; `renew` `ok` → keep `minutesLeft`; `revoked|exhausted|expired` → teardown to `ending` then `idle` with the calm reason; `stop` → `ending` → `idle`. Any `voice_*` error → `error` state with the copy.
+- **TESTS:** Given `start` ok / When run / Then state `live` and a renew timer is scheduled. Given `renew` returns `exhausted` / When it fires / Then teardown to `idle`. Given `start` returns `voice_off` / When run / Then state `error` with the off copy. Given `stop` / When called / Then state `idle` and the timer clears.
+- **NUMBERS:** `renewEveryMs` 15,000 (repo constant).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0376 — Voice: `VoiceCall` component (full-screen dialog)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0375 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0375.
+- **WHY:** components.md §2.11 (VoiceCall `.tp-call[data-state][data-ended]`, `role="dialog" aria-modal="true"`, `.tp-call__state` `aria-live`); PRD F-30.
+- **GOAL:** `VoiceCall` renders the full-screen call dialog (top/title, stage, state word, hint, transcript dock, docked controls) driven by the call state, with Esc pausing.
+- **SCOPE:** `apps/web/components/coach/voice/VoiceCall.tsx` · test `apps/web/components/coach/voice/VoiceCall.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `VoiceCall.tsx`; 2) align structure/classes with components.md §2.11; 3) wire states (`idle/connecting/live/ending/error`) and `data-state`/`data-ended`; 4) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/VoiceCall.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not implement the child controls here (own tickets); do not call the backend; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Layout: `__top` (title), `__title` (`EN: Call with your coach / HE: שיחה עם המאמן שלך`), `__stage` (transcript/AudioLevel), `__state` (`aria-live`: `EN: Speaking / HE: מדבר`; `EN: Not connected / HE: לא מחובר`), `__hint` (`EN: Talk any time. You can cut in while the coach speaks. / HE: דבר בכל עת. אפשר לקטוע את המאמן בזמן שהוא מדבר.`), `__dock` (MicToggle, Interrupt, PushToTalk, EndCall). States: idle, connecting, live, ending, error, offline. `role="dialog" aria-modal="true"`; Esc pauses. RTL inline-start. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given state `live` / When rendered / Then `data-state="live"` and the live hint shows. Given `connecting` / When rendered / Then the state word shows connecting. Given Esc / When pressed / Then the call pauses (mic off). Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0377 — Voice: `AudioLevel` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (AudioLevel `.tp-level` > `.tp-level__bar` `--level`, `aria-hidden`, static under reduced motion).
+- **GOAL:** `AudioLevel` renders the microphone level bars from `levels[]` with the current level via `--level`, static under reduced motion.
+- **SCOPE:** `apps/web/components/coach/voice/AudioLevel.tsx` · test `apps/web/components/coach/voice/AudioLevel.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/AudioLevel.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `AudioLevel` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/AudioLevel.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not animate under `prefers-reduced-motion`; do not expose the level to a screen reader (`aria-hidden`); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `AudioLevel({ levels: number[] })`. Bars use `--tp-accent`; the active bar height reflects `--level` (0…1). `aria-hidden="true"`. Reduced motion → static max bars, no pulse. RTL: bars flow inline-start.
+- **TESTS:** Given levels `[0.2,0.8]` / When rendered / Then the highest bar carries the larger level. Given reduced motion / When rendered / Then no animation class is applied. Given any render / When inspected / Then the element is `aria-hidden`.
+- **NUMBERS:** motion ≤250 ms; static under reduced motion (DESIGN.md §7).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0378 — Voice: `LiveTranscript` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (LiveTranscript `ol.tp-call__transcript[aria-live=polite]`, `.tp-call-line[data-who][data-live]`); PRD F-30 (read-back).
+- **GOAL:** `LiveTranscript` renders the rolling transcript (you / coach) with live lines marked and a ReadAloud action per coach line.
+- **SCOPE:** `apps/web/components/coach/voice/LiveTranscript.tsx` · test `apps/web/components/coach/voice/LiveTranscript.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/LiveTranscript.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `LiveTranscript` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/LiveTranscript.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not store transcripts; do not mark user lines as live; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `LiveTranscript({ lines: { who:"user"|"coach", text, live? }[] })`. Rows `data-who`; `data-live` only on the streaming coach line. `ol` is `aria-live=polite`. Copy `EN: You / HE: אתה` and `EN: Coach / HE: מאמן`. RTL: text `dir="auto"` per line; who label inline-start. ReadAloud button per coach line (TFV2-0387).
+- **TESTS:** Given two lines / When rendered / Then each shows with the right `data-who`. Given a live coach line / When rendered / Then only that line has `data-live`. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0379 — Voice: `MicToggle` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (MicToggle `.tp-call__mic[aria-pressed]`, "The one accent on the call screen").
+- **GOAL:** `MicToggle` is the single accent mic button, `aria-pressed`, with the `call-mic` action.
+- **SCOPE:** `apps/web/components/coach/voice/MicToggle.tsx` · test `apps/web/components/coach/voice/MicToggle.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/MicToggle.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `MicToggle` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/MicToggle.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not add a second accent element on the call screen; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `MicToggle({ pressed, onToggle })`. Accent `--tp-accent` when off (inviting), `--tp-danger` muted state. Copy: `EN: Mic on / HE: מיקרופון פועל` / `EN: Mic off / HE: מיקרופון כבוי`. `aria-pressed` reflects state; `call-mic` event. Target ≥ 24×24 CSS px. RTL: label inline-start.
+- **TESTS:** Given `pressed=false` / When rendered / Then `aria-pressed=false` and the accent style applies. Given `pressed=true` / When rendered / Then the muted style and `Mic off` label show. Given a tap / When fired / Then `onToggle` runs.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0380 — Voice: `Interrupt` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (Interrupt `.tp-btn--secondary[data-action=call-interrupt]`, hand icon, enabled only while the coach speaks).
+- **GOAL:** `Interrupt` is a secondary button that fires `session.interrupt()`, disabled unless the coach is speaking.
+- **SCOPE:** `apps/web/components/coach/voice/Interrupt.tsx` · test `apps/web/components/coach/voice/Interrupt.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/Interrupt.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `Interrupt` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/Interrupt.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not enable while the user speaks; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `Interrupt({ enabled, onInterrupt })`. Copy: `EN: Interrupt / HE: קטע`. Secondary style (`--tp-btn--secondary`), hand icon. Disabled state greyed. `data-action=call-interrupt` → `session.interrupt()`.
+- **TESTS:** Given the coach speaking / When rendered / Then enabled. Given the user speaking / When rendered / Then disabled. Given a press / When fired / Then `onInterrupt` runs.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0381 — Voice: `EndCall` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (EndCall `.tp-btn--danger[data-action=call-end]`, phone-off icon, word "End call").
+- **GOAL:** `EndCall` is a danger button that ends the session (`voice.endSession`) then closes the call.
+- **SCOPE:** `apps/web/components/coach/voice/EndCall.tsx` · test `apps/web/components/coach/voice/EndCall.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/EndCall.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `EndCall` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/EndCall.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not skip `voice.endSession` before `call-close`; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `EndCall({ onEnd })`. Copy: `EN: End call / HE: סיים שיחה`. Danger style `--tp-danger`. `data-action=call-end` → `voice.endSession`; then `call-close`.
+- **TESTS:** Given a live call / When End call is pressed / Then `onEnd` fires once. Given `onEnd` / When pressed twice fast / Then it fires once (no double end). Run at 390 and 1280, EN and HE.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8) · contrast 4.5:1 (WCAG 2.2 AA).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0382 — Voice: `PushToTalk` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** PRD F-35 (walkie-talkie on every tier); components.md §2.11 (PushToTalk `button.tp-ptt[data-pressed]`, pointer hold or Space/Enter hold).
+- **GOAL:** `PushToTalk` is a hold-to-talk button on every tier, active on pointer/Space/Enter hold, with `data-pressed`.
+- **SCOPE:** `apps/web/components/coach/voice/PushToTalk.tsx` · test `apps/web/components/coach/voice/PushToTalk.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/PushToTalk.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `PushToTalk` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/PushToTalk.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not gate push-to-talk by tier (it is every tier); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `PushToTalk({ onPressStart, onPressEnd })`. Copy: `EN: Hold to talk / HE: החזק כדי לדבר`. Pointer down/Space/Enter keydown → `data-pressed` + `onPressStart`; up → `onPressEnd`. `aria-pressed`. RTL label inline-start.
+- **TESTS:** Given a pointer hold / When held / Then `onPressStart` fires and `data-pressed` is set. Given release / When fired / Then `onPressEnd` fires. Given Space held / When keydown / Then `onPressStart` fires.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0383 — Voice: `CallMinutes` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** components.md §2.11 (CallMinutes `.tp-call__minutes[data-low]`, clock icon + "12 minutes left today"); PRD F-35.
+- **GOAL:** `CallMinutes` shows the minutes left today from `voice.availability`/`renew`, with a low state when running low.
+- **SCOPE:** `apps/web/components/coach/voice/CallMinutes.tsx` · test `apps/web/components/coach/voice/CallMinutes.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/CallMinutes.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `CallMinutes` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/CallMinutes.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not compute minutes client-side beyond what the server returns; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `CallMinutes({ minutesLeft })`. Copy: `EN: n minutes left today / HE: נותרו n דקות היום` (n LTR `tp-num`); low state `EN: running low / HE: אוזל` with `data-low` at ≤ 5 min. Clock icon.
+- **TESTS:** Given `minutesLeft=12` / When rendered / Then "12 minutes left today" shows. Given `minutesLeft=3` / When rendered / Then `data-low` and "running low" show. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** low threshold ≤ 5 min (internal).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0384 — Voice: `CallActionConfirm` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (CallActionConfirm `.tp-call-action[data-undone]`; "Added 'call the bank' to Today · Undo"); PRD F-22/F-131 (5-min Undo).
+- **GOAL:** `CallActionConfirm` is an inline sonner confirming a spoken action with a 5-minute Undo.
+- **SCOPE:** `apps/web/components/coach/voice/CallActionConfirm.tsx` · test `apps/web/components/coach/voice/CallActionConfirm.test.tsx`.
+- **MUTATES:** `apps/web` UI only (Undo calls the existing restore mutation).
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/CallActionConfirm.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `CallActionConfirm` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/CallActionConfirm.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not hide the Undo before 5 min; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `CallActionConfirm({ text, onUndo })`. Copy: `EN: Added "<text>" to Today / HE: הוספתי את "<text>" להיום`; `EN: Undo / HE: בטל`. `data-undone` after Undo. Countdown 5:00.
+- **TESTS:** Given a confirm / When rendered / Then the added copy and Undo show. Given Undo / When pressed / Then `onUndo` fires and `data-undone` is set. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** Undo window 5 min (PRD F-131).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0385 — Voice: `LanguageChip` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376.
+- **WHY:** components.md §2.11 (LanguageChip `button.tp-lang-chip[data-lang][data-lang-current]`, each name in its own `lang`); PRD F-73.
+- **GOAL:** `LanguageChip` toggles the call language (en/he) with each name in its own `lang`, calling `voice.setLanguage`.
+- **SCOPE:** `apps/web/components/coach/voice/LanguageChip.tsx` · test `apps/web/components/coach/voice/LanguageChip.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/LanguageChip.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `LanguageChip` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/LanguageChip.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not switch the app-wide locale here (call language only); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `LanguageChip({ lang, onSet })`. Options `English` (`lang="en"`) / `עברית` (`lang="he"`), each name in its own `lang`. `data-lang-current` on the active. `call-lang` → `voice.setLanguage`.
+- **TESTS:** Given `lang="en"` / When rendered / Then "English" shows with `data-lang-current`. Given `lang="he"` / When rendered / Then "עברית" shows. Given a tap / When fired / Then `onSet` runs. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Hebrew lane gated on a Hebrew crisis list — Amit (voicePolicy `laneFor`).
+
+### TFV2-0386 — Voice: calm error copy EN/HE + offline state
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** `convex/voice.ts` `VOICE_ERRORS`; PRD F-70/F-71; components.md §2.18 (StateOffline).
+- **GOAL:** Every `voice_*` machine code maps to calm EN/HE copy, and the call screen shows the offline state without clearing content.
+- **SCOPE:** `apps/web/lib/voice-strings.ts` · `apps/web/messages/en.json` · `apps/web/messages/he.json` (or the existing message dictionaries) · test `apps/web/lib/voice-strings.test.ts`.
+- **MUTATES:** `apps/web` strings only.
+- **STEPS:** 1) Graphify code-map of the message dictionaries and `VOICE_ERRORS`; 2) map each code to EN/HE; 3) add the offline string; 4) write the test.
+- **DONE:** `bun test apps/web/lib/voice-strings.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not change a code's meaning; do not drop the English fallback; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Pairs `EN / HE`: voice_off `Voice isn't switched on yet. Typing works as always. / הקול עדיין לא מופעל. ההקלדה עובדת כרגיל.`; voice_language `Voice in this language isn't ready yet. Typing works as always. / הקול בשפה הזו עדיין לא מוכן. ההקלדה עובדת כרגיל.`; voice_daily_limit `That's today's voice time. Typing works as always. / נגמר זמן הקול להיום. ההקלדה עובדת כרגיל.`; voice_resting `Voice is resting for today. Typing works as always. / הקול נח היום. ההקלדה עובדת כרגיל.`; voice_session_ended `This voice session has ended. Start it again when you like. / השיחה הקולית הסתיימה. אפשר להתחיל שוב מתי שתרצה.`; voice_connect `Voice couldn't connect just now. Try again in a moment. / לא הצלחנו להתחבר עכשיו. נסה שוב עוד רגע.`. Offline: `EN: You're offline. Changes save when you're back. / HE: אין חיבור. השינויים נשמרים כשתחזור.`
+- **TESTS:** Given code `voice_off` / When resolved in `he` / Then the Hebrew copy returns. Given a missing key / When resolved / Then English returns. Given every `VOICE_ERRORS` key / When resolved / Then a non-empty EN and HE string exists.
+- **NUMBERS:** 100% of `VOICE_ERRORS` codes covered in both languages (internal).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0387 — Voice: `ReadAloudButton` component
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0369 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0369.
+- **WHY:** components.md §2.10 (ReadAloudButton `read-aloud` → `voice.speak({text,lang})`); PRD F-36 (audio recap).
+- **GOAL:** `ReadAloudButton` reads a coach/text reply aloud via `voice.speak`, `aria-pressed`, and toggles on/off.
+- **SCOPE:** `apps/web/components/coach/voice/ReadAloudButton.tsx` · test `apps/web/components/coach/voice/ReadAloudButton.test.tsx`.
+- **MUTATES:** `apps/web` UI only.
+- **STEPS:** 1) Graphify code-map of `apps/web/components/coach/voice/ReadAloudButton.tsx` (the unit may already exist inside the call screen — then verify/extract); 2) implement `ReadAloudButton` per the SPEC; 3) write the render test.
+- **DONE:** `bun test apps/web/components/coach/voice/ReadAloudButton.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not read the crisis card; do not read arbitrary client text as coach (server resolves sentences); do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `ReadAloudButton({ messageId, lang })`. Copy: `EN: Read aloud / HE: הקרא בקול`; active `EN: Stop / HE: עצור`. `aria-pressed` reflects. Calls the TTS queue, never reads the crisis card.
+- **TESTS:** Given an idle button / When rendered / Then "Read aloud" shows. Given a press / When fired / Then `aria-pressed` true and "Stop" shows. Given the crisis card id / When rendered / Then the button is hidden/disabled.
+- **NUMBERS:** target ≥24×24 CSS px (WCAG 2.5.8).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0388 — Voice: web `/coach` voice in/out integration (fold-in #746)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0376, TFV2-0387 · **Folds-in:** #746
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0376 and TFV2-0387.
+- **WHY:** PRD F-30/F-31; issue #746 (`/coach` voice in/out); `apps/web/components/coach/CoachPanel.tsx`, `CoachChat.tsx`.
+- **GOAL:** The web `/coach` panel offers a mic entry that starts the live `VoiceCall` (STT in, TTS out, barge-in), with the mic gated by `voice.availability`, and ReadAloud on text replies.
+- **SCOPE:** `apps/web/components/coach/CoachPanel.tsx` · `apps/web/components/coach/CoachChat.tsx` · test `apps/web/components/coach/CoachPanel.test.tsx`.
+- **MUTATES:** `apps/web` UI only (wires existing voice modules).
+- **STEPS:** 1) Graphify code-map of `CoachPanel.tsx`/`CoachChat.tsx` and the existing `components/coach/voice/`; 2) add the mic entry (disabled + reason when unavailable); 3) mount `VoiceCall` on start; 4) add ReadAloud to text replies; 5) write the render test.
+- **DONE:** `bun test apps/web/components/coach/CoachPanel.test.tsx` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not bypass the availability gate; do not implement the voice pipeline (own tickets); do not call a paid provider; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Mic entry (MicToggle) in the coach composer; disabled with the `availability` reason when not available; on start mounts the full-screen `VoiceCall`. Text replies get a `ReadAloudButton`. Copy reuses TFV2-0386. States: default, voice-off, voice-language, voice-budget, live.
+- **TESTS:** Given availability `off` / When rendered / Then the mic is disabled with the off copy. Given available / When the mic is pressed / Then `VoiceCall` mounts. Given a text reply / When rendered / Then a ReadAloud button is present. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
+
+### TFV2-0389 — Voice: mobile voice-call live wiring
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0388, TFV2-0376 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `mobile`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0388 and TFV2-0376.
+- **WHY:** PRD F-30/F-121; `docs/design/v3/screens/mobile/voice-call.html`; replaces the placeholder from TFV2-0325.
+- **GOAL:** `apps/mobile/app/(tempo)/voice-call.tsx` replaces the "Not connected" placeholder with the live call (native STT, TTS queue, barge-in, minutes, language chip), gated by `voice.availability`.
+- **SCOPE:** `apps/mobile/app/(tempo)/voice-call.tsx` · `apps/mobile/lib/v3/voice-stt.ts` (reuse) · test `tests/e2e/mobile-voice-call.spec.ts`.
+- **MUTATES:** `apps/mobile` UI only (wires existing voice modules).
+- **STEPS:** 1) Graphify code-map of `voice-call.tsx`; 2) wire the state machine + STT socket + TTS queue + barge-in; 3) keep the not-connected fallback when unavailable; 4) update the Playwright click-through.
+- **DONE:** `bunx playwright test tests/e2e/mobile-voice-call.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not add a provider/key; do not record audio; do not enable the mic when availability is off; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Copy reuses TFV2-0325 + TFV2-0386. States: not-connected (unavailable), connecting, live (AudioLevel + LiveTranscript), ending, error, offline. Mic accent `--tp-accent`; end-call `--tp-danger`. RTL inline-start; digits LTR. Breakpoints 390/768/1024/1280. Motion ≤250 ms.
+- **TESTS:** Given availability off / When rendered / Then "Not connected" and disabled controls. Given available + a mocked socket / When mic pressed / Then the live state (AudioLevel + transcript) shows. Given End call / When pressed / Then returns to Coach. Run at 390 and 1280, EN and HE.
+- **NUMBERS:** contrast 4.5:1 (WCAG 2.2 AA) · target ≥24×24 CSS px (WCAG 2.5.8) · motion ≤250 ms.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** voice stage (Gen 1 vs later) — Amit (REWRITE-PLAN-v2 §4.1); this ticket assumes Gen 1.
+
+### TFV2-0390 — Voice: call preferences (language + push-to-talk default)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** PRD F-35/F-73; `convex/preferences.ts` (userPreferences).
+- **GOAL:** `convex/preferences.ts` (or `voice.ts`) persists per-user voice prefs (preferred call language, push-to-talk default) and they are read on session start.
+- **SCOPE:** `convex/preferences.ts` · test `convex/preferences.test.ts`.
+- **MUTATES:** `userPreferences` (additive fields only).
+- **STEPS:** 1) Graphify code-map of `preferences.ts`; 2) add `voiceLanguage`/`voicePushToTalk` upsert; 3) read them in `voice.start` (language is still server-decided from locale/lane); 4) write the test.
+- **DONE:** `bun test convex/preferences.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not let the client override the server-chosen lane/model; do not edit `convex/schema.ts` unless the fields already exist (else mark UNKNOWN and stop); do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `setVoicePrefs({ voicePushToTalk?: boolean, voiceLanguage?: "en"|"he" })` and `getVoicePrefs()`. Push-to-talk default false (live conversation) or true (walkie-talkie) — persisted. Errors: none beyond requireUser.
+- **TESTS:** Given a set / When `getVoicePrefs` / Then the saved values return. Given `voicePushToTalk:true` / When a session starts / Then the client starts in push-to-talk mode. Given an unknown field / When set / Then it is ignored.
+- **NUMBERS:** no industry number applies → `UNKNOWN` (none needed).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** whether the prefs columns already exist in `userPreferences` — verify; if not, Amit (schema change).
+
+### TFV2-0391 — Voice: minutes usage + reset-at-midnight verify
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0365.
+- **WHY:** PRD F-35; `.cursorrules` (daily caps reset at local midnight); `convex/lib/voicePolicy.ts` `localDateKey`.
+- **GOAL:** Daily minutes are counted per the user's local midnight (not UTC) and reset when the local date rolls over.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · test `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** none (pure date-key logic).
+- **STEPS:** 1) Graphify code-map of `localDateKey`/`utcDateKey`; 2) verify a local-midnight boundary changes `dateKey`; 3) add missing coverage.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not switch the cap to UTC; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `localDateKey(now, timeZone)` returns `YYYY-MM-DD` in the user's zone (UTC fallback on unknown). Minutes sum per `dateKey`, so a new local day resets the personal cap; the global ceiling stays on `utcDateKey`.
+- **TESTS:** Given `now` just before local midnight in `Asia/Jerusalem` / When `localDateKey` / Then one date; given just after / Then the next date. Given an unknown zone / When `localDateKey` / Then UTC date. Given two leases across midnight / When summed / Then they fall in different date keys.
+- **NUMBERS:** daily reset at local midnight (`.cursorrules` / HARD_RULES §9).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0392 — Voice: crisis-safety integration (transcript → fixed card)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0371 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0371.
+- **WHY:** PRD F-24; TRD §7 rule 7; `convex/lib/crisisWords.ts`; `convex/voice.ts` (crisis card never spoken, L-12).
+- **GOAL:** A spoken crisis turn is verified to route to the fixed crisis card with no model call and no TTS, exactly as the text path.
+- **SCOPE:** `convex/voice.ts` (fix only) · `convex/messages.ts` (fix only if the send path is there) · test `convex/voice.test.ts`.
+- **MUTATES:** none (verification of the transcript send path).
+- **STEPS:** 1) Graphify code-map of how the final transcript reaches the coach send and `isCrisisText`; 2) verify the transcript passes through the same crisis guard as typed text; 3) verify the crisis card is never read aloud; 4) add missing coverage.
+- **DONE:** `bun test convex/voice.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not let crisis text reach a model; do not read the crisis card aloud; do not change the crisis card copy; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** The final transcript goes through the ordinary coach send (same as typed text), so `isCrisisText` short-circuits to `crisisCardText(CRISIS_CARD)` with no model call. `admitSentence` already returns `done` for `modelUsed === "crisis-card"`, so no TTS. Hebrew crisis phrases remain gated (English list only) → UNKNOWN/Amit.
+- **TESTS:** Given a crisis transcript / When the turn runs / Then the fixed card returns and no model call is made. Given a crisis reply / When TTS is requested / Then `done`, no audio. Given a normal transcript / When run / Then the normal coach path runs.
+- **NUMBERS:** crisis card is fixed content, never model-written (TRD §7 rule 7).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Hebrew crisis phrase list — Amit (REWRITE-PLAN-v2 §4.1 / voicePolicy).
+
+### TFV2-0393 — Voice: proposal/Undo path for spoken actions
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0384 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0384.
+- **WHY:** PRD F-31/F-22/F-131; HARD_RULES §6.2 (every mutation a proposal with Undo).
+- **GOAL:** Every spoken coach action surfaces as a `CallActionConfirm` with a 5-minute Undo, never auto-applied, verified end-to-end.
+- **SCOPE:** `apps/web/components/coach/voice/useVoiceCall.ts` (fix only) · test `apps/web/components/coach/voice/useVoiceCall.test.ts`.
+- **MUTATES:** none (client presentation of existing proposals).
+- **STEPS:** 1) Graphify code-map of how voice turns surface proposals (the same Accept/Reject as text); 2) verify each proposal renders as `CallActionConfirm`; 3) verify Undo fires the restore; 4) write the test.
+- **DONE:** `bun test apps/web/components/coach/voice/useVoiceCall.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not auto-apply any voice action; do not shorten the Undo window; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Voice has no action path of its own (L-16); the final transcript goes through the normal coach send, so every change is still a proposal. Each accepted proposal shows `CallActionConfirm` with the Undo toast (5:00).
+- **TESTS:** Given a spoken "add a task" / When the coach proposes / Then a CallActionConfirm shows, not an auto-apply. Given Undo / When pressed / Then the restore runs and `data-undone` is set. Given a rejected proposal / When surfaced / Then no confirm shows.
+- **NUMBERS:** Undo window 5 min (PRD F-131).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0394 — Voice: end-to-end smoke (Playwright, mocked providers)
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0388, TFV2-0389 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0388 and TFV2-0389.
+- **WHY:** PRD F-30; AGENTS.md (E2E smoke); the voice path end-to-end.
+- **GOAL:** A Playwright smoke clicks the coach mic → live call → transcript → end call, with Deepgram/Chatterbox mocked, asserting every state.
+- **SCOPE:** `tests/e2e/voice-smoke.spec.ts` · (fixture) `tests/e2e/fixtures/voice-mock.ts`.
+- **MUTATES:** none (test only; mocks providers).
+- **STEPS:** 1) Graphify code-map; 2) mock `fetch`/WebSocket for Deepgram and the TTS; 3) write the click-through: open coach, press mic, assert live state, end call; 4) run.
+- **DONE:** `bunx playwright test tests/e2e/voice-smoke.spec.ts` → all pass.
+- **EVIDENCE:** Playwright output.
+- **DO NOT:** do not use real keys/providers; do not set `PLAYWRIGHT_BASE_URL`; do not weaken an assertion; do not touch `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** Covers the states from TFV2-0375/0388: idle → connecting → live (AudioLevel + LiveTranscript) → end → idle; and the unavailable path (mic disabled with reason). EN and HE, 390 and 1280.
+- **TESTS:** Given mocked providers / When the mic is pressed / Then the call reaches `live` with a transcript line. Given End call / When pressed / Then back to `idle` with the mic available again. Given availability off / When rendered / Then the mic is disabled with the reason.
+- **NUMBERS:** smoke asserts every state (internal completeness); no latency number without measurement → `UNKNOWN`.
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** none.
+
+### TFV2-0395 — Voice: Hebrew lane (Nova-3) + RTL verification
+- **Stage:** E · **Pass:** 1 · **Depends:** TFV2-0371, TFV2-0365 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `backend`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0371 and TFV2-0365.
+- **WHY:** PRD F-33 (Hebrew Nova-3 → Chatterbox multilingual), F-71/F-72; TRD §5a; `convex/lib/voicePolicy.ts` `LANES.he`.
+- **GOAL:** The Hebrew lane is verified (Nova-3 `he` socket URL, Chatterbox `he` TTS) and gated off until a Hebrew crisis phrase list is approved, with RTL verified in the call UI.
+- **SCOPE:** `convex/lib/voicePolicy.ts` (fix only) · `apps/web/components/coach/voice/VoiceCall.tsx` (RTL) · test `convex/lib/voicePolicy.test.ts`.
+- **MUTATES:** none (lane gating + RTL).
+- **STEPS:** 1) Graphify code-map of `LANES.he`/`laneFor`; 2) verify the `he` lane returns the Nova-3 `he` URL only when the Hebrew crisis list is approved; 3) verify call UI RTL; 4) write the test.
+- **DONE:** `bun test convex/lib/voicePolicy.test.ts` → all pass.
+- **EVIDENCE:** test output.
+- **DO NOT:** do not enable `he` before the Hebrew crisis list is approved; do not hard-code a Hebrew model choice beyond the lane; do not touch `convex/schema.ts`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `LANES.he = { language:"he", url:"wss://api.deepgram.com/v1/listen?model=nova-3&language=he&interim_results=true&smart_format=true&endpointing=500&utterance_end_ms=1500&vad_events=true" }`. `laneFor("he")` returns `null` until the Hebrew crisis phrase list is approved (today's list is English-only). RTL: transcript lines `dir="auto"`, controls inline-start.
+- **TESTS:** Given locale `he` and no approved Hebrew crisis list / When `laneFor` / Then null (voice off for Hebrew). Given `en` / When `laneFor` / Then the Flux en lane. Given an approved Hebrew list (flag) / When `laneFor("he")` / Then the Nova-3 he lane.
+- **NUMBERS:** Deepgram Nova-3 `he` model (PRD F-33, known fact) · Hebrew crisis list approval → `UNKNOWN` (Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** Hebrew crisis phrase list approval — Amit (REWRITE-PLAN-v2 §4.1); voice stage — Amit.
+
+### TFV2-0396 — Voice: latency + performance budget
+- **Stage:** E · **Pass:** 2 · **Depends:** TFV2-0394 · **Folds-in:** none
+- **FOR:** Tempo Flow (`Levidavidspublic/tempo-rhythm`); area `web`, lane per `factory/SLOTS.md`.
+- **WHEN:** after TFV2-0394.
+- **WHY:** TRD §5a step 6 (ack < 0.2 s, response ≈ 1 s); TICKET-STANDARD NUMBERS rule.
+- **GOAL:** The voice path is instrumented with measured acknowledgment and first-audio/first-text latency, reported honestly (measured or UNKNOWN), without inventing numbers.
+- **SCOPE:** `apps/web/lib/voice-perf.ts` · test `apps/web/lib/voice-perf.test.ts`.
+- **MUTATES:** none (measurement only).
+- **STEPS:** 1) Graphify code-map; 2) instrument timers for acknowledge (mic→socket open) and first-text (→ first transcript) and first-audio (→ first sentence playback); 3) expose them for CI/logging without storing audio; 4) write the test.
+- **DONE:** `bun test apps/web/lib/voice-perf.test.ts` → all pass.
+- **EVIDENCE:** test output + a measured sample if available, else the `UNKNOWN` record.
+- **DO NOT:** do not invent a latency value; do not block on a provider to measure; do not store audio; do not touch `convex/`, `.env`, workflows.
+- **REPORT:** status / evidence / changed / unknowns / notes for ticket sync.
+- **SPEC:** `recordLatency(kind, ms)` for `ack`, `first_text`, `first_audio`; a `summary()` returning the last values or null. No threshold is asserted until measured; the TRD budget (ack < 0.2 s, response ≈ 1 s) is the target to check against.
+- **TESTS:** Given a recorded `ack` of 150 ms / When summarized / Then it reports 150. Given no measurement / When summarized / Then null (never a fabricated number). Given a recorded `first_audio` / When summarized / Then the value is a finite ms.
+- **NUMBERS:** ack < 0.2 s, response ≈ 1 s (TRD §5a step 6, target) · first-audio latency `UNKNOWN` until measured (Amit).
+- **GATES:** 1 Build/typecheck/lint · 2 own TESTS green · 3 NUMBERS in range · 4 Google style formatting/naming · 5 secret + forbidden-tech scan · 6 scope guard · 7 config guard · 8 never weaken/skip/lower/delete a check.
+- **OPEN:** first-audio latency — Amit (TRD §5a: "first-audio latency is UNKNOWN until measured"); voice stage — Amit (REWRITE-PLAN-v2 §4.1).
