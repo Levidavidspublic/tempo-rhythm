@@ -11,7 +11,7 @@ import { validate } from "./validate-tickets.mjs";
 import { isTicketPath, MARKER } from "./tickets-lib.mjs";
 import { linkedTickets } from "./gh-api.mjs";
 import { bugbotState, coderabbitState, CODERABBIT_LOGINS, findingsNote } from "./review-gate.mjs";
-import { reviewKind } from "./release-gate.mjs";
+import { reviewKind, skipReviewChoice, reviewBlockLine, judgeGate } from "./release-gate.mjs";
 import { nextStep, ownerTicket } from "./review-fix.mjs";
 import { judge as scopeJudge, judgeBatch, isBatchPR } from "./scope-guard.mjs";
 import { ciGreen, readiness, mergeOrder, batchBody, reviewNeeded, batchBranch, isConflict, FINALIZE_CLEARS } from "./batch-loop.mjs";
@@ -255,6 +255,94 @@ t("review gate: CodeRabbit completed / skipped / findings / blocked", () => {
   assert.equal(reviewKind("bugbot"), "bugbot");
   assert.equal(reviewKind("CodeRabbit"), "coderabbit");
   assert.equal(reviewKind("other"), "");
+});
+t("release gate: empty skip reason fails preflight; owner skip passes only that review; stop reason is never empty", () => {
+  assert.match(skipReviewChoice(true, "").error, /skip_reason/);
+  assert.match(skipReviewChoice("true", " \n\t ").error, /skip_reason/);
+  assert.equal(skipReviewChoice(false, "").error, "");
+  assert.equal(skipReviewChoice("false", "   ").skip, false);
+  assert.equal(skipReviewChoice("true", "  882 files exceed the limit  ").reason, "882 files exceed the limit");
+
+  const green = {
+    "release PR": "success",
+    "CI (lint, typecheck, unit, scans, notices, local E2E, build)": "success",
+    "secret scans": "success",
+    "Playwright on the integration preview": "success",
+  };
+  const pass = judgeGate({
+    results: { ...green, "code review (coderabbit)": "skipped" },
+    skipCodeReview: "true",
+    skipReason: "882 files exceed the limit of 300",
+    actor: "Division6066",
+  });
+  assert.equal(pass.ok, true);
+  assert.equal(pass.note, "Code review skipped by Division6066: 882 files exceed the limit of 300");
+
+  const otherSkip = judgeGate({
+    results: { ...green, "code review (coderabbit)": "skipped" },
+    skipCodeReview: "false",
+    skipReason: "",
+    actor: "Division6066",
+  });
+  assert.equal(otherSkip.ok, false);
+  assert.equal(otherSkip.note, "");
+
+  const failedReview = judgeGate({
+    results: { ...green, "code review (coderabbit)": "failure" },
+    skipCodeReview: "true",
+    skipReason: "not used",
+    actor: "Division6066",
+  });
+  assert.equal(failedReview.ok, false);
+  assert.equal(failedReview.note, "");
+
+  const ciDown = judgeGate({
+    results: { ...green, "secret scans": "failure", "code review (coderabbit)": "skipped" },
+    skipCodeReview: "true",
+    skipReason: "file limit",
+    actor: "Division6066",
+  });
+  assert.equal(ciDown.ok, false);
+  assert.equal(ciDown.note, "Code review skipped by Division6066: file limit");
+
+  const emptyReason = judgeGate({
+    results: { ...green, "code review (coderabbit)": "skipped" },
+    skipCodeReview: "true",
+    skipReason: "   ",
+    actor: "Division6066",
+  });
+  assert.equal(emptyReason.ok, false);
+  assert.match(emptyReason.choiceError, /skip_reason/);
+  assert.equal(emptyReason.note, "");
+
+  const limit = "Review skipped: 882 files exceed the limit of 300";
+  const sha = "abc1234abc1234abc1234abc1234abc1234abc12";
+  const skippedWithBlankComment = coderabbitState({
+    headSha: sha,
+    statuses: [{ context: "CodeRabbit", state: "success", description: limit, updated_at: "2026-10-19T12:00:00Z" }],
+    comments: [{ user: { login: "coderabbitai[bot]" }, created_at: "2026-10-19T12:05:00Z", body: "<h3></h3>\n<img alt=\"failed\">" }],
+  });
+  assert.equal(skippedWithBlankComment.state, "blocked");
+  assert.match(skippedWithBlankComment.detail, /882 files exceed the limit of 300/);
+  assert.doesNotMatch(skippedWithBlankComment.detail, /couldn't review:\s*CodeRabbit couldn't review/);
+  assert.ok(skippedWithBlankComment.detail.trim().length > 0);
+
+  const blankComment = coderabbitState({
+    headSha: sha,
+    comments: [{ user: { login: "coderabbitai[bot]" }, created_at: "2026-10-19T12:05:00Z", body: "<img alt=\"failed\">" }],
+  });
+  assert.equal(blankComment.state, "blocked");
+  assert.equal(blankComment.detail, "CodeRabbit couldn't review: no reason given.");
+  assert.doesNotMatch(blankComment.detail, /couldn't review:\s*$/);
+
+  const fb = "CodeRabbit couldn't review: no reason given.";
+  assert.equal(reviewBlockLine("CodeRabbit couldn't review", "CodeRabbit couldn't review: ", fb), fb);
+  assert.equal(reviewBlockLine("CodeRabbit couldn't review", "CodeRabbit couldn't review: CodeRabbit couldn't review: ", fb), fb);
+  assert.equal(reviewBlockLine("CodeRabbit couldn't review", "", fb), fb);
+  const once = reviewBlockLine("CodeRabbit couldn't review", limit, fb);
+  assert.match(once, /882 files exceed the limit of 300/);
+  assert.equal(once, `CodeRabbit couldn't review: ${limit}`);
+  assert.equal(reviewBlockLine("CodeRabbit couldn't review", `CodeRabbit couldn't review: ${limit}`, fb), `CodeRabbit couldn't review: ${limit}`);
 });
 t("review gate: usage-limit note after the last run = blocked, not clean", () => {
   const run = { name: "Cursor Bugbot", status: "completed", conclusion: "neutral", completed_at: "2026-10-06T01:00:00Z" };

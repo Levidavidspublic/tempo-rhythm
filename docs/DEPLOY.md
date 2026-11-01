@@ -41,6 +41,8 @@ All checks run on the exact integration commit you released (the "gate SHA").
 5. **Playwright against the integration preview.** It waits for the Vercel preview of the gate SHA. It runs the whole suite there with the protection bypass. If Vercel skipped that commit (no app change), it tests preview.tempoflow.dev, which serves the same app code.
 6. **One code review** of the whole release PR. Which reviewer runs is the repo variable `RELEASE_REVIEWER`: `bugbot` (default) or `coderabbit`. It runs only after steps 3 to 5 are green. If that reviewer already finished this exact SHA, that review counts. Otherwise the workflow posts one request (`@cursor review` or `@coderabbitai review`). A CodeRabbit status whose description says the review was skipped does not count as a pass.
 
+You can skip **only** that code review for one run: tick skip code review and write a reason. An empty reason stops the run in preflight. CI, the secret scans, and the preview E2E still run. The Release PR and the run summary say `Code review skipped by Division6066: <reason>` (the login of the person who clicked Run, which must be Division6066). A review that is skipped or failed for any other reason still stops the release. Nothing about this is saved.
+
 Any red check or any review finding stops the release. The PR gets `blocked:amit` and a comment that lists what failed. There is no auto-fix on a release. Fix it on integration, then click again.
 
 ## Then it ships (real run only)
